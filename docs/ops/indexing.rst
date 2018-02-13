@@ -18,7 +18,11 @@ Prerequisites for Indexing Data
 -------------------------------
 
  * A working Data Cube setup
- * Some *Analysis Ready Data* to load
+ * Some *Analysis Ready Data* *Different terminology* to load
+
+Indexing Steps
+--------------
+
  * A Product definition added to your Data Cube for each type of dataset
  * Dataset metadata documents for each individual dataset
 
@@ -68,7 +72,7 @@ what type of **units** the measurement is in, a **nodata** value, and even a way
 of specifying **bit level descriptions** or the **spectral response** in the
 case of reflectance data.
 
-A set of example Product definitions are supplied in
+A set of example Product definitions are supplied in *add in link here*
 `docs/config_samples/dataset_types` to cover some common Geoscience Australia
 and other Earth Observation Data.
 
