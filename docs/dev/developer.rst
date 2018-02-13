@@ -23,7 +23,7 @@ API reference
 .. toctree::
    :hidden:
 
-   external
+   api/external
    setup/common_install
 
 

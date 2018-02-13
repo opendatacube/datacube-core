@@ -44,7 +44,7 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
 
 class Query(object):
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
-        """"Parses search terms in preparation for querying the Data Cube Index.
+        """Parses search terms in preparation for querying the Data Cube Index.
 
         Create a :class:`Query` object by passing it a set of search terms as keyword arguments.
 
@@ -53,6 +53,7 @@ class Query(object):
         Use by accessing :attr:`search_terms`::
 
         >>> query.search_terms['time']  # doctest: +NORMALIZE_WHITESPACE
+
         Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=<UTC>), \
         end=datetime.datetime(2002, 1, 1, 0, 0, tzinfo=<UTC>))
 
