@@ -51,6 +51,8 @@ what type of **units** the measurement is in, a **nodata** value, and even a way
 of specifying **bit level descriptions** or the **spectral response** in the
 case of reflectance data.
 
+The most basic Product Definition file would have the below structure. 
+
 .. code-block:: yaml
 
     name: landsat
@@ -74,16 +76,20 @@ case of reflectance data.
         latitude: -0.00025
         longitude: 0.00025
     
-A set of example Product definitions are supplied in ** add in link here **
-`docs/config_samples/dataset_types` to cover some common Geoscience Australia
+See also :ref:`product-doc` for more in depth details on this config file and possible inclusions. 
+
+A collection of example Product definitions are available in github__ to cover some common Geoscience Australia
 and other Earth Observation Data.
+
+
+__ https://github.com/opendatacube/datacube-core/tree/develop/docs/config_samples/dataset_types
 
 Loading Product Definitions
 ---------------------------
 
 To load Products into your Data Cube run::
 
-    datacube product add <path-to-dataset-type-yml>
+    datacube product add <path-to-product-definition-yaml>
 
 
 Dataset Documents
