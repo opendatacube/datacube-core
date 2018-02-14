@@ -2,7 +2,7 @@
 Python and packages
 -------------------
 
-Python 2.7 and 3.5+ are supported. Python 3.6 is recommended.
+Python 3.5+ is required. Python 3.6 is recommended.
 
 Anaconda Python
 ~~~~~~~~~~~~~~~
@@ -17,13 +17,9 @@ Conda Environments are recommended for use in isolating your ODC development env
 
 Install required python packages and create an ``odc`` conda environment.
 
-Python 3.5::
+Python 3.6::
 
-    conda env create -n odc --file .travis/environment_py35.yaml sphinx
-
-Python 2.7::
-
-    conda env create -n odc --file .travis/environment_py27.yaml sphinx
+    conda env create -n odc --file .travis/environment.yaml sphinx
 
 Activate ``odc`` python environment::
 

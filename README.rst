@@ -27,7 +27,7 @@ System
 ~~~~~~
 
 -  PostgreSQL 9.5+
--  Python 2.7+ or Python 3.5+
+-  Python Python 3.5+
 
 Developer setup
 ===============

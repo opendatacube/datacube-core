@@ -18,23 +18,22 @@ Manual Installation (Fallback)
 
 Only follow these steps if the Miniconda installation does not suit your needs.
 
-Python 2.7 or Python 3.5 environment
+Python Python 3 environment
 ------------------------------------
 
 1. Download and install a standard python release from http://www.python.org/
-. The :term:`AGDC` supports versions 2.7 and
-3.5.
+. The :term:`AGDC` supports 3.5 or newer.
 
 .. note::
     If in a restricted environment with no local administrator access, python can be installed by running::
 
-        msiexec /a python-2.7.11.msi TARGETDIR=C:\Python27
+        msiexec /a python-3.6.4.msi TARGETDIR=C:\Python3
     
-    Or by launching the version 3.5 installer and selecting **not** to *install for all users* (only single user install).
+    Or by launching the version 3.6 installer and selecting **not** to *install for all users* (only single user install).
 
 2. Ensure **pip** is installed::
 
-    cd C:\Python27
+    cd C:\Python3
     python -m ensurepip
 
 3. Upgrade and Install python virtualenv::

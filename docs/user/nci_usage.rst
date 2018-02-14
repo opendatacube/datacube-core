@@ -18,12 +18,9 @@ To use the modules on ``raijin`` or ``VDI``, add the datacube module path::
 
 (you can add the above to your ``.bash_profile`` to avoid running it every time)
 
-You should now have access to the following modules:
+You should now have access to the module `agdc-py3-prod`
 
- * **agdc-py2-prod** - Python 2.7
- * **agdc-py3-prod** - Python 3.5
-
-To load the production module with Python 3 (which is highly recommended over 2), run::
+To load the production module, run::
 
     $ module load agdc-py3-prod
 
