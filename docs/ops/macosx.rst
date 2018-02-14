@@ -33,7 +33,7 @@ HDF5, netCDF4, and GDAL::
 
 Python and packages
 -------------------
-Python 2.7 and 3.5+ are supported.
+Python 3.5+ is required (2.6 is recommended)
 
 Download the latest version of the software from the `repository <https://github.com/opendatacube/datacube-core>`_ and install it::
 

@@ -38,7 +38,7 @@ Optional packages (useful utilities, docs)::
 Python and packages
 -------------------
 
-Python 2.7 and 3.5+ are supported.
+Python 3.5+ is required. Python 3.6 is recommended.
 
 Download the latest version of the software from the `repository <https://github.com/opendatacube/datacube-core>`_ and install it::
 
