@@ -33,7 +33,7 @@ setup(
     name='datacube',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    python_requires='>3.5.2',
+    python_requires='>=3.5.2',
 
     url='https://github.com/opendatacube/datacube-core',
     author='AGDC Collaboration',
