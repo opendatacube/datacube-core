@@ -14,14 +14,22 @@ these description documents. Before loading them will need to generate them,
 using a tool which understands the format the dataset is in. Several of these
 tools are provided in  :file:`utils/` in the source repository.
 
-The two examples below shows USGS landsat data for ingestion into the Data cube.
+The two examples below shows USGS landsat data for indexing into the Data cube.
 
-#. A specific example for USGS collection 1 MTL format is :download:`USGS Landsat Prepare Script
-<../../utils/ls_usgs_prepare.py>`
-
-
-Preparing USGS Landsat Collection 1 - LEVEL1
+Example 1: USGS Landsat Collection 1 - LEVEL1
 ---------------------------------------------------
+
+To add the product definitions:
+
+For Landsat collection 1 level 1 product:
+
+::
+
+    $ datacube product add docs/config_samples/dataset_types/ls_usgs.yaml
+    Added "ls8_level1_usgs"
+    Added "ls7_level1_usgs"
+    Added "ls5_level1_usgs"
+    Added "ls8_l1_pc_usgs"
 
 Download the USGS Collection 1 landsat scenes from any of the link below:
 
@@ -29,7 +37,10 @@ Download the USGS Collection 1 landsat scenes from any of the link below:
 * `GloVis <https://glovis.usgs.gov>`_
 * `ESPA ordering <https://espa.cr.usgs.gov>`_
 
-The prepare script for collection 1 - level 1 data is provided in :file:`utils/ls_usgs_prepare.py`
+Prepare script for USGS collection 1 MTL format can be downloaded from :download:`USGS Landsat Prepare Script
+<../../utils/ls_usgs_prepare.py>`
+
+The prepare script for collection 1 - level 1 data is provided in :file:`utils/ls_usgs_prepare.py` and the link  `opendatacube github <https://github.com/opendatacube/datacube-core/tree/develop/utils>`_
 
 ::
 
@@ -50,30 +61,32 @@ The prepare script for collection 1 - level 1 data is provided in :file:`utils/l
 
     $ python utils/ls_usgs_prepare.py --output ls8_usgs_lv1 ~/earth_explorer/Collection1/LANDSAT8
 
-*ls8_usgs_lv1* is the output for required dataset for landsat 8 scene.
+*ls8_usgs_lv1* is the output required for the dataset for landsat 8 scene.
+
+
+Example 1: USGS Landsat Surface Reflectance - LEDAPS
+---------------------------------------------------
 
 To add the product definitions:
 
-For Landsat collection 1 level 1 product:
+For Landsat Surface reflectance LEDAPS add:
 
 ::
 
-    $ datacube product add docs/config_samples/dataset_types/ls_usgs.yaml
-    Added "ls8_level1_usgs"
-    Added "ls7_level1_usgs"
-    Added "ls5_level1_usgs"
-    Added "ls8_l1_pc_usgs"
+    $ datacube product add docs/config_samples/dataset_types/*
+    ...
+    Added "ls5_ledaps_scene"
+    ...
+    Added "ls7_ledaps_scene"
+    ...
+    Added "ls8_ledaps_scene"
+    ...
 
-
-
-#. An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
+Prepare script for USGS landsat surface reflectance can be downloaded from :download:`USGS Landsat LEDAPS
 <../../utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py>`
 
-Preparing USGS Landsat Surface Reflectance - LEDAPS
----------------------------------------------------
-
 To prepare downloaded USGS LEDAPS Landsat scenes for use with the Data Cube,
-use the script provided in :file:`utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py`.
+use the script provided in :file:`utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py` and the link  `opendatacube github <https://github.com/opendatacube/datacube-core/tree/develop/utils>`_
 
 The following example generates the required Dataset Metadata files, named
 `agdc-metadata.yaml` for three landsat scenes.
@@ -100,18 +113,7 @@ The following example generates the required Dataset Metadata files, named
 The scenes are now ready to be :ref:`indexed <indexing>` and accessed using
 the Data Cube.
 
-For Landsat Surface reflectance LEDAPS add:
 
-::
-
-    $ datacube product add docs/config_samples/dataset_types/*
-    ...
-    Added "ls5_ledaps_scene"
-    ...
-    Added "ls7_ledaps_scene"
-    ...
-    Added "ls8_ledaps_scene"
-    ...
 
 Then :ref:`index the data <indexing>`.
 
