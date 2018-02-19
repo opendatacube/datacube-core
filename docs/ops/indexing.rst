@@ -56,27 +56,43 @@ The most basic Product Definition file would have the below structure.
 
 .. code-block:: yaml
 
-    name: landsat
-    description: Landsat 8, band 2, 3, 4
-    metadata_type: eo
+ name: landsat8
+ description: Landsat 8 Level 1 Collection-1 OLI-TIRS
+ metadata_type: eo
 
-    metadata:
-      product_type: landsat
-      format:
-        name: GeoTiff
+ metadata:
+     platform:
+         code: LANDSAT_8
+     instrument:
+         name: OLI_TIRS
+     product_type: Level1
+     format:
+         name: GeoTiff
 
-    measurements:
-      - name: band1
-        dtype: float32
-        nodata: 255 
-        units: '1'
+ measurements:
+     - name: 'blue'
+       aliases: [band_2, blue]
+       dtype: int16
+       nodata: -9999
+       units: '1'
 
-    storage:
-      crs: EPSG:4326
-      resolution:
-        latitude: -0.00025
-        longitude: 0.00025
-    
+     - name: 'green'
+       aliases: [band_3, green]
+       dtype: int16
+       nodata: -9999
+       units: '1'
+
+     - name: 'red'
+       aliases: [band_4, red]
+       dtype: int16
+       nodata: -9999
+       units: '1'
+
+     - name: 'nir'
+       aliases: [band_5, nir]
+       dtype: int16
+       nodata: -9999
+       units: '1'    
 See also :ref:`product-doc` for more in depth details on this config file and possible inclusions. 
 
 A collection of example Product definitions are available in github__ to cover some common Geoscience Australia
