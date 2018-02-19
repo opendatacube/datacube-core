@@ -95,10 +95,14 @@ To load Products into your Data Cube run::
 
 Dataset Documents
 -----------------
-Every dataset requires a metadata document describing what the data represents and where it has come
-from, as well has what format it is stored in. At a minimum, you need the dimensions or fields your want to
-search by, such as lat, lon and time, but you can include any information you deem useful.
+A :ref:`dataset-metadata-doc` is required to accompany the dataset for it to be
+recognised by the Data Cube. It defines critical metadata of the dataset such as:
 
+    - measurements
+    - platform and sensor names
+    - geospatial extents and projection
+    - acquisition time
+    
 It is typically stored in YAML documents, but JSON is also supported. It is stored in the index
 for searching, querying and accessing the data.
 
@@ -107,13 +111,6 @@ no further steps are required for indexing them.
 
 For third party datasets, see :ref:`prepare-scripts`.
 
-A :ref:`dataset-metadata-doc` is required to accompany the dataset for it to be
-recognised by the Data Cube. It defines critical metadata of the dataset such as:
-
-    - measurements
-    - platform and sensor names
-    - geospatial extents and projection
-    - acquisition time
 
 .. note::
 
