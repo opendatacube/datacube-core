@@ -5,20 +5,6 @@ This section contains information on setting up and running a Data Cube.
 Generally, users will not be required to know most of the information contained
 here.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Operations Guide
-
-   install
-   db_setup
-   indexing
-   ingest
-   config
-   prepare_scripts
-   tools
-   replication
-
-
 Overview
 --------
 
@@ -70,3 +56,20 @@ Follow the steps below to install and configure a new Data Cube instance.
     LoadProductTypes [href="../ops/indexing.html#product-definitions", target="_top", label="Define Product Types"];
     WritePrepScript [href="../ops/prepare_scripts.html", target="_top", label="Write Prepare Script"];
     RunPrepScript [href="../ops/prepare_scripts.html", target="_top", label="Run Prepare Script"];
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Operations Guide
+
+   install
+   db_setup
+   indexing
+   ingest
+   config
+   prepare_scripts
+   tools
+   replication
+
+
+
