@@ -1,4 +1,7 @@
 # Warning: this is a WIP
+
+# TODO: fix juxtapose collate bug
+# TODO: needs an aggregation phase
 """
 Implementation of virtual products.
 Provides an interface to the products in the database
