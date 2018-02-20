@@ -1,5 +1,5 @@
 """
-Utility functions that mimic existing functionality in the core api.
+Utility functions that mimic existing functionality in the core API.
 Perhaps core can be refactored to use these to reduce code duplication.
 """
 from __future__ import absolute_import
@@ -19,7 +19,7 @@ def select_datasets_inside_polygon(datasets, polygon):
 def output_geobox(datasets, grid_spec,
                   like=None, output_crs=None, resolution=None, align=None,
                   **query):
-    # figure out output geobox as in `datacube.Datacube.load`
+    # configure output geobox as in `datacube.Datacube.load`
 
     if like is not None:
         assert output_crs is None, "'like' and 'output_crs' are not supported together"
@@ -48,5 +48,5 @@ def output_geobox(datasets, grid_spec,
 
 
 def product_definitions_from_index(index):
-    return dict((product.name, product.definition)
-                for product in index.products.get_all())
+    return {product.name: product.definition
+            for product in index.products.get_all()}

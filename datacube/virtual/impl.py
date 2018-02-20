@@ -34,7 +34,7 @@ class VirtualProduct(ABC):
 
     @abstractmethod
     def output_measurements(self, product_definitions):
-        # type: (Dict[str, dict])-> Dict[str, Measurement]
+        # type: (Dict[str, dict]) -> Dict[str, Measurement]
         """ A dictionary mapping names to measurement metadata. """
 
     @abstractmethod
@@ -233,11 +233,11 @@ class BasicProduct(VirtualProduct):
 
         # convert Measurements back to dicts?
         # essentially what `datacube.api.core.set_resampling_method` does
-        measurements = [dict(**measurement.__dict__)
+        measurements = [{**measurement.__dict__}
                         for measurement in raster.output_measurements.values()]
 
         if self.resampling_method is not None:
-            measurements = [dict(resampling_method=self.resampling_method, **measurement)
+            measurements = [{'resampling_method': self.resampling_method, **measurement}
                             for measurement in measurements]
 
         def unwrap(indexes, value):
@@ -311,8 +311,7 @@ class Collate(VirtualProduct):
         input_measurements = [child.output_measurements(product_definitions)
                               for child in self.children]
 
-        first = input_measurements[0]
-        rest = input_measurements[1:]
+        first, *rest = input_measurements
 
         for child in rest:
             if set(child) != set(first):
@@ -326,8 +325,7 @@ class Collate(VirtualProduct):
             msg = "Source index measurement '{}' already present".format(self.index_measurement_name)
             raise VirtualProductException(msg)
 
-        first.update(self.index_measurement)
-        return first
+        return {**first, **self.index_measurement}
 
     def find_datasets(self, index, **query):
         result = [child.find_datasets(index, **query)
@@ -386,8 +384,8 @@ class Collate(VirtualProduct):
 
             raise ValueError("Every child of CollatedDatasetPile object is None")
 
-        rasters = [child.fetch_data(raster.filter(is_from(i)).map(strip_source))
-                   for i, child in enumerate(self.children)]
+        rasters = [child.fetch_data(raster.filter(is_from(source_index)).map(strip_source))
+                   for source_index, child in enumerate(self.children)]
 
         return xarray.concat(rasters, dim='time')
 
