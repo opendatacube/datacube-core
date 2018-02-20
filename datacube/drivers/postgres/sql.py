@@ -102,6 +102,14 @@ def pg_column_exists(conn, table, column):
 
 
 def escape_pg_identifier(engine, name):
+    """
+    Escape identifiers (tables, fields, roles, etc) for inclusion in SQL statements.
+
+    psycopg2 can safely merge query arguments, but cannot do the same for dynamically
+    generating queries.
+
+    See http://initd.org/psycopg/docs/sql.html for more information.
+    """
     # New (2.7+) versions of psycopg2 have function: extensions.quote_ident()
     # But it's too bleeding edge right now. We'll ask the server to escape instead, as
     # these are not performance sensitive.
