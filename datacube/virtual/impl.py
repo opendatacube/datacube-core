@@ -297,12 +297,12 @@ def transform(child, data_transform=None, measurement_transform=None, raster_tra
 
 
 class Collate(VirtualProduct):
-    def __init__(self, *children, **kwargs):
+    def __init__(self, *children, index_measurement_name=None):
         if len(children) == 0:
             raise VirtualProductException("No children for collate node")
 
         self.children = children
-        self.index_measurement_name = kwargs.get('index_measurement_name')
+        self.index_measurement_name = index_measurement_name
 
         name = self.index_measurement_name
         if name is not None:
@@ -393,8 +393,8 @@ class Collate(VirtualProduct):
         return xarray.concat(rasters, dim='time')
 
 
-def collate(*children, **kwargs):
-    return Collate(*children, **kwargs)
+def collate(*children, index_measurement_name=None):
+    return Collate(*children, index_measurement_name=index_measurement_name)
 
 
 class Juxtapose(VirtualProduct):
