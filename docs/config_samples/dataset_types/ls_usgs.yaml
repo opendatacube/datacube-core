@@ -7,7 +7,7 @@ metadata:
         code: LANDSAT_8
     instrument:
         name: OLI_TIRS
-    product_type: L1TP
+    product_type: level1
     format:
         name: GeoTiff
 
@@ -148,7 +148,7 @@ metadata:
         code: LANDSAT_7
     instrument:
         name: ETM
-    product_type: L1TP
+    product_type: level1
     format:
         name: GeoTiff
 
@@ -251,7 +251,7 @@ metadata:
         code: LANDSAT_5
     instrument:
         name: TM
-    product_type: L1TP
+    product_type: level1
     format:
         name: GeoTiff
 
@@ -353,7 +353,7 @@ metadata:
         code: LANDSAT_8
     instrument:
         name: OLI_TIRS
-    product_type: L1T
+    product_type: level1
     format:
         name: GeoTiff
 
