@@ -39,7 +39,7 @@ Conda Environments are recommended for use in isolating your ODC development env
 
 Install required python packages and create an ``odc`` conda environment.
 
-Python 3.5::
+Python 3.6::
 
     conda env create -n odc --file .travis/environment.yaml sphinx
 

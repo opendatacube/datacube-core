@@ -18,8 +18,8 @@ Manual Installation (Fallback)
 
 Only follow these steps if the Miniconda installation does not suit your needs.
 
-Python Python 3 environment
-------------------------------------
+Python 3 environment
+--------------------
 
 1. Download and install a standard python release from http://www.python.org/
 . The :term:`AGDC` supports 3.5 or newer.
