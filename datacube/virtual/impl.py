@@ -2,6 +2,7 @@
 
 # TODO: fix juxtapose collate bug
 # TODO: needs an aggregation phase
+# TODO: collate index_measurement
 """
 Implementation of virtual products.
 Provides an interface to the products in the database
@@ -41,8 +42,8 @@ class VirtualProduct(ABC):
         """ A dictionary mapping names to measurement metadata. """
 
     @abstractmethod
-    def find_datasets(self, index, **query):
-        # type: (Index, Dict[str, Any]) -> DatasetPile
+    def find_datasets(self, dc, **query):
+        # type: (Datacube, Dict[str, Any]) -> DatasetPile
         """ Collection of datasets that match the query. """
 
     # no database access below this line
@@ -61,14 +62,15 @@ class VirtualProduct(ABC):
         # type: (RasterRecipe) -> xarray.Dataset
         """ Convert virtual raster to `xarray.Dataset`. """
 
-    def load(self, index, **query):
-        # type: (Index, Dict[str, Any]) -> xarray.Dataset
+    def load(self, dc, **query):
+        # type: (Datacube, Dict[str, Any]) -> xarray.Dataset
         """ Mimic `datacube.Datacube.load`. """
-        datasets = self.find_datasets(index, **query)
+        datasets = self.find_datasets(dc, **query)
         raster = self.build_raster(datasets, **query)
         observations = [self.fetch_data(observation)
                         for _, observation in raster.split(dim='time')]
         data = xarray.concat(observations, dim='time')
+
         return data
 
 
@@ -171,7 +173,7 @@ class BasicProduct(VirtualProduct):
         except KeyError as ke:
             raise VirtualProductException("Could not find measurement: {}".format(ke.args))
 
-    def find_datasets(self, index, **query):
+    def find_datasets(self, dc, **query):
         # this is basically a copy of `datacube.Datacube.find_datasets_lazy`
         # ideally that method would look like this too in the future
 
@@ -180,6 +182,7 @@ class BasicProduct(VirtualProduct):
         # other possible query entries include `geopolygon`
         # and contents of `SPATIAL_KEYS` and `CRS_KEYS`
         # query should not include contents of `OTHER_KEYS` except `geopolygon`
+        index = dc.index
 
         # find the datasets
         query = Query(index, product=self.product_name, measurements=self.measurement_names,
@@ -281,8 +284,8 @@ class Transform(VirtualProduct):
     def output_measurements(self, product_definitions):
         return self.measurement_transform(self.child.output_measurements(product_definitions))
 
-    def find_datasets(self, index, **query):
-        return self.child.find_datasets(index, **query)
+    def find_datasets(self, dc, **query):
+        return self.child.find_datasets(dc, **query)
 
     def build_raster(self, datasets, **query):
         return self.child.build_raster(datasets, **query)
@@ -330,8 +333,10 @@ class Collate(VirtualProduct):
 
         return {**first, **self.index_measurement}
 
-    def find_datasets(self, index, **query):
-        result = [child.find_datasets(index, **query)
+    def find_datasets(self, dc, **query):
+        index = dc.index
+
+        result = [child.find_datasets(dc, **query)
                   for child in self.children]
 
         # should possibly check all the `grid_spec`s are the same
@@ -419,9 +424,11 @@ class Juxtapose(VirtualProduct):
 
         return result
 
-    def find_datasets(self, index, **query):
+    def find_datasets(self, dc, **query):
+        index = dc.index
+
         product_definitions = product_definitions_from_index(index)
-        result = [child.find_datasets(index, **query)
+        result = [child.find_datasets(dc, **query)
                   for child in self.children]
 
         # should possibly check all the `grid_spec`s are the same
