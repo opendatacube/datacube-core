@@ -107,8 +107,8 @@ def update_products(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
 
 @product.command('list')
 @click.option('--names', is_flag=True, default=False, help='Output product names only, one per line.')
-@ui.pass_index()
-def list_products(index, simple):
+@ui.pass_datacube()
+def list_products(dc, simple):
     """
     List products that are defined in the generic index.
     """
