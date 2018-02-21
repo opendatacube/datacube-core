@@ -14,6 +14,7 @@ implementing the same interface.
 from __future__ import absolute_import
 
 from abc import ABC, abstractmethod
+from functools import reduce
 
 import xarray
 
@@ -68,7 +69,7 @@ class VirtualProduct(ABC):
         datasets = self.find_datasets(dc, **query)
         raster = self.build_raster(datasets, **query)
         observations = [self.fetch_data(observation)
-                        for _, observation in raster.split(dim='time')]
+                        for observation in raster.split(dim='time')]
         data = xarray.concat(observations, dim='time')
 
         return data
@@ -131,8 +132,8 @@ class RasterRecipe(object):
 
         (length,) = pile[dim].shape
         for i in range(length):
-            yield i, RasterRecipe(pile.isel(**{dim: slice(i, i + 1)}),
-                                  self.geobox, self.output_measurements)
+            yield RasterRecipe(pile.isel(**{dim: slice(i, i + 1)}),
+                               self.geobox, self.output_measurements)
 
 
 class BasicProduct(VirtualProduct):
@@ -392,10 +393,19 @@ class Collate(VirtualProduct):
 
             raise ValueError("Every child of CollatedDatasetPile object is None")
 
-        rasters = [child.fetch_data(raster.filter(is_from(source_index)).map(strip_source))
+        def fetch_data(child, r):
+            size = reduce(lambda x, y: x * y, r.shape, 1)
+
+            if size > 0:
+                return child.fetch_data(r)
+            else:
+                # empty raster
+                return None
+
+        rasters = [fetch_data(child, raster.filter(is_from(source_index)).map(strip_source))
                    for source_index, child in enumerate(self.children)]
 
-        return xarray.concat(rasters, dim='time')
+        return xarray.concat([r for r in rasters if r is not None], dim='time')
 
 
 def collate(*children, index_measurement_name=None):
@@ -481,7 +491,7 @@ class Juxtapose(VirtualProduct):
             child_raster = raster.map(select_child(source_index))
             grouped = child_raster.grouped_dataset_pile
 
-            # bad assumption!
+            # can `grouped` really be empty?
             child_measurements = grouped.item(0).output_measurements
             return RasterRecipe(grouped, geobox, child_measurements)
 
