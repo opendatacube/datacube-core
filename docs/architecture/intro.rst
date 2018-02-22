@@ -1,7 +1,7 @@
 .. _dev_arch:
 
 Introduction
-============
+************
 
 The Open Data Cube community is based around the `datacube-core` library.
 This document describes the architecture of the library and the ecosystem of systems and applications it interacts with.
@@ -10,26 +10,27 @@ This document describes the architecture of the library and the ecosystem of sys
 <https://github.com/opendatacube/datacube-core/blob/develop/LICENSE>`_ license.
 
 Use Cases
----------
+=========
+
 Large-scale workflows on HPC
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 Continent or global-scale processing of data on a High Performance Computing supercomputer cluster.
 
 Exploratory Data Analysis
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 Allows interactive analysis of data, such as through a Jupyter Notebook.
 
 Cloud-based Services
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 Using ODC to serve WMS (Web Map Service), WCS (Web Coverage Service), or custom tools (such as polygon drill time series
 analysis.
 
 Standalone Applications
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 Running environmental analysis applications on a laptop, suitable for field work, or outreach to a developing region.
 
 Assumptions and Design Constraints
-----------------------------------
+==================================
 On a HPC system, the resources to provided to host the database may limited.
 During execution of a task across many compute nodes, the database should not be relied upon to serve concurrent access
 from all of the compute nodes.

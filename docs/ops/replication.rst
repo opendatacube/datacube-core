@@ -1,11 +1,10 @@
 .. _replication:
 
-================
 Data Replication
-================
+****************
 
 Simple Data Cube Replication Tool
----------------------------------
+=================================
 
 This tool provides a very simplistic way to download data and metadata from a
 remote Data Cube onto a local PC. It connects to a remote Data Cube via SSH,
@@ -24,7 +23,7 @@ or specify an alternate location on the command line.
 
 
 Configuration
--------------
+=============
 
 As an example, the following configration will download 3 Products for the
 specified time and space range. Queries are specified using the same
@@ -62,7 +61,7 @@ terms as for the Data Cube Query API.
       time: [2008-01-01, 2010-01-01]
 
 Caveats and limitations
------------------------
+=======================
 
 - Remote datacube files and database are accessed via an SSH host that can be
   logged into without a password, ie. by using local SSH key agent.
@@ -70,7 +69,7 @@ Caveats and limitations
 
 
 Command line documentation
---------------------------
+==========================
 
 .. _datacube-simple-replica:
 

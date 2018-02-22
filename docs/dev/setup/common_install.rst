@@ -1,11 +1,14 @@
 
+.. This file is included in the Ubuntu and OS X installation instructions
+   All the headings should thus be at the correct level for verbatim inclusion.
+
 Python and packages
--------------------
+===================
 
 Python 3.5+ is required. Python 3.6 is recommended.
 
 Anaconda Python
-~~~~~~~~~~~~~~~
+---------------
 
 `Install Anaconda Python <https://www.continuum.io/downloads>`_
 
@@ -27,7 +30,7 @@ Activate ``odc`` python environment::
 
 
 Postgres database configuration
--------------------------------
+===============================
 
 This configuration supports local development using your login name.
 
@@ -64,7 +67,7 @@ Connecting to your own database to try out some SQL should now be as easy as::
 
 
 Open Data Cube source and development configuration
----------------------------------------------------
+===================================================
 
 Download the latest version of the software from the `repository <https://github.com/opendatacube/datacube-core>`_ ::
 
@@ -86,7 +89,7 @@ Then edit the ``~/.datacube_integration.conf`` with a text editor and add the fo
 
 
 Verify it all works
--------------------
+===================
 
 Run the integration tests::
 

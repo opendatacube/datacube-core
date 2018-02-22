@@ -1,8 +1,8 @@
-Reverting ``DriverManager`` and implementing alternatives
-=========================================================
+Plugins
+*******
 
 Reason for Pull Request
------------------------
+=======================
 
 Although initially the ``DriverManager`` code seemed to address the need
 for extensibility in Data Cube. Upon trying to use it in the NCI/GA
@@ -35,7 +35,7 @@ proposed changes.
 This Pull Request is our proposed implementation.
 
 Support for Plug-in drivers
----------------------------
+===========================
 
 A light weight implementation of a driver loading system has been
 implemented in
@@ -207,7 +207,7 @@ NetCDF Writer Driver
 :py:class:`datacube.drivers.netcdf.driver.NetcdfWriterDriver`
 
 Other Changes
--------------
+=============
 
 Removed 3D Ingestion feature
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,7 +1,7 @@
 .. _extending-datacube:
 
 Extending Datacube
-==================
+##################
 
 Beyond the very flexible configuration available in ODC, there are three
 extension points provided for implementing different types of data storage and
@@ -12,23 +12,23 @@ indexing.
  - Alternative types of Index
 
 Drivers for Reading Data
-------------------------
+========================
 
 ``ReaderDriver``
 
 Drivers for Writing Data
-------------------------
+========================
 
 ``WriterDriver``
 
 
 Alternative types of Index
---------------------------
+==========================
 
 ``IndexDriverCache``
 
 Drivers Plugin Management Module
---------------------------------
+================================
 
 Drivers are defined in ``setup.py -> entry_points``::
 

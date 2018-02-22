@@ -1,5 +1,5 @@
-Operations Guide
-================
+Overview
+********
 
 This section contains information on setting up and running a Data Cube.
 Generally, users will not be required to know most of the information contained
@@ -20,7 +20,7 @@ here.
 
 
 Overview
---------
+========
 
 Follow the steps below to install and configure a new Data Cube instance.
 

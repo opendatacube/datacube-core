@@ -3,7 +3,7 @@
 .. _nci_usage_guide:
 
 NCI Usage Guide
-===============
+***************
 
 `Digital Earth Australia`_ is has replaced the :term:`AGDC` as the implementation of :term:`ODC`
 at the :term:`NCI`.
