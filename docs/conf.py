@@ -134,7 +134,8 @@ pygments_style = 'friendly'
 
 autosummary_generate = True
 
-extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'GH')}
+extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
+            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
@@ -142,10 +143,6 @@ intersphinx_mapping = {
     'xarray': ('http://xarray.pydata.org/en/stable/', None),
     'dask': ('http://dask.pydata.org/en/stable/', None),
 }
-
-click_utils_commands = {'datacube-search': 'datacube.scripts.search_tool:cli',
-                        'datacube': 'datacube.scripts.cli_app:cli',
-                        'datacube-simple-replica': 'datacube_apps.simple_replica:replicate'}
 
 graphviz_output_format = 'svg'
 

@@ -9,16 +9,24 @@ What's New
 Next release
 ============
 
- - Make :class:`CRS` equality comparisons a little bit looser. Trust either a _Proj.4_ based comparison
-   or a _GDAL_ based comparison. (Closed #243)
+ - Support for third party drivers, for custom data storage and custom index implementations
 
- - Allow creation of :class:`Geometry` objects from 3d representations. The Z axis is simply thrown away.
+ - Changes in ingestion configuration
+
+   - Must specify which `write_driver` to use.
+
+ - Make :class:`CRS` equality comparisons a little bit looser. Trust either a *Proj.4* based comparison
+   or a *GDAL* based comparison. (Closed #243)
+
+ - Allow creation of :class:`datacube.utils.geometry.Geometry` objects from 3d representations. The Z axis is simply thrown away.
 
  - Added example prepare script for Collection 1 USGS data; improved band handling and downloads.
 
  - Multiple environments can now be specified in one datacube config. See `#298`_ and the `config docs`_
 
- - The :option:`--config_file` option to :program:`datacube` has been renamed to :option:`--config`, which is
+   - Allow specifying which `index_driver` should be used for an environment.
+
+ - The :option:`datacube --config_file` option has been renamed to :option:`datacube --config`, which is
    shorter and more consistent with the other options. The old name can still be used for now.
 
  - Added documentation about :ref:`bit-masking`.

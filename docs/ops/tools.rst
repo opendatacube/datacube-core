@@ -1,8 +1,6 @@
 Command Line Tools
 ******************
 
-.. _datacube-tool:
-
 .. contents::
    :local:
 

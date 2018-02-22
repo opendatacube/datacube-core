@@ -16,14 +16,6 @@ deployment we discovered a few show-stopper issues including:
    S3+Block driver which was registered to handle the ``s3://``
    protocol.
 
-As a result of these, and plenty of diversions on other things, we've
-had a 6+ month fork between
-`datacube-core/develop <https://github.com/opendatacube/datacube-core/tree/develop>`_
-and
-`datacube-core/release-1.5 <https://github.com/opendatacube/datacube-core/tree/release-1.5>`_
-which GA has been maintaining in support of their production
-environment.
-
 In early December @omad @petewa @rtaib and @Kirill888 discussed some
 potential solutions. These discussions are documented `in github
 discussions <https://github.com/orgs/opendatacube/teams/developers/discussions/2>`__
@@ -34,21 +26,9 @@ proposed changes.
 
 This Pull Request is our proposed implementation.
 
-Support for Plug-in drivers
-===========================
-
-A light weight implementation of a driver loading system has been
-implemented in
-`datacube/drivers/driver_cache.py <https://github.com/opendatacube/datacube-core/blob/60187e38669d529c55d05a962bd7c5288d906f1b/datacube/drivers/driver_cache.py>`__,
-which uses ```setuptools`` dynamic service and plugin discovery
-mechanism <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`__
-to name and define available drivers. This code caches the available
-drivers in the current environment, and allows them to be loaded on
-demand, as well as handling any failures due to missing dependencies or
-other environment issues.
 
 Index Plug-ins
-~~~~~~~~~~~~~~
+==============
 
 **Entry point group:**
 `datacube.plugins.index <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/setup.py#L112>`__
@@ -62,7 +42,7 @@ to use. If this parameter is missing, it falls back to using the default
 PostgreSQL Index.
 
 Example code to implement an index driver
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------------
 
 .. code:: python
 
@@ -75,7 +55,7 @@ Example code to implement an index driver
             return Index.from_config(config, application_name, validate_connection)
 
 Default Implementation
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 The default ``Index`` uses a PostgreSQL database for all storage and
 retrieval.
@@ -117,7 +97,7 @@ at the individual *dataset+time+band* level for loading data. This is
 something to be addressed in the future.
 
 Example code to implement a reader driver
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------------
 
 .. code:: python
 
@@ -134,20 +114,20 @@ Example code to implement a reader driver
         ...
 
 S3 Driver
-^^^^^^^^^
+---------
 
 **URI Protocol:** ``s3://`` **Dataset Format:** ``aio``
 **Implementation location:**
 ```datacube/drivers/s3/driver.py`` <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/datacube/drivers/s3/driver.py>`__
 
 Example Pickle Based Driver
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------
 
 Available in ``/examples/io_plugin``. Includes an example ``setup.py``
 as well as an example **Read** and **Write** Drivers.
 
 Data Write Plug-ins
-~~~~~~~~~~~~~~~~~~~
+===================
 
 **Entry point group:**
 ```datacube.plugins.io.write`` <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/setup.py#L107>`__
@@ -166,7 +146,7 @@ each driver is the closest we've got. The **ingester** is using it to
 write data.
 
 Example code to implement a writer driver
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------------
 
 .. code:: python
 
@@ -190,50 +170,22 @@ Example code to implement a writer driver
             ...
             return {}  # Can return extra metadata to be saved in the index with the dataset
 
-S3 Writer Driver
-^^^^^^^^^^^^^^^^
-
-**Name:** ``s3aio`` **Protocol:** ``s3`` **Format:** ``aio``
-**Implementation**:
-
-:py:class:`datacube.drivers.s3.driver.S3WriterDriver`
-
 NetCDF Writer Driver
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 
 **Name:** ``netcdf``, ``NetCDF CF`` **Format:** ``NetCDF``
 **Implementation**:
 
 :py:class:`datacube.drivers.netcdf.driver.NetcdfWriterDriver`
 
-Other Changes
-=============
+S3 Writer Driver
+----------------
 
-Removed 3D Ingestion feature
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Name:** ``s3aio`` **Protocol:** ``s3`` **Format:** ``aio``
+**Implementation**:
 
-We've decided to revert the changes to ``datacube ingest`` which were
-added to support ingesting to a 3D chunk in S3. We know this is an
-essential feature for the S3 Block storage system, but would prefer it
-to be implemented as a separate command. Our issue is that it doesn't
-support incremental update of datasets when they have been added or
-changed.
+:py:class:`datacube.drivers.s3.driver.S3WriterDriver`
 
-Being able to incrementally add or change datasets and then ingest them
-is vital for the NCI/GA implementation of Data Cube. This is the reason
-we have separate tools for **ingest** (which deals with a single dataset
-at a single time, and so works fine with incremental updates) and
-**stack** which is responsible for taking a period of time and
-re-storing it in deep-time storage units.
-
-Being able to update storage blocks involves all sorts of thorny issues,
-and the simple implementation didn't address any of them, which could
-lead to confusion.
-
-Changes when specifying the environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Added ``index_driver`` parameter
 
 Change to Ingestion Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -256,6 +208,7 @@ include them here. eg:
 References and History
 ======================
 
+- :pull:`346`
 -  `Pluggable Back Ends Discussion [7 December
    2017] <https://github.com/orgs/opendatacube/teams/developers/discussions/2>`__
 -  Teleconference with @omad @petewa @rtaib @Kirill888 on *12 December
