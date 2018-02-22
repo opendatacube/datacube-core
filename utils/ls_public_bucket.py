@@ -1,6 +1,6 @@
 
 # coding: utf-8
-from xml.etree import ElementTree
+
 from pathlib import Path
 import os
 from osgeo import osr
@@ -8,7 +8,6 @@ import dateutil
 from dateutil import parser
 from datetime import timedelta
 import uuid
-import yaml
 import logging
 import click
 import re
@@ -26,6 +25,7 @@ bands_ls8 = [
            ('5', 'nir'),
            ]
 
+
 def _parse_value(s):
     s = s.strip('"')
     for parser in [int, float]:
@@ -34,6 +34,7 @@ def _parse_value(s):
         except ValueError:
             pass
     return s
+
 
 def _parse_group(lines):
     tree = {}
@@ -48,8 +49,8 @@ def _parse_group(lines):
             else:
                 tree[key] = _parse_value(value)
     return tree
-            
-            
+
+
 def get_geo_ref_points(info):
     return {
         'ul': {'x': info['CORNER_UL_PROJECTION_X_PRODUCT'], 'y': info['CORNER_UL_PROJECTION_Y_PRODUCT']},
@@ -76,12 +77,12 @@ def satellite_ref(sat):
     if sat == 'LANDSAT_8':
         sat_img = bands_ls8
     else:
-       raise ValueError('Not Landsat 8 or Landsat 7')
+        raise ValueError('Not Landsat 8 or Landsat 7')
     return sat_img
 
 
 def format_obj_key(obj_key):
-    obj_key ='/'.join(obj_key.split("/")[:-1])
+    obj_key = '/'.join(obj_key.split("/")[:-1])
     return obj_key
 
 
@@ -90,43 +91,29 @@ def get_s3_url(bucket_name, obj_key):
         bucket_name=bucket_name, obj_key=obj_key)
 
 
-def absolutify_paths(doc,bucket_name,obj_key):
+def absolutify_paths(doc, bucket_name, obj_key):
     objt_key = format_obj_key(obj_key)
     for band in doc['image']['bands'].values():
-        band['path'] = get_s3_url(bucket_name, objt_key+ '/'+band['path'])
+        band['path'] = get_s3_url(bucket_name, objt_key + '/'+band['path'])
     return doc
 
 
 def make_metadata_doc(mtl_data, bucket_name, object_key):
     mtl_product_info = mtl_data['PRODUCT_METADATA']
-    
     mtl_metadata_info = mtl_data['METADATA_FILE_INFO']
-    
     satellite = mtl_product_info['SPACECRAFT_ID']
-    
     instrument = mtl_product_info['SENSOR_ID']
-    
     acquisition_date = mtl_product_info['DATE_ACQUIRED']
-    
     scene_center_time = mtl_product_info['SCENE_CENTER_TIME']
-    
     level = mtl_product_info['DATA_TYPE']
-
     sensing_time = acquisition_date + ' ' + scene_center_time
-    
     cs_code = 32600 + mtl_data['PROJECTION_PARAMETERS']['UTM_ZONE']
-    
     label = mtl_metadata_info['LANDSAT_SCENE_ID']
-    
     spatial_ref = osr.SpatialReference()
     spatial_ref.ImportFromEPSG(cs_code)
-    
     geo_ref_points = get_geo_ref_points(mtl_product_info)
-   
     coordinates = get_coords(geo_ref_points, spatial_ref)
-    
     bands = satellite_ref(satellite)
-    
     doc = {
         'id': str(uuid.uuid5(uuid.NAMESPACE_URL, get_s3_url(bucket_name, object_key))),
         'processing_level': level,
@@ -158,16 +145,15 @@ def make_metadata_doc(mtl_data, bucket_name, object_key):
         },
         'lineage': {'source_datasets': {}},
     }
-    doc = absolutify_paths(doc,bucket_name,object_key)
-    
-    return doc           
-            
-    
-def get_metadata_docs(bucket_name,p):
+    doc = absolutify_paths(doc, bucket_name, object_key)
+    return doc
+
+
+def get_metadata_docs(bucket_name, p):
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(bucket_name)
     logging.info("Bucket : %s", bucket_name)
-    for obj in bucket.objects.filter(Prefix = p):
+    for obj in bucket.objects.filter(Prefix=p):
         if obj.key.endswith('MTL.txt'):
             obj_key = obj.key
             logging.info("Processing %s", obj_key)
@@ -175,8 +161,8 @@ def get_metadata_docs(bucket_name,p):
             mtl_doc = _parse_group(iter(raw_string.split("\n")))['L1_METADATA_FILE']
             metadata_doc = make_metadata_doc(mtl_doc, bucket_name, obj_key)
             yield obj_key, metadata_doc
-            
-            
+
+
 def make_rules(index):
     all_product_names = [prod.name for prod in index.products.get_all()]
     rules = parse_match_rules_options(index, None, all_product_names, True)
@@ -192,28 +178,25 @@ def add_dataset(doc, uri, rules, index):
         index.datasets.update(dataset, {tuple(): changes.allow_any})
     return uri
 
-def add_datacube_dataset(bucket_name,config,p):
-    dc=datacube.Datacube(config=config)
+
+def add_datacube_dataset(bucket_name, config, p):
+    dc = datacube.Datacube(config=config)
     index = dc.index
     rules = make_rules(index)
-    
-    for metadata_path,metadata_doc in get_metadata_docs(bucket_name,p):
-        uri= get_s3_url(bucket_name, metadata_path)
+    for metadata_path, metadata_doc in get_metadata_docs(bucket_name, p):
+        uri = get_s3_url(bucket_name, metadata_path)
         add_dataset(metadata_doc, uri, rules, index)
         logging.info("Indexing %s", metadata_path)
 
 
-@click.command(help= "Enter Bucket name. Optional to enter configuration file to access a different database")
+@click.command(help="Enter Bucket name. Optional to enter configuration file to access a different database")
 @click.argument('bucket_name')
-@click.option('--config','-c',help=" Pass the configuration file to access the database",
-		type=click.Path(exists=True))
-@click.option('-p', help = "Pass the prefix of the object to the bucket")
-
-def main(bucket_name, config,p):
+@click.option('--config', '-c', help=" Pass the config file to access the database", type=click.Path(exists=True))
+@click.option('-p', help="Pass the prefix of the object to the bucket")
+def main(bucket_name, config, p):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
-    add_datacube_dataset(bucket_name,config,p)
-   
-    
+    add_datacube_dataset(bucket_name, config, p)
+
+
 if __name__ == "__main__":
     main()
-
