@@ -1,3 +1,4 @@
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
    Open Data Cube Manual
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,11 +61,6 @@ and  related data from multiple satellite and other acquisition systems.
    about/license
 
 
-.. Kept to maintain any old hyperlinks.
-.. toctree::
-   :hidden:
-
-   user/nci_usage
 
 .. _support:
 
