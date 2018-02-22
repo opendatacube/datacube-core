@@ -1,3 +1,8 @@
+:orphan:
+
+.. This file isn't referenced in the toctree, but is kept to maintain old hyperlinks.
+
+
 .. highlight:: console
 
 .. _nci_usage_guide:
