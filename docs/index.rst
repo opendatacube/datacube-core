@@ -46,7 +46,7 @@ and  related data from multiple satellite and other acquisition systems.
    :maxdepth: 2
    :caption: Developer Guide
 
-   dev/developer.rst
+   dev/api/index.rst
    dev/setup/index.rst
    architecture/index.rst
 
