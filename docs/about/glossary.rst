@@ -10,7 +10,7 @@ This page lists definitions for terms used in the Open Data Cube and this manual
 
    AGDC
       The Australian Geoscience Data Cube, an Australian project that developed the
-      python library that became ODC.
+      python library that became :term:`ODC`.
 
    API
       The Data Cube Application Programming Interface gives programmers full
@@ -19,9 +19,13 @@ This page lists definitions for terms used in the Open Data Cube and this manual
    
    CEOS-SEO
       Committee on Earth Observation, Systems Engineering Office
-      
+
+   CRS
+      Coordinate Reference System
+
    CSIRO
       Commonwealth Scientific and Industrial Research Organisation
+
 
    DEA
       Digital Earth Australia is :term:`GA`'s implementation of ODC, hosted at

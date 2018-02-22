@@ -90,7 +90,9 @@ See also :ref:`runtime-config-doc`
 Initialise the Database Schema
 ==============================
 
-:ref:`datacube-tool` can create and populate the Data Cube database schema
-(agdc)::
+The ``datacube system init`` tool can create and populate the Data Cube database schema ::
 
     datacube -v system init
+
+.. click:: datacube.scripts.system:database_init
+   :prog: datacube system

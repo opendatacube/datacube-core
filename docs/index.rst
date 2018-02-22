@@ -38,7 +38,8 @@ and  related data from multiple satellite and other acquisition systems.
    ops/db_setup.rst
    ops/indexing.rst
    ops/ingest.rst
-   ops/config.rst
+   ops/product.rst
+   ops/dataset_documents.rst
    ops/prepare_scripts.rst
    ops/tools.rst
    ops/replication.rst
