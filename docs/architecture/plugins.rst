@@ -188,7 +188,7 @@ S3 Writer Driver
 
 
 Change to Ingestion Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------
 
 Must now specify the **Write Driver** to use. For s3 ingestion there was
 a top level ``container`` specified, which has been renamed and moved
