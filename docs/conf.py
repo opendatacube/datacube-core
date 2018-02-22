@@ -62,6 +62,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'sphinxcontrib.plantuml',
+    'sphinx_click.ext',
     'click_utils'
 ]
 
@@ -348,6 +349,7 @@ NATIVE_MODULES = [
     'tqdm',
     'cloudpickle',
     'zstd',
+#    'pathos',
 ]
 
 from mock import Mock as MagicMock

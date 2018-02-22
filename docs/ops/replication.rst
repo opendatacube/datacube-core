@@ -15,50 +15,20 @@ be downloaded. If a Dataset is already available locally, it will not be
 downlaoded again, meaning the tool can be run multiple times to keep the local
 system up to date with new datasets on the remote server.
 
-It can be run from the command line as :ref:`datacube-simple-replica`, taking an
+It can be run from the command line as :command:`datacube-simple-replica`, taking an
 optional parameter of a configuration file.
 
-Provide a configuration file in :ref:`datacube-replication-config` in YAML format,
+Provide a configuration file in :file:`~/.datacube.replication.conf` in YAML format,
 or specify an alternate location on the command line.
 
 
-Configuration
-=============
+Command line documentation
+==========================
 
-As an example, the following configration will download 3 Products for the
-specified time and space range. Queries are specified using the same
-terms as for the Data Cube Query API.
+.. click:: datacube_apps.simple_replica:replicate
+   :prog: datacube-simple-replica
 
 
-.. code-block:: yaml
-   :caption: ~/.datacube.replication.conf
-   :name: datacube-replication-config
-
-    remote_host: raijin.nci.org.au
-    remote_user: example12345
-    db_password: xxxxxxxxxxxx
-
-    remote_dir: /g/data/
-    local_dir: C:/datacube/
-
-    replicated_data:
-    - product: ls5_pq_albers
-      crs: EPSG:3577
-      x: [1200000, 1300000]
-      y: [-4200000, -4300000]
-      time: [2008-01-01, 2010-01-01]
-
-    - product: ls7_pq_albers
-      crs: EPSG:3577
-      x: [1200000, 1300000]
-      y: [-4200000, -4300000]
-      time: [2008-01-01, 2010-01-01]
-
-    - product: ls8_pq_albers
-      crs: EPSG:3577
-      x: [1200000, 1300000]
-      y: [-4200000, -4300000]
-      time: [2008-01-01, 2010-01-01]
 
 Caveats and limitations
 =======================
@@ -66,14 +36,5 @@ Caveats and limitations
 - Remote datacube files and database are accessed via an SSH host that can be
   logged into without a password, ie. by using local SSH key agent.
 - The remote datacube index must be same version as the local datacube code.
-
-
-Command line documentation
-==========================
-
-.. _datacube-simple-replica:
-
-.. datacube:click-help:: datacube-simple-replica
-
 
 

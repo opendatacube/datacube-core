@@ -11,6 +11,8 @@ Product Definition
 Product description document defines some of the metadata common to all the datasets belonging to the products.
 It also describes the measurements that product has and some of the properties of the measurements.
 
+.. highlight:: language
+
 .. literalinclude:: ../config_samples/dataset_types/dsm1sv10.yaml
    :language: yaml
 
