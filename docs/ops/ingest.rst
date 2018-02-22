@@ -1,7 +1,7 @@
 .. _ingestion:
 
 Ingesting Data
-==============
+**************
 
 Congratulations, you're ready to ingest some data. If you've made it this far
 you should already have some data :ref:`indexed <indexing>`, and want to
@@ -10,7 +10,7 @@ tile it up into a faster storage format or projection system.
 .. _ingest-config:
 
 Ingestion Configuration
------------------------
+=======================
 
 An Ingestion Configuration file defines a mapping from the way one set of
 Datasets is stored, into a new storage scheme for the data. This will be
@@ -33,7 +33,7 @@ different projections, resolutions, etc.
 For more information see :ref:`ingestion-config`.
 
 Ingest Some Data
-----------------
+================
 
 Use the :ref:`datacube-tool` to ingest your data, specifying the desired
 configuration file.

@@ -1,6 +1,6 @@
-=======================
+
 Windows Developer Setup
-=======================
+***********************
 
 Base OS: Windows 10
 
@@ -13,7 +13,7 @@ This guide will setup an ODC core development environment and includes:
  - Build configuration for local ODC documentation
 
 Required software
------------------
+=================
 
 Postgres:
 
@@ -22,12 +22,12 @@ Postgres:
     
 
 Python and packages
--------------------
+===================
 
 Python 3.5+ is required. Python 3.6 is recommended.
 
 Anaconda Python
-~~~~~~~~~~~~~~~
+---------------
 
 `Install Anaconda Python <https://www.continuum.io/downloads#windows>`_
 
@@ -48,13 +48,13 @@ Activate ``odc`` python environment::
     activate odc
 
 Postgres database configuration
--------------------------------
+===============================
 
 This configuration supports local development using your login name.
 
 
 Open Data Cube source and development configuration
----------------------------------------------------
+===================================================
 
 Download the latest version of the software from the `repository <https://github.com/opendatacube/datacube-core>`_ ::
 
@@ -75,7 +75,7 @@ Then edit the ``%HOME%\.datacube_integration.conf`` with a text editor and add t
     db_password: <foobar>
 
 Verify it all works
--------------------
+===================
 
 Run the integration tests::
 

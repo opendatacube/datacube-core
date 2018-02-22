@@ -1,5 +1,5 @@
 Database Setup
-==============
+**************
 
 .. attention::
 
@@ -7,13 +7,13 @@ Database Setup
     on Ubuntu then you may want to configure the ``postgres`` user password to `complete the postgres setup <https://help.ubuntu.com/community/PostgreSQL>`_
 
 Install PostgreSQL
-------------------
+==================
 
 Data Cube is using `PostgreSQL <https://www.postgresql.org>`_
 
 
 Ubuntu
-~~~~~~
+------
 
 Ubuntu 16.04 includes packages for PostgreSQL 9.5. On earlier versions of Ubuntu you can use the postgresql.org repo as
 described on `their download page <http://www.postgresql.org/download/linux/ubuntu/>`_.
@@ -27,7 +27,7 @@ Configure the ``postgres`` user password to `complete the postgres setup <https:
 
 
 Windows
-~~~~~~~
+-------
 
 An easy to install version of PostgreSQL can be downloaded from
 http://sourceforge.net/projects/postgresqlportable/. It can install and run as
@@ -43,13 +43,13 @@ substituting "u12345" with your windows login user-ID::
 
 
 MacOS
-~~~~~
+-----
 
 Install Postgres.app from http://postgresapp.com/
 
 
 Create Database
----------------
+===============
 
 If you have existing Postgres authentication:
 ::
@@ -68,7 +68,8 @@ or specify connection details manually:
 .. _create-configuration-file:
 
 Create Configuration File
--------------------------
+=========================
+
 Datacube looks for a configuration file in ~/.datacube.conf or in the location specified by the ``DATACUBE_CONFIG_PATH`` environment variable. The file has this format::
 
     [datacube]
@@ -87,7 +88,8 @@ Uncomment and fill in lines as required.
 See also :ref:`runtime-config-doc`
 
 Initialise the Database Schema
-------------------------------
+==============================
+
 :ref:`datacube-tool` can create and populate the Data Cube database schema
 (agdc)::
 

@@ -1,9 +1,12 @@
 .. _glossary:
 
 Glossary
-========
+########
+
+This page lists definitions for terms used in the Open Data Cube and this manual.
 
 .. glossary::
+   :sorted:
 
    AGDC
       The Australian Geoscience Data Cube, an Australian project that developed the

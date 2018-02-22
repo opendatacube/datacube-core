@@ -1,12 +1,13 @@
 Configuration Files
-===================
+*******************
 
 See also :ref:`create-configuration-file` for the datacube config file.
 
 .. _product-doc:
 
 Product Definition
-------------------
+==================
+
 Product description document defines some of the metadata common to all the datasets belonging to the products.
 It also describes the measurements that product has and some of the properties of the measurements.
 
@@ -82,7 +83,7 @@ measurements
 .. _dataset-metadata-doc:
 
 Dataset Metadata Document
--------------------------
+=========================
 Dataset document defines critical metadata of the dataset such as:
 
     - measurements
@@ -218,7 +219,7 @@ lineage
 .. _ingestion-config:
 
 Metadata Type Definition
-------------------------
+========================
 A Metadata Type defines which fields should be searchable in your product or dataset metadata.
 
 A metadata type is added by default called 'eo' with platform/instrument/lat/lon/time fields.
@@ -232,7 +233,7 @@ Or more elaborate examples (with fewer comments) in GA's configuration
 repository: https://github.com/GeoscienceAustralia/datacube-ingestion
 
 Ingestion Config
-----------------
+================
 An ingestion config is a document which defines the way data should be prepared
 for high performance access. This can include  slicing the data into regular
 chunks, reprojecting into to the desired projection and compressing the data.
@@ -329,7 +330,7 @@ measurements
 .. _ops-runtime-config-doc:
 
 Runtime Config
---------------
+==============
 
 The runtime config specifies configuration options for the current user, such as
 available datacube instances and which to use by default.

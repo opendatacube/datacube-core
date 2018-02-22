@@ -1,9 +1,9 @@
 
 Data Model
-==========
+**********
 
 Dataset
--------
+=======
 
 .. pull-quote::
    “The smallest aggregation of data independently described, inventoried, and managed.”​
@@ -17,7 +17,7 @@ Examples of ODC Datasets:​
 .. _product:
 
 Product
--------
+=======
 Products are collections of `datasets` that share the same set of measurements and some subset of metadata.
 
 .. digraph:: product
@@ -43,7 +43,7 @@ Products are collections of `datasets` that share the same set of measurements a
 
 
 Metadata Types
---------------
+==============
 Metadata Types define custom index search fields across products.
 The default `eo` metadata type defines fields such as 'platform', 'instrument' and the spatial bounds.
 
@@ -51,7 +51,7 @@ The default `eo` metadata type defines fields such as 'platform', 'instrument' a
 
 
 How the Index Works
--------------------
+===================
 
 .. uml:: /diagrams/index_sequence.plantuml
    :caption: Sequence of steps when creating an index
