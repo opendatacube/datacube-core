@@ -26,3 +26,4 @@ dependencies:
 - sphinx_rtd_theme
 - pip:
     - sphinxcontrib-plantuml
+    - sphinx-click

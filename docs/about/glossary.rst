@@ -38,9 +38,23 @@ This page lists definitions for terms used in the Open Data Cube and this manual
       national research computing facility. It provides computing facilities for
       use by Australian researchers, industry and government. For more
       information see http://www.nci.org.au/.
-      
+
+   HPC
+      High Performance Computing. aka, a supercomputer. These days typically a cluster
+      of high performance computers linked together with high speed networking.
+
+   Landsat
+      A series of US owned earth observation satellites, with freely available data.
+
+   MODIS
+      US owned earth observation satellites with freely available data.
+
    ODC
       Open Data Cube
+
+   OGC
+      `Open Geospatial Consortium <http://www.opengeospatial.org>`_. An organisation which
+      makes geospatial standards.
 
    PostgreSQL
       The high performance database engine used as an index of Datasets by the
@@ -59,6 +73,10 @@ This page lists definitions for terms used in the Open Data Cube and this manual
       Virtual Desktop Infrastructure is a virtual laboratory at NCI that provides a
       linux desktop environment for scientific computing. For more see
       http://vdi.nci.org.au/help.
+
+   WMS
+      Web Map Service. A standard for delivery published maps into web browsers and
+      GIS software, defined by the :term:`OGC`.
 
    YAML
       YAML is a human friendly data serialization standard for all programming

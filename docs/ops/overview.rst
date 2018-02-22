@@ -5,19 +5,6 @@ This section contains information on setting up and running a Data Cube.
 Generally, users will not be required to know most of the information contained
 here.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Operations Guide
-
-   install
-   db_setup
-   indexing
-   ingest
-   config
-   prepare_scripts
-   tools
-   replication
-
 
 Overview
 ========
