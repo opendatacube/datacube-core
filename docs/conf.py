@@ -346,7 +346,6 @@ NATIVE_MODULES = [
     'tqdm',
     'cloudpickle',
     'zstd',
-#    'pathos',
 ]
 
 from mock import Mock as MagicMock
