@@ -136,6 +136,7 @@ lineage
                         modification_dt: 2011-11-15 02:10:26
                         checksum_sha1: f66265314fc12e005deb356b69721a7031a71374
 
+.. _metadata-type-definition:
 
 Metadata Type Definition
 ========================

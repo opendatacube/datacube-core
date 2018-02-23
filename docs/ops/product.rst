@@ -18,11 +18,12 @@ description
     Product description
 
 metadata_type
-    Name of the `Metadata Type Definition`_
+    Name of the `metadata-type-definition`_
 
 metadata
     Dictionary containing bits of metadata common to all the datasets in the product.
-    It is used during indexing (if ``--auto-match`` options is used) to match datasets to thier products.
+
+    It is used during indexing (if :option:`datacube dataset add --auto-match` options is used) to match datasets to thier products.
 
 storage (optional)
     Describes some of common storage attributes of all the datasets. While optional defining this will make
