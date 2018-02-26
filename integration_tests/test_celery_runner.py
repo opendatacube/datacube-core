@@ -18,7 +18,7 @@ REDIS_WAIT = 0.5
 def check_redis_binary():
     try:
         return subprocess.check_call(['redis-server', '--version']) == 0
-    except:
+    except Exception:
         return False
 
 
@@ -83,6 +83,7 @@ def test_launch_redis_with_custom_password():
     assert is_running is False
 
 
+@pytest.mark.timeout(30)
 @pytest.mark.skipif(sys.platform == 'win32',
                     reason="does not run on Windows")
 @skip_if_no_redis

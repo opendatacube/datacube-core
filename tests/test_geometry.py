@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import numpy as np
 import osgeo
 import pytest
 
@@ -16,6 +17,27 @@ def test_pickleable():
     pickled = pickle.dumps(poly, pickle.HIGHEST_PROTOCOL)
     unpickled = pickle.loads(pickled)
     assert poly == unpickled
+
+
+def test_geobox_simple():
+    from affine import Affine
+    t = geometry.GeoBox(4000, 4000,
+                        Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0),
+                        geometry.CRS('EPSG:4326'))
+
+    expect_lon = np.asarray([151.000125,  151.000375,  151.000625,  151.000875,  151.001125,
+                             151.001375,  151.001625,  151.001875,  151.002125,  151.002375])
+
+    expect_lat = np.asarray([-29.000125, -29.000375, -29.000625, -29.000875, -29.001125,
+                             -29.001375, -29.001625, -29.001875, -29.002125, -29.002375])
+    expect_resolution = np.asarray([-0.00025, 0.00025])
+
+    assert t.coordinates['latitude'].values.shape == (4000,)
+    assert t.coordinates['longitude'].values.shape == (4000,)
+
+    np.testing.assert_almost_equal(t.resolution, expect_resolution)
+    np.testing.assert_almost_equal(t.coords['latitude'].values[:10], expect_lat)
+    np.testing.assert_almost_equal(t.coords['longitude'].values[:10], expect_lon)
 
 
 def test_props():

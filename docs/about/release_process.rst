@@ -1,7 +1,10 @@
 .. _release_process:
 
-Build a version
+Release Process
 ===============
+
+Build a version
+---------------
 
 #. Pick a release name for the next version
     Releases are versioned using the ``major.minor.bugfix`` numbering system.
@@ -20,7 +23,7 @@ Build a version
 
 
 Marking it stable
-=================
+-----------------
 
 Once/if a built version has been tested on Raijin, found to be stable, and the team agrees, we make it the new default
 stable version.

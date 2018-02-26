@@ -664,7 +664,7 @@ class DocReader(object):
         return fields
 
     def __dir__(self):
-        return self.fields.keys()
+        return list(self.fields)
 
 
 def import_function(func_ref):
@@ -755,3 +755,7 @@ def ignore_exceptions_if(ignore_errors):
             _LOG.warning('Ignoring Exception: %s', e)
     else:
         yield
+
+
+def _readable_offset(offset):
+    return '.'.join(map(str, offset))

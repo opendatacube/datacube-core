@@ -17,11 +17,3 @@ class DataSource(object):
     @contextmanager
     def open(self):
         return None
-
-    @abstractmethod
-    def get_transform(self, shape):
-        return None
-
-    @abstractmethod
-    def get_crs(self):
-        return None

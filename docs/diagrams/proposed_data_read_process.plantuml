@@ -1,0 +1,109 @@
+@startuml
+
+skinparam backgroundColor white
+
+skinparam note {
+    BackgroundColor #F1FFFF
+    BorderColor #2980B9
+}
+
+skinparam activity {
+    BackgroundColor #BDE3FF
+    ArrowColor #2980B9
+    BorderColor #2980B9
+    StartColor #227BC6
+    EndColor #227BC6
+    BarColor #227BC6
+}
+
+skinparam sequence {
+    ArrowColor  #2980B9
+    DividerBackgroundColor  #BDE3FF
+    GroupBackgroundColor    #BDE3FF
+    LifeLineBackgroundColor white
+    LifeLineBorderColor #2980B9
+    ParticipantBackgroundColor  #BDE3FF
+    ParticipantBorderColor  #2980B9
+    BoxLineColor    #2980B9
+    BoxBackgroundColor  #DDDDDD
+}
+
+skinparam actorBackgroundColor #FEFECE
+skinparam actorBorderColor    #A80036
+
+skinparam usecaseArrowColor   #A80036
+skinparam usecaseBackgroundColor  #FEFECE
+skinparam usecaseBorderColor  #A80036
+
+skinparam classArrowColor #A80036
+skinparam classBackgroundColor    #FEFECE
+skinparam classBorderColor    #A80036
+
+skinparam objectArrowColor    #A80036
+skinparam objectBackgroundColor   #FEFECE
+skinparam objectBorderColor   #A80036
+
+skinparam packageBackgroundColor  #FEFECE
+skinparam packageBorderColor  #A80036
+
+skinparam stereotypeCBackgroundColor  #ADD1B2
+skinparam stereotypeABackgroundColor  #A9DCDF
+skinparam stereotypeIBackgroundColor  #B4A7E5
+skinparam stereotypeEBackgroundColor  #EB937F
+
+skinparam componentArrowColor #A80036
+skinparam componentBackgroundColor    #FEFECE
+skinparam componentBorderColor    #A80036
+skinparam componentInterfaceBackgroundColor   #FEFECE
+skinparam componentInterfaceBorderColor   #A80036
+
+skinparam stateBackgroundColor #BDE3FF
+skinparam stateBorderColor #2980B9
+skinparam stateArrowColor #2980B9
+skinparam stateStartColor black
+skinparam stateEndColor   black
+
+title Proposed Data Reading Process
+actor User
+
+
+User -> Datacube: Requests some data using dc.load_data()
+activate Datacube
+
+loop for each time/irregular dimension slice
+  Datacube -> Datacube: _fuse_measurement()
+  Datacube -> DataLoader:  reproject_and_fuse()
+  note right
+    DataLoader is not currently a class, it is 
+    functions in the ""datacube.storage.storage"" module
+  end note
+  activate DataLoader
+  hnote over DataLoader : create a destination array in RAM
+  loop for each DataSource
+    create DataSource
+    DataLoader -> DataSource: read_from_source()
+    activate DataSource
+
+    create BandSource
+    activate BandSource
+    DataSource -> BandSource: open() returns BandSource
+    alt Non reprojecting read
+        BandSource -> BandSource: _read_decimated()
+    else ReProjecting read
+        BandSource -> BandSource: reproject()
+    end
+    BandSource --> DataSource: append data into destination array
+    deactivate BandSource
+    DataSource --> DataLoader: return destination array
+    deactivate DataSource
+  end
+  DataLoader --> Datacube: return data
+  deactivate DataLoader
+
+end
+
+Datacube --> User: return data
+deactivate Datacube
+
+
+@enduml

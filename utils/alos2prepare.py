@@ -18,7 +18,6 @@ import click
 from osgeo import osr
 import os
 
-
 _STATIONS = {'023': 'TKSC', '022': 'SGS', '010': 'GNC', '011': 'HOA',
              '012': 'HEOC', '013': 'IKR', '014': 'KIS', '015': 'LGS',
              '016': 'MGR', '017': 'MOR', '032': 'LGN', '019': 'MTI', '030': 'KHC',
@@ -65,6 +64,7 @@ def get_coords(geo_ref_points, spatial_ref):
     def transform(p):
         lon, lat, z = t.TransformPoint(p['x'], p['y'])
         return {'lon': lon, 'lat': lat}
+
     return {key: transform(p) for key, p in geo_ref_points.items()}
 
 
@@ -83,7 +83,6 @@ def crazy_parse(timestr):
 
 
 def prep_dataset(fields, path):
-
     # for file in os.listdir(str(path)):
     #    if file.endswith(".xml") and (not file.endswith('aux.xml')):
     #        metafile = file
@@ -147,6 +146,7 @@ def dataset_folder(fields):
     fmt_str = "{vehicle}_{instrument}_{type}_{level}_GA{type}{product}-{groundstation}_{path}_{row}_{date}"
     return fmt_str.format(**fields)
 
+
 # INPUT path is parsed for elements - below hardcoded for testing
 
 
@@ -182,6 +182,7 @@ def main(datasets):
         logging.info("Writing %s", yaml_path)
         with open(yaml_path, 'w') as stream:
             yaml.dump(dataset, stream)
+
 
 if __name__ == "__main__":
     main()

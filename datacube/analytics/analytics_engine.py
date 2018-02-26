@@ -21,13 +21,8 @@ from __future__ import print_function
 
 # pylint: disable=redefined-builtin
 
-import sys
 import copy
 import logging
-from pprint import pprint
-
-import numpy as np
-import numexpr as ne
 
 from datacube.compat import string_types
 from datacube.api import API
@@ -64,12 +59,12 @@ class AnalyticsEngine(object):
             'median': 'median(array1)'
         }
 
-    def __init__(self, api=None, index=None, driver_manager=None):
+    def __init__(self, api=None, index=None):
         LOG.info('Initialise Analytics Module.')
         self.plan = []
         self.plan_dict = {}
 
-        self.api = api or API(index=index, driver_manager=driver_manager)
+        self.api = api or API(index=index)
         self.api_descriptors = {}
         self.api_products = []
 
@@ -417,14 +412,14 @@ class AnalyticsEngine(object):
             self.api_products = self.api.list_products()
         for product in self.api_products:
             storage_type = str(product['name'])
-            if storage_type not in self.api_descriptors.keys():
+            if storage_type not in self.api_descriptors:
                 continue
             items[storage_type]['platform'] = str(product['platform'])
             items[storage_type]['product_type'] = str(product['product_type'])
             items[storage_type]['instrument'] = str(product['instrument'])
         for variable in self.api.list_variables():
             storage_type = str(variable['product'])
-            if storage_type not in self.api_descriptors.keys():
+            if storage_type not in self.api_descriptors:
                 continue
             if 'bands' not in items[storage_type]:
                 items[storage_type]['bands'] = []

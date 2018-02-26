@@ -1,16 +1,16 @@
 import numpy as np
 import pytest
+import sys
 
 sa = pytest.importorskip('SharedArray')
+s3aio = pytest.importorskip('datacube.drivers.s3.storage.s3aio')
 
 
 class TestS3LIO(object):
     def test_create_s3lio(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
         s = s3aio.S3LIO()
 
     def test_chunk_indices_1d(self):
-        import datacube.drivers.s3.storage.s3aio as s3aio
         s = s3aio.S3LIO()
         assert list(s.chunk_indices_1d(0, 10, 2)) == [slice(0, 2, None), slice(2, 4, None), slice(4, 6, None),
                                                       slice(6, 8, None), slice(8, 10, None)]
@@ -19,8 +19,6 @@ class TestS3LIO(object):
         assert list(s.chunk_indices_1d(0, 10, 2, slice(2, 8), True)) == [2, 2, 2]
 
     def test_chunk_indices_nd(self):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3LIO()
         x = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
         assert (list(s.chunk_indices_nd(x.shape, (2, 2, 2))) ==
@@ -47,8 +45,6 @@ class TestS3LIO(object):
             (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
 
     def test_put_array_in_s3_without_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3LIO(False, False, str(tmpdir))
         x = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
         key_map = s.put_array_in_s3(x, (2, 2, 2), "base_name", 'arrayio')
@@ -60,7 +56,6 @@ class TestS3LIO(object):
         assert np.array_equal(x, e)
 
     def test_put_array_in_s3_mp_without_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
         s = s3aio.S3LIO(False, False, str(tmpdir))
         x = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
         key_map = s.put_array_in_s3_mp(x, (2, 2, 2), "base_name", 'arrayio')
@@ -72,7 +67,6 @@ class TestS3LIO(object):
         assert np.array_equal(x, e)
 
     def test_put_array_in_s3_with_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
         s = s3aio.S3LIO(True, False, str(tmpdir))
         x = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
         key_map = s.put_array_in_s3(x, (2, 2, 2), "base_name", 'arrayio')
@@ -84,8 +78,6 @@ class TestS3LIO(object):
         assert np.array_equal(x, e)
 
     def test_put_array_in_s3_mp_with_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3LIO(True, False, str(tmpdir))
         x = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
         key_map = s.put_array_in_s3_mp(x, (2, 2, 2), "base_name", 'arrayio')
@@ -97,7 +89,6 @@ class TestS3LIO(object):
         assert np.array_equal(x, e)
 
     def test_regular_index(self):
-        import datacube.drivers.s3.storage.s3aio as s3aio
         s = s3aio.S3LIO()
         i = s.regular_index((-35 + 2 * 0.128, 149 + 2 * 0.128), ((-35, -34), (149, 150)), (4000, 4000))
         assert i == [1024, 1024]
@@ -108,8 +99,6 @@ class TestS3LIO(object):
         assert i == 4
 
     def test_get_data_with_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3LIO(True, False, str(tmpdir))
 
         x = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
@@ -125,8 +114,6 @@ class TestS3LIO(object):
         assert np.array_equal(x[1:3, 1:3, 1:3], d)
 
     def test_get_data_without_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3LIO(False, False, str(tmpdir))
 
         x = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
@@ -145,19 +132,14 @@ class TestS3LIO(object):
 
 class TestS3AOI(object):
     def test_create_s3aio(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
         s = s3aio.S3AIO()
 
     def test_1d_nd_converions(self):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3AIO()
         assert s.to_1d((3, 1, 4, 1), (6, 7, 8, 9)) == np.ravel_multi_index((3, 1, 4, 1), (6, 7, 8, 9))
         assert s.to_nd(1621, (6, 7, 8, 9)) == np.unravel_index(1621, (6, 7, 8, 9))
 
     def test_get_point_without_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3IO(False, str(tmpdir))
         data = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
         s.put_bytes("arrayio", "array444", bytes(data.data))
@@ -168,8 +150,6 @@ class TestS3AOI(object):
         assert d == 0
 
     def test_get_point_with_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3IO(False, str(tmpdir))
         data = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
         import zstd
@@ -183,8 +163,6 @@ class TestS3AOI(object):
         assert d == 0
 
     def test_get_slice_with_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3IO(False, str(tmpdir))
 
         data = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
@@ -205,8 +183,6 @@ class TestS3AOI(object):
         assert np.array_equal(d, data[0:2, 0:4, 0:4])
 
     def test_get_slice_without_compression(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3IO(False, str(tmpdir))
 
         data = np.arange(4 * 4 * 4, dtype=np.uint8).reshape((4, 4, 4))
@@ -228,19 +204,16 @@ class TestS3AOI(object):
 
 class TestS3IO(object):
     def test_create_s3io(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
         s = s3aio.S3IO(False)
         s = s3aio.S3IO(False, str(tmpdir))
 
     def test_s3_resources(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
         s = s3aio.S3IO(False, str(tmpdir))
         a = s.s3_resource()
         b = s.s3_bucket('bucket')
         b = s.s3_object('bucket', 'key')
 
     def test_put_bytes(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
 
         s = s3aio.S3IO(False, str(tmpdir))
         data = np.arange(20, dtype=np.uint8)
@@ -251,8 +224,8 @@ class TestS3IO(object):
 
         bs = s.list_buckets()
         assert 'arrayio' in bs
-        l = s.list_objects('arrayio')
-        assert '1234test' in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' in listobjs
 
         b = s.get_bytes('arrayio', '1234test')
         assert bytes(data.data) == bytes(b)
@@ -264,12 +237,10 @@ class TestS3IO(object):
         s.delete_objects('arrayio', ['1234test'])
         assert not s.object_exists('arrayio', '1234test')
 
-        l = s.list_objects('arrayio')
-        assert '1234test' not in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' not in listobjs
 
     def test_put_bytes_mpu(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3IO(False, str(tmpdir))
         data = np.arange(20, dtype=np.uint8)
         s.put_bytes_mpu("arrayio", "1234test", bytes(data.data), 10)
@@ -279,8 +250,8 @@ class TestS3IO(object):
 
         bs = s.list_buckets()
         assert 'arrayio' in bs
-        l = s.list_objects('arrayio')
-        assert '1234test' in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' in listobjs
 
         b = s.get_bytes('arrayio', '1234test')
         assert bytes(data.data) == bytes(b)
@@ -292,12 +263,10 @@ class TestS3IO(object):
         s.delete_objects('arrayio', ['1234test'])
         assert not s.object_exists('arrayio', '1234test')
 
-        l = s.list_objects('arrayio')
-        assert '1234test' not in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' not in listobjs
 
     def test_put_bytes_mpu_mp(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3IO(False, str(tmpdir))
         data = np.arange(20, dtype=np.uint8)
         s.put_bytes_mpu_mp("arrayio", "1234test", bytes(data.data), 10)
@@ -307,8 +276,8 @@ class TestS3IO(object):
 
         bs = s.list_buckets()
         assert 'arrayio' in bs
-        l = s.list_objects('arrayio')
-        assert '1234test' in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' in listobjs
 
         b = s.get_bytes('arrayio', '1234test')
         assert bytes(data.data) == bytes(b)
@@ -320,12 +289,12 @@ class TestS3IO(object):
         s.delete_objects('arrayio', ['1234test'])
         assert not s.object_exists('arrayio', '1234test')
 
-        l = s.list_objects('arrayio')
-        assert '1234test' not in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' not in listobjs
 
+    @pytest.mark.skipif(sys.platform != 'linux',
+                        reason='delete_created_arrays() only works on linux')
     def test_put_bytes_mpu_mp_shm(self, tmpdir):
-        import datacube.drivers.s3.storage.s3aio as s3aio
-
         s = s3aio.S3IO(False, str(tmpdir))
 
         s.delete_created_arrays()
@@ -343,8 +312,8 @@ class TestS3IO(object):
 
         bs = s.list_buckets()
         assert 'arrayio' in bs
-        l = s.list_objects('arrayio')
-        assert '1234test' in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' in listobjs
 
         b = s.get_bytes('arrayio', '1234test')
         assert bytes(data.data) == bytes(b)
@@ -356,5 +325,5 @@ class TestS3IO(object):
         s.delete_objects('arrayio', ['1234test'])
         assert not s.object_exists('arrayio', '1234test')
 
-        l = s.list_objects('arrayio')
-        assert '1234test' not in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' not in listobjs

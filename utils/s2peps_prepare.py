@@ -204,7 +204,7 @@ def prepare_dataset(path):
                         'path': str(os.path.join(img_data_path, (image.rsplit('/', 1)[1] + ".jp2"))),
                         'layer': 1,
                     } for image in images
-                    }
+                }
             },
 
             'lineage': {'source_datasets': {}},

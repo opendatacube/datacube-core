@@ -1,11 +1,10 @@
 from __future__ import absolute_import
-import os
-import sys
-import xarray as xr
+
 import numpy as np
-import pytest
+import xarray as xr
 
 from datacube.ndexpr import NDexpr
+
 
 #
 # Test cases for NDexpr class
@@ -28,11 +27,11 @@ def test_2():
     ne.set_ae(False)
     x1 = xr.DataArray(np.random.randn(2, 3))
     y1 = xr.DataArray(np.random.randn(2, 3))
-    z1 = xr.DataArray(np.array([[[0,  1,  2], [3,  4,  5], [6,  7,  8]],
+    z1 = xr.DataArray(np.array([[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
                                 [[9, 10, 11], [12, 13, 14], [15, 16, 17]],
                                 [[18, 19, 20], [21, 22, 23], [24, 25, 26]]
                                 ]))
-    z2 = z1*2
+    z2 = z1 * 2
     z3 = np.arange(27)
     mask1 = z1 > 4
 
@@ -168,9 +167,9 @@ def test_2():
     assert ne.test("percentile(z1, (50, 60, 70))", np.percentile(z1, (50, 60, 70)))
     assert ne.test("percentile(z1, (50, 60, 70)) + percentile(z1, (50, 60, 70))",
                    np.percentile(z1, (50, 60, 70)) + np.percentile(z1, (50, 60, 70)))
-    assert ne.test("1 + var(z1, 0, 0+1, 2) + 1", 1+xr.DataArray.var(z1, axis=(0, 0+1, 2))+1)
+    assert ne.test("1 + var(z1, 0, 0+1, 2) + 1", 1 + xr.DataArray.var(z1, axis=(0, 0 + 1, 2)) + 1)
 
-    assert ne.test("1 + ((z1+z1)*0.0005)**2 + 1", 1 + np.power((z1+z1)*0.0005, 2) + 1)
+    assert ne.test("1 + ((z1+z1)*0.0005)**2 + 1", 1 + np.power((z1 + z1) * 0.0005, 2) + 1)
 
     assert ne.test("z1{mask1}", xr.DataArray.where(z1, mask1))
     assert ne.test("z1{z1>2}", xr.DataArray.where(z1, z1 > 2))
@@ -184,7 +183,7 @@ def test_2():
     assert ne.test("z1{z1>2 & z1<5}", xr.DataArray.where(z1, (z1 > 2) & (z1 < 5)))
 
     ne.evaluate("m = z1+1")
-    assert ne.test("m", z1+1)
+    assert ne.test("m", z1 + 1)
 
     assert ne.test("z1{~mask1}", xr.DataArray.where(z1, ~mask1))
 
@@ -200,7 +199,7 @@ def test_2():
     assert ne.test("z1>>1", np.right_shift(z1, 1))
     assert ne.test("z1<<1", np.left_shift(z1, 1))
 
-    assert ne.test("(z1+z1)", z1+z1)
+    assert ne.test("(z1+z1)", z1 + z1)
     assert ne.evaluate("(z1, z1)") == (z1, z1)
     assert ne.evaluate('(1, (4, 5))') == (1, (4, 5))
 

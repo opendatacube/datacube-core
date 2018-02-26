@@ -5,18 +5,16 @@ Module
 from __future__ import absolute_import
 
 import copy
-import json
 
 import pytest
 import yaml
-from click.testing import CliRunner
 
-from datacube.index._api import Index
-from datacube.index.postgres._fields import NumericRangeDocField, PgField
+from datacube.drivers.postgres._fields import NumericRangeDocField, PgField
+from datacube.index.index import Index
+from datacube.index.metadata_types import default_metadata_type_docs
 from datacube.model import MetadataType, DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes
-import datacube.scripts.cli_app
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',
@@ -53,48 +51,49 @@ _DATASET_METADATA = {
 }
 
 
-def test_metadata_indexes_views_exist(db, default_metadata_type):
+def test_metadata_indexes_views_exist(initialised_postgres_db, default_metadata_type):
     """
-    :type db: datacube.index.postgres._connections.PostgresDb
+    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
     :type default_metadata_type: datacube.model.MetadataType
     """
     # Metadata indexes should no longer exist.
-    assert not _object_exists(db, 'dix_eo_platform')
+    assert not _object_exists(initialised_postgres_db, 'dix_eo_platform')
 
     # Ensure view was created (following naming conventions)
-    assert _object_exists(db, 'dv_eo_dataset')
+    assert _object_exists(initialised_postgres_db, 'dv_eo_dataset')
 
 
-def test_dataset_indexes_views_exist(db, ls5_telem_type):
+def test_dataset_indexes_views_exist(initialised_postgres_db, ls5_telem_type):
     """
-    :type db: datacube.index.postgres._connections.PostgresDb
+    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
     :type ls5_telem_type: datacube.model.DatasetType
     """
     assert ls5_telem_type.name == 'ls5_telem_test'
 
     # Ensure field indexes were created for the dataset type (following the naming conventions):
-    assert _object_exists(db, "dix_ls5_telem_test_orbit")
+    assert _object_exists(initialised_postgres_db, "dix_ls5_telem_test_orbit")
 
     # Ensure it does not create a 'platform' index, because that's a fixed field
     # (ie. identical in every dataset of the type)
-    assert not _object_exists(db, "dix_ls5_telem_test_platform")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_platform")
 
     # Ensure view was created (following naming conventions)
-    assert _object_exists(db, 'dv_ls5_telem_test_dataset')
+    assert _object_exists(initialised_postgres_db, 'dv_ls5_telem_test_dataset')
 
     # Ensure view was created (following naming conventions)
-    assert not _object_exists(db, 'dix_ls5_telem_test_gsi'), "indexed=false field gsi shouldn't have an index"
+    assert not _object_exists(initialised_postgres_db,
+                              'dix_ls5_telem_test_gsi'), "indexed=false field gsi shouldn't have an index"
 
 
-def test_dataset_composite_indexes_exist(db, ls5_telem_type):
+def test_dataset_composite_indexes_exist(initialised_postgres_db, ls5_telem_type):
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:
     # (following the naming conventions)
-    assert _object_exists(db, "dix_ls5_telem_test_sat_path_sat_row_time")
+    assert _object_exists(initialised_postgres_db, "dix_ls5_telem_test_sat_path_sat_row_time")
 
     # But no individual field indexes for these
-    assert not _object_exists(db, "dix_ls5_telem_test_sat_path")
-    assert not _object_exists(db, "dix_ls5_telem_test_sat_row")
-    assert not _object_exists(db, "dix_ls5_telem_test_time")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_sat_path")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_sat_row")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_time")
 
 
 def test_field_expression_unchanged(default_metadata_type, telemetry_metadata_type):
@@ -176,7 +175,7 @@ def test_idempotent_add_dataset_type(index, ls5_telem_type, ls5_telem_doc):
         # TODO: Support for adding/changing search fields?
 
 
-def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc, driver):
+def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     """
     :type index: datacube.index._api.Index
     """
@@ -184,42 +183,28 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc, dri
     assert ls5_telem_type
 
     example_ls5_nbar_metadata_doc['lineage']['source_datasets'] = {}
-    dataset = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc,
-                      uris=['%s:///test/doc.yaml' % driver.uri_scheme],
-                      sources={})
+    dataset = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc, uris=['file:///test/doc.yaml'], sources={})
     dataset = index.datasets.add(dataset)
     assert dataset
 
     # update with the same doc should do nothing
     index.datasets.update(dataset)
     updated = index.datasets.get(dataset.id)
-    print('>>>>', updated.local_uri)
-    if driver.uri_scheme == 'file':
-        assert updated.local_uri == 'file:///test/doc.yaml'
-    else:
-        assert updated.local_uri is None
-    assert updated.uris == ['%s:///test/doc.yaml' % driver.uri_scheme]
+    assert updated.local_uri == 'file:///test/doc.yaml'
+    assert updated.uris == ['file:///test/doc.yaml']
 
     # update location
-    if driver.uri_scheme == 'file':
-        assert index.datasets.get(dataset.id).local_uri == 'file:///test/doc.yaml'
-    else:
-        assert updated.local_uri is None
-    update = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc,
-                     uris=['%s:///test/doc2.yaml' % driver.uri_scheme],
-                     sources={})
+    assert index.datasets.get(dataset.id).local_uri == 'file:///test/doc.yaml'
+    update = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc, uris=['file:///test/doc2.yaml'], sources={})
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
+
     # New locations are appended on update.
     # They may be indexing the same dataset from a different location: we don't want to remove the original location.
     # Returns the most recently added
-    if driver.uri_scheme == 'file':
-        assert updated.local_uri == 'file:///test/doc2.yaml'
-    else:
-        assert updated.local_uri is None
+    assert updated.local_uri == 'file:///test/doc2.yaml'
     # But both still exist (newest-to-oldest order)
-    assert updated.uris == ['%s:///test/doc2.yaml' % driver.uri_scheme,
-                            '%s:///test/doc.yaml' % driver.uri_scheme]
+    assert updated.uris == ['file:///test/doc2.yaml', 'file:///test/doc.yaml']
 
     # adding more metadata should always be allowed
     doc = copy.deepcopy(updated.metadata_doc)
@@ -228,24 +213,18 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc, dri
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
-    if driver.uri_scheme == 'file':
-        assert updated.local_uri == 'file:///test/doc2.yaml'
-    else:
-        assert updated.local_uri is None
+    assert updated.local_uri == 'file:///test/doc2.yaml'
     assert len(updated.uris) == 2
 
     # adding more metadata and changing location
     doc = copy.deepcopy(updated.metadata_doc)
     doc['test2'] = {'some': 'other thing'}
-    update = Dataset(ls5_telem_type, doc, uris=['%s:///test/doc3.yaml' % driver.uri_scheme])
+    update = Dataset(ls5_telem_type, doc, uris=['file:///test/doc3.yaml'])
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
     assert updated.metadata_doc['test2'] == {'some': 'other thing'}
-    if driver.uri_scheme == 'file':
-        assert updated.local_uri == 'file:///test/doc3.yaml'
-    else:
-        assert updated.local_uri is None
+    assert updated.local_uri == 'file:///test/doc3.yaml'
     assert len(updated.uris) == 3
 
     # changing existing metadata fields isn't allowed by default
@@ -258,10 +237,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc, dri
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
     assert updated.metadata_doc['test2'] == {'some': 'other thing'}
     assert updated.metadata_doc['product_type'] == 'nbar'
-    if driver.uri_scheme == 'file':
-        assert updated.local_uri == 'file:///test/doc3.yaml'
-    else:
-        assert updated.local_uri is None
+    assert updated.local_uri == 'file:///test/doc3.yaml'
     assert len(updated.uris) == 3
 
     # allowed changes go through
@@ -269,16 +245,13 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc, dri
     doc['product_type'] = 'foobar'
     # Backwards compat: third argument was a single local uri.
     with pytest.warns(DeprecationWarning):
-        update = Dataset(ls5_telem_type, doc, '%s:///test/doc4.yaml' % driver.uri_scheme)
+        update = Dataset(ls5_telem_type, doc, 'file:///test/doc4.yaml')
     index.datasets.update(update, {('product_type',): changes.allow_any})
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
     assert updated.metadata_doc['test2'] == {'some': 'other thing'}
     assert updated.metadata_doc['product_type'] == 'foobar'
-    if driver.uri_scheme == 'file':
-        assert updated.local_uri == 'file:///test/doc4.yaml'
-    else:
-        assert updated.local_uri is None
+    assert updated.local_uri == 'file:///test/doc4.yaml'
 
 
 def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc):
@@ -334,36 +307,34 @@ def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_t
 
 
 def test_product_update_cli(index,
-                            global_integration_cli_args,
+                            clirunner,
                             ls5_telem_type,
                             ls5_telem_doc,
                             ga_metadata_type,
                             tmpdir):
-    # type: (Index, list, DatasetType, dict, MetadataType) -> None
+    # type: (Index, callable, DatasetType, dict, MetadataType) -> None
     """
     Test updating products via cli
     """
 
     def run_update_product(file_path, allow_unsafe=False):
-        opts = list(global_integration_cli_args)
-        opts.extend(
-            [
-                '-v', 'product', 'update', str(file_path)
-            ]
-        )
-
         if allow_unsafe:
-            opts.append('--allow-unsafe')
+            allow_unsafe = ['--allow-unsafe']
+        else:
+            allow_unsafe = []
 
-        runner = CliRunner()
-        result = runner.invoke(
-            datacube.scripts.cli_app.cli,
-            opts,
-            catch_exceptions=False
+        return clirunner(
+            [
+                'product', 'update', str(file_path)
+            ] + allow_unsafe, catch_exceptions=False,
+            expect_success=False
         )
-        return result
 
     def get_current(index, product_doc):
+        # It's calling out to a separate instance to update the product (through the cli),
+        # so we need to clear our local index object's cache to get the updated one.
+        index.products.get_by_name_unsafe.cache_clear()
+
         return index.products.get_by_name(product_doc['name']).definition
 
     # Update an unchanged file, should be unchanged.
@@ -416,12 +387,12 @@ def _to_yaml(ls5_telem_doc):
     return yaml.safe_dump(ls5_telem_doc, allow_unicode=True)
 
 
-def test_update_metadata_type(index, default_metadata_type_docs, default_metadata_type):
+def test_update_metadata_type(index, default_metadata_type):
     """
     :type default_metadata_type_docs: list[dict]
     :type index: datacube.index._api.Index
     """
-    mt_doc = [d for d in default_metadata_type_docs if d['name'] == default_metadata_type.name][0]
+    mt_doc = [d for d in default_metadata_type_docs() if d['name'] == default_metadata_type.name][0]
 
     assert index.metadata_types.get_by_name(mt_doc['name']) is not None
 
@@ -519,7 +490,7 @@ def test_filter_types_by_search(index, ls5_telem_type):
     assert res == []
 
 
-def test_update_metadata_type_doc(db, index, ls5_telem_type):
+def test_update_metadata_type_doc(initialised_postgres_db, index, ls5_telem_type):
     type_doc = copy.deepcopy(ls5_telem_type.metadata_type.definition)
     type_doc['dataset']['search_fields']['test_indexed'] = {
         'description': 'indexed test field',
@@ -534,5 +505,5 @@ def test_update_metadata_type_doc(db, index, ls5_telem_type):
     index.metadata_types.update_document(type_doc)
 
     assert ls5_telem_type.name == 'ls5_telem_test'
-    assert _object_exists(db, "dix_ls5_telem_test_test_indexed")
-    assert not _object_exists(db, "dix_ls5_telem_test_test_not_indexed")
+    assert _object_exists(initialised_postgres_db, "dix_ls5_telem_test_test_indexed")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_test_not_indexed")

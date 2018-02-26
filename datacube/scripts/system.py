@@ -7,9 +7,8 @@ from click import echo, style
 from sqlalchemy.exc import OperationalError
 
 import datacube
-from datacube.config import LocalConfig
-from datacube.drivers.manager import DriverManager
-from datacube.index.postgres._connections import IndexSetupError
+from datacube.index import index_connect
+from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
 
@@ -42,17 +41,13 @@ def system():
     '--lock-table/--no-lock-table', is_flag=True, default=False,
     help="Allow table to be locked (eg. while creating missing indexes)"
 )
-@click.option(
-    '--create-s3-tables', '-s3', is_flag=True, default=False,
-    help="Create S3 datables."
-)
 @ui.pass_index(expect_initialised=False)
-def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table, create_s3_tables):
+# TODO: Need to be able to specify the type of index. In our current case, whether to create s3aio specific tables
+def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table):
     echo('Initialising database...')
 
     was_created = index.init_db(with_default_types=default_types,
-                                with_permissions=init_users,
-                                with_s3_tables=create_s3_tables)
+                                with_permissions=init_users)
 
     if was_created:
         echo(style('Created.', bold=True))
@@ -83,22 +78,21 @@ def check(
     echo_field('Version', datacube.__version__)
     echo_field('Config files', ','.join(local_config.files_loaded))
     echo_field('Host',
-               '{}:{}'.format(local_config.db_hostname or 'localhost', local_config.db_port or '5432'))
+               '{}:{}'.format(local_config['db_hostname'] or 'localhost', local_config.get('db_port', None) or '5432'))
 
-    echo_field('Database', local_config.db_database)
-    echo_field('User', local_config.db_username)
-    echo_field('Environment', local_config.environment)
+    echo_field('Database', local_config['db_database'])
+    echo_field('User', local_config['db_username'])
+    echo_field('Environment', local_config['env'])
+    echo_field('Index Driver', local_config['index_driver'])
 
     echo()
     echo('Valid connection:\t', nl=False)
     try:
-        with DriverManager(default_driver_name=local_config.default_driver,
-                           local_config=local_config) as driver_manager:
-            index = driver_manager.index
-            echo(style('YES', bold=True))
-            for role, user, description in index.users.list_users():
-                if user == local_config.db_username:
-                    echo('You have %s privileges.' % style(role.upper(), bold=True))
+        index = index_connect(local_config=local_config)
+        echo(style('YES', bold=True))
+        for role, user, description in index.users.list_users():
+            if user == local_config['db_username']:
+                echo('You have %s privileges.' % style(role.upper(), bold=True))
     except OperationalError as e:
         handle_exception('Error Connecting to Database: %s', e)
     except IndexSetupError as e:

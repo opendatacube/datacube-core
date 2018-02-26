@@ -92,5 +92,6 @@ def main():
     print(reduction_on_dim01)
     print(reduction_on_dim012)
 
+
 if __name__ == '__main__':
     main()

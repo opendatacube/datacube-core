@@ -15,14 +15,13 @@ from uuid import UUID
 
 import pytest
 import yaml
-from click.testing import CliRunner
 from dateutil import tz
 from psycopg2._range import NumericRange
 
 import datacube.scripts.cli_app
 import datacube.scripts.search_tool
-from datacube.index._api import Index
-from datacube.index.postgres import PostgresDb
+from datacube.drivers.postgres import PostgresDb
+from datacube.index.index import Index
 from datacube.model import Dataset
 from datacube.model import DatasetType
 from datacube.model import MetadataType
@@ -58,9 +57,9 @@ def pseudo_ls8_type(index, ga_metadata_type):
 
 
 @pytest.fixture
-def pseudo_ls8_dataset(index, db, pseudo_ls8_type):
+def pseudo_ls8_dataset(index, initialised_postgres_db, pseudo_ls8_type):
     id_ = str(uuid.uuid4())
-    with db.connect() as connection:
+    with initialised_postgres_db.connect() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
@@ -110,10 +109,10 @@ def pseudo_ls8_dataset(index, db, pseudo_ls8_type):
 
 
 @pytest.fixture
-def pseudo_ls8_dataset2(index, db, pseudo_ls8_type):
+def pseudo_ls8_dataset2(index, initialised_postgres_db, pseudo_ls8_type):
     # Like the previous dataset, but a day later in time.
     id_ = str(uuid.uuid4())
-    with db.connect() as connection:
+    with initialised_postgres_db.connect() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
@@ -164,7 +163,7 @@ def pseudo_ls8_dataset2(index, db, pseudo_ls8_type):
 
 # Datasets 3 and 4 mirror 1 and 2 but have a different path/row.
 @pytest.fixture
-def pseudo_ls8_dataset3(index, db, pseudo_ls8_type, pseudo_ls8_dataset):
+def pseudo_ls8_dataset3(index, initialised_postgres_db, pseudo_ls8_type, pseudo_ls8_dataset):
     # type: (Index, PostgresDb, DatasetType, Dataset) -> Dataset
 
     # Same as 1, but a different path/row
@@ -176,7 +175,7 @@ def pseudo_ls8_dataset3(index, db, pseudo_ls8_type, pseudo_ls8_dataset):
         'satellite_ref_point_end': {'x': 116, 'y': 87},
     }
 
-    with db.connect() as connection:
+    with initialised_postgres_db.connect() as connection:
         was_inserted = connection.insert_dataset(
             dataset_doc,
             id_,
@@ -190,7 +189,7 @@ def pseudo_ls8_dataset3(index, db, pseudo_ls8_type, pseudo_ls8_dataset):
 
 
 @pytest.fixture
-def pseudo_ls8_dataset4(index, db, pseudo_ls8_type, pseudo_ls8_dataset2):
+def pseudo_ls8_dataset4(index, initialised_postgres_db, pseudo_ls8_type, pseudo_ls8_dataset2):
     # type: (Index, PostgresDb, DatasetType, Dataset) -> Dataset
 
     # Same as 2, but a different path/row
@@ -202,7 +201,7 @@ def pseudo_ls8_dataset4(index, db, pseudo_ls8_type, pseudo_ls8_dataset2):
         'satellite_ref_point_end': {'x': 116, 'y': 87},
     }
 
-    with db.connect() as connection:
+    with initialised_postgres_db.connect() as connection:
         was_inserted = connection.insert_dataset(
             dataset_doc,
             id_,
@@ -216,7 +215,7 @@ def pseudo_ls8_dataset4(index, db, pseudo_ls8_type, pseudo_ls8_dataset2):
 
 
 @pytest.fixture
-def ls5_dataset_w_children(driver, index, example_ls5_dataset_path, indexed_ls5_scene_dataset_types):
+def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_products):
     # type: (Driver, Path, DatasetType) -> Dataset
     # TODO: We need a higher-level API for indexing paths, rather than reaching inside the cli script
     datasets = list(
@@ -231,9 +230,9 @@ def ls5_dataset_w_children(driver, index, example_ls5_dataset_path, indexed_ls5_
 
 
 @pytest.fixture
-def ls5_dataset_nbar_type(ls5_dataset_w_children, indexed_ls5_scene_dataset_types):
+def ls5_dataset_nbar_type(ls5_dataset_w_children, indexed_ls5_scene_products):
     # type: (Dataset, List[DatasetType]) -> DatasetType
-    for dataset_type in indexed_ls5_scene_dataset_types:
+    for dataset_type in indexed_ls5_scene_products:
         if dataset_type.name == ls5_dataset_w_children.type.name:
             return dataset_type
     else:
@@ -397,7 +396,7 @@ def test_search_globally(index, pseudo_ls8_dataset):
     assert results[0].sources is None
 
 
-def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_dataset_types,
+def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_products,
                            ls5_dataset_w_children):
     """
     :type index: datacube.index._api.Index
@@ -488,7 +487,7 @@ def test_search_or_expressions(index,
     assert datasets[0].id == pseudo_ls8_dataset.id
 
 
-def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_dataset_types):
+def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_products):
     # type: (Index, DatasetType, Dataset, list) -> None
     """
     :type index: datacube.index._api.Index
@@ -520,7 +519,7 @@ def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls
 
 def test_search_returning_rows(index, pseudo_ls8_type,
                                pseudo_ls8_dataset, pseudo_ls8_dataset2,
-                               indexed_ls5_scene_dataset_types):
+                               indexed_ls5_scene_products):
     dataset = pseudo_ls8_dataset
 
     # If returning a field like uri, there will be one result per location.
@@ -651,16 +650,13 @@ def test_search_special_fields(index, pseudo_ls8_type, pseudo_ls8_dataset,
     assert len(datasets) == 0
 
 
-def test_search_by_uri(index, ls5_dataset_w_children, driver):
+def test_search_by_uri(index, ls5_dataset_w_children):
     datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
                                            uri=ls5_dataset_w_children.local_uri)
-    if driver.uri_scheme == 'file':
-        assert len(datasets) == 1
-    else:
-        assert len(datasets) == 0
+    assert len(datasets) == 1
 
     datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
-                                           uri='%s:///x/yz' % driver.uri_scheme)
+                                           uri='file:///x/yz')
     assert len(datasets) == 0
 
 
@@ -848,22 +844,15 @@ def test_count_time_groups(index, pseudo_ls8_type, pseudo_ls8_dataset):
 
 
 @pytest.mark.usefixtures('ga_metadata_type',
-                         'indexed_ls5_scene_dataset_types')
-def test_source_filter(global_integration_cli_args, index, example_ls5_dataset_path, ls5_nbar_ingest_config):
-    opts = list(global_integration_cli_args)
-    opts.extend(
+                         'indexed_ls5_scene_products')
+def test_source_filter(clirunner, index, example_ls5_dataset_path):
+    clirunner(
         [
-            '-v',
             'dataset',
             'add',
             '--auto-match',
             str(example_ls5_dataset_path)
         ]
-    )
-    result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        opts,
-        catch_exceptions=False
     )
 
     all_nbar = index.datasets.search_eager(product='ls5_nbar_scene')
@@ -890,25 +879,17 @@ def test_source_filter(global_integration_cli_args, index, example_ls5_dataset_p
         )
 
 
-def test_count_time_groups_cli(global_integration_cli_args, pseudo_ls8_type, pseudo_ls8_dataset):
-    # type: (list, DatasetType, Dataset) -> None
+def test_count_time_groups_cli(clirunner, pseudo_ls8_type, pseudo_ls8_dataset):
+    # type: (callable, DatasetType, Dataset) -> None
 
-    opts = list(global_integration_cli_args)
-    opts.extend(
+    result = clirunner(
         [
             'product-counts',
             '1 day',
             '2014-07-25 < time < 2014-07-27'
-        ]
+        ], cli_method=datacube.scripts.search_tool.cli,
+        verbose_flag=''
     )
-
-    runner = CliRunner()
-    result = runner.invoke(
-        datacube.scripts.search_tool.cli,
-        opts,
-        catch_exceptions=False
-    )
-    assert result.exit_code == 0
 
     expected_out = (
         '{}\n'
@@ -919,58 +900,40 @@ def test_count_time_groups_cli(global_integration_cli_args, pseudo_ls8_type, pse
     assert result.output == expected_out
 
 
-def test_search_cli_basic(global_integration_cli_args, telemetry_metadata_type, pseudo_ls8_dataset):
+def test_search_cli_basic(clirunner, telemetry_metadata_type, pseudo_ls8_dataset):
     """
     Search datasets using the cli.
-    :type global_integration_cli_args: tuple[str]
     :type telemetry_metadata_type: datacube.model.MetadataType
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
-    opts = list(global_integration_cli_args)
-    opts.extend(
+    result = clirunner(
         [
             # No search arguments: return all datasets.
             'datasets'
-        ]
+        ], cli_method=datacube.scripts.search_tool.cli
     )
 
-    runner = CliRunner()
-    result = runner.invoke(
-        datacube.scripts.search_tool.cli,
-        opts
-    )
     assert str(pseudo_ls8_dataset.id) in result.output
     assert str(telemetry_metadata_type.name) in result.output
 
     assert result.exit_code == 0
 
 
-def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset, pseudo_ls8_dataset2):
-    # type: (Index, tuple, Dataset, Dataset) -> None
+def test_cli_info(index, clirunner, pseudo_ls8_dataset, pseudo_ls8_dataset2):
+    # type: (Index, callable, Dataset, Dataset) -> None
     """
     Search datasets using the cli.
     :type index: datacube.index._api.Index
-    :type global_integration_cli_args: tuple[str]
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     index.datasets.add_location(pseudo_ls8_dataset.id, 'file:///tmp/location1')
     index.datasets.add_location(pseudo_ls8_dataset.id, 'file:///tmp/location2')
 
-    opts = list(global_integration_cli_args)
-    opts.extend(
-        [
-            'dataset', 'info', str(pseudo_ls8_dataset.id)
-        ]
-    )
+    opts = [
+        'dataset', 'info', str(pseudo_ls8_dataset.id)
+    ]
+    result = clirunner(opts, verbose_flag='')
 
-    runner = CliRunner()
-    result = runner.invoke(
-        datacube.scripts.cli_app.cli,
-        opts,
-        catch_exceptions=False
-    )
-
-    assert result.exit_code == 0
     output = result.output
 
     # Should be a valid yaml
@@ -1009,12 +972,7 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset, pseudo
     # Request two, they should have separate yaml documents
     opts.append(str(pseudo_ls8_dataset2.id))
 
-    runner = CliRunner()
-    result = runner.invoke(
-        datacube.scripts.cli_app.cli,
-        opts,
-        catch_exceptions=False
-    )
+    result = clirunner(opts)
     yaml_docs = list(yaml.safe_load_all(result.output))
     assert len(yaml_docs) == 2, "Two datasets should produce two sets of info"
     assert yaml_docs[0]['id'] == str(pseudo_ls8_dataset.id)
@@ -1028,20 +986,15 @@ def assume_utc(d):
         return d.astimezone(tz.tzutc())
 
 
-def test_cli_missing_info(global_integration_cli_args):
-    opts = list(global_integration_cli_args)
+def test_cli_missing_info(clirunner, initialised_postgres_db):
     id_ = str(uuid.uuid4())
-    opts.extend(
+    result = clirunner(
         [
             'dataset', 'info', id_
-        ]
-    )
-
-    runner = CliRunner()
-    result = runner.invoke(
-        datacube.scripts.cli_app.cli,
-        opts,
-        catch_exceptions=False
+        ],
+        catch_exceptions=False,
+        expect_success=False,
+        verbose_flag=False
     )
 
     assert result.exit_code == 1, "Should return exit status when dataset is missing"
@@ -1124,10 +1077,9 @@ def test_find_duplicates(index, pseudo_ls8_type,
     assert sat_res == []
 
 
-def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo_ls8_dataset, pseudo_ls8_dataset2):
+def test_csv_search_via_cli(clirunner, pseudo_ls8_type, pseudo_ls8_dataset, pseudo_ls8_dataset2):
     """
     Search datasets via the cli with csv output
-    :type global_integration_cli_args: tuple[str]
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
 
@@ -1144,17 +1096,17 @@ def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo
     # Dataset 2 is the same but on day 2014-7-27
 
     def matches_both(*args):
-        rows = _cli_csv_search(('datasets',) + args, global_integration_cli_args)
+        rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 2
         assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_ls8_dataset.id), str(pseudo_ls8_dataset2.id)}
 
     def matches_1(*args):
-        rows = _cli_csv_search(('datasets',) + args, global_integration_cli_args)
+        rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 1
         assert rows[0]['id'] == str(pseudo_ls8_dataset.id)
 
     def matches_none(*args):
-        rows = _cli_csv_search(('datasets',) + args, global_integration_cli_args)
+        rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 0
 
     matches_both(' -40 < lat < -10')
@@ -1192,9 +1144,9 @@ _EXPECTED_OUTPUT_HEADER = 'dataset_type_id,format,gsi,id,instrument,lat,lon,meta
                           'metadata_type_id,orbit,platform,product,product_type,sat_path,sat_row,time,uri'
 
 
-def test_csv_structure(global_integration_cli_args, pseudo_ls8_type, ls5_telem_type,
+def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
                        pseudo_ls8_dataset, pseudo_ls8_dataset2):
-    output = _csv_search_raw(['datasets', ' -40 < lat < -10'], global_integration_cli_args)
+    output = _csv_search_raw(['datasets', ' -40 < lat < -10'], clirunner)
     lines = [line.strip() for line in output.split('\n') if line]
     # A header and two dataset rows
     assert len(lines) == 3
@@ -1202,28 +1154,13 @@ def test_csv_structure(global_integration_cli_args, pseudo_ls8_type, ls5_telem_t
     assert lines[0] == _EXPECTED_OUTPUT_HEADER
 
 
-def _cli_csv_search(args, global_integration_cli_args):
+def _cli_csv_search(args, clirunner):
     # Do a CSV search from the cli, returning results as a list of dictionaries
-    output = _csv_search_raw(args, global_integration_cli_args)
+    output = _csv_search_raw(args, clirunner)
     return list(csv.DictReader(io.StringIO(output)))
 
 
-def _csv_search_raw(args, global_integration_cli_args):
+def _csv_search_raw(args, clirunner):
     # Do a CSV search from the cli, returning output as a string
-    global_opts = list(global_integration_cli_args)
-    global_opts.extend(['-f', 'csv'])
-    result = _cli_search(args, global_opts)
-    assert result.exit_code == 0, result.output
+    result = clirunner(['-f', 'csv'] + list(args), cli_method=datacube.scripts.search_tool.cli, verbose_flag=False)
     return result.output
-
-
-def _cli_search(args, global_integration_cli_args):
-    opts = list(global_integration_cli_args)
-    opts.extend(args)
-    runner = CliRunner()
-    result = runner.invoke(
-        datacube.scripts.search_tool.cli,
-        opts,
-        catch_exceptions=False
-    )  # Annoyingly, this runner merges stderr and stdout together
-    return result

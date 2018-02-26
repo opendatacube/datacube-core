@@ -1,0 +1,63 @@
+@startuml
+
+title Current Process for Loading Data
+'!include ..\datacube-core\docs\plantuml.cfg
+
+actor User
+
+participant Datacube
+
+
+User -> Datacube: Requests some data using dc.load_data()
+activate Datacube
+
+Datacube -> Datacube: create_storage()
+activate Datacube
+loop for each measurement/band
+  Datacube -> Datacube: data_func()
+  activate Datacube
+  hnote over Datacube
+    create a destination array in RAM
+    Dimensions are <irregular dims> + <geobox_dims>
+  end note
+  loop for each time slice
+    Datacube -> Datacube: _fuse_measurement()
+    activate Datacube
+    Datacube -> DataLoader:  reproject_and_fuse()
+    note right
+        DataLoader is not currently a class, it is 
+        functions in the ""datacube.storage.storage"" module
+    end note
+    activate DataLoader
+    participant DataSource #PaleGreen
+    loop for each DataSource
+        create DataSource
+        DataLoader -> DataSource: read_from_source()
+        activate DataSource
+
+        participant BandSource #Cyan
+        create BandSource
+        DataSource -> BandSource: open() returns BandSource
+        activate BandSource
+        alt Non reprojecting read
+            BandSource -> BandSource: _read_decimated()
+        else ReProjecting read
+            BandSource -> BandSource: reproject()
+        end
+        BandSource --> DataSource: append data into destination array
+        deactivate BandSource
+        deactivate DataSource
+    end
+    deactivate Datacube
+    DataLoader --> Datacube: return data
+    deactivate DataLoader
+
+    deactivate Datacube
+  end
+end
+
+Datacube --> User: return data
+deactivate Datacube
+
+
+@enduml

@@ -40,6 +40,12 @@ os.chdir(current_dir)
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
+# -- RTD Debugging
+import subprocess
+subprocess.call('which java', shell=True)
+subprocess.call('java -version', shell=True)
+subprocess.call('plantuml -v', shell=True)
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -55,6 +61,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
+    'sphinxcontrib.plantuml',
     'click_utils'
 ]
 
@@ -125,7 +132,7 @@ autosummary_generate = True
 
 extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'GH')}
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3.5/', None),
+    'python': ('https://docs.python.org/', None),
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'xarray': ('http://xarray.pydata.org/en/stable/', None),
@@ -190,10 +197,6 @@ html_static_path = ['_static']
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
 #html_last_updated_fmt = '%b %d, %Y'
-
-# If true, SmartyPants will be used to convert quotes and dashes to
-# typographically correct entities.
-html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
@@ -305,6 +308,8 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
+plantuml_output_format = 'svg'
+plantuml_latex_output_format = 'pdf'
 
 
 # Mock modules that need native libraries.

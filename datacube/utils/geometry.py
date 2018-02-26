@@ -154,6 +154,8 @@ class CRS(object):
         if self.geographic:
             return int(self._crs.GetAuthorityCode('GEOGCS'))
 
+        return None
+
     @property
     def proj(self):
         return CRSProjProxy(self._crs)
@@ -197,6 +199,8 @@ class CRS(object):
         if self.projected:
             return 'y', 'x'
 
+        raise ValueError('Neither projected nor geographic')
+
     @property
     def units(self):
         """
@@ -209,6 +213,8 @@ class CRS(object):
 
         if self.projected:
             return self['UNIT'], self['UNIT']
+
+        raise ValueError('Neither projected nor geographic')
 
     def __str__(self):
         return self.crs_str
@@ -700,18 +706,6 @@ class GeoBox(object):
     """
     Defines the location and resolution of a rectangular grid of data,
     including it's :py:class:`CRS`.
-
-    >>> from affine import Affine
-    >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), CRS('EPSG:4326'))
-    >>> t.coordinates['latitude'].values
-    array([-29.000125, -29.000375, -29.000625, ..., -29.999375, -29.999625,
-           -29.999875])
-    >>> t.coordinates['longitude'].values
-    array([ 151.000125,  151.000375,  151.000625, ...,  151.999375,
-            151.999625,  151.999875])
-    >>> t.resolution
-    (-0.00025, 0.00025)
-
 
     :param geometry.CRS crs: Coordinate Reference System
     :param affine.Affine affine: Affine transformation defining the location of the geobox

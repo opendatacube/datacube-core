@@ -23,7 +23,9 @@ Check out the :ref:`installation` for instructions on configuring and setting up
 Australian Users
 ================
 
-If you have a login with the :term:`NCI`, check out the :ref:`nci_usage_guide`
+If you have are lucky enough to have a login with the :term:`NCI`, check out the :ref:`nci_usage_guide`.
+Geoscience Australia have a Data Cube installation with the Australian Landsat archive,
+along with many other datasets, set up and ready to use.
 
 
 .. toctree::
@@ -31,8 +33,8 @@ If you have a login with the :term:`NCI`, check out the :ref:`nci_usage_guide`
    nci_usage
 
 
-Types of Datasets in a Data Cube
-================================
+Types of Datasets
+=================
 
 When using the Data Cube, it will contain records about 3 different types of
 products and datasets.
@@ -84,7 +86,7 @@ Example:
 
 
 Provenance
-==========
+~~~~~~~~~~
 
 .. digraph:: provenance
 

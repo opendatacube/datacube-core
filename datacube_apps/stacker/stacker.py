@@ -59,8 +59,8 @@ def get_temp_file(final_output_path):
     return tmp_path
 
 
-def make_stacker_tasks(driver_manager, config, cell_index=None, time=None, **kwargs):
-    gw = datacube.api.GridWorkflow(index=None, product=config['product'].name, driver_manager=driver_manager)
+def make_stacker_tasks(index, config, cell_index=None, time=None, **kwargs):
+    gw = datacube.api.GridWorkflow(index=index, product=config['product'].name)
 
     for query in task_app.break_query_into_years(time):
         cells = gw.list_cells(product=config['product'].name, cell_index=cell_index, **query)
@@ -82,8 +82,8 @@ def make_stacker_tasks(driver_manager, config, cell_index=None, time=None, **kwa
                               year, cell_index_key, only_filename)
 
 
-def make_stacker_config(driver_manager, config, export_path=None, **query):
-    config['product'] = driver_manager.index.products.get_by_name(config['output_type'])
+def make_stacker_config(index, config, export_path=None, **query):
+    config['product'] = index.products.get_by_name(config['output_type'])
 
     if export_path is not None:
         config['location'] = export_path
@@ -217,7 +217,7 @@ def process_result(index, result):
 
 
 @click.command(name=APP_NAME)
-@datacube.ui.click.pass_driver_manager(app_name=APP_NAME)
+@datacube.ui.click.pass_index(app_name=APP_NAME)
 @datacube.ui.click.global_cli_options
 @click.option('--cell-index', 'cell_index', help='Limit the process to a particular cell (e.g. 14,-11)',
               callback=task_app.validate_cell_index, default=None)
@@ -229,9 +229,8 @@ def process_result(index, result):
 @task_app.queue_size_option
 @task_app.task_app_options
 @task_app.task_app(make_config=make_stacker_config, make_tasks=make_stacker_tasks)
-def main(driver_manager, config, tasks, executor, queue_size, **kwargs):
+def main(index, config, tasks, executor, queue_size, **kwargs):
     """This script creates NetCDF files containing an entire year of tiles in the same file."""
-    index = driver_manager.index
     click.echo('Starting stacking utility...')
 
     task_func = partial(do_stack_task, config)

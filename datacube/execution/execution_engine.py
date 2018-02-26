@@ -24,13 +24,8 @@ import sys
 import copy
 import inspect
 import logging
-from pprint import pprint
-import numpy as np
 import numexpr as ne
-import gdal
-import osr
 import xarray as xr
-from xarray import ufuncs
 
 from datacube.api import API
 from datacube.analytics.analytics_engine import OperationType
@@ -55,13 +50,13 @@ class ExecutionEngine(object):
                      "std": xr.DataArray.std,
                      "var": xr.DataArray.var}
 
-    def __init__(self, api=None, index=None, driver_manager=None):
+    def __init__(self, api=None, index=None):
         LOG.info('Initialise Execution Module.')
         self.cache = {}
         self.nd = NDexpr()
         self.nd.set_ae(True)
 
-        self.api = api or API(index=index, driver_manager=driver_manager)
+        self.api = api or API(index=index)
         self.udfuncs = {}
 
     def add_function(self, name, func):

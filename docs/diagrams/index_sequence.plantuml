@@ -1,0 +1,99 @@
+@startuml
+title Initialise Database
+participant Test
+participant Index
+participant PostgresDb
+participant "PostgresDbAPI\nWTF is this thing" as PostgresDbAPI
+
+
+note over Index: Entry point is ""connect()""\nin ""index/_api.py""
+note over PostgresDb: In ""postgres/_connections.py"""
+note over PostgresDbAPI: In ""postgres/_api.py"""
+note over PostgresDbInTransaction,PostgresDbConnection: In ""postgres/_connections.py"""
+
+== Create the Database Connection ==
+
+Test -> Index: index_connect()
+create PostgresDb
+Index -> PostgresDb: from_config()
+activate PostgresDb
+    PostgresDb -> PostgresDb: create()
+    activate PostgresDb
+
+        PostgresDb -> PostgresDb: _create_engine()
+        activate PostgresDb
+
+            PostgresDb -> SQLAlchemy: create_engine()
+            SQLAlchemy --> PostgresDb: returns an engine
+
+        deactivate PostgresDb
+    deactivate PostgresDb
+
+    PostgresDb --> Index: database ready for use
+deactivate PostgresDb
+activate Index
+
+    Index --> Test: here, have an Index
+deactivate Index
+
+== Use the Database Connection ==
+
+note over Test: Using begin() starts a transaction
+Test -> PostgresDb: begin()
+activate PostgresDb
+    PostgresDb -> PostgresDbInTransaction: _enter__()
+    PostgresDbInTransaction -> PostgresDbAPI: Construct
+    PostgresDbAPI --> PostgresDbInTransaction: self
+    PostgresDbInTransaction --> PostgresDb: return PostgresDbAPI
+
+    PostgresDb --> Test: a PostgresDbAPI
+
+deactivate PostgresDb
+
+
+note over Test: Using connect() does **NOT** start a transaction
+Test -> PostgresDb: connect()
+activate PostgresDb
+    PostgresDb -> PostgresDbConnection: _enter__()
+    PostgresDbConnection -> PostgresDbAPI: Construct
+    PostgresDbAPI --> PostgresDbConnection: self
+    PostgresDbConnection --> PostgresDb: return PostgresDbAPI
+
+    PostgresDb --> Test: a PostgresDbAPI
+
+deactivate PostgresDb
+
+== Create an Index using the Connection ==
+
+Test -> Index: dunder_init()
+
+Test -> Index: init_db()
+activate Index
+    Index -> PostgresDb: init()
+    activate PostgresDb
+        PostgresDb -> _core: ensure_db(self._engine)
+        activate _core
+            _core -> SQLAlchemy: engine.connect()
+            SQLAlchemy --> _core: returns a connection
+            database Server
+            _core -> Server: create roles
+            _core -> Server: create schema
+            _core -> Server: create types
+            _core -> Server: create tables
+            _core -> Server: create grants
+
+            _core --> PostgresDb: True if schema was initialised
+        
+        deactivate _core
+
+    deactivate PostgresDb
+deactivate Index
+
+
+== Initialise the Database Using an Index ==
+
+'Test -> PostgresDb: init()
+
+
+
+@enduml

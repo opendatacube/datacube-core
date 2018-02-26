@@ -9,7 +9,10 @@ from datetime import date, datetime, time
 from dateutil.tz import tz
 
 from datacube.model import Range
-from .exceptions import UnknownFieldError
+
+
+class UnknownFieldError(Exception):
+    pass
 
 
 class Field(object):

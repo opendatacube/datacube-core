@@ -31,16 +31,14 @@ def describe_variable_flags(variable):
     Returns a string describing the available flags for a masking variable
 
     Interprets the `flags_definition` attribute on the provided variable and returns
-    a string like:
+    a string like::
 
-    `
-    Bits are listed from the MSB (bit 13) to the LSB (bit 0)
-    Bit     Value   Flag Name            Description
-    13      0       cloud_shadow_fmask   Cloud Shadow (Fmask)
-    12      0       cloud_shadow_acca    Cloud Shadow (ACCA)
-    11      0       cloud_fmask          Cloud (Fmask)
-    10      0       cloud_acca           Cloud (ACCA)
-    `
+        Bits are listed from the MSB (bit 13) to the LSB (bit 0)
+        Bit     Value   Flag Name            Description
+        13      0       cloud_shadow_fmask   Cloud Shadow (Fmask)
+        12      0       cloud_shadow_acca    Cloud Shadow (ACCA)
+        11      0       cloud_fmask          Cloud (Fmask)
+        10      0       cloud_acca           Cloud (ACCA)
 
     :param variable: Masking xarray.Dataset or xarray.DataArray
     :return: str
@@ -79,13 +77,13 @@ def make_mask(variable, **flags):
 
     For example:
 
-    make_mask(pqa, cloud_acca=False, cloud_fmask=False, land_obs=True)
+    >>> make_mask(pqa, cloud_acca=False, cloud_fmask=False, land_obs=True) # doctest: +SKIP
 
     OR
 
-    make_mask(pqa, **GOOD_PIXEL_FLAGS)
+    >>> make_mask(pqa, **GOOD_PIXEL_FLAGS) # doctest: +SKIP
 
-    where GOOD_PIXEL_FLAGS is a dict of flag_name to True/False
+    where `GOOD_PIXEL_FLAGS` is a dict of flag_name to True/False
 
     :param variable:
     :type variable: xarray.Dataset or xarray.DataArray
@@ -114,7 +112,7 @@ def valid_data_mask(data):
             return True
         return data != data.nodata
 
-    raise TypeError('valid_data_mask not supported for type %s', type(data))
+    raise TypeError('valid_data_mask not supported for type {}'.format(type(data)))
 
 
 def mask_valid_data(data, keep_attrs=True):
@@ -148,7 +146,7 @@ def mask_invalid_data(data, keep_attrs=True):
             out_data_array.attrs = data.attrs
         return out_data_array
 
-    raise TypeError('mask_invalid_data not supported for type %s', type(data))
+    raise TypeError('mask_invalid_data not supported for type {}'.format(type(data)))
 
 
 def create_mask_value(bits_def, **flags):

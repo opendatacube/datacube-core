@@ -9,16 +9,15 @@ from __future__ import absolute_import
 import copy
 import datetime
 import sys
-import re
 from pathlib import Path
 from uuid import UUID
 
 import pytest
 from dateutil import tz
 
-from datacube.index._api import Index
+from datacube.index.index import Index
 from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
-from datacube.index.postgres import PostgresDb
+from datacube.drivers.postgres import PostgresDb
 from datacube.utils.changes import DocumentMismatchError
 from datacube.model import Dataset
 
@@ -73,9 +72,9 @@ _pseudo_telemetry_dataset_type = {
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
 
-def test_archive_datasets(index, db, local_config, default_metadata_type):
+def test_archive_datasets(index, initialised_postgres_db, local_config, default_metadata_type):
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    with db.begin() as transaction:
+    with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
@@ -109,12 +108,12 @@ def test_archive_datasets(index, db, local_config, default_metadata_type):
 
 
 @pytest.fixture
-def telemetry_dataset(index, db, default_metadata_type):
+def telemetry_dataset(index, initialised_postgres_db, default_metadata_type):
     # type: (Index, PostgresDb) -> Dataset
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
-    with db.begin() as transaction:
+    with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
@@ -125,15 +124,15 @@ def telemetry_dataset(index, db, default_metadata_type):
     return index.datasets.get(_telemetry_uuid)
 
 
-def test_index_duplicate_dataset(index, db, local_config, default_metadata_type):
+def test_index_duplicate_dataset(index, initialised_postgres_db, local_config, default_metadata_type):
     """
-    :type index: datacube.index._api.Index
-    :type db: datacube.index.postgres._connections.PostgresDb
+    :type index: datacube.index.index.Index
+    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
     """
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
-    with db.begin() as transaction:
+    with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
@@ -145,7 +144,7 @@ def test_index_duplicate_dataset(index, db, local_config, default_metadata_type)
 
     # Insert again.
     with pytest.raises(DuplicateRecordError):
-        with db.connect() as connection:
+        with initialised_postgres_db.connect() as connection:
             was_inserted = connection.insert_dataset(
                 _telemetry_dataset,
                 _telemetry_uuid,
@@ -165,15 +164,15 @@ def test_has_dataset(index, telemetry_dataset):
     assert not index.datasets.has('f226a278-e422-11e6-b501-185e0f80a5c0')
 
 
-def test_transactions(index, db, local_config, default_metadata_type):
+def test_transactions(index, initialised_postgres_db, local_config, default_metadata_type):
     """
-    :type index: datacube.index._api.Index
-    :type db: datacube.index.postgres._connections.PostgresDb
+    :type index: datacube.index.index.Index
+    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
     """
     assert not index.datasets.has(_telemetry_uuid)
 
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    with db.begin() as transaction:
+    with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
@@ -194,7 +193,7 @@ def test_get_missing_things(index):
     """
     The get(id) methods should return None if the object doesn't exist.
 
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.index.Index
     """
     uuid_ = UUID('18474b58-c8a6-11e6-a4b3-185e0f80a5c0')
     missing_thing = index.datasets.get(uuid_, include_sources=False)
@@ -242,28 +241,26 @@ def test_index_dataset_with_sources(index, default_metadata_type):
         index.datasets.add(child, sources_policy='verify')
 
 
-def test_index_dataset_with_location(index, default_metadata_type, driver):
+# Make sure that both normal and s3aio index can handle normal data locations correctly
+@pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env',), indirect=True)
+def test_index_dataset_with_location(index, default_metadata_type):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.index.Index
     :type default_metadata_type: datacube.model.MetadataType
     """
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()
-    first_uri = driver.as_uri(first_file)
-    second_uri = driver.as_uri(second_file)
 
     type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
-    dataset = Dataset(type_, _telemetry_dataset, uris=[first_uri], sources={})
+    dataset = Dataset(type_, _telemetry_dataset, uris=[first_file.as_uri()], sources={})
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
+
     assert stored.id == _telemetry_uuid
     # TODO: Dataset types?
     assert stored.type.id == type_.id
     assert stored.metadata_type.id == default_metadata_type.id
-    if driver.uri_scheme == 'file':
-        assert stored.local_path == Path(first_file)
-    else:
-        assert stored.local_path is None
+    assert stored.local_path == Path(first_file)
 
     # Ingesting again should have no effect.
     index.datasets.add(dataset)
@@ -271,16 +268,16 @@ def test_index_dataset_with_location(index, default_metadata_type, driver):
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
     # Remove the location
-    was_removed = index.datasets.remove_location(dataset.id, first_uri)
+    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())
     assert was_removed
-    was_removed = index.datasets.remove_location(dataset.id, first_uri)
+    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())
     assert not was_removed
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 0
     # Re-add the location
-    was_added = index.datasets.add_location(dataset.id, first_uri)
+    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())
     assert was_added
-    was_added = index.datasets.add_location(dataset.id, first_uri)
+    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())
     assert not was_added
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
@@ -289,60 +286,55 @@ def test_index_dataset_with_location(index, default_metadata_type, driver):
     # (any UTC conversion errors will be off by much more than this for PST/AEST)
     before_archival_dt = utc_now() - datetime.timedelta(hours=1, minutes=1)
 
-    was_archived = index.datasets.archive_location(dataset.id, first_uri)
+    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())
     assert was_archived
     locations = index.datasets.get_locations(dataset.id)
     assert locations == []
     locations = index.datasets.get_archived_locations(dataset.id)
-
-    assert len(locations) == 1
-    assert locations == [first_uri]
+    assert locations == [first_file.as_uri()]
 
     # It should return the time archived.
     location_times = index.datasets.get_archived_location_times(dataset.id)
     assert len(location_times) == 1
     location, archived_time = location_times[0]
-    assert location == re.sub("^file", driver.uri_scheme, first_file.as_uri())
+    assert location == first_file.as_uri()
     assert utc_now() > archived_time > before_archival_dt
 
-    was_restored = index.datasets.restore_location(dataset.id, first_uri)
+    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())
     assert was_restored
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
 
     # Ingesting with a new path should add the second one too.
-    dataset.uris = [second_uri]
+    dataset.uris = [second_file.as_uri()]
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 2
     # Newest to oldest.
-    assert locations == [second_uri, first_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
-    if driver.uri_scheme == 'file':
-        assert stored.local_path == Path(second_file)
-    else:
-        assert stored.local_path is None
+    assert stored.local_path == Path(second_file)
 
     # Can archive and restore the first file, and location order is preserved
-    was_archived = index.datasets.archive_location(dataset.id, first_uri)
+    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())
     assert was_archived
     locations = index.datasets.get_locations(dataset.id)
-    assert locations == [second_uri]
-    was_restored = index.datasets.restore_location(dataset.id, first_uri)
+    assert locations == [second_file.as_uri()]
+    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())
     assert was_restored
     locations = index.datasets.get_locations(dataset.id)
-    assert locations == [second_uri, first_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
 
     # Can archive and restore the second file, and location order is preserved
-    was_archived = index.datasets.archive_location(dataset.id, second_uri)
+    was_archived = index.datasets.archive_location(dataset.id, second_file.as_uri())
     assert was_archived
     locations = index.datasets.get_locations(dataset.id)
-    assert locations == [first_uri]
-    was_restored = index.datasets.restore_location(dataset.id, second_uri)
+    assert locations == [first_file.as_uri()]
+    was_restored = index.datasets.restore_location(dataset.id, second_file.as_uri())
     assert was_restored
     locations = index.datasets.get_locations(dataset.id)
-    assert locations == [second_uri, first_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
 
     # Ingestion again without location should have no effect.
     dataset.uri = None
@@ -351,19 +343,16 @@ def test_index_dataset_with_location(index, default_metadata_type, driver):
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 2
     # Newest to oldest.
-    assert locations == [second_uri, first_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
-    if driver.uri_scheme == 'file':
-        assert stored.local_path == Path(second_file)
-    else:
-        assert stored.local_path is None
+    assert stored.local_path == Path(second_file)
 
     # Ability to get datasets for a location
     # Add a second dataset with a different location (to catch lack of joins, filtering etc)
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a5c0'
-    index.datasets.add(Dataset(type_, second_ds_doc, uris=[second_uri], sources={}))
-    dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_uri)]
+    index.datasets.add(Dataset(type_, second_ds_doc, uris=[second_file.as_uri()], sources={}))
+    dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri())]
     assert dataset_ids == [dataset.id]
 
 

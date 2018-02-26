@@ -73,10 +73,10 @@ def get_single_dataset_paths(cell):
     return files_to_fix
 
 
-def make_fixer_tasks(driver_manager, config, time=None, cell_index=None, **kwargs):
+def make_fixer_tasks(index, config, time=None, cell_index=None, **kwargs):
     """Find datasets that have a location not shared by other datasets and make it into a task
     """
-    gw = datacube.api.GridWorkflow(index=None, product=config['product'].name, driver_manager=driver_manager)
+    gw = datacube.api.GridWorkflow(index=index, product=config['product'].name)
 
     for query in task_app.break_query_into_years(time):
         cells = gw.list_cells(product=config['product'].name, cell_index=cell_index, **query)
@@ -98,8 +98,8 @@ def make_fixer_tasks(driver_manager, config, time=None, cell_index=None, **kwarg
                                    output_filename=output_filename)
 
 
-def make_fixer_config(driver_manager, config, export_path=None, **query):
-    config['product'] = driver_manager.index.products.get_by_name(config['output_type'])
+def make_fixer_config(index, config, export_path=None, **query):
+    config['product'] = index.products.get_by_name(config['output_type'])
 
     if export_path is not None:
         config['location'] = export_path
@@ -247,7 +247,7 @@ def process_result(index, result):
 
 
 @click.command(name=APP_NAME)
-@datacube.ui.click.pass_driver_manager(app_name=APP_NAME)
+@datacube.ui.click.pass_index(app_name=APP_NAME)
 @datacube.ui.click.global_cli_options
 @click.option('--cell-index', 'cell_index', help='Limit the process to a particular cell (e.g. 14,-11)',
               callback=task_app.validate_cell_index, default=None)
@@ -259,9 +259,8 @@ def process_result(index, result):
 @task_app.queue_size_option
 @task_app.task_app_options
 @task_app.task_app(make_config=make_fixer_config, make_tasks=make_fixer_tasks)
-def fixer(driver_manager, config, tasks, executor, queue_size, **kwargs):
+def fixer(index, config, tasks, executor, queue_size, **kwargs):
     """This script rewrites unstacked dataset files to correct their NetCDF metadata."""
-    index = driver_manager.index
     click.echo('Starting fixer utility...')
 
     task_func = partial(do_fixer_task, config)

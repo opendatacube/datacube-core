@@ -15,7 +15,7 @@ from click import echo
 import json
 from yaml import Node
 
-from datacube.index._api import Index
+from datacube.index.index import Index
 from datacube.index.exceptions import MissingRecordError
 from datacube.model import Dataset
 from datacube.model import Range
@@ -83,10 +83,10 @@ def load_rules_from_file(filename, index):
         type_ = index.products.get_by_name(rule['type'])
         if not type_:
             _LOG.error('DatasetType %s does not exists', rule['type'])
-            return
+            return None
         if not changes.contains(type_.metadata_doc, rule['metadata']):
             _LOG.error('DatasetType %s can\'t be matched by its own rule', rule['type'])
-            return
+            return None
         rule['type'] = type_
 
     return rules
@@ -99,7 +99,7 @@ def load_rules_from_types(index, type_names=None):
             type_ = index.products.get_by_name(name)
             if not type_:
                 _LOG.error('DatasetType %s does not exists', name)
-                return
+                return None
             types.append(type_)
     else:
         types += index.products.get_all()
@@ -347,7 +347,7 @@ _OUTPUT_WRITERS = {
 @click.option('--show-sources', help='Also show source datasets', is_flag=True, default=False)
 @click.option('--show-derived', help='Also show derived datasets', is_flag=True, default=False)
 @click.option('-f', help='Output format',
-              type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
+              type=click.Choice(list(_OUTPUT_WRITERS)), default='yaml', show_default=True)
 @click.option('--max-depth',
               help='Maximum sources/derived depth to travel',
               type=int,
@@ -385,7 +385,7 @@ def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
 @click.option('--limit', help='Limit the number of results',
               type=int, default=None)
 @click.option('-f', help='Output format',
-              type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
+              type=click.Choice(list(_OUTPUT_WRITERS)), default='yaml', show_default=True)
 @ui.parsed_search_expressions
 @ui.pass_index()
 def search_cmd(index, limit, f, expressions):
@@ -447,7 +447,7 @@ def restore_cmd(index, restore_derived, derived_tolerance_seconds, dry_run, ids)
 
 def _restore_one(dry_run, id_, index, restore_derived, tolerance):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.index.Index
     :type restore_derived: bool
     :type tolerance: datetime.timedelta
     :type dry_run:  bool

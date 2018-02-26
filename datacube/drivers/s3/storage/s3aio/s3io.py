@@ -10,24 +10,22 @@ Multi-threaded. set new_session = True
 
 from __future__ import print_function, absolute_import, division
 
+import SharedArray as sa
 import io
 import os
 import uuid
+from itertools import repeat
+from operator import mul
+from os.path import expanduser
+
 import boto3
 import boto3.session
 import botocore
-import SharedArray as sa
 import numpy as np
-from six.moves import reduce, zip
-from operator import mul
-from os.path import expanduser
-from itertools import repeat
+import sys
 from pathos.multiprocessing import ProcessingPool
+from six.moves import reduce, zip
 
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 # pylint: disable=too-many-locals, too-many-public-methods
 
@@ -49,7 +47,7 @@ class S3IO(object):
         """
         self.enable_s3 = enable_s3
         if file_path is None:
-            self.file_path = expanduser("~")+"/S3IO/"
+            self.file_path = expanduser("~") + "/S3IO/"
         else:
             self.file_path = file_path
 
@@ -85,7 +83,7 @@ class S3IO(object):
         :return: Returns a reference to the S3 resource.
         """
         if not self.enable_s3:
-            return
+            return None
         if new_session is True:
             s3 = boto3.session.Session().resource('s3')
         else:
@@ -102,7 +100,7 @@ class S3IO(object):
         :return: Returns a reference to the S3 bucket.
         """
         if not self.enable_s3:
-            return
+            return None
         s3 = self.s3_resource(new_session)
         return s3.Bucket(s3_bucket)
 
@@ -117,7 +115,7 @@ class S3IO(object):
         :return: Returns a reference to the S3 object.
         """
         if not self.enable_s3:
-            return
+            return None
         s3 = self.s3_resource(new_session)
         return s3.Bucket(s3_bucket).Object(s3_key)
 
@@ -163,7 +161,7 @@ class S3IO(object):
                 error_code = int(e.response['Error']['Code'])
                 raise Exception("ClientError", error_code)
         else:
-            directory = self.file_path+"/"+str(s3_bucket)
+            directory = self.file_path + "/" + str(s3_bucket)
             if os.path.exists(directory):
                 return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
             else:
@@ -186,16 +184,17 @@ class S3IO(object):
             key_list = [{'Key': v} for v in keys]
             response = b.delete_objects(Delete={'Objects': key_list})
             if 'ResponseMetadata' in response and 'HTTPStatusCode' in response['ResponseMetadata'] and \
-               response['ResponseMetadata']['HTTPStatusCode'] == 200 and 'Deleted' in response:
+                    response['ResponseMetadata']['HTTPStatusCode'] == 200 and 'Deleted' in response:
                 return [d['Key'] for d in response['Deleted']]
         else:
-            directory = self.file_path+"/"+str(s3_bucket)
+            directory = self.file_path + "/" + str(s3_bucket)
             response = []
             for k in keys:
-                if os.path.exists(directory+"/"+k) and os.path.isfile(directory+"/"+k):
-                    os.remove(directory+"/"+k)
+                if os.path.exists(directory + "/" + k) and os.path.isfile(directory + "/" + k):
+                    os.remove(directory + "/" + k)
                     response.append(k)
             return response
+        return []
 
     def bucket_exists(self, s3_bucket, new_session=False):
         """Check if bucket exists.
@@ -217,7 +216,7 @@ class S3IO(object):
                 raise Exception("ClientError", error_code)
             return True
         else:
-            directory = self.file_path+"/"+str(s3_bucket)
+            directory = self.file_path + "/" + str(s3_bucket)
             return os.path.exists(directory) and os.path.isdir(directory)
 
     def object_exists(self, s3_bucket, s3_key, new_session=False):
@@ -241,7 +240,7 @@ class S3IO(object):
                 raise Exception("ClientError", error_code)
             return True
         else:
-            directory = self.file_path+"/"+str(s3_bucket)+"/"+str(s3_key)
+            directory = self.file_path + "/" + str(s3_bucket) + "/" + str(s3_key)
             return os.path.exists(directory) and os.path.isfile(directory)
 
     def put_bytes(self, s3_bucket, s3_key, data, new_session=False):
@@ -263,10 +262,12 @@ class S3IO(object):
             s3 = self.s3_resource(new_session)
             s3.meta.client.put_object(Bucket=s3_bucket, Key=s3_key, Body=io.BytesIO(data))
         else:
-            directory = self.file_path+"/"+str(s3_bucket)
-            if not os.path.exists(directory):
+            directory = self.file_path + "/" + str(s3_bucket)
+            try:
                 os.makedirs(directory)
-            f = open(directory+"/"+str(s3_key), "wb")
+            except OSError:
+                pass
+            f = open(directory + "/" + str(s3_key), "wb")
             f.write(data)
             f.close()
 
@@ -302,14 +303,14 @@ class S3IO(object):
         s3 = self.s3_resource(new_session)
         mpu = s3.meta.client.create_multipart_upload(Bucket=s3_bucket, Key=s3_key)
 
-        nbytes = reduce(mul, data.shape, 1)*data.itemsize
-        num_blocks = int(np.ceil(nbytes/float(block_size)))
+        nbytes = reduce(mul, data.shape, 1) * data.itemsize
+        num_blocks = int(np.ceil(nbytes / float(block_size)))
         parts_dict = dict(Parts=[])
 
         for block_number in range(num_blocks):
             part_number = block_number + 1
-            start = block_number*block_size
-            end = (block_number+1)*block_size
+            start = block_number * block_size
+            end = (block_number + 1) * block_size
             if end > nbytes:
                 end = nbytes
             data_chunk = io.BytesIO(data[start:end])
@@ -340,6 +341,7 @@ class S3IO(object):
             False: reuse existing session
         :return: Multi-part upload response
         """
+
         def work_put(block_number, data, s3_bucket, s3_key, block_size, mpu):
             response = boto3.resource('s3').meta.client.upload_part(Bucket=s3_bucket,
                                                                     Key=s3_key,
@@ -357,12 +359,12 @@ class S3IO(object):
         s3 = self.s3_resource(new_session)
 
         mpu = s3.meta.client.create_multipart_upload(Bucket=s3_bucket, Key=s3_key)
-        nbytes = reduce(mul, data.shape, 1)*data.itemsize
-        num_blocks = int(np.ceil(nbytes/float(block_size)))
+        nbytes = reduce(mul, data.shape, 1) * data.itemsize
+        num_blocks = int(np.ceil(nbytes / float(block_size)))
         data_chunks = []
         for block_number in range(num_blocks):
-            start = block_number*block_size
-            end = (block_number+1)*block_size
+            start = block_number * block_size
+            end = (block_number + 1) * block_size
             if end > nbytes:
                 end = nbytes
             data_chunks.append(io.BytesIO(data[start:end]))
@@ -395,10 +397,11 @@ class S3IO(object):
             False: reuse existing session
         :return: Multi-part upload response
         """
+
         def work_put_shm(block_number, array_name, s3_bucket, s3_key, block_size, mpu):
             part_number = block_number + 1
-            start = block_number*block_size
-            end = (block_number+1)*block_size
+            start = block_number * block_size
+            end = (block_number + 1) * block_size
             shared_array = sa.attach(array_name)
             data_chunk = io.BytesIO(shared_array.data[start:end])
 
@@ -421,7 +424,7 @@ class S3IO(object):
         mpu = s3.meta.client.create_multipart_upload(Bucket=s3_bucket, Key=s3_key)
 
         shared_array = sa.attach(array_name)
-        num_blocks = int(np.ceil(shared_array.nbytes/float(block_size)))
+        num_blocks = int(np.ceil(shared_array.nbytes / float(block_size)))
         parts_dict = dict(Parts=[])
         blocks = range(num_blocks)
 
@@ -460,14 +463,16 @@ class S3IO(object):
                     break
                 break
         else:
-            directory = self.file_path+"/"+str(s3_bucket)
+            directory = self.file_path + "/" + str(s3_bucket)
             if not os.path.exists(directory):
-                return
-            f = open(directory+"/"+str(s3_key), "rb")
+                return None
+            f = open(directory + "/" + str(s3_key), "rb")
             f.seek(0, 0)
             d = f.read()
             f.close()
             return d
+
+        return None  # TODO: fix logic above, inserting this just to fix warnings
 
     def get_byte_range(self, s3_bucket, s3_key, s3_start, s3_end, new_session=False):
         """Gets bytes from a S3 object within a range.
@@ -487,22 +492,24 @@ class S3IO(object):
                 b = s3.Bucket(s3_bucket)
                 o = b.Object(s3_key)
                 try:
-                    d = o.get(Range='bytes='+str(s3_start)+'-'+str(s3_end-1))['Body'].read()
+                    d = o.get(Range='bytes=' + str(s3_start) + '-' + str(s3_end - 1))['Body'].read()
                     d = np.frombuffer(d, dtype=np.uint8, count=-1, offset=0)
                     return d
                 except botocore.exceptions.ClientError as e:
                     break
                 break
         else:
-            directory = self.file_path+"/"+str(s3_bucket)
+            directory = self.file_path + "/" + str(s3_bucket)
             if not os.path.exists(directory):
-                return
-            f = open(directory+"/"+str(s3_key), "rb")
+                return None
+            f = open(directory + "/" + str(s3_key), "rb")
             f.seek(s3_start, 0)
-            d = f.read(s3_end-s3_start)
+            d = f.read(s3_end - s3_start)
             d = np.frombuffer(d, dtype=np.uint8, count=-1, offset=0)
             f.close()
             return d
+
+        return None  # TODO: fix logic above, inserting this just to fix warnings
 
     def get_byte_range_mp(self, s3_bucket, s3_key, s3_start, s3_end, block_size, new_session=False):
         """Gets bytes from a S3 object within a range in parallel.
@@ -517,9 +524,10 @@ class S3IO(object):
             False: reuse existing session
         :return: Requested bytes
         """
+
         def work_get(block_number, array_name, s3_bucket, s3_key, s3_max_size, block_size):
-            start = block_number*block_size
-            end = (block_number+1)*block_size
+            start = block_number * block_size
+            end = (block_number + 1) * block_size
             if end > s3_max_size:
                 end = s3_max_size
             d = self.get_byte_range(s3_bucket, s3_key, start, end, True)
@@ -534,10 +542,10 @@ class S3IO(object):
 
         s3o = s3.Bucket(s3_bucket).Object(s3_key).get()
         s3_max_size = s3o['ContentLength']
-        s3_obj_size = s3_end-s3_start
-        num_streams = int(np.ceil(s3_obj_size/block_size))
+        s3_obj_size = s3_end - s3_start
+        num_streams = int(np.ceil(s3_obj_size / block_size))
         blocks = range(num_streams)
-        array_name = '_'.join(['S3IO', s3_bucket, s3_key, str(uuid.uuid4()), str(os.getpid())])
+        array_name = generate_array_name('S3IO' + '_' + s3_bucket + '_' + s3_key)
         sa.create(array_name, shape=s3_obj_size, dtype=np.uint8)
         shared_array = sa.attach(array_name)
 
@@ -546,3 +554,12 @@ class S3IO(object):
 
         sa.delete(array_name)
         return shared_array
+
+
+def generate_array_name(basename):
+    array_name = '_'.join([basename, str(uuid.uuid4()), str(os.getpid())])
+
+    if sys.platform == 'darwin':
+        return 'file://' + array_name
+    else:
+        return array_name

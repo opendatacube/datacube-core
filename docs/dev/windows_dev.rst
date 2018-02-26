@@ -2,8 +2,6 @@
 Windows Developer Setup
 =======================
 
-**Under construction**
-
 Base OS: Windows 10
 
 This guide will setup an ODC core development environment and includes:
@@ -22,14 +20,11 @@ Postgres:
     Download and install from `here <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads#windows>`_.
 
     
-Optional packages (useful utilities, docs):
-
-    
 
 Python and packages
 -------------------
 
-Python 2.7 and 3.5+ are supported. Python 3.6 is recommended.
+Python 3.5+ is required. Python 3.6 is recommended.
 
 Anaconda Python
 ~~~~~~~~~~~~~~~
@@ -46,11 +41,7 @@ Install required python packages and create an ``odc`` conda environment.
 
 Python 3.5::
 
-    conda env create -n odc --file .travis/environment_py35.yaml sphinx
-
-Python 2.7::
-
-    conda env create -n odc --file .travis/environment_py27.yaml sphinx
+    conda env create -n odc --file .travis/environment.yaml sphinx
 
 Activate ``odc`` python environment::
 

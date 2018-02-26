@@ -133,7 +133,7 @@ def test_get_doc_changes(v1, v2, expected):
     assert rval == expected
 
 
-def test_get_doc_changes():
+def test_get_doc_changes_w_baseprefix():
     rval = get_doc_changes({}, None, base_prefix=('a',))
     assert rval == [(('a',), {}, None)]
 

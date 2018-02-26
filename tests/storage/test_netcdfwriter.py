@@ -57,6 +57,20 @@ SINIS_PROJ = geometry.CRS("""PROJCS["Sinusoidal",
                                 PARAMETER["Central_Meridian",0.0],
                                 UNIT["Meter",1.0]]""")
 
+LCC2_PROJ = geometry.CRS("""PROJCS["unnamed",
+                               GEOGCS["WGS 84",
+                                       DATUM["unknown",
+                                       SPHEROID["WGS84",6378137,6556752.3141]],
+                                       PRIMEM["Greenwich",0],
+                                       UNIT["degree",0.0174532925199433]],
+                               PROJECTION["Lambert_Conformal_Conic_2SP"],
+                               PARAMETER["standard_parallel_1",17.5],
+                               PARAMETER["standard_parallel_2",29.5],
+                               PARAMETER["latitude_of_origin",12],
+                               PARAMETER["central_meridian",-102],
+                               PARAMETER["false_easting",2500000],
+                               PARAMETER["false_northing",0]]""")
+
 GLOBAL_ATTRS = {'test_attribute': 'test_value'}
 
 DATA_VARIABLES = ('B1', 'B2')
@@ -108,6 +122,26 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
         assert 'standard_parallel' in nco['crs'].ncattrs()
         assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
         assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
+        _ensure_spheroid(nco['crs'])
+        _ensure_gdal(nco['crs'])
+        _ensure_geospatial(nco)
+
+
+def test_create_lambert_conformal_conic_2sp_projection_netcdf(tmpnetcdf_filename):
+    nco = create_netcdf(tmpnetcdf_filename)
+    create_coordinate(nco, 'x', numpy.array([1., 2., 3.]), 'm')
+    create_coordinate(nco, 'y', numpy.array([1., 2., 3.]), 'm')
+    create_grid_mapping_variable(nco, LCC2_PROJ)
+    nco.close()
+
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        assert 'crs' in nco.variables
+        assert nco['crs'].grid_mapping_name == 'lambert_conformal_conic'
+        assert 'standard_parallel' in nco['crs'].ncattrs()
+        assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
+        assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
+        assert 'false_easting' in nco['crs'].ncattrs()
+        assert 'false_northing' in nco['crs'].ncattrs()
         _ensure_spheroid(nco['crs'])
         _ensure_gdal(nco['crs'])
         _ensure_geospatial(nco)

@@ -7,7 +7,7 @@ These installation instructions build a Data Cube environment that can be used t
 
 The Data Cube is a set of python code with dependencies including:
 
-* Python 2.7 or 3.5
+* Python 3.5+ (3.6 recommended)
 * GDAL
 * PostgeSQL database
 

@@ -1,25 +1,19 @@
 from __future__ import absolute_import
 
+import hashlib
 import warnings
 from pathlib import Path
 from uuid import UUID
 
-from math import ceil
 import netCDF4
-import numpy as np
 import pytest
-import hashlib
-
 import yaml
-from click.testing import CliRunner
 from affine import Affine
+
 from datacube.api.query import query_group_by
-
-import datacube.scripts.cli_app
 from datacube.utils import geometry, read_documents, netcdf_extract_string
-from datacube.drivers.manager import DriverManager
-
-from .conftest import EXAMPLE_LS5_DATASET_ID, GEOTIFF
+from integration_tests.conftest import prepare_test_ingestion_configuration
+from .conftest import GEOTIFF
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
@@ -27,6 +21,8 @@ LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
 LS5_MATCH_RULES = CONFIG_SAMPLES / 'match_rules' / 'ls5_scenes.yaml'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
+
+INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
 
 TEST_STORAGE_SHRINK_FACTOR = 100
 TEST_STORAGE_NUM_MEASUREMENTS = 2
@@ -41,84 +37,95 @@ JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
-                         'indexed_ls5_scene_dataset_types')
-def test_full_ingestion(global_integration_cli_args, driver_manager, driver,
-                        example_ls5_dataset_paths, ls5_nbar_ingest_config):
-    config_path, config = ls5_nbar_ingest_config
+                         'indexed_ls5_scene_products')
+def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):
+    config = INGESTER_CONFIGS/ingest_configs['ls5_nbar_albers']
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config, mode='fast_ingest')
     valid_uuids = []
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         valid_uuids.append(uuid)
-        opts = list(global_integration_cli_args)
-        opts.extend(
-            [
-                '-v',
-                '--driver',
-                driver.name,
-                'dataset',
-                'add',
-                '--auto-match',
-                str(example_ls5_dataset_path)
-            ]
-        )
-        result = CliRunner().invoke(
-            datacube.scripts.cli_app.cli,
-            opts,
-            catch_exceptions=False
-        )
-        print(result.output)
-        assert not result.exception
-        assert result.exit_code == 0
+        clirunner([
+            'dataset',
+            'add',
+            '--auto-match',
+            str(example_ls5_dataset_path)
+        ])
 
-    ensure_datasets_are_indexed(driver_manager, valid_uuids)
+    ensure_datasets_are_indexed(index, valid_uuids)
 
     # TODO(csiro) Set time dimension when testing
     # config['storage']['tile_size']['time'] = 2
 
-    opts = list(global_integration_cli_args)
-    opts.extend(
-        [
-            '-v',
-            '--driver',
-            driver.name,
-            'ingest',
-            '--config-file',
-            str(config_path)
-        ]
-    )
-    result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        opts,
-        catch_exceptions=False
-    )
-    # print(result.output)
-    assert not result.exception
-    assert result.exit_code == 0
+    clirunner([
+        'ingest',
+        '--config-file',
+        str(config_path)
+    ])
 
-    datasets = driver_manager.index.datasets.search_eager(product='ls5_nbar_albers')
+    datasets = index.datasets.search_eager(product='ls5_nbar_albers')
     assert len(datasets) > 0
     assert datasets[0].managed
 
-    check_open_with_api(driver_manager, len(valid_uuids))
-    check_data_with_api(driver_manager, len(valid_uuids))
+    check_open_with_api(index, len(valid_uuids))
+    check_data_with_api(index, len(valid_uuids))
 
     # NetCDF specific checks, based on the saved NetCDF file
-    if driver == 'NetCDF CF':
-        ds_path = str(datasets[0].local_path)
-        with netCDF4.Dataset(ds_path) as nco:
-            check_data_shape(nco)
-            check_grid_mapping(nco)
-            check_cf_compliance(nco)
-            check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset_paths)
-            check_attributes(nco, config['global_attributes'])
+    ds_path = str(datasets[0].local_path)
+    with netCDF4.Dataset(ds_path) as nco:
+        check_data_shape(nco)
+        check_grid_mapping(nco)
+        check_cf_compliance(nco)
+        check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset_paths)
+        check_attributes(nco, config['global_attributes'])
 
-            name = config['measurements'][0]['name']
-            check_attributes(nco[name], config['measurements'][0]['attrs'])
-        check_open_with_xarray(ds_path)
+        name = config['measurements'][0]['name']
+        check_attributes(nco[name], config['measurements'][0]['attrs'])
+    check_open_with_xarray(ds_path)
 
 
-def ensure_datasets_are_indexed(driver_manager, valid_uuids):
-    datasets = driver_manager.index.datasets.search_eager(product='ls5_nbar_scene')
+@pytest.mark.timeout(20)
+@pytest.mark.parametrize('datacube_env_name', ('s3aio_env',), indirect=True)
+@pytest.mark.usefixtures('default_metadata_type',
+                         'indexed_ls5_scene_products')
+def test_s3_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):
+    config = INGESTER_CONFIGS/ingest_configs['ls5_nbar_albers']
+
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config, mode='fast_ingest')
+    valid_uuids = []
+    for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
+        valid_uuids.append(uuid)
+        clirunner([
+            'dataset',
+            'add',
+            '--auto-match',
+            str(example_ls5_dataset_path)
+        ])
+
+    ensure_datasets_are_indexed(index, valid_uuids)
+
+    # TODO(csiro) Set time dimension when testing
+    # config['storage']['tile_size']['time'] = 2
+
+    result = clirunner([
+        'ingest',
+        '--config-file',
+        str(config_path)
+    ])
+
+    print(result.output)
+
+    datasets = index.datasets.search_eager(product='ls5_nbar_albers')
+    assert len(datasets) > 0
+    assert datasets[0].managed
+
+    check_open_with_api(index, len(valid_uuids))
+    check_data_with_api(index, len(valid_uuids))
+
+
+def ensure_datasets_are_indexed(index, valid_uuids):
+    datasets = index.datasets.search_eager(product='ls5_nbar_scene')
     assert len(datasets) == len(valid_uuids)
     for dataset in datasets:
         assert dataset.id in valid_uuids
@@ -189,9 +196,9 @@ def check_open_with_xarray(file_path):
     xarray.open_dataset(str(file_path))
 
 
-def check_open_with_api(driver_manager, time_slices):
+def check_open_with_api(index, time_slices):
     from datacube import Datacube
-    dc = Datacube(driver_manager=driver_manager)
+    dc = Datacube(index=index)
 
     input_type_name = 'ls5_nbar_albers'
     input_type = dc.index.products.get_by_name(input_type_name)
@@ -199,18 +206,18 @@ def check_open_with_api(driver_manager, time_slices):
     observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
     group_by = query_group_by('time')
     sources = dc.group_datasets(observations, group_by)
-    data = dc.load_data(sources, geobox, input_type.measurements.values(), driver_manager=driver_manager)
+    data = dc.load_data(sources, geobox, input_type.measurements.values())
     assert data.blue.shape == (time_slices, 200, 200)
 
 
-def check_data_with_api(driver_manager, time_slices):
+def check_data_with_api(index, time_slices):
     """Chek retrieved data for specific values.
 
     We scale down by 100 and check for predefined values in the
     corners.
     """
     from datacube import Datacube
-    dc = Datacube(driver_manager=driver_manager)
+    dc = Datacube(index=index)
 
     # Make the retrieved data 100 less granular
     shape_x = int(GEOTIFF['shape']['x'] / 100.0)
@@ -226,7 +233,7 @@ def check_data_with_api(driver_manager, time_slices):
     observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
     group_by = query_group_by('time')
     sources = dc.group_datasets(observations, group_by)
-    data = dc.load_data(sources, geobox, input_type.measurements.values(), driver_manager=driver_manager)
+    data = dc.load_data(sources, geobox, input_type.measurements.values())
     assert hashlib.md5(data.green.data).hexdigest() == '7f5ace486e88d33edf3512e8de6b6996'
     assert hashlib.md5(data.blue.data).hexdigest() == 'b58204f1e10dd678b292df188c242c7e'
     for time_slice in range(time_slices):

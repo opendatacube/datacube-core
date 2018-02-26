@@ -8,8 +8,6 @@ git:
 
 language: python
 python:
-# We don't use the travis python, but we will use it for the build matrix
-  - "2.7"
   - "3.5"
   - "3.6"
 
@@ -19,55 +17,52 @@ cache:
 
 # Install required packages
 addons:
+  # We typically use postgres 9.6, but Travis has 9.5 pre-installed, so the build goes a little faster
   postgresql: "9.5"
   services:
     - postgresql
     - redis-server
+  apt:
+    sources:
+      - sourceline: ppa:nextgis/ppa
+    packages:
+      - gdal-bin
+      - libgdal-dev
+      - libgdal20
+      - libudunits2-0
 
 before_install:
-  # Create a database for the integration tests.
+# Create a database for the integration tests.
   - createdb agdcintegration
+
+# Check disk usage
   - df -h
   - df -i
 
+# Set paths for building python-gdal
+  - export CPLUS_INCLUDE_PATH=/usr/include/gdal
+  - export C_INCLUDE_PATH=/usr/include/gdal
+  - pip install coveralls
+
+
 install:
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -f -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
+# Install datacube
+  - pip install '.[test,analytics,celery,s3]' --upgrade
+  - pip install ./tests/drivers/fail_drivers --no-deps --upgrade  # used to test exception paths in driver loader
 
-  # travis specific goo
-  - conda config --set always_yes yes --set changeps1 no
-  - conda config --show-sources
-  - conda config --show
-
-  - conda config --prepend channels conda-forge
-  - conda config --prepend channels conda-forge/label/dev
-  - conda update --all
-
-  # Useful for debugging any issues with conda
-  - conda info -a
-
-  - conda create -n agdc python=$TRAVIS_PYTHON_VERSION
-  - conda env update -n agdc --file .travis/environment.yaml
-
-  # try to reclaim some space -- delete downloaded packages
-  - conda clean --tarballs --yes
-
-  - source activate agdc
-  - pip install . --no-deps --upgrade
-
+# Print installed packages in case we need to debug them
   - pip freeze
+
+# Check disk usage
   - df -h
   - df -i
 
 script:
-  # Ensure we are running against the correct python version
+# Ensure we are running against the correct python version
   - '[[ $(python --version 2>&1) == *"$TRAVIS_PYTHON_VERSION"* ]]'
-  - conda clean --all --yes
+
+# Run all the linting and tests
   - ./check-code.sh integration_tests
-  # Take extra steps to minimise disk space. We have run out a few times.
-  - conda clean --all --yes
 
 after_success:
   - test $TRAVIS_PYTHON_VERSION = "3.6" && coveralls

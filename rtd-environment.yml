@@ -1,0 +1,28 @@
+name: odc
+channels:
+- conda-forge/label/dev
+- conda-forge
+- defaults
+- nodefaults
+dependencies:
+- python >= 3.6
+- pyyaml
+- sqlalchemy
+- python-dateutil
+- jsonschema
+- cachetools
+- cloudpickle >= 0.4.0 # pickle logger objects
+- numpy
+- rasterio >= 0.9 # to handle weird 1.0a ordering...
+- singledispatch
+- netcdf4
+- psycopg2
+- gdal                # [not py27]
+- dask
+- xarray
+- matplotlib # pixel drill app
+- pathlib
+- sphinx
+- sphinx_rtd_theme
+- pip:
+    - sphinxcontrib-plantuml

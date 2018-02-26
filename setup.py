@@ -3,7 +3,17 @@
 import versioneer
 from setuptools import setup, find_packages
 
-tests_require = ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint==1.6.4', 'hypothesis', 'compliance-checker']
+tests_require = [
+    'compliance-checker',
+    'hypothesis',
+    'mock',
+    'objgraph',
+    'pycodestyle',
+    'pylint',
+    'pytest',
+    'pytest-cov',
+    'pytest-timeout',
+]
 
 extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
@@ -23,6 +33,7 @@ setup(
     name='datacube',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
+    python_requires='>=3.5.2',
 
     url='https://github.com/opendatacube/datacube-core',
     author='AGDC Collaboration',
@@ -43,10 +54,9 @@ setup(
         "Operating System :: POSIX :: Linux",
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Scientific/Engineering :: GIS",
         "Topic :: Scientific/Engineering :: Information Analysis",
     ],
@@ -74,12 +84,11 @@ setup(
         'jsonschema',
         'netcdf4',
         'numpy',
-        'pathlib',
         'psycopg2',
         'pypeg2',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=0.9',  # required for zip reading, 0.9 gets around 1.0a ordering problems
+        'rasterio>=0.9a10',  # required for zip reading, 0.9 gets around 1.0a ordering problems
         'singledispatch',
         'sqlalchemy',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
@@ -89,15 +98,29 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'datacube-search = datacube.scripts.search_tool:cli',
             'datacube = datacube.scripts.cli_app:cli',
+            'datacube-search = datacube.scripts.search_tool:cli',
             'datacube-stacker = datacube_apps.stacker:main',
             'datacube-worker = datacube.execution.worker:main',
             'datacube-fixer = datacube_apps.stacker:fixer_main',
             'datacube-ncml = datacube_apps.ncml:ncml_app',
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
             'movie_generator = datacube_apps.movie_generator:main',
-            'datacube-simple-replica = datacube_apps.simple_replica:replicate'
-        ]
+            'datacube-simple-replica = datacube_apps.simple_replica:replicate [replicas]'
+        ],
+        'datacube.plugins.io.read': [
+            'netcdf = datacube.drivers.netcdf.driver:reader_driver_init',
+            's3aio = datacube.drivers.s3.driver:reader_driver_init',
+            's3aio_test = datacube.drivers.s3.driver:reader_test_driver_init'
+        ],
+        'datacube.plugins.io.write': [
+            'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
+            's3aio = datacube.drivers.s3.driver:writer_driver_init',
+            's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init',
+        ],
+        'datacube.plugins.index': [
+            'default = datacube.index.index:index_driver_init',
+            's3aio_index = datacube.drivers.s3aio_index:index_driver_init',
+        ],
     },
 )

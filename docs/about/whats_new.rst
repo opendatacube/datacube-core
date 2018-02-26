@@ -6,7 +6,7 @@ What's New
 ==========
 
 
-v1.6.0 ??????? (?? ??????? 2017)
+Next release
 --------------------------------
 
  - Make :class:`CRS` equality comparisons a little bit looser. Trust either a _Proj.4_ based comparison
@@ -18,8 +18,36 @@ v1.6.0 ??????? (?? ??????? 2017)
 
  - Multiple environments can now be specified in one datacube config. See `#298`_ and the `config docs`_
 
+ - The :option:`--config_file` option to :program:`datacube` has been renamed to :option:`--config`, which is
+   shorter and more consistent with the other options. The old name can still be used for now.
+
+ - Added documentation about :ref:`bit-masking`.
+
 .. _#298: https://github.com/opendatacube/datacube-core/pull/298
 .. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
+
+v1.5.4 Dingley Dahu (13th December 2017)
+----------------------------------------
+ - Minor features backported from 2.0:
+
+    - Support for `limit` in searches
+
+    - Alternative lazy search method `find_lazy`
+
+ - Fixes:
+
+    - Improve native field descriptions
+
+    - Connection should not be held open between multi-product searches
+
+    - Disable prefetch for celery workers
+
+    - Support jsonify-ing decimals
+
+v1.5.3 Purpler Unicorn with Starlight (16 October 2017)
+-------------------------------------------------------
+
+ - Use `cloudpickle` as the `celery` serialiser
 
 v1.5.2 Purpler Unicorn with Stars (28 August 2017)
 --------------------------------------------------
@@ -446,8 +474,8 @@ The major changes include:
 
     - **Dataset Type** has been replaced by :ref:`Product <product-definitions>`
 
-    - **Storage Type** has been removed, and an :ref:`Ingestion Configuration
-      <ingest-config>` has taken it's place.
+    - **Storage Type** has been removed, and an :ref:`Ingestion Configuration <ingest-config>`
+      has taken it's place.
 
     - A new :ref:`datacube-class` for querying and accessing data.
 

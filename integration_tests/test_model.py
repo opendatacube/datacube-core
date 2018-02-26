@@ -1,10 +1,9 @@
 from datacube.model import Dataset
-from datacube.model import MetadataType
 
 
-def test_crs_parse(indexed_ls5_scene_dataset_types):
+def test_crs_parse(indexed_ls5_scene_products):
     # type: (MetadataType) -> None
-    product = indexed_ls5_scene_dataset_types[2]
+    product = indexed_ls5_scene_products[2]
 
     # Explicit CRS, should load fine.
     # Taken from LS8_OLI_NBAR_3577_-14_-11_20140601021126000000.nc

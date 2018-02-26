@@ -18,7 +18,6 @@ from singledispatch import singledispatch
 
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
-from datacube.ui.expression import parse_expressions
 
 PASS_INDEX = ui.pass_index('datacube-search')
 
@@ -74,7 +73,7 @@ OUTPUT_FORMATS = {
 @click.group(help="Search the Data Cube", context_settings=CLICK_SETTINGS)
 @ui.global_cli_options
 @click.option('-f',
-              type=click.Choice(OUTPUT_FORMATS.keys()),
+              type=click.Choice(list(OUTPUT_FORMATS)),
               default='pretty', show_default=True,
               help='Output format')
 @click.pass_context

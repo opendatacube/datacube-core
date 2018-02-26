@@ -33,6 +33,7 @@ _STATIONS = {'023': 'TKSC', '022': 'SGS', '010': 'GNC', '011': 'HOA',
 
 BANDS = ['coastal_aerosol', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2']
 
+
 # IMAGE BOUNDARY CODE
 
 
@@ -135,6 +136,7 @@ def get_coords(geo_ref_points, spatial_ref):
     def transform(p):
         lon, lat, z = t.TransformPoint(p['x'], p['y'])
         return {'lon': lon, 'lat': lat}
+
     return {key: transform(p) for key, p in geo_ref_points.items()}
 
 
@@ -158,7 +160,6 @@ def prep_dataset(fields, path):
         if file.endswith(".xml") and (not file.endswith('aux.xml')):
             metafile = file
         if file.endswith(".tif") and ("band" in file):
-
             images_list.append(os.path.join(str(path), file))
     with open(os.path.join(str(path), metafile)) as f:
         xmlstring = f.read()
@@ -224,7 +225,6 @@ def dataset_folder(fields):
 
 
 def prepare_datasets(nbar_path):
-
     fields = re.match(
         (
             r"(?P<code>LC8|LE7|LT5)"
@@ -237,7 +237,7 @@ def prepare_datasets(nbar_path):
 
     timedelta(days=int(fields["julianday"]))
     fields.update({'level': 'sr_refl', 'type': 'LEDAPS', 'creation_dt': (
-        (crazy_parse(fields["productyear"] + '0101T00:00:00')) + timedelta(days=int(fields["julianday"])))})
+            (crazy_parse(fields["productyear"] + '0101T00:00:00')) + timedelta(days=int(fields["julianday"])))})
     nbar = prep_dataset(fields, nbar_path)
     return (nbar, nbar_path)
 
@@ -260,6 +260,7 @@ def main(datasets):
         logging.info("Writing %s", yaml_path)
         with open(yaml_path, 'w') as stream:
             yaml.dump(dataset, stream)
+
 
 if __name__ == "__main__":
     main()
