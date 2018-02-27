@@ -1,3 +1,6 @@
+# This file describes Sentinel 2 Data, processed through NBAR, by Geoscience Australia
+# The files referenced can be found on the NCI at /g/data/dz56/datacube/002/S2_MSI_ARD/
+
 name: s2a_ard_granule
 description: Sentinel-2A MSI ARD - NBAR NBART and Pixel Quality
 metadata_type: eo
@@ -16,7 +19,10 @@ measurements:
   nodata: 0
   units: '1'
   flags_definition: 
-    cfmask:
+  # This is a value field, not a bit-field. Hence 'bits' specifies *all* bits
+  # The values are directly from the python fmask code
+  # See https://bitbucket.org/chchrsc/python-fmask/src/1e1c25772bde5d6069e56c7927be561295076928/fmask/fmask.py?at=default&fileviewer=file-view-default#fmask.py-83
+    fmask:
       bits: [0,1,2,3,4,5,6,7]
       description: Fmask
       values:
@@ -264,7 +270,10 @@ measurements:
   nodata: 0
   units: '1'
   flags_definition: 
-    cfmask:
+    fmask:
+  # This is a value field, not a bit-field. Hence 'bits' specifies *all* bits
+  # The values are directly from the python fmask code
+  # See https://bitbucket.org/chchrsc/python-fmask/src/1e1c25772bde5d6069e56c7927be561295076928/fmask/fmask.py?at=default&fileviewer=file-view-default#fmask.py-83
       bits: [0,1,2,3,4,5,6,7]
       description: Fmask
       values:
