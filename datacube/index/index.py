@@ -15,9 +15,12 @@ class Index(object):
     """
     Access to the datacube index.
 
-    Thread safe. But not multiprocess safe once a connection is made (db connections cannot be shared between processes)
-    You can close idle connections before forking by calling close(), provided you know no other connections are active.
-    Or else use a separate instance of this class in each process.
+    It's recommended not to initialise this class directly, but to call `datacube.index.index_connect()` or
+    access the one from ``.index`` on your existing :class:`datacube.api.core.Datacube`.
+
+    These are thread safe. But not multiprocess safe once a connection is made (db connections cannot be shared
+    between processes) You can close idle connections before forking by calling close(), provided you know no
+    other connections are active. Or else use a separate instance of this class in each process.
 
     :ivar datacube.index._datasets.DatasetResource datasets: store and retrieve :class:`datacube.model.Dataset`
     :ivar datacube.index._datasets.ProductResource products: store and retrieve :class:`datacube.model.DatasetType`\
