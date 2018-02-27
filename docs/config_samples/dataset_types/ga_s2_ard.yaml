@@ -13,18 +13,19 @@ measurements:
 - name: 'pixel_quality'
   aliases: [mask, CFmask]
   dtype: uint8
-  nodata: 255
+  nodata: 0
   units: '1'
   flags_definition: 
     cfmask:
       bits: [0,1,2,3,4,5,6,7]
       description: CFmask
       values:
-        0: clear
-        1: water
-        2: shadow
-        3: snow
-        4: cloud
+        0: nodata
+        1: valid
+        2: cloud
+        3: shadow
+        4: snow
+        5: water
 - name: 'contiguity'
   dtype: uint8
   nodata: 255
