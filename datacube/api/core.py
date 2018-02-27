@@ -327,13 +327,13 @@ class Datacube(object):
         if not observations:
             return None if stack else xarray.Dataset()
 
-        if like:
+        if like is not None:
             assert output_crs is None, "'like' and 'output_crs' are not supported together"
             assert resolution is None, "'like' and 'resolution' are not supported together"
             assert align is None, "'like' and 'align' are not supported together"
             geobox = like.geobox
         else:
-            if output_crs:
+            if output_crs is not None:
                 if not resolution:
                     raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
                 crs = geometry.CRS(output_crs)
