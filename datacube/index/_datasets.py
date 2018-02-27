@@ -30,13 +30,13 @@ except ImportError:
 
 class DatasetResource(object):
     """
-    :type _db: datacube.index.postgres._connections.PostgresDb
+    :type _db: datacube.drivers.postgres._connections.PostgresDb
     :type types: datacube.index.products.ProductResource
     """
 
     def __init__(self, db, dataset_type_resource):
         """
-        :type db: datacube.index.postgres._connections.PostgresDb
+        :type db: datacube.drivers.postgres._connections.PostgresDb
         :type dataset_type_resource: datacube.index.products.ProductResource
         """
         self._db = db

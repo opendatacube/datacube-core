@@ -22,6 +22,7 @@ from sqlalchemy.engine.url import URL as EngineUrl
 
 import datacube
 from datacube.compat import string_types
+from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
 from . import _api
 from . import _core
@@ -38,10 +39,6 @@ except ImportError:
     # No default on Windows
     DEFAULT_DB_USER = None
 DEFAULT_DB_PORT = 5432
-
-
-class IndexSetupError(Exception):
-    pass
 
 
 class PostgresDb(object):
