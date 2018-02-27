@@ -20,7 +20,7 @@ class Index(object):
     Or else use a separate instance of this class in each process.
 
     :ivar datacube.index._datasets.DatasetResource datasets: store and retrieve :class:`datacube.model.Dataset`
-    :ivar datacube.index._datasets.DatasetTypeResource products: store and retrieve :class:`datacube.model.DatasetType`\
+    :ivar datacube.index._datasets.ProductResource products: store and retrieve :class:`datacube.model.DatasetType`\
     (should really be called Product)
     :ivar datacube.index._datasets.MetadataTypeResource metadata_types: store and retrieve \
     :class:`datacube.model.MetadataType`
@@ -28,7 +28,7 @@ class Index(object):
 
     :type users: datacube.index.users.UserResource
     :type datasets: datacube.index._datasets.DatasetResource
-    :type products: datacube.index._datasets.DatasetTypeResource
+    :type products: datacube.index._datasets.ProductResource
     :type metadata_types: datacube.index._datasets.MetadataTypeResource
     """
 
