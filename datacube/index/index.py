@@ -4,9 +4,9 @@ import logging
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.index._datasets import DatasetResource
-from datacube.index.metadata_types import MetadataTypeResource, default_metadata_type_docs
-from datacube.index.products import ProductResource
-from datacube.index.users import UserResource
+from datacube.index._metadata_types import MetadataTypeResource, default_metadata_type_docs
+from datacube.index._products import ProductResource
+from datacube.index._users import UserResource
 
 _LOG = logging.getLogger(__name__)
 
@@ -23,16 +23,16 @@ class Index(object):
     other connections are active. Or else use a separate instance of this class in each process.
 
     :ivar datacube.index._datasets.DatasetResource datasets: store and retrieve :class:`datacube.model.Dataset`
-    :ivar datacube.index._datasets.ProductResource products: store and retrieve :class:`datacube.model.DatasetType`\
+    :ivar datacube.index._products.ProductResource products: store and retrieve :class:`datacube.model.DatasetType`\
     (should really be called Product)
-    :ivar datacube.index._datasets.MetadataTypeResource metadata_types: store and retrieve \
+    :ivar datacube.index._metadata_types.MetadataTypeResource metadata_types: store and retrieve \
     :class:`datacube.model.MetadataType`
     :ivar UserResource users: user management
 
-    :type users: datacube.index.users.UserResource
+    :type users: datacube.index._users.UserResource
     :type datasets: datacube.index._datasets.DatasetResource
-    :type products: datacube.index._datasets.ProductResource
-    :type metadata_types: datacube.index._datasets.MetadataTypeResource
+    :type products: datacube.index._products.ProductResource
+    :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
 
     def __init__(self, db):

@@ -22,7 +22,7 @@ import datacube.scripts.cli_app
 import datacube.utils
 from datacube.drivers.postgres import _core
 from datacube.index import index_connect
-from datacube.index.metadata_types import default_metadata_type_docs
+from datacube.index._metadata_types import default_metadata_type_docs
 
 try:
     from yaml import CSafeLoader as SafeLoader
