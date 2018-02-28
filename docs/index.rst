@@ -56,10 +56,10 @@ and  related data from multiple satellite and other acquisition systems.
    :maxdepth: 2
    :caption: About Data Cube
 
-   about/whats_new
-   about/glossary
-   about/release_process
-   about/license
+   about/whats_new.rst
+   about/glossary.rst
+   about/release_process.rst
+   about/license.rst
 
 
 

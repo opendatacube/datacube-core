@@ -11,6 +11,8 @@ Next release
 
  - Support for third party drivers, for custom data storage and custom index implementations
 
+   - The correct way to get an Index connection in code is to use :meth:`datacube.index.index_connect`.
+
  - Changes in ingestion configuration
 
    - Must specify which `write_driver` to use.
