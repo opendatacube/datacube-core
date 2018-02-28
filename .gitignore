@@ -67,6 +67,8 @@ docs/html/
 
 # Generated Documentation
 generate/
+docs/notebooks/
 
 #Local Visual Studio Code configurations
 .vscode/
+

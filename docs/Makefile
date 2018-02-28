@@ -177,4 +177,4 @@ pseudoxml:
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
 
 livehtml:
-	sphinx-autobuild -b html -p 8123 --ignore "*_tmp_*" --ignore "*_old_*" -z ../datacube --ignore "dev/generate/*" $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	sphinx-autobuild -b html -p 8123 --ignore "*_tmp_*" --ignore "*_old_*" --watch "../datacube" --ignore "notebooks/*" --ignore "dev/api/generate/*" $(ALLSPHINXOPTS) $(BUILDDIR)/html
