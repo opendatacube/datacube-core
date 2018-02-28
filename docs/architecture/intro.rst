@@ -22,8 +22,7 @@ Allows interactive analysis of data, such as through a Jupyter Notebook.
 
 Cloud-based Services
 --------------------
-Using :term:`ODC` to serve :term:`WMS` (Web Map Service), WCS (Web Coverage Service), or custom tools (such as polygon drill time series
-analysis.
+Using :abbr:`ODC (Open Data Cube)` to serve :abbr:`WMS (Web Map Service)`, :abbr:`WCS (Web Coverage Service)`, or custom tools (such as polygon drill time series analysis.
 
 Standalone Applications
 -----------------------
@@ -31,7 +30,7 @@ Running environmental analysis applications on a laptop, suitable for field work
 
 Assumptions and Design Constraints
 ==================================
-On a :term:`HPC` system, the resources to provided to host the database may limited.
+On a :abbr:`HPC (High Performance Computing)` system, the resources to provided to host the database may limited.
 During execution of a task across many compute nodes, the database should not be relied upon to serve concurrent access
 from all of the compute nodes.
 

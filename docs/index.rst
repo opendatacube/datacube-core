@@ -51,6 +51,7 @@ and  related data from multiple satellite and other acquisition systems.
    dev/api/index.rst
    dev/setup/index.rst
    architecture/index.rst
+   about/release_process.rst
 
 .. toctree::
    :maxdepth: 2
@@ -58,7 +59,6 @@ and  related data from multiple satellite and other acquisition systems.
 
    about/whats_new.rst
    about/glossary.rst
-   about/release_process.rst
    about/license.rst
 
 
