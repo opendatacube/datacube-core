@@ -11,8 +11,9 @@ Dataset
 (Definition of “Granule” from NASA EarthData Unified Metadata Model)​
 
 Examples of ODC Datasets:​
-* a Landsat Scene​
-* an Albers Equal Area tile portion of a Landsat Scene​
+
+ * a Landsat Scene​
+ * an Albers Equal Area tile portion of a Landsat Scene​
 
 .. _product:
 
