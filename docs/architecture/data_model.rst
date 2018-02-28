@@ -5,10 +5,11 @@ Data Model
 Dataset
 =======
 
-.. pull-quote::
+.. epigraph::
+
    “The smallest aggregation of data independently described, inventoried, and managed.”​
 
-(Definition of “Granule” from NASA EarthData Unified Metadata Model)​
+   -- Definition of “Granule” from NASA EarthData Unified Metadata Model​
 
 Examples of ODC Datasets:​
 
