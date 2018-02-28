@@ -11,7 +11,6 @@ Architecture Guide
    metadata_index.rst
    storage.rst
    driver.rst
-   plugins.rst
    virtual.md
    applications.rst
    data_management.rst

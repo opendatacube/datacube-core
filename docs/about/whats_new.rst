@@ -15,7 +15,21 @@ Next release
 
  - Changes in ingestion configuration
 
-   - Must specify which `write_driver` to use.
+   - Must now specify the `write_plugin`_ to use. For s3 ingestion there was
+     a top level ``container`` specified, which has been renamed and moved
+     under ``storage``. The entire ``storage`` section is passed through to
+     the `write_plugin`_, so drivers requiring other configuration can
+     include them here. eg:
+
+     .. code:: yaml
+
+         ...
+         storage:
+           ...
+           driver: s3aio
+           bucket: my_s3_bucket
+         ...
+
 
  - Make :class:`CRS` equality comparisons a little bit looser. Trust either a *Proj.4* based comparison
    or a *GDAL* based comparison. (Closed #243)
