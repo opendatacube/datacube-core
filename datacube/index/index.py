@@ -15,8 +15,8 @@ class Index(object):
     """
     Access to the datacube index.
 
-    It's recommended not to initialise this class directly, but to call `datacube.index.index_connect()` or
-    access the one from ``.index`` on your existing :class:`datacube.api.core.Datacube`.
+    DON'T INITIALISE THIS DIRECTLY (it will break in the future). Use `datacube.index.index_connect()` or
+    access property ``.index`` on your existing :class:`datacube.api.core.Datacube`.
 
     These are thread safe. But not multiprocess safe once a connection is made (db connections cannot be shared
     between processes) You can close idle connections before forking by calling close(), provided you know no
