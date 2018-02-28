@@ -241,7 +241,7 @@ def ls5_dataset_nbar_type(ls5_dataset_w_children, indexed_ls5_scene_products):
 
 def test_search_dataset_equals(index, pseudo_ls8_dataset):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     datasets = index.datasets.search_eager(
@@ -267,7 +267,7 @@ def test_search_dataset_equals(index, pseudo_ls8_dataset):
 
 def test_search_dataset_by_metadata(index, pseudo_ls8_dataset):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     datasets = index.datasets.search_by_metadata(
@@ -303,7 +303,7 @@ def test_search_day(index, pseudo_ls8_dataset):
 
 def test_search_dataset_ranges(index, pseudo_ls8_dataset):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
 
@@ -384,7 +384,7 @@ def test_search_dataset_ranges(index, pseudo_ls8_dataset):
 
 def test_search_globally(index, pseudo_ls8_dataset):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     # Insert dataset. It should be matched to the telemetry collection.
@@ -399,7 +399,7 @@ def test_search_globally(index, pseudo_ls8_dataset):
 def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_products,
                            ls5_dataset_w_children):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     """
     # Expect one product with our one dataset.
     products = list(index.datasets.search_by_product(
@@ -490,7 +490,7 @@ def test_search_or_expressions(index,
 def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_products):
     # type: (Index, DatasetType, Dataset, list) -> None
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     """
 
     # Expect one product with our one dataset.
@@ -576,7 +576,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
 
 def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_telem_type):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     :type pseudo_ls8_type: datacube.model.DatasetType
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
@@ -630,7 +630,7 @@ def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_tele
 def test_search_special_fields(index, pseudo_ls8_type, pseudo_ls8_dataset,
                                ls5_dataset_w_children):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     :type pseudo_ls8_type: datacube.model.DatasetType
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
@@ -923,7 +923,7 @@ def test_cli_info(index, clirunner, pseudo_ls8_dataset, pseudo_ls8_dataset2):
     # type: (Index, callable, Dataset, Dataset) -> None
     """
     Search datasets using the cli.
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     index.datasets.add_location(pseudo_ls8_dataset.id, 'file:///tmp/location1')

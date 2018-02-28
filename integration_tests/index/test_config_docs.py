@@ -159,7 +159,7 @@ def _object_exists(db, index_name):
 def test_idempotent_add_dataset_type(index, ls5_telem_type, ls5_telem_doc):
     """
     :type ls5_telem_type: datacube.model.DatasetType
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     """
     assert index.products.get_by_name(ls5_telem_type.name) is not None
 
@@ -177,7 +177,7 @@ def test_idempotent_add_dataset_type(index, ls5_telem_type, ls5_telem_doc):
 
 def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     """
     ls5_telem_type = index.products.add_document(ls5_telem_doc)
     assert ls5_telem_type
@@ -257,7 +257,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
 def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc):
     """
     :type ls5_telem_type: datacube.model.DatasetType
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     """
     assert index.products.get_by_name(ls5_telem_type.name) is not None
 
@@ -390,7 +390,7 @@ def _to_yaml(ls5_telem_doc):
 def test_update_metadata_type(index, default_metadata_type):
     """
     :type default_metadata_type_docs: list[dict]
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     """
     mt_doc = [d for d in default_metadata_type_docs() if d['name'] == default_metadata_type.name][0]
 
@@ -429,7 +429,7 @@ def test_update_metadata_type(index, default_metadata_type):
 def test_filter_types_by_fields(index, ls5_telem_type):
     """
     :type ls5_telem_type: datacube.model.DatasetType
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     """
     assert index.products
     res = list(index.products.get_with_fields(['sat_path', 'sat_row', 'platform']))
@@ -442,7 +442,7 @@ def test_filter_types_by_fields(index, ls5_telem_type):
 def test_filter_types_by_search(index, ls5_telem_type):
     """
     :type ls5_telem_type: datacube.model.DatasetType
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     """
     assert index.products
 
