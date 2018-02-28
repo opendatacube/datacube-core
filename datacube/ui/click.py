@@ -202,7 +202,7 @@ def pass_index(app_name=None, expect_initialised=True):
     :param bool expect_initialised:
         Whether to connect immediately on startup. Useful to catch connection config issues immediately,
         but if you're planning to fork before any usage (such as in the case of some web servers),
-        you may not want this. For more information on thread/process usage, see datacube.index._api.Index
+        you may not want this. For more information on thread/process usage, see datacube.index.Index
     """
 
     def decorate(f):
@@ -235,7 +235,7 @@ def pass_datacube(app_name=None, expect_initialised=True):
     :param bool expect_initialised:
         Whether to connect immediately on startup. Useful to catch connection config issues immediately,
         but if you're planning to fork before any usage (such as in the case of some web servers),
-        you may not want this. For More information on thread/process usage, see datacube.index._api.Index
+        you may not want this. For More information on thread/process usage, see datacube.index.Index
     """
 
     def decorate(f):
