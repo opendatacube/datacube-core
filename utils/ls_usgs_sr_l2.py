@@ -204,8 +204,8 @@ def prep_dataset(path, metadata):
     return doc
 
 
-def prepare_datasets(path,metadata):
-    doc = prep_dataset(path,metadata)
+def prepare_datasets(path, metadata):
+    doc = prep_dataset(path, metadata)
     return absolutify_paths(doc, path)
 
 
@@ -230,8 +230,9 @@ def main(output, metadata):
         with open(output, 'w') as stream:
             for file in os.listdir(str(path)):
                 if file.endswith(".xml") and (not file.endswith('aux.xml')):
-                    yaml.dump(prepare_datasets(path, file), stream, explicit_start= True)
+                    yaml.dump(prepare_datasets(path, file), stream, explicit_start=True)
                     logging.info("Writing %s", output)
+
 
 if __name__ == "__main__":
     main()
