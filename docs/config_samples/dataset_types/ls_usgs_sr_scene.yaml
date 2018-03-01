@@ -1,0 +1,243 @@
+name: ls8_usgs_sr_scene
+description: Landsat 8 USGS Collection 1 Level2 Surface Reflectance LaSRC. 30m UTM based projection.
+metadata_type: eo
+
+storage:
+    crs: PROJCS["WGS 84",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",105],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]]
+
+    resolution:
+        x: 30
+        y: -30
+
+metadata:
+    platform:
+        code: LANDSAT_8
+    instrument:
+        name: OLI_TIRS
+    product_type: LaSRC
+    format:
+        name: GeoTiff
+
+measurements:
+    - name: 'sr_band1'
+      aliases: [band_1, coastal_aerosol]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band2'
+      aliases: [band_2, blue]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band3'
+      aliases: [band_3, green]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band4'
+      aliases: [band_4, red]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band5'
+      aliases: [band_5, nir]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band6'
+      aliases: [band_6, swir1]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band7'
+      aliases: [band_7, swir2]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'pixel_qa'
+      aliases: [pixel_qa]
+      dtype: uint16
+      nodata: 1
+      units: '1'
+      flags_definition:
+        pixel_qa:
+          bits: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+          description: Level 2 Pixel Quality Band
+          values:
+            1: Fill
+            2: Clear
+            4: Water
+            8: Cloud shadow
+            16: Snow
+            32: Cloud
+            64: Cloud Confidence Low Bit
+            128: Cloud Confidence High Bit
+            256: Cirrus Confidence Low Bit
+            512: Cirrus Confidence High Bit
+            1024: Unused
+            2048: Unused
+            4096: Unused
+            8192: Unused
+            16384: Unused
+            32786: Unused
+    - name: 'sr_aerosol'
+      aliases: [sr_aerosol_qa, aerosol_qa, aerosol]
+      dtype: uint8
+      nodata: 0
+      units: '1'
+      flags_definition:
+        aerosol_qa:
+          bits: [0,1,2,3,4,5,6,7]
+          description: Aerosol QA
+          values:
+            1: Data Fill Flag
+            2: Aerosol Retrieval - Valid
+            4: Aerosol Retrieval - Interpolated
+            8: Water Pixel
+            16: Water Aerosol Retrieval Failed
+            32: Neighbor of Failed Aerosol Retrieval
+            64: Aerosol Content Content Low Bit
+            128: Aerosol Content Content High Bit
+    - name: 'radsat_qa'
+      aliases: [radsat_qa]
+      dtype: uint16
+      nodata: 1
+      units: '1'
+      flags_definition:
+        radsat_qa:
+          bits: [0,1,2,3,4,5,6,7]
+          description: Radiometric Saturation QA
+          values:
+            1: Data Fill Flag
+            2: Band 1 Data Saturation Flag
+            4: Band 2 Data Saturation Flag
+            8: Band 3 Data Saturation Flag
+            16: Band 4 Data Saturation Flag
+            32: Band 5 Data Saturation Flag
+            64: Band 6 Data Saturation Flag
+            128: Band 7 Data Saturation Flag
+            256: Unused
+            512: Band 9 Data Saturation Flag
+            1024: Band 10 Data Saturation Flag
+            2048: Band 11 Data Saturation Flag
+
+---
+
+name: ls7_usgs_sr_scene
+description: Landsat 7 USGS Collection 1 Level2 Surface Reflectance LEDAPS. 30m UTM based projection.
+metadata_type: eo
+
+storage:
+    crs: PROJCS["WGS 84",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",105],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]]
+    resolution:
+        x: 30
+        y: -30
+
+metadata:
+    platform:
+        code: LANDSAT_7
+    instrument:
+        name: ETM
+    product_type: LEDAPS
+    format:
+        name: GeoTiff
+
+measurements:
+    - name: 'sr_band1'
+      aliases: [band_1, blue]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band2'
+      aliases: [band_2, green]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band3'
+      aliases: [band_3, red]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band4'
+      aliases: [band_4, nir]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band5'
+      aliases: [band_5, swir1]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_band7'
+      aliases: [band_7, swir2]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'sr_atmos_opacity'
+      aliases: [atmos_op]
+      dtype: uint8
+      nodata: 0
+      units: '1'
+    - name: 'pixel_qa'
+      aliases: [pixel_qa]
+      dtype: uint16
+      nodata: 1
+      units: '1'
+      flags_definition:
+        pixel_qa:
+          bits: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+          description: Level 2 Pixel Quality Band
+          values:
+            1: Fill
+            2: Clear
+            4: Water
+            8: Cloud shadow
+            16: Snow
+            32: Cloud
+            64: Cloud Confidence Low Bit
+            128: Cloud Confidence High Bit
+            256: Unused
+            512: Unused
+            1024: Unused
+            2048: Unused
+            4096: Unused
+            8192: Unused
+            16384: Unused
+            32786: Unused
+    - name: 'radsat_qa'
+      aliases: [radsat_qa]
+      dtype: uint8
+      nodata: 1
+      units: '1'
+      flags_definition:
+        radsat_qa:
+          bits: [0,1,2,3,4,5,6,7]
+          description: Radiometric Saturation QA
+          values:
+            1: Data Fill Flag
+            2: Band 1 Data Saturation Flag
+            4: Band 2 Data Saturation Flag
+            8: Band 3 Data Saturation Flag
+            16: Band 4 Data Saturation Flag
+            32: Band 5 Data Saturation Flag
+            64: Band 6 Data Saturation Flag
+            128: Band 7 Data Saturation Flag
+    - name: 'sr_cloud_qa'
+      aliases: [cloud_qa]
+      dtype: uint8
+      nodata: 0
+      units: '1'
+      flags_definition:
+        cloud_qa:
+          bits: [0,1,2,3,4,5,6,7]
+          description: SR Cloud QA
+          values:
+            1: Dark Dense Vegetation (DDV)
+            2: Cloud
+            4: Cloud shadow
+            8: Adjacent to cloud
+            16: Snow
+            32: Land/Water
+            64: Unused
+            128: Unused
+
