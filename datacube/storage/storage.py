@@ -115,7 +115,7 @@ def _read_decimated(array_transform, src, dest_shape):
     dy_dx = (array_transform.f, array_transform.c)
     sy_sx = (array_transform.e, array_transform.a)
     read, write, read_shape, write_shape = zip(*map(_calc_offsets2, dy_dx, sy_sx, src.shape, dest_shape))
-    if all(write_shape):
+    if write_shape[0] > 0 and write_shape[1] > 0 and all(write_shape):
         window = ((read[0], read[0] + read_shape[0]), (read[1], read[1] + read_shape[1]))
         tmp = src.read(window=window, out_shape=write_shape)
         scale = (read_shape[0] / write_shape[0] if sy_sx[0] > 0 else -read_shape[0] / write_shape[0],
