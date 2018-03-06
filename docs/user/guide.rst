@@ -45,7 +45,7 @@ Multi-Product Time Series
 Uses
 :class:`datacube.Datacube`
 :class:`datacube.model.DatasetType`
-:meth:`datacube.index._datasets.DatasetTypeResource.get_by_name`
+:meth:`datacube.index._datasets.ProductResource.get_by_name`
 :meth:`datacube.Datacube.load`
 :meth:`xarray.Dataset.isel`
 :func:`xarray.concat`

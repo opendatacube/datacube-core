@@ -30,14 +30,14 @@ except ImportError:
 
 class DatasetResource(object):
     """
-    :type _db: datacube.index.postgres._connections.PostgresDb
-    :type types: datacube.index.products.ProductResource
+    :type _db: datacube.drivers.postgres._connections.PostgresDb
+    :type types: datacube.index._products.ProductResource
     """
 
     def __init__(self, db, dataset_type_resource):
         """
-        :type db: datacube.index.postgres._connections.PostgresDb
-        :type dataset_type_resource: datacube.index.products.ProductResource
+        :type db: datacube.drivers.postgres._connections.PostgresDb
+        :type dataset_type_resource: datacube.index._products.ProductResource
         """
         self._db = db
         self.types = dataset_type_resource
@@ -147,7 +147,7 @@ class DatasetResource(object):
         return dataset
 
     def search_product_duplicates(self, product, *group_fields):
-        # type: (DatasetType, Iterable[Union[str, field.Field]]) -> Iterable[tuple, Set[UUID]]
+        # type: (DatasetType, Iterable[Union[str, fields.Field]]) -> Iterable[tuple, Set[UUID]]
         """
         Find dataset ids who have duplicates of the given set of field names.
 

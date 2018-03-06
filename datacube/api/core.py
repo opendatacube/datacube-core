@@ -83,7 +83,7 @@ class Datacube(object):
         If no index or config is given, the default configuration is used for database connection.
 
         :param Index index: The database index to use.
-        :type index: :py:class:`datacube.index._api.Index` or None.
+        :type index: :py:class:`datacube.index.Index` or None.
 
         :param Union[LocalConfig|str] config: A config object or a path to a config file that defines the connection.
 

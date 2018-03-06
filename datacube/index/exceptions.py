@@ -7,3 +7,7 @@ class DuplicateRecordError(Exception):
 
 class MissingRecordError(Exception):
     pass
+
+
+class IndexSetupError(Exception):
+    pass
