@@ -223,11 +223,10 @@ def absolutify_paths(doc, path):
                 nargs=-1)
 def main(output, metadata):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
-
-    for dataset in metadata:
-        path = os.path.abspath(dataset)
-        logging.info("Processing %s", path)
-        with open(output, 'w') as stream:
+    with open(output, 'w') as stream:
+        for dataset in metadata:
+            path = os.path.abspath(dataset)
+            logging.info("Processing %s", path)
             for file in os.listdir(str(path)):
                 if file.endswith(".xml") and (not file.endswith('aux.xml')):
                     yaml.dump(prepare_datasets(path, file), stream, explicit_start=True)
