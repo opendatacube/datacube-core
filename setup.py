@@ -84,7 +84,7 @@ setup(
         'jsonschema',
         'netcdf4',
         'numpy',
-        'psycopg2',
+        'psycopg2-binary',
         'pypeg2',
         'python-dateutil',
         'pyyaml',
