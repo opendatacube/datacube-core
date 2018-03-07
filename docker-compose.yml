@@ -1,0 +1,9 @@
+version: '3'
+services:
+  datacube:
+    build: .
+    volumes:
+      - ./:/code
+    entrypoint:
+      python3 /code/datacube/scripts/cli_app.py
+    command: --help
