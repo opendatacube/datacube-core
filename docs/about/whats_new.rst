@@ -23,6 +23,8 @@ Next release
 
  - Added documentation about :ref:`bit-masking`.
 
+ - Added Dockerfile to enable with automated builds for a reference Docker image.
+
 .. _#298: https://github.com/opendatacube/datacube-core/pull/298
 .. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
 
