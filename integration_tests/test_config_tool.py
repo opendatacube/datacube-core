@@ -204,9 +204,9 @@ def test_user_creation(clirunner, example_user):
     assert_no_user(clirunner, username)
 
 
-def assert_user_with_role(clirunner, role, user_name, description):
-    result = clirunner(['user', 'list', '-f', 'csv'])
-    assert '{},{},{}'.format(role, user_name, description) in result.output
+def assert_user_with_role(clirunner, role, user_name):
+    result = clirunner(['user', 'list'])
+    assert '{}{}'.format('user: ', user_name) in result.output
 
 
 def assert_no_user(clirunner, username):
