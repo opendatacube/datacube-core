@@ -2,6 +2,7 @@
 
 import versioneer
 from setuptools import setup, find_packages
+import os
 
 tests_require = [
     'compliance-checker',
@@ -28,6 +29,22 @@ extras_require = {
 }
 # An 'all' option, following ipython naming conventions.
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
+
+extra_plugins = dict(read=[], write=[], index=[])
+
+if os.name != 'nt':
+    extra_plugins['read'].extend([
+        's3aio = datacube.drivers.s3.driver:reader_driver_init [s3]',
+        's3aio_test = datacube.drivers.s3.driver:reader_test_driver_init [s3]',
+    ])
+    extra_plugins['write'].extend([
+        's3aio = datacube.drivers.s3.driver:writer_driver_init [s3]',
+        's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init [s3]',
+    ])
+
+    extra_plugins['index'].extend([
+        's3aio_index = datacube.drivers.s3aio_index:index_driver_init [s3]',
+    ])
 
 setup(
     name='datacube',
@@ -110,17 +127,15 @@ setup(
         ],
         'datacube.plugins.io.read': [
             'netcdf = datacube.drivers.netcdf.driver:reader_driver_init',
-            's3aio = datacube.drivers.s3.driver:reader_driver_init',
-            's3aio_test = datacube.drivers.s3.driver:reader_test_driver_init'
+            *extra_plugins['read'],
         ],
         'datacube.plugins.io.write': [
             'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
-            's3aio = datacube.drivers.s3.driver:writer_driver_init',
-            's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init',
+            *extra_plugins['write'],
         ],
         'datacube.plugins.index': [
             'default = datacube.index.index:index_driver_init',
-            's3aio_index = datacube.drivers.s3aio_index:index_driver_init',
+            *extra_plugins['index'],
         ],
     },
 )
