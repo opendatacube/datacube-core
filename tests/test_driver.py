@@ -4,6 +4,7 @@ import pytest
 from collections import namedtuple
 
 from datacube.drivers import new_datasource, reader_drivers, writer_drivers, index_drivers
+from datacube.drivers.indexes import IndexDriverCache
 from datacube.storage.storage import RasterDatasetDataSource
 from .util import mk_sample_dataset
 
@@ -60,6 +61,11 @@ def test_index_drivers():
     available_drivers = index_drivers()
     assert 'default' in available_drivers
     assert 's3aio_index' in available_drivers
+
+
+def test_default_injection():
+    cache = IndexDriverCache('datacube.plugins.index-no-such-prefix')
+    assert cache.drivers() == ['default']
 
 
 def test_netcdf_driver_import():
