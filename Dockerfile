@@ -15,7 +15,10 @@ RUN apt-get update && apt-get install -y \
     python3 python3-gdal python3-setuptools python3-dev python3-numpy python3-netcdf4 \
     python3-pip
 
-# Get the code, and put it in /opt
+# Install psychopg2 as a special case, to quiet the warning message 
+RUN pip3 install --no-cache --no-binary :all: psycopg2
+
+# Get the code, and put it in /code
 ENV APPDIR=/code
 RUN mkdir -p $APPDIR
 COPY . $APPDIR
