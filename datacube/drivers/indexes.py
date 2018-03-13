@@ -17,8 +17,7 @@ class IndexDriverCache(object):
         :returns: None if driver with a given name is not found
 
         :param str name: Driver name
-        :param str fmt: Dataset format
-        :return: Returns WriterDriver
+        :return: Returns IndexDriver
         """
         return self._drivers.get(name, None)
 
@@ -29,7 +28,7 @@ class IndexDriverCache(object):
 
 
 def index_cache():
-    """ Singleton for WriterDriverCache
+    """ Singleton for IndexDriverCache
     """
     # pylint: disable=protected-access
     if not hasattr(index_cache, '_instance'):
