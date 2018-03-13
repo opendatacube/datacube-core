@@ -7,6 +7,10 @@ class IndexDriverCache(object):
     def __init__(self, group):
         self._drivers = load_drivers(group)
 
+        if len(self._drivers) == 0:
+            from datacube.index.index import index_driver_init
+            self._drivers = dict(default=index_driver_init())
+
         for driver in list(self._drivers.values()):
             if hasattr(driver, 'aliases'):
                 for alias in driver.aliases:
