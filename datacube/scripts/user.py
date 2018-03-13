@@ -108,12 +108,12 @@ _OUTPUT_WRITERS = {
 @ui.pass_index()
 
 
-def list_users(index,f):
+def list_users(index, f):
     """
     List users
     """
     _OUTPUT_WRITERS[f]((build_user_list(index)
-    ))
+                       ))
 
 @user_cmd.command('grant')
 @click.argument('role',
