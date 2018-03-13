@@ -28,9 +28,12 @@ WORKDIR $APPDIR
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
+
+# Install dependencies
 RUN pip3 install '.[test,analytics,celery,s3]' --upgrade
 RUN pip3 install ./tests/drivers/fail_drivers --no-deps --upgrade
 
+# Install ODC
 RUN python3 setup.py develop
 
 CMD datacube --help
