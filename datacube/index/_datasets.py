@@ -66,7 +66,7 @@ class DatasetResource(object):
             return None
 
         for dataset, result in datasets.values():
-            dataset.metadata_doc['lineage']['source_datasets'] = {
+            dataset.metadata.sources = {
                 classifier: datasets[source][0].metadata_doc
                 for source, classifier in zip(result['sources'], result['classes']) if source
             }
@@ -84,8 +84,10 @@ class DatasetResource(object):
         :rtype: list[Dataset]
         """
         with self._db.connect() as connection:
-            return [self._make(result, full_info=True)
-                    for result in connection.get_derived_datasets(id_)]
+            return [
+                self._make(result, full_info=True)
+                for result in connection.get_derived_datasets(id_)
+            ]
 
     def has(self, id_):
         """
@@ -120,8 +122,8 @@ class DatasetResource(object):
             sources_policy = 'skip'
         self._add_sources(dataset, sources_policy)
 
-        sources_tmp = dataset.type.dataset_reader(dataset.metadata_doc).sources
-        dataset.type.dataset_reader(dataset.metadata_doc).sources = {}
+        sources_tmp = dataset.metadata.sources
+        dataset.metadata.sources = {}
         try:
             _LOG.info('Indexing %s', dataset.id)
 
@@ -142,7 +144,7 @@ class DatasetResource(object):
                     except DuplicateRecordError as e:
                         _LOG.warning(str(e))
         finally:
-            dataset.type.dataset_reader(dataset.metadata_doc).sources = sources_tmp
+            dataset.metadata.sources = sources_tmp
 
         return dataset
 
@@ -247,8 +249,8 @@ class DatasetResource(object):
         for offset, old_val, new_val in unsafe_changes:
             _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
-        sources_tmp = dataset.type.dataset_reader(dataset.metadata_doc).sources
-        dataset.type.dataset_reader(dataset.metadata_doc).sources = {}
+        sources_tmp = dataset.metadata.sources
+        dataset.metadata.sources = {}
         try:
             product = self.types.get_by_name(dataset.type.name)
             with self._db.begin() as transaction:
@@ -257,7 +259,7 @@ class DatasetResource(object):
 
             self._ensure_new_locations(dataset, existing)
         finally:
-            dataset.type.dataset_reader(dataset.metadata_doc).sources = sources_tmp
+            dataset.metadata.sources = sources_tmp
 
         return dataset
 
