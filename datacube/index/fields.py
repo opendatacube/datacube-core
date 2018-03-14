@@ -15,18 +15,43 @@ class UnknownFieldError(Exception):
     pass
 
 
+# Allowed values for field 'type' (specified in a metadata type docuemnt)
+_AVAILABLE_TYPE_NAMES = (
+    'numeric-range',
+    'double-range',
+    'integer-range',
+    'datetime-range',
+
+    'string',
+    'numeric',
+    'double',
+    'integer',
+    'datetime',
+
+    # For backwards compatibility (alias for numeric-range)
+    'float-range',
+)
+
+
 class Field(object):
     """
     A searchable field within a dataset/storage metadata document.
     """
+    # type of field.
+    # If type is not specified, the field is a string
+    # This should always be one of _AVAILABLE_TYPE_NAMES
+    type_name = 'string'
 
-    def __init__(self, name, description):
+    def __init__(self, name: str, description: str):
         self.name = name
+
         self.description = description
 
         # Does selecting this affect the output rows?
         # (eg. Does this join other tables that aren't 1:1 with datasets.)
         self.affects_row_selection = False
+
+        assert self.type_name in _AVAILABLE_TYPE_NAMES, "Invalid type name %r" % (self.type_name,)
 
     def __eq__(self, value):
         """
