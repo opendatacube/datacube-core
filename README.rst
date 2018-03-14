@@ -61,7 +61,7 @@ Developer setup
 
 5. **(or)** Run all tests, including integration tests.
 
-``./check-code.sh integration_tests``
+   ``./check-code.sh integration_tests``
 
 -  Assumes a password-less Postgres database running on localhost called
    ``agdcintegration``
@@ -84,20 +84,20 @@ be used to create a configuration file when the container is launched.
 
 You can build the image with a command like this: 
 
-      `docker build --tag opendatacube:local .`
+   `docker build --tag opendatacube:local .`
 
 And it can then be run with this command:
 
-      `docker run --rm opendatacube:local`
+   `docker run --rm opendatacube:local`
 
 If you don't need to build (and you shouldn't) then you can run it from a pre-built image with:
 
-      `docker run --rm opendatacube/datacube-core`.
+   `docker run --rm opendatacube/datacube-core`.
 
 An example of starting a container with environment variables is as follows:
 
 ```
-docker run \
+   docker run \
       --rm \
       -e DATACUBE_CONFIG_PATH=/opt/custom-config.conf \
       -e DB_DATABASE=mycube \
@@ -115,12 +115,12 @@ Environment Variables
 Most of the below environment variables should be self explanatory, and none are required (although
 it is recommended that you set them).
 
- - `DATACUBE_CONFIG_PATH` - the path for the config file for writing (also used by ODC for reading)
- - `DB_DATABASE`
- - `DB_HOSTNAME`
- - `DB_USERNAME`
- - `DB_PASSWORD`
- - `DB_PORT`
+- `DATACUBE_CONFIG_PATH` - the path for the config file for writing (also used by ODC for reading)
+- `DB_DATABASE` - the name of the postgres database
+- `DB_HOSTNAME` - the hostname of the postgres database
+- `DB_USERNAME` - the username of the postgres database
+- `DB_PASSWORD` - the password to used for the postgres database
+- `DB_PORT` - the port that the postgres database is exposed on
 
 
 .. |Build Status| image:: https://travis-ci.org/opendatacube/datacube-core.svg?branch=develop
