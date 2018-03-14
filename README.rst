@@ -63,7 +63,8 @@ Developer setup
 
    ``./check-code.sh integration_tests``
 
--  Assumes a password-less Postgres database running on localhost called
+   -  Assumes a password-less Postgres database running on localhost called
+
    ``agdcintegration``
 
    -  Otherwise copy ``integration_tests/agdcintegration.conf`` to
@@ -84,15 +85,15 @@ be used to create a configuration file when the container is launched.
 
 You can build the image with a command like this: 
 
-   ``docker build --tag opendatacube:local .``
+``docker build --tag opendatacube:local .``
 
 And it can then be run with this command:
 
-   ``docker run --rm opendatacube:local``
+``docker run --rm opendatacube:local``
 
 If you don't need to build (and you shouldn't) then you can run it from a pre-built image with:
 
-   ``docker run --rm opendatacube/datacube-core``
+``docker run --rm opendatacube/datacube-core``
 
 An example of starting a container with environment variables is as follows:
 
