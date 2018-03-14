@@ -84,29 +84,30 @@ be used to create a configuration file when the container is launched.
 
 You can build the image with a command like this: 
 
-   `docker build --tag opendatacube:local .`
+   ``docker build --tag opendatacube:local .``
 
 And it can then be run with this command:
 
-   `docker run --rm opendatacube:local`
+   ``docker run --rm opendatacube:local``
 
 If you don't need to build (and you shouldn't) then you can run it from a pre-built image with:
 
-   `docker run --rm opendatacube/datacube-core`.
+   ``docker run --rm opendatacube/datacube-core``
 
 An example of starting a container with environment variables is as follows:
 
-```bash
-docker run \
-    --rm \
-    -e DATACUBE_CONFIG_PATH=/opt/custom-config.conf \
-    -e DB_DATABASE=mycube \
-    -e DB_HOSTNAME=localhost \
-    -e DB_USERNAME=postgres \
-    -e DB_PASSWORD=secretpassword \
-    -e DB_PORT=5432 \
-    opendatacube/datacube-core
-```
+.. code-block:: bash
+   
+   docker run \
+      --rm \
+      -e DATACUBE_CONFIG_PATH=/opt/custom-config.conf \
+      -e DB_DATABASE=mycube \
+      -e DB_HOSTNAME=localhost \
+      -e DB_USERNAME=postgres \
+      -e DB_PASSWORD=secretpassword \
+      -e DB_PORT=5432 \
+      opendatacube/datacube-core
+
 
 This wont actually do anything, in order to make it work, you need an environment with Postgres, at least, and some scripts to index and possible ingest data.
 
@@ -115,12 +116,12 @@ Environment Variables
 Most of the below environment variables should be self explanatory, and none are required (although
 it is recommended that you set them).
 
-- `DATACUBE_CONFIG_PATH` - the path for the config file for writing (also used by ODC for reading)
-- `DB_DATABASE` - the name of the postgres database
-- `DB_HOSTNAME` - the hostname of the postgres database
-- `DB_USERNAME` - the username of the postgres database
-- `DB_PASSWORD` - the password to used for the postgres database
-- `DB_PORT` - the port that the postgres database is exposed on
+- ``DATACUBE_CONFIG_PATH`` - the path for the config file for writing (also used by ODC for reading)
+- ``DB_DATABASE`` - the name of the postgres database
+- ``DB_HOSTNAME`` - the hostname of the postgres database
+- ``DB_USERNAME`` - the username of the postgres database
+- ``DB_PASSWORD`` - the password to used for the postgres database
+- ``DB_PORT`` - the port that the postgres database is exposed on
 
 
 .. |Build Status| image:: https://travis-ci.org/opendatacube/datacube-core.svg?branch=develop
