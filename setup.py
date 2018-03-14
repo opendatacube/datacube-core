@@ -20,7 +20,6 @@ extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
     'interactive': ['matplotlib', 'fiona'],
     'distributed': ['distributed', 'dask[distributed]'],
-    'analytics': ['scipy', 'pyparsing', 'numexpr'],
     'doc': ['Sphinx', 'setuptools'],
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'celery': ['celery>=4', 'redis'],
