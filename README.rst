@@ -96,16 +96,16 @@ If you don't need to build (and you shouldn't) then you can run it from a pre-bu
 
 An example of starting a container with environment variables is as follows:
 
-```
-   docker run \
-      --rm \
-      -e DATACUBE_CONFIG_PATH=/opt/custom-config.conf \
-      -e DB_DATABASE=mycube \
-      -e DB_HOSTNAME=localhost \
-      -e DB_USERNAME=postgres \
-      -e DB_PASSWORD=secretpassword \
-      -e DB_PORT=5432 \
-      opendatacube/datacube-core
+```bash
+docker run \
+    --rm \
+    -e DATACUBE_CONFIG_PATH=/opt/custom-config.conf \
+    -e DB_DATABASE=mycube \
+    -e DB_HOSTNAME=localhost \
+    -e DB_USERNAME=postgres \
+    -e DB_PASSWORD=secretpassword \
+    -e DB_PORT=5432 \
+    opendatacube/datacube-core
 ```
 
 This wont actually do anything, in order to make it work, you need an environment with Postgres, at least, and some scripts to index and possible ingest data.
