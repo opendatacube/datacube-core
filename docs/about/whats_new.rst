@@ -47,12 +47,16 @@ Next release
 
  - Added documentation about :ref:`bit-masking`.
 
- - Added Dockerfile to enable with automated builds for a reference Docker image.
+ - Added Dockerfile to enable automated builds for a reference Docker image.
+
+ - Removed the old `ndexpr`, `analytics` and `execution engine` code. There is work underway in the `execution engine branch`_ to replace these features.
+
 
  - Command line tools can now output CSV or YAML. (Issue #206, PR 390)
 
 .. _#298: https://github.com/opendatacube/datacube-core/pull/298
 .. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
+.. _execution engine branch: https://github.com/opendatacube/datacube-core/compare/csiro/execution-engine
 
 v1.5.4 Dingley Dahu (13th December 2017)
 ========================================
