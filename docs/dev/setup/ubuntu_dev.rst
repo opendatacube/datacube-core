@@ -1,6 +1,6 @@
-======================
+
 Ubuntu Developer Setup
-======================
+**********************
 
 Base OS: Ubuntu 16.04 LTS
 
@@ -14,7 +14,7 @@ This guide will setup an ODC core development environment and includes:
 
 
 Required software
------------------
+=================
 
 GDAL, HDF5, and netCDF4::
 

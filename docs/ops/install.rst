@@ -1,7 +1,7 @@
 .. _installation:
 
 Installation
-============
+************
 
 These installation instructions build a Data Cube environment that can be used to ingest data (with config files from github) and run analytics processes.
 

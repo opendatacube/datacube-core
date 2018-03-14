@@ -1,5 +1,7 @@
 .. _user_guide:
 
+User Guide
+**********
 
 Jupyter Notebooks
 =================

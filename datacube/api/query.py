@@ -44,7 +44,7 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
 
 class Query(object):
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
-        """"Parses search terms in preparation for querying the Data Cube Index.
+        """Parses search terms in preparation for querying the Data Cube Index.
 
         Create a :class:`Query` object by passing it a set of search terms as keyword arguments.
 

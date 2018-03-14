@@ -1,6 +1,6 @@
-=======================
+
 Mac OSX Developer Setup
-=======================
+***********************
 
 **Under construction**
 
@@ -16,7 +16,7 @@ This guide will setup an ODC core development environment and includes:
 
 
 Required software
------------------
+=================
 
 Postgres:
 

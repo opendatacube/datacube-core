@@ -182,7 +182,7 @@ def replicate_data(config):
     replicator.run()
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.argument('config_path', required=False)
 @global_cli_options
 def replicate(config_path):

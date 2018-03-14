@@ -1,12 +1,26 @@
 
 Data Model
-==========
+**********
 
+Dataset
+=======
+
+.. epigraph::
+
+   “The smallest aggregation of data independently described, inventoried, and managed.”​
+
+   -- Definition of “Granule” from NASA EarthData Unified Metadata Model​
+
+Examples of ODC Datasets:​
+
+ * a Landsat Scene​
+ * an Albers Equal Area tile portion of a Landsat Scene​
 
 .. _product:
 
 Product
--------
+=======
+Products are collections of `datasets` that share the same set of measurements and some subset of metadata.
 
 .. digraph:: product
 
@@ -30,21 +44,16 @@ Product
      (optional)\l+ dimensions\l...|...}"];
 
 
-Reading Data
-------------
+Metadata Types
+==============
+Metadata Types define custom index search fields across products.
+The default `eo` metadata type defines fields such as 'platform', 'instrument' and the spatial bounds.
 
-.. uml:: /diagrams/current_data_read_process.plantuml
-   :caption: Current Data Read Process
 
 
-Data Load Classes
------------------
-
-.. uml:: /diagrams/storage_drivers_old.plantuml
-   :caption: Classes currently implementing the DataCube Data Read Functionality
 
 How the Index Works
--------------------
+===================
 
 .. uml:: /diagrams/index_sequence.plantuml
    :caption: Sequence of steps when creating an index

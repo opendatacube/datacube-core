@@ -3,7 +3,7 @@
 .. _prepare-scripts:
 
 Dataset Preparation Scripts
-===========================
+***************************
 
 Some data you may want to load into your Data Cube will come pre-packaged with a
 dataset-description document and is ready to be :ref:`indexed/loaded <indexing>`
@@ -21,7 +21,7 @@ The two examples below shows USGS landsat data for ingestion into the Data cube.
 
 
 Preparing USGS Landsat Collection 1 - LEVEL1
----------------------------------------------------
+============================================
 
 Download the USGS Collection 1 landsat scenes from any of the link below:
 
@@ -70,7 +70,7 @@ For Landsat collection 1 level 1 product:
 <../../utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py>`
 
 Preparing USGS Landsat Surface Reflectance - LEDAPS
----------------------------------------------------
+===================================================
 
 To prepare downloaded USGS LEDAPS Landsat scenes for use with the Data Cube,
 use the script provided in :file:`utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py`.
@@ -116,7 +116,7 @@ For Landsat Surface reflectance LEDAPS add:
 Then :ref:`index the data <indexing>`.
 
 Custom Prepare Scripts
-----------------------
+======================
 
 We expect that many new Data Cube instances will require custom prepare scripts
 to be written. It is generally a straightforward task of mapping metadata from

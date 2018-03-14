@@ -46,6 +46,10 @@ def _get_quoted_connection_info(connection):
 def ensure_db(engine, with_permissions=True):
     """
     Initialise the db if needed.
+
+    Ensures standard users exist.
+
+    Create the schema if it doesn't exist.
     """
     is_new = False
     c = engine.connect()
@@ -116,7 +120,11 @@ def database_exists(engine):
 
 def schema_is_latest(engine):
     """
-    Is the schema up-to-date?
+    Over the lifetime of ODC there have been a couple of schema updates. For now we don't
+    version the schema, but we do need to check we're running against the latest.
+
+    We may have a versioned schema in the future.
+    For now, we know updates have been applied if certain objects exist.
     """
     # We may have versioned schema in the future.
     # For now, we know updates have been applied if certain objects exist,
@@ -130,6 +138,10 @@ def schema_is_latest(engine):
 
 
 def update_schema(engine):
+    """
+    Instead of versioning our schema, this function ensures we are running against the latest
+    version of the database schema.
+    """
     is_unification = pg_exists(engine, schema_qualified('dataset_type'))
     if not is_unification:
         raise ValueError('Pre-unification database cannot be updated.')

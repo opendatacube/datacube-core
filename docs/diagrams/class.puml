@@ -1,0 +1,40 @@
+@startuml
+
+title Core Model Class Diagram
+
+class MetadataType {
+definitions : dict
+fields : dict
+}
+
+class Product {
+name : str
+}
+
+MetadataType o-- Product
+
+class Measurement {
+name : str
+dtype : str
+nodata : str
+units : str
+}
+
+
+Product *-- Measurement
+
+class Dataset {
+metadata_doc : dict
+}
+
+Product o-- Dataset
+
+class Location {
+uri_scheme : str
+uri_body : str
+archived : DateTime
+}
+
+Dataset *-- Location
+
+@enduml

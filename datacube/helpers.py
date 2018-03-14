@@ -29,8 +29,11 @@ def write_geotiff(filename, dataset, time_index=None, profile_override=None):
     """
     profile_override = profile_override or {}
 
-    dtypes = {val.dtype for val in dataset.data_vars.values()}
-    assert len(dtypes) == 1  # Check for multiple dtypes
+    try:
+        dtypes = {val.dtype for val in dataset.data_vars.values()}
+        assert len(dtypes) == 1  # Check for multiple dtypes
+    except AttributeError:
+        dtypes = [dataset.dtype]
 
     profile = DEFAULT_PROFILE.copy()
     profile.update({
@@ -44,8 +47,11 @@ def write_geotiff(filename, dataset, time_index=None, profile_override=None):
     profile.update(profile_override)
 
     with rasterio.open(str(filename), 'w', **profile) as dest:
-        for bandnum, data in enumerate(dataset.data_vars.values(), start=1):
-            dest.write(data.isel(time=time_index).data, bandnum)
+        if hasattr(dataset, 'data_vars'):
+            for bandnum, data in enumerate(dataset.data_vars.values(), start=1):
+                dest.write(data.isel(time=time_index).data, bandnum)
+        else:  # Assume that we have a DataArray
+            dest.write(dataset.isel(time=time_index).data, 0)
 
 
 def ga_pq_fuser(dest, src):
