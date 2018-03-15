@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from collections import OrderedDict
 
-from datacube.utils import gen_password
+from datacube.utils import gen_password, SafeDatacubeDumper
 from datacube.config import LocalConfig
 from datacube.index.index import Index
 from datacube.ui import click as ui
@@ -41,9 +41,6 @@ def _write_csv(index):
     writer = csv.DictWriter(sys.stdout, ['role', 'user', 'description'], extrasaction='ignore')
     writer.writeheader()
 
-    #for role, user, description in index:
-        #click.echo('{0:6}\t{1:15}\t{2}'.format(role, user, description if description else ''))
-        #writer.writerow('role':role, 'user':user,'description':description})
     def add_first_role(row):
         roles_ = row['role']
         row['role'] = roles_ if roles_ else None
@@ -61,40 +58,7 @@ def _write_yaml(index):
     (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
     """
 
-    # We can't control how many ancestors this dumper API uses.
-    # pylint: disable=too-many-ancestors
-    class OrderedDumper(yaml.SafeDumper):
-        pass
-
-    def _dict_representer(dumper, data):
-        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
-
-#    def _range_representer(dumper, data):
-#        # type: (yaml.Dumper, Range) -> Node
-#        begin, end = data
-#
-#        # pyyaml doesn't output timestamps in flow style as timestamps(?)
-#        if isinstance(begin, datetime.datetime):
-#            begin = begin.isoformat()
-#        if isinstance(end, datetime.datetime):
-#            end = end.isoformat()
-#
-#        return dumper.represent_mapping(
-#            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-#            (('begin', begin), ('end', end)),
-#            flow_style=True
-#        )
-#
-#    def _reduced_accuracy_decimal_representer(dumper, data):
-#        # type: (yaml.Dumper, Decimal) -> Node
-#        return dumper.represent_float(
-#            float(data)
-#        )
-#
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
-#    OrderedDumper.add_representer(Range, _range_representer)
-#    OrderedDumper.add_representer(Decimal, _reduced_accuracy_decimal_representer)
-    return yaml.dump_all(index, sys.stdout, OrderedDumper, default_flow_style=False, indent=4)
+    return yaml.dump_all(index, sys.stdout, SafeDatacubeDumper, default_flow_style=False, indent=4)
 
 _OUTPUT_WRITERS = {
     'csv': _write_csv,
@@ -112,8 +76,7 @@ def list_users(index, f):
     """
     List users
     """
-    _OUTPUT_WRITERS[f]((build_user_list(index)
-                       ))
+    _OUTPUT_WRITERS[f](build_user_list(index))
 
 @user_cmd.command('grant')
 @click.argument('role',

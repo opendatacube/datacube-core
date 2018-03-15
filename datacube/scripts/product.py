@@ -19,7 +19,7 @@ import pandas as pd
 from datacube.index.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
-from datacube.utils import read_documents, InvalidDocException
+from datacube.utils import read_documents, InvalidDocException, SafeDatacubeDumper
 
 _LOG = logging.getLogger('datacube-product')
 
@@ -144,19 +144,10 @@ def _write_yaml(index):
     (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
     """
 
-    # We can't control how many ancestors this dumper API uses.
-    # pylint: disable=too-many-ancestors
-    class OrderedDumper(yaml.SafeDumper):
-        pass
-
-    def _dict_representer(dumper, data):
-        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
-
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
     try:
-        return yaml.dump_all(index, sys.stdout, Dumper=OrderedDumper, default_flow_style=False, indent=4)
+        return yaml.dump_all(index, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
     except TypeError:
-        return yaml.dump(index.definition, sys.stdout, Dumper=OrderedDumper, default_flow_style=False, indent=4)
+        return yaml.dump(index.definition, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
 
 def _write_tab(products):
     products = pd.DataFrame(products)
@@ -187,15 +178,13 @@ def list_products(dc, f):
     """
     List products that are defined in the generic index.
     """
-    LIST_OUTPUT_WRITERS[f]((build_product_list(dc.index)
-                           ))
+    LIST_OUTPUT_WRITERS[f](build_product_list(dc.index))
 
 def build_product_show(index, product_name):
     product_def = index.products.get_by_name(product_name)
     return product_def
 
 def _write_json(product_def):
-    #product_def = index.products.get_by_name(product_name)
     click.echo_via_pager(json.dumps(product_def.definition, indent=4))
 
 
@@ -213,5 +202,4 @@ def show_product(dc, product_name, f):
     """
     Show details about a product in the generic index.
     """
-    SHOW_OUTPUT_WRITERS[f]((build_product_show(dc.index, product_name)
-                           ))
+    SHOW_OUTPUT_WRITERS[f](build_product_show(dc.index, product_name))
