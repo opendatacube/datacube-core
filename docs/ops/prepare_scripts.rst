@@ -16,7 +16,8 @@ tools are provided in  :file:`utils/` in the source repository.
 
 The two examples below shows USGS landsat data for ingestion into the Data cube.
 
-#. A specific example for USGS collection 1 MTL format is :download:`USGS Landsat Prepare Script
+
+1. A specific example for USGS collection 1 MTL format is :download:`USGS Landsat Prepare Script
 <../../utils/ls_usgs_prepare.py>`
 
 
@@ -66,7 +67,7 @@ For Landsat collection 1 level 1 product:
 
 
 
-#. An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
+2. An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
 <../../utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py>`
 
 Preparing USGS Landsat Surface Reflectance - LEDAPS
