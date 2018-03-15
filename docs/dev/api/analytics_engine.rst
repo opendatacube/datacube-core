@@ -3,15 +3,9 @@
 Analytics and Execution Engines
 ===============================
 
-Analytics Engine
-----------------
-
-.. autoclass:: datacube.analytics.AnalyticsEngine
-   :members:
+The old Analytics and Execution Engines have been deprecated, but replacements
+are taking shape inside the `execution engine branch`_ on GitHub. Check out the work there
+for the latest updates.
 
 
-Execution Engine
-----------------
-
-.. autoclass:: datacube.execution.ExecutionEngine
-   :members:
+.. _execution engine branch: https://github.com/opendatacube/datacube-core/compare/csiro/execution-engine
