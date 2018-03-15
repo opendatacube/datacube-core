@@ -22,7 +22,8 @@ from datacube.model import Range
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, changes, InvalidDocException, SafeDatacubeDumper
+from datacube.utils import read_documents, changes, InvalidDocException 
+from datacube.utils.serialise import SafeDatacubeDumper
 
 try:
     from typing import Iterable

@@ -11,12 +11,13 @@ from decimal import Decimal
 
 from collections import OrderedDict
 
-from datacube.utils import gen_password, SafeDatacubeDumper
+from datacube.utils import gen_password
 from datacube.config import LocalConfig
 from datacube.index.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.model import Range
+from datacube.utils.serialise import SafeDatacubeDumper
 
 _LOG = logging.getLogger('datacube-user')
 USER_ROLES = ('user', 'ingest', 'manage', 'admin')
