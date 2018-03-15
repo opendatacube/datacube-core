@@ -26,12 +26,15 @@ Prerequisites for Indexing Data
 Steps to Adding Data
 ====================
 
- * Create a new product: Before the data itself can be added, a product describing the data must be created.
-     - Requires creation of a :ref:`product-definition` document (yaml)
- * Index the data: After this step the data is accessible through the datacube.
-     - Requires datacube friendly :ref:`dataset-documents` for data which is to be indexed
- * :ref:`Ingest <ingestion>` the data(optional): After indexing the data you can choose to ingest. This provides the ability to tile the original data into a faster storage format or a new projection system.
-     - Requires creation of an ingestion configuration file (yaml).
+ * Create a new product
+     Before the data itself can be added, a product describing the data must be created.
+     Requires creation of a :ref:`product-definitions` document (yaml)
+ * Index the data
+     After this step the data is accessible through the datacube.
+     Requires datacube friendly :ref:`dataset-documents` for data which is to be indexed
+ * :ref:`Ingest <ingestion>` the data(optional)
+     After indexing the data you can choose to ingest. This provides the ability to tile the original data into a faster storage format or a new projection system.
+     Requires creation of an ingestion configuration file (yaml).
 
 
 .. _product-definitions:
@@ -133,6 +136,7 @@ datasets into our Cube by running::
 
 
 .. _sample-eo-data:
+
 Sample Earth Observation Data
 -----------------------------
 
