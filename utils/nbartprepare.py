@@ -35,7 +35,7 @@ def main(datasets):
         with open(str(path)) as stream:
             documents = list(yaml.load_all(stream))
 
-        documents = [prepare_dataset(datatset) for datatset in documents]
+        documents = [prepare_dataset(dataset) for dataset in documents]
         if documents:
             yaml_path = str(path.parent.joinpath('agdc-metadata.yaml'))
             logging.info("Writing %s dataset(s) into %s", len(documents), yaml_path)

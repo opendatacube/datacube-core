@@ -22,7 +22,7 @@ from itertools import chain, groupby
 import numpy
 
 from ..utils import geometry
-from .core import Datacube, Group, get_bounds, datatset_type_to_row
+from .core import Datacube, Group, get_bounds, dataset_type_to_row
 from .query import DescriptorQuery
 
 _LOG = logging.getLogger(__name__)
@@ -411,7 +411,7 @@ class API(object):
 
         :return: list of dictionaries describing the products
         """
-        return [datatset_type_to_row(dataset_type) for dataset_type in self.datacube.index.products.get_all()]
+        return [dataset_type_to_row(dataset_type) for dataset_type in self.datacube.index.products.get_all()]
 
     def list_variables(self):
         """
