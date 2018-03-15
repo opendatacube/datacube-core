@@ -12,7 +12,7 @@ from decimal import Decimal
 import yaml
 from datacube.model import Range
 
-class SafeDatacubeDumper(yaml.SafeDumper):
+class SafeDatacubeDumper(yaml.SafeDumper): # pylint: disable=too-many-ancestors
     pass
 def _dict_representer(dumper, data):
     return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
