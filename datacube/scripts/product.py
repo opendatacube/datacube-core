@@ -8,6 +8,14 @@ import click
 import sys
 from click import echo
 
+from collections import OrderedDict
+import yaml
+import yaml.resolver
+from yaml import Node
+import csv
+from datacube.api.core import dataset_type_to_row
+import pandas as pd
+
 from datacube.index.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
@@ -104,44 +112,96 @@ def update_products(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
                                                                                  len(safe_changes)))
     sys.exit(failures)
 
+def build_product_list(index):
+    lstdct = []
+    for product in index.products.search():
+        info = dataset_type_to_row(product)
+        lstdct.append(info)
+    return lstdct
 
-@product.command('list')
-@click.option('--names', is_flag=True, default=False, help='Output product names only, one per line.')
-@ui.pass_datacube()
-def list_products(dc, simple):
+def _write_csv(index):
+    writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description', 'ancillary_quality', 'latgqa_cep90', 'product_type', 'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path', 'gqa_iterative_stddev_xy', 'time', 'sat_row', 'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_size', 'spatial_dimensions'], extrasaction='ignore')
+    writer.writeheader()
+
+    def add_first_name(row):
+        names_ = row['name']
+        row['name'] = names_ if names_ else None
+        return row
+        writer.writerows(add_first_name(row) for row in index)
+
+def _write_yaml(index):
     """
-    List products that are defined in the generic index.
+    Dump yaml data with support for OrderedDicts.
+
+    Allows for better human-readability of output: such as dataset ID field first, sources last.
+
+    (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
     """
-    products = dc.list_products()
+
+    # We can't control how many ancestors this dumper API uses.
+    # pylint: disable=too-many-ancestors
+    class OrderedDumper(yaml.SafeDumper):
+        pass
+
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    try:
+        return yaml.dump_all(index, sys.stdout, Dumper=OrderedDumper, default_flow_style=False, indent=4)
+    except TypeError:
+        return yaml.dump(index.definition, sys.stdout, Dumper=OrderedDumper, default_flow_style=False, indent=4)
+
+def _write_tab(products):
+    products = pd.DataFrame(products)
 
     if products.empty:
         echo('No products discovered :(')
         return
 
-    if simple:
-        echo('\n'.join(list(products['names'])))
-    echo(products.to_string(columns=('name', 'description', 'product_type', 'instrument',
-                                     'format', 'platform'),
+    echo(products.to_string(columns=('id', 'name', 'description', 'ancillary_quality', 'product_type', 'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path', 'gqa_iterative_stddev_xy', 'time', 'sat_row', 'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_size', 'spatial_dimensions'),
                             justify='left'))
 
+LIST_OUTPUT_WRITERS = {
+    'csv': _write_csv,
+    'yaml': _write_yaml,
+    'tab': _write_tab,
+}
 
-@product.command('show')
-@click.argument('product_name', nargs=1)
-@ui.pass_index()
-def show_product(index, product_name):
+@product.command('list')
+@click.option('-f', help='Output format',
+              type=click.Choice(list(LIST_OUTPUT_WRITERS)), default='yaml', show_default=True)
+@ui.pass_datacube()
+def list_products(dc, f):
     """
-    Show details about a product in the generic index.
+    List products that are defined in the generic index.
     """
+    LIST_OUTPUT_WRITERS[f]((build_product_list(dc.index)
+                           ))
+
+def build_product_show(index, product_name):
     product_def = index.products.get_by_name(product_name)
+    return product_def
+
+def _write_json(product_def):
+    #product_def = index.products.get_by_name(product_name)
     click.echo_via_pager(json.dumps(product_def.definition, indent=4))
 
 
-@product.command('export')
-@ui.pass_index()
-def export_products(index):
-    """Export all products into YAML."""
-    import yaml
+SHOW_OUTPUT_WRITERS = {
+    'yaml': _write_yaml,
+    'json': _write_json,
+}
 
-    all_products = index.products.get_all()
-    all_product_definitions = (product.definition for product in all_products)
-    click.echo_via_pager(yaml.dump_all(all_product_definitions))
+@product.command('show')
+@click.option('-f', help='Output format',
+              type=click.Choice(list(SHOW_OUTPUT_WRITERS)), default='yaml', show_default=True)
+@click.argument('product_name', nargs=1)
+@ui.pass_datacube()
+def show_product(dc, product_name, f):
+    """
+    Show details about a product in the generic index.
+    """
+    SHOW_OUTPUT_WRITERS[f]((build_product_show(dc.index, product_name)
+                           ))
+
