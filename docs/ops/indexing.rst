@@ -14,21 +14,24 @@ existence of and detailed metadata about the data into the **index**. None of
 the data itself is copied, moved or transformed. This is therefore a relatively
 safe and fast process.
 
+
 Prerequisites for Indexing Data
 -------------------------------
 
  * A working Data Cube setup
- * Some *Analysis Ready Data* ** Different terminology ** to load
- ** link to sample EO Data **
+ * Some data to load
+(Links to some freely available :ref:`sample-eo-data`.)
 
 
-Indexing Steps
---------------
+Steps to Adding Data
+--------------------
 
- * Create a product definition document (yaml)
- * Add new product to Datacube, using above yaml
- * Create metadata documents for data which is to be indexed
- * Index data in Datacube using above metadata documents
+ * Create a new product: Before the data itself can be added, a product describing the data must be created.
+     - Requires creation of a :ref:`product-definition` document (yaml)
+ * Index the data: After this step the data is accessible through the datacube.
+     - Requires datacube friendly :ref:`dataset-documents` for data which is to be indexed
+ * :ref:`Ingest <ingestion>` the data(optional): After indexing the data you can choose to ingest. This provides the ability to tile the original data into a faster storage format or a new projection system.
+     - Requires creation of an ingestion configuration file (yaml).
 
 
 .. _product-definitions:
@@ -74,9 +77,11 @@ case of reflectance data.
         latitude: -0.00025
         longitude: 0.00025
     
-A set of example Product definitions are supplied in ** add in link here **
-`docs/config_samples/dataset_types` to cover some common Geoscience Australia
-and other Earth Observation Data.
+
+More detailed information on the structure of a product definition document can be found :ref:`here <product-doc>`
+
+A set of example Product definitions are supplied `here <https://github.com/opendatacube/datacube-core/tree/develop/docs/config_samples/dataset_types>`_ to cover some common Geoscience Australia and other Earth Observation Data.
+
 
 Loading Product Definitions
 ---------------------------
@@ -85,6 +90,8 @@ To load Products into your Data Cube run::
 
     datacube product add <path-to-dataset-type-yml>
 
+
+.. _dataset-documents:
 
 Dataset Documents
 -----------------
@@ -124,7 +131,7 @@ datasets into our Cube by running::
     datacube dataset add --auto-match <path-to-dataset>
 
 
-
+.. _sample-eo-data:
 Sample Earth Observation Data
 -----------------------------
 
