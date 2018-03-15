@@ -114,20 +114,26 @@ def update_products(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
 
 def build_product_list(index):
     lstdct = []
-    for product in index.products.search():
-        info = dataset_type_to_row(product)
+    for line in index.products.search():
+        info = dataset_type_to_row(line)
         lstdct.append(info)
     return lstdct
 
 def _write_csv(index):
-    writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description', 'ancillary_quality', 'latgqa_cep90', 'product_type', 'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path', 'gqa_iterative_stddev_xy', 'time', 'sat_row', 'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_size', 'spatial_dimensions'], extrasaction='ignore')
+    writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description',\
+                            'ancillary_quality', 'latgqa_cep90', 'product_type',\
+                            'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path',\
+                            'gqa_iterative_stddev_xy', 'time', 'sat_row', 'orbit', 'gqa',\
+                            'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_size',\
+                            'spatial_dimensions'], extrasaction='ignore')
     writer.writeheader()
 
     def add_first_name(row):
         names_ = row['name']
         row['name'] = names_ if names_ else None
         return row
-        writer.writerows(add_first_name(row) for row in index)
+
+    writer.writerows(add_first_name(row) for row in index)
 
 def _write_yaml(index):
     """
@@ -159,7 +165,12 @@ def _write_tab(products):
         echo('No products discovered :(')
         return
 
-    echo(products.to_string(columns=('id', 'name', 'description', 'ancillary_quality', 'product_type', 'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path', 'gqa_iterative_stddev_xy', 'time', 'sat_row', 'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_size', 'spatial_dimensions'),
+    echo(products.to_string(columns=('id', 'name', 'description', 'ancillary_quality',\
+                                     'product_type', 'gqa_abs_iterative_mean_xy',\
+                                     'gqa_ref_source', 'sat_path',\
+                                     'gqa_iterative_stddev_xy', 'time', 'sat_row',\
+                                     'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',\
+                                     'resolution', 'tile_size', 'spatial_dimensions'),
                             justify='left'))
 
 LIST_OUTPUT_WRITERS = {
@@ -204,4 +215,3 @@ def show_product(dc, product_name, f):
     """
     SHOW_OUTPUT_WRITERS[f]((build_product_show(dc.index, product_name)
                            ))
-
