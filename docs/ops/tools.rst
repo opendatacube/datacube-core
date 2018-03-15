@@ -1,6 +1,12 @@
 Command Line Tools
-==================
+******************
 
-.. _datacube-tool:
+.. contents::
+   :local:
 
-.. datacube:click-help:: datacube
+.. click:: datacube.scripts.cli_app:cli
+   :prog: datacube
+   :show-nested:
+
+
+

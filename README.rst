@@ -27,7 +27,7 @@ System
 ~~~~~~
 
 -  PostgreSQL 9.5+
--  Python 2.7+ or Python 3.5+
+-  Python Python 3.5+
 
 Developer setup
 ===============
@@ -61,13 +61,69 @@ Developer setup
 
 5. **(or)** Run all tests, including integration tests.
 
-``./check-code.sh integration_tests``
+   ``./check-code.sh integration_tests``
 
--  Assumes a password-less Postgres database running on localhost called
+   -  Assumes a password-less Postgres database running on localhost called
+
    ``agdcintegration``
 
    -  Otherwise copy ``integration_tests/agdcintegration.conf`` to
       ``~/.datacube_integration.conf`` and edit to customise.
+
+Docker
+======
+
+Docker for OpenDataCube is in the early stages of development, and more documentation and examples of how 
+to use it will be forthcoming soon. For now, you can build and run this Docker image from 
+this repository as documented below.
+
+Example Usage
+~~~~~~~~~~~~~
+There are a number of environment variables in use that can be used to configure the OpenDataCube.
+Some of these are built into the application itself, and others are specific to Docker, and will 
+be used to create a configuration file when the container is launched.
+
+You can build the image with a command like this: 
+
+``docker build --tag opendatacube:local .``
+
+And it can then be run with this command:
+
+``docker run --rm opendatacube:local``
+
+If you don't need to build (and you shouldn't) then you can run it from a pre-built image with:
+
+``docker run --rm opendatacube/datacube-core``
+
+An example of starting a container with environment variables is as follows:
+
+.. code-block:: bash
+   
+   docker run \
+      --rm \
+      -e DATACUBE_CONFIG_PATH=/opt/custom-config.conf \
+      -e DB_DATABASE=mycube \
+      -e DB_HOSTNAME=localhost \
+      -e DB_USERNAME=postgres \
+      -e DB_PASSWORD=secretpassword \
+      -e DB_PORT=5432 \
+      opendatacube/datacube-core
+
+
+This wont actually do anything, in order to make it work, you need an environment with Postgres, at least, and some scripts to index and possible ingest data.
+
+Environment Variables
+~~~~~~~~~~~~~~~~~~~~~
+Most of the below environment variables should be self explanatory, and none are required (although
+it is recommended that you set them).
+
+- ``DATACUBE_CONFIG_PATH`` - the path for the config file for writing (also used by ODC for reading)
+- ``DB_DATABASE`` - the name of the postgres database
+- ``DB_HOSTNAME`` - the hostname of the postgres database
+- ``DB_USERNAME`` - the username of the postgres database
+- ``DB_PASSWORD`` - the password to used for the postgres database
+- ``DB_PORT`` - the port that the postgres database is exposed on
+
 
 .. |Build Status| image:: https://travis-ci.org/opendatacube/datacube-core.svg?branch=develop
    :target: https://travis-ci.org/opendatacube/datacube-core

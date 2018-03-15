@@ -24,7 +24,7 @@ def default_metadata_type_docs():
 class MetadataTypeResource(object):
     def __init__(self, db):
         """
-        :type db: datacube.index.postgres._connections.PostgresDb
+        :type db: datacube.drivers.postgres._connections.PostgresDb
         """
         self._db = db
 

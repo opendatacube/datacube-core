@@ -1,11 +1,14 @@
 
-Python and packages
--------------------
+.. This file is included in the Ubuntu and OS X installation instructions
+   All the headings should thus be at the correct level for verbatim inclusion.
 
-Python 2.7 and 3.5+ are supported. Python 3.6 is recommended.
+Python and packages
+===================
+
+Python 3.5+ is required. Python 3.6 is recommended.
 
 Anaconda Python
-~~~~~~~~~~~~~~~
+---------------
 
 `Install Anaconda Python <https://www.continuum.io/downloads>`_
 
@@ -17,13 +20,9 @@ Conda Environments are recommended for use in isolating your ODC development env
 
 Install required python packages and create an ``odc`` conda environment.
 
-Python 3.5::
+Python 3.6::
 
-    conda env create -n odc --file .travis/environment_py35.yaml sphinx
-
-Python 2.7::
-
-    conda env create -n odc --file .travis/environment_py27.yaml sphinx
+    conda env create -n odc --file .travis/environment.yaml sphinx
 
 Activate ``odc`` python environment::
 
@@ -31,7 +30,7 @@ Activate ``odc`` python environment::
 
 
 Postgres database configuration
--------------------------------
+===============================
 
 This configuration supports local development using your login name.
 
@@ -68,7 +67,7 @@ Connecting to your own database to try out some SQL should now be as easy as::
 
 
 Open Data Cube source and development configuration
----------------------------------------------------
+===================================================
 
 Download the latest version of the software from the `repository <https://github.com/opendatacube/datacube-core>`_ ::
 
@@ -90,7 +89,7 @@ Then edit the ``~/.datacube_integration.conf`` with a text editor and add the fo
 
 
 Verify it all works
--------------------
+===================
 
 Run the integration tests::
 

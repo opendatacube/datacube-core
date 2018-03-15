@@ -2,6 +2,7 @@
 
 import versioneer
 from setuptools import setup, find_packages
+import os
 
 tests_require = [
     'compliance-checker',
@@ -29,10 +30,27 @@ extras_require = {
 # An 'all' option, following ipython naming conventions.
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
 
+extra_plugins = dict(read=[], write=[], index=[])
+
+if os.name != 'nt':
+    extra_plugins['read'].extend([
+        's3aio = datacube.drivers.s3.driver:reader_driver_init [s3]',
+        's3aio_test = datacube.drivers.s3.driver:reader_test_driver_init [s3]',
+    ])
+    extra_plugins['write'].extend([
+        's3aio = datacube.drivers.s3.driver:writer_driver_init [s3]',
+        's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init [s3]',
+    ])
+
+    extra_plugins['index'].extend([
+        's3aio_index = datacube.drivers.s3aio_index:index_driver_init [s3]',
+    ])
+
 setup(
     name='datacube',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
+    python_requires='>=3.5.2',
 
     url='https://github.com/opendatacube/datacube-core',
     author='AGDC Collaboration',
@@ -53,10 +71,9 @@ setup(
         "Operating System :: POSIX :: Linux",
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Scientific/Engineering :: GIS",
         "Topic :: Scientific/Engineering :: Information Analysis",
     ],
@@ -84,7 +101,6 @@ setup(
         'jsonschema',
         'netcdf4',
         'numpy',
-        'pathlib;python_version<"3"',
         'psycopg2',
         'pypeg2',
         'python-dateutil',
@@ -111,17 +127,15 @@ setup(
         ],
         'datacube.plugins.io.read': [
             'netcdf = datacube.drivers.netcdf.driver:reader_driver_init',
-            's3aio = datacube.drivers.s3.driver:reader_driver_init',
-            's3aio_test = datacube.drivers.s3.driver:reader_test_driver_init'
+            *extra_plugins['read'],
         ],
         'datacube.plugins.io.write': [
             'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
-            's3aio = datacube.drivers.s3.driver:writer_driver_init',
-            's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init',
+            *extra_plugins['write'],
         ],
         'datacube.plugins.index': [
             'default = datacube.index.index:index_driver_init',
-            's3aio_index = datacube.drivers.s3aio_index:index_driver_init',
+            *extra_plugins['index'],
         ],
     },
 )

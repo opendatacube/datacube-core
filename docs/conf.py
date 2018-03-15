@@ -62,15 +62,19 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'sphinxcontrib.plantuml',
+    'sphinx_click.ext',
     'click_utils'
 ]
-
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
+
+source_parsers = {
+   '.md': 'recommonmark.parser.CommonMarkParser',
+}
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
@@ -130,7 +134,8 @@ pygments_style = 'friendly'
 
 autosummary_generate = True
 
-extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'GH')}
+extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
+            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
@@ -138,10 +143,6 @@ intersphinx_mapping = {
     'xarray': ('http://xarray.pydata.org/en/stable/', None),
     'dask': ('http://dask.pydata.org/en/stable/', None),
 }
-
-click_utils_commands = {'datacube-search': 'datacube.scripts.search_tool:cli',
-                        'datacube': 'datacube.scripts.cli_app:cli',
-                        'datacube-simple-replica': 'datacube_apps.simple_replica:replicate'}
 
 graphviz_output_format = 'svg'
 
@@ -156,6 +157,9 @@ else:
         import sphinx_rtd_theme
         html_theme = 'sphinx_rtd_theme'
         html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+        html_theme_options = {
+            'collapse_navigation': False
+        }
     except ImportError:
         html_theme = 'alabaster'
 
@@ -341,6 +345,7 @@ NATIVE_MODULES = [
     'sshtunnel',
     'tqdm',
     'cloudpickle',
+    'zstd',
 ]
 
 from mock import Mock as MagicMock

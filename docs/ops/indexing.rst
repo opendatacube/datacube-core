@@ -3,7 +3,7 @@
 .. _indexing:
 
 Indexing Data
-=============
+*************
 
 Once you have the Data Cube software installed and connected to a database, you
 can start to load in some data. This step is performed using the **datacube**
@@ -16,7 +16,7 @@ safe and fast process.
 
 
 Prerequisites for Indexing Data
--------------------------------
+===============================
 
  * A working Data Cube setup
  * Some data to load
@@ -24,7 +24,7 @@ Prerequisites for Indexing Data
 
 
 Steps to Adding Data
---------------------
+====================
 
  * Create a new product: Before the data itself can be added, a product describing the data must be created.
      - Requires creation of a :ref:`product-definition` document (yaml)
@@ -37,7 +37,7 @@ Steps to Adding Data
 .. _product-definitions:
 
 Product Definition
-------------------
+==================
 
 The Data Cube can handle many different types of data, and requires a bit of
 information up front to know what to do with them. This is the task of a
@@ -84,7 +84,7 @@ A set of example Product definitions are supplied `here <https://github.com/open
 
 
 Loading Product Definitions
----------------------------
+===========================
 
 To load Products into your Data Cube run::
 
@@ -94,7 +94,8 @@ To load Products into your Data Cube run::
 .. _dataset-documents:
 
 Dataset Documents
------------------
+=================
+
 Every dataset requires a metadata document describing what the data represents and where it has come
 from, as well has what format it is stored in. At a minimum, you need the dimensions or fields your want to
 search by, such as lat, lon and time, but you can include any information you deem useful.
@@ -123,7 +124,7 @@ For more information see :ref:`dataset-metadata-doc`.
 
 
 Adding Some Data
-----------------
+================
 
 Everything is now ready, and we can use the **datacube** tool to add one or more
 datasets into our Cube by running::

@@ -44,7 +44,7 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
 
 class Query(object):
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
-        """"Parses search terms in preparation for querying the Data Cube Index.
+        """Parses search terms in preparation for querying the Data Cube Index.
 
         Create a :class:`Query` object by passing it a set of search terms as keyword arguments.
 
@@ -60,7 +60,7 @@ class Query(object):
 
         Used by :meth:`datacube.Datacube.find_datasets` and :meth:`datacube.Datacube.load`.
 
-        :param datacube.index._api.Index index: An optional `index` object, if checking of field names is desired.
+        :param datacube.index.Index index: An optional `index` object, if checking of field names is desired.
         :param str product: name of product
         :param geopolygon: spatial bounds of the search
         :type geopolygon: geometry.Geometry or None

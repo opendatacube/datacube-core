@@ -40,30 +40,6 @@ THREADING_REQS_AVAILABLE = ('SharedArray' in sys.modules and 'pathos.threading' 
 Group = namedtuple('Group', ['key', 'datasets'])
 
 
-def _xarray_affine(obj):
-    dims = obj.crs.dimensions
-    xres, xoff = data_resolution_and_offset(obj[dims[1]].values)
-    yres, yoff = data_resolution_and_offset(obj[dims[0]].values)
-    return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
-
-
-def _xarray_extent(obj):
-    return obj.geobox.extent
-
-
-def _xarray_geobox(obj):
-    dims = obj.crs.dimensions
-    return geometry.GeoBox(obj[dims[1]].size, obj[dims[0]].size, obj.affine, obj.crs)
-
-
-xarray.Dataset.geobox = property(_xarray_geobox)
-xarray.Dataset.affine = property(_xarray_affine)
-xarray.Dataset.extent = property(_xarray_extent)
-xarray.DataArray.geobox = property(_xarray_geobox)
-xarray.DataArray.affine = property(_xarray_affine)
-xarray.DataArray.extent = property(_xarray_extent)
-
-
 class Datacube(object):
     """
     Interface to search, read and write a datacube.
@@ -83,7 +59,7 @@ class Datacube(object):
         If no index or config is given, the default configuration is used for database connection.
 
         :param Index index: The database index to use.
-        :type index: :py:class:`datacube.index._api.Index` or None.
+        :type index: :py:class:`datacube.index.Index` or None.
 
         :param Union[LocalConfig|str] config: A config object or a path to a config file that defines the connection.
 
@@ -327,13 +303,13 @@ class Datacube(object):
         if not observations:
             return None if stack else xarray.Dataset()
 
-        if like:
+        if like is not None:
             assert output_crs is None, "'like' and 'output_crs' are not supported together"
             assert resolution is None, "'like' and 'resolution' are not supported together"
             assert align is None, "'like' and 'align' are not supported together"
             geobox = like.geobox
         else:
-            if output_crs:
+            if output_crs is not None:
                 if not resolution:
                     raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
                 crs = geometry.CRS(output_crs)

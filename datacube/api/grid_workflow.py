@@ -371,10 +371,6 @@ class GridWorkflow(object):
         .. seealso::
             :meth:`list_tiles` :meth:`list_cells`
         """
-        observations = []
-        for dataset in tile.sources.values:
-            observations += dataset
-
         measurements = tile.product.lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 

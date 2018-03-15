@@ -1,5 +1,7 @@
-Open Data Cube
-==============
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   Open Data Cube Manual
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The Open Data Cube provides an integrated gridded data
 analysis environment for decades of analysis ready earth observation satellite
@@ -17,44 +19,54 @@ and  related data from multiple satellite and other acquisition systems.
     the sidebar navigation. The subtrees are only displayed when you navigate to
     their parent page.
 
-.. toctree::
-   :maxdepth: 3
-   :caption: Overview
-
-   user/intro
 
 .. toctree::
-   :maxdepth: 3
    :caption: User Guide
 
-   user/guide
-   user/config
+   user/intro.rst
+   user/guide.rst
+   user/config.rst
+
+
 
 .. toctree::
    :maxdepth: 2
    :caption: Operations Guide
 
-   ops/overview
+   ops/overview.rst
+   ops/install.rst
+   ops/db_setup.rst
+   ops/indexing.rst
+   ops/ingest.rst
+   ops/product.rst
+   ops/dataset_documents.rst
+   ops/prepare_scripts.rst
+   ops/tools.rst
+   ops/replication.rst
 
 .. toctree::
    :maxdepth: 2
    :caption: Developer Guide
 
-   dev/developer
+   dev/api/index.rst
+   dev/setup/index.rst
+   architecture/index.rst
+   about/release_process.rst
 
 .. toctree::
    :maxdepth: 2
    :caption: About Data Cube
 
-   about/whats_new
-   about/glossary
-   about/release_process
-   about/license
+   about/whats_new.rst
+   about/glossary.rst
+   about/license.rst
+
+
 
 .. _support:
 
 Support
--------
+=======
 
 The best way to get help with the Data Cube is to open an issue on Github_.
 
