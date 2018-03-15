@@ -108,7 +108,7 @@ Loading Product Definitions
 
 To load Products into your Data Cube run::
 
-    datacube product add <path-to-dataset-type-yml>
+    datacube product add <path-to-product-definition-yml>
 
 
 .. _dataset-documents:
@@ -143,13 +143,13 @@ recognised by the Data Cube. It defines critical metadata of the dataset such as
 For more information see :ref:`dataset-metadata-doc`.
 
 
-Adding Some Data
+Adding Data - Indexing
 ================
 
 Everything is now ready, and we can use the **datacube** tool to add one or more
 datasets into our Cube by running::
 
-    datacube dataset add --auto-match <path-to-dataset>
+    datacube dataset add --auto-match <path-to-dataset-document-yaml>
 
 
 .. _sample-eo-data:
