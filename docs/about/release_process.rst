@@ -58,3 +58,9 @@ stable version.
         openssl sha256 <downloaded-datacube-source.tar.gz>
         
     
+.. _PyPI: https://pypi.python.org/pypi
+.. _Travis: https://travis-ci.org/opendatacube/datacube-core
+.. _readthedocs: http://readthedocs.org/projects/datacube-core/builds/
+.. _Datacube releases: https://github.com/opendatacube/datacube-core/releases
+.. _Datcube Feedstock: https://github.com/conda-forge/datacube-feedstock#updating-datacube-feedstock
+
