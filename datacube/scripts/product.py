@@ -115,8 +115,8 @@ def update_products(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
 
 def build_product_list(index):
     lstdct = []
-    for line in index.products.search():
-        info = dataset_type_to_row(line)
+    for product in index.products.search():
+        info = dataset_type_to_row(product)
         lstdct.append(info)
     return lstdct
 
