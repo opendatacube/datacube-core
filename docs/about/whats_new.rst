@@ -49,6 +49,8 @@ Next release
 
  - Added Dockerfile to enable with automated builds for a reference Docker image.
 
+ - Command line tools can now output CSV or YAML. (Issue #206, PR 390)
+
 .. _#298: https://github.com/opendatacube/datacube-core/pull/298
 .. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
 
