@@ -23,6 +23,7 @@ from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, changes, InvalidDocException
+from datacube.utils.serialise import SafeDatacubeDumper
 
 try:
     from typing import Iterable
@@ -279,7 +280,6 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False, d
 
     return info
 
-
 def _write_csv(infos):
     writer = csv.DictWriter(sys.stdout, ['id', 'status', 'product', 'location'], extrasaction='ignore')
     writer.writeheader()
@@ -291,7 +291,6 @@ def _write_csv(infos):
 
     writer.writerows(add_first_location(row) for row in infos)
 
-
 def _write_yaml(infos):
     """
     Dump yaml data with support for OrderedDicts.
@@ -301,47 +300,12 @@ def _write_yaml(infos):
     (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
     """
 
-    # We can't control how many ancestors this dumper API uses.
-    # pylint: disable=too-many-ancestors
-    class OrderedDumper(yaml.SafeDumper):
-        pass
-
-    def _dict_representer(dumper, data):
-        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
-
-    def _range_representer(dumper, data):
-        # type: (yaml.Dumper, Range) -> Node
-        begin, end = data
-
-        # pyyaml doesn't output timestamps in flow style as timestamps(?)
-        if isinstance(begin, datetime.datetime):
-            begin = begin.isoformat()
-        if isinstance(end, datetime.datetime):
-            end = end.isoformat()
-
-        return dumper.represent_mapping(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            (('begin', begin), ('end', end)),
-            flow_style=True
-        )
-
-    def _reduced_accuracy_decimal_representer(dumper, data):
-        # type: (yaml.Dumper, Decimal) -> Node
-        return dumper.represent_float(
-            float(data)
-        )
-
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
-    OrderedDumper.add_representer(Range, _range_representer)
-    OrderedDumper.add_representer(Decimal, _reduced_accuracy_decimal_representer)
-    return yaml.dump_all(infos, sys.stdout, OrderedDumper, default_flow_style=False, indent=4)
-
+    return yaml.dump_all(infos, sys.stdout, SafeDatacubeDumper, default_flow_style=False, indent=4)
 
 _OUTPUT_WRITERS = {
     'csv': _write_csv,
     'yaml': _write_yaml,
 }
-
 
 @dataset_cmd.command('info', help="Display dataset information")
 @click.option('--show-sources', help='Also show source datasets', is_flag=True, default=False)

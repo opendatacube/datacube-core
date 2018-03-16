@@ -103,7 +103,7 @@ class Datacube(object):
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
         :rtype: pandas.DataFrame or list(dict)
         """
-        rows = [datatset_type_to_row(dataset_type) for dataset_type in self.index.products.get_all()]
+        rows = [dataset_type_to_row(dataset_type) for dataset_type in self.index.products.get_all()]
         if not with_pandas:
             return rows
 
@@ -661,7 +661,7 @@ def set_resampling_method(measurements, resampling=None):
     return measurements
 
 
-def datatset_type_to_row(dt):
+def dataset_type_to_row(dt):
     row = {
         'id': dt.id,
         'name': dt.name,
@@ -670,7 +670,7 @@ def datatset_type_to_row(dt):
     row.update(dt.fields)
     if dt.grid_spec is not None:
         row.update({
-            'crs': dt.grid_spec.crs,
+            'crs': str(dt.grid_spec.crs),
             'spatial_dimensions': dt.grid_spec.dimensions,
             'tile_size': dt.grid_spec.tile_size,
             'resolution': dt.grid_spec.resolution,

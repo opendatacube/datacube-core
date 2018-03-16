@@ -206,7 +206,7 @@ def test_user_creation(clirunner, example_user):
 
 def assert_user_with_role(clirunner, role, user_name):
     result = clirunner(['user', 'list'])
-    assert '{}\t{}'.format(role, user_name) in result.output
+    assert '{}{}'.format('user: ', user_name) in result.output
 
 
 def assert_no_user(clirunner, username):
