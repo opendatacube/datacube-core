@@ -353,7 +353,7 @@ metadata:
         code: LANDSAT_8
     instrument:
         name: OLI_TIRS
-    product_type: L1TP
+    product_type: L1T
     format:
         name: GeoTiff
 
