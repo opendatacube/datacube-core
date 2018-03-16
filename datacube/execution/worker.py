@@ -19,7 +19,7 @@ def parse_executor_opt(ctx, param, value):
     except ValueError:
         ctx.fail('Expected host:port, got `{}`'.format(host_port))
 
-    return (ex_type, host, port)
+    return ex_type, host, port
 
 
 def launch_celery_worker(host, port, nprocs, password=''):

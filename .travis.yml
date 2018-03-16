@@ -47,7 +47,7 @@ before_install:
 
 install:
 # Install datacube
-  - pip install '.[test,analytics,celery,s3]' --upgrade
+  - pip install '.[test,celery,s3]' --upgrade
   - pip install ./tests/drivers/fail_drivers --no-deps --upgrade  # used to test exception paths in driver loader
 
 # Print installed packages in case we need to debug them
