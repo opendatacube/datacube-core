@@ -1,6 +1,4 @@
-
 # coding: utf-8
-
 from pathlib import Path
 import os
 from osgeo import osr
@@ -18,12 +16,26 @@ from datacube.utils import changes
 
 MTL_PAIRS_RE = re.compile(r'(\w+)\s=\s(.*)')
 
-bands_ls8 = [
-           ('2', 'blue'),
-           ('3', 'green'),
-           ('4', 'red'),
-           ('5', 'nir'),
-           ]
+bands_ls8 = [('1', 'coastal_aerosol'),
+             ('2', 'blue'),
+             ('3', 'green'),
+             ('4', 'red'),
+             ('5', 'nir'),
+             ('6', 'swir1'),
+             ('7', 'swir2'),
+             ('8', 'panchromatic'),
+             ('9', 'cirrus'),
+             ('10', 'lwir1'),
+             ('11', 'lwir2'),
+             ('QUALITY', 'quality')]
+
+bands_ls7 = [('1', 'blue'),
+             ('2', 'green'),
+             ('3', 'red'),
+             ('4', 'nir'),
+             ('5', 'swir1'),
+             ('7', 'swir2'),
+             ('QUALITY', 'quality')]
 
 
 def _parse_value(s):
@@ -76,8 +88,10 @@ def satellite_ref(sat):
     """
     if sat == 'LANDSAT_8':
         sat_img = bands_ls8
+    elif sat == 'LANDSAT_7' or sat == 'LANDSAT_5':
+        sat_img = bands_ls7
     else:
-        raise ValueError('Not Landsat 8 or Landsat 7')
+        raise ValueError('Satellite data Not Supported')
     return sat_img
 
 
@@ -106,6 +120,7 @@ def make_metadata_doc(mtl_data, bucket_name, object_key):
     acquisition_date = mtl_product_info['DATE_ACQUIRED']
     scene_center_time = mtl_product_info['SCENE_CENTER_TIME']
     level = mtl_product_info['DATA_TYPE']
+    product_type = 'level1'
     sensing_time = acquisition_date + ' ' + scene_center_time
     cs_code = 32600 + mtl_data['PROJECTION_PARAMETERS']['UTM_ZONE']
     label = mtl_metadata_info['LANDSAT_SCENE_ID']
@@ -117,7 +132,7 @@ def make_metadata_doc(mtl_data, bucket_name, object_key):
     doc = {
         'id': str(uuid.uuid5(uuid.NAMESPACE_URL, get_s3_url(bucket_name, object_key))),
         'processing_level': level,
-        'product_type': 'Level1',
+        'product_type': product_type,
         'creation_dt': str(acquisition_date),
         'label': label,
         'platform': {'code': satellite},
@@ -149,11 +164,11 @@ def make_metadata_doc(mtl_data, bucket_name, object_key):
     return doc
 
 
-def get_metadata_docs(bucket_name, p):
+def get_metadata_docs(bucket_name, prefix):
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(bucket_name)
     logging.info("Bucket : %s", bucket_name)
-    for obj in bucket.objects.filter(Prefix=p):
+    for obj in bucket.objects.filter(Prefix=prefix):
         if obj.key.endswith('MTL.txt'):
             obj_key = obj.key
             logging.info("Processing %s", obj_key)
@@ -179,11 +194,11 @@ def add_dataset(doc, uri, rules, index):
     return uri
 
 
-def add_datacube_dataset(bucket_name, config, p):
+def add_datacube_dataset(bucket_name, config, prefix):
     dc = datacube.Datacube(config=config)
     index = dc.index
     rules = make_rules(index)
-    for metadata_path, metadata_doc in get_metadata_docs(bucket_name, p):
+    for metadata_path, metadata_doc in get_metadata_docs(bucket_name, prefix):
         uri = get_s3_url(bucket_name, metadata_path)
         add_dataset(metadata_doc, uri, rules, index)
         logging.info("Indexing %s", metadata_path)
@@ -192,10 +207,10 @@ def add_datacube_dataset(bucket_name, config, p):
 @click.command(help="Enter Bucket name. Optional to enter configuration file to access a different database")
 @click.argument('bucket_name')
 @click.option('--config', '-c', help=" Pass the config file to access the database", type=click.Path(exists=True))
-@click.option('-p', help="Pass the prefix of the object to the bucket")
-def main(bucket_name, config, p):
+@click.option('--prefix', '-p', help="Pass the prefix of the object to the bucket")
+def main(bucket_name, config, prefix):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
-    add_datacube_dataset(bucket_name, config, p)
+    add_datacube_dataset(bucket_name, config, prefix)
 
 
 if __name__ == "__main__":
