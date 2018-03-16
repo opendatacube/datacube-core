@@ -14,14 +14,14 @@ these description documents. Before loading them will need to generate them,
 using a tool which understands the format the dataset is in. Several of these
 tools are provided in  :file:`utils/` in the source repository.
 
-The two examples below shows USGS landsat data for ingestion into the Data cube.
+The two examples below shows USGS landsat data for ingestion into the Data cube:
 
 
-1. A specific example for USGS collection 1 MTL format is :download:`USGS Landsat Prepare Script
+A specific example for USGS collection 1 MTL format is :download:`USGS Landsat Prepare Script
 <../../utils/ls_usgs_prepare.py>`
 
 
-Preparing USGS Landsat Collection 1 - LEVEL1
+1. Preparing USGS Landsat Collection 1 - LEVEL1
 ============================================
 
 Download the USGS Collection 1 landsat scenes from any of the link below:
@@ -66,11 +66,10 @@ For Landsat collection 1 level 1 product:
     Added "ls8_l1_pc_usgs"
 
 
-
-2. An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
+An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
 <../../utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py>`
 
-Preparing USGS Landsat Surface Reflectance - LEDAPS
+2. Preparing USGS Landsat Surface Reflectance - LEDAPS
 ===================================================
 
 To prepare downloaded USGS LEDAPS Landsat scenes for use with the Data Cube,
