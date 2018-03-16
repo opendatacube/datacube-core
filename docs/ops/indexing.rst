@@ -57,6 +57,8 @@ what type of **units** the measurement is in, a **nodata** value, and even a way
 of specifying **bit level descriptions** or the **spectral response** in the
 case of reflectance data.
 
+A product definition example:
+
 .. code-block:: yaml
 
      name: ls8_level1
@@ -71,8 +73,13 @@ case of reflectance data.
          product_type: level1
          format:
              name: GeoTiff
-
      measurements:
+         - name: 'coastal_aerosol'
+           aliases: [band_1, coastal_aerosol]
+           dtype: int16
+           nodata: -9999
+           units: '1'
+
          - name: 'blue'
            aliases: [band_2, blue]
            dtype: int16
@@ -97,10 +104,21 @@ case of reflectance data.
            nodata: -9999
            units: '1'
 
+         - name: 'swir1'
+           aliases: [band_6, swir1]
+           dtype: int16
+           nodata: -9999
+           units: '1'
+
+         - name: 'swir2'
+           aliases: [band_7, swir2]
+           dtype: int16
+           nodata: -9999
+           units: '1'
 
 More detailed information on the structure of a product definition document can be found :ref:`here <product-doc>`
 
-A set of example Product definitions are supplied `here <https://github.com/opendatacube/datacube-core/tree/develop/docs/config_samples/dataset_types>`_ to cover some common Geoscience Australia and other Earth Observation Data.
+A set of Product definitions are supplied `here <https://github.com/opendatacube/datacube-core/tree/develop/docs/config_samples/dataset_types>`_ to cover some common Geoscience Australia and other Earth Observation Data.
 
 
 Loading Product Definitions
