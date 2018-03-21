@@ -18,7 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install psychopg2 as a special case, to quiet the warning message 
-RUN pip3 install --no-cache --no-binary :all: psycopg2
+RUN pip3 install --no-cache --no-binary :all: psycopg2 \
+    && rm -rf $HOME/.cache/pip
 
 # Get the code, and put it in /code
 ENV APPDIR=/code
@@ -30,8 +31,10 @@ WORKDIR $APPDIR
 ENV LC_ALL C.UTF-8
 
 # Install dependencies
-RUN pip3 install '.[test,analytics,celery,s3]' --upgrade
-RUN pip3 install ./tests/drivers/fail_drivers --no-deps --upgrade
+RUN pip3 install '.[test,analytics,celery,s3]' --upgrade \
+    && rm -rf $HOME/.cache/pip
+RUN pip3 install ./tests/drivers/fail_drivers --no-deps --upgrade \
+    && rm -rf $HOME/.cache/pip
 
 # Install ODC
 RUN python3 setup.py develop
