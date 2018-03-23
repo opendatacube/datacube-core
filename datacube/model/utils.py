@@ -85,8 +85,10 @@ def new_dataset_info():
 
 def band_info(band_names, uri=None, band_uris=None):
     if band_uris is None:
-        band_uris = {name: uri if uri is not None else ''
-                     for name in band_names}
+        band_uris = {name: '' for name in band_names}
+    elif band_uris == uri:
+        # multiband
+        band_uris = {name: uri for name in band_names}
 
     return {
         'image': {
@@ -182,7 +184,7 @@ def make_dataset(product, sources, extent, center_time,
     :param center_time: time of the central point of the dataset
     :param str uri: The uri of the dataset
     :param dict app_info: Additional metadata to be stored about the generation of the product
-    :param dict band_uris: band name to uri mapping
+    :param dict band_uris: band name to uri mapping (or just the uri for multiband datasets)
     :rtype: class:`Dataset`
     """
     document = {}
