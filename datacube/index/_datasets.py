@@ -619,7 +619,7 @@ class DatasetResource(object):
 
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
-            raise ValueError('No valid product was specified.')         
+            raise ValueError('No valid product was specified.')
 
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields
