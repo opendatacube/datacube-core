@@ -145,7 +145,7 @@ class GridWorkflow(object):
 
         Either grid_spec or product must be supplied.
 
-        :param Index index: The database index to use.
+        :param datacube.index.Index index: The database index to use.
         :param GridSpec grid_spec: The grid projection and resolution
         :param str product: The name of an existing product, if no grid_spec is supplied.
         """

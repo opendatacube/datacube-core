@@ -30,7 +30,7 @@ Build a version
 Marking it stable
 =================
 
-Once/if a built version has been tested on Raijin, found to be stable, and the team agrees, we make it the new default
+Once a built version has been tested, found to be stable, and the team agrees, we make it the new 
 stable version.
 
 #. Merge changes leading up to the release into the `stable` branch
@@ -58,27 +58,9 @@ stable version.
         openssl sha256 <downloaded-datacube-source.tar.gz>
         
     
-#. Update the default version on `raijin`
-    Follow the instructions under **Update default version** in the `Datacube Environment`_ repository.
-
-#. Notify the community of the release using the Datacube Central mailing list
-    The notifications are sent out using MailChimp_. You might need an invitation from the Geoscience
-    Australia account.
-    
-    Create a campaign (possibly by replicating one of the existing ones) and change the notes.
-    You could send out a test mail to selected accounts before sending it out to the entire DEA
-    Beta Users list.
-
 .. _PyPI: https://pypi.python.org/pypi
-
 .. _Travis: https://travis-ci.org/opendatacube/datacube-core
-
 .. _readthedocs: http://readthedocs.org/projects/datacube-core/builds/
-
 .. _Datacube releases: https://github.com/opendatacube/datacube-core/releases
-
-.. _Datacube Environment: https://github.com/GeoscienceAustralia/digitalearthau/tree/develop/modules
-
 .. _Datcube Feedstock: https://github.com/conda-forge/datacube-feedstock#updating-datacube-feedstock
 
-.. _MailChimp: https://www.mailchimp.com
