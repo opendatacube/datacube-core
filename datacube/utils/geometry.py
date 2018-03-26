@@ -248,7 +248,8 @@ class CRS(object):
 
 def _make_point(pt):
     geom = ogr.Geometry(ogr.wkbPoint)
-    geom.AddPoint_2D(*pt)
+    # Ignore the third dimension
+    geom.AddPoint_2D(*pt[0:2])
     return geom
 
 
