@@ -603,12 +603,12 @@ def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_tele
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results when searching for a different dataset type.
-    datasets = index.datasets.search_eager(
-        product=ls5_telem_type.name,
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS'
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            product=ls5_telem_type.name,
+            platform='LANDSAT_8',
+            instrument='OLI_TIRS'
+        )
 
     # One result when no types specified.
     datasets = index.datasets.search_eager(
@@ -643,11 +643,11 @@ def test_search_special_fields(index, pseudo_ls8_type, pseudo_ls8_dataset,
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Unknown field: no results
-    datasets = index.datasets.search_eager(
-        platform='LANDSAT_8',
-        flavour='chocolate',
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            platform='LANDSAT_8',
+            flavour='chocolate',
+        )
 
 
 def test_search_by_uri(index, ls5_dataset_w_children):
@@ -662,12 +662,12 @@ def test_search_by_uri(index, ls5_dataset_w_children):
 
 def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
     # Should return no results.
-    datasets = index.datasets.search_eager(
-        product=pseudo_ls8_type.name,
-        # The telemetry type is not of type storage_unit.
-        metadata_type='storage_unit'
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            product=pseudo_ls8_type.name,
+            # The telemetry type is not of type storage_unit.
+            metadata_type='storage_unit'
+        )
 
 
 def test_fetch_all_of_md_type(index, pseudo_ls8_dataset):
@@ -687,10 +687,10 @@ def test_fetch_all_of_md_type(index, pseudo_ls8_dataset):
     assert results[0].id == pseudo_ls8_dataset.id
 
     # No results for another.
-    results = index.datasets.search_eager(
-        metadata_type='telemetry'
-    )
-    assert len(results) == 0
+    with pytest.raises(ValueError):
+        results = index.datasets.search_eager(
+            metadata_type='telemetry'
+        )
 
 
 def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_telem_type):
