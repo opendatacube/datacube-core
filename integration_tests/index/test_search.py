@@ -258,11 +258,11 @@ def test_search_dataset_equals(index, pseudo_ls8_dataset):
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Wrong sensor name
-    datasets = index.datasets.search_eager(
-        platform='LANDSAT-8',
-        instrument='TM',
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            platform='LANDSAT-8',
+            instrument='TM',
+        )
 
 
 def test_search_dataset_by_metadata(index, pseudo_ls8_dataset):
