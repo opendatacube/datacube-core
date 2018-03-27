@@ -1107,7 +1107,7 @@ def test_csv_search_via_cli(clirunner, pseudo_ls8_type, pseudo_ls8_dataset, pseu
 
     def matches_none(*args):
         rows = _cli_csv_search(('datasets',) + args, clirunner)
-        assert len(rows) == 0
+        assert len(lines) == 1
 
     matches_both(' -40 < lat < -10')
     matches_both('product=' + pseudo_ls8_type.name)
