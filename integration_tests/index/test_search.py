@@ -619,12 +619,12 @@ def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_tele
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results for different metadata type.
-    datasets = index.datasets.search_eager(
-        metadata_type='telemetry',
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS'
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            metadata_type='telemetry',
+            platform='LANDSAT_8',
+            instrument='OLI_TIRS'
+        )
 
 
 def test_search_special_fields(index, pseudo_ls8_type, pseudo_ls8_dataset,
