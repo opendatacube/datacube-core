@@ -327,3 +327,19 @@ def test_3d_geometry_converted_to_2d_geometry():
     assert {2} == set(len(pt) for pt in g_3d.boundary.coords)  # All coordinates are 2D
 
     assert g_2d == g_3d  # 3D geometry has been converted to a 2D by dropping the Z axis
+
+
+def test_3d_point_converted_to_2d_point():
+    point = (-35.5029340, 145.9312455, 0.0)
+
+    point_3d = {'coordinates': point,
+                'type': 'Point'}
+    point_2d = {'coordinates': (point[0], point[1]),
+                'type': 'Point'}
+
+    p_2d = geometry.Geometry(point_2d)
+    p_3d = geometry.Geometry(point_3d)
+
+    assert len(p_3d.coords[0]) == 2
+
+    assert p_2d == p_3d
