@@ -12,7 +12,7 @@ EXTENT = Table('extent', METADATA,
                Column('start', DateTime(timezone=True), nullable=False),
                Column('offset_alias', String, nullable=False),
                Column('geometry', postgres.JSONB, nullable=True)
-               )
+              )
 
 EXTENT_META = Table('extent_meta', METADATA,
                     Column('id', SmallInteger, primary_key=True, autoincrement=True),
@@ -21,7 +21,7 @@ EXTENT_META = Table('extent_meta', METADATA,
                     Column('end', DateTime(timezone=True), nullable=False),
                     Column('offset_alias', String, nullable=False),
                     Column('projection', String, nullable=True)
-                    )
+                   )
 
 PRODUCT_BOUNDS = Table('product_bounds', METADATA,
                        Column('id', SmallInteger, primary_key=True, autoincrement=True),
@@ -30,14 +30,13 @@ PRODUCT_BOUNDS = Table('product_bounds', METADATA,
                        Column('end', DateTime(timezone=True), nullable=False),
                        Column('bounds', postgres.JSONB, nullable=True),
                        Column('projection', String, nullable=True)
-                       )
+                      )
 
 if __name__ == '__main__':
-    engine = create_engine('postgresql://aj9439@agdcdev-db.nci.org.au:6432/datacube')
+    ENGINE = create_engine('postgresql://aj9439@agdcdev-db.nci.org.au:6432/datacube')
     # Create the extent table
-    EXTENT.create(bind=engine)
+    EXTENT.create(bind=ENGINE)
     # Create the extent_meta table
-    EXTENT_META.create(bind=engine)
+    EXTENT_META.create(bind=ENGINE)
     # Create product_bound table
-    PRODUCT_BOUNDS.create(bind=engine)
-
+    PRODUCT_BOUNDS.create(bind=ENGINE)
