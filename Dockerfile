@@ -47,7 +47,7 @@ RUN pip3 install '.[test,celery,s3]' --upgrade \
     && rm -rf $HOME/.cache/pip
 
 # Install ODC
-RUN python3 setup.py develop
+RUN python3 setup.py install
 
 # Move docs and utils somewhere else, and remove the temp folder
 RUN mkdir -p /opt/odc \
