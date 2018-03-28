@@ -1,1 +1,1 @@
-from ._extent_index import *
+from ._extent_index import ExtentIndex
