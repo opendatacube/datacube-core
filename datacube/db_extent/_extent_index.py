@@ -509,6 +509,8 @@ class ExtentIndex(object):
             dataset_type_ref = self.get_dataset_type_ref(product_name)
         if dataset_type_ref:
             return self._get_extent_row(dataset_type_ref, start, offset_alias)
+        else:
+            KeyError("Corresponding dataset_type_ref does not exist")
 
     def get_bounds(self, product_name):
         """
@@ -536,11 +538,11 @@ class ExtentIndex(object):
 
 if __name__ == '__main__':
     # Get the Connections to the databases
-    extent_db = PostgresDb.create(hostname='agdcdev-db.nci.org.au', database='datacube', port=6432, username='aj9439')
-    extent_idx = ExtentIndex(hostname='agdc-db.nci.org.au', database='datacube', port=6432,
-                             username='aj9439', extent_index=Index(extent_db))
+    EXTENT_DB = PostgresDb.create(hostname='agdcdev-db.nci.org.au', database='datacube', port=6432, username='aj9439')
+    EXTENT_IDX = ExtentIndex(hostname='agdc-db.nci.org.au', database='datacube', port=6432,
+                             username='aj9439', extent_index=Index(EXTENT_DB))
 
     # load into extents table
-    # extent_idx.store_extent(product_name='ls8_nbar_albers', start='2017-01',
-    #                         end='2017-04', offset_alias='1M', projection='EPSG:4326')
-    extent_idx.store_bounds(product_name='ls8_nbar_albers',projection='EPSG:4326')
+    EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
+                            end='2017-04', offset_alias='1M', projection='EPSG:4326')
+    EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
