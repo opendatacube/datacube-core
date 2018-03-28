@@ -601,15 +601,11 @@ class DatasetResource(object):
     def _do_search_by_product(self, query, return_fields=False, select_field_names=None,
                               with_source_ids=False, source_filter=None,
                               limit=None):
-        #if not product:
-        #    raise ValueError('No valid product was specified.')
-
         if source_filter:
             product_queries = list(self._get_product_queries(source_filter))
             if not product_queries:
                 # No products match our source filter, so there will be no search results regardless.
-                _LOG.info("No products match source filter")
-                return
+                raise ValueError('No products match source filter: ' % source_filter)
             if len(product_queries) > 1:
                 raise RuntimeError("Multi-product source filters are not supported. Try adding 'product' field")
 
