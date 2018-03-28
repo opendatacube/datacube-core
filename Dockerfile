@@ -38,18 +38,16 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 RUN pip3 install --upgrade pip setuptools wheel \
     && rm -rf $HOME/.cache/pip
 
-# Install psychopg2 as a special case, to quiet the warning message 
+# Install psycopg2 as a special case, to quiet the warning message 
 RUN pip3 install --no-cache --no-binary :all: psycopg2 \
     && rm -rf $HOME/.cache/pip
 
 # Now use the setup.py file to identify dependencies
 RUN pip3 install '.[test,celery,s3]' --upgrade \
     && rm -rf $HOME/.cache/pip
-RUN pip3 install ./tests/drivers/fail_drivers --no-deps --upgrade \
-    && rm -rf $HOME/.cache/pip
 
 # Install ODC
-RUN python3 setup.py develop
+RUN python3 setup.py install
 
 # Move docs and utils somewhere else, and remove the temp folder
 RUN mkdir -p /opt/odc \
