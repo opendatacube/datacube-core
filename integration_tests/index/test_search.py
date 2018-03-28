@@ -1107,7 +1107,11 @@ def test_csv_search_via_cli(clirunner, pseudo_ls8_type, pseudo_ls8_dataset, pseu
 
     def matches_none(*args):
         rows = _cli_csv_search(('datasets',) + args, clirunner)
-        assert len(lines) == 1
+        assert len(rows) == 0
+
+    def no_such_product(*args):
+        with pytest.raises(ValueError):
+            rows = _cli_csv_search(('datasets',) + args, clirunner)
 
     matches_both(' -40 < lat < -10')
     matches_both('product=' + pseudo_ls8_type.name)
@@ -1119,7 +1123,7 @@ def test_csv_search_via_cli(clirunner, pseudo_ls8_type, pseudo_ls8_dataset, pseu
     matches_1('platform=LANDSAT_8', '2014-07-24<time<2014-07-27')
 
     # One matching field, one non-matching
-    matches_none('2014-07-24<time<2014-07-27', 'platform=LANDSAT_5')
+    no_such_product('2014-07-24<time<2014-07-27', 'platform=LANDSAT_5')
 
     # Test date shorthand
     matches_both('2014-7 < time < 2014-8')
