@@ -38,7 +38,7 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 RUN pip3 install --upgrade pip setuptools wheel \
     && rm -rf $HOME/.cache/pip
 
-# Install psychopg2 as a special case, to quiet the warning message 
+# Install psycopg2 as a special case, to quiet the warning message 
 RUN pip3 install --no-cache --no-binary :all: psycopg2 \
     && rm -rf $HOME/.cache/pip
 
