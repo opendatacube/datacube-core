@@ -45,8 +45,6 @@ RUN pip3 install --no-cache --no-binary :all: psycopg2 \
 # Now use the setup.py file to identify dependencies
 RUN pip3 install '.[test,celery,s3]' --upgrade \
     && rm -rf $HOME/.cache/pip
-RUN pip3 install ./tests/drivers/fail_drivers --no-deps --upgrade \
-    && rm -rf $HOME/.cache/pip
 
 # Install ODC
 RUN python3 setup.py develop
