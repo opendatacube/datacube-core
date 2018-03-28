@@ -510,7 +510,7 @@ class ExtentIndex(object):
         if dataset_type_ref:
             return self._get_extent_row(dataset_type_ref, start, offset_alias)
         else:
-            KeyError("Corresponding dataset_type_ref does not exist")
+            raise KeyError("Corresponding dataset_type_ref does not exist")
 
     def get_bounds(self, product_name):
         """
@@ -533,7 +533,7 @@ class ExtentIndex(object):
             else:
                 raise KeyError("A bounds record corresponding to {} does not exist".format(product_name))
         else:
-            KeyError("A dataset_type corresponding to {} does not exist".format(product_name))
+            raise KeyError("A dataset_type corresponding to {} does not exist".format(product_name))
 
 
 if __name__ == '__main__':
