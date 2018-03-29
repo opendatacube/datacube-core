@@ -93,6 +93,7 @@ class ExtentIndex(object):
         self._username = username
 
         # Access to tables
+        self._extent_index = extent_index
         self._engine = create_engine(extent_index.url, client_encoding='utf8')
         self._conn = self._engine.connect()
         meta = MetaData(self._engine, schema=SCHEMA_NAME)
@@ -146,8 +147,11 @@ class ExtentIndex(object):
         """
         dataset_type_query = select([self._dataset_type_table.c.id.label('id')]).\
             where(self._dataset_type_table.c.name == product_name)
-        dataset_type_row = self._conn.execute(dataset_type_query).fetchone()
-        return dataset_type_row['id'] if dataset_type_row else None
+        conn = self._engine.connect()
+        dataset_type_row = conn.execute(dataset_type_query).fetchone()
+        type_id = dataset_type_row['id'] if dataset_type_row else None
+        conn.close()
+        return type_id
 
     def _get_extent_meta_row(self, dataset_type_ref, offset_alias):
         """
@@ -161,7 +165,11 @@ class ExtentIndex(object):
                                     self._extent_meta_table.c.end.label('end')]).\
             where((dataset_type_ref == self._extent_meta_table.c.dataset_type_ref) &
                   (offset_alias == self._extent_meta_table.c.offset_alias))
-        return self._conn.execute(extent_meta_query).fetchone()
+        conn = self._engine.connect()
+        result = conn.execute(extent_meta_query).fetchone()
+        row = {'id': result['id'], 'start': result['start'], 'end': result['end']}
+        conn.close()
+        return row
 
     def _get_extent_row(self, dataset_type_ref, start, offset_alias):
         """
@@ -175,11 +183,14 @@ class ExtentIndex(object):
         extent_uuid = ExtentIndex._compute_uuid(dataset_type_ref, start, offset_alias)
         extent_query = select([self._extent_table.c.geometry.label('geometry')]).\
             where(self._extent_table.c.id == extent_uuid.hex)
-        extent_row = self._conn.execute(extent_query).fetchone()
+        conn = self._engine.connect()
+        extent_row = conn.execute(extent_query).fetchone()
         if extent_row:
-            return extent_row['geometry']
+            geo = extent_row['geometry']
         else:
             raise KeyError("Corresponding extent record does not exist in the extent table")
+        conn.close()
+        return geo
 
     def _do_insert_query(self, dataset_type_ref, start, offset_alias, extent):
         """
@@ -196,18 +207,20 @@ class ExtentIndex(object):
         # See whether an entry already exists in extent
         extent_query = select([self._extent_table.c.id.label('id')]).\
             where(self._extent_table.c.id == extent_uuid.hex)
-        extent_row = self._conn.execute(extent_query).fetchone()
+        conn = self._engine.connect()
+        extent_row = conn.execute(extent_query).fetchone()
         if extent_row:
             # Update the existing entry
             update = self._extent_table.update().\
                 where(self._extent_table.c.id == extent_row['id']).\
                 values(geometry=mapping(extent))
-            self._conn.execute(update)
+            conn.execute(update)
         else:
             # Insert a new entry
             ins = self._extent_table.insert().values(id=extent_uuid.hex, dataset_type_ref=dataset_type_ref,
                                                      start=start, offset_alias=offset_alias, geometry=mapping(extent))
-            self._conn.execute(ins)
+            conn.execute(ins)
+        conn.close()
 
     def _store_one(self, product_name, dataset_type_ref, period, offset_alias,
                    offset_pool=DEFAULT_PER_PROCESS_FREQ, projection=None):
@@ -272,6 +285,7 @@ class ExtentIndex(object):
         dataset_type_ref = self.get_dataset_type_ref(product_name)
 
         if dataset_type_ref:
+            conn = self._engine.connect()
             # Now we are ready to get the extent_metadata id
             extent_meta_row = self._get_extent_meta_row(dataset_type_ref, offset_alias)
             if extent_meta_row:
@@ -280,21 +294,22 @@ class ExtentIndex(object):
                     update = self._extent_meta_table.update(). \
                         where(self._extent_meta_table.c.id == extent_meta_row['id']). \
                         values(start=start, end=end, projection=projection)
-                    self._conn.execute(update)
+                    conn.execute(update)
             else:
                 # insert a new meta entry
                 ins = self._extent_meta_table.insert().values(dataset_type_ref=dataset_type_ref,
                                                               start=start, end=end,
                                                               offset_alias=offset_alias,
                                                               projection=projection)
-                self._conn.execute(ins)
+                conn.execute(ins)
+            conn.close()
             # Time to insert/update new extent data
             self._store_many(product_name=product_name, dataset_type_ref=dataset_type_ref,
                              start=start, end=end, offset_alias=offset_alias, projection=projection)
         else:
             raise KeyError("dataset_type_ref does not exist")
 
-    def _store_bounds_record(self, product_name, lower, upper, bounds, projection):
+    def _store_bounds_record(self, dataset_type_ref, lower, upper, bounds, projection):
         """
         Store a record in the products_bounds table. It raises KeyError exception if product name is not
         found in the dataset_type table. The stored values are upper and lower bounds of time, axis aligned
@@ -306,29 +321,32 @@ class ExtentIndex(object):
         :param str projection: The projection used
         :return:
         """
-        # Get the dataset_type_ref
-        dataset_type_ref = self.get_dataset_type_ref(product_name)
-        if not dataset_type_ref:
-            raise KeyError("dataset_type_ref does not exist")
 
         bounds_json = {'left': bounds.left, 'bottom': bounds.bottom, 'right': bounds.right, 'top': bounds.top}
 
-        # See whether an entry exists in extent
+        # We need to recreate the engine object here to avoid timeouts
+        # even though recreating the engine per connection is not the advise
+        egn = create_engine(self._extent_index.url, client_encoding='utf8')
+        conn = egn.connect()
+
+        # See whether an entry exists in product_bounds
         bounds_query = select([self._bounds_table.c.id.label('id')]).\
             where(self._bounds_table.c.dataset_type_ref == dataset_type_ref)
-        bounds_row = self._conn.execute(bounds_query).fetchone()
+        bounds_row = conn.execute(bounds_query).fetchone()
         if bounds_row:
             # Update the existing entry
             update = self._bounds_table.update().\
                 where(self._bounds_table.c.id == bounds_row['id']).\
                 values(start=lower, end=upper, bounds=json.dumps(bounds_json), projection=projection)
-            self._conn.execute(update)
+            conn.execute(update)
         else:
             # Insert a new entry
             ins = self._bounds_table.insert().values(dataset_type_ref=dataset_type_ref,
                                                      start=lower, end=upper,
                                                      bounds=json.dumps(bounds_json), projection=projection)
-            self._conn.execute(ins)
+            conn.execute(ins)
+        conn.close()
+        egn.dispose()
 
     @staticmethod
     def _bounds_union(bound1, bound2):
@@ -354,6 +372,11 @@ class ExtentIndex(object):
         :return:
         """
 
+        # Get the dataset_type_ref
+        dataset_type_ref = self.get_dataset_type_ref(product_name)
+        if not dataset_type_ref:
+            raise KeyError("dataset_type_ref does not exist")
+
         datasets = self._loading_datacube.find_datasets_lazy(product=product_name)
         try:
             first = next(datasets)
@@ -370,7 +393,7 @@ class ExtentIndex(object):
                 bounds = self._bounds_union(bounds, dataset.extent.boundingbox)
             else:
                 bounds = self._bounds_union(bounds, dataset.extent.to_crs(CRS(projection)).boundingbox)
-        self._store_bounds_record(product_name=product_name, lower=lower,
+        self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=lower,
                                   upper=upper, bounds=bounds, projection=projection)
 
     def store_bounds(self, product_name, projection=None):
