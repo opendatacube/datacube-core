@@ -58,6 +58,9 @@ Enhancements
 
  - Command line tools can now output CSV or YAML. (Issue :issue:`206`, :pull:`390`)
 
+ - Support for saving data to NetCDF using a Lambert Conformal Conic Projection
+   (:pull:`329`)
+
  - Lots of documentation updates:
 
    - Information about :ref:`bit-masking`.
