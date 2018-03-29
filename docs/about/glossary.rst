@@ -44,6 +44,10 @@ This page lists definitions for terms used in the Open Data Cube and this manual
       It supports ODC through the development of Digital Earth Australia. For more
       information see http://www.ga.gov.au/dea/.
 
+   grid spec
+   Grid Specification
+      A definition of how some raster data relates to a geospatial grid. Includes a CRS, a zero point, and an X and Y scale.
+
    NCI
    National Computation Infrastructure
 

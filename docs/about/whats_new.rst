@@ -6,19 +6,38 @@ What's New
 **********
 
 
-Next release
-============
+v1.6rc1 Easter Bilby
+====================
 
- - Support for third party drivers, for custom data storage and custom index implementations
+This is the first release in a while, and so there's a lot of changes, including
+some significant refactoring, with the potential having issues when upgrading.
 
-   - The correct way to get an Index connection in code is to use :meth:`datacube.index.index_connect`.
+
+
+Backwards Incompatible Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ - Drop Support for Python 2. Python 3.5 is now the earliest supported Python
+   version.
+
+ - Removed the old ``ndexpr``, ``analytics`` and ``execution engine`` code. There is
+   work underway in the `execution engine branch`_ to replace these features.
+
+Enhancements
+~~~~~~~~~~~~
+
+ - Support for third party drivers, for custom data storage and custom index
+   implementations
+
+ - The correct way to get an Index connection in code is to use
+   :meth:`datacube.index.index_connect`.
 
  - Changes in ingestion configuration
 
-   - Must now specify the `write_plugin`_ to use. For s3 ingestion there was
+   - Must now specify the :ref:`write_plugin` to use. For s3 ingestion there was
      a top level ``container`` specified, which has been renamed and moved
      under ``storage``. The entire ``storage`` section is passed through to
-     the `write_plugin`_, so drivers requiring other configuration can
+     the :ref:`write_plugin`, so drivers requiring other configuration can
      include them here. eg:
 
      .. code:: yaml
@@ -30,31 +49,59 @@ Next release
            bucket: my_s3_bucket
          ...
 
+ - Added a ``Dockerfile`` to enable automated builds for a reference Docker image.
 
- - Make :class:`CRS` equality comparisons a little bit looser. Trust either a *Proj.4* based comparison
-   or a *GDAL* based comparison. (Closed #243)
+ - Multiple environments can now be specified in one datacube config. See
+   :pull:`298` and the `config docs`_
 
- - Allow creation of :class:`datacube.utils.geometry.Geometry` objects from 3d representations. The Z axis is simply thrown away.
+   - Allow specifying which ``index_driver`` should be used for an environment.
 
- - Added example prepare script for Collection 1 USGS data; improved band handling and downloads.
+ - Command line tools can now output CSV or YAML. (Issue :issue:`206`, :pull:`390`)
 
- - Multiple environments can now be specified in one datacube config. See `#298`_ and the `config docs`_
+ - Lots of documentation updates:
 
-   - Allow specifying which `index_driver` should be used for an environment.
+   - Information about :ref:`bit-masking`.
 
- - The :option:`datacube --config_file` option has been renamed to :option:`datacube --config`, which is
-   shorter and more consistent with the other options. The old name can still be used for now.
+   - A description of how data is loaded.
 
- - Added documentation about :ref:`bit-masking`.
+   - Some higher level architecture documentation.
 
- - Added Dockerfile to enable automated builds for a reference Docker image.
-
- - Removed the old `ndexpr`, `analytics` and `execution engine` code. There is work underway in the `execution engine branch`_ to replace these features.
+   - Updates on how to index new data.
 
 
- - Command line tools can now output CSV or YAML. (Issue #206, PR 390)
+Bug Fixes
+~~~~~~~~~
 
-.. _#298: https://github.com/opendatacube/datacube-core/pull/298
+ - Allow creation of :class:`datacube.utils.geometry.Geometry` objects from 3d
+   representations. The Z axis is simply thrown away.
+
+ - The :option:`datacube --config_file` option has been renamed to
+   :option:`datacube --config`, which is shorter and more consistent with the
+   other options. The old name can still be used for now.
+
+ - Fix a severe performance regression when extracting and reprojecting a small
+   region of data. (:pull:`393`)
+
+ - Fix for a somewhat rare bug causing read failures by attempt to read data from
+   a negative index into a file. (:pull:`376`)
+
+ - Make :class:`CRS` equality comparisons a little bit looser. Trust either a
+   *Proj.4* based comparison or a *GDAL* based comparison. (Closed :issue:`243`)
+
+New Data Support
+~~~~~~~~~~~~~~~~
+
+ - Added example prepare script for Collection 1 USGS data; improved band
+   handling and downloads.
+
+ - Add a product specification and prepare script for indexing Landsat L2 Surface
+   Reflectance Data (:pull:`375`)
+
+ - Add a product specification for Sentinel 2 ARD Data (:pull:`342`)
+
+
+
+
 .. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
 .. _execution engine branch: https://github.com/opendatacube/datacube-core/compare/csiro/execution-engine
 

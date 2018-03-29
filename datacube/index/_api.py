@@ -22,11 +22,10 @@ def index_connect(local_config=None, application_name=None, validate_connection=
     check that the server is available.
 
     :param application_name: A short, alphanumeric name to identify this application.
-    :param local_config: Config object to use.
-    :type local_config: :py:class:`datacube.config.LocalConfig`, optional
+    :param datacube.config.LocalConfig local_config: Config object to use. (optional)
     :param validate_connection: Validate database connection and schema immediately
-    :raises datacube.drivers.postgres._connections.IndexSetupError
     :rtype: datacube.index.index.Index
+    :raises datacube.drivers.postgres._connections.IndexSetupError:
     """
     if local_config is None:
         local_config = LocalConfig.find()
