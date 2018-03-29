@@ -153,7 +153,6 @@ class CRS(object):
 
         if self.geographic:
             return int(self._crs.GetAuthorityCode('GEOGCS'))
-
         return None
 
     @property

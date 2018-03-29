@@ -138,6 +138,52 @@ v1.5.2 Purpler Unicorn with Stars (28 August 2017)
  - When reading data, implement `skip_broken_datasets` for the `dask` case too
 
 
+v1.5.4 Dingley Dahu (13th December 2017)
+------------------------------------
+ - Minor features backported from 2.0:
+
+    - Support for `limit` in searches
+
+    - Alternative lazy search method `find_lazy`
+
+ - Fixes:
+
+    - Improve native field descriptions
+
+    - Connection should not be held open between multi-product searches
+
+    - Disable prefetch for celery workers
+
+    - Support jsonify-ing decimals
+
+v1.5.3 Purpler Unicorn with Starlight (16 October 2017)
+-----------------------------
+
+ - Use `cloudpickle` as the `celery` serialiser
+
+ - Allow `celery` tests to run without installing it
+
+ - Move `datacube-worker` inside the main datacube package
+
+ - Write `metadata_type` from the ingest configuration if available
+
+ - Support config parsing limitations of Python 2
+
+ - Fix #303: resolve GDAL build dependencies on Travis
+
+ - Upgrade `rasterio` to newer version
+
+
+v1.5.2 Purpler Unicorn with Stars (28 August 2017)
+--------------------------------------------------
+
+ - Fix bug when reading data in native projection, but outside `source` area. Often hit when running `datacube-stats`
+
+ - Fix error loading and fusing data using `dask`. (Fixes #276)
+
+ - When reading data, implement `skip_broken_datasets` for the `dask` case too
+
+
 v1.5.1 Purpler Unicorn (13 July 2017)
 =====================================
 
