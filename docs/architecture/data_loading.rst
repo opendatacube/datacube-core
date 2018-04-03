@@ -362,6 +362,6 @@ Storage Classes
 
 
 
-.. _rasterio: https://mapbox.github.io/rasterio/
+.. _rasterio: https://rasterio.readthedocs.io/en/latest/
 .. _xarray: https://xarray.pydata.org/
 .. _dask: https://dask.pydata.org/

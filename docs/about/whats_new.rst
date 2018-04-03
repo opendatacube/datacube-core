@@ -52,7 +52,7 @@ Enhancements
  - Added a ``Dockerfile`` to enable automated builds for a reference Docker image.
 
  - Multiple environments can now be specified in one datacube config. See
-   :pull:`298` and the `config docs`_
+   :pull:`298` and the :ref:`runtime-config-doc`
 
    - Allow specifying which ``index_driver`` should be used for an environment.
 
@@ -104,7 +104,6 @@ New Data Support
 
 
 
-.. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
 .. _execution engine branch: https://github.com/opendatacube/datacube-core/compare/csiro/execution-engine
 
 v1.5.4 Dingley Dahu (13th December 2017)

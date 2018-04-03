@@ -53,7 +53,7 @@ This page lists definitions for terms used in the Open Data Cube and this manual
 
       Australia's national research computing facility. It provides computing
       facilities for use by Australian researchers, industry and government. For
-      more information see http://www.nci.org.au/.
+      more information see http://nci.org.au/.
 
    HPC
    High Performance Computing
@@ -85,7 +85,7 @@ This page lists definitions for terms used in the Open Data Cube and this manual
    Python
       The programming language used to develop the Data Cube. It is easy to use
       while still allowing high performance access and processing capabilities.
-      See http://www.python.org/ for more.
+      See https://www.python.org/ for more.
 
    USGS
    United States Geological Survey

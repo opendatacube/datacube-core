@@ -38,7 +38,7 @@ looking.
     * `MCD43A3 - Albedo 16-Day L3 Global 500m`__
     * `MCD43A4 - Nadir BRDF-Adjusted Reflectance 16-Day L3 Global 500m`__
 
-__ http://landsat.usgs.gov/CDR_LSR.php
+__ https://landsat.usgs.gov/landsat-surface-reflectance-data-products
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3
