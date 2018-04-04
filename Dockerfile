@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:17.10
 # This Dockerfile should follow the Travis configuration process
 # available here: https://github.com/opendatacube/datacube-core/blob/develop/.travis.yml
 
@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
+RUN python --version
 RUN add-apt-repository ppa:nextgis/ppa
 
 # And now install apt dependencies, including a few of the heavy Python projects
@@ -15,9 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core requirements from travis.yml
     gdal-bin libgdal-dev libgdal20 libudunits2-0 \
     # Extra python components, to speed things up
-    python3 python3-setuptools python3-dev python3-numpy python3-netcdf4 \
-    # Need pip to install more python packages later
-    python3-pip \
+    python3 python3-setuptools python3-dev \
+    python3-numpy python3-netcdf4 python3-psycopg2 \
+    # Need pip to install more python packages later.
+    # The libdpkg-perl is needed to build pyproj
+    python3-pip libdpkg-perl \
     # G++ because GDAL decided it needed compiling
     g++ \
     && rm -rf /var/lib/apt/lists/*
@@ -36,10 +39,6 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 
 # Install dependencies. First update pip
 RUN pip3 install --upgrade pip setuptools wheel \
-    && rm -rf $HOME/.cache/pip
-
-# Install psychopg2 as a special case, to quiet the warning message 
-RUN pip3 install --no-cache --no-binary :all: psycopg2 \
     && rm -rf $HOME/.cache/pip
 
 # Now use the setup.py file to identify dependencies
