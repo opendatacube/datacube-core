@@ -26,11 +26,11 @@ _LOG = logging.getLogger('datacube-product')
 
 
 @cli.group(name='product', help='Product commands')
-def product():
+def product_cli():
     pass
 
 
-@product.command('add')
+@product_cli.command('add')
 @click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
               help='Allow index to be locked from other users while updating (default: false)')
 @click.argument('files',
@@ -53,7 +53,7 @@ def add_dataset_types(index, allow_exclusive_lock, files):
             continue
 
 
-@product.command('update')
+@product_cli.command('update')
 @click.option(
     '--allow-unsafe/--forbid-unsafe', is_flag=True, default=False,
     help="Allow unsafe updates (default: false)"
@@ -115,8 +115,8 @@ def update_products(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
 
 def build_product_list(index):
     lstdct = []
-    for line in index.products.search():
-        info = dataset_type_to_row(line)
+    for product in index.products.search():
+        info = dataset_type_to_row(product)
         lstdct.append(info)
     return lstdct
 
@@ -171,7 +171,7 @@ LIST_OUTPUT_WRITERS = {
     'tab': _write_tab,
 }
 
-@product.command('list')
+@product_cli.command('list')
 @click.option('-f', help='Output format',
               type=click.Choice(list(LIST_OUTPUT_WRITERS)), default='yaml', show_default=True)
 @ui.pass_datacube()
@@ -194,7 +194,7 @@ SHOW_OUTPUT_WRITERS = {
     'json': _write_json,
 }
 
-@product.command('show')
+@product_cli.command('show')
 @click.option('-f', help='Output format',
               type=click.Choice(list(SHOW_OUTPUT_WRITERS)), default='yaml', show_default=True)
 @click.argument('product_name', nargs=1)

@@ -1,10 +1,7 @@
 .appveyor
 .circleci
-.dockerignore
 .github
 .travis
 contrib
-docs
 examples
 integration_tests
-utils
