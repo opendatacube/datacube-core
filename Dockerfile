@@ -8,7 +8,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python --version
 RUN add-apt-repository ppa:nextgis/ppa
 
 # And now install apt dependencies, including a few of the heavy Python projects
