@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-numpy python3-netcdf4 python3-psycopg2 \
     # Need pip to install more python packages later.
     # The libdpkg-perl is needed to build pyproj
-    python3-pip libdpkg-perl \
+    python3-pip python3-wheel libdpkg-perl \
     # G++ because GDAL decided it needed compiling
     g++ \
     && rm -rf /var/lib/apt/lists/*
@@ -37,17 +37,6 @@ ENV LC_ALL C.UTF-8
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
-# Install dependencies. First update pip
-RUN pip3 install --upgrade pip setuptools wheel \
-    && rm -rf $HOME/.cache/pip
-
-<<<<<<< HEAD
-=======
-# Install psycopg2 as a special case, to quiet the warning message 
-RUN pip3 install --no-cache --no-binary :all: psycopg2 \
-    && rm -rf $HOME/.cache/pip
-
->>>>>>> develop
 # Now use the setup.py file to identify dependencies
 RUN pip3 install '.[test,celery,s3]' --upgrade \
     && rm -rf $HOME/.cache/pip
