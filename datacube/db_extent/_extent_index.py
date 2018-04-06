@@ -1,7 +1,6 @@
 import logging
 import warnings
-import shapely
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, shape, asShape, mapping
 from shapely.ops import cascaded_union
 from datacube import Datacube
 from datacube.utils.geometry import CRS, BoundingBox
@@ -12,10 +11,10 @@ from datacube.drivers.postgres._core import SCHEMA_NAME
 from datacube.index import Index
 from datacube.drivers.postgres import PostgresDb
 from multiprocessing import Pool
-from shapely.geometry import mapping
 import uuid
 from datetime import datetime, timezone
 import json
+from functools import reduce
 
 _LOG = logging.getLogger(__name__)
 # pandas style time period frequencies
@@ -32,8 +31,17 @@ EXTENT_ENV = 'dev'
 POOL_SIZE = 31
 
 
-class ExtentChunk(object):
-    def __init__(self, product, hostname, port, database, username, projection=None):
+def extent_per_period(dc, product, period, projection=None):
+    datasets = dc.find_datasets_lazy(product=product, time=(period.start_time, period.end_time))
+    if projection:
+        extents = [asShape(dataset.extent.to_crs(CRS(projection))) for dataset in datasets]
+    else:
+        extents = [asShape(dataset.extent) for dataset in datasets]
+    return cascaded_union(extents)
+
+
+class ComputeChunk(object):
+    def __init__(self, product, hostname, port, database, username, compute, projection=None):
         """
         Perform initialization of product variable and variables required
         for the recreation of datacube objects. Intended for multi-processes.
@@ -49,7 +57,14 @@ class ExtentChunk(object):
         self._database = database
         self._username = username
         self._product = product
+        self._compute = compute
         self._projection = projection
+
+    def _set_datacube(self):
+        db = PostgresDb.create(hostname=self._hostname, port=self._port,
+                               database=self._database, username=self._username)
+        index = Index(db)
+        return Datacube(index=index)
 
     def __call__(self, period):
         """
@@ -57,19 +72,9 @@ class ExtentChunk(object):
         :param Period period: a pandas period object specifying time range
         :return: union of extents as computed by shapely cascaded union
         """
-        # Got to create the datacube objects per process
-        db = PostgresDb.create(hostname=self._hostname, port=self._port,
-                               database=self._database, username=self._username)
-        index = Index(db)
-        dc = Datacube(index=index)
 
-        # Extract extents and compute the union
-        datasets = dc.find_datasets_lazy(product=self._product, time=(period.start_time, period.end_time))
-        if self._projection:
-            extents = [shapely.geometry.asShape(dataset.extent.to_crs(CRS(self._projection))) for dataset in datasets]
-        else:
-            extents = [shapely.geometry.asShape(dataset.extent) for dataset in datasets]
-        return cascaded_union(extents)
+        return self._compute(dc=self._set_datacube(), product=self._product,
+                             period=period, projection=self._projection)
 
 
 class ExtentIndex(object):
@@ -94,7 +99,7 @@ class ExtentIndex(object):
 
         # Access to tables
         self._extent_index = extent_index
-        self._engine = create_engine(extent_index.url, client_encoding='utf8')
+        self._engine = create_engine(extent_index.url, pool_recycle=240, client_encoding='utf8')
         self._conn = self._engine.connect()
         meta = MetaData(self._engine, schema=SCHEMA_NAME)
         meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'product_bounds'], schema=SCHEMA_NAME)
@@ -147,11 +152,10 @@ class ExtentIndex(object):
         """
         dataset_type_query = select([self._dataset_type_table.c.id.label('id')]).\
             where(self._dataset_type_table.c.name == product_name)
-        conn = self._engine.connect()
-        dataset_type_row = conn.execute(dataset_type_query).fetchone()
-        type_id = dataset_type_row['id'] if dataset_type_row else None
-        conn.close()
-        return type_id
+        with self._engine.begin(close_with_result=True) as conn:
+            dataset_type_row = conn.execute(dataset_type_query).fetchone()
+            type_id = dataset_type_row['id'] if dataset_type_row else None
+            return type_id
 
     def _get_extent_meta_row(self, dataset_type_ref, offset_alias):
         """
@@ -165,11 +169,10 @@ class ExtentIndex(object):
                                     self._extent_meta_table.c.end.label('end')]).\
             where((dataset_type_ref == self._extent_meta_table.c.dataset_type_ref) &
                   (offset_alias == self._extent_meta_table.c.offset_alias))
-        conn = self._engine.connect()
-        result = conn.execute(extent_meta_query).fetchone()
-        row = {'id': result['id'], 'start': result['start'], 'end': result['end']}
-        conn.close()
-        return row
+        with self._engine.begin(close_with_result=True) as conn:
+            result = conn.execute(extent_meta_query).fetchone()
+            row = {'id': result['id'], 'start': result['start'], 'end': result['end']}
+            return row
 
     def _get_extent_row(self, dataset_type_ref, start, offset_alias):
         """
@@ -183,14 +186,13 @@ class ExtentIndex(object):
         extent_uuid = ExtentIndex._compute_uuid(dataset_type_ref, start, offset_alias)
         extent_query = select([self._extent_table.c.geometry.label('geometry')]).\
             where(self._extent_table.c.id == extent_uuid.hex)
-        conn = self._engine.connect()
-        extent_row = conn.execute(extent_query).fetchone()
-        if extent_row:
-            geo = extent_row['geometry']
-        else:
-            raise KeyError("Corresponding extent record does not exist in the extent table")
-        conn.close()
-        return geo
+        with self._engine.begin(close_with_result=True) as conn:
+            extent_row = conn.execute(extent_query).fetchone()
+            if extent_row:
+                geo = extent_row['geometry']
+            else:
+                raise KeyError("Corresponding extent record does not exist in the extent table")
+            return geo
 
     def _do_insert_query(self, dataset_type_ref, start, offset_alias, extent):
         """
@@ -238,10 +240,14 @@ class ExtentIndex(object):
         # Compute full extent using multiprocess pools
         pool = Pool(processes=POOL_SIZE)
         period_list = PeriodIndex(start=period.start_time, end=period.end_time, freq=offset_pool)
-        extent_list = pool.map(ExtentChunk(product=product_name, hostname=self._hostname,
-                                           port=self._port, database=self._database,
-                                           username=self._username, projection=projection), period_list)
-        full_extent = cascaded_union(extent_list)
+        extent_list = pool.map(ComputeChunk(product=product_name, hostname=self._hostname,
+                                            port=self._port, database=self._database,
+                                            username=self._username, compute=extent_per_period,
+                                            projection=projection), period_list)
+        # Filter out extents of NoneType
+        extent_list = [extent for extent in extent_list if extent]
+
+        full_extent = cascaded_union(extent_list) if extent_list else None
 
         # Format the start time to year-month format
         start_time = datetime(year=period.start_time.year, month=period.start_time.month, day=period.start_time.day)
@@ -324,10 +330,7 @@ class ExtentIndex(object):
 
         bounds_json = {'left': bounds.left, 'bottom': bounds.bottom, 'right': bounds.right, 'top': bounds.top}
 
-        # We need to recreate the engine object here to avoid timeouts
-        # even though recreating the engine per connection is not the advise
-        egn = create_engine(self._extent_index.url, client_encoding='utf8')
-        conn = egn.connect()
+        conn = self._engine.connect()
 
         # See whether an entry exists in product_bounds
         bounds_query = select([self._bounds_table.c.id.label('id')]).\
@@ -346,7 +349,10 @@ class ExtentIndex(object):
                                                      bounds=json.dumps(bounds_json), projection=projection)
             conn.execute(ins)
         conn.close()
-        egn.dispose()
+
+    @staticmethod
+    def _empty_box(bound):
+        return bound.left is None or bound.bottom is None or bound.right is None or bound.top is None
 
     @staticmethod
     def _bounds_union(bound1, bound2):
@@ -356,10 +362,65 @@ class ExtentIndex(object):
         :param BoundingBox bound2: A axis aligned bound
         :return BoundingBox: The union of the given bounds
         """
-        return BoundingBox(left=min(bound1.left, bound2.left),
-                           bottom=min(bound1.bottom, bound2.bottom),
-                           right=max(bound1.right, bound2.right),
-                           top=max(bound1.top, bound2.top))
+        if ExtentIndex._empty_box(bound1):
+            return bound2
+        elif ExtentIndex._empty_box(bound2):
+            return bound1
+        else:
+            return BoundingBox(left=min(bound1.left, bound2.left),
+                               bottom=min(bound1.bottom, bound2.bottom),
+                               right=max(bound1.right, bound2.right),
+                               top=max(bound1.top, bound2.top))
+
+    def _compute_bounds_with_hints(self, product, time_hints, projection=None):
+        def _cool_min(a, b):
+            if not a:
+                return b
+            elif not b:
+                return a
+            else:
+                return min(a, b)
+
+        def _cool_max(a, b):
+            if not a:
+                return b
+            elif not b:
+                return a
+            else:
+                return max(a, b)
+
+        pool = Pool(processes=POOL_SIZE)
+        period_list = PeriodIndex(start=time_hints[0], end=time_hints[1], freq='1Y')
+        bounds_list = pool.map(ComputeChunk(product=product, hostname=self._hostname,
+                                            port=self._port, database=self._database,
+                                            username=self._username, compute=ExtentIndex._compute_bounds,
+                                            projection=projection), period_list)
+
+        return reduce(lambda x, y: (_cool_min(x[0], y[0]), _cool_max(x[1], y[1]),
+                                    ExtentIndex._bounds_union(x[2], y[2])), bounds_list)
+
+    @staticmethod
+    def _compute_bounds(dc, product, projection=None, period=None):
+        if period:
+            datasets = dc.find_datasets_lazy(product=product, time=(period.start_time, period.end_time))
+        else:
+            datasets = dc.find_datasets_lazy(product=product)
+        try:
+            first = next(datasets)
+            lower, upper = first.time.begin, first.time.end
+            bounds = first.extent.boundingbox if not projection else first.extent.to_crs(CRS(projection)).boundingbox
+        except StopIteration:
+            return None, None, BoundingBox(left=None, bottom=None, right=None, top=None)
+        for dataset in datasets:
+            if dataset.time.begin < lower:
+                lower = dataset.time.begin
+            if dataset.time.end > upper:
+                upper = dataset.time.end
+            if not projection:
+                bounds = ExtentIndex._bounds_union(bounds, dataset.extent.boundingbox)
+            else:
+                bounds = ExtentIndex._bounds_union(bounds, dataset.extent.to_crs(CRS(projection)).boundingbox)
+        return lower, upper, bounds
 
     def _store_bounds(self, product_name, projection=None):
         """
@@ -377,22 +438,12 @@ class ExtentIndex(object):
         if not dataset_type_ref:
             raise KeyError("dataset_type_ref does not exist")
 
-        datasets = self._loading_datacube.find_datasets_lazy(product=product_name)
-        try:
-            first = next(datasets)
-            lower, upper = first.time.begin, first.time.end
-            bounds = first.extent.boundingbox if not projection else first.extent.to_crs(CRS(projection)).boundingbox
-        except StopIteration:
-            raise ValueError('No datasets found for {}'.format(product_name))
-        for dataset in datasets:
-            if dataset.time.begin < lower:
-                lower = dataset.time.begin
-            if dataset.time.end > upper:
-                upper = dataset.time.end
-            if not projection:
-                bounds = self._bounds_union(bounds, dataset.extent.boundingbox)
-            else:
-                bounds = self._bounds_union(bounds, dataset.extent.to_crs(CRS(projection)).boundingbox)
+        # lower, upper, bounds = self._compute_bounds(dc=self._loading_datacube, product=product_name,
+        #                                             projection=projection)
+        lower, upper, bounds = self._compute_bounds_with_hints(product=product_name,
+                                                               time_hints=('2005-01', '2018-01'),
+                                                               projection=projection)
+
         self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=lower,
                                   upper=upper, bounds=bounds, projection=projection)
 
@@ -481,7 +532,7 @@ class ExtentIndex(object):
         :param extent2: A shapely multi polygon
         :return: The cascaded union of the parameters
         """
-        if extent1 & extent2:
+        if bool(extent1) & bool(extent2):
             return cascaded_union([extent1, extent2])
         elif extent1:
             return extent1
@@ -508,13 +559,13 @@ class ExtentIndex(object):
             front, mid, back = ExtentIndex._split_time_range(start, end)
             if front:
                 for et in self.get_extent_monthly(dataset_type_ref, front.start_time, front.end_time):
-                    extent = ExtentIndex._compute_extent_union(extent, et)
+                    extent = ExtentIndex._compute_extent_union(extent, shape(et))
             if mid:
                 for et in self.get_extent_yearly(dataset_type_ref, mid.start_time, mid.end_time):
-                    extent = ExtentIndex._compute_extent_union(extent, et)
+                    extent = ExtentIndex._compute_extent_union(extent, shape(et))
             if back:
                 for et in self.get_extent_monthly(dataset_type_ref, back.start_time, back.end_time):
-                    extent = ExtentIndex._compute_extent_union(extent, et)
+                    extent = ExtentIndex._compute_extent_union(extent, shape(et))
         return extent
 
     def get_extent_direct(self, start, offset_alias, product_name=None, dataset_type_ref=None):
@@ -566,6 +617,6 @@ if __name__ == '__main__':
                              username='aj9439', extent_index=Index(EXTENT_DB))
 
     # load into extents table
-    EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
-                            end='2017-04', offset_alias='1M', projection='EPSG:4326')
+    # EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
+    #                         end='2017-02', offset_alias='1M', projection='EPSG:4326')
     EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
