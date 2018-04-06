@@ -2,6 +2,7 @@ import logging
 import warnings
 from shapely.geometry import Polygon, shape, asShape, mapping
 from shapely.ops import cascaded_union
+import shapely.wkt as wkt
 from datacube import Datacube
 from datacube.utils.geometry import CRS, BoundingBox
 from pandas import period_range, PeriodIndex, Period, Timestamp, DatetimeIndex
@@ -32,12 +33,23 @@ POOL_SIZE = 31
 
 
 def extent_per_period(dc, product, period, projection=None):
+    """
+    Computes the extent for a given period. If projection parameter is absent
+    no projection is applied
+    :param Datacube dc: A Datacube object
+    :param str product: product name
+    :param Period period: A pandas period object
+    :param str projection: A projection string
+    :return: A shapely geometry. If the extent is empty a shapely empty geometry object is returned
+    """
     datasets = dc.find_datasets_lazy(product=product, time=(period.start_time, period.end_time))
+    if not datasets:
+        return wkt.loads('MULTIPOLYGON EMPTY')
     if projection:
-        extents = [asShape(dataset.extent.to_crs(CRS(projection))) for dataset in datasets]
+        extents = [asShape(dataset.extent.to_crs(CRS(projection))) for dataset in datasets if dataset.extent]
     else:
-        extents = [asShape(dataset.extent) for dataset in datasets]
-    return cascaded_union(extents)
+        extents = [asShape(dataset.extent) for dataset in datasets if dataset.extent]
+    return cascaded_union(extents) if extents else wkt.loads('MULTIPOLYGON EMPTY')
 
 
 class ComputeChunk(object):
@@ -61,6 +73,11 @@ class ComputeChunk(object):
         self._projection = projection
 
     def _set_datacube(self):
+        """
+        Creates a Datacube object from host, database info, and user info. Datacube objects needed
+        to be created per process (They cannot be pickled!)
+        :return Datacube: A Datacube object
+        """
         db = PostgresDb.create(hostname=self._hostname, port=self._port,
                                database=self._database, username=self._username)
         index = Index(db)
@@ -110,6 +127,11 @@ class ExtentIndex(object):
 
     @property
     def _loading_datacube(self):
+        """
+        Creates a Datacube object from host, database info, and user info. Datacube objects needed
+        to be created per process
+        :return: Datacube object
+        """
         db = PostgresDb.create(hostname=self._hostname, port=self._port,
                                database=self._database, username=self._username)
         index = Index(db)
@@ -352,6 +374,11 @@ class ExtentIndex(object):
 
     @staticmethod
     def _empty_box(bound):
+        """
+        Check whether the BoundingBox is empty
+        :param BoundingBox bound: a BoundingBox
+        :return bool:
+        """
         return bound.left is None or bound.bottom is None or bound.right is None or bound.top is None
 
     @staticmethod
@@ -373,6 +400,14 @@ class ExtentIndex(object):
                                top=max(bound1.top, bound2.top))
 
     def _compute_bounds_with_hints(self, product, time_hints, projection=None):
+        """
+        Use the given time period as a hint to find the bounds. If actual bounds falls outside the given
+        time limits the values computed will not make sense
+        :param str product: Product name
+        :param tuple time_hints: A tuple containing the begin and end of a period
+        :param str projection: A projection string
+        :return tuple : min_time, max_time, bounding box
+        """
         def _cool_min(a, b):
             if not a:
                 return b
@@ -401,6 +436,14 @@ class ExtentIndex(object):
 
     @staticmethod
     def _compute_bounds(dc, product, projection=None, period=None):
+        """
+        Computes the min, max time bounds and spacial bounds
+        :param Datacube dc: A datacube object
+        :param str product: product name
+        :param str projection: a projection string
+        :param Period period: A pandas Period object
+        :return tuple: min time, max, time, and bounding box
+        """
         if period:
             datasets = dc.find_datasets_lazy(product=product, time=(period.start_time, period.end_time))
         else:
@@ -422,7 +465,7 @@ class ExtentIndex(object):
                 bounds = ExtentIndex._bounds_union(bounds, dataset.extent.to_crs(CRS(projection)).boundingbox)
         return lower, upper, bounds
 
-    def _store_bounds(self, product_name, projection=None):
+    def _store_bounds(self, product_name, projection=None, time_hints=None):
         """
         Store a bounds record in the product_bounds table. It computes max, min bounds in the projected space
         using dataset extents. If projection is not specified, it is assumed that CRS is constant product wide else
@@ -438,10 +481,12 @@ class ExtentIndex(object):
         if not dataset_type_ref:
             raise KeyError("dataset_type_ref does not exist")
 
-        # lower, upper, bounds = self._compute_bounds(dc=self._loading_datacube, product=product_name,
-        #                                             projection=projection)
-        lower, upper, bounds = self._compute_bounds_with_hints(product=product_name,
-                                                               time_hints=('2005-01', '2018-01'),
+        if time_hints:
+            lower, upper, bounds = self._compute_bounds_with_hints(product=product_name,
+                                                                   time_hints=time_hints,
+                                                                   projection=projection)
+        else:
+            lower, upper, bounds = ExtentIndex._compute_bounds(dc=self._loading_datacube, product=product_name,
                                                                projection=projection)
 
         self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=lower,
@@ -617,6 +662,6 @@ if __name__ == '__main__':
                              username='aj9439', extent_index=Index(EXTENT_DB))
 
     # load into extents table
-    # EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
-    #                         end='2017-02', offset_alias='1M', projection='EPSG:4326')
+    EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
+                            end='2017-02', offset_alias='1M', projection='EPSG:4326')
     EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
