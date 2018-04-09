@@ -23,7 +23,7 @@ from datacube.drivers import storage_writer_by_name
 
 from datacube.ui.click import cli
 
-_LOG = logging.getLogger('agdc-ingest')
+_LOG = logging.getLogger('datacube-ingest')
 
 FUSER_KEY = 'fuse_data'
 
@@ -91,8 +91,7 @@ def get_app_metadata(config, config_file):
         'lineage': {
             'algorithm': {
                 'name': 'datacube-ingest',
-                'version': config.get('version', 'unknown'),
-                'repo_url': 'https://github.com/GeoscienceAustralia/datacube-ingester.git',
+                'repo_url': 'https://github.com/opendatacube/datacube-core.git',
                 'parameters': {'configuration_file': config_file}
             },
         }
@@ -159,10 +158,10 @@ def get_full_lineage(index, id_):
     return index.datasets.get(id_, include_sources=True)
 
 
-def load_config_from_file(index, config):
-    config_name = Path(config).name
-    _, config = next(read_documents(Path(config)))
-    config['filename'] = config_name
+def load_config_from_file(path):
+    config_file = Path(path)
+    _, config = next(read_documents(config_file))
+    config['filename'] = str(config_file.absolute())
 
     return config
 
@@ -328,6 +327,15 @@ def _validate_year(ctx, param, value):
                                  'or as an inclusive range (eg 1996-2001)')
 
 
+def get_driver_from_config(config):
+    driver_name = config['storage']['driver']
+    driver = storage_writer_by_name(driver_name)
+    if driver is None:
+        click.echo('Failed to load requested storage driver: ' + driver_name)
+        sys.exit(2)
+    return driver
+
+
 @cli.command('ingest', help="Ingest datasets")
 @click.option('--config-file', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
@@ -342,7 +350,7 @@ def _validate_year(ctx, param, value):
 @click.option('--allow-product-changes', is_flag=True, default=False,
               help='Allow the output product definition to be updated if it differs.')
 @ui.executor_cli_options
-@ui.pass_index(app_name='agdc-ingest')
+@ui.pass_index(app_name='datacube-ingest')
 def ingest_cmd(index,
                config_file,
                year,
@@ -354,16 +362,8 @@ def ingest_cmd(index,
                allow_product_changes):
     # pylint: disable=too-many-locals
 
-    def get_driver_from_config(config):
-        driver_name = config['storage']['driver']
-        driver = storage_writer_by_name(driver_name)
-        if driver is None:
-            click.echo('Failed to load requested storage driver: ' + driver_name)
-            sys.exit(2)
-        return driver
-
     if config_file:
-        config = load_config_from_file(index, config_file)
+        config = load_config_from_file(config_file)
         driver = get_driver_from_config(config)
         source_type, output_type = ensure_output_type(index, config, driver.format,
                                                       allow_product_changes=allow_product_changes)
@@ -376,17 +376,14 @@ def ingest_cmd(index,
                                                       allow_product_changes=allow_product_changes)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
-        return 1
+        sys.exit(-1)
 
     if dry_run:
         check_existing_files(get_filename(config, task['tile_index'], task['tile'].sources) for task in tasks)
-        return 0
-
-    if save_tasks:
+    elif save_tasks:
         save_tasks_(config, tasks, save_tasks)
-        return 0
+    else:
+        successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
+        click.echo('%d successful, %d failed' % (successful, failed))
 
-    successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
-    click.echo('%d successful, %d failed' % (successful, failed))
-
-    sys.exit(failed)
+        sys.exit(failed)
