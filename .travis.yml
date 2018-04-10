@@ -90,6 +90,16 @@ deploy:
       condition: $TRAVIS_BRANCH = "develop" || ! -z "${TRAVIS_TAG}"  # develop branch or tags
       repo: opendatacube/datacube-core
       python: "3.6"
+  - provider: pypi
+    user: damien.ayers
+    password:
+      secure: "D868pBc2xCF67O2MjLc+OeuIJjIFxSOEhmm7D7lmWqqkJPf+af8qmIBmjJQoyegpiI0n6wwORG65V7E0rCvJlcNtbDwcCYNbGYoFqptZ1OjRedSjr72Vn+45hkgXcyqCyuNf9kikCZv3VkR4yLvput5j9glHAESarrKAQahLdObzJ1cHdPokEPYD1ibyT+wM5jmQJx5Q1Cp3P+c7EE7DTm/g1HL9g4vAx/b729dMVodGrly0gRzH99ivKDMUaUcMRlIABFJvl4qxNn6O7X3SUaEzqKy2gqMzCcjlqwU4rrfTizy5fxPD7r2RJ3RZFv1iPMGF1qLCutN6JzBZltKHVcObUXmm+5ZEGcarpzllkp4gmFcSI47TLLMgQ2nn9UVfmeYqAnbBkjNLZS4/8CfhZFn/QY0gqmZUSo8sdwSqOgACbMwUN5F0qdm/Cq66kS/0iTM4WeShYrhkDX5txFQM11DVPC3fuxs2PhastnwBMPybhEqj0dhCOS1u4bStJN2vAygFTkuHWEZYsI4tyyXb6q1rtx6palbKgTS1UI/+HCh0fhdBPMTjciFldWxkf9ZyVMMcxKSEavqfan78OMfXo2xnn3HgsyiOXtKzrIngPt/8amKIQ7L2cjdG/bGxE9TtH2wU9hLk4g7BQDR13lv8s3l4DsW/6B5lO2lodZ14nfE="
+    distributions: sdist bdist_wheel
+    on:
+      branch: stable
+      tags: true
+      python: 3.6
+      repo: opendatacube/datacube-core
 
 notifications:
   slack:
