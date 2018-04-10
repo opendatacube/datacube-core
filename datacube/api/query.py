@@ -140,52 +140,6 @@ class Query(object):
                    geopolygon=self.geopolygon)
 
 
-class DescriptorQuery(Query):
-    """
-    Representation of an old `get_descriptor()/get_data()` style query for the :class:`datacube.API`.
-    """
-    def __init__(self, descriptor_request=None):
-        super(DescriptorQuery, self).__init__()
-
-        if descriptor_request is None:
-            descriptor_request = {}
-        if not isinstance(descriptor_request, collections.Mapping):
-            raise ValueError('Could not understand descriptor {}'.format(descriptor_request))
-
-        if 'storage_type' in descriptor_request:
-            self.product = descriptor_request['storage_type']
-        defined_keys = ('dimensions', 'variables', 'product', 'storage_type')
-        self.search = {key: value for key, value in descriptor_request.items() if key not in defined_keys}
-
-        if 'product' in descriptor_request:
-            self.search['product_type'] = descriptor_request['product']
-
-        if 'variables' in descriptor_request:
-            self.measurements = descriptor_request['variables']
-
-        group_by_name = 'time'
-        if 'dimensions' in descriptor_request:
-            dims = descriptor_request['dimensions']
-
-            spatial_dims = {dim: v for dim, v in dims.items() if dim in SPATIAL_KEYS}
-            range_params = {dim: v['range'] for dim, v in spatial_dims.items() if 'range' in v}
-            crs = {c for dim, v in dims.items() for k, c in v.items() if k in CRS_KEYS}
-            if len(crs) == 1:
-                range_params['crs'] = crs.pop()
-            elif len(crs) > 1:
-                raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
-            self.geopolygon = _range_to_geopolygon(**range_params)
-
-            other_dims = {dim: v for dim, v in dims.items()
-                          if dim not in ['latitude', 'lat', 'y', 'longitude', 'lon', 'x']}
-            self.search.update(_range_to_search(**other_dims))
-            self.slices = {dim: slice(*v['array_range']) for dim, v in dims.items() if 'array_range' in v}
-            groups = [v['group_by'] for dim, v in dims.items() if 'group_by' in v]
-            if groups:
-                group_by_name = groups[0]
-        self.group_by = query_group_by(group_by_name)
-
-
 def query_geopolygon(geopolygon=None, **kwargs):
     spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
     crs = {v for k, v in kwargs.items() if k in CRS_KEYS}
@@ -271,20 +225,6 @@ def _value_to_range(value):
         return value, value
     else:
         return float(value[0]), float(value[-1])
-
-
-def _range_to_search(**kwargs):
-    search = {}
-    for key, value in kwargs.items():
-        if key.lower() in ('time', 't'):
-            time_range = value['range']
-            search['time'] = _time_to_search_dims(time_range)
-        elif key not in ['latitude', 'lat', 'y'] + ['longitude', 'lon', 'x']:
-            if isinstance(value, collections.Sequence) and len(value) == 2:
-                search[key] = Range(*value)
-            else:
-                search[key] = value
-    return search
 
 
 def _values_to_search(**kwargs):
