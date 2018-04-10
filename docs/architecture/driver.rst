@@ -221,4 +221,4 @@ References and History
 -  Teleconference with @omad @petewa @rtaib @Kirill888 on *12 December
    2017*.
 -  `Notes from ODC Storage and Index Driver
-   Meeting <https://docs.google.com/document/d/1l2xOaKyvQRV4h35NELKvyM3DYOUosXJhcj-lgHC8MN4/edit#heading=h.h400fj5rkdxg>`__
+   Meeting <https://docs.google.com/document/d/1l2xOaKyvQRV4h35NELKvyM3DYOUosXJhcj-lgHC8MN4/edit>`__

@@ -93,7 +93,7 @@ def get_native_fields():
     fields = {
         'id': NativeField(
             'id',
-            None,
+            'Dataset UUID',
             DATASET.c.id
         ),
         'product': NativeField(
@@ -108,7 +108,7 @@ def get_native_fields():
         ),
         'metadata_type': NativeField(
             'metadata_type',
-            'Metadata type of dataset',
+            'Metadata type name of dataset',
             METADATA_TYPE.c.name
         ),
         'metadata_type_id': NativeField(
