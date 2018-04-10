@@ -6,6 +6,10 @@ git:
   # we can reach the last tagged version.
   depth: 99999
 
+env:
+  global:
+    - CC_TEST_REPORTER_ID=56b5f09a9339c3ada591c94a6430823aee15e426fbcd9990e04fe936e40c8582
+
 language: python
 python:
   - "3.5"
@@ -57,12 +61,20 @@ install:
   - df -h
   - df -i
 
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+
 script:
 # Ensure we are running against the correct python version
   - '[[ $(python --version 2>&1) == *"$TRAVIS_PYTHON_VERSION"* ]]'
 
 # Run all the linting and tests
   - ./check-code.sh integration_tests
+
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
 after_success:
   - test $TRAVIS_PYTHON_VERSION = "3.6" && coveralls
