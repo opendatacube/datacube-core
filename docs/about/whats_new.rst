@@ -6,12 +6,11 @@ What's New
 **********
 
 
-v1.6rc1 Easter Bilby
-====================
+v1.6rc1 Easter Bilby (10 April 2018)
+====================================
 
 This is the first release in a while, and so there's a lot of changes, including
 some significant refactoring, with the potential having issues when upgrading.
-
 
 
 Backwards Incompatible Fixes
