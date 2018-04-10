@@ -23,7 +23,6 @@ dependencies:
 - paramiko # for simple-replicas
 - pathlib
 - pathos
-- pep8 # testing
 - psycopg2
 - pycodestyle # testing
 - pygeoif = 0.6 # compliance-checker 3.0.3 fails with 0.7
