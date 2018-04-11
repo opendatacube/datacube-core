@@ -80,9 +80,9 @@ def test_config_check(clirunner, initialised_postgres_db, local_config):
         ]
     )
 
-    host_regex = re.compile('.*Host:\s+{}.*'.format(local_config['db_hostname']),
+    host_regex = re.compile(r'.*Host:\s+{}.*'.format(local_config['db_hostname']),
                             flags=re.DOTALL)  # Match across newlines
-    user_regex = re.compile('.*User:\s+{}.*'.format(local_config['db_username']),
+    user_regex = re.compile(r'.*User:\s+{}.*'.format(local_config['db_username']),
                             flags=re.DOTALL)
     assert host_regex.match(result.output)
     assert user_regex.match(result.output)
