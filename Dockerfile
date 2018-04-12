@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gdal-bin libgdal-dev libgdal20 libudunits2-0 \
     # Extra python components, to speed things up
     python3 python3-setuptools python3-dev \
-    python3-numpy python3-netcdf4 python3-psycopg2 \
+    python3-numpy python3-netcdf4 python3-gdal \
     # Need pip to install more python packages later.
     # The libdpkg-perl is needed to build pyproj
     python3-pip python3-wheel libdpkg-perl \
@@ -35,6 +35,10 @@ ENV LC_ALL C.UTF-8
 # And some GDAL variables
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
+
+# Install psycopg2 as a special case, to quiet the warning message 
+RUN pip3 install --no-cache --no-binary :all: psycopg2 \
+    && rm -rf $HOME/.cache/pip
 
 # Now use the setup.py file to identify dependencies
 RUN pip3 install '.[test,celery,s3]' --upgrade \
