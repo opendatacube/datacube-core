@@ -65,7 +65,7 @@ On windows systems by default there are no ready configured compilers, and so
 libraries needed for some python modules must be obtained in precompiled 
 (binary) form.
 
-Download and install binary wheels from http://www.lfd.uci.edu/~gohlke/pythonlibs/
+Download and install binary wheels from https://www.lfd.uci.edu/~gohlke/pythonlibs/
 
 You will need to download at least:
 

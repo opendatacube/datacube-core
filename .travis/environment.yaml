@@ -13,14 +13,12 @@ dependencies:
 - cython # used by netcdf4 at compile only, but needed for compliance checker to load plugins
 - dask
 - fiona # movie generator app
-- gdal                # [not py27]
-- gdal = 2.1.*        # [py27]
+- gdal
 - hypothesis # testing
 - jsonschema
 - matplotlib # pixel drill app
 - mock # testing
 - netcdf4
-- numexpr # For AE/EE
 - numpy
 - paramiko # for simple-replicas
 - pathlib
