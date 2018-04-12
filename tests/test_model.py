@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 
 import numpy
-from .util import mk_sample_dataset
+from .util import mk_sample_dataset, mk_sample_product
 from datacube.model import GridSpec
 from datacube.utils import geometry
 from datacube.storage.storage import measurement_paths
@@ -53,3 +53,13 @@ def test_dataset_measurement_paths():
 
     for k, v in paths.items():
         assert v == 'file:///tmp/' + k + '.tiff'
+
+
+def test_product_dimensions():
+    product = mk_sample_product('test_product')
+    assert product.grid_spec is None
+    assert product.dimensions == ('time', 'y', 'x')
+
+    product = mk_sample_product('test_product', with_grid_spec=True)
+    assert product.grid_spec is not None
+    assert product.dimensions == ('time', 'y', 'x')
