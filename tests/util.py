@@ -166,7 +166,14 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
 
 def mk_sample_product(name,
                       description='Sample',
-                      measurements=['red', 'green', 'blue']):
+                      measurements=['red', 'green', 'blue'],
+                      with_grid_spec=False,
+                      storage=None):
+
+    if storage is None and with_grid_spec is True:
+        storage = {'crs': 'EPSG:3577',
+                   'resolution': {'x': 25, 'y': -25},
+                   'tile_size': {'x': 100000.0, 'y': 100000.0}}
 
     eo_type = MetadataType({
         'name': 'eo',
@@ -203,13 +210,18 @@ def mk_sample_product(name,
 
     measurements = [mk_measurement(m) for m in measurements]
 
-    return DatasetType(eo_type, dict(
+    definition = dict(
         name=name,
         description=description,
         metadata_type='eo',
         metadata={},
         measurements=measurements
-    ))
+    )
+
+    if storage is not None:
+        definition['storage'] = storage
+
+    return DatasetType(eo_type, definition)
 
 
 def mk_sample_dataset(bands,
