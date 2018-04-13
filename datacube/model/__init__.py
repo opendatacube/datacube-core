@@ -29,6 +29,7 @@ CellIndex = namedtuple('CellIndex', ('x', 'y'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
+DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
@@ -420,7 +421,12 @@ class DatasetType(object):
         :type: tuple[str]
         """
         assert self.metadata_type.name == 'eo'
-        return ('time',) + self.grid_spec.dimensions
+        if self.grid_spec is not None:
+            spatial_dims = self.grid_spec.dimensions
+        else:
+            spatial_dims = DEFAULT_SPATIAL_DIMS
+
+        return ('time',) + spatial_dims
 
     @cached_property
     def grid_spec(self):

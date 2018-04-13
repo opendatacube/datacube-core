@@ -5,6 +5,13 @@
 What's New
 **********
 
+Bug Fixes
+~~~~~~~~~
+
+- `.dimensions` property of a product no longer crashes when product is missing
+  a `grid_spec`, instead defaults to `time,y,x`
+
+
 
 v1.6rc1 Easter Bilby (10 April 2018)
 ====================================
