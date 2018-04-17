@@ -81,14 +81,14 @@ after_success:
   - test $TRAVIS_PYTHON_VERSION = "3.6" && coveralls
 
 before_deploy:
-  - python setup.py sdist --dist-dir dist/$TRAVIS_PYTHON_VERSION
-  - DEPLOY_PATH=$TRAVIS_REPO_SLUG/${TRAVIS_TAG:-$TRAVIS_BRANCH}  # eg opendatacube/datacube-core/datacube-1.4.2
+  - python setup.py sdist bdist_wheel
 
 # On success, upload a package to an S3 Bucket. Used for continuous deployment.
 deploy:
-  # Deploy the source dist tarball to s3 for tags or the develop branch, so that it can be installed on other systems
-  # For tags, the object will be opendatacube/datacube-core/datacube-1.4.2/3.6/datacube-1.4.2.tar.gz
-  # For develop, the object will be opendatacube/datacube-core/develop/3.6/datacube-1.4.1+91.g43bd4e12.tar.gz
+  # Deploy the sdist tarball and bdist_wheel to s3 for tags or the develop branch
+  # It can be installed via pip install --extra-index-url https://packages.dea.gadevs.ga/ datacube
+  # For tags, the object will be datacube/datacube-1.4.2.tar.gz
+  # For develop, the object will be datacube/datacube-1.4.1+91.g43bd4e12.tar.gz
   - provider: s3
     access_key_id: "AKIAJMZN4F5L5KXPQKVQ"
     secret_access_key:
@@ -96,7 +96,7 @@ deploy:
     bucket: "datacube-core-deployment"
     region: "ap-southeast-2"
     local_dir: dist
-    upload_dir: $DEPLOY_PATH
+    upload_dir: datacube
     skip_cleanup: true
     on:
       all_branches: true  # Let the condition below decide if the branch is to be deployed
