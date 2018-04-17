@@ -1,6 +1,6 @@
 import logging
 import warnings
-from shapely.geometry import Polygon, shape, asShape, mapping
+from shapely.geometry import shape, asShape, mapping
 from shapely.ops import cascaded_union
 import shapely.wkt as wkt
 from datacube import Datacube
@@ -204,8 +204,10 @@ class ExtentIndex(object):
         :param offset_alias: pandas style period string
         :return: extent field
         """
+
         # compute the id (i.e. uuid) from dataset_type_ref, start, and offset
         extent_uuid = ExtentIndex._compute_uuid(dataset_type_ref, start, offset_alias)
+
         extent_query = select([self._extent_table.c.geometry.label('geometry')]).\
             where(self._extent_table.c.id == extent_uuid.hex)
         with self._engine.begin(close_with_result=True) as conn:
@@ -431,6 +433,7 @@ class ExtentIndex(object):
                                             username=self._username, compute=ExtentIndex._compute_bounds,
                                             projection=projection), period_list)
 
+        # Aggregate time min, time max, and bounds
         return reduce(lambda x, y: (_cool_min(x[0], y[0]), _cool_max(x[1], y[1]),
                                     ExtentIndex._bounds_union(x[2], y[2])), bounds_list)
 
@@ -535,7 +538,12 @@ class ExtentIndex(object):
         start = ExtentIndex._parse_time(start)
         end = ExtentIndex._parse_time(end)
 
-        dti = DatetimeIndex(start=start, end=end, freq='1MS')
+        # There seems to be a nanosecond level precision that is discarded by DatetimeIndex.
+        # This seems to be acceptable and therefore, lets ignore this warning
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', UserWarning)
+            dti = DatetimeIndex(start=start, end=end, freq='1MS')
+
         for month in dti:
             yield self.get_extent_direct(start=month, offset_alias='1M', dataset_type_ref=dataset_type_ref)
 

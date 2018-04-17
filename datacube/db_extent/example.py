@@ -2,8 +2,7 @@ import geopandas as gpd
 from datacube.index import Index
 from datacube.drivers.postgres import PostgresDb
 from datacube.db_extent import ExtentIndex
-from geopandas import GeoDataFrame
-from shapely.geometry import shape, Polygon, mapping
+from shapely.geometry import shape, Polygon
 import matplotlib.pyplot as plt
 import datetime
 import json
@@ -29,41 +28,39 @@ def main():
     dataset_type_ref = extent_idx.get_dataset_type_ref('ls8_nbar_albers')
     start = datetime.datetime(year=2017, month=1, day=1)
     extent = extent_idx.get_extent_direct(start=start, offset_alias='1M', dataset_type_ref=dataset_type_ref)
-    if extent:
-        ft1 = {'type': 'Feature',
-               'geometry': shape(extent)}
-        gs1 = GeoDataFrame(ft1)
-        base = aus.plot()
-        gs1.plot(ax=base, color='red', alpha=0.3, edgecolor='green')
+    ft1 = {'type': 'Feature',
+           'geometry': shape(extent)}
+    gs1 = gpd.GeoDataFrame(ft1)
+    base = aus.plot()
+    gs1.plot(ax=base, color='red', alpha=0.3, edgecolor='green')
 
     # get extents using get_extent_monthly() and plot it
     extents = extent_idx.get_extent_monthly(dataset_type_ref=dataset_type_ref, start='2017-01', end='2017-03')
     base = aus.plot()
     for extent in extents:
-        if extent:
-            ft1 = {'type': 'Feature',
-                   'geometry': shape(extent)}
-            gs1 = GeoDataFrame(ft1)
-            gs1.plot(ax=base, color='red', alpha=0.3, edgecolor='blue')
+        ft1 = {'type': 'Feature',
+               'geometry': shape(extent)}
+        gs1 = gpd.GeoDataFrame(ft1)
+        gs1.plot(ax=base, color='red', alpha=0.3, edgecolor='blue')
 
     # get extents using get_extent() and plot it
     extent = extent_idx.get_extent(product_name='ls8_nbar_albers', start='2017-01', end='2017-03')
-    if extent:
-        ft1 = {'type': 'Feature',
-               'geometry': shape(extent)}
-        gs1 = GeoDataFrame(ft1)
-        base = aus.plot()
-        gs1.plot(ax=base, color='red', alpha=0.3, edgecolor='black')
+    ft1 = {'type': 'Feature',
+           'geometry': shape(extent)}
+    gs1 = gpd.GeoDataFrame(ft1)
+    base = aus.plot()
+    gs1.plot(ax=base, color='red', alpha=0.3, edgecolor='black')
 
     # Get bounds using get_bounds() and plot it
     bounds_data = extent_idx.get_bounds('ls8_nbar_albers')
     bounds = json.loads(bounds_data['bounds'])
     if bounds:
-        poly_bounds = shape(mapping(bounds_to_poly(bounds)))
+        poly_bounds = bounds_to_poly(bounds)
         ft2 = {'type': 'Feature',
                'geometry': [poly_bounds]}
-        gs2 = GeoDataFrame(ft2)
+        gs2 = gpd.GeoDataFrame(ft2)
         base = aus.plot()
+        base = gs1.plot(ax=base, color='red', alpha=0.3, edgecolor='green')
         gs2.plot(ax=base, color='red', alpha=0.3, edgecolor='yellow')
 
     # Show the figure
