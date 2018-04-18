@@ -350,4 +350,3 @@ if __name__ == '__main__':
     # Get the Connections to the databases
     EXTENT_DB = PostgresDb.create(hostname='agdcdev-db.nci.org.au', database='datacube', port=6432, username='aj9439')
     EXTENT_IDX = ExtentIndex(datacube_index=Index(EXTENT_DB))
-

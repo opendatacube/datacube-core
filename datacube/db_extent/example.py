@@ -21,11 +21,10 @@ def main():
 
     # Get the Connections to the databases
     extent_db = PostgresDb.create(hostname='agdcdev-db.nci.org.au', database='datacube', port=6432, username='aj9439')
-    extent_idx = ExtentIndex(hostname='agdc-db.nci.org.au', database='datacube', port=6432,
-                             username='aj9439', extent_index=Index(extent_db))
+    extent_idx = ExtentIndex(datacube_index=Index(extent_db))
 
     # Get extent of a month using get_extent_direct() and plot it
-    dataset_type_ref = extent_idx.get_dataset_type_ref('ls8_nbar_albers')
+    dataset_type_ref = Index(extent_db).products.get_by_name('ls8_nbar_albers').id
     start = datetime.datetime(year=2017, month=1, day=1)
     extent = extent_idx.get_extent_direct(start=start, offset_alias='1M', dataset_type_ref=dataset_type_ref)
     ft1 = {'type': 'Feature',
