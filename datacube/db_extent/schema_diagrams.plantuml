@@ -1,0 +1,29 @@
+@startuml
+class extent {
+    id : postgres.UUID
+    dataset_type_ref : dataset_type.id
+    start : Datetime
+    offset_alias : String
+    geometry : postgres.JSONB
+}
+class extent_meta {
+    dataset_type_ref : dataset_type.id
+    start : Datetime
+    end : Datetime
+    offset_alias : postgres.JSONB
+    projection : String
+}
+class product_bounds {
+    dataset_type_ref : dataset_type.id
+    start : Datetime
+    end : Datetime
+    bounds : postgres.JSONB
+    projection : String
+}
+class dataset_type
+
+dataset_type }-- extent
+dataset_type }-- extent_meta
+dataset_type -- product_bounds
+extent_meta }-- extent
+@enduml
