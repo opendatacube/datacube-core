@@ -52,8 +52,8 @@ setup(
     python_requires='>=3.5.2',
 
     url='https://github.com/opendatacube/datacube-core',
-    author='AGDC Collaboration',
-    maintainer='AGDC Collaboration',
+    author='Open Data Cube',
+    maintainer='Open Data Cube',
     maintainer_email='',
     description='An analysis environment for satellite and other earth observation data',
     long_description=open('README.rst').read(),
