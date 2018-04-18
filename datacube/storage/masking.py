@@ -7,6 +7,7 @@ from __future__ import absolute_import
 
 import collections
 import warnings
+import pandas
 
 from datacube.utils import generate_table
 
@@ -26,12 +27,13 @@ def list_flag_names(variable):
     return sorted(list(flags_def.keys()))
 
 
-def describe_variable_flags(variable):
+def describe_variable_flags(variable, with_pandas=True):
     """
-    Returns a string describing the available flags for a masking variable
+    Returns either a Pandas Dataframe (with_pandas=True - default) or a string
+    (with_pandas=False) describing the available flags for a masking variable
 
-    Interprets the `flags_definition` attribute on the provided variable and returns
-    a string like::
+    Interprets the `flags_definition` attribute on the provided variable and
+    returns a Pandas Dataframe or string like::
 
         Bits are listed from the MSB (bit 13) to the LSB (bit 0)
         Bit     Value   Flag Name            Description
@@ -41,11 +43,14 @@ def describe_variable_flags(variable):
         10      0       cloud_acca           Cloud (ACCA)
 
     :param variable: Masking xarray.Dataset or xarray.DataArray
-    :return: str
+    :return: Pandas Dataframe or str
     """
     flags_def = get_flags_def(variable)
 
-    return describe_flags_def(flags_def)
+    if not with_pandas:
+        return describe_flags_def(flags_def)
+
+    return pandas.DataFrame.from_dict(flags_def, orient='index')
 
 
 def describe_flags_def(flags_def):
@@ -128,7 +133,7 @@ def mask_invalid_data(data, keep_attrs=True):
     """
     Sets all `nodata` values to ``nan``.
 
-    This will convert converts numeric data to type `float`.
+    This will convert numeric data to type `float`.
 
     :param Dataset or DataArray data:
     :param bool keep_attrs: If the attributes of the data should be included in the returned .
