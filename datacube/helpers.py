@@ -51,7 +51,7 @@ def write_geotiff(filename, dataset, time_index=None, profile_override=None):
             for bandnum, data in enumerate(dataset.data_vars.values(), start=1):
                 dest.write(data.isel(time=time_index).data, bandnum)
         else:  # Assume that we have a DataArray
-            dest.write(dataset.isel(time=time_index).data, 0)
+            dest.write(dataset.isel(time=time_index).data, 1)
 
 
 def ga_pq_fuser(dest, src):
