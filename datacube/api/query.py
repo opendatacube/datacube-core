@@ -307,7 +307,7 @@ def _time_to_search_dims(time_range):
         return time_range
 
     elif isinstance(time_range, str):
-        time_range = (time_range,time_range)
+        time_range = (time_range, time_range)
         time_range = Range(_to_datetime(time_range[0]), _to_datetime(fill_end_time(time_range)))
         if time_range[0] == time_range[1]:
             return time_range[0]
