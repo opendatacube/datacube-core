@@ -28,7 +28,7 @@ addons:
     - redis-server
   apt:
     sources:
-      - sourceline: ppa:ubuntugis/ubuntugis-unstable
+      - sourceline: ppa:nextgis/ppa
     packages:
       - gdal-bin
       - libgdal-dev
