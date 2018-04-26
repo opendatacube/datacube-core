@@ -30,10 +30,10 @@ addons:
     sources:
       - sourceline: ppa:nextgis/ppa
     packages:
-      - gdal-bin
-      - libgdal-dev
-      - libgdal20
-      - libudunits2-0
+      - gdal-bin=2.2.4+1-0trusty1
+      - libgdal-dev=2.2.4+1-0trusty1
+      - libgdal20=2.2.4+1-0trusty1
+      - libudunits2-0=2.2.4+1-0trusty1
 
 before_install:
 # Create a database for the integration tests.
