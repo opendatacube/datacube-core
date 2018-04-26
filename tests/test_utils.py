@@ -7,11 +7,13 @@ import os
 import string
 
 import pytest
+import rasterio
 from dateutil.parser import parse
-from pandas import to_datetime
 from hypothesis import given
 from hypothesis.strategies import integers, text
+from pandas import to_datetime
 
+from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
@@ -157,3 +159,16 @@ def test_more_check_doc_unchanged():
 
     with pytest.raises(DocumentMismatchError, message='Letters differs from stored (a.b: 1!=2)'):
         check_doc_unchanged({'a': {'b': 1}}, {'a': {'b': 2}}, 'Letters')
+
+
+def test_write_geotiff(tmpdir, odc_style_xr_dataset):
+    filename = tmpdir + '/test.tif'
+
+    write_geotiff(filename, odc_style_xr_dataset)
+
+    assert filename.exists()
+
+    with rasterio.open(str(filename)) as src:
+        written_data = src.read(1)
+
+        assert (written_data == odc_style_xr_dataset['B10']).all()
