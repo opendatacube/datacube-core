@@ -30,7 +30,7 @@ addons:
     sources:
       - sourceline: ppa:nextgis/ppa
     packages:
-      - gdal-bin=2.2.4+1
+      - gdal-bin=2.2.4
       - libgdal-dev
       - libgdal20
       - libudunits2-0
