@@ -26,7 +26,6 @@ from datacube.model import Range
 from datetime import timezone
 
 
-
 def test_datetime_to_timestamp():
     assert _datetime_to_timestamp((1990, 1, 7)) == 631670400
     assert _datetime_to_timestamp(datetime.datetime(1990, 1, 7)) == 631670400
