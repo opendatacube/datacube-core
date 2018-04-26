@@ -291,7 +291,7 @@ def fill_end_time(time_range):
     except IndexError:
         mins = 59
     try:
-        secs = float(break_time[5])+0.999
+        secs = int(break_time[5])+0.999
     except IndexError:
         secs = 59.999
 
