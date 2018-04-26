@@ -86,3 +86,80 @@ def test_query_kwargs():
 
     with pytest.raises(LookupError):
         query_group_by(group_by='magic')
+
+import pytest
+
+from datacube.api.query import Query, _datetime_to_timestamp, query_group_by
+from datacube.model import Range
+from datetime import timezone
+
+testdata = [
+    (('2018-04-05', '2018-04-06'), Range(begin=datetime.datetime(2018, 4, 5, 0, 0, tzinfo=timezone.utc),
+                                         end=datetime.datetime(2018, 4, 6, 0, 0, tzinfo=timezone.utc))),
+    ('2008', datetime.datetime(2008, 1, 1, 0, 0, tzinfo=timezone.utc)),
+    (('2008', '2008'), datetime.datetime(2008, 1, 1, 0, 0, tzinfo=timezone.utc)),
+    (('2008', '2009'), Range(begin=datetime.datetime(2008, 1, 1, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2009, 1, 1, 0, 0, tzinfo=timezone.utc))),
+    (('2008-03', '2009'), Range(begin=datetime.datetime(2008, 3, 1, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2009, 1, 1, 0, 0, tzinfo=timezone.utc))),
+    (('2008-03', '2009-10'), Range(begin=datetime.datetime(2008, 3, 1, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2009, 10, 1, 0, 0, tzinfo=timezone.utc))),
+    (('2008', '2009-10'), Range(begin=datetime.datetime(2008, 1, 1, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2009, 10, 1, 0, 0, tzinfo=timezone.utc))),
+    (('2008-03-03', '2008-11'), Range(begin=datetime.datetime(2008, 3, 3, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 1, 0, 0, tzinfo=timezone.utc))),
+    (('2008-11-14', '2008-11-30'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 30, 0, 0, tzinfo=timezone.utc))),
+    (('2008-11-14', '2008-11-29'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 29, 0, 0, tzinfo=timezone.utc))),
+    (('2008-11-14', '2008-11'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11,  1, 0, 0, tzinfo=timezone.utc))),
+    (('2008-11-14', '2008'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008,  1,  1, 0, 0, tzinfo=timezone.utc))),
+    (('2008-11-14'), datetime.datetime(2008, 11, 14, 0, 0, tzinfo=timezone.utc)),
+]
+
+newtestdata = [
+    (('2018-04-05', '2018-04-06'), Range(begin=datetime.datetime(2018, 4, 5, 0, 0, 0, tzinfo=timezone.utc),
+                                         end=datetime.datetime(2018, 4, 6, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    ('2008', Range(begin=datetime.datetime(2008, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+                                         end=datetime.datetime(2008, 12, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008', '2008'), Range(begin=datetime.datetime(2008, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+                                         end=datetime.datetime(2008, 12, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008', '2009'), Range(begin=datetime.datetime(2008, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2009, 12, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-03', '2009'), Range(begin=datetime.datetime(2008, 3, 1, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2009, 12, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-03', '2009-10'), Range(begin=datetime.datetime(2008, 3, 1, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2009, 10, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008', '2009-10'), Range(begin=datetime.datetime(2008, 1, 1, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2009, 10, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-03-03', '2008-11'), Range(begin=datetime.datetime(2008, 3, 3, 0, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 30, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-11-14', '2008-11-30'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 30, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-11-14', '2008-11-29'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 29, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-11-14', '2008-11'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11,  30, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-11-14', '2008'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008,  12,  31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-11-14'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008,  11,  14, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-11-14', '2009-02-02'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2009, 2,  2, 23, 59, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-11-14 23:33:57', '2008-11-14 23:33:57'), Range(begin=datetime.datetime(2008, 11, 14, 23, 33, 57, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 14, 23, 33, 57, 999000, tzinfo=timezone.utc))),
+    (('2008-11-14 23:33', '2008-11-14 23:34'), Range(begin=datetime.datetime(2008, 11, 14, 23, 33, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 14, 23, 34, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-11-14 23:00:00', '2008-11-14 23:35'), Range(begin=datetime.datetime(2008, 11, 14, 23, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 14, 23, 35, 59, 999000, tzinfo=timezone.utc))),
+    (('2008-11-10 11', '2008-11-16 14:01'), Range(begin=datetime.datetime(2008, 11, 10, 11, 0, tzinfo=timezone.utc),
+                             end=datetime.datetime(2008, 11, 16, 14, 1, 59, 999000, tzinfo=timezone.utc))),
+]
+
+@pytest.mark.parametrize('time_param,expected', newtestdata)
+def test_time_handling(time_param, expected):
+    query = Query(time=time_param)
+    assert 'time' in query.search_terms
+    assert query.search_terms['time'] == expected

@@ -21,9 +21,12 @@ import logging
 import datetime
 import collections
 import warnings
+import calendar
+import re
 
 from dateutil import tz
 from pandas import to_datetime as pandas_to_datetime
+from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 import numpy as np
 
 from ..compat import string_types, integer_types
@@ -264,16 +267,54 @@ def _to_datetime(t):
 
     return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
 
+def last_day_of_month(year, month):
+    first_weekday, last_day = calendar.monthrange(year, month)
+    return last_day
+
+def fill_end_time(time_range):
+    break_time = re.findall(r"[\w']+", time_range[1])
+    year = int(break_time[0])
+    try:
+        month = int(break_time[1])
+    except IndexError:
+        month = 12
+    try:
+        day = int(break_time[2])
+    except IndexError:
+        day = last_day_of_month(year, month)
+    try:
+        hour = break_time[3]
+    except IndexError:
+        hour = 23
+    try:
+        mins = break_time[4]
+    except IndexError:
+        mins = 59
+    try:
+        secs = float(break_time[5])+0.999
+    except IndexError:
+        secs = 59.999
+
+    endtime = str(year)+"-"+str(month)+"-"+str(day)+"T"+str(hour)+":"+str(mins)+":"+str(secs)
+
+    return endtime
 
 def _time_to_search_dims(time_range):
     if hasattr(time_range, '__iter__') and len(time_range) == 2:
-        time_range = Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
+        time_range = Range(_to_datetime(time_range[0]), _to_datetime(fill_end_time(time_range)))
         if time_range[0] == time_range[1]:
             return time_range[0]
         return time_range
+
+    elif isinstance(time_range, str):
+        time_range = (time_range,time_range)
+        time_range = Range(_to_datetime(time_range[0]), _to_datetime(fill_end_time(time_range)))
+        if time_range[0] == time_range[1]:
+            return time_range[0]
+        return time_range
+
     else:
         return _to_datetime(time_range)
-
 
 def _convert_to_solar_time(utc, longitude):
     seconds_per_degree = 240
