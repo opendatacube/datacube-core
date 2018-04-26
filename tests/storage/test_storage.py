@@ -7,7 +7,6 @@ import netCDF4
 import numpy as np
 import pytest
 import rasterio.warp
-import xarray
 from affine import Affine, identity
 
 import datacube
@@ -20,30 +19,16 @@ from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse
 from datacube.utils import geometry
 from datacube.utils.geometry import GeoBox, CRS
 
-GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
-           'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
-           'AUTHORITY["EPSG","4326"]]'
 
-
-def test_write_dataset_to_netcdf(tmpnetcdf_filename):
-    affine = Affine.scale(0.1, 0.1) * Affine.translation(20, 30)
-    geobox = geometry.GeoBox(100, 100, affine, geometry.CRS(GEO_PROJ))
-    dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
-    for name, coord in geobox.coordinates.items():
-        dataset[name] = (name, coord.values, {'units': coord.units, 'crs': geobox.crs})
-
-    dataset['B10'] = (geobox.dimensions,
-                      np.arange(10000, dtype='int16').reshape(geobox.shape),
-                      {'nodata': 0, 'units': '1', 'crs': geobox.crs})
-
-    write_dataset_to_netcdf(dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
+def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
+    write_dataset_to_netcdf(odc_style_xr_dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
                             variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         nco.set_auto_mask(False)
         assert 'B10' in nco.variables
         var = nco.variables['B10']
-        assert (var[:] == dataset['B10'].values).all()
+        assert (var[:] == odc_style_xr_dataset['B10'].values).all()
 
         assert 'foo' in nco.ncattrs()
         assert nco.getncattr('foo') == 'bar'
@@ -568,6 +553,8 @@ class TestRasterDataReading(object):
 
 @pytest.fixture
 def make_sample_netcdf(tmpdir):
+    """Make a test Geospatial NetCDF file, 4000x4000 int16 random data, in a variable named `sample`.
+    Return the GDAL access string."""
     sample_nc = str(tmpdir.mkdir('netcdfs').join('sample.nc'))
     geobox = GeoBox(4000, 4000, affine=Affine(25.0, 0.0, 1200000, 0.0, -25.0, -4200000), crs=CRS('EPSG:3577'))
 
