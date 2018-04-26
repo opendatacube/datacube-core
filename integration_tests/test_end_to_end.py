@@ -206,7 +206,7 @@ def check_open_with_grid_workflow(index):
     dataset_cell = gw.load(tile)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
 
-    ts = numpy.datetime64('1992-03-23T23:14:25.500000000')
+    ts = numpy.datetime64('1992-03-23T23:14:25')
     tile_key = LBG_CELL + (ts,)
     tiles = gw.list_tiles(product=type_name)
     assert tiles
