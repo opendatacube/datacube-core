@@ -99,7 +99,7 @@ def check_open_with_dc(index):
     assert data_array.shape
     assert (data_array != -999).any()
 
-    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], time='2007-02-13 23:45:40')
+    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], time='2007-02-13 23:45:40.0')
     assert data_array['blue'].shape[0] == 1
     assert (data_array.blue != -999).any()
 
