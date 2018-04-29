@@ -102,7 +102,7 @@ class Query(object):
                     self.search['time'] = _time_to_search_dims(
                         (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
                          pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
-                         )#+ datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
+                         + datetime.timedelta(milliseconds=1))
                     )
 
     @property
@@ -272,7 +272,8 @@ def last_day_of_month(year, month):
     return last_day
 
 def fill_end_time(time_range):
-    print('timer1=',time_range[1])
+    if isinstance(time_range[1], datetime.datetime):
+        return time_range[1]
     break_time = re.findall(r"[\w]+", time_range[1])
     year = int(break_time[0])
     try:
