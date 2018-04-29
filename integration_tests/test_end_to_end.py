@@ -99,7 +99,7 @@ def check_open_with_dc(index):
     assert data_array.shape
     assert (data_array != -999).any()
 
-    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], time='2007-02-13 23:45:40.0')
+    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], time='1992-03-23 23:14:25.5')
     assert data_array['blue'].shape[0] == 1
     assert (data_array.blue != -999).any()
 
@@ -206,7 +206,7 @@ def check_open_with_grid_workflow(index):
     dataset_cell = gw.load(tile)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
 
-    ts = numpy.datetime64('1992-03-23T23:14:25')
+    ts = numpy.datetime64('1992-03-23T23:14:25.500000000')
     tile_key = LBG_CELL + (ts,)
     tiles = gw.list_tiles(product=type_name)
     assert tiles
