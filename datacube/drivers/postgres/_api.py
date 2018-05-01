@@ -26,7 +26,10 @@ from datacube.index.fields import OrExpression
 from datacube.model import Range
 from . import _core
 from . import _dynamic as dynamic
-from ._fields import parse_fields, NativeField, Expression, PgField, PgExpression
+from ._fields import (
+    parse_fields, Expression, PgField, PgExpression,
+    NativeField, DateDocField, SimpleDocField
+)
 from .sql import escape_pg_identifier
 from ._schema import (
     DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
@@ -96,6 +99,16 @@ def get_native_fields():
             'Dataset UUID',
             DATASET.c.id
         ),
+        'indexed_time': NativeField(
+            'indexed_time',
+            'Time indexed in datacube',
+            DATASET.c.added
+        ),
+        'indexed_by': NativeField(
+            'indexed_by',
+            'User who indexed',
+            DATASET.c.added_by
+        ),
         'product': NativeField(
             'product',
             'Dataset type name',
@@ -136,13 +149,32 @@ def get_native_fields():
     return fields
 
 
-def get_dataset_fields(dataset_search_fields):
+def get_dataset_fields(metadata_type_definition):
+    dataset_section = metadata_type_definition['dataset']
+
     fields = get_native_fields()
+    # "Fixed fields" (not dynamic: defined in metadata type schema)
+    fields.update(dict(
+        creation_time=DateDocField(
+            'creation_time',
+            'Time when dataset was created (processed)',
+            DATASET.c.metadata,
+            False,
+            offset=dataset_section['creation_dt']
+        ),
+        label=SimpleDocField(
+            'label',
+            'Label',
+            DATASET.c.metadata,
+            False,
+            offset=dataset_section['label']
+        ),
+    ))
 
     # noinspection PyTypeChecker
     fields.update(
         parse_fields(
-            dataset_search_fields,
+            dataset_section['search_fields'],
             DATASET.c.metadata
         )
     )
@@ -674,7 +706,7 @@ class PostgresDbAPI(object):
         )
         type_id = res.inserted_primary_key[0]
 
-        search_fields = get_dataset_fields(definition['dataset']['search_fields'])
+        search_fields = get_dataset_fields(definition)
         self._setup_metadata_type_fields(
             type_id, name, search_fields, concurrently=concurrently
         )
@@ -690,7 +722,7 @@ class PostgresDbAPI(object):
         )
         type_id = res.first()[0]
 
-        search_fields = get_dataset_fields(definition['dataset']['search_fields'])
+        search_fields = get_dataset_fields(definition)
         self._setup_metadata_type_fields(
             type_id, name, search_fields,
             concurrently=concurrently,
@@ -705,7 +737,7 @@ class PostgresDbAPI(object):
         search_fields = {}
 
         for metadata_type in self.get_all_metadata_types():
-            fields = get_dataset_fields(metadata_type['definition']['dataset']['search_fields'])
+            fields = get_dataset_fields(metadata_type['definition'])
             search_fields[metadata_type['id']] = fields
             self._setup_metadata_type_fields(
                 metadata_type['id'],
