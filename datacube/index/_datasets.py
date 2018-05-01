@@ -493,7 +493,7 @@ class DatasetResource(object):
         It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
 
         :param tuple[str] field_names:
-        :param dict[str,str|float|datacube.model.Range] query:
+        :param Union[str,float,datacube.model.Range] query:
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
         result_type = namedtuple('search_result', field_names)
