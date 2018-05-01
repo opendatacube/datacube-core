@@ -950,9 +950,11 @@ def test_cli_info(index, clirunner, pseudo_ls8_dataset, pseudo_ls8_dataset2):
         '- file:///tmp/location2',
         '- file:///tmp/location1',
         'fields:',
+        '    creation_time: 2015-04-22 06:32:04',
         '    format: PSEUDOMD',
         '    gsi: null',
         '    instrument: OLI_TIRS',
+        '    label: LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_116_074_20150330T022553Z20150330T022657',
         '    lat: {begin: -31.37116, end: -29.23394}',
         '    lon: {begin: 149.78434, end: 152.21782}',
         '    orbit: null',
@@ -1143,8 +1145,9 @@ def test_csv_search_via_cli(clirunner, pseudo_ls8_type, pseudo_ls8_dataset, pseu
 
 
 # Headers are currently in alphabetical order.
-_EXPECTED_OUTPUT_HEADER = 'dataset_type_id,format,gsi,id,instrument,lat,lon,metadata_doc,metadata_type,' \
-                          'metadata_type_id,orbit,platform,product,product_type,sat_path,sat_row,time,uri'
+_EXPECTED_OUTPUT_HEADER = 'creation_time,dataset_type_id,format,gsi,id,indexed_by,indexed_time,' \
+                          'instrument,label,lat,lon,metadata_doc,metadata_type,metadata_type_id,' \
+                          'orbit,platform,product,product_type,sat_path,sat_row,time,uri'
 
 
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
