@@ -5,6 +5,16 @@
 What's New
 **********
 
+v1.6rc2 (Maybe v1.6 proper) (?? May 2018)
+=========================================
+
+Backwards Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The `helpers.write_geotiff()` function has been updated to support files smaller
+  than 256x256. It also no longer supports specifying the time index. Before passing
+  data in, use `xarray_data.isel(time=<my_time_index>)`. (#277)
+
 Changes
 ~~~~~~~
 

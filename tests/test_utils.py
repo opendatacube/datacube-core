@@ -162,7 +162,10 @@ def test_more_check_doc_unchanged():
 
 
 def test_write_geotiff(tmpdir, odc_style_xr_dataset):
+    """Ensure the geotiff helper writer works, and supports datasets smaller than 256x256."""
     filename = tmpdir + '/test.tif'
+
+    assert len(odc_style_xr_dataset.latitude) < 256
 
     write_geotiff(filename, odc_style_xr_dataset)
 
@@ -172,3 +175,10 @@ def test_write_geotiff(tmpdir, odc_style_xr_dataset):
         written_data = src.read(1)
 
         assert (written_data == odc_style_xr_dataset['B10']).all()
+
+
+def test_write_geotiff_time_index_deprecated():
+    """The `time_index` parameter to `write_geotiff()` was a poorly thought out addition and is now deprecated."""
+
+    with pytest.raises(ValueError):
+        write_geotiff("", None, time_index=1)

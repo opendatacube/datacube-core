@@ -19,15 +19,21 @@ DEFAULT_PROFILE = {
     'tiled': True}
 
 
-def write_geotiff(filename, dataset, profile_override=None):
+def write_geotiff(filename, dataset, profile_override=None, time_index=None):
     """
     Write an ODC style xarray.Dataset to a GeoTIFF file.
 
     :param filename: Output filename
-    :attr dataset: xarray dataset containing multiple bands to write to file
-    :attr profile_override: option dict, overrides rasterio file creation options.
+    :param dataset: xarray dataset containing one or more bands to write to a file.
+    :param profile_override: option dict, overrides rasterio file creation options.
+    :param time_index: DEPRECATED
     """
     profile_override = profile_override or {}
+
+    if time_index is not None:
+        raise ValueError('''The write_geotiff function no longer supports passing in `time_index`.
+        The same function can be achieved by calling `dataset.isel(time=<time_index>)` before passing
+        in your dataset. It was removed because it made the function much less useful for more advanced cases.''')
 
     try:
         dtypes = {val.dtype for val in dataset.data_vars.values()}
