@@ -20,7 +20,9 @@ from psycopg2._range import NumericRange
 
 import datacube.scripts.cli_app
 import datacube.scripts.search_tool
+from datacube.config import LocalConfig
 from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgres._connections import DEFAULT_DB_USER
 from datacube.index.index import Index
 from datacube.model import Dataset
 from datacube.model import DatasetType
@@ -29,7 +31,7 @@ from datacube.model import Range
 from datacube.scripts import dataset as dataset_script
 
 try:
-    from typing import List
+    from typing import List, Tuple
 except ImportError:
     pass
 
@@ -487,8 +489,9 @@ def test_search_or_expressions(index,
     assert datasets[0].id == pseudo_ls8_dataset.id
 
 
-def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_products):
-    # type: (Index, DatasetType, Dataset, list) -> None
+def test_search_returning(index, local_config, pseudo_ls8_type, pseudo_ls8_dataset,
+                          indexed_ls5_scene_products):
+    # type: (Index, LocalConfig, DatasetType, Dataset, list) -> None
     """
     :type index: datacube.index._api.Index
     """
@@ -515,6 +518,27 @@ def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls
     id, document = results[0]
     assert id == pseudo_ls8_dataset.id
     assert document == pseudo_ls8_dataset.metadata_doc
+
+    my_username = local_config.get('db_username', DEFAULT_DB_USER)
+
+    # Mixture of document and native fields
+    results = list(index.datasets.search_returning(
+        ('id', 'creation_time', 'label'),
+        platform='LANDSAT_8',
+        indexed_by=my_username,
+    ))
+    assert len(results) == 1
+
+    # type: (uuid.UUID, datetime.datetime, str)
+    id, creation_time, label = results[0]
+
+    assert id == pseudo_ls8_dataset.id
+
+    # It's always UTC in the document
+    expected_time = creation_time.astimezone(tz.tzutc()).replace(tzinfo=None)
+    assert expected_time.isoformat() == pseudo_ls8_dataset.metadata_doc['creation_dt']
+    assert label == pseudo_ls8_dataset.metadata_doc['ga_label']
+
 
 
 def test_search_returning_rows(index, pseudo_ls8_type,
