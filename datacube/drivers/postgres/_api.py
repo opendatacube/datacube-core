@@ -162,6 +162,13 @@ def get_dataset_fields(metadata_type_definition):
             False,
             offset=dataset_section['creation_dt']
         ),
+        format=SimpleDocField(
+            'format',
+            'File format (GeoTiff, NetCDF)',
+            DATASET.c.metadata,
+            False,
+            offset=dataset_section['format']
+        ),
         label=SimpleDocField(
             'label',
             'Label',
