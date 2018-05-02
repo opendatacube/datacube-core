@@ -49,7 +49,7 @@ def morph_dataset_type(source_type, config, index, storage_format):
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
-                                         if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
+                                         if k in ('crs', 'tile_size', 'resolution', 'origin')}
 
     output_type.metadata_doc['format'] = {'name': storage_format}
 
