@@ -160,21 +160,21 @@ def get_dataset_fields(metadata_type_definition):
             'Time when dataset was created (processed)',
             DATASET.c.metadata,
             False,
-            offset=dataset_section['creation_dt']
+            offset=dataset_section.get('creation_dt') or ['creation_dt']
         ),
         format=SimpleDocField(
             'format',
             'File format (GeoTiff, NetCDF)',
             DATASET.c.metadata,
             False,
-            offset=dataset_section['format']
+            offset=dataset_section.get('format') or ['format', 'name']
         ),
         label=SimpleDocField(
             'label',
             'Label',
             DATASET.c.metadata,
             False,
-            offset=dataset_section['label']
+            offset=dataset_section.get('label') or ['label']
         ),
     ))
 
