@@ -534,8 +534,8 @@ def test_search_returning(index, local_config, pseudo_ls8_type, pseudo_ls8_datas
         instrument='OLI_TIRS',
     ))
     assert len(results) == 1
-    id, path_range, sat_range = results[0]
-    assert id == pseudo_ls8_dataset.id
+    id_, path_range, sat_range = results[0]
+    assert id_ == pseudo_ls8_dataset.id
     # TODO: output nicer types?
     assert path_range == NumericRange(Decimal('116'), Decimal('116'), '[]')
     assert sat_range == NumericRange(Decimal('74'), Decimal('84'), '[]')
@@ -546,24 +546,25 @@ def test_search_returning(index, local_config, pseudo_ls8_type, pseudo_ls8_datas
         instrument='OLI_TIRS',
     ))
     assert len(results) == 1
-    id, document = results[0]
-    assert id == pseudo_ls8_dataset.id
+    id_, document = results[0]
+    assert id_ == pseudo_ls8_dataset.id
     assert document == pseudo_ls8_dataset.metadata_doc
 
     my_username = local_config.get('db_username', DEFAULT_DB_USER)
 
     # Mixture of document and native fields
     results = list(index.datasets.search_returning(
-        ('id', 'creation_time', 'label'),
+        ('id', 'creation_time', 'format', 'label'),
         platform='LANDSAT_8',
         indexed_by=my_username,
     ))
     assert len(results) == 1
 
-    # type: (uuid.UUID, datetime.datetime, str)
-    id, creation_time, label = results[0]
+    # type: (uuid.UUID, datetime.datetime, str, str)
+    id_, creation_time, format_, label = results[0]
 
-    assert id == pseudo_ls8_dataset.id
+    assert id_ == pseudo_ls8_dataset.id
+    assert format_ == 'PSEUDOMD'
 
     # It's always UTC in the document
     expected_time = creation_time.astimezone(tz.tzutc()).replace(tzinfo=None)
