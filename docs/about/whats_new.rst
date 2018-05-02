@@ -29,6 +29,9 @@ Bug Fixes
 - `.dimensions` property of a product no longer crashes when product is missing
   a `grid_spec`, instead defaults to `time,y,x`
 
+- Fix a regression in v1.6rc1 whereby it was impossible to run ``datacube ingest``
+  to create products which were defined in 1.5.5 and earlier versions of ODC. (:issue:`432`, :pull:`436`)
+
 
 
 v1.6rc1 Easter Bilby (10 April 2018)
