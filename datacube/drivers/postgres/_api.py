@@ -101,17 +101,17 @@ def get_native_fields():
         ),
         'indexed_time': NativeField(
             'indexed_time',
-            'Time indexed in datacube',
+            'When dataset was indexed',
             DATASET.c.added
         ),
         'indexed_by': NativeField(
             'indexed_by',
-            'User who indexed',
+            'User who indexed the dataset',
             DATASET.c.added_by
         ),
         'product': NativeField(
             'product',
-            'Dataset type name',
+            'Product name',
             DATASET_TYPE.c.name
         ),
         'dataset_type_id': NativeField(
