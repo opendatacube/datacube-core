@@ -5,6 +5,14 @@
 What's New
 **********
 
+Changes
+~~~~~~~
+
+- The masking related function ``describe_variable_flags()`` now returns a
+  pandas DataFrame by default. This will display as a table in Jupyter
+  Notebooks. (:pull:`422`)
+
+
 Bug Fixes
 ~~~~~~~~~
 
