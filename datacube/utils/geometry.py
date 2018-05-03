@@ -847,6 +847,14 @@ class GeoBox(object):
             crs=self.extent.crs
         )
 
+    def __eq__(self, other):
+        if not isinstance(other, GeoBox):
+            return False
+
+        return (self.shape == other.shape
+                and self.transform == other.transform
+                and self.crs == other.crs)
+
 
 def _round_to_res(value, res, acc=0.1):
     """
