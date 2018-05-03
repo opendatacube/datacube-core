@@ -312,14 +312,20 @@ class Dataset(object):
 
 
 class Measurement(object):
-    def __init__(self, measurement_dict):
-        self.name = measurement_dict['name']
-        self.dtype = measurement_dict['dtype']
-        self.nodata = measurement_dict['nodata']
-        self.units = measurement_dict['units']
-        self.aliases = measurement_dict['aliases']
-        self.spectral_definition = measurement_dict['spectral_definition']
-        self.flags_definition = measurement_dict['flags_definition']
+    REQUIRED_KEYS = ['name', 'dtype', 'nodata', 'units']
+    OPTIONAL_KEYS = ['aliases', 'spectral_definition', 'flags_definition']
+
+    def __init__(self, **measurement_dict):
+        for key in self.REQUIRED_KEYS:
+            setattr(self, key, measurement_dict[key])
+
+        for key in self.OPTIONAL_KEYS:
+            if key in measurement_dict:
+                setattr(self, key, measurement_dict[key])
+
+    def __repr__(self):
+        attrs = ", ".join("{}={}".format(key, value) for key, value in vars(self).items())
+        return "Measurement({})".format(attrs)
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
@@ -563,6 +569,15 @@ class GridSpec(object):
         self.resolution = resolution
         #: :type: (float, float)
         self.origin = origin or (0.0, 0.0)
+
+    def __eq__(self, other):
+        if not isinstance(other, GridSpec):
+            return False
+
+        return (self.crs == other.crs
+                and self.tile_size == other.tile_size
+                and self.resolution == other.resolution
+                and self.origin == other.origin)
 
     @property
     def dimensions(self):
