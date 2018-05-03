@@ -13,18 +13,34 @@ In the current version of DC (1.5.4), products are unique strings which associat
 
 Virtual Products
 ----------------
-Requirements (in progress)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Metadata as bands, e.g. data about what LandSat data came from may be encoded as metadata which will be preserved as a band
-- Timestamps must be retained
-- Must support DC GridWorkflow for datasets which will not fit into memory
-- For all queries against a virtual product the database should be accessed to retrieve the locations of datasets, and then database should not be accessed again. The locations of the datasets may need to be serialized to a storage device and loaded later.
-- Support querying multiple databases.
+Scope
+~~~~~
+Our principle design goals for Virtual Products (VPs) are:
 
-Class Thoughts
+- *A common interface for products*: Our representation of a product (both virtual and concrete)
+  should provide methods to query data and load data (possibly among other things) so that the
+  user need not be concerned with how a product is constructed (whether it is virtual or concrete,
+  or performs on-the-fly computation).
+
+- *Multi-product query optimization*: When observations from different products are expected
+  to be in one-to-one correspondence (such as NBAR and PQ when producing cloud-free NBAR),
+  the "missing" observations in the correspondence should be filtered out so that they are not
+  actually loaded.
+
+- *Multi-sensor aggregation*: A common pattern in scientific applications is to combine similar
+  data (perhaps after some post-processing) collected by different sensors, such as Landsat 5, 7,
+  or 8.
+
+- *On-the-fly computation*: The ability to apply a data transformation to each observation as soon as
+  the data is loaded. Often the actual loaded data is not needed afterwards and may be safely discarded.
+  We aim to greatly reduce the peak resident memory size required for large scale computations.
+
+Current design
 ~~~~~~~~~~~~~~
-A class implementing Virtual Products (VPs) will represent a tree which represents the hierarchy of virtual products. Leaf nodes will be Virtual Products which are unmodified products.
+A Virtual Product in general is a tree. The leaf nodes are the concrete products in our datacube.
+Other nodes in the tree represent modes of combining the data fetched from the leaf nodes
+and transformations to be applied to that data.
 
 Combinators
     Combinators are functions which accept 1 or more Virtual Products and return a Virtual Product. The following combinators will be available:
@@ -33,30 +49,21 @@ Combinators
         For example: Combining the sensor readings for LS5 on 05/07/95, LS6 on 06/11/95, LS8 on 07/11/95 into one dataset.
 
     `Juxtapose`: `A -> B -> A x B`
-        Similar to a `JOIN` in SQL, could be outer or inner. This could be used for apply PQ for cloud masking in combination with Filter or Transform.
-
-    `Drop`: `A -> A`
-        Given some predicate function, this will remove all datasets with metadata that do not meet the given predicate. Performed at query time.
-
-    `Filter`: `A -> A`
-        Given some predicate function, this will remove all points in a dataset that do not meet the given predicate. Performed at fetch time.
+        Similar to a `JOIN` in SQL, could be outer or inner. This could be used for apply PQ for cloud masking in combination with Transform.
 
     `Transform`: `A -> B`
-        Synonymous with the `map` function of the `mapreduce` paradigm. Will require some transformation function f which accepts a dataset and returns a dataset. This combinator may also modify the type of the dataset.
+        Synonymous with the `map` function of the `mapreduce` paradigm. Will require some transformation function which accepts a dataset and returns a dataset. This combinator may also modify the type of the dataset.
 
 Methods & Workflow (High Level API)
 
     `construct`
-        Constructing a Virtual Product will set it's child Virtual Products as well as any functions it requires to operate. The construction will not access the database.
+        Constructing a Virtual Product will set its child Virtual Products as well as any functions it requires to operate. The construction will not access the database.
 
     `validate`
         The validation function will check the measurement types of the inputs and outputs and ensure that they are compatible. In most cases this will be checking that they match, however with a `Transform` there may be a change.
 
     `query`
-        The query function will retreieve datasets which match a query, product, and in case of `Drop` products, metadata predicate. The product being queried may be virtual. Access to the database will cease after this stage.
-
-    `serialize`
-        Optional(?) The serialize function will use the results of the `query` function (i.e. datasets that match the query) and serialize them for use on machines or nodes that cannot or should not query the database but can fetch data.
+        The query function will retreieve datasets which match a query. The product being queried may be virtual. Access to the database will cease after this stage.
 
     `fetch`
         The fetch function will use the results of the `query`, direct or deserialized, and load the datasets. At this stage combinators working on data can apply their functions or predicates; for example `Filter` can execute. Once completed, the output for the top level Virtual Product will be the desired Virtual Dataset.
