@@ -323,14 +323,8 @@ class Measurement(object):
             if key in measurement_dict:
                 setattr(self, key, measurement_dict[key])
 
-    def to_dict(self, update_with=None):
-        if update_with is None:
-            update_with = {}
-
-        return {**self.__dict__, **update_with}
-
     def __repr__(self):
-        attrs = ", ".join("{}={}".format(key, value) for key, value in self.to_dict().items())
+        attrs = ", ".join("{}={}".format(key, value) for key, value in vars(self).items())
         return "Measurement({})".format(attrs)
 
 
