@@ -46,7 +46,19 @@ def find_matching_product(rules, doc):
     """:rtype: datacube.model.DatasetType"""
     matched = [rule for rule in rules if changes.contains(doc, rule['metadata'])]
     if not matched:
-        raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
+        # provide user with information about the failure
+        if len(rules) == 0:
+            raise BadMatch('No rules provided.')
+        elif len(rules) == 1:
+            metadata = rules[0]['metadata']
+            relevant_doc = {k: v for k, v in doc.items() if k in metadata}
+            raise BadMatch('Dataset metadata did not match product rules.'
+                           '\nDataset metadata:\n %s\n'
+                           '\nProduct metadata:\n %s\n'
+                           % (json.dumps(metadata, indent=4),
+                              json.dumps(relevant_doc, indent=4)))
+        else:
+            raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
     if len(matched) > 1:
         raise BadMatch('Too many matching Products found for %s. Matched %s.' % (
             doc.get('id', 'unidentified'), matched))
