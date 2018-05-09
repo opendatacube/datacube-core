@@ -15,6 +15,7 @@
 from __future__ import absolute_import, division, print_function
 
 import datetime
+import pandas
 
 import pytest
 from dateutil import tz
@@ -89,48 +90,46 @@ def test_query_kwargs():
         query_group_by(group_by='magic')
 
 
+def format_test(start_out, end_out):
+    return Range(pandas.to_datetime(start_out, utc=True).to_pydatetime(),
+                 pandas.to_datetime(end_out, utc=True).to_pydatetime())
+
+
 testdata = [
-    (('2018-04-05', '2018-04-06'), Range(begin=datetime.datetime(2018, 4, 5, 0, 0, 0, tzinfo=timezone.utc),
-                                         end=datetime.datetime(2018, 4, 6, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    ('2008', Range(begin=datetime.datetime(2008, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-                   end=datetime.datetime(2008, 12, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008', '2008'), Range(begin=datetime.datetime(2008, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-                             end=datetime.datetime(2008, 12, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008', '2009'), Range(begin=datetime.datetime(2008, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-                             end=datetime.datetime(2009, 12, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-03', '2009'), Range(begin=datetime.datetime(2008, 3, 1, 0, 0, tzinfo=timezone.utc),
-                                end=datetime.datetime(2009, 12, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-03', '2009-10'), Range(begin=datetime.datetime(2008, 3, 1, 0, 0, tzinfo=timezone.utc),
-                                   end=datetime.datetime(2009, 10, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008', '2009-10'), Range(begin=datetime.datetime(2008, 1, 1, 0, 0, tzinfo=timezone.utc),
-                                end=datetime.datetime(2009, 10, 31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-03-03', '2008-11'), Range(begin=datetime.datetime(2008, 3, 3, 0, 0, 0, tzinfo=timezone.utc),
-                                      end=datetime.datetime(2008, 11, 30, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-11-14', '2008-11-30'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
-                                         end=datetime.datetime(2008, 11, 30, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-11-14', '2008-11-29'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
-                                         end=datetime.datetime(2008, 11, 29, 23, 59, 59, 999000,
-                                         tzinfo=timezone.utc))),
-    (('2008-11-14', '2008-11'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
-                                      end=datetime.datetime(2008, 11,  30, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-11-14', '2008'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
-                                   end=datetime.datetime(2008,  12,  31, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-11-14'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
-                           end=datetime.datetime(2008,  11,  14, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-11-14', '2009-02-02'), Range(begin=datetime.datetime(2008, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
-                                         end=datetime.datetime(2009, 2,  2, 23, 59, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-11-14 23:33:57', '2008-11-14 23:33:57'), Range(begin=datetime.datetime(2008, 11, 14, 23, 33, 57,
-                                                           tzinfo=timezone.utc), end=datetime.datetime(2008, 11, 14,
-                                                           23, 33, 57, 999000, tzinfo=timezone.utc))),
-    (('2008-11-14 23:33', '2008-11-14 23:34'), Range(begin=datetime.datetime(2008, 11, 14, 23, 33, 0,
-                                                     tzinfo=timezone.utc), end=datetime.datetime(2008, 11, 14, 23, 34,
-                                                     59, 999000, tzinfo=timezone.utc))),
-    (('2008-11-14 23:00:00', '2008-11-14 23:35'), Range(begin=datetime.datetime(2008, 11, 14, 23, 0,
-                                                        tzinfo=timezone.utc), end=datetime.datetime(2008, 11, 14, 23,
-                                                        35, 59, 999000, tzinfo=timezone.utc))),
-    (('2008-11-10 11', '2008-11-16 14:01'), Range(begin=datetime.datetime(2008, 11, 10, 11, 0, tzinfo=timezone.utc),
-                                                  end=datetime.datetime(2008, 11, 16, 14, 1, 59, 999000,
-                                                  tzinfo=timezone.utc))),
+    (('2008'),
+     format_test('2008-01-01T00:00:00', '2008-12-31T23:59:59.999999')),
+    (('2008', '2008'),
+     format_test('2008-01-01T00:00:00', '2008-12-31T23:59:59.999999')),
+    (('2008', '2009'),
+     format_test('2008-01-01T00:00:00', '2009-12-31T23:59:59.999999')),
+    (('2008-03', '2009'),
+     format_test('2008-03-01T00:00', '2009-12-31T23:59:59.999999')),
+    (('2008-03', '2009-10'),
+     format_test('2008-03-01T00:00', '2009-10-31T23:59:59.999999')),
+    (('2008', '2009-10'),
+     format_test('2008-01-01T00:00', '2009-10-31T23:59:59.999999')),
+    (('2008-03-03', '2008-11'),
+     format_test('2008-03-03T00:00:00', '2008-11-30T23:59:59.999999')),
+    (('2008-11-14', '2008-11-30'),
+     format_test('2008-11-14T00:00:00', '2008-11-30T23:59:59.999999')),
+    (('2008-11-14', '2008-11-29'),
+     format_test('2008-11-14T00:00:00', '2008-11-29T23:59:59.999999')),
+    (('2008-11-14', '2008-11'),
+     format_test('2008-11-14T00:00:00', '2008-11-30T23:59:59.999999')),
+    (('2008-11-14', '2008'),
+     format_test('2008-11-14T00:00:00', '2008-12-31T23:59:59.999999')),
+    (('2008-11-14'),
+     format_test('2008-11-14T00:00:00', '2008-11-14T23:59:59.999999')),
+    (('2008-11-14', '2009-02-02'),
+     format_test('2008-11-14T00:00:00', '2009-02-02T23:59:59.999999')),
+    (('2008-11-14T23:33:57', '2008-11-14 23:33:57'),
+     format_test('2008-11-14T23:33:57', '2008-11-14T23:33:57.999999')),
+    (('2008-11-14 23:33', '2008-11-14 23:34'),
+     format_test('2008-11-14T23:33:00', '2008-11-14T23:34:59.999999')),
+    (('2008-11-14T23:00:00', '2008-11-14 23:35'),
+     format_test('2008-11-14T23:00', '2008-11-14T23:35:59.999999')),
+    (('2008-11-10T11', '2008-11-16 14:01'),
+     format_test('2008-11-10T11:00', '2008-11-16T14:01:59.999999')),
 ]
 
 
