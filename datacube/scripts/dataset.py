@@ -5,7 +5,6 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
-from decimal import Decimal
 from pathlib import Path
 
 import click
@@ -13,12 +12,10 @@ import yaml
 import yaml.resolver
 from click import echo
 import json
-from yaml import Node
 
 from datacube.index.index import Index
 from datacube.index.exceptions import MissingRecordError
 from datacube.model import Dataset
-from datacube.model import Range
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
@@ -292,6 +289,7 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False, d
 
     return info
 
+
 def _write_csv(infos):
     writer = csv.DictWriter(sys.stdout, ['id', 'status', 'product', 'location'], extrasaction='ignore')
     writer.writeheader()
@@ -302,6 +300,7 @@ def _write_csv(infos):
         return row
 
     writer.writerows(add_first_location(row) for row in infos)
+
 
 def _write_yaml(infos):
     """
@@ -314,10 +313,12 @@ def _write_yaml(infos):
 
     return yaml.dump_all(infos, sys.stdout, SafeDatacubeDumper, default_flow_style=False, indent=4)
 
+
 _OUTPUT_WRITERS = {
     'csv': _write_csv,
     'yaml': _write_yaml,
 }
+
 
 @dataset_cmd.command('info', help="Display dataset information")
 @click.option('--show-sources', help='Also show source datasets', is_flag=True, default=False)
