@@ -16,17 +16,14 @@ import click
 import dask.array as da
 import dask
 from dateutil import tz
-import pandas as pd
 from pathlib import Path
 
 import datacube
-from datacube.api import Tile
 from datacube.model import Dataset
 from datacube.model.utils import xr_apply, datasets_to_doc
 from datacube.storage import netcdf_writer
 from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.ui import task_app
-from datacube.ui.click import to_pathlib
 
 _LOG = logging.getLogger(__name__)
 
