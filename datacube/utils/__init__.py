@@ -199,20 +199,12 @@ def map_with_lookahead(it, if_one, if_many):
     :param if_many: Function to apply for multi-element sequences
 
     """
-    v0 = []
-    for idx, v in enumerate(it):
-        if idx == 0:
-            v0.append(v)
-        elif idx == 1:
-            for _v in v0:
-                yield if_many(_v)
-            yield if_many(v)
-            v0 = []
-        else:
-            yield if_many(v)
+    it = iter(it)
+    p1 = list(itertools.islice(it, 2))
+    proc = if_many if len(p1) > 1 else if_one
 
-    for v in v0:
-        yield if_one(v)
+    for v in itertools.chain(iter(p1), it):
+        yield proc(v)
 
 
 ###
