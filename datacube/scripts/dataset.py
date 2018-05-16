@@ -19,7 +19,7 @@ from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, changes, InvalidDocException
+from datacube.utils import read_documents, changes, InvalidDocException, without_lineage_sources
 from datacube.utils.serialise import SafeDatacubeDumper
 
 try:
@@ -75,13 +75,17 @@ def check_dataset_consistent(dataset):
     return True, None
 
 
-def create_dataset(dataset_doc, uri, rules):
+def create_dataset(dataset_doc, uri, rules, skip_lineage=False):
     """
     :rtype datacube.model.Dataset:
     """
     dataset_type = find_matching_product(rules, dataset_doc)
-    sources = {cls: create_dataset(source_doc, None, rules)
-               for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
+    if skip_lineage:
+        sources = None
+        dataset_doc = without_lineage_sources(dataset_doc)
+    else:
+        sources = {cls: create_dataset(source_doc, None, rules)
+                   for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
     return Dataset(dataset_type, dataset_doc, uris=[uri] if uri else None, sources=sources)
 
 
@@ -101,7 +105,7 @@ def load_rules_from_types(index, type_names=None):
     return rules
 
 
-def load_datasets(datasets, rules):
+def load_datasets(datasets, rules, skip_lineage=False):
     for dataset_path in datasets:
         metadata_path = get_metadata_path(Path(dataset_path))
         if not metadata_path or not metadata_path.exists():
@@ -113,7 +117,7 @@ def load_datasets(datasets, rules):
                 uri = metadata_path.absolute().as_uri()
 
                 try:
-                    dataset = create_dataset(metadata_doc, uri, rules)
+                    dataset = create_dataset(metadata_doc, uri, rules, skip_lineage=skip_lineage)
                 except BadMatch as e:
                     _LOG.error('Unable to create Dataset for %s: %s', uri, e)
                     continue
@@ -124,6 +128,53 @@ def load_datasets(datasets, rules):
                     continue
 
                 yield dataset
+        except InvalidDocException:
+            _LOG.error("Failed reading documents from %s", metadata_path)
+            continue
+
+
+def load_datasets_for_update(datasets, index):
+    """Load datasets from disk, associate to a product by looking up existing
+    dataset in the index. Datasets not in the database will be logged.
+
+    Doesn't load lineage information
+    """
+    def mk_dataset(metadata_doc, uri):
+        uuid = metadata_doc.get('id', None)
+
+        if uuid is None:
+            return None, "Metadata document it missing id field"
+
+        existing = index.datasets.get(uuid)
+        if existing is None:
+            return None, "No such dataset the database: {}".format(uuid)
+
+        return Dataset(existing.type,
+                       without_lineage_sources(metadata_doc, inplace=True),
+                       uris=[uri]), None
+
+    for dataset_path in datasets:
+        metadata_path = get_metadata_path(Path(dataset_path))
+        if not metadata_path or not metadata_path.exists():
+            _LOG.error('No supported metadata docs found for dataset %s', dataset_path)
+            continue
+
+        try:
+            for metadata_path, metadata_doc in read_documents(metadata_path):
+                uri = metadata_path.absolute().as_uri()
+
+                dataset, error_msg = mk_dataset(metadata_doc, uri)
+
+                if dataset is None:
+                    _LOG.error("Failure while processing: %s\n" +
+                               " > Reason: %s", metadata_path, error_msg)
+                else:
+                    is_consistent, reason = check_dataset_consistent(dataset)
+                    if is_consistent:
+                        yield dataset
+                    else:
+                        _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
+
         except InvalidDocException:
             _LOG.error("Failed reading documents from %s", metadata_path)
             continue
@@ -181,22 +232,15 @@ def parse_update_rules(allow_any):
 
 @dataset_cmd.command('update', help="Update datasets in the Data Cube")
 @click.option('--allow-any', help="Allow any changes to the specified key (a.b.c)", multiple=True)
-@click.option('--dtype', '-t', help='Product to be associated with the datasets', multiple=True)
-@click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
-              is_flag=True, default=False)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def update_cmd(index, allow_any, dtype, auto_match, dry_run, datasets):
-    rules = parse_match_rules_options(index, dtype, auto_match)
-    if rules is None:
-        return
-
+def update_cmd(index, allow_any, dry_run, datasets):
     updates = parse_update_rules(allow_any)
 
     success, fail = 0, 0
-    for dataset in load_datasets(datasets, rules):
+    for dataset in load_datasets_for_update(datasets, index):
         _LOG.info('Matched %s', dataset)
 
         if not dry_run:
