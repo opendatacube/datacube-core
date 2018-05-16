@@ -78,7 +78,20 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
     clirunner(['-v', 'product', 'add', str(LS5_DATASET_TYPES)])
 
     # Index the Datasets
-    clirunner(['-v', 'dataset', 'add', '--auto-match',
+    #  - do test run first to increase test coverage
+    clirunner(['-v', 'dataset', 'add', '--dry-run',
+               str(lbg_nbar), str(lbg_pq)])
+
+    #  - do actual indexing
+    clirunner(['-v', 'dataset', 'add',
+               str(lbg_nbar), str(lbg_pq)])
+
+    # Test no-op update
+    clirunner(['-v', 'dataset', 'update', '--dry-run',
+               str(lbg_nbar), str(lbg_pq)])
+
+    # Test no changes needed update
+    clirunner(['-v', 'dataset', 'update',
                str(lbg_nbar), str(lbg_pq)])
 
     # Ingest NBAR
