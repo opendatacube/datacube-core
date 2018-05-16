@@ -15,7 +15,7 @@ from pandas import to_datetime
 
 from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
-from datacube.utils import without_lineage_sources
+from datacube.utils import without_lineage_sources, map_with_lookahead
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 
@@ -210,3 +210,15 @@ def test_without_lineage_sources():
     assert mk_sample(10) != mk_sample({})
     assert without_lineage_sources(mk_sample(10)) == mk_sample({})
     assert without_lineage_sources(mk_sample(10), inplace=True) == mk_sample({})
+
+
+def test_map_with_lookahead():
+    def if_one(x):
+        return 'one'+str(x)
+
+    def if_many(x):
+        return 'many'+str(x)
+
+    assert list(map_with_lookahead(iter([]), if_one, if_many)) == []
+    assert list(map_with_lookahead(iter([1]), if_one, if_many)) == [if_one(1)]
+    assert list(map_with_lookahead(range(5), if_one, if_many)) == list(map(if_many, range(5)))

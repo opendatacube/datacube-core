@@ -182,6 +182,39 @@ def data_resolution_and_offset(data):
     return numpy.asscalar(res), numpy.asscalar(off)
 
 
+def map_with_lookahead(it, if_one, if_many):
+    """It's like normal map: creates new generator by applying a function to every
+    element of the original generator, but it applies `if_one` transform for
+    single element sequences and `if_many` transform for multi-element sequences.
+
+    If iterators supported `len` it would be equivalent to the code below:
+
+    ```
+    proc = if_many if len(it) > 1 else if_one
+    return map(proc, it)
+    ```
+
+    :param it: Sequence to iterate over
+    :param if_one: Function to apply for single element sequences
+    :param if_many: Function to apply for multi-element sequences
+
+    """
+    v0 = []
+    for idx, v in enumerate(it):
+        if idx == 0:
+            v0.append(v)
+        elif idx == 1:
+            for _v in v0:
+                yield if_many(_v)
+            yield if_many(v)
+            v0 = []
+        else:
+            yield if_many(v)
+
+    for v in v0:
+        yield if_one(v)
+
+
 ###
 # Functions for working with YAML documents and configurations
 ###
