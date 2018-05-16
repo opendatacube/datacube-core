@@ -15,6 +15,7 @@ from pandas import to_datetime
 
 from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
+from datacube.utils import without_lineage_sources
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 
@@ -182,3 +183,30 @@ def test_write_geotiff_time_index_deprecated():
 
     with pytest.raises(ValueError):
         write_geotiff("", None, time_index=1)
+
+
+def test_without_lineage_sources():
+    def mk_sample(v):
+        return dict(lineage={'source_datasets': v, 'a': 'a', 'b': 'b'},
+                    aa='aa',
+                    bb=dict(bb='bb'))
+
+    x = {'a': 1}
+    assert without_lineage_sources(x) == x
+    assert without_lineage_sources(x, inplace=True) == x
+
+    x = {'a': 1, 'lineage': {}}
+    assert without_lineage_sources(x) == x
+    assert without_lineage_sources(x, inplace=True) == x
+
+    x = mk_sample(1)
+    assert without_lineage_sources(x) != x
+    assert x['lineage']['source_datasets'] == 1
+
+    x = mk_sample(2)
+    assert without_lineage_sources(x, inplace=True) == x
+    assert x['lineage']['source_datasets'] == {}
+
+    assert mk_sample(10) != mk_sample({})
+    assert without_lineage_sources(mk_sample(10)) == mk_sample({})
+    assert without_lineage_sources(mk_sample(10), inplace=True) == mk_sample({})

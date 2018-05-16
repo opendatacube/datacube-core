@@ -238,6 +238,27 @@ class NoDatesSafeLoader(SafeLoader):  # pylint: disable=too-many-ancestors
 NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
 
 
+def without_lineage_sources(doc, inplace=False):
+    """ Replace lineage.source_datasets with {}
+    """
+    lineage = doc.get('lineage', None)
+    if lineage is None:
+        return doc
+
+    if 'source_datasets' not in lineage:
+        return doc
+
+    if inplace:
+        doc['lineage']['source_datasets'] = {}
+    else:
+        doc = doc.copy()
+        lineage = lineage.copy()
+        lineage['source_datasets'] = {}
+        doc['lineage'] = lineage
+
+    return doc
+
+
 def read_documents(*paths):
     """
     Read & parse documents from the filesystem (yaml or json).
