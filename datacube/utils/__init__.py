@@ -305,38 +305,53 @@ def read_documents(*paths):
     :type paths: pathlib.Path
     :rtype: tuple[(pathlib.Path, dict)]
     """
+    def process_yaml(path, compressed):
+        opener = gzip.open if compressed else open
+        with opener(str(path), 'r') as handle:
+            for parsed_doc in yaml.load_all(handle, Loader=NoDatesSafeLoader):
+                yield parsed_doc
+
+    def process_json(path, compressed):
+        opener = gzip.open if compressed else open
+        with opener(str(path), 'r') as handle:
+            yield json.load(handle)
+
+    def process_netcdf(path, compressed):
+        if compressed:
+            raise InvalidDocException("Can't process gziped netcdf files")
+
+        return read_strings_from_netcdf(path, variable='dataset')
+
+    procs = {
+        '.yaml': process_yaml,
+        '.yml': process_yaml,
+        '.json': process_json,
+        '.nc': process_netcdf,
+    }
+
     for path in paths:
         path = pathlib.Path(path)
         suffix = path.suffix.lower()
 
-        # If compressed, open as gzip stream.
-        opener = open
-        if suffix == '.gz':
-            suffix = path.suffixes[-2].lower()
-            opener = gzip.open
+        compressed = suffix == '.gz'
 
-        if suffix in ('.yaml', '.yml'):
-            try:
-                with opener(str(path), 'r') as handle:
-                    for parsed_doc in yaml.load_all(handle, Loader=NoDatesSafeLoader):
-                        yield path, parsed_doc
-            except yaml.YAMLError as e:
-                raise InvalidDocException('Failed to load %s: %s' % (path, e))
-        elif suffix == '.json':
-            try:
-                with opener(str(path), 'r') as handle:
-                    yield path, json.load(handle)
-            except ValueError as e:
-                raise InvalidDocException('Failed to load %s: %s' % (path, e))
-        elif suffix == '.nc':
-            try:
-                for doc in read_strings_from_netcdf(path, variable='dataset'):
-                    yield path, yaml.load(doc, Loader=NoDatesSafeLoader)
-            except Exception as e:
-                raise InvalidDocException('Unable to load dataset information from NetCDF file: %s. %s' % (path, e))
-        else:
+        if compressed:
+            suffix = path.suffixes[-2].lower()
+
+        proc = procs.get(suffix)
+
+        if proc is None:
             raise ValueError('Unknown document type for {}; expected one of {!r}.'
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
+        try:
+            for doc in proc(path, compressed):
+                yield path, doc
+        except InvalidDocException as e:
+            raise e
+        except (yaml.YAMLError, ValueError) as e:
+            raise InvalidDocException('Failed to load %s: %s' % (path, e))
+        except Exception as e:
+            raise InvalidDocException('Failed to load %s: %s' % (path, e))
 
 
 def netcdf_extract_string(chars):
