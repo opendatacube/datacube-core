@@ -15,7 +15,7 @@ from pandas import to_datetime
 
 from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
-from datacube.utils import without_lineage_sources, map_with_lookahead
+from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 
@@ -222,3 +222,11 @@ def test_map_with_lookahead():
     assert list(map_with_lookahead(iter([]), if_one, if_many)) == []
     assert list(map_with_lookahead(iter([1]), if_one, if_many)) == [if_one(1)]
     assert list(map_with_lookahead(range(5), if_one, if_many)) == list(map(if_many, range(5)))
+
+
+def test_read_documents(sample_document_files):
+    for filename, ndocs in sample_document_files:
+        all_docs = list(read_documents(filename))
+        assert len(all_docs) == ndocs
+
+        assert set(str(f) for f, _ in all_docs) == set([filename])
