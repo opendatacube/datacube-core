@@ -85,23 +85,6 @@ def create_dataset(dataset_doc, uri, rules):
     return Dataset(dataset_type, dataset_doc, uris=[uri] if uri else None, sources=sources)
 
 
-def load_rules_from_file(filename, index):
-    rules = next(read_documents(Path(filename)))[1]
-    # TODO: verify schema
-
-    for rule in rules:
-        type_ = index.products.get_by_name(rule['type'])
-        if not type_:
-            _LOG.error('DatasetType %s does not exists', rule['type'])
-            return None
-        if not changes.contains(type_.metadata_doc, rule['metadata']):
-            _LOG.error('DatasetType %s can\'t be matched by its own rule', rule['type'])
-            return None
-        rule['type'] = type_
-
-    return rules
-
-
 def load_rules_from_types(index, type_names=None):
     types = []
     if type_names:
@@ -146,23 +129,17 @@ def load_datasets(datasets, rules):
             continue
 
 
-def parse_match_rules_options(index, match_rules, dtype, auto_match):
-    if not (match_rules or dtype or auto_match):
-        auto_match = True
+def parse_match_rules_options(index, dtype, auto_match):
+    if auto_match is True:
+        _LOG.warning("--auto-match option is deprecated, update your scripts, behaviour is the same without it")
 
-    if match_rules:
-        return load_rules_from_file(match_rules, index)
-    else:
-        assert dtype or auto_match
-        return load_rules_from_types(index, dtype)
+    return load_rules_from_types(index, dtype)
 
 
 @dataset_cmd.command('add', help="Add datasets to the Data Cube")
-@click.option('--match-rules', '-r', help='Rules to be used to associate datasets with products',
-              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dtype', '-t', help='Product to be associated with the datasets',
               multiple=True)
-@click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
+@click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
               is_flag=True, default=False)
 @click.option('--sources-policy', type=click.Choice(['verify', 'ensure', 'skip']), default='verify',
               help="""'verify' - verify source datasets' metadata (default)
@@ -172,8 +149,8 @@ def parse_match_rules_options(index, match_rules, dtype, auto_match):
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, match_rules, dtype, auto_match, sources_policy, dry_run, dataset_paths):
-    rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
+def index_cmd(index, dtype, auto_match, sources_policy, dry_run, dataset_paths):
+    rules = parse_match_rules_options(index, dtype, auto_match)
     if rules is None:
         return
 
@@ -204,17 +181,15 @@ def parse_update_rules(allow_any):
 
 @dataset_cmd.command('update', help="Update datasets in the Data Cube")
 @click.option('--allow-any', help="Allow any changes to the specified key (a.b.c)", multiple=True)
-@click.option('--match-rules', '-r', help='Rules to be used to associate datasets with products',
-              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dtype', '-t', help='Product to be associated with the datasets', multiple=True)
-@click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
+@click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
               is_flag=True, default=False)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def update_cmd(index, allow_any, match_rules, dtype, auto_match, dry_run, datasets):
-    rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
+def update_cmd(index, allow_any, dtype, auto_match, dry_run, datasets):
+    rules = parse_match_rules_options(index, dtype, auto_match)
     if rules is None:
         return
 
