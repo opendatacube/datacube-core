@@ -123,9 +123,7 @@ def load_datasets(datasets, rules, skip_lineage=False):
             continue
 
         try:
-            for metadata_path, metadata_doc in read_documents(metadata_path):
-                uri = metadata_path.absolute().as_uri()
-
+            for uri, metadata_doc in read_documents(metadata_path, uri=True):
                 try:
                     dataset = create_dataset(metadata_doc, uri, rules, skip_lineage=skip_lineage)
                 except BadMatch as e:
@@ -170,9 +168,7 @@ def load_datasets_for_update(datasets, index):
             continue
 
         try:
-            for metadata_path, metadata_doc in read_documents(metadata_path):
-                uri = metadata_path.absolute().as_uri()
-
+            for uri, metadata_doc in read_documents(metadata_path, uri=True):
                 dataset, error_msg = mk_dataset(metadata_doc, uri)
 
                 if dataset is None:
