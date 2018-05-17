@@ -287,7 +287,7 @@ def without_lineage_sources(doc, inplace=False):
     return doc
 
 
-def read_documents(*paths):
+def read_documents(*paths, uri=False):
     """
     Read & parse documents from the filesystem (yaml or json).
 
@@ -297,7 +297,10 @@ def read_documents(*paths):
     the datacube we use JSON in PostgreSQL and it will turn our dates
     to strings anyway.
 
+    :param uri: When True yield uri instead pathlib.Path
+
     :type paths: pathlib.Path
+    :type uri: Bool
     :rtype: tuple[(pathlib.Path, dict)]
     """
     def process_yaml(path, compressed):
@@ -325,7 +328,7 @@ def read_documents(*paths):
         '.nc': process_netcdf,
     }
 
-    for path in paths:
+    def process_file(path):
         path = pathlib.Path(path)
         suffix = path.suffix.lower()
 
@@ -339,9 +342,26 @@ def read_documents(*paths):
         if proc is None:
             raise ValueError('Unknown document type for {}; expected one of {!r}.'
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
-        try:
+
+        if not uri:
             for doc in proc(path, compressed):
                 yield path, doc
+        else:
+            def add_uri_no_part(x):
+                idx, doc = x
+                return path.as_uri(), doc
+
+            def add_uri_with_part(x):
+                idx, doc = x
+                return path.as_uri() + '#part={}'.format(idx), doc
+
+            yield from map_with_lookahead(enumerate(proc(path, compressed)),
+                                          if_one=add_uri_no_part,
+                                          if_many=add_uri_with_part)
+
+    for path in paths:
+        try:
+            yield from process_file(path)
         except InvalidDocException as e:
             raise e
         except (yaml.YAMLError, ValueError) as e:

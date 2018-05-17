@@ -12,6 +12,7 @@ from dateutil.parser import parse
 from hypothesis import given
 from hypothesis.strategies import integers, text
 from pandas import to_datetime
+import pathlib
 
 from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
@@ -231,7 +232,24 @@ def test_read_documents(sample_document_files):
         all_docs = list(read_documents(filename))
         assert len(all_docs) == ndocs
 
-        for _, doc in all_docs:
+        for path, doc in all_docs:
             assert isinstance(doc, dict)
+            assert isinstance(path, pathlib.Path)
 
         assert set(str(f) for f, _ in all_docs) == set([filename])
+
+    for filename, ndocs in sample_document_files:
+        all_docs = list(read_documents(filename, uri=True))
+        assert len(all_docs) == ndocs
+
+        for uri, doc in all_docs:
+            assert isinstance(doc, dict)
+            assert isinstance(uri, str)
+
+        p = pathlib.Path(filename)
+        if ndocs > 1:
+            expect_uris = [p.as_uri() + '#part={}'.format(i) for i in range(ndocs)]
+        else:
+            expect_uris = [p.as_uri()]
+
+        assert [f for f, _ in all_docs] == expect_uris
