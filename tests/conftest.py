@@ -42,6 +42,7 @@ def data_folder():
 def sample_document_files(data_folder):
     files = [('multi_doc.yml', 3),
              ('multi_doc.yml.gz', 3),
+             ('multi_doc.nc', 3),
              ('single_doc.yaml', 1),
              ('sample.json', 1)]
 

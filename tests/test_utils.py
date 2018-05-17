@@ -229,4 +229,7 @@ def test_read_documents(sample_document_files):
         all_docs = list(read_documents(filename))
         assert len(all_docs) == ndocs
 
+        for _, doc in all_docs:
+            assert isinstance(doc, dict)
+
         assert set(str(f) for f, _ in all_docs) == set([filename])

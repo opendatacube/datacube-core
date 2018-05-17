@@ -312,7 +312,8 @@ def read_documents(*paths):
         if compressed:
             raise InvalidDocException("Can't process gziped netcdf files")
 
-        return read_strings_from_netcdf(path, variable='dataset')
+        for doc in read_strings_from_netcdf(path, variable='dataset'):
+            yield yaml.load(doc, Loader=NoDatesSafeLoader)
 
     procs = {
         '.yaml': process_yaml,
