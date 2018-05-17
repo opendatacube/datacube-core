@@ -349,11 +349,11 @@ def read_documents(*paths, uri=False):
         else:
             def add_uri_no_part(x):
                 idx, doc = x
-                return path.as_uri(), doc
+                return path.absolute().as_uri(), doc
 
             def add_uri_with_part(x):
                 idx, doc = x
-                return path.as_uri() + '#part={}'.format(idx), doc
+                return path.absolute().as_uri() + '#part={}'.format(idx), doc
 
             yield from map_with_lookahead(enumerate(proc(path, compressed)),
                                           if_one=add_uri_no_part,
