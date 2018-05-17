@@ -34,6 +34,16 @@ class BadMatch(Exception):
     pass
 
 
+def report_old_options(mapping):
+    def maybe_remap(s):
+        if s in mapping:
+            _LOG.warning("DEPRECATED option detected: --%s use --%s instead", s, mapping[s])
+            return mapping[s]
+        else:
+            return s
+    return maybe_remap
+
+
 @cli.group(name='dataset', help='Dataset management commands')
 def dataset_cmd():
     pass
@@ -187,8 +197,15 @@ def parse_match_rules_options(index, dtype, auto_match):
     return load_rules_from_types(index, dtype)
 
 
-@dataset_cmd.command('add', help="Add datasets to the Data Cube")
-@click.option('--dtype', '-t', help='Product to be associated with the datasets',
+@dataset_cmd.command('add',
+                     help="Add datasets to the Data Cube",
+                     context_settings=dict(token_normalize_func=report_old_options({
+                         'dtype': 'product',
+                         't': 'p'
+                     })))
+@click.option('--product', '-p', 'product_names',
+              help=('Only match against products specified with this option, '
+                    'you can supply several by repeating this option with a new product name'),
               multiple=True)
 @click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
               is_flag=True, default=False)
@@ -200,8 +217,8 @@ def parse_match_rules_options(index, dtype, auto_match):
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, dtype, auto_match, sources_policy, dry_run, dataset_paths):
-    rules = parse_match_rules_options(index, dtype, auto_match)
+def index_cmd(index, product_names, auto_match, sources_policy, dry_run, dataset_paths):
+    rules = parse_match_rules_options(index, product_names, auto_match)
     if rules is None:
         return
 
