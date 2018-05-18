@@ -238,6 +238,12 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
+    variable_params['dataset'] = {
+        'chunksizes': (1,),
+        'zlib': True,
+        'complevel': 9,
+    }
+
     storage_metadata = driver.write_dataset_to_storage(nudata, file_path,
                                                        global_attributes=global_attributes,
                                                        variable_params=variable_params,
