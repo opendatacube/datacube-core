@@ -24,12 +24,7 @@ from datacube.utils import clamp, datetime_to_seconds_since_1970, DatacubeExcept
 from datacube.utils import geometry
 from datacube.utils import is_url, uri_to_local_path
 
-try:
-    from yaml import CSafeDumper as SafeDumper
-except ImportError:
-    from yaml import SafeDumper
 import numpy
-
 from affine import Affine
 from datacube.compat import integer_types
 import rasterio
