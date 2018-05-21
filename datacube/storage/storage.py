@@ -15,7 +15,8 @@ import math
 from contextlib import contextmanager
 from pathlib import Path
 
-from datacube.compat import urlparse, urljoin, url_parse_module
+import urllib.parse
+from urllib.parse import urlparse, urljoin
 from datacube.config import OPTIONS
 from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset
@@ -441,9 +442,9 @@ def register_scheme(*schemes):
     Register additional uri schemes as supporting relative offsets (etc), so that band/measurement paths can be
     calculated relative to the base uri.
     """
-    url_parse_module.uses_netloc.extend(schemes)
-    url_parse_module.uses_relative.extend(schemes)
-    url_parse_module.uses_params.extend(schemes)
+    urllib.parse.uses_netloc.extend(schemes)
+    urllib.parse.uses_relative.extend(schemes)
+    urllib.parse.uses_params.extend(schemes)
 
 
 # Not recognised by python by default. Doctests below will fail without it.
