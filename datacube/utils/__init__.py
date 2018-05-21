@@ -18,7 +18,7 @@ from datetime import datetime, date
 from itertools import chain
 from math import ceil
 from uuid import UUID
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qsl
 from urllib.request import url2pathname
 
 import dateutil.parser
@@ -151,7 +151,26 @@ def _parse_time_generic(time):
 
 
 def mk_part_uri(uri, idx):
+    """ Appends fragment part to the uri recording index of the part
+    """
     return '{}#part={:d}'.format(uri, idx)
+
+
+def get_part_from_uri(uri):
+    """ Reverse of mk_part_uri
+
+    returns None|int|string
+    """
+    def maybe_int(v):
+        if v is None:
+            return None
+        try:
+            return int(v)
+        except ValueError:
+            return v
+
+    opts = dict(parse_qsl(urlparse(uri).fragment))
+    return maybe_int(opts.get('part', None))
 
 
 try:

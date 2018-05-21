@@ -19,6 +19,7 @@ import numpy as np
 from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
 from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents
+from datacube.utils import mk_part_uri, get_part_from_uri
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 from datacube.model.utils import xr_apply
@@ -228,6 +229,18 @@ def test_map_with_lookahead():
     assert list(map_with_lookahead(range(5), if_one, if_many)) == list(map(if_many, range(5)))
     assert list(map_with_lookahead(range(10), if_one=if_one)) == list(range(10))
     assert list(map_with_lookahead(iter([1]), if_many=if_many)) == [1]
+
+
+def test_part_uri():
+    base = 'file:///foo.txt'
+
+    for i in range(10):
+        assert get_part_from_uri(mk_part_uri(base, i)) == i
+
+    assert get_part_from_uri('file:///f.txt') is None
+    assert get_part_from_uri('file:///f.txt#something_else') is None
+    assert get_part_from_uri('file:///f.txt#part=aa') == 'aa'
+    assert get_part_from_uri('file:///f.txt#part=111') == 111
 
 
 def test_read_documents(sample_document_files):

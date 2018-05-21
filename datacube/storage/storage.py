@@ -23,7 +23,7 @@ from datacube.model import Dataset
 from datacube.storage import netcdf_writer
 from datacube.utils import clamp, datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
 from datacube.utils import geometry
-from datacube.utils import is_url, uri_to_local_path
+from datacube.utils import is_url, uri_to_local_path, get_part_from_uri
 
 import numpy
 from affine import Affine
@@ -395,12 +395,14 @@ class RasterDatasetDataSource(RasterioDataSource):
         """
         self._dataset = dataset
         self._measurement = dataset.measurements[measurement_id]
+        self._netcdf = ('netcdf' in dataset.format.lower())
         url = _resolve_url(_choose_location(dataset), self._measurement['path'])
+        self._part = get_part_from_uri(url)
         filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
         nodata = dataset.type.measurements[measurement_id].get('nodata')
         super(RasterDatasetDataSource, self).__init__(filename, nodata=nodata)
 
-    def get_bandnumber(self, src):
+    def get_bandnumber(self, src=None):
 
         # If `band` property is set to an integer it overrides any other logic
         band = self._measurement.get('band')
@@ -410,9 +412,27 @@ class RasterDatasetDataSource(RasterioDataSource):
             else:
                 _LOG.warning('Expected "band" property to be of integer type')
 
-        if 'netcdf' not in self._dataset.format.lower():
+        if not self._netcdf:
             layer_id = self._measurement.get('layer', 1)
             return layer_id if isinstance(layer_id, integer_types) else 1
+
+        # Netcdf only below
+        if self._part is not None:
+            return self._part + 1  # Convert to rasterio 1-based indexing
+
+        if src is None:
+            # File wasnt' open, could be unstacked file in a new format, or
+            # stacked/unstacked in old. We assume caller knows what to do
+            # (maybe based on some side-channel information), so just report
+            # undefined.
+            return None
+
+        if src.count == 1:  # Single-slice netcdf file
+            return 1
+
+        _LOG.warning("Encountered stacked netcdf file without recorded index\n - %s", src.name)
+
+        # Below is backwards compatibility code
 
         tag_name = GDAL_NETCDF_DIM + 'time'
         if tag_name not in src.tags(1):  # TODO: support time-less datasets properly
