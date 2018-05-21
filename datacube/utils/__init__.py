@@ -18,6 +18,8 @@ from datetime import datetime, date
 from itertools import chain
 from math import ceil
 from uuid import UUID
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 import dateutil.parser
 import jsonschema
@@ -619,11 +621,11 @@ def uri_to_local_path(local_uri):
     if not local_uri:
         return None
 
-    components = compat.urlparse(local_uri)
+    components = urlparse(local_uri)
     if components.scheme != 'file':
         raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
 
-    path = compat.url2pathname(components.path)
+    path = url2pathname(components.path)
 
     return pathlib.Path(path)
 
