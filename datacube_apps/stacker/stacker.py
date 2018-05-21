@@ -139,6 +139,12 @@ def do_stack_task(config, task):
 
     variable_params = config['variable_params']
 
+    variable_params['dataset'] = {
+        'chunksizes': (1,),
+        'zlib': True,
+        'complevel': 9,
+    }
+
     output_filename = Path(task['output_filename'])
     output_uri = output_filename.absolute().as_uri()
     temp_filename = get_temp_file(output_filename)
