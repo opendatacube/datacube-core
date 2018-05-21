@@ -13,12 +13,15 @@ from hypothesis import given
 from hypothesis.strategies import integers, text
 from pandas import to_datetime
 import pathlib
+import xarray as xr
+import numpy as np
 
 from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
 from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
+from datacube.model.utils import xr_apply
 
 
 def test_stats_dates():
@@ -253,3 +256,22 @@ def test_read_documents(sample_document_files):
             expect_uris = [p.as_uri()]
 
         assert [f for f, _ in all_docs] == expect_uris
+
+
+def test_xr_apply():
+    src = xr.DataArray(np.asarray([1, 2, 3], dtype='uint8'), dims=['time'])
+    dst = xr_apply(src, lambda _, v: v, dtype='float32')
+
+    assert dst.dtype.name == 'float32'
+    assert dst.shape == src.shape
+    assert dst.values.tolist() == [1, 2, 3]
+
+    dst = xr_apply(src, lambda _, v: v)
+    assert dst.dtype.name == 'uint8'
+    assert dst.shape == src.shape
+    assert dst.values.tolist() == [1, 2, 3]
+
+    dst = xr_apply(src, lambda idx, _, v: idx[0] + v, with_numeric_index=True)
+    assert dst.dtype.name == 'uint8'
+    assert dst.shape == src.shape
+    assert dst.values.tolist() == [0+1, 1+2, 2+3]
