@@ -148,6 +148,10 @@ def _parse_time_generic(time):
     return time
 
 
+def mk_part_uri(uri, idx):
+    return '{}#part={:d}'.format(uri, idx)
+
+
 try:
     import ciso8601  # pylint: disable=wrong-import-position
 
@@ -353,7 +357,7 @@ def read_documents(*paths, uri=False):
 
             def add_uri_with_part(x):
                 idx, doc = x
-                return path.absolute().as_uri() + '#part={}'.format(idx), doc
+                return mk_part_uri(path.absolute().as_uri(), idx), doc
 
             yield from map_with_lookahead(enumerate(proc(path, compressed)),
                                           if_one=add_uri_no_part,
