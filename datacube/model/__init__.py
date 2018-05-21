@@ -29,6 +29,7 @@ CellIndex = namedtuple('CellIndex', ('x', 'y'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
+DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
@@ -311,14 +312,20 @@ class Dataset(object):
 
 
 class Measurement(object):
-    def __init__(self, measurement_dict):
-        self.name = measurement_dict['name']
-        self.dtype = measurement_dict['dtype']
-        self.nodata = measurement_dict['nodata']
-        self.units = measurement_dict['units']
-        self.aliases = measurement_dict['aliases']
-        self.spectral_definition = measurement_dict['spectral_definition']
-        self.flags_definition = measurement_dict['flags_definition']
+    REQUIRED_KEYS = ['name', 'dtype', 'nodata', 'units']
+    OPTIONAL_KEYS = ['aliases', 'spectral_definition', 'flags_definition']
+
+    def __init__(self, **measurement_dict):
+        for key in self.REQUIRED_KEYS:
+            setattr(self, key, measurement_dict[key])
+
+        for key in self.OPTIONAL_KEYS:
+            if key in measurement_dict:
+                setattr(self, key, measurement_dict[key])
+
+    def __repr__(self):
+        attrs = ", ".join("{}={}".format(key, value) for key, value in vars(self).items())
+        return "Measurement({})".format(attrs)
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
@@ -420,7 +427,12 @@ class DatasetType(object):
         :type: tuple[str]
         """
         assert self.metadata_type.name == 'eo'
-        return ('time',) + self.grid_spec.dimensions
+        if self.grid_spec is not None:
+            spatial_dims = self.grid_spec.dimensions
+        else:
+            spatial_dims = DEFAULT_SPATIAL_DIMS
+
+        return ('time',) + spatial_dims
 
     @cached_property
     def grid_spec(self):
@@ -557,6 +569,15 @@ class GridSpec(object):
         self.resolution = resolution
         #: :type: (float, float)
         self.origin = origin or (0.0, 0.0)
+
+    def __eq__(self, other):
+        if not isinstance(other, GridSpec):
+            return False
+
+        return (self.crs == other.crs
+                and self.tile_size == other.tile_size
+                and self.resolution == other.resolution
+                and self.origin == other.origin)
 
     @property
     def dimensions(self):

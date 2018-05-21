@@ -1,10 +1,9 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 # This Dockerfile should follow the Travis configuration process
 # available here: https://github.com/opendatacube/datacube-core/blob/develop/.travis.yml
 
 # First add the NextGIS repo
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python-software-properties \
     software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
@@ -13,11 +12,13 @@ RUN add-apt-repository ppa:nextgis/ppa
 # And now install apt dependencies, including a few of the heavy Python projects
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core requirements from travis.yml
-    gdal-bin python3-gdal libgdal-dev libgdal20 libudunits2-0 \
+    gdal-bin gdal-data python3-gdal libgdal-dev libgdal20 libudunits2-0 \
     # Extra python components, to speed things up
-    python3 python3-setuptools python3-dev python3-numpy python3-netcdf4 \
-    # Need pip to install more python packages later
-    python3-pip \
+    python3 python3-setuptools python3-dev \
+    python3-numpy python3-netcdf4 python3-gdal \
+    # Need pip to install more python packages later.
+    # The libdpkg-perl is needed to build pyproj
+    python3-pip python3-wheel libdpkg-perl \
     # G++ because GDAL decided it needed compiling
     g++ \
     && rm -rf /var/lib/apt/lists/*

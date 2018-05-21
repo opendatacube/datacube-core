@@ -5,20 +5,66 @@
 What's New
 **********
 
+v1.6rc2 (Maybe v1.6 proper) (?? May 2018)
+=========================================
 
-Next release
-============
+Backwards Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- - Support for third party drivers, for custom data storage and custom index implementations
+- The `helpers.write_geotiff()` function has been updated to support files smaller
+  than 256x256. It also no longer supports specifying the time index. Before passing
+  data in, use `xarray_data.isel(time=<my_time_index>)`. (#277)
 
-   - The correct way to get an Index connection in code is to use :meth:`datacube.index.index_connect`.
+Changes
+~~~~~~~
+
+- The masking related function ``describe_variable_flags()`` now returns a
+  pandas DataFrame by default. This will display as a table in Jupyter
+  Notebooks. (:pull:`422`)
+
+
+Bug Fixes
+~~~~~~~~~
+
+- `.dimensions` property of a product no longer crashes when product is missing
+  a `grid_spec`, instead defaults to `time,y,x`
+
+- Fix a regression in v1.6rc1 whereby it was impossible to run ``datacube ingest``
+  to create products which were defined in 1.5.5 and earlier versions of ODC. (:issue:`432`, :pull:`436`)
+
+
+
+v1.6rc1 Easter Bilby (10 April 2018)
+====================================
+
+This is the first release in a while, and so there's a lot of changes, including
+some significant refactoring, with the potential having issues when upgrading.
+
+
+Backwards Incompatible Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ - Drop Support for Python 2. Python 3.5 is now the earliest supported Python
+   version.
+
+ - Removed the old ``ndexpr``, ``analytics`` and ``execution engine`` code. There is
+   work underway in the `execution engine branch`_ to replace these features.
+
+Enhancements
+~~~~~~~~~~~~
+
+ - Support for third party drivers, for custom data storage and custom index
+   implementations
+
+ - The correct way to get an Index connection in code is to use
+   :meth:`datacube.index.index_connect`.
 
  - Changes in ingestion configuration
 
-   - Must now specify the `write_plugin`_ to use. For s3 ingestion there was
+   - Must now specify the :ref:`write_plugin` to use. For s3 ingestion there was
      a top level ``container`` specified, which has been renamed and moved
      under ``storage``. The entire ``storage`` section is passed through to
-     the `write_plugin`_, so drivers requiring other configuration can
+     the :ref:`write_plugin`, so drivers requiring other configuration can
      include them here. eg:
 
      .. code:: yaml
@@ -30,41 +76,70 @@ Next release
            bucket: my_s3_bucket
          ...
 
+ - Added a ``Dockerfile`` to enable automated builds for a reference Docker image.
 
- - Make :class:`CRS` equality comparisons a little bit looser. Trust either a *Proj.4* based comparison
-   or a *GDAL* based comparison. (Closed #243)
+ - Multiple environments can now be specified in one datacube config. See
+   :pull:`298` and the :ref:`runtime-config-doc`
 
- - Allow creation of :class:`datacube.utils.geometry.Geometry` objects from 3d representations. The Z axis is simply thrown away.
+   - Allow specifying which ``index_driver`` should be used for an environment.
 
- - Added example prepare script for Collection 1 USGS data; improved band handling and downloads.
+ - Command line tools can now output CSV or YAML. (Issue :issue:`206`, :pull:`390`)
 
- - Multiple environments can now be specified in one datacube config. See `#298`_ and the `config docs`_
+ - Support for saving data to NetCDF using a Lambert Conformal Conic Projection
+   (:pull:`329`)
 
-   - Allow specifying which `index_driver` should be used for an environment.
+ - Lots of documentation updates:
 
- - The :option:`datacube --config_file` option has been renamed to :option:`datacube --config`, which is
-   shorter and more consistent with the other options. The old name can still be used for now.
+   - Information about :ref:`bit-masking`.
 
- - Added documentation about :ref:`bit-masking`.
+   - A description of how data is loaded.
 
- - Added Dockerfile to enable automated builds for a reference Docker image.
+   - Some higher level architecture documentation.
 
- - Removed the old `ndexpr`, `analytics` and `execution engine` code. There is work underway in the `execution engine branch`_ to replace these features.
+   - Updates on how to index new data.
 
 
- - Command line tools can now output CSV or YAML. (Issue #206, PR 390)
+Bug Fixes
+~~~~~~~~~
 
-.. _#298: https://github.com/opendatacube/datacube-core/pull/298
-.. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
+ - Allow creation of :class:`datacube.utils.geometry.Geometry` objects from 3d
+   representations. The Z axis is simply thrown away.
+
+ - The :option:`datacube --config_file` option has been renamed to
+   :option:`datacube --config`, which is shorter and more consistent with the
+   other options. The old name can still be used for now.
+
+ - Fix a severe performance regression when extracting and reprojecting a small
+   region of data. (:pull:`393`)
+
+ - Fix for a somewhat rare bug causing read failures by attempt to read data from
+   a negative index into a file. (:pull:`376`)
+
+ - Make :class:`CRS` equality comparisons a little bit looser. Trust either a
+   *Proj.4* based comparison or a *GDAL* based comparison. (Closed :issue:`243`)
+
+New Data Support
+~~~~~~~~~~~~~~~~
+
+ - Added example prepare script for Collection 1 USGS data; improved band
+   handling and downloads.
+
+ - Add a product specification and prepare script for indexing Landsat L2 Surface
+   Reflectance Data (:pull:`375`)
+
+ - Add a product specification for Sentinel 2 ARD Data (:pull:`342`)
+
+
+
 .. _execution engine branch: https://github.com/opendatacube/datacube-core/compare/csiro/execution-engine
 
 v1.5.4 Dingley Dahu (13th December 2017)
 ========================================
  - Minor features backported from 2.0:
 
-    - Support for `limit` in searches
+    - Support for ``limit`` in searches
 
-    - Alternative lazy search method `find_lazy`
+    - Alternative lazy search method ``find_lazy``
 
  - Fixes:
 
@@ -79,24 +154,71 @@ v1.5.4 Dingley Dahu (13th December 2017)
 v1.5.3 Purpler Unicorn with Starlight (16 October 2017)
 =======================================================
 
- - Use `cloudpickle` as the `celery` serialiser
+ - Use ``cloudpickle`` as the ``celery`` serialiser
 
 v1.5.2 Purpler Unicorn with Stars (28 August 2017)
 ==================================================
 
- - Fix bug when reading data in native projection, but outside `source` area. Often hit when running `datacube-stats`
+ - Fix bug when reading data in native projection, but outside ``source`` area. Often hit when running ``datacube-stats``
 
- - Fix error loading and fusing data using `dask`. (Fixes #276)
+ - Fix error loading and fusing data using ``dask``. (Fixes :issue:`276`)
 
- - When reading data, implement `skip_broken_datasets` for the `dask` case too
+ - When reading data, implement ``skip_broken_datasets`` for the ``dask`` case too
+
+
+v1.5.4 Dingley Dahu (13th December 2017)
+========================================
+ - Minor features backported from 2.0:
+
+    - Support for ``limit`` in searches
+
+    - Alternative lazy search method ``find_lazy``
+
+ - Fixes:
+
+    - Improve native field descriptions
+
+    - Connection should not be held open between multi-product searches
+
+    - Disable prefetch for celery workers
+
+    - Support jsonify-ing decimals
+
+v1.5.3 Purpler Unicorn with Starlight (16 October 2017)
+=======================================================
+
+ - Use ``cloudpickle`` as the ``celery`` serialiser
+
+ - Allow ``celery`` tests to run without installing it
+
+ - Move ``datacube-worker`` inside the main datacube package
+
+ - Write ``metadata_type`` from the ingest configuration if available
+
+ - Support config parsing limitations of Python 2
+
+ - Fix :issue:`303`: resolve GDAL build dependencies on Travis
+
+ - Upgrade ``rasterio`` to newer version
+
+
+v1.5.2 Purpler Unicorn with Stars (28 August 2017)
+==================================================
+
+ - Fix bug when reading data in native projection, but outside ``source`` area.
+   Often hit when running ``datacube-stats``
+
+ - Fix error loading and fusing data using ``dask``. (Fixes :issue:`276`)
+
+ - When reading data, implement ``skip_broken_datasets`` for the ``dask`` case too
 
 
 v1.5.1 Purpler Unicorn (13 July 2017)
 =====================================
 
- - Fix bug #261. Unable to load Australian Rainfall Grid Data. This was as a
+ - Fix bug :issue:`261`. Unable to load Australian Rainfall Grid Data. This was as a
    result of the CRS/Transformation override functionality being broken when
-   using the latest `rasterio` version `1.0a9`
+   using the latest ``rasterio`` version ``1.0a9``
 
 
 v1.5.0 Purple Unicorn (9 July 2017)
@@ -112,18 +234,18 @@ New Features
 Usability Improvements
 ~~~~~~~~~~~~~~~~~~~~~~
 
- - When `datacube dataset add` is unable to add a Dataset to the index, print
+ - When ``datacube dataset add`` is unable to add a Dataset to the index, print
    out the entire Dataset to make it easier to debug the problem.
 
- - Give `datacube system check` prettier and more readable output.
+ - Give ``datacube system check`` prettier and more readable output.
 
- - Make `celery` and `redis` optional when installing.
+ - Make ``celery`` and ``redis`` optional when installing.
 
  - Significantly reduced disk space usage for integration tests
 
- - `Dataset` objects now have an `is_active` field to mirror `is_archived`.
+ - ``Dataset`` objects now have an ``is_active`` field to mirror ``is_archived``.
 
- - Added `index.datasets.get_archived_location_times()` to see when each
+ - Added ``index.datasets.get_archived_location_times()`` to see when each
    location was archived.
 
 v1.4.1 (25 May 2017)
@@ -131,18 +253,18 @@ v1.4.1 (25 May 2017)
 
  - Support for reading multiband HDF datasets, such as MODIS collection 6
 
- - Workaround for rasterio issue when reprojecting stacked data
+ - Workaround for ``rasterio`` issue when reprojecting stacked data
 
  - Bug fixes for command line arg handling
 
 v1.4.0 (17 May 2017)
 ====================
 
-- Adds more convenient year/date range search expressions (see `#226`_)
+- Adds more convenient year/date range search expressions (see :pull:`226`)
 
-- Adds a :ref:`simple replication utility <replication>` (see `#223`_)
+- Adds a :ref:`simple replication utility <replication>` (see :pull:`223`)
 
-- Fixed issue reading products without embedded CRS info, such as `bom_rainfall_grid` (see `#224`_)
+- Fixed issue reading products without embedded CRS info, such as ``bom_rainfall_grid`` (see :issue:`224`)
 
 - Fixed issues with stacking and ncml creation for NetCDF files
 
@@ -152,9 +274,6 @@ v1.4.0 (17 May 2017)
 
 - Require ``xarray`` >= 0.9. Solves common problems caused by losing embedded ``flag_def`` and ``crs`` attributes.
 
-.. _#226: https://github.com/opendatacube/datacube-core/pull/226
-.. _#223: https://github.com/opendatacube/datacube-core/pull/223
-.. _#224: https://github.com/opendatacube/datacube-core/issues/224
 
 v1.3.1 (20 April 2017)
 ======================

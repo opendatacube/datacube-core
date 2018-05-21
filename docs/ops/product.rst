@@ -18,7 +18,7 @@ description
     Product description
 
 metadata_type
-    Name of the `metadata-type-definition`_
+    Name of the :ref:`metadata-type-definition`
 
 metadata
     Dictionary containing bits of metadata common to all the datasets in the product.
