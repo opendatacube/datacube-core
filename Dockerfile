@@ -26,11 +26,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 
-# Install Python dependencies
-# First update pip and tooling
-RUN pip3 install --upgrade pip setuptools wheel \
-    && rm -rf $HOME/.cache/pip
-
 # Install psycopg2 as a special case, to quiet the warning message 
 RUN pip3 install --no-cache --no-binary :all: psycopg2 \
     && rm -rf $HOME/.cache/pip
