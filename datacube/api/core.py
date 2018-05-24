@@ -313,7 +313,7 @@ class Datacube(object):
         measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
-        result = self.load_data(grouped, geobox, measurements.values(),
+        result = self.load_data(grouped, geobox, list(measurements.values()),
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
                                 use_threads=use_threads)
