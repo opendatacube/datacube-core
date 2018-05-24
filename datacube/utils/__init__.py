@@ -12,6 +12,7 @@ import json
 import logging
 import pathlib
 import re
+from copy import deepcopy
 from collections import OrderedDict
 from contextlib import contextmanager
 from datetime import datetime, date
@@ -291,23 +292,21 @@ class NoDatesSafeLoader(SafeLoader):  # pylint: disable=too-many-ancestors
 NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
 
 
-def without_lineage_sources(doc, inplace=False):
+def without_lineage_sources(doc, spec, inplace=False):
     """ Replace lineage.source_datasets with {}
+
+    :param dict doc: parsed yaml/json document describing dataset
+    :param spec: Product or MetadataType according to which `doc` to be interpreted
+    :param bool inplace: If True modify `doc` in place
     """
-    lineage = doc.get('lineage', None)
-    if lineage is None:
-        return doc
 
-    if 'source_datasets' not in lineage:
-        return doc
+    if not inplace:
+        doc = deepcopy(doc)
 
-    if inplace:
-        doc['lineage']['source_datasets'] = {}
-    else:
-        doc = doc.copy()
-        lineage = lineage.copy()
-        lineage['source_datasets'] = {}
-        doc['lineage'] = lineage
+    doc_view = spec.dataset_reader(doc)
+
+    if 'sources' in doc_view.fields:
+        doc_view.sources = {}
 
     return doc
 

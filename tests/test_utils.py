@@ -23,6 +23,9 @@ from datacube.utils import mk_part_uri, get_part_from_uri
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 from datacube.model.utils import xr_apply
+from datacube.model import MetadataType
+
+from .util import mk_sample_product
 
 
 def test_stats_dates():
@@ -196,25 +199,43 @@ def test_without_lineage_sources():
                     aa='aa',
                     bb=dict(bb='bb'))
 
+    spec = mk_sample_product('tt')
+
     x = {'a': 1}
-    assert without_lineage_sources(x) == x
-    assert without_lineage_sources(x, inplace=True) == x
+    assert without_lineage_sources(x, spec) == x
+    assert without_lineage_sources(x, spec, inplace=True) == x
 
     x = {'a': 1, 'lineage': {}}
-    assert without_lineage_sources(x) == x
-    assert without_lineage_sources(x, inplace=True) == x
+    assert without_lineage_sources(x, spec) == x
+    assert without_lineage_sources(x, spec, inplace=True) == x
 
     x = mk_sample(1)
-    assert without_lineage_sources(x) != x
+    assert without_lineage_sources(x, spec) != x
     assert x['lineage']['source_datasets'] == 1
 
     x = mk_sample(2)
-    assert without_lineage_sources(x, inplace=True) == x
+    assert without_lineage_sources(x, spec, inplace=True) == x
     assert x['lineage']['source_datasets'] == {}
 
     assert mk_sample(10) != mk_sample({})
-    assert without_lineage_sources(mk_sample(10)) == mk_sample({})
-    assert without_lineage_sources(mk_sample(10), inplace=True) == mk_sample({})
+    assert without_lineage_sources(mk_sample(10), spec) == mk_sample({})
+    assert without_lineage_sources(mk_sample(10), spec, inplace=True) == mk_sample({})
+
+    # check behaviour when `sources` is not defined for the type
+    no_sources_type = MetadataType({
+        'name': 'eo',
+        'description': 'Sample',
+        'dataset': dict(
+            id=['id'],
+            label=['ga_label'],
+            creation_time=['creation_dt'],
+            measurements=['image', 'bands'],
+            format=['format', 'name'],
+        )
+    }, dataset_search_fields={})
+
+    assert without_lineage_sources(mk_sample(10), no_sources_type) == mk_sample(10)
+    assert without_lineage_sources(mk_sample(10), no_sources_type, inplace=True) == mk_sample(10)
 
 
 def test_map_with_lookahead():

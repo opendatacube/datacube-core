@@ -92,7 +92,7 @@ def create_dataset(dataset_doc, uri, rules, skip_lineage=False):
     dataset_type = find_matching_product(rules, dataset_doc)
     if skip_lineage:
         sources = None
-        dataset_doc = without_lineage_sources(dataset_doc)
+        dataset_doc = without_lineage_sources(dataset_doc, dataset_type)
     else:
         sources = {cls: create_dataset(source_doc, None, rules)
                    for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
@@ -158,7 +158,7 @@ def load_datasets_for_update(datasets, index):
             return None, "No such dataset the database: {}".format(uuid)
 
         return Dataset(existing.type,
-                       without_lineage_sources(metadata_doc, inplace=True),
+                       without_lineage_sources(metadata_doc, existing.type, inplace=True),
                        uris=[uri]), None
 
     for dataset_path in datasets:
