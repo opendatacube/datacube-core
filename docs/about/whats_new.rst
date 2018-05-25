@@ -21,6 +21,8 @@ Backwards Incompatible Changes
 
 - Removed `--match-rules` option from `datacube dataset add` (#447)
 
+- The seldom-used `stack` keyword argument has been removed from `Datcube.load`. (#461)
+
 Changes
 ~~~~~~~
 

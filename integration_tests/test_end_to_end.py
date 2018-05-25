@@ -108,7 +108,7 @@ def check_open_with_dc(index):
     from datacube.api.core import Datacube
     dc = Datacube(index=index)
 
-    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], stack='variable')
+    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue']).to_array(dim='variable')
     assert data_array.shape
     assert (data_array != -999).any()
 
@@ -120,14 +120,15 @@ def check_open_with_dc(index):
     assert data_array['blue'].shape[1:] == (1, 1)
     assert (data_array.blue != -999).any()
 
-    data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150), stack='variable')
+    data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150)).to_array(dim='variable')
+
     assert data_array.ndim == 4
     assert 'variable' in data_array.dims
     assert (data_array != -999).any()
 
     with rasterio.Env():
         lazy_data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150),
-                                  stack='variable', dask_chunks={'time': 1, 'x': 1000, 'y': 1000})
+                                  dask_chunks={'time': 1, 'x': 1000, 'y': 1000}).to_array(dim='variable')
         assert lazy_data_array.data.dask
         assert lazy_data_array.ndim == data_array.ndim
         assert 'variable' in lazy_data_array.dims
