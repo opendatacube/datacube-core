@@ -15,6 +15,8 @@ Backwards Incompatible Changes
   than 256x256. It also no longer supports specifying the time index. Before passing
   data in, use `xarray_data.isel(time=<my_time_index>)`. (#277)
 
+- The seldom-used `stack` keyword argument has been removed from `Datcube.load`. (#461)
+
 Changes
 ~~~~~~~
 
