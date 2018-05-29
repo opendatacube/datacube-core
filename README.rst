@@ -17,7 +17,7 @@ Documentation
 See the `user guide <http://datacube-core.readthedocs.io/en/latest/>`__ for
 installation & usage of the datacube, and for documentation of the API.
 
-`Join our Slack <https://opendatacube.signup.team/>`__ if you need help
+`Join our Slack <http://slack.opendatacube.org>`__ if you need help
 setting up or using Data Cube Core.
 
 Requirements
