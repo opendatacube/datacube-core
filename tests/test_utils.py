@@ -12,11 +12,20 @@ from dateutil.parser import parse
 from hypothesis import given
 from hypothesis.strategies import integers, text
 from pandas import to_datetime
+import pathlib
+import xarray as xr
+import numpy as np
 
 from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
+from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents
+from datacube.utils import mk_part_uri, get_part_from_uri
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
+from datacube.model.utils import xr_apply
+from datacube.model import MetadataType
+
+from .util import mk_sample_product
 
 
 def test_stats_dates():
@@ -182,3 +191,121 @@ def test_write_geotiff_time_index_deprecated():
 
     with pytest.raises(ValueError):
         write_geotiff("", None, time_index=1)
+
+
+def test_without_lineage_sources():
+    def mk_sample(v):
+        return dict(lineage={'source_datasets': v, 'a': 'a', 'b': 'b'},
+                    aa='aa',
+                    bb=dict(bb='bb'))
+
+    spec = mk_sample_product('tt')
+
+    x = {'a': 1}
+    assert without_lineage_sources(x, spec) == x
+    assert without_lineage_sources(x, spec, inplace=True) == x
+
+    x = {'a': 1, 'lineage': {}}
+    assert without_lineage_sources(x, spec) == x
+    assert without_lineage_sources(x, spec, inplace=True) == x
+
+    x = mk_sample(1)
+    assert without_lineage_sources(x, spec) != x
+    assert x['lineage']['source_datasets'] == 1
+
+    x = mk_sample(2)
+    assert without_lineage_sources(x, spec, inplace=True) == x
+    assert x['lineage']['source_datasets'] == {}
+
+    assert mk_sample(10) != mk_sample({})
+    assert without_lineage_sources(mk_sample(10), spec) == mk_sample({})
+    assert without_lineage_sources(mk_sample(10), spec, inplace=True) == mk_sample({})
+
+    # check behaviour when `sources` is not defined for the type
+    no_sources_type = MetadataType({
+        'name': 'eo',
+        'description': 'Sample',
+        'dataset': dict(
+            id=['id'],
+            label=['ga_label'],
+            creation_time=['creation_dt'],
+            measurements=['image', 'bands'],
+            format=['format', 'name'],
+        )
+    }, dataset_search_fields={})
+
+    assert without_lineage_sources(mk_sample(10), no_sources_type) == mk_sample(10)
+    assert without_lineage_sources(mk_sample(10), no_sources_type, inplace=True) == mk_sample(10)
+
+
+def test_map_with_lookahead():
+    def if_one(x):
+        return 'one'+str(x)
+
+    def if_many(x):
+        return 'many'+str(x)
+
+    assert list(map_with_lookahead(iter([]), if_one, if_many)) == []
+    assert list(map_with_lookahead(iter([1]), if_one, if_many)) == [if_one(1)]
+    assert list(map_with_lookahead(range(5), if_one, if_many)) == list(map(if_many, range(5)))
+    assert list(map_with_lookahead(range(10), if_one=if_one)) == list(range(10))
+    assert list(map_with_lookahead(iter([1]), if_many=if_many)) == [1]
+
+
+def test_part_uri():
+    base = 'file:///foo.txt'
+
+    for i in range(10):
+        assert get_part_from_uri(mk_part_uri(base, i)) == i
+
+    assert get_part_from_uri('file:///f.txt') is None
+    assert get_part_from_uri('file:///f.txt#something_else') is None
+    assert get_part_from_uri('file:///f.txt#part=aa') == 'aa'
+    assert get_part_from_uri('file:///f.txt#part=111') == 111
+
+
+def test_read_documents(sample_document_files):
+    for filename, ndocs in sample_document_files:
+        all_docs = list(read_documents(filename))
+        assert len(all_docs) == ndocs
+
+        for path, doc in all_docs:
+            assert isinstance(doc, dict)
+            assert isinstance(path, pathlib.Path)
+
+        assert set(str(f) for f, _ in all_docs) == set([filename])
+
+    for filename, ndocs in sample_document_files:
+        all_docs = list(read_documents(filename, uri=True))
+        assert len(all_docs) == ndocs
+
+        for uri, doc in all_docs:
+            assert isinstance(doc, dict)
+            assert isinstance(uri, str)
+
+        p = pathlib.Path(filename)
+        if ndocs > 1:
+            expect_uris = [p.as_uri() + '#part={}'.format(i) for i in range(ndocs)]
+        else:
+            expect_uris = [p.as_uri()]
+
+        assert [f for f, _ in all_docs] == expect_uris
+
+
+def test_xr_apply():
+    src = xr.DataArray(np.asarray([1, 2, 3], dtype='uint8'), dims=['time'])
+    dst = xr_apply(src, lambda _, v: v, dtype='float32')
+
+    assert dst.dtype.name == 'float32'
+    assert dst.shape == src.shape
+    assert dst.values.tolist() == [1, 2, 3]
+
+    dst = xr_apply(src, lambda _, v: v)
+    assert dst.dtype.name == 'uint8'
+    assert dst.shape == src.shape
+    assert dst.values.tolist() == [1, 2, 3]
+
+    dst = xr_apply(src, lambda idx, _, v: idx[0] + v, with_numeric_index=True)
+    assert dst.dtype.name == 'uint8'
+    assert dst.shape == src.shape
+    assert dst.values.tolist() == [0+1, 1+2, 2+3]

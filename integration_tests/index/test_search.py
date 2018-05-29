@@ -850,7 +850,6 @@ def test_source_filter(clirunner, index, example_ls5_dataset_path):
         [
             'dataset',
             'add',
-            '--auto-match',
             str(example_ls5_dataset_path)
         ]
     )

@@ -39,6 +39,18 @@ def data_folder():
 
 
 @pytest.fixture
+def sample_document_files(data_folder):
+    files = [('multi_doc.yml', 3),
+             ('multi_doc.yml.gz', 3),
+             ('multi_doc.nc', 3),
+             ('single_doc.yaml', 1),
+             ('sample.json', 1)]
+
+    return [(str(os.path.join(data_folder, f)), n)
+            for f, n in files]
+
+
+@pytest.fixture
 def example_netcdf_path(request):
     """Return a string path to `sample_tile.nc` in the test data dir"""
     return str(request.fspath.dirpath('data/sample_tile.nc'))

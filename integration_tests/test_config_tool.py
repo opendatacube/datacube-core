@@ -150,6 +150,12 @@ def test_db_init(clirunner, initialised_postgres_db):
         assert has_schema(initialised_postgres_db._engine, connection._connection)
 
 
+def test_add_no_such_product(clirunner, initialised_postgres_db):
+    result = clirunner(['dataset', 'add', '--dtype', 'no_such_product'])
+    assert "DEPRECATED option detected" in result.output
+    assert "ERROR DatasetType" in result.output
+
+
 @pytest.fixture(params=[
     ('test_"user"_{n}', None),
     ('test_"user"_{n}', 'Test user description'),

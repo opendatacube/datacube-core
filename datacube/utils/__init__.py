@@ -12,12 +12,15 @@ import json
 import logging
 import pathlib
 import re
+from copy import deepcopy
 from collections import OrderedDict
 from contextlib import contextmanager
 from datetime import datetime, date
 from itertools import chain
 from math import ceil
 from uuid import UUID
+from urllib.parse import urlparse, parse_qsl
+from urllib.request import url2pathname
 
 import dateutil.parser
 import jsonschema
@@ -148,6 +151,29 @@ def _parse_time_generic(time):
     return time
 
 
+def mk_part_uri(uri, idx):
+    """ Appends fragment part to the uri recording index of the part
+    """
+    return '{}#part={:d}'.format(uri, idx)
+
+
+def get_part_from_uri(uri):
+    """ Reverse of mk_part_uri
+
+    returns None|int|string
+    """
+    def maybe_int(v):
+        if v is None:
+            return None
+        try:
+            return int(v)
+        except ValueError:
+            return v
+
+    opts = dict(parse_qsl(urlparse(uri).fragment))
+    return maybe_int(opts.get('part', None))
+
+
 try:
     import ciso8601  # pylint: disable=wrong-import-position
 
@@ -180,6 +206,34 @@ def data_resolution_and_offset(data):
     res = (data[data.size - 1] - data[0]) / (data.size - 1.0)
     off = data[0] - 0.5 * res
     return numpy.asscalar(res), numpy.asscalar(off)
+
+
+def map_with_lookahead(it, if_one=None, if_many=None):
+    """It's like normal map: creates new generator by applying a function to every
+    element of the original generator, but it applies `if_one` transform for
+    single element sequences and `if_many` transform for multi-element sequences.
+
+    If iterators supported `len` it would be equivalent to the code below:
+
+    ```
+    proc = if_many if len(it) > 1 else if_one
+    return map(proc, it)
+    ```
+
+    :param it: Sequence to iterate over
+    :param if_one: Function to apply for single element sequences
+    :param if_many: Function to apply for multi-element sequences
+
+    """
+    if_one = if_one or (lambda x: x)
+    if_many = if_many or (lambda x: x)
+
+    it = iter(it)
+    p1 = list(itertools.islice(it, 2))
+    proc = if_many if len(p1) > 1 else if_one
+
+    for v in itertools.chain(iter(p1), it):
+        yield proc(v)
 
 
 ###
@@ -238,7 +292,26 @@ class NoDatesSafeLoader(SafeLoader):  # pylint: disable=too-many-ancestors
 NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
 
 
-def read_documents(*paths):
+def without_lineage_sources(doc, spec, inplace=False):
+    """ Replace lineage.source_datasets with {}
+
+    :param dict doc: parsed yaml/json document describing dataset
+    :param spec: Product or MetadataType according to which `doc` to be interpreted
+    :param bool inplace: If True modify `doc` in place
+    """
+
+    if not inplace:
+        doc = deepcopy(doc)
+
+    doc_view = spec.dataset_reader(doc)
+
+    if 'sources' in doc_view.fields:
+        doc_view.sources = {}
+
+    return doc
+
+
+def read_documents(*paths, uri=False):
     """
     Read & parse documents from the filesystem (yaml or json).
 
@@ -248,41 +321,77 @@ def read_documents(*paths):
     the datacube we use JSON in PostgreSQL and it will turn our dates
     to strings anyway.
 
+    :param uri: When True yield uri instead pathlib.Path
+
     :type paths: pathlib.Path
+    :type uri: Bool
     :rtype: tuple[(pathlib.Path, dict)]
     """
-    for path in paths:
+    def process_yaml(path, compressed):
+        opener = gzip.open if compressed else open
+        with opener(str(path), 'r') as handle:
+            for parsed_doc in yaml.load_all(handle, Loader=NoDatesSafeLoader):
+                yield parsed_doc
+
+    def process_json(path, compressed):
+        opener = gzip.open if compressed else open
+        with opener(str(path), 'r') as handle:
+            yield json.load(handle)
+
+    def process_netcdf(path, compressed):
+        if compressed:
+            raise InvalidDocException("Can't process gziped netcdf files")
+
+        for doc in read_strings_from_netcdf(path, variable='dataset'):
+            yield yaml.load(doc, Loader=NoDatesSafeLoader)
+
+    procs = {
+        '.yaml': process_yaml,
+        '.yml': process_yaml,
+        '.json': process_json,
+        '.nc': process_netcdf,
+    }
+
+    def process_file(path):
         path = pathlib.Path(path)
         suffix = path.suffix.lower()
 
-        # If compressed, open as gzip stream.
-        opener = open
-        if suffix == '.gz':
-            suffix = path.suffixes[-2].lower()
-            opener = gzip.open
+        compressed = suffix == '.gz'
 
-        if suffix in ('.yaml', '.yml'):
-            try:
-                with opener(str(path), 'r') as handle:
-                    for parsed_doc in yaml.load_all(handle, Loader=NoDatesSafeLoader):
-                        yield path, parsed_doc
-            except yaml.YAMLError as e:
-                raise InvalidDocException('Failed to load %s: %s' % (path, e))
-        elif suffix == '.json':
-            try:
-                with opener(str(path), 'r') as handle:
-                    yield path, json.load(handle)
-            except ValueError as e:
-                raise InvalidDocException('Failed to load %s: %s' % (path, e))
-        elif suffix == '.nc':
-            try:
-                for doc in read_strings_from_netcdf(path, variable='dataset'):
-                    yield path, yaml.load(doc, Loader=NoDatesSafeLoader)
-            except Exception as e:
-                raise InvalidDocException('Unable to load dataset information from NetCDF file: %s. %s' % (path, e))
-        else:
+        if compressed:
+            suffix = path.suffixes[-2].lower()
+
+        proc = procs.get(suffix)
+
+        if proc is None:
             raise ValueError('Unknown document type for {}; expected one of {!r}.'
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
+
+        if not uri:
+            for doc in proc(path, compressed):
+                yield path, doc
+        else:
+            def add_uri_no_part(x):
+                idx, doc = x
+                return path.absolute().as_uri(), doc
+
+            def add_uri_with_part(x):
+                idx, doc = x
+                return mk_part_uri(path.absolute().as_uri(), idx), doc
+
+            yield from map_with_lookahead(enumerate(proc(path, compressed)),
+                                          if_one=add_uri_no_part,
+                                          if_many=add_uri_with_part)
+
+    for path in paths:
+        try:
+            yield from process_file(path)
+        except InvalidDocException as e:
+            raise e
+        except (yaml.YAMLError, ValueError) as e:
+            raise InvalidDocException('Failed to load %s: %s' % (path, e))
+        except Exception as e:
+            raise InvalidDocException('Failed to load %s: %s' % (path, e))
 
 
 def netcdf_extract_string(chars):
@@ -530,11 +639,11 @@ def uri_to_local_path(local_uri):
     if not local_uri:
         return None
 
-    components = compat.urlparse(local_uri)
+    components = urlparse(local_uri)
     if components.scheme != 'file':
         raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
 
-    path = compat.url2pathname(components.path)
+    path = url2pathname(components.path)
 
     return pathlib.Path(path)
 

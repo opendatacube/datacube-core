@@ -664,3 +664,31 @@ def test_multiband_support_in_datasetsource(example_gdal_path):
     ds = RasterDatasetDataSource(d, measurement_id='green')
 
     assert ds.get_bandnumber(None) == band_num
+
+
+def test_netcdf_multi_part():
+    defn = {
+        "id": '12345678123456781234567812345678',
+        "format": {"name": "NetCDF CF"},
+        "image": {
+            "bands": {
+                'green': {
+                    'type': 'reflective',
+                    'cell_size': 25.0,
+                    'layer': 'green',
+                    'path': '',
+                    'label': 'Coastal Aerosol',
+                },
+            }
+        }
+    }
+
+    def ds(uri):
+        d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=[uri])
+        return RasterDatasetDataSource(d, measurement_id='green')
+
+    for i in range(3):
+        assert ds('file:///tmp.nc#part=%d' % i).get_bandnumber() == (i+1)
+
+    # can't tell without opening file
+    assert ds('file:///tmp.nc').get_bandnumber() is None

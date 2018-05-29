@@ -201,7 +201,8 @@ class DatasetResource(object):
         :param dict updates_allowed: Allowed updates
         :rtype: bool,list[change],list[change]
         """
-        existing = self.get(dataset.id, include_sources=True)
+        need_sources = dataset.sources is not None
+        existing = self.get(dataset.id, include_sources=need_sources)
         if not existing:
             raise ValueError('Unknown dataset %s, cannot update – did you intend to add it?' % dataset.id)
 
