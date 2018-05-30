@@ -1,6 +1,6 @@
 import logging
 import warnings
-from shapely.geometry import asShape, mapping
+from shapely.geometry import asShape
 from shapely.ops import cascaded_union
 import shapely.wkt as wkt
 from datacube.utils.geometry import CRS, Geometry
@@ -10,8 +10,8 @@ from sqlalchemy.sql import select
 from datacube.drivers.postgres._core import SCHEMA_NAME
 from datacube.index import Index
 from datacube.drivers.postgres import PostgresDb
-import uuid
-from datetime import datetime, timezone
+from datacube.db_extent import ExtentMetadata, compute_uuid, parse_time
+from datetime import datetime
 
 _LOG = logging.getLogger(__name__)
 # pandas style time period frequencies
@@ -31,36 +31,6 @@ POOL_SIZE = 31
 
 # SQLAlchemy constants
 POOL_RECYCLE_TIME_SEC = 240
-
-
-class ExtentMetadata(object):
-    """ Pre-load extent meta data"""
-    def __init__(self, index):
-        # Create extent_meta table object
-        self._engine = create_engine(index.url, pool_recycle=POOL_RECYCLE_TIME_SEC, client_encoding='utf8')
-        meta = MetaData(self._engine, schema=SCHEMA_NAME)
-        meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'product_bounds'], schema=SCHEMA_NAME)
-        self._extent_meta_table = meta.tables[SCHEMA_NAME + '.extent_meta']
-
-        # Load metadata
-        # self items would be tuple (dataset_type_ref, offset_alias) indexed dictionary
-        self.items = self._load_metadata()
-
-    def _load_metadata(self):
-        extent_meta_query = select([self._extent_meta_table.c.id,
-                                    self._extent_meta_table.c.dataset_type_ref,
-                                    self._extent_meta_table.c.start,
-                                    self._extent_meta_table.c.end,
-                                    self._extent_meta_table.c.offset_alias,
-                                    self._extent_meta_table.c.projection])
-        with self._engine.begin() as conn:
-            result = {}
-            for item in conn.execute(extent_meta_query).fetchall():
-                result[(item['dataset_type_ref'], item['offset_alias'])] = {'id': item['id'],
-                                                                            'start': item['start'],
-                                                                            'end': item['end'],
-                                                                            'projection': item['projection']}
-        return result
 
 
 class ExtentIndex(object):
@@ -89,35 +59,6 @@ class ExtentIndex(object):
         # Metadata pre-loads
         self.metadata = ExtentMetadata(datacube_index).items
 
-    @staticmethod
-    def _compute_uuid(dataset_type_ref, start, offset_alias):
-        """
-        compute the id (i.e. uuid) from dataset_type_ref, start, and offset
-        :param dataset_type_ref: An id field value of dataset_type table
-        :param datetime start: A time stamp
-        :param str offset_alias: The string representation of pandas offset alias
-        :return UUID: a uuid reflecting a hash value from dataset_type id, start timestamp, and offset_alias
-        """
-
-        name_space = uuid.UUID('{'+format(2**127+dataset_type_ref, 'x')+'}')
-        start_time = str(start.year) + str(start.month)
-        return uuid.uuid3(name_space, start_time + offset_alias)
-
-    @staticmethod
-    def _parse_time(time_stamp):
-        """
-        Parses a time representation into a datetime object
-        :param time_stamp: A time value
-        :return datetime: datetime representation of given time value
-        """
-        if not isinstance(time_stamp, datetime):
-            t = Timestamp(time_stamp)
-            time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
-        if not time_stamp.tzinfo:
-            system_tz = datetime.now(timezone.utc).astimezone().tzinfo
-            return time_stamp.replace(tzinfo=system_tz)
-        return time_stamp
-
     def _get_extent_meta_row(self, dataset_type_ref, offset_alias):
         """
         Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
@@ -141,8 +82,7 @@ class ExtentIndex(object):
         """
 
         # compute the id (i.e. uuid) from dataset_type_ref, start, and offset
-        extent_uuid = ExtentIndex._compute_uuid(dataset_type_ref, start, offset_alias)
-
+        extent_uuid = compute_uuid(dataset_type_ref, start, offset_alias)
         extent_query = select([self._extent_table.c.geometry]).\
             where(self._extent_table.c.id == extent_uuid.hex)
         with self._engine.begin() as conn:
@@ -160,15 +100,14 @@ class ExtentIndex(object):
         :param dataset_type_ref: dataset_type
         :param offset_alias: pandas style offset alias string
         :param projection: requested projection string
-        :return:
+        :return: A Geometry object
         """
 
         metadata = self.metadata[(dataset_type_ref, offset_alias)]
-        # Project to the requested projection
-        if projection:
-            return Geometry(extent, CRS(metadata['projection'])).to_crs(CRS(projection)).__geo_interface__
-        else:
-            return extent
+        # Create a Geometry object
+        geom = Geometry(extent, CRS(metadata['projection']))
+        # Project to the requested projection and return
+        return geom.to_crs(CRS(projection)) if projection else geom
 
     def get_extent_yearly(self, dataset_type_ref, year_start, year_end, projection=None):
         """
@@ -198,8 +137,8 @@ class ExtentIndex(object):
         """
         # All the months where the first day of the month is within start and end
         # Parse the time arguments
-        start = ExtentIndex._parse_time(start)
-        end = ExtentIndex._parse_time(end)
+        start = parse_time(start)
+        end = parse_time(end)
 
         # There seems to be a nanosecond level precision that is discarded by DatetimeIndex.
         # This seems to be acceptable and therefore, lets ignore this warning
@@ -268,27 +207,26 @@ class ExtentIndex(object):
         :return: total extent
         """
         # Parse the time arguments
-        start = ExtentIndex._parse_time(start)
-        end = ExtentIndex._parse_time(end)
-        extent = wkt.loads('MULTIPOLYGON EMPTY')
+        start = parse_time(start)
+        end = parse_time(end)
+        extents = []
         dataset_type_ref = self._extent_index.products.get_by_name(product_name).id
         if dataset_type_ref:
             front, mid, back = ExtentIndex._split_time_range(start, end)
             if front:
-                extents = [asShape(et) for et in self.get_extent_monthly(dataset_type_ref,
-                                                                         front.start_time, front.end_time)]
-                extent = cascaded_union(extents)
+                for et in self.get_extent_monthly(dataset_type_ref, front.start_time, front.end_time):
+                    extents.append(asShape(et))
             if back:
-                extents = [asShape(et) for et in self.get_extent_monthly(dataset_type_ref,
-                                                                         back.start_time, back.end_time)]
-                extent = cascaded_union(extents)
-            extent_monthly = self.reproject(extent, dataset_type_ref, '1M', projection)
+                for et in self.get_extent_monthly(dataset_type_ref, back.start_time, back.end_time):
+                    extents.append(asShape(et))
+            extent_monthly = self.reproject(cascaded_union(extents).__geo_interface__,
+                                            dataset_type_ref, '1M', projection)
             if mid:
                 extents = [asShape(et) for et in self.get_extent_yearly(dataset_type_ref,
                                                                         mid.start_time, mid.end_time)]
-                extent_yearly = cascaded_union(extents)
-                return cascaded_union([extent_monthly, self.reproject(extent_yearly,
-                                                                      dataset_type_ref, '1Y', projection)])
+                extent_yearly = self.reproject(cascaded_union(extents), dataset_type_ref, '1Y', projection)
+                return Geometry(cascaded_union([asShape(extent_monthly),
+                                                asShape(extent_yearly)]), CRS(projection))
             return extent_monthly
         else:
             raise KeyError("Corresponding dataset_type_ref does not exist")
@@ -302,10 +240,10 @@ class ExtentIndex(object):
         :param product_name: name of the product
         :param dataset_type_ref: dataset_type id of the product
         :param projection: projection string of the request
-        :return: total extent if not found a KeyError exception will be raised
+        :return datacube.utils.Geometry: total extent
         """
 
-        start = ExtentIndex._parse_time(start)
+        start = parse_time(start)
         if not dataset_type_ref:
             dataset_type_ref = self._extent_index.products.get_by_name(product_name).id
         if dataset_type_ref:
@@ -319,7 +257,7 @@ class ExtentIndex(object):
                                dataset_type_ref=None, projection=None, geobox=None):
         extent = self.get_extent_direct(start, offset_alias, product_name,
                                         dataset_type_ref, projection)
-        return mapping(asShape(extent).intersection(geobox.extent)) if geobox else extent
+        return geobox.extent.intersection(extent) if geobox else extent
 
     def get_bounds(self, product_name):
         """
