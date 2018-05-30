@@ -146,20 +146,22 @@ def load_datasets_for_update(datasets, index):
     dataset in the index. Datasets not in the database will be logged.
 
     Doesn't load lineage information
+
+    Generates tuples in the form (new_dataset, existing_dataset)
     """
     def mk_dataset(metadata_doc, uri):
         uuid = metadata_doc.get('id', None)
 
         if uuid is None:
-            return None, "Metadata document it missing id field"
+            return None, None, "Metadata document it missing id field"
 
         existing = index.datasets.get(uuid)
         if existing is None:
-            return None, "No such dataset the database: {}".format(uuid)
+            return None, None, "No such dataset the database: {}".format(uuid)
 
         return Dataset(existing.type,
                        without_lineage_sources(metadata_doc, existing.type, inplace=True),
-                       uris=[uri]), None
+                       uris=[uri]), existing, None
 
     for dataset_path in datasets:
         metadata_path = get_metadata_path(Path(dataset_path))
@@ -169,7 +171,7 @@ def load_datasets_for_update(datasets, index):
 
         try:
             for uri, metadata_doc in read_documents(metadata_path, uri=True):
-                dataset, error_msg = mk_dataset(metadata_doc, uri)
+                dataset, existing, error_msg = mk_dataset(metadata_doc, uri)
 
                 if dataset is None:
                     _LOG.error("Failure while processing: %s\n" +
@@ -177,7 +179,7 @@ def load_datasets_for_update(datasets, index):
                 else:
                     is_consistent, reason = check_dataset_consistent(dataset)
                     if is_consistent:
-                        yield dataset
+                        yield dataset, existing
                     else:
                         _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
 
@@ -248,19 +250,67 @@ def parse_update_rules(keys_that_can_change):
               help="Allow any changes to the specified key (a.b.c)",
               multiple=True)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.option('--location-policy',
+              type=click.Choice(['keep', 'archive', 'forget']),
+              default='keep',
+              help='''What to do with previously recorded dataset location
+'keep' - keep as alternative location [default]
+'archive' - mark as archived
+'forget' - remove from the index
+''')
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def update_cmd(index, keys_that_can_change, dry_run, datasets):
+def update_cmd(index, keys_that_can_change, dry_run, location_policy, datasets):
+
+    def loc_action(action, new_ds, existing_ds, action_name):
+        if len(existing_ds.uris) == 0:
+            return None
+
+        if len(existing_ds.uris) > 1:
+            _LOG.warning("Refusing to %s old location, there are several", action_name)
+            return None
+
+        new_uri, = new_ds.uris
+        old_uri, = existing_ds.uris
+
+        if new_uri == old_uri:
+            return None
+
+        if dry_run:
+            echo('Will {} old location {}, and add new one {}'.format(action_name, old_uri, new_uri))
+            return True
+
+        return action(existing_ds.id, old_uri)
+
+    def loc_archive(new_ds, existing_ds):
+        return loc_action(index.datasets.archive_location, new_ds, existing_ds, 'archive')
+
+    def loc_forget(new_ds, existing_ds):
+        return loc_action(index.datasets.remove_location, new_ds, existing_ds, 'forget')
+
+    def loc_keep(new_ds, existing_ds):
+        return None
+
+    update_loc = dict(archive=loc_archive,
+                      forget=loc_forget,
+                      keep=loc_keep)[location_policy]
+
     updates_allowed = parse_update_rules(keys_that_can_change)
 
     success, fail = 0, 0
-    for dataset in load_datasets_for_update(datasets, index):
+    for dataset, existing_ds in load_datasets_for_update(datasets, index):
         _LOG.info('Matched %s', dataset)
+
+        if location_policy != 'keep':
+            if len(existing_ds.uris) > 1:
+                # TODO:
+                pass
 
         if not dry_run:
             try:
                 index.datasets.update(dataset, updates_allowed=updates_allowed)
+                update_loc(dataset, existing_ds)
                 success += 1
                 echo('Updated %s' % dataset.id)
             except ValueError as e:
@@ -268,6 +318,7 @@ def update_cmd(index, keys_that_can_change, dry_run, datasets):
                 echo('Failed to update %s: %s' % (dataset.id, e))
         else:
             if update_dry_run(index, updates_allowed, dataset):
+                update_loc(dataset, existing_ds)
                 success += 1
             else:
                 fail += 1
