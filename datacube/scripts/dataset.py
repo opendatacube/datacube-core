@@ -236,21 +236,23 @@ def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
                 _LOG.error('Failed to add dataset %s: %s', dataset.local_uri, e)
 
 
-def parse_update_rules(allow_any):
-    updates = {}
-    for key_str in allow_any:
-        updates[tuple(key_str.split('.'))] = changes.allow_any
-    return updates
+def parse_update_rules(keys_that_can_change):
+    updates_allowed = {}
+    for key_str in keys_that_can_change:
+        updates_allowed[tuple(key_str.split('.'))] = changes.allow_any
+    return updates_allowed
 
 
 @dataset_cmd.command('update', help="Update datasets in the Data Cube")
-@click.option('--allow-any', help="Allow any changes to the specified key (a.b.c)", multiple=True)
+@click.option('--allow-any', 'keys_that_can_change',
+              help="Allow any changes to the specified key (a.b.c)",
+              multiple=True)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def update_cmd(index, allow_any, dry_run, datasets):
-    updates = parse_update_rules(allow_any)
+def update_cmd(index, keys_that_can_change, dry_run, datasets):
+    updates_allowed = parse_update_rules(keys_that_can_change)
 
     success, fail = 0, 0
     for dataset in load_datasets_for_update(datasets, index):
@@ -258,23 +260,23 @@ def update_cmd(index, allow_any, dry_run, datasets):
 
         if not dry_run:
             try:
-                index.datasets.update(dataset, updates_allowed=updates)
+                index.datasets.update(dataset, updates_allowed=updates_allowed)
                 success += 1
                 echo('Updated %s' % dataset.id)
             except ValueError as e:
                 fail += 1
                 echo('Failed to update %s: %s' % (dataset.id, e))
         else:
-            if update_dry_run(index, updates, dataset):
+            if update_dry_run(index, updates_allowed, dataset):
                 success += 1
             else:
                 fail += 1
     echo('%d successful, %d failed' % (success, fail))
 
 
-def update_dry_run(index, updates, dataset):
+def update_dry_run(index, updates_allowed, dataset):
     try:
-        can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates)
+        can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates_allowed)
     except ValueError as e:
         echo('Cannot update %s: %s' % (dataset.id, e))
         return False
