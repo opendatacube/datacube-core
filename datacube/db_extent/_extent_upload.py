@@ -16,7 +16,7 @@ import uuid
 from datetime import datetime, timezone
 import json
 from functools import reduce
-from datacube.db_extent import ExtentMetadata
+from datacube.db_extent import ExtentMetadata, compute_uuid, parse_time
 
 _LOG = logging.getLogger(__name__)
 # pandas style time period frequencies
@@ -156,35 +156,6 @@ class ExtentUpload(object):
         index = Index(db)
         return Datacube(index=index)
 
-    @staticmethod
-    def _compute_uuid(dataset_type_ref, start, offset_alias):
-        """
-        compute the id (i.e. uuid) from dataset_type_ref, start, and offset
-        :param dataset_type_ref: An id field value of dataset_type table
-        :param datetime start: A time stamp
-        :param str offset_alias: The string representation of pandas offset alias
-        :return UUID: a uuid reflecting a hash value from dataset_type id, start timestamp, and offset_alias
-        """
-
-        name_space = uuid.UUID('{'+format(2**127+dataset_type_ref, 'x')+'}')
-        start_time = str(start.year) + str(start.month)
-        return uuid.uuid3(name_space, start_time + offset_alias)
-
-    @staticmethod
-    def _parse_time(time_stamp):
-        """
-        Parses a time representation into a datetime object
-        :param time_stamp: A time value
-        :return datetime: datetime representation of given time value
-        """
-        if not isinstance(time_stamp, datetime):
-            t = Timestamp(time_stamp)
-            time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
-        if not time_stamp.tzinfo:
-            system_tz = datetime.now(timezone.utc).astimezone().tzinfo
-            return time_stamp.replace(tzinfo=system_tz)
-        return time_stamp
-
     def _get_extent_meta_row(self, dataset_type_ref, offset_alias):
         """
         Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
@@ -209,7 +180,7 @@ class ExtentUpload(object):
 
         # compute the id (i.e. uuid) from dataset_type_ref, start, and offset
         # Alternatively you can get extent_meta id and search for (extent_meta_id, start)
-        extent_uuid = ExtentUpload._compute_uuid(dataset_type_ref, start, offset_alias)
+        extent_uuid = compute_uuid(dataset_type_ref, start, offset_alias)
 
         extent_query = select([self._extent_table.c.geometry]).\
             where(self._extent_table.c.id == extent_uuid.hex)
@@ -231,7 +202,7 @@ class ExtentUpload(object):
         """
 
         # compute the id (i.e. uuid) from dataset_type_ref, start, and offset
-        extent_uuid = ExtentUpload._compute_uuid(dataset_type_ref, start, offset_alias)
+        extent_uuid = compute_uuid(dataset_type_ref, start, offset_alias)
 
         # See whether an entry already exists in extent
         extent_query = select([self._extent_table.c.id]).\
@@ -274,9 +245,8 @@ class ExtentUpload(object):
                                                 username=self._username, compute=extent_per_period,
                                                 projection=projection), period_list)
 
-        # Filter out extents of NoneType
+        # Filter out extents of NoneType (this part probably unnecessary now)
         extent_list = [extent for extent in extent_list if extent]
-
         full_extent = cascaded_union(extent_list) if extent_list else wkt.loads('MULTIPOLYGON EMPTY')
 
         # Format the start time to year-month format
@@ -314,8 +284,8 @@ class ExtentUpload(object):
             offset_alias = DEFAULT_FREQ
 
         # Parse the time arguments
-        start = ExtentUpload._parse_time(start)
-        end = ExtentUpload._parse_time(end)
+        start = parse_time(start)
+        end = parse_time(end)
 
         # Lets get the dataset_type id
         dataset_type_ref = self._extent_index.products.get_by_name(product_name).id
@@ -527,6 +497,8 @@ if __name__ == '__main__':
                               username='aj9439', extent_index=Index(EXTENT_DB))
 
     # load into extents table
-    EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2016-01',
+    EXTENT_IDX.store_extent(product_name='ls8_nbar_scene', start='2013-01',
+                            end='2013-05', offset_alias='1D', projection='EPSG:4326')
+    EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
                             end='2017-05', offset_alias='1M', projection='EPSG:4326')
-    EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
+    # EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
