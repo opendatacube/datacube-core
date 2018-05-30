@@ -87,12 +87,21 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
                str(lbg_nbar), str(lbg_pq)])
 
     # Test no-op update
-    clirunner(['-v', 'dataset', 'update', '--dry-run',
-               str(lbg_nbar), str(lbg_pq)])
+    for policy in ['archive', 'forget', 'keep']:
+        clirunner(['-v', 'dataset', 'update',
+                   '--dry-run',
+                   '--location-policy', policy,
+                   str(lbg_nbar), str(lbg_pq)])
 
-    # Test no changes needed update
-    clirunner(['-v', 'dataset', 'update',
-               str(lbg_nbar), str(lbg_pq)])
+        # Test no changes needed update
+        clirunner(['-v', 'dataset', 'update',
+                   '--location-policy', policy,
+                   str(lbg_nbar), str(lbg_pq)])
+
+    # TODO: test location update
+    # 1. Make a copy of a file
+    # 2. Call dataset update with archive/forget
+    # 3. Check location
 
     # Ingest NBAR
     clirunner(['-v', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
