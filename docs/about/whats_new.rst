@@ -26,6 +26,12 @@ Backwards Incompatible Changes
 Changes
 ~~~~~~~
 
+- Add `--location-policy` to `datacube dataset update` command. Previously this
+  command would always just add a new location to the list of uris associated
+  with a given dataset, now one can specify `archive` and `forget` options,
+  which would mark previous location as archived or remove it from the index
+  altogether. The default behaviour is unchanged. (:pull:`469`)
+
 - The masking related function `describe_variable_flags()` now returns a
   pandas DataFrame by default. This will display as a table in Jupyter
   Notebooks. (:pull:`422`)
