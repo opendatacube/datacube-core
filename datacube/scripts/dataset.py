@@ -62,8 +62,8 @@ def find_matching_product(rules, doc):
             raise BadMatch('Dataset metadata did not match product rules.'
                            '\nDataset metadata:\n %s\n'
                            '\nProduct metadata:\n %s\n'
-                           % (json.dumps(metadata, indent=4),
-                              json.dumps(relevant_doc, indent=4)))
+                           % (json.dumps(relevant_doc, indent=4),
+                              json.dumps(metadata, indent=4)))
         else:
             raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
     if len(matched) > 1:
