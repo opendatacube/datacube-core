@@ -105,7 +105,7 @@ class ExtentIndex(object):
 
         metadata = self.metadata[(dataset_type_ref, offset_alias)]
         # Create a Geometry object
-        geom = Geometry(extent, CRS(metadata['projection']))
+        geom = Geometry(extent, CRS(metadata['crs']))
         # Project to the requested projection and return
         return geom.to_crs(CRS(projection)) if projection else geom
 
@@ -272,7 +272,7 @@ class ExtentIndex(object):
                                    self._bounds_table.c.start,
                                    self._bounds_table.c.end,
                                    self._bounds_table.c.bounds,
-                                   self._bounds_table.c.projection]). \
+                                   self._bounds_table.c.crs]). \
                 where(self._bounds_table.c.dataset_type_ref == dataset_type_ref)
             bounds_row = self._conn.execute(bounds_query).fetchone()
             if bounds_row:

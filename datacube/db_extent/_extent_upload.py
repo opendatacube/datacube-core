@@ -299,14 +299,14 @@ class ExtentUpload(object):
                     # Got to update meta data
                     update = self._extent_meta_table.update(). \
                         where(self._extent_meta_table.c.id == extent_meta_row['id']). \
-                        values(start=start, end=end, projection=projection)
+                        values(start=start, end=end, crs=projection)
                     conn.execute(update)
             else:
                 # insert a new meta entry
                 ins = self._extent_meta_table.insert().values(dataset_type_ref=dataset_type_ref,
                                                               start=start, end=end,
                                                               offset_alias=offset_alias,
-                                                              projection=projection)
+                                                              crs=projection)
                 conn.execute(ins)
             # We are pre-loading metadata so got to update those
             self.metadata = ExtentMetadata(self._extent_index).items
@@ -342,13 +342,13 @@ class ExtentUpload(object):
             # Update the existing entry
             update = self._bounds_table.update().\
                 where(self._bounds_table.c.id == bounds_row['id']).\
-                values(start=lower, end=upper, bounds=json.dumps(bounds_json), projection=projection)
+                values(start=lower, end=upper, bounds=json.dumps(bounds_json), crs=projection)
             conn.execute(update)
         else:
             # Insert a new entry
             ins = self._bounds_table.insert().values(dataset_type_ref=dataset_type_ref,
                                                      start=lower, end=upper,
-                                                     bounds=json.dumps(bounds_json), projection=projection)
+                                                     bounds=json.dumps(bounds_json), crs=projection)
             conn.execute(ins)
         conn.close()
 
@@ -501,4 +501,4 @@ if __name__ == '__main__':
                             end='2013-05', offset_alias='1D', projection='EPSG:4326')
     EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
                             end='2017-05', offset_alias='1M', projection='EPSG:4326')
-    # EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
+    EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
