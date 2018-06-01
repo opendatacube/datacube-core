@@ -55,12 +55,12 @@ class ExtentMetadata(object):
                                     self._extent_meta_table.c.start,
                                     self._extent_meta_table.c.end,
                                     self._extent_meta_table.c.offset_alias,
-                                    self._extent_meta_table.c.projection])
+                                    self._extent_meta_table.c.crs])
         with self._engine.begin() as conn:
             result = {}
             for item in conn.execute(extent_meta_query).fetchall():
                 result[(item['dataset_type_ref'], item['offset_alias'])] = {'id': item['id'],
                                                                             'start': item['start'],
                                                                             'end': item['end'],
-                                                                            'projection': item['projection']}
+                                                                            'crs': item['crs']}
         return result
