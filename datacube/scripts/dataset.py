@@ -91,7 +91,7 @@ def create_dataset(dataset_doc, uri, rules, skip_lineage=False):
     """
     dataset_type = find_matching_product(rules, dataset_doc)
     if skip_lineage:
-        sources = None
+        sources = {}
         dataset_doc = without_lineage_sources(dataset_doc, dataset_type)
     else:
         sources = {cls: create_dataset(source_doc, None, rules)
@@ -212,10 +212,32 @@ def parse_match_rules_options(index, dtype, auto_match):
 'ensure' - add source dataset if it doesn't exist
 'skip' - dont add the derived dataset if source dataset doesn't exist""")
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.option('--ignore-lineage',
+              help="Don't add lineage data to the database",
+              is_flag=True, default=False)
+@click.option('--confirm-ignore-lineage',
+              help="Don't add lineage data to the database, without confirmation",
+              is_flag=True, default=False)
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, product_names, auto_match, sources_policy, dry_run, dataset_paths):
+def index_cmd(index, product_names, auto_match, sources_policy, dry_run,
+              ignore_lineage,
+              confirm_ignore_lineage,
+              dataset_paths):
+
+    if confirm_ignore_lineage is False and ignore_lineage is True:
+        if sys.stdin.isatty():
+            confirmed = click.confirm("Requested to skip lineage information, Are you sure?", default=False)
+            if not confirmed:
+                click.echo('OK aborting', err=True)
+                sys.exit(1)
+        else:
+            click.echo("Use --confirm-ignore-lineage from non-interactive scripts. Aborting.")
+            sys.exit(1)
+
+        confirm_ignore_lineage = True
+
     rules = parse_match_rules_options(index, product_names, auto_match)
     if rules is None:
         return
@@ -223,13 +245,15 @@ def index_cmd(index, product_names, auto_match, sources_policy, dry_run, dataset
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
         with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
-            index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter)
+            index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter,
+                                skip_lineage=confirm_ignore_lineage)
     else:
-        index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths)
+        index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths,
+                            skip_lineage=confirm_ignore_lineage)
 
 
-def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
-    for dataset in load_datasets(dataset_paths, rules):
+def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths, skip_lineage=False):
+    for dataset in load_datasets(dataset_paths, rules, skip_lineage=skip_lineage):
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
