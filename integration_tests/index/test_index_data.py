@@ -356,6 +356,9 @@ def test_index_dataset_with_location(index, default_metadata_type):
         dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri(), mode=mode)]
         assert dataset_ids == [dataset.id]
 
+    with pytest.raises(ValueError):
+        list(index.datasets.get_datasets_for_location(first_file.as_uri(), mode="nosuchmode"))
+
 
 def utc_now():
     # utcnow() doesn't include a tzinfo.
