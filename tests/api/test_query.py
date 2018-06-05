@@ -15,6 +15,7 @@
 from __future__ import absolute_import, division, print_function
 
 import datetime
+import pandas
 
 import pytest
 from dateutil import tz
@@ -23,6 +24,7 @@ from ..util import isclose
 
 from datacube.api.query import Query, _datetime_to_timestamp, query_group_by
 from datacube.model import Range
+from datetime import timezone
 
 
 def test_datetime_to_timestamp():
@@ -86,3 +88,53 @@ def test_query_kwargs():
 
     with pytest.raises(LookupError):
         query_group_by(group_by='magic')
+
+
+def format_test(start_out, end_out):
+    return Range(pandas.to_datetime(start_out, utc=True).to_pydatetime(),
+                 pandas.to_datetime(end_out, utc=True).to_pydatetime())
+
+
+testdata = [
+    (('2008'),
+     format_test('2008-01-01T00:00:00', '2008-12-31T23:59:59.999999')),
+    (('2008', '2008'),
+     format_test('2008-01-01T00:00:00', '2008-12-31T23:59:59.999999')),
+    (('2008', '2009'),
+     format_test('2008-01-01T00:00:00', '2009-12-31T23:59:59.999999')),
+    (('2008-03', '2009'),
+     format_test('2008-03-01T00:00', '2009-12-31T23:59:59.999999')),
+    (('2008-03', '2009-10'),
+     format_test('2008-03-01T00:00', '2009-10-31T23:59:59.999999')),
+    (('2008', '2009-10'),
+     format_test('2008-01-01T00:00', '2009-10-31T23:59:59.999999')),
+    (('2008-03-03', '2008-11'),
+     format_test('2008-03-03T00:00:00', '2008-11-30T23:59:59.999999')),
+    (('2008-11-14', '2008-11-30'),
+     format_test('2008-11-14T00:00:00', '2008-11-30T23:59:59.999999')),
+    (('2008-11-14', '2008-11-29'),
+     format_test('2008-11-14T00:00:00', '2008-11-29T23:59:59.999999')),
+    (('2008-11-14', '2008-11'),
+     format_test('2008-11-14T00:00:00', '2008-11-30T23:59:59.999999')),
+    (('2008-11-14', '2008'),
+     format_test('2008-11-14T00:00:00', '2008-12-31T23:59:59.999999')),
+    (('2008-11-14'),
+     format_test('2008-11-14T00:00:00', '2008-11-14T23:59:59.999999')),
+    (('2008-11-14', '2009-02-02'),
+     format_test('2008-11-14T00:00:00', '2009-02-02T23:59:59.999999')),
+    (('2008-11-14T23:33:57', '2008-11-14 23:33:57'),
+     format_test('2008-11-14T23:33:57', '2008-11-14T23:33:57.999999')),
+    (('2008-11-14 23:33', '2008-11-14 23:34'),
+     format_test('2008-11-14T23:33:00', '2008-11-14T23:34:59.999999')),
+    (('2008-11-14T23:00:00', '2008-11-14 23:35'),
+     format_test('2008-11-14T23:00', '2008-11-14T23:35:59.999999')),
+    (('2008-11-10T11', '2008-11-16 14:01'),
+     format_test('2008-11-10T11:00', '2008-11-16T14:01:59.999999')),
+]
+
+
+@pytest.mark.parametrize('time_param,expected', testdata)
+def test_time_handling(time_param, expected):
+    query = Query(time=time_param)
+    assert 'time' in query.search_terms
+    assert query.search_terms['time'] == expected

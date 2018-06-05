@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import imp
 import shutil
 from pathlib import Path
-
 import numpy
 import pytest
 import rasterio
@@ -86,13 +85,27 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
     clirunner(['-v', 'dataset', 'add',
                str(lbg_nbar), str(lbg_pq)])
 
-    # Test no-op update
-    clirunner(['-v', 'dataset', 'update', '--dry-run',
+    #  - this will be no-op but with ignore lineage
+    clirunner(['-v', 'dataset', 'add',
+               '--confirm-ignore-lineage',
                str(lbg_nbar), str(lbg_pq)])
 
-    # Test no changes needed update
-    clirunner(['-v', 'dataset', 'update',
-               str(lbg_nbar), str(lbg_pq)])
+    # Test no-op update
+    for policy in ['archive', 'forget', 'keep']:
+        clirunner(['-v', 'dataset', 'update',
+                   '--dry-run',
+                   '--location-policy', policy,
+                   str(lbg_nbar), str(lbg_pq)])
+
+        # Test no changes needed update
+        clirunner(['-v', 'dataset', 'update',
+                   '--location-policy', policy,
+                   str(lbg_nbar), str(lbg_pq)])
+
+    # TODO: test location update
+    # 1. Make a copy of a file
+    # 2. Call dataset update with archive/forget
+    # 3. Check location
 
     # Ingest NBAR
     clirunner(['-v', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])

@@ -256,6 +256,6 @@ class MetadataTypeResource(object):
         """
         return MetadataType(
             definition,
-            dataset_search_fields=self._db.get_dataset_fields(definition['dataset']['search_fields']),
+            dataset_search_fields=self._db.get_dataset_fields(definition),
             id_=id_
         )

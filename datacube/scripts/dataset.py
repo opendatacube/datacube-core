@@ -62,8 +62,8 @@ def find_matching_product(rules, doc):
             raise BadMatch('Dataset metadata did not match product rules.'
                            '\nDataset metadata:\n %s\n'
                            '\nProduct metadata:\n %s\n'
-                           % (json.dumps(metadata, indent=4),
-                              json.dumps(relevant_doc, indent=4)))
+                           % (json.dumps(relevant_doc, indent=4),
+                              json.dumps(metadata, indent=4)))
         else:
             raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
     if len(matched) > 1:
@@ -91,7 +91,7 @@ def create_dataset(dataset_doc, uri, rules, skip_lineage=False):
     """
     dataset_type = find_matching_product(rules, dataset_doc)
     if skip_lineage:
-        sources = None
+        sources = {}
         dataset_doc = without_lineage_sources(dataset_doc, dataset_type)
     else:
         sources = {cls: create_dataset(source_doc, None, rules)
@@ -146,20 +146,22 @@ def load_datasets_for_update(datasets, index):
     dataset in the index. Datasets not in the database will be logged.
 
     Doesn't load lineage information
+
+    Generates tuples in the form (new_dataset, existing_dataset)
     """
     def mk_dataset(metadata_doc, uri):
         uuid = metadata_doc.get('id', None)
 
         if uuid is None:
-            return None, "Metadata document it missing id field"
+            return None, None, "Metadata document it missing id field"
 
         existing = index.datasets.get(uuid)
         if existing is None:
-            return None, "No such dataset the database: {}".format(uuid)
+            return None, None, "No such dataset the database: {}".format(uuid)
 
         return Dataset(existing.type,
                        without_lineage_sources(metadata_doc, existing.type, inplace=True),
-                       uris=[uri]), None
+                       uris=[uri]), existing, None
 
     for dataset_path in datasets:
         metadata_path = get_metadata_path(Path(dataset_path))
@@ -169,7 +171,7 @@ def load_datasets_for_update(datasets, index):
 
         try:
             for uri, metadata_doc in read_documents(metadata_path, uri=True):
-                dataset, error_msg = mk_dataset(metadata_doc, uri)
+                dataset, existing, error_msg = mk_dataset(metadata_doc, uri)
 
                 if dataset is None:
                     _LOG.error("Failure while processing: %s\n" +
@@ -177,7 +179,7 @@ def load_datasets_for_update(datasets, index):
                 else:
                     is_consistent, reason = check_dataset_consistent(dataset)
                     if is_consistent:
-                        yield dataset
+                        yield dataset, existing
                     else:
                         _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
 
@@ -210,10 +212,32 @@ def parse_match_rules_options(index, dtype, auto_match):
 'ensure' - add source dataset if it doesn't exist
 'skip' - dont add the derived dataset if source dataset doesn't exist""")
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.option('--ignore-lineage',
+              help="Don't add lineage data to the database",
+              is_flag=True, default=False)
+@click.option('--confirm-ignore-lineage',
+              help="Don't add lineage data to the database, without confirmation",
+              is_flag=True, default=False)
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, product_names, auto_match, sources_policy, dry_run, dataset_paths):
+def index_cmd(index, product_names, auto_match, sources_policy, dry_run,
+              ignore_lineage,
+              confirm_ignore_lineage,
+              dataset_paths):
+
+    if confirm_ignore_lineage is False and ignore_lineage is True:
+        if sys.stdin.isatty():
+            confirmed = click.confirm("Requested to skip lineage information, Are you sure?", default=False)
+            if not confirmed:
+                click.echo('OK aborting', err=True)
+                sys.exit(1)
+        else:
+            click.echo("Use --confirm-ignore-lineage from non-interactive scripts. Aborting.")
+            sys.exit(1)
+
+        confirm_ignore_lineage = True
+
     rules = parse_match_rules_options(index, product_names, auto_match)
     if rules is None:
         return
@@ -221,13 +245,15 @@ def index_cmd(index, product_names, auto_match, sources_policy, dry_run, dataset
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
         with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
-            index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter)
+            index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter,
+                                skip_lineage=confirm_ignore_lineage)
     else:
-        index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths)
+        index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths,
+                            skip_lineage=confirm_ignore_lineage)
 
 
-def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
-    for dataset in load_datasets(dataset_paths, rules):
+def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths, skip_lineage=False):
+    for dataset in load_datasets(dataset_paths, rules, skip_lineage=skip_lineage):
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
@@ -236,45 +262,96 @@ def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
                 _LOG.error('Failed to add dataset %s: %s', dataset.local_uri, e)
 
 
-def parse_update_rules(allow_any):
-    updates = {}
-    for key_str in allow_any:
-        updates[tuple(key_str.split('.'))] = changes.allow_any
-    return updates
+def parse_update_rules(keys_that_can_change):
+    updates_allowed = {}
+    for key_str in keys_that_can_change:
+        updates_allowed[tuple(key_str.split('.'))] = changes.allow_any
+    return updates_allowed
 
 
 @dataset_cmd.command('update', help="Update datasets in the Data Cube")
-@click.option('--allow-any', help="Allow any changes to the specified key (a.b.c)", multiple=True)
+@click.option('--allow-any', 'keys_that_can_change',
+              help="Allow any changes to the specified key (a.b.c)",
+              multiple=True)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.option('--location-policy',
+              type=click.Choice(['keep', 'archive', 'forget']),
+              default='keep',
+              help='''What to do with previously recorded dataset location
+'keep' - keep as alternative location [default]
+'archive' - mark as archived
+'forget' - remove from the index
+''')
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def update_cmd(index, allow_any, dry_run, datasets):
-    updates = parse_update_rules(allow_any)
+def update_cmd(index, keys_that_can_change, dry_run, location_policy, datasets):
+
+    def loc_action(action, new_ds, existing_ds, action_name):
+        if len(existing_ds.uris) == 0:
+            return None
+
+        if len(existing_ds.uris) > 1:
+            _LOG.warning("Refusing to %s old location, there are several", action_name)
+            return None
+
+        new_uri, = new_ds.uris
+        old_uri, = existing_ds.uris
+
+        if new_uri == old_uri:
+            return None
+
+        if dry_run:
+            echo('Will {} old location {}, and add new one {}'.format(action_name, old_uri, new_uri))
+            return True
+
+        return action(existing_ds.id, old_uri)
+
+    def loc_archive(new_ds, existing_ds):
+        return loc_action(index.datasets.archive_location, new_ds, existing_ds, 'archive')
+
+    def loc_forget(new_ds, existing_ds):
+        return loc_action(index.datasets.remove_location, new_ds, existing_ds, 'forget')
+
+    def loc_keep(new_ds, existing_ds):
+        return None
+
+    update_loc = dict(archive=loc_archive,
+                      forget=loc_forget,
+                      keep=loc_keep)[location_policy]
+
+    updates_allowed = parse_update_rules(keys_that_can_change)
 
     success, fail = 0, 0
-    for dataset in load_datasets_for_update(datasets, index):
+    for dataset, existing_ds in load_datasets_for_update(datasets, index):
         _LOG.info('Matched %s', dataset)
+
+        if location_policy != 'keep':
+            if len(existing_ds.uris) > 1:
+                # TODO:
+                pass
 
         if not dry_run:
             try:
-                index.datasets.update(dataset, updates_allowed=updates)
+                index.datasets.update(dataset, updates_allowed=updates_allowed)
+                update_loc(dataset, existing_ds)
                 success += 1
                 echo('Updated %s' % dataset.id)
             except ValueError as e:
                 fail += 1
                 echo('Failed to update %s: %s' % (dataset.id, e))
         else:
-            if update_dry_run(index, updates, dataset):
+            if update_dry_run(index, updates_allowed, dataset):
+                update_loc(dataset, existing_ds)
                 success += 1
             else:
                 fail += 1
     echo('%d successful, %d failed' % (success, fail))
 
 
-def update_dry_run(index, updates, dataset):
+def update_dry_run(index, updates_allowed, dataset):
     try:
-        can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates)
+        can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates_allowed)
     except ValueError as e:
         echo('Cannot update %s: %s' % (dataset.id, e))
         return False

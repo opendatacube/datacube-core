@@ -430,7 +430,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         if src.count == 1:  # Single-slice netcdf file
             return 1
 
-        _LOG.warning("Encountered stacked netcdf file without recorded index\n - %s", src.name)
+        _LOG.debug("Encountered stacked netcdf file without recorded index\n - %s", src.name)
 
         # Below is backwards compatibility code
 
