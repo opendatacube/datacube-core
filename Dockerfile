@@ -12,7 +12,7 @@ RUN add-apt-repository ppa:nextgis/ppa
 # And now install apt dependencies, including a few of the heavy Python projects
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core requirements from travis.yml
-    gdal-bin gdal-data python3-gdal libgdal-dev libgdal20 libudunits2-0 \
+    gdal-bin gdal-data libgdal-dev libgdal20 libudunits2-0 \
     # Extra python components, to speed things up
     python3 python3-setuptools python3-dev \
     python3-numpy python3-netcdf4 python3-gdal \
@@ -23,18 +23,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# Get the code, and put it in /code
+ENV APPDIR=/tmp/code
+RUN mkdir -p $APPDIR
+COPY . $APPDIR
+WORKDIR $APPDIR
+
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 
 # Install psycopg2 as a special case, to quiet the warning message 
 RUN pip3 install --no-cache --no-binary :all: psycopg2 \
     && rm -rf $HOME/.cache/pip
-
-# Get the code, and put it in /code
-ENV APPDIR=/tmp/code
-RUN mkdir -p $APPDIR
-COPY . $APPDIR
-WORKDIR $APPDIR
 
 # Now use the setup.py file to identify dependencies
 RUN pip3 install '.[test,celery,s3]' --upgrade \
