@@ -352,8 +352,9 @@ def test_index_dataset_with_location(index, default_metadata_type):
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a5c0'
     index.datasets.add(Dataset(type_, second_ds_doc, uris=[second_file.as_uri()], sources={}))
-    dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri())]
-    assert dataset_ids == [dataset.id]
+    for mode in ('exact', 'prefix'):
+        dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri(), mode=mode)]
+        assert dataset_ids == [dataset.id]
 
 
 def utc_now():

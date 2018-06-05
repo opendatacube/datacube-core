@@ -288,16 +288,23 @@ class PostgresDbAPI(object):
             ).fetchone()
         )
 
-    def get_datasets_for_location(self, uri):
+    def get_datasets_for_location(self, uri, mode="exact"):
         scheme, body = _split_uri(uri)
+
+        if mode == 'exact':
+            body_query = DATASET_LOCATION.c.uri_body == body
+        elif mode == 'prefix':
+            body_query = DATASET_LOCATION.c.uri_body.startswith(body)
+        else:
+            raise ValueError('Unsupported query mode {}'.format(mode))
+
         return self._connection.execute(
             select(
                 _DATASET_SELECT_FIELDS
             ).select_from(
                 DATASET_LOCATION.join(DATASET)
             ).where(
-                and_(DATASET_LOCATION.c.uri_scheme == scheme,
-                     DATASET_LOCATION.c.uri_body == body)
+                and_(DATASET_LOCATION.c.uri_scheme == scheme, body_query)
             )
         ).fetchall()
 
