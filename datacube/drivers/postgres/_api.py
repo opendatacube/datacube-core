@@ -288,8 +288,11 @@ class PostgresDbAPI(object):
             ).fetchone()
         )
 
-    def get_datasets_for_location(self, uri, mode="exact"):
+    def get_datasets_for_location(self, uri, mode=None):
         scheme, body = _split_uri(uri)
+
+        if mode is None:
+            mode = 'exact' if body.count('#') > 0 else 'prefix'
 
         if mode == 'exact':
             body_query = DATASET_LOCATION.c.uri_body == body

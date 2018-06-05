@@ -370,7 +370,7 @@ class DatasetResource(object):
             except DuplicateRecordError:
                 return False
 
-    def get_datasets_for_location(self, uri, mode='exact'):
+    def get_datasets_for_location(self, uri, mode=None):
         with self._db.connect() as connection:
             return (self._make(row) for row in connection.get_datasets_for_location(uri, mode=mode))
 
