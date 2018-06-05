@@ -73,7 +73,7 @@ Developer setup
 Docker
 ======
 
-Docker for OpenDataCube is in the early stages of development, and more documentation and examples of how 
+Docker for Open Data Cube is in the early stages of development, and more documentation and examples of how 
 to use it will be forthcoming soon. For now, you can build and run this Docker image from 
 this repository as documented below.
 
@@ -110,7 +110,10 @@ An example of starting a container with environment variables is as follows:
       opendatacube/datacube-core
 
 
-This wont actually do anything, in order to make it work, you need an environment with Postgres, at least, and some scripts to index and possible ingest data.
+Additionally, you can run an Open Data Cube Docker container along with Postgres using the Docker Compose file.
+For example, you can run ``docker-compose up`` and it will start up the Postgres server and Open Data Cube next to it. 
+To run commands in ODC, you can use ``docker-compose run odc datacube -v system init`` or ``docker-compose run odc datacube --version``.
+
 
 Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~
