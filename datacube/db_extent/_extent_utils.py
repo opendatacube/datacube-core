@@ -5,6 +5,16 @@ from sqlalchemy.pool import NullPool
 import uuid
 from pandas import Timestamp
 from datetime import datetime, timezone
+import itertools
+
+
+def peek_generator(iterable):
+    """ See https://:stackoverflow.com/questions/661603/how-do-i-know-if-a-generator-is-empty-from-the-start """
+    try:
+        first = next(iterable)
+    except StopIteration:
+        return None
+    return itertools.chain([first], iterable)
 
 
 def parse_time(time_stamp):

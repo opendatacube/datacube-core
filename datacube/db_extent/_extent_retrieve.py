@@ -2,7 +2,6 @@ import logging
 import warnings
 from shapely.geometry import asShape
 from shapely.ops import cascaded_union
-import shapely.wkt as wkt
 from datacube.utils.geometry import CRS, Geometry
 from pandas import Period, Timestamp, DatetimeIndex
 from sqlalchemy import create_engine, MetaData
@@ -59,7 +58,7 @@ class ExtentIndex(object):
         # Metadata pre-loads
         self.metadata = ExtentMetadata(datacube_index).items
 
-    def _get_extent_meta_row(self, dataset_type_ref, offset_alias):
+    def get_extent_meta(self, dataset_type_ref, offset_alias):
         """
         Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
         :param dataset_type_ref: dataset type id

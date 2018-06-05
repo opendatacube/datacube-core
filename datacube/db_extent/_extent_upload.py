@@ -5,18 +5,17 @@ from shapely.ops import cascaded_union
 import shapely.wkt as wkt
 from datacube import Datacube
 from datacube.utils.geometry import CRS, BoundingBox
-from pandas import period_range, PeriodIndex, Period, Timestamp
+from pandas import period_range, PeriodIndex, Period
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.sql import select
 from datacube.drivers.postgres._core import SCHEMA_NAME
 from datacube.index import Index
 from datacube.drivers.postgres import PostgresDb
 from multiprocessing import Pool
-import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 import json
 from functools import reduce
-from datacube.db_extent import ExtentMetadata, compute_uuid, parse_time
+from datacube.db_extent import ExtentMetadata, compute_uuid, parse_time, peek_generator, ExtentIndex
 
 _LOG = logging.getLogger(__name__)
 # pandas style time period frequencies
@@ -359,6 +358,8 @@ class ExtentUpload(object):
         :param BoundingBox bound: a BoundingBox
         :return bool:
         """
+        if not bool(bound):
+            return None
         return bound.left is None or bound.bottom is None or bound.right is None or bound.top is None
 
     @staticmethod
@@ -416,19 +417,17 @@ class ExtentUpload(object):
                                     ExtentUpload._bounds_union(x[2], y[2])), bounds_list)
 
     @staticmethod
-    def _compute_bounds(dc, product, projection=None, period=None):
+    def _compute_bounds(datasets, projection=None):
         """
         Computes the min, max time bounds and spacial bounds
-        :param Datacube dc: A datacube object
-        :param str product: product name
+        :param datasets: Non-empty list of datasets
         :param str projection: a projection string
-        :param Period period: A pandas Period object
         :return tuple: min time, max, time, and bounding box
         """
-        if period:
-            datasets = dc.find_datasets_lazy(product=product, time=(period.start_time, period.end_time))
-        else:
-            datasets = dc.find_datasets_lazy(product=product)
+
+        if not bool(datasets):
+            raise ValueError('There is no datasets')
+
         try:
             first = next(datasets)
             lower, upper = first.time.begin, first.time.end
@@ -466,12 +465,40 @@ class ExtentUpload(object):
             lower, upper, bounds = self._compute_bounds_with_hints(product=product_name,
                                                                    time_hints=time_hints,
                                                                    projection=projection)
+            self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=lower,
+                                      upper=upper, bounds=bounds, projection=projection)
         else:
-            lower, upper, bounds = ExtentUpload._compute_bounds(dc=self._loading_datacube, product=product_name,
-                                                                projection=projection)
+            dc = self._loading_datacube
+            datasets = peek_generator(dc.find_datasets_lazy(product=product_name))
+            if datasets:
+                lower, upper, bounds = ExtentUpload._compute_bounds(datasets, projection=projection)
+                self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=lower,
+                                          upper=upper, bounds=bounds, projection=projection)
 
-        self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=lower,
-                                  upper=upper, bounds=bounds, projection=projection)
+    def update_bounds(self, product_name, to_time):
+        to_time = parse_time(to_time)
+        # Retrieve the current bounds record
+        bounds = ExtentIndex(datacube_index=self._extent_index).get_bounds(product_name)
+        if bounds:
+            from_time = bounds['end']
+            dc = self._loading_datacube
+            datasets = peek_generator(dc.find_datasets_lazy(product=product_name, time=(from_time, to_time)))
+            if datasets:
+                old_lower = bounds['start']
+                bds = json.loads(bounds['bounds'])
+                old_bounds = BoundingBox(left=bds['left'], bottom=bds['bottom'], right=bds['right'], top=bds['top'])
+                _, new_upper, new_bounds = ExtentUpload._compute_bounds(datasets,
+                                                                        projection=bounds['crs'])
+                dataset_type_ref = self._extent_index.products.get_by_name(product_name).id
+                self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=old_lower,
+                                          upper=new_upper,
+                                          bounds=ExtentUpload._bounds_union(old_bounds, new_bounds),
+                                          projection=bounds['crs'])
+            else:
+                return
+
+        else:
+            raise KeyError("{} does not exist".format(product_name))
 
     def store_bounds(self, product_name, projection=None):
         """
@@ -497,8 +524,8 @@ if __name__ == '__main__':
                               username='aj9439', extent_index=Index(EXTENT_DB))
 
     # load into extents table
-    EXTENT_IDX.store_extent(product_name='ls8_nbar_scene', start='2013-01',
-                            end='2013-05', offset_alias='1D', projection='EPSG:4326')
-    EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
-                            end='2017-05', offset_alias='1M', projection='EPSG:4326')
-    EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
+    # EXTENT_IDX.store_extent(product_name='ls8_nbar_scene', start='2013-01',
+    #                         end='2013-05', offset_alias='1D', projection='EPSG:4326')
+    # EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
+    #                         end='2017-05', offset_alias='1M', projection='EPSG:4326')
+    EXTENT_IDX.update_bounds(product_name='ls8_nbar_albers', to_time='2018-06-06')
