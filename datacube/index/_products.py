@@ -383,3 +383,41 @@ class ProductResource(object):
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
             id_=query_row['id'],
         )
+
+    def db_extent(self, dataset_type_id, start, offset_alias, projection=None):
+        """
+        A fast direct query of extent specified by dataset_type_id, start, and offset
+        :param dataset_type_id: The dataset_type_id
+        :param start: An object indicating the start time stamp preferably of type datetime
+        :param offset_alias: A pandas style offset alias string
+        :param projection: projection string of the request
+        :return datacube.utils.Geometry: total extent
+        """
+
+        from datacube.utils.geometry import CRS, Geometry
+        from datetime import datetime, timezone
+        from pandas import Timestamp
+
+        def parse_time(time_stamp):
+            """
+            Parses a time representation into a datetime object
+            :param time_stamp: A time value
+            :return datetime: datetime representation of given time value
+            """
+            if not isinstance(time_stamp, datetime):
+                t = Timestamp(time_stamp)
+                time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
+            if not time_stamp.tzinfo:
+                system_tz = datetime.now(timezone.utc).astimezone().tzinfo
+                return time_stamp.replace(tzinfo=system_tz)
+            return time_stamp
+
+        start = parse_time(start)
+        with self._db.connect() as connection:
+            result = connection.get_db_extent(dataset_type_id, start, offset_alias)
+            # Project to the requested projection
+            metadata = connection.get_db_extent_meta(dataset_type_id, offset_alias)
+            # Create a Geometry object
+            geom = Geometry(result, CRS(metadata['crs']))
+            # Project to the requested projection and return
+            return geom.to_crs(CRS(projection)) if projection else geom
