@@ -2,8 +2,8 @@ from sqlalchemy import create_engine, SmallInteger, String, DateTime
 from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.schema import Column, Table
 from sqlalchemy.dialects import postgresql as postgres
-from datacube.drivers.postgres._schema import DATASET_TYPE
-from datacube.drivers.postgres._core import METADATA
+from ._schema import DATASET_TYPE
+from ._core import METADATA
 
 
 EXTENT_META = Table('extent_meta', METADATA,

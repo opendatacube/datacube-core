@@ -35,6 +35,10 @@ from ._schema import (
     DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
 )
 
+from ._db_extent_schema import (
+    EXTENT, EXTENT_META, RANGES
+)
+
 try:
     from typing import Iterable
     from typing import Tuple
@@ -902,6 +906,66 @@ class PostgresDbAPI(object):
             )
         )
         return res.rowcount > 0
+
+    def get_db_extent_meta(self, dataset_type_ref, offset_alias):
+        """
+        Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
+        :param dataset_type_ref: dataset type id
+        :param str offset_alias: Pandas style offset period string
+        :return: single extent_meta row matching the parameters
+        """
+        return self._connection.execute(
+            select([
+                EXTENT_META
+            ]).where(
+                and_(
+                    dataset_type_ref == EXTENT_META.c.dataset_type_ref,
+                    offset_alias == EXTENT_META.c.offset_alias,
+                )
+            )).fetchone()
+
+    def get_db_extent(self, dataset_type_ref, start, offset_alias):
+        """
+        Extract and return extent information corresponding to dataset type, start, and offset_alias
+        :param dataset_type_ref: dataset type id
+        :param datetime.datetime start: datetime representation of start timestamp
+        :param offset_alias: pandas style period string
+        :return: 'geometry' field if a database record exits otherwise None
+        """
+
+        def compute_uuid():
+            """
+            ToDo: This may need refactoring
+            compute the id (i.e. uuid) from dataset_type_ref, start, and offset
+            :return UUID: a uuid reflecting a hash value from dataset_type id, start timestamp, and offset_alias
+            """
+            name_space = uuid.UUID('{' + format(2 ** 127 + dataset_type_ref, 'x') + '}')
+            start_time = str(start.year) + str(start.month) + str(start.day)
+            return uuid.uuid3(name_space, start_time + offset_alias)
+
+        # compute the id (i.e. uuid) from dataset_type_ref, start, and offset
+        extent_uuid = compute_uuid()
+        res = self._connection.execute(
+            select([
+                EXTENT.c.geometry
+            ]).where(EXTENT.c.id == extent_uuid.hex)
+        ).fetchone()
+        return res['geometry'] if res else None
+
+    def get_ranges(self, dataset_type_ref):
+        """
+        Returns a ranges record corresponding to a given product id
+        :param dataset_type_ref: dataset type id
+        :return sqlalchemy.engine.result.RowProxy: a row corresponding to product name, if exists otherwise
+        return None
+        """
+        res = self._connection.execute(
+            select([
+                RANGES.c.dataset_type_ref, RANGES.c.start,
+                RANGES.c.end, RANGES.c.bounds, RANGES.c.crs
+            ]).where(RANGES.c.dataset_type_ref == dataset_type_ref)
+        ).fetchone()
+        return res if res else None
 
     def __repr__(self):
         return "PostgresDb<connection={!r}>".format(self._connection)
