@@ -35,8 +35,8 @@ try:
     import pwd
 
     DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name
-except ImportError:
-    # No default on Windows
+except (ImportError, KeyError):
+    # No default on Windows and some other systems
     DEFAULT_DB_USER = None
 DEFAULT_DB_PORT = 5432
 
