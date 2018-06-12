@@ -961,8 +961,8 @@ class PostgresDbAPI(object):
         """
         res = self._connection.execute(
             select([
-                RANGES.c.dataset_type_ref, RANGES.c.start,
-                RANGES.c.end, RANGES.c.bounds, RANGES.c.crs
+                RANGES.c.dataset_type_ref, RANGES.c.time_min,
+                RANGES.c.time_max, RANGES.c.bounds, RANGES.c.crs
             ]).where(RANGES.c.dataset_type_ref == dataset_type_ref)
         ).fetchone()
         return res if res else None
