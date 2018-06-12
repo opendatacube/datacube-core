@@ -32,12 +32,9 @@ from ._fields import (
 )
 from .sql import escape_pg_identifier
 from ._schema import (
-    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
+    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE, EXTENT_META, EXTENT, RANGES
 )
 
-from ._db_extent_schema import (
-    EXTENT, EXTENT_META, RANGES
-)
 
 try:
     from typing import Iterable

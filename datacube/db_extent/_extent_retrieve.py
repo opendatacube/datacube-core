@@ -49,10 +49,10 @@ class ExtentIndex(object):
         #                              pool_pre_ping=True, client_encoding='utf8')
         self._conn = self._engine.connect()
         meta = MetaData(self._engine, schema=SCHEMA_NAME)
-        meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'product_bounds'], schema=SCHEMA_NAME)
+        meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'ranges'], schema=SCHEMA_NAME)
         self._extent_table = meta.tables[SCHEMA_NAME+'.extent']
         self._extent_meta_table = meta.tables[SCHEMA_NAME+'.extent_meta']
-        self._bounds_table = meta.tables[SCHEMA_NAME + '.product_bounds']
+        self._ranges_table = meta.tables[SCHEMA_NAME + '.ranges']
         self._dataset_type_table = meta.tables[SCHEMA_NAME+'.dataset_type']
 
         # Metadata pre-loads
@@ -267,12 +267,12 @@ class ExtentIndex(object):
         """
         dataset_type_ref = self._extent_index.products.get_by_name(product_name).id
         if dataset_type_ref:
-            bounds_query = select([self._bounds_table.c.dataset_type_ref,
-                                   self._bounds_table.c.start,
-                                   self._bounds_table.c.end,
-                                   self._bounds_table.c.bounds,
-                                   self._bounds_table.c.crs]). \
-                where(self._bounds_table.c.dataset_type_ref == dataset_type_ref)
+            bounds_query = select([self._ranges_table.c.dataset_type_ref,
+                                   self._ranges_table.c.time_min,
+                                   self._ranges_table.c.time_max,
+                                   self._ranges_table.c.bounds,
+                                   self._ranges_table.c.crs]). \
+                where(self._ranges_table.c.dataset_type_ref == dataset_type_ref)
             bounds_row = self._conn.execute(bounds_query).fetchone()
             if bounds_row:
                 return bounds_row

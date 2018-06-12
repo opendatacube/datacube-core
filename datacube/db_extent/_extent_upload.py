@@ -132,12 +132,12 @@ class ExtentUpload(object):
         self._engine = create_engine(extent_index.url, poolclass=NullPool, client_encoding='utf8')
         # self._engine = create_engine(extent_index.url, pool_recycle=POOL_RECYCLE_TIME_SEC,
         #                              pool_pre_ping=True, client_encoding='utf8')
-        self._conn = self._engine.connect()
+        # self._conn = self._engine.connect()
         meta = MetaData(self._engine, schema=SCHEMA_NAME)
-        meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'product_bounds'], schema=SCHEMA_NAME)
+        meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'ranges'], schema=SCHEMA_NAME)
         self._extent_table = meta.tables[SCHEMA_NAME+'.extent']
         self._extent_meta_table = meta.tables[SCHEMA_NAME+'.extent_meta']
-        self._bounds_table = meta.tables[SCHEMA_NAME + '.product_bounds']
+        self._ranges_table = meta.tables[SCHEMA_NAME + '.ranges']
         self._dataset_type_table = meta.tables[SCHEMA_NAME+'.dataset_type']
 
         # Metadata pre-loads
@@ -334,19 +334,19 @@ class ExtentUpload(object):
         conn = self._engine.connect()
 
         # See whether an entry exists in product_bounds
-        bounds_query = select([self._bounds_table.c.id]).\
-            where(self._bounds_table.c.dataset_type_ref == dataset_type_ref)
+        bounds_query = select([self._ranges_table.c.id]).\
+            where(self._ranges_table.c.dataset_type_ref == dataset_type_ref)
         bounds_row = conn.execute(bounds_query).fetchone()
         if bounds_row:
             # Update the existing entry
-            update = self._bounds_table.update().\
-                where(self._bounds_table.c.id == bounds_row['id']).\
-                values(start=lower, end=upper, bounds=json.dumps(bounds_json), crs=projection)
+            update = self._ranges_table.update().\
+                where(self._ranges_table.c.id == bounds_row['id']).\
+                values(time_min=lower, time_max=upper, bounds=json.dumps(bounds_json), crs=projection)
             conn.execute(update)
         else:
             # Insert a new entry
-            ins = self._bounds_table.insert().values(dataset_type_ref=dataset_type_ref,
-                                                     start=lower, end=upper,
+            ins = self._ranges_table.insert().values(dataset_type_ref=dataset_type_ref,
+                                                     time_min=lower, time_max=upper,
                                                      bounds=json.dumps(bounds_json), crs=projection)
             conn.execute(ins)
         conn.close()
@@ -481,6 +481,8 @@ class ExtentUpload(object):
         bounds = ExtentIndex(datacube_index=self._extent_index).get_bounds(product_name)
         if bounds:
             from_time = bounds['end']
+            if from_time > to_time:
+                return
             dc = self._loading_datacube
             datasets = peek_generator(dc.find_datasets_lazy(product=product_name, time=(from_time, to_time)))
             if datasets:
@@ -496,7 +498,6 @@ class ExtentUpload(object):
                                           projection=bounds['crs'])
             else:
                 return
-
         else:
             raise KeyError("{} does not exist".format(product_name))
 
@@ -528,4 +529,5 @@ if __name__ == '__main__':
     #                         end='2013-05', offset_alias='1D', projection='EPSG:4326')
     # EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
     #                         end='2017-05', offset_alias='1M', projection='EPSG:4326')
-    EXTENT_IDX.update_bounds(product_name='ls8_nbar_albers', to_time='2018-06-06')
+    EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
+    EXTENT_IDX.store_bounds(product_name='ls8_nbar_scene', projection='EPSG:4326')
