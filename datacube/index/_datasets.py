@@ -560,16 +560,12 @@ class DatasetResource(object):
     def _try_add(self, dataset):
         was_inserted = False
 
-        product = self.types.get_by_name(dataset.type.name)
-        if product is None:
-            _LOG.warning('Adding product "%s" as it doesn\'t exist.', dataset.type.name)
-            product = self.types.add(dataset.type)
         if dataset.sources is None:
             raise ValueError("Dataset has missing (None) sources. Was this loaded without include_sources=True?")
 
         with self._db.begin() as transaction:
             try:
-                was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, product.id)
+                was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
 
                 for classifier, source_dataset in dataset.sources.items():
                     transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
