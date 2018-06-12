@@ -112,3 +112,63 @@ DATASET_SOURCE = Table(
     PrimaryKeyConstraint('dataset_ref', 'classifier'),
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),
 )
+
+# Metadata for spatial extents.
+EXTENT_META = Table(
+    'extent_meta', _core.METADATA,
+    Column('id', SmallInteger, primary_key=True, autoincrement=True),
+    Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), nullable=False),
+
+    # The start and end times for period index for periodic extents
+    Column('start', DateTime(timezone=True), nullable=False),
+    Column('end', DateTime(timezone=True), nullable=False),
+
+    # Python Pandas library style offset alias string indicating the length of each period
+    Column('offset_alias', String, nullable=False),
+
+    # The projection string
+    Column('crs', String, nullable=True),
+
+    # When it was added and by whom.
+    Column('time_added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', sql.PGNAME, server_default=func.current_user(), nullable=False),
+
+    UniqueConstraint('dataset_type_ref', 'offset_alias')
+)
+
+
+# The spatial extent geometry for various time periods. Refer to extent_meta table to
+# obtain length of time period.
+EXTENT = Table(
+    'extent', _core.METADATA,
+    Column('id', postgres.UUID(as_uuid=True), primary_key=True),
+    Column('extent_meta_ref', None, ForeignKey(EXTENT_META.c.id), nullable=False),
+
+    # The start time of this period
+    Column('start', DateTime(timezone=True), nullable=False),
+
+    # The spatial extent geometry
+    Column('geometry', postgres.JSONB, nullable=True),
+
+    UniqueConstraint('extent_meta_ref', 'start')
+)
+
+# Time min/max and rectangular spatial bounds for products
+RANGES = Table(
+    'ranges', _core.METADATA,
+    Column('id', SmallInteger, primary_key=True, autoincrement=True),
+    Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), nullable=False),
+
+    # The time min and max at the time indicated by 'time_added' field for the product
+    Column('time_min', DateTime(timezone=True), nullable=True),
+    Column('time_max', DateTime(timezone=True), nullable=True),
+
+    # The rectangular spatial bounds and the crs projection used at the time
+    # indicated by 'time_added' field for the product
+    Column('bounds', postgres.JSONB, nullable=True),
+    Column('crs', String, nullable=True),
+
+    # When it was added and by whom.
+    Column('time_added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', sql.PGNAME, server_default=func.current_user(), nullable=False)
+)
