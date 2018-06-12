@@ -52,7 +52,7 @@ class ExtentMetadata(object):
         # Create extent_meta table object
         self._engine = create_engine(index.url, poolclass=NullPool, client_encoding='utf8')
         meta = MetaData(self._engine, schema=SCHEMA_NAME)
-        meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'product_bounds'], schema=SCHEMA_NAME)
+        meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'ranges'], schema=SCHEMA_NAME)
         self._extent_meta_table = meta.tables[SCHEMA_NAME + '.extent_meta']
 
         # Load metadata

@@ -20,9 +20,10 @@ with open('db_extent_cfg.yaml', 'r') as stream:
 METADATA = EXTENT_IDX.metadata
 for product in PRODUCTS:
     # Process product-bounds
-    if EXTENT_IDX.get_bounds(product):
+    try:
+        EXTENT_IDX.get_bounds(product)
         EXTENT_UPLOAD.update_bounds(product_name=product, to_time=TO_TIME)
-    else:
+    except KeyError:
         EXTENT_UPLOAD.store_bounds(product, projection='EPSG:4326')
 
     # Process product-extents
@@ -38,7 +39,7 @@ for product in PRODUCTS:
         EXTENT_UPLOAD.store_extent(product_name=product, start=start, end=end,
                                    offset_alias='1Y', projection=product_meta['crs'])
     else:
-        EXTENT_UPLOAD.store_extent(product_name=product, start=bounds['start'], end=bounds['end'],
+        EXTENT_UPLOAD.store_extent(product_name=product, start=bounds['time_min'], end=bounds['time_max'],
                                    offset_alias='1Y', projection=bounds['crs'])
 
     # Extents for monthly durations
@@ -49,16 +50,16 @@ for product in PRODUCTS:
         EXTENT_UPLOAD.store_extent(product_name=product, start=start, end=end,
                                    offset_alias='1M', projection=product_meta['crs'])
     else:
-        EXTENT_UPLOAD.store_extent(product_name=product, start=bounds['start'], end=bounds['end'],
+        EXTENT_UPLOAD.store_extent(product_name=product, start=bounds['time_min'], end=bounds['time_max'],
                                    offset_alias='1M', projection=bounds['crs'])
 
     # Extents for daily durations
-    product_meta = METADATA.get((dataset_type_ref, '1D'))
-    if product_meta:
-        end = parse_time(TO_TIME)
-        start = product_meta['end']
-        EXTENT_UPLOAD.store_extent(product_name=product, start=start, end=end,
-                                   offset_alias='1D', projection=product_meta['crs'])
-    else:
-        EXTENT_UPLOAD.store_extent(product_name=product, start=bounds['start'], end=bounds['end'],
-                                   offset_alias='1D', projection=bounds['crs'])
+    # product_meta = METADATA.get((dataset_type_ref, '1D'))
+    # if product_meta:
+    #     end = parse_time(TO_TIME)
+    #     start = product_meta['end']
+    #     EXTENT_UPLOAD.store_extent(product_name=product, start=start, end=end,
+    #                                offset_alias='1D', projection=product_meta['crs'])
+    # else:
+    #     EXTENT_UPLOAD.store_extent(product_name=product, start=bounds['start'], end=bounds['end'],
+    #                                offset_alias='1D', projection=bounds['crs'])
