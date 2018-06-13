@@ -656,12 +656,13 @@ class PostgresDbAPI(object):
             METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
         ).first()
 
-    def add_dataset_type(self,
-                         name,
-                         metadata,
-                         metadata_type_id,
-                         search_fields,
-                         definition, concurrently=True):
+    def insert_dataset_type(self,
+                            name,
+                            metadata,
+                            metadata_type_id,
+                            search_fields,
+                            definition,
+                            concurrently=True):
 
         res = self._connection.execute(
             DATASET_TYPE.insert().values(
@@ -714,7 +715,7 @@ class PostgresDbAPI(object):
                                         rebuild_view=True)
         return type_id
 
-    def add_metadata_type(self, name, definition, concurrently=False):
+    def insert_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(
             METADATA_TYPE.insert().values(
                 name=name,
