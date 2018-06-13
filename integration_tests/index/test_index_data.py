@@ -305,14 +305,20 @@ def test_index_dataset_with_location(index, default_metadata_type):
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
 
-    # Ingesting with a new path should add the second one too.
+    # Indexing with a new path should NOT add the second one.
     dataset.uris = [second_file.as_uri()]
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset.id)
-    assert len(locations) == 2
+    assert len(locations) == 1
+
+    # Add location manually instead
+    index.datasets.add_location(dataset.id, second_file.as_uri())
+    stored = index.datasets.get(dataset.id)
+    assert len(stored.uris) == 2
+
     # Newest to oldest.
-    assert locations == [second_file.as_uri(), first_file.as_uri()]
+    assert stored.uris == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
     assert stored.local_path == Path(second_file)
 
