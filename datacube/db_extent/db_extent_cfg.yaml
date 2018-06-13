@@ -1,1 +1,17 @@
 product_names: ['ls8_nbar_scene', 'ls8_nbar_albers']
+crs: 'EPSG:4326'
+
+# datacube that will store extents and ranges
+datacube:
+  hostname: 'agdcdev-db.nci.org.au'
+  database: 'datacube'
+  port: '6432'
+  username: 'aj9439'
+
+# datacube that contains the datasets for extent and
+# ranges computation if different from datacube above
+datacube-from:
+  hostname: 'agdc-db.nci.org.au'
+  database: 'datacube'
+  port: '6432'
+  username: 'aj9439'

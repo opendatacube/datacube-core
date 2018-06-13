@@ -923,30 +923,46 @@ class PostgresDbAPI(object):
 
     def get_db_extent(self, dataset_type_ref, start, offset_alias):
         """
-        Extract and return extent information corresponding to dataset type, start, and offset_alias
+        Extract and return extent information corresponding to dataset type, start, and offset_alias.
+        The start time and db_extent.start are casted to date types during retrieval.
         :param dataset_type_ref: dataset type id
         :param datetime.datetime start: datetime representation of start timestamp
         :param offset_alias: pandas style period string
         :return: 'geometry' field if a database record exits otherwise None
         """
+        from datetime import datetime, timezone
+        from pandas import Timestamp
+        from sqlalchemy import DATE
 
-        def compute_uuid():
+        def _parse_date(time_stamp):
             """
-            ToDo: This may need refactoring
-            compute the id (i.e. uuid) from dataset_type_ref, start, and offset
-            :return UUID: a uuid reflecting a hash value from dataset_type id, start timestamp, and offset_alias
-            """
-            name_space = uuid.UUID('{' + format(2 ** 127 + dataset_type_ref, 'x') + '}')
-            start_time = str(start.year) + str(start.month) + str(start.day)
-            return uuid.uuid3(name_space, start_time + offset_alias)
+               Parses a time representation into a datetime object with year, month, day values and timezone
+               :param time_stamp: A time value
+               :return datetime: datetime representation of given time value
+               """
+            if not isinstance(time_stamp, datetime):
+                t = Timestamp(time_stamp)
+                time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
+            if not time_stamp.tzinfo:
+                system_tz = datetime.now(timezone.utc).astimezone().tzinfo
+                return time_stamp.replace(tzinfo=system_tz)
+            return time_stamp
 
-        # compute the id (i.e. uuid) from dataset_type_ref, start, and offset
-        extent_uuid = compute_uuid()
+        # Get extent metadata
+        metadata = self.get_db_extent_meta(dataset_type_ref, offset_alias)
+        if not bool(metadata):
+            return None
+
+        start = _parse_date(start)
         res = self._connection.execute(
             select([
                 EXTENT.c.geometry
-            ]).where(EXTENT.c.id == extent_uuid.hex)
-        ).fetchone()
+            ]).where(
+                and_(
+                    EXTENT.c.extent_meta_ref == metadata['id'],
+                    cast(EXTENT.c.start, DATE) == start.date(),
+                )
+            )).fetchone()
         return res['geometry'] if res else None
 
     def get_ranges(self, dataset_type_ref):
