@@ -253,15 +253,25 @@ class DatasetResource(object):
 
         return dataset
 
-    def _ensure_new_locations(self, dataset, existing):
-        new_uris = set(dataset.uris) - set(existing.uris)
-        if new_uris:
-            for uri in new_uris:
-                # We have to do each in separate transactions because the method catches exceptions,
-                # which will invalidate the transaction.
-                # We probably want to do so anyway, as they are independently valid.
-                with self._db.begin() as transaction:
-                    transaction.ensure_dataset_locations(dataset.id, [uri] if uri else None)
+    def _ensure_new_locations(self, dataset, existing=None, transaction=None):
+        new_uris = set(dataset.uris)
+        if existing is not None:
+            new_uris -= set(existing.uris)
+        new_uris -= set([None])
+
+        def safe_insert_one(uri, transaction):
+            try:
+                transaction.insert_dataset_location(dataset.id, uri)
+            except DuplicateRecordError as e:
+                return False
+            return True
+
+        for uri in new_uris:
+            if transaction is None:
+                with self._db.begin() as tr:
+                    safe_insert_one(uri, tr)
+            else:
+                safe_insert_one(uri, transaction)
 
     def archive(self, ids):
         """
@@ -354,7 +364,7 @@ class DatasetResource(object):
 
         with self._db.connect() as connection:
             try:
-                connection.ensure_dataset_locations(id_, [uri])
+                connection.insert_dataset_location(id_, uri)
                 return True
             except DuplicateRecordError:
                 return False
@@ -563,7 +573,7 @@ class DatasetResource(object):
                 # if insertion fails we'll try updating location later
                 # if insertion succeeds the location bit can't possibly fail
                 if dataset.uris:
-                    transaction.ensure_dataset_locations(dataset.id, dataset.uris)
+                    self._ensure_new_locations(dataset, transaction=transaction)
             except DuplicateRecordError as e:
                 _LOG.warning(str(e))
         return was_inserted

@@ -184,7 +184,7 @@ class MockDb(object):
     def get_locations(self, dataset):
         return ['file:xxx']
 
-    def ensure_dataset_locations(self, *args, **kwargs):
+    def insert_dataset_location(self, *args, **kwargs):
         return
 
     def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):

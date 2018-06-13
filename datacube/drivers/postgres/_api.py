@@ -255,27 +255,29 @@ class PostgresDbAPI(object):
         )
         return res.rowcount > 0
 
-    def ensure_dataset_locations(self, dataset_id, uris):
+    def insert_dataset_location(self, dataset_id, uri):
         """
         Add a location to a dataset if it is not already recorded.
+
+        raises `DuplicateRecordError` dataset has this location recorded in the DB.
+
         :type dataset_id: str or uuid.UUID
-        :type uris: list[str]
+        :type uri: str
         """
 
-        for uri in uris:
-            scheme, body = _split_uri(uri)
+        scheme, body = _split_uri(uri)
 
-            try:
-                self._connection.execute(
-                    DATASET_LOCATION.insert(),
-                    dataset_ref=dataset_id,
-                    uri_scheme=scheme,
-                    uri_body=body,
-                )
-            except IntegrityError as e:
-                if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                    raise DuplicateRecordError('Location already exists: %s' % uri)
-                raise
+        try:
+            self._connection.execute(
+                DATASET_LOCATION.insert(),
+                dataset_ref=dataset_id,
+                uri_scheme=scheme,
+                uri_body=body,
+            )
+        except IntegrityError as e:
+            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
+                raise DuplicateRecordError('Location already exists: %s' % uri)
+            raise
 
     def contains_dataset(self, dataset_id):
         return bool(
