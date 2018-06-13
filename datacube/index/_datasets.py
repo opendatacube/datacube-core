@@ -117,9 +117,6 @@ class DatasetResource(object):
 
         :rtype: Dataset
         """
-        if 'skip_sources' in kwargs and kwargs['skip_sources']:
-            warnings.warn('"skip_sources" is deprecated, use "sources_policy=\'skip\'"', DeprecationWarning)
-            sources_policy = 'skip'
         self._add_sources(dataset, sources_policy)
 
         sources_tmp = dataset.metadata.sources
