@@ -135,14 +135,6 @@ class DatasetResource(object):
                         jsonify_document(dataset.metadata_doc),
                         'Dataset {}'.format(dataset.id)
                     )
-
-                # reinsert attempt? try updating the location
-                if dataset.uris:
-                    try:
-                        with self._db.begin() as transaction:
-                            transaction.ensure_dataset_locations(dataset.id, dataset.uris)
-                    except DuplicateRecordError as e:
-                        _LOG.warning(str(e))
         finally:
             dataset.metadata.sources = sources_tmp
 
