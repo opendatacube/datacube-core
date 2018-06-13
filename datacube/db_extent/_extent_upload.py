@@ -295,10 +295,12 @@ class ExtentUpload(object):
             extent_meta_row = self._get_extent_meta_row(dataset_type_ref, offset_alias)
             if extent_meta_row:
                 if start < extent_meta_row['start'] or end > extent_meta_row['end']:
+                    new_start = start if start < extent_meta_row['start'] else extent_meta_row['start']
+                    new_end = end if end > extent_meta_row['end'] else extent_meta_row['end']
                     # Got to update meta data
                     update = self._extent_meta_table.update(). \
                         where(self._extent_meta_table.c.id == extent_meta_row['id']). \
-                        values(start=start, end=end, crs=projection)
+                        values(start=new_start, end=new_end, crs=projection)
                     conn.execute(update)
             else:
                 # insert a new meta entry
@@ -480,13 +482,13 @@ class ExtentUpload(object):
         # Retrieve the current bounds record
         bounds = ExtentIndex(datacube_index=self._extent_index).get_bounds(product_name)
         if bounds:
-            from_time = bounds['end']
+            from_time = bounds['time_max']
             if from_time > to_time:
                 return
             dc = self._loading_datacube
             datasets = peek_generator(dc.find_datasets_lazy(product=product_name, time=(from_time, to_time)))
             if datasets:
-                old_lower = bounds['start']
+                old_lower = bounds['time_min']
                 bds = json.loads(bounds['bounds'])
                 old_bounds = BoundingBox(left=bds['left'], bottom=bds['bottom'], right=bds['right'], top=bds['top'])
                 _, new_upper, new_bounds = ExtentUpload._compute_bounds(datasets,
