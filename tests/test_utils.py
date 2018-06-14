@@ -6,6 +6,7 @@ Test date sequence generation functions as used by statistics apps
 import os
 import string
 
+from types import SimpleNamespace
 import pytest
 import rasterio
 from dateutil.parser import parse
@@ -22,7 +23,7 @@ from datacube.utils import without_lineage_sources, map_with_lookahead, read_doc
 from datacube.utils import mk_part_uri, get_part_from_uri
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
-from datacube.model.utils import xr_apply
+from datacube.model.utils import xr_apply, traverse_datasets
 from datacube.model import MetadataType
 
 from .util import mk_sample_product
@@ -309,3 +310,55 @@ def test_xr_apply():
     assert dst.dtype.name == 'uint8'
     assert dst.shape == src.shape
     assert dst.values.tolist() == [0+1, 1+2, 2+3]
+
+
+def test_traverse_datasets():
+    """
+      A -> B
+      |    |
+      |    v
+      +--> C -> D
+      |
+      +--> E
+    """
+    def node(name, **kwargs):
+        return SimpleNamespace(id=name, sources=kwargs)
+
+    D = node('D')
+    E = node('E')
+    C = node('C', cd=D)
+    B = node('B', bc=C)
+    A = node('A', ab=B, ac=C, ae=E)
+
+    def visitor(node, name=None, depth=0, out=None):
+        s = '{}:{}:{:d}'.format(node.id, name if name else '..', depth)
+        out.append(s)
+
+    with pytest.raises(ValueError):
+        traverse_datasets(A, visitor, mode='not-a-real-mode')
+
+    expect_preorder = '''
+A:..:0
+B:ab:1
+C:bc:2
+D:cd:3
+C:ac:1
+D:cd:2
+E:ae:1
+'''.lstrip().rstrip()
+
+    expect_postorder = '''
+D:cd:3
+C:bc:2
+B:ab:1
+D:cd:2
+C:ac:1
+E:ae:1
+A:..:0
+'''.lstrip().rstrip()
+
+    for mode, expect in zip(['pre-order', 'post-order'],
+                            [expect_preorder, expect_postorder]):
+        out = []
+        traverse_datasets(A, visitor, mode=mode, out=out)
+        assert '\n'.join(out) == expect

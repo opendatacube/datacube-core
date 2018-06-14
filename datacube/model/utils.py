@@ -234,3 +234,50 @@ def merge(a, b, path=None):
         else:
             a[key] = b[key]
     return a
+
+
+def traverse_datasets(ds, cbk, mode='post-order', **kwargs):
+    """Perform depth first traversal of lineage tree. Note that we assume it's a
+    tree, even though it might be a DAG (Directed Acyclic Graph). If it is a
+    DAG it will be treated as if it was a tree with some nodes appearing twice or more
+    times in this tree.
+
+    Order of traversal of nodes on the same level is in default sort order for
+    strings (assuming your keys are strings, which is the case for Dataset
+    object). NOTE: this could be problematic as order might be dependent on
+    locale settings.
+
+    If given a graph with cycles this will blow the stack, so don't do that.
+
+    ds -- Dataset with lineage to iterate over, but really anything that has
+          `sources` attribute which contains a dict from string to the same
+          thing.
+
+    cbk :: (Dataset, depth=0, name=None, **kwargs) -> None
+
+    mode: post-order | pre-order
+
+    mode=post-order -- Visit all lineage first, only then visit top level
+    mode=pre-order --  Visit top level first, only then visit lineage
+
+    """
+
+    def visit_pre_order(ds, func, depth=0, name=None):
+        func(ds, depth=depth, name=name, **kwargs)
+
+        for k in sorted(ds.sources):
+            visit_pre_order(ds.sources[k], func, depth=depth+1, name=k)
+
+    def visit_post_order(ds, func, depth=0, name=None):
+        for k in sorted(ds.sources):
+            visit_post_order(ds.sources[k], func, depth=depth+1, name=k)
+
+        func(ds, depth=depth, name=name, **kwargs)
+
+    proc = {'post-order': visit_post_order,
+            'pre-order': visit_pre_order}.get(mode, None)
+
+    if proc is None:
+        raise ValueError('Unsupported traversal mode: {}'.format(mode))
+
+    proc(ds, cbk)
