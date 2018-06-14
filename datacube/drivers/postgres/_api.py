@@ -908,7 +908,8 @@ class PostgresDbAPI(object):
         """
         Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
         :param dataset_type_ref: dataset type id
-        :param str offset_alias: Pandas style offset period string
+        :param str offset_alias: Pandas style offset period string. for example '1M' indicate a month,
+                                 '1Y' indicates a year, '1D' indicates a day.
         :return: single extent_meta row matching the parameters
         """
         return self._connection.execute(
@@ -927,7 +928,8 @@ class PostgresDbAPI(object):
         The start time and db_extent.start are casted to date types during retrieval.
         :param dataset_type_ref: dataset type id
         :param datetime.datetime start: datetime representation of start timestamp
-        :param offset_alias: pandas style period string
+        :param offset_alias: pandas style period string, for example '1M' indicate a month,
+                            '1Y' indicates a year, '1D' indicates a day.
         :return: 'geometry' field if a database record exits otherwise None
         """
         from datetime import datetime, timezone
