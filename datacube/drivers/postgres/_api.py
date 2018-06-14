@@ -61,7 +61,8 @@ _DATASET_SELECT_FIELDS = (
                 SELECTED_DATASET_LOCATION.c.archived == None
             )
         ).order_by(
-            SELECTED_DATASET_LOCATION.c.added.desc()
+            SELECTED_DATASET_LOCATION.c.added.desc(),
+            SELECTED_DATASET_LOCATION.c.id.desc()
         ).label('uris')
     ).label('uris')
 )
@@ -834,7 +835,8 @@ class PostgresDbAPI(object):
                 ]).where(
                     and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived == None)
                 ).order_by(
-                    DATASET_LOCATION.c.added.desc()
+                    DATASET_LOCATION.c.added.desc(),
+                    DATASET_LOCATION.c.id.desc()
                 )
             ).fetchall()
         ]

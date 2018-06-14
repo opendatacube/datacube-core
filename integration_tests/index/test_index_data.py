@@ -342,7 +342,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     locations = index.datasets.get_locations(dataset.id)
     assert locations == [second_file.as_uri(), first_file.as_uri()]
 
-    # Ingestion again without location should have no effect.
+    # Indexing again without location should have no effect.
     dataset.uri = None
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
@@ -352,6 +352,22 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert locations == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
     assert stored.local_path == Path(second_file)
+
+    # Check order of uris is preserved when indexing with more than one
+    second_ds_doc = copy.deepcopy(_telemetry_dataset)
+    second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a589'
+    index.datasets.add(Dataset(type_, second_ds_doc, uris=['file:///a', 'file:///b'], sources={}))
+
+    # test order using get_locations function
+    assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///a', 'file:///b']
+
+    # test order using datasets.get(), it has custom query as it turns out
+    assert index.datasets.get(second_ds_doc['id']).uris == ['file:///a', 'file:///b']
+
+    # test update, this should prepend file:///c, file:///d to the existing list
+    index.datasets.update(Dataset(type_, second_ds_doc, uris=['file:///a', 'file:///c', 'file:///d'], sources={}))
+    assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///c', 'file:///d', 'file:///a', 'file:///b']
+    assert index.datasets.get(second_ds_doc['id']).uris == ['file:///c', 'file:///d', 'file:///a', 'file:///b']
 
     # Ability to get datasets for a location
     # Add a second dataset with a different location (to catch lack of joins, filtering etc)

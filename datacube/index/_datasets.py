@@ -254,10 +254,8 @@ class DatasetResource(object):
         return dataset
 
     def _ensure_new_locations(self, dataset, existing=None, transaction=None):
-        new_uris = set(dataset.uris)
-        if existing is not None:
-            new_uris -= set(existing.uris)
-        new_uris -= set([None])
+        skip_set = set([None] + existing.uris if existing is not None else [])
+        new_uris = [uri for uri in dataset.uris if uri not in skip_set]
 
         def safe_insert_one(uri, transaction):
             try:
@@ -266,7 +264,9 @@ class DatasetResource(object):
                 return False
             return True
 
-        for uri in new_uris:
+        # process in reverse order, since every add is essentially append to
+        # front of a stack
+        for uri in new_uris[::-1]:
             if transaction is None:
                 with self._db.begin() as tr:
                     safe_insert_one(uri, tr)
@@ -427,9 +427,11 @@ class DatasetResource(object):
 
         :param bool full_info: Include all available fields
         """
-        uris = dataset_res.uris
-        if uris:
-            uris = [uri for uri in uris if uri] if uris else []
+        if dataset_res.uris:
+            uris = [uri for uri in dataset_res.uris if uri]
+        else:
+            uris = []
+
         return Dataset(
             type_=self.types.get(dataset_res.dataset_type_ref),
             metadata_doc=dataset_res.metadata,
