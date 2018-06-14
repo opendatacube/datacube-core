@@ -11,6 +11,11 @@ from datacube.model import DatasetType
 from datacube.utils import InvalidDocException, jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
+from datacube.utils.geometry import CRS, Geometry
+from datetime import datetime, timezone
+from pandas import Timestamp, PeriodIndex
+import warnings
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -383,3 +388,88 @@ class ProductResource(object):
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
             id_=query_row['id'],
         )
+
+    def extent(self, dataset_type_id, start, offset_alias, projection=None):
+        """
+        A query of extent specified by dataset_type_id, start, and offset
+        :param dataset_type_id: The dataset_type_id
+        :param start: An object indicating the start time stamp preferably of type datetime
+        :param offset_alias: A pandas style offset alias string
+        :param projection: projection string of the request
+        :return datacube.utils.Geometry: total extent
+        """
+
+        start = _parse_date(start)
+        with self._db.connect() as connection:
+            result = connection.get_db_extent(dataset_type_id, start, offset_alias)
+            # Project to the requested projection
+            metadata = connection.get_db_extent_meta(dataset_type_id, offset_alias)
+            # Create a Geometry object
+            geom = Geometry(result, CRS(metadata['crs']))
+            # Project to the requested projection and return
+            return geom.to_crs(CRS(projection)) if projection else geom
+
+    def extent_periodic(self, dataset_type_id, start, end, offset_alias, projection=None):
+        """
+        Return periodic extents that correspond to a dataset_type id. It returns all the extent records
+        that is present within start and end specified.
+        :param dataset_type_id: dataset_type id
+        :param start: a time indicating the start of a sequence of months ( the first whole month on
+        or after this date and within the given time range will be the first month )
+        :param end: a time indicating the end of the sequence ( the last whole month on or before this
+        date and within the given time range will be the last month of the sequence
+        :param offset_alias: Pandas style offset_alias
+        :param projection: The requested projection
+        :return: generator of extents
+        """
+
+        # Parse the time arguments
+        start = _parse_date(start)
+        end = _parse_date(end)
+
+        # check whether extents exists as per extent_meta table
+        with self._db.connect() as connection:
+            metadata = connection.get_db_extent_meta(dataset_type_id, offset_alias)
+            if not offset_alias == metadata['offset_alias']:
+                raise ValueError('There is no extent_meta record for this offset_alias')
+            if start < metadata['start']:
+                start = metadata['start']
+            if end > metadata['end']:
+                end = metadata['end']
+
+        if start > end:
+            return
+
+        # Compute the period index
+        dti = PeriodIndex(start=start, end=end, freq=offset_alias)
+        for period in dti:
+            yield {'start': period.start_time, 'extent': self.extent(start=period.start_time,
+                                                                     offset_alias=offset_alias,
+                                                                     dataset_type_id=dataset_type_id,
+                                                                     projection=projection)}
+
+    def ranges(self, product_name):
+        """
+        Get ranges record from the database relevant to the product. It returns information
+        such as time_min, time_max, and spatial bounds
+        :param str product_name: The name of the product
+        :return: ranges record as stored in the database
+        """
+        dataset_type_ref = self.get_by_name(product_name).id
+        with self._db.connect() as connection:
+            return connection.get_ranges(dataset_type_ref)
+
+
+def _parse_date(time_stamp):
+    """
+       Parses a time representation into a datetime object with year, month, day values and timezone
+       :param time_stamp: A time value
+       :return datetime: datetime representation of given time value
+       """
+    if not isinstance(time_stamp, datetime):
+        t = Timestamp(time_stamp)
+        time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
+    if not time_stamp.tzinfo:
+        system_tz = datetime.now(timezone.utc).astimezone().tzinfo
+        return time_stamp.replace(tzinfo=system_tz)
+    return time_stamp

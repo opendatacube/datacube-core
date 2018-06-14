@@ -118,6 +118,18 @@ def database_exists(engine):
     return has_schema(engine, engine)
 
 
+def has_extents_ranges(engine):
+    """
+    Check to see extent_meta, extent, and ranges tables are present in schema (specified by SCHEMA_NAME)
+    :param engine: sqlalchemy engine object
+    :return:
+    """
+    extent_exists = pg_exists(engine, schema_qualified('extent_meta'))
+    extent_meta_exists = pg_exists(engine, schema_qualified('extent'))
+    ranges_exists = pg_exists(engine, schema_qualified('ranges'))
+    return extent_exists and extent_meta_exists and ranges_exists
+
+
 def schema_is_latest(engine):
     """
     Over the lifetime of ODC there have been a couple of schema updates. For now we don't
@@ -134,7 +146,8 @@ def schema_is_latest(engine):
     has_dataset_source_update = not pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref'))
     has_uri_searches = pg_exists(engine, schema_qualified(location_first_index))
     has_dataset_location = pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
-    return has_dataset_source_update and has_uri_searches and has_dataset_location
+
+    return has_dataset_source_update and has_uri_searches and has_dataset_location and has_extents_ranges
 
 
 def update_schema(engine):
@@ -184,6 +197,22 @@ def update_schema(engine):
         commit;
         """.format(schema=SCHEMA_NAME))
         _LOG.info('Completed uri-search update')
+
+    # Create extent_meta, extent, and ranges tables if they don't exit
+    if not has_extents_ranges(engine):
+        _LOG.info('Creating extent_meta, extent, and ranges tables')
+        from ._schema import EXTENT_META, EXTENT, RANGES
+        with engine.connect() as conn:
+            trans = conn.begin()
+            try:
+                EXTENT_META.create(bind=conn)
+                EXTENT.create(bind=conn)
+                RANGES.create(bind=conn)
+                trans.commit()
+            except:
+                trans.rollback()
+                _LOG.info('Creating extent_meta, extent, and ranges tables failed')
+                raise
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
