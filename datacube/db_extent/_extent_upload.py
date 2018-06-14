@@ -272,7 +272,8 @@ class ExtentUpload(object):
     def store_extent(self, product_name, start, end, offset_alias=None, projection=None):
         """
         store product extents to the database for each time period indicated by
-        offset alias within the specified time range
+        offset alias within the specified time range. It updates the extent_meta and extent tables rather than
+        replacing the corresponding records so that there is no gaps along time that wasn't looked at.
         :param product_name: name of the product
         :param start: start time preferably in datetime type of extent computation and storage
         :param end: end time preferably in datetime type of extent computation and storage
@@ -294,14 +295,29 @@ class ExtentUpload(object):
             # Now we are ready to get the extent_metadata id
             extent_meta_row = self._get_extent_meta_row(dataset_type_ref, offset_alias)
             if extent_meta_row:
-                if start < extent_meta_row['start'] or end > extent_meta_row['end']:
-                    new_start = start if start < extent_meta_row['start'] else extent_meta_row['start']
-                    new_end = end if end > extent_meta_row['end'] else extent_meta_row['end']
-                    # Got to update meta data
-                    update = self._extent_meta_table.update(). \
-                        where(self._extent_meta_table.c.id == extent_meta_row['id']). \
-                        values(start=new_start, end=new_end, crs=projection)
-                    conn.execute(update)
+                # make sure there are no gaps from start to end in the database
+                # new_start_c and new_end_c are for computes
+                new_start_c = extent_meta_row['end'] if start > extent_meta_row['end'] else start
+                new_end_c = extent_meta_row['start'] if end < extent_meta_row['start'] else end
+
+                # new_start_d and new_end_d are for extent_meta table to update
+                new_start_d = min(new_start_c, extent_meta_row['start'])
+                new_end_d = max(new_end_c, extent_meta_row['end'])
+
+                # Got to update meta data
+                update = self._extent_meta_table.update(). \
+                    where(self._extent_meta_table.c.id == extent_meta_row['id']). \
+                    values(start=new_start_d, end=new_end_d, crs=projection)
+                conn.execute(update)
+
+                # We are pre-loading metadata so got to update those
+                self.metadata = ExtentMetadata(self._extent_index).items
+
+                conn.close()
+                # Time to insert/update new extent data
+                self._store_many(product_name=product_name, dataset_type_ref=dataset_type_ref,
+                                 start=new_start_c, end=new_end_c, offset_alias=offset_alias, projection=projection)
+
             else:
                 # insert a new meta entry
                 ins = self._extent_meta_table.insert().values(dataset_type_ref=dataset_type_ref,
@@ -309,13 +325,14 @@ class ExtentUpload(object):
                                                               offset_alias=offset_alias,
                                                               crs=projection)
                 conn.execute(ins)
-            # We are pre-loading metadata so got to update those
-            self.metadata = ExtentMetadata(self._extent_index).items
 
-            conn.close()
-            # Time to insert/update new extent data
-            self._store_many(product_name=product_name, dataset_type_ref=dataset_type_ref,
-                             start=start, end=end, offset_alias=offset_alias, projection=projection)
+                # We are pre-loading metadata so got to update those
+                self.metadata = ExtentMetadata(self._extent_index).items
+
+                conn.close()
+                # Time to insert/update new extent data
+                self._store_many(product_name=product_name, dataset_type_ref=dataset_type_ref,
+                                 start=start, end=end, offset_alias=offset_alias, projection=projection)
         else:
             raise KeyError("dataset_type_ref does not exist")
 
@@ -531,5 +548,5 @@ if __name__ == '__main__':
     #                         end='2013-05', offset_alias='1D', projection='EPSG:4326')
     # EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
     #                         end='2017-05', offset_alias='1M', projection='EPSG:4326')
-    EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
-    EXTENT_IDX.store_bounds(product_name='ls8_nbar_scene', projection='EPSG:4326')
+    # EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
+    # EXTENT_IDX.store_bounds(product_name='ls8_nbar_scene', projection='EPSG:4326')
