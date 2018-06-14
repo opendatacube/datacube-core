@@ -13,17 +13,17 @@ class extent_meta {
     offset_alias : postgres.JSONB
     crs : String
 }
-class product_bounds {
+class ranges {
     id : SmallInteger
     dataset_type_ref : dataset_type.id
-    start : Datetime
-    end : Datetime
+    time_min : Datetime
+    time_max : Datetime
     bounds : postgres.JSONB
     crs : String
 }
 class dataset_type
 
 dataset_type }-- extent_meta
-dataset_type -- product_bounds
+dataset_type -- ranges
 extent_meta }-- extent
 @enduml
