@@ -119,21 +119,16 @@ class DatasetResource(object):
         """
         self._add_sources(dataset, sources_policy)
 
-        sources_tmp = dataset.metadata.sources
-        dataset.metadata.sources = {}
-        try:
-            _LOG.info('Indexing %s', dataset.id)
+        _LOG.info('Indexing %s', dataset.id)
 
-            if not self._try_add(dataset):
-                existing = self.get(dataset.id)
-                if existing:
-                    check_doc_unchanged(
-                        existing.metadata_doc,
-                        jsonify_document(dataset.metadata_doc),
-                        'Dataset {}'.format(dataset.id)
-                    )
-        finally:
-            dataset.metadata.sources = sources_tmp
+        if not self._try_add(dataset):
+            existing = self.get(dataset.id)
+            if existing:
+                check_doc_unchanged(
+                    existing.metadata_doc_without_lineage(),
+                    jsonify_document(dataset.metadata_doc_without_lineage()),
+                    'Dataset {}'.format(dataset.id)
+                )
 
         return dataset
 
@@ -239,17 +234,12 @@ class DatasetResource(object):
         for offset, old_val, new_val in unsafe_changes:
             _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
-        sources_tmp = dataset.metadata.sources
-        dataset.metadata.sources = {}
-        try:
-            product = self.types.get_by_name(dataset.type.name)
-            with self._db.begin() as transaction:
-                if not transaction.update_dataset(dataset.metadata_doc, dataset.id, product.id):
-                    raise ValueError("Failed to update dataset %s..." % dataset.id)
+        product = self.types.get_by_name(dataset.type.name)
+        with self._db.begin() as transaction:
+            if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
+                raise ValueError("Failed to update dataset %s..." % dataset.id)
 
-            self._ensure_new_locations(dataset, existing)
-        finally:
-            dataset.metadata.sources = sources_tmp
+        self._ensure_new_locations(dataset, existing)
 
         return dataset
 
@@ -566,7 +556,9 @@ class DatasetResource(object):
 
         with self._db.begin() as transaction:
             try:
-                was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
+                was_inserted = transaction.insert_dataset(dataset.metadata_doc_without_lineage(),
+                                                          dataset.id,
+                                                          dataset.type.id)
 
                 for classifier, source_dataset in dataset.sources.items():
                     transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
