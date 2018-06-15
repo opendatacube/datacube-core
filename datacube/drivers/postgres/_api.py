@@ -1,7 +1,7 @@
 # coding=utf-8
 
 # We often have one-arg-per column, so these checks aren't so useful.
-# pylint: disable=too-many-arguments,too-many-public-methods
+# pylint: disable=too-many-arguments,too-many-public-methods,too-many-lines
 
 # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
 # pylint: disable=singleton-comparison
