@@ -907,6 +907,7 @@ class PostgresDbAPI(object):
     def get_db_extent_meta(self, dataset_type_ref, offset_alias):
         """
         Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
+
         :param dataset_type_ref: dataset type id
         :param str offset_alias: Pandas style offset period string. for example '1M' indicate a month,
                                  '1Y' indicates a year, '1D' indicates a day.
@@ -925,7 +926,8 @@ class PostgresDbAPI(object):
     def get_db_extent(self, dataset_type_ref, start, offset_alias):
         """
         Extract and return extent information corresponding to dataset type, start, and offset_alias.
-        The start time and db_extent.start are casted to date types during retrieval.
+        The start time and product_extent.start are casted to date types during retrieval.
+
         :param dataset_type_ref: dataset type id
         :param datetime.datetime start: datetime representation of start timestamp
         :param offset_alias: pandas style period string, for example '1M' indicate a month,
