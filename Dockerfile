@@ -51,6 +51,10 @@ RUN mkdir -p /opt/odc \
     && mv $APPDIR/docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh \
     && rm -rf $APPDIR
 
+# Fix an issue with libcurl...
+RUN mkdir -p /etc/pki/tls/certs \
+    && ln -s /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt;
+
 # Set up an entrypoint that drops environment variables into the config file
 ENTRYPOINT ["docker-entrypoint.sh"]
 
