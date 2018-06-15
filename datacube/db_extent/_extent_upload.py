@@ -41,6 +41,7 @@ def extent_per_period(dc, product, period, projection=None):
     """
     Computes the extent for a given period. If projection parameter is absent
     no projection is applied
+
     :param Datacube dc: A Datacube object
     :param str product: product name
     :param Period period: A pandas period object
@@ -66,6 +67,7 @@ class ComputeChunk(object):
         """
         Perform initialization of product variable and variables required
         for the recreation of datacube objects. Intended for multi-processes.
+
         :param str product: name of the product
         :param hostname: Host name of the datacube postgres db to extract extents
         :param port: port of the datacube postgres db to extract extents
@@ -87,6 +89,7 @@ class ComputeChunk(object):
         """
         Creates a Datacube object from host, database info, and user info. Datacube objects needed
         to be created per process (They cannot be pickled!)
+
         :return Datacube: A Datacube object
         """
         db = PostgresDb.create(hostname=self._hostname, port=self._port,
@@ -97,6 +100,7 @@ class ComputeChunk(object):
     def __call__(self, period):
         """
         Implements an extent query to be executed by a multiprocess
+
         :param Period period: a pandas period object specifying time range
         :return: union of extents as computed by shapely cascaded union
         """
@@ -149,6 +153,7 @@ class ExtentUpload(object):
         """
         Creates a Datacube object from host, database info, and user info. Datacube objects needed
         to be created per process
+
         :return: Datacube object
         """
         db = PostgresDb.create(hostname=self._hostname, port=self._port,
@@ -159,6 +164,7 @@ class ExtentUpload(object):
     def _get_extent_meta_row(self, dataset_type_ref, offset_alias):
         """
         Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
+
         :param dataset_type_ref: dataset type id
         :param str offset_alias: Pandas style offset period string
         :return:
@@ -172,6 +178,7 @@ class ExtentUpload(object):
     def _get_extent_row(self, dataset_type_ref, start, offset_alias):
         """
         Extract and return extent information corresponding to dataset type, start, and offset_alias
+
         :param dataset_type_ref: dataset type id
         :param datetime start: datetime representation of start timestamp
         :param offset_alias: pandas style period string
@@ -195,6 +202,7 @@ class ExtentUpload(object):
     def _do_insert_query(self, dataset_type_ref, start, offset_alias, extent):
         """
         Insert or Update an extent record corresponding to dataset_type id, start time, and offset
+
         :param dataset_type_ref: dataset_type id
         :param datetime start: start time
         :param str offset_alias: pandas style offset alias string
@@ -230,6 +238,7 @@ class ExtentUpload(object):
         Store a record in extent table corresponding to a given (period, offset_alias)
         using multiprocessing pools. Each process execute extent compute corresponding to a offset
         specified by offset_pool
+
         :param str product_name: Name of a product
         :param dataset_type_ref: dataset_type id of the product
         :param Period period: A pandas style Period object holding a time range
@@ -257,6 +266,7 @@ class ExtentUpload(object):
     def _store_many(self, product_name, dataset_type_ref, start, end, offset_alias, projection=None):
         """
         Store extent records correspond to each period of length offset within start and end
+
         :param str product_name: product name
         :param dataset_type_ref: product_type id
         :param datetime start: Start time of sequence of offsets
@@ -275,6 +285,7 @@ class ExtentUpload(object):
         store product extents to the database for each time period indicated by
         offset alias within the specified time range. It updates the extent_meta and extent tables rather than
         replacing the corresponding records so that there is no gaps along time that wasn't looked at.
+
         :param product_name: name of the product
         :param start: start time preferably in datetime type of extent computation and storage
         :param end: end time preferably in datetime type of extent computation and storage
@@ -342,6 +353,7 @@ class ExtentUpload(object):
         Store a record in the products_bounds table. It raises KeyError exception if product name is not
         found in the dataset_type table. The stored values are upper and lower bounds of time, axis aligned
         spacial bounds, and spacial projection used.
+
         :param datetime lower: The lower time bound
         :param datetime upper: The upper time bound
         :param BoundingBox bounds: The spacial bounds
@@ -375,6 +387,7 @@ class ExtentUpload(object):
     def _empty_box(bound):
         """
         Check whether the BoundingBox is empty
+
         :param BoundingBox bound: a BoundingBox
         :return bool:
         """
@@ -386,6 +399,7 @@ class ExtentUpload(object):
     def _bounds_union(bound1, bound2):
         """
         Computes the union of two given spacial bounds
+
         :param BoundingBox bound1: A axis aligned bound
         :param BoundingBox bound2: A axis aligned bound
         :return BoundingBox: The union of the given bounds
@@ -404,6 +418,7 @@ class ExtentUpload(object):
         """
         Use the given time period as a hint to find the bounds. If actual bounds falls outside the given
         time limits the values computed will not make sense
+
         :param str product: Product name
         :param tuple time_hints: A tuple containing the begin and end of a period
         :param str projection: A projection string
@@ -440,6 +455,7 @@ class ExtentUpload(object):
     def _compute_bounds(datasets, projection=None):
         """
         Computes the min, max time bounds and spacial bounds
+
         :param datasets: Non-empty list of datasets
         :param str projection: a projection string
         :return tuple: min time, max, time, and bounding box
@@ -471,6 +487,7 @@ class ExtentUpload(object):
         using dataset extents. If projection is not specified, it is assumed that CRS is constant product wide else
         spacial bounds computed may not make sense. It stores time bounds as well. It does not validate projection
         parameter
+
         :param product_name:
         :param projection:
         :return:
@@ -526,6 +543,7 @@ class ExtentUpload(object):
         Store a bounds record in the product_bounds table. It computes max, min bounds in the projected space
         using dataset extents. If projection is not specified, it is assumed that CRS is constant product wide else
         spacial bounds computed may not make sense. It stores time bounds as well
+
         :param str product_name: The name of the product
         :param projection: The projection to be used when computing bounds of extent
         """

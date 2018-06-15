@@ -392,16 +392,21 @@ class ProductResource(object):
     def extent(self, dataset_type_id, start, offset_alias, projection=None):
         """
         A query of extent specified by dataset_type_id, start, and offset
+
         :param dataset_type_id: The dataset_type_id
         :param start: An object indicating the start time stamp preferably of type datetime
         :param offset_alias: A pandas style offset alias string
         :param projection: projection string of the request
+
         :return datacube.utils.Geometry: total extent
         """
 
         start = _parse_date(start)
         with self._db.connect() as connection:
             result = connection.get_db_extent(dataset_type_id, start, offset_alias)
+            # if there is no extent record return None
+            if not bool(result):
+                return None
             # the crs string is in metadata
             metadata = connection.get_db_extent_meta(dataset_type_id, offset_alias)
             # Create a Geometry object
@@ -412,33 +417,44 @@ class ProductResource(object):
     def extent_periodic(self, dataset_type_id, start, end, offset_alias, projection=None):
         """
         Return periodic extents that correspond to a dataset_type id. It returns all the extent records
-        that is present within start and end specified.
+        that is present within start and end specified. Each extent item would have the structure
+        {'start', 'extent'} where 'start' indicates the start timestamp of the period and the 'extent'
+        indicates the extent geometry (a crs aware Geometry object).
+
         :param dataset_type_id: dataset_type id
-        :param start: a time indicating the start of a sequence of months ( the first whole month on
-        or after this date and within the given time range will be the first month )
-        :param end: a time indicating the end of the sequence ( the last whole month on or before this
-        date and within the given time range will be the last month of the sequence
+        :param start:
+            a time indicating the start of a sequence of months ( the first whole month on
+            or after this date and within the given time range will be the first month )
+        :param end:
+            a time indicating the end of the sequence ( the last whole month on or before this
+            date and within the given time range will be the last month of the sequence
         :param offset_alias: Pandas style offset_alias
         :param projection: The requested projection
+
         :return: generator of extents
         """
 
-        # Parse the time arguments
+        # Parse the time arguments and they would be timezone aware
         start = _parse_date(start)
         end = _parse_date(end)
+
+        if start > end:
+            return
 
         # check whether extents exists as per extent_meta table
         with self._db.connect() as connection:
             metadata = connection.get_db_extent_meta(dataset_type_id, offset_alias)
             if not offset_alias == metadata['offset_alias']:
                 raise ValueError('There is no extent_meta record for this offset_alias')
-            if start < metadata['start']:
-                start = metadata['start']
-            if end > metadata['end']:
-                end = metadata['end']
 
-        if start > end:
-            return
+            # make sure metadata['start'] and metadata['end] are timezone aware
+            metadata_start = _parse_date(metadata['start'])
+            metadata_end = _parse_date(metadata['end'])
+
+            if start < metadata_start:
+                start = metadata_start
+            if end > metadata_end:
+                end = metadata_end
 
         # Compute the period index
         dti = PeriodIndex(start=start, end=end, freq=offset_alias)
@@ -452,9 +468,11 @@ class ProductResource(object):
         """
         Get ranges record from the database relevant to the product. It returns information
         such as time_min, time_max, and spatial bounds
+
         :param str product_name: The name of the product
         :return: ranges record as stored in the database
         """
+
         dataset_type_ref = self.get_by_name(product_name).id
         with self._db.connect() as connection:
             return connection.get_ranges(dataset_type_ref)
@@ -462,10 +480,11 @@ class ProductResource(object):
 
 def _parse_date(time_stamp):
     """
-       Parses a time representation into a datetime object with year, month, day values and timezone
-       :param time_stamp: A time value
-       :return datetime: datetime representation of given time value
-       """
+    Parses a time representation into a datetime object with year, month, day values and timezone
+
+    :param time_stamp: A time value
+    :return datetime: datetime representation of given time value
+    """
     if not isinstance(time_stamp, datetime):
         t = Timestamp(time_stamp)
         time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
