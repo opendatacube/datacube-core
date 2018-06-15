@@ -12,6 +12,7 @@ API reference
    masking.rst
    analytics_engine.rst
    s3block.rst
+   dbextents.rst
 
 .. toctree::
    :hidden:

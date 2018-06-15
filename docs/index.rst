@@ -43,6 +43,7 @@ and  related data from multiple satellite and other acquisition systems.
    ops/prepare_scripts.rst
    ops/tools.rst
    ops/replication.rst
+   ops/product_extent.rst
 
 .. toctree::
    :maxdepth: 2

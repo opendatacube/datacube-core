@@ -110,15 +110,19 @@ class ExtentUpload(object):
     """
     Parses and executes queries to store and get various extent information from the database
     """
-    def __init__(self, hostname, port, database, username, extent_index):
+    def __init__(self, hostname, port, database, username, destination_index):
         """
+        Arguments specifying the source and destination databases to use.
+
         There are two sets of arguments: to re-create datacube object
         and an Index object linking to extent tables
+
         :param hostname: Host name of the datacube postgres db to extract extents
         :param port: port name of the datacube postgres db to extract extents
         :param database: database name of the datacube postgres db to extract extents
         :param username: user name of the datacube postgres db to extract extents
-        :param Index extent_index: datacube Index object linking to extent tables
+
+        :param Index destination_index: datacube Index where extents will be stored
         """
         # We need the following info for multi-processes to create Datacube objects
         self._hostname = hostname
@@ -127,12 +131,9 @@ class ExtentUpload(object):
         self._username = username
 
         # Access to tables
-        self._extent_index = extent_index
+        self._extent_index = destination_index
         from sqlalchemy.pool import NullPool
-        self._engine = create_engine(extent_index.url, poolclass=NullPool, client_encoding='utf8')
-        # self._engine = create_engine(extent_index.url, pool_recycle=POOL_RECYCLE_TIME_SEC,
-        #                              pool_pre_ping=True, client_encoding='utf8')
-        # self._conn = self._engine.connect()
+        self._engine = create_engine(destination_index.url, poolclass=NullPool, client_encoding='utf8')
         meta = MetaData(self._engine, schema=SCHEMA_NAME)
         meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'ranges'], schema=SCHEMA_NAME)
         self._extent_table = meta.tables[SCHEMA_NAME+'.extent']
@@ -141,7 +142,7 @@ class ExtentUpload(object):
         self._dataset_type_table = meta.tables[SCHEMA_NAME+'.dataset_type']
 
         # Metadata pre-loads
-        self.metadata = ExtentMetadata(extent_index).items
+        self.metadata = ExtentMetadata(destination_index).items
 
     @property
     def _loading_datacube(self):
@@ -541,7 +542,7 @@ if __name__ == '__main__':
     # Get the Connections to the databases
     EXTENT_DB = PostgresDb.create(hostname='agdcdev-db.nci.org.au', database='datacube', port=6432, username='aj9439')
     EXTENT_IDX = ExtentUpload(hostname='agdc-db.nci.org.au', database='datacube', port=6432,
-                              username='aj9439', extent_index=Index(EXTENT_DB))
+                              username='aj9439', destination_index=Index(EXTENT_DB))
 
     # load into extents table
     # EXTENT_IDX.store_extent(product_name='ls8_nbar_scene', start='2013-01',
