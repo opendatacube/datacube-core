@@ -392,10 +392,12 @@ class ProductResource(object):
     def extent(self, dataset_type_id, start, offset_alias, projection=None):
         """
         A query of extent specified by dataset_type_id, start, and offset
+
         :param dataset_type_id: The dataset_type_id
         :param start: An object indicating the start time stamp preferably of type datetime
         :param offset_alias: A pandas style offset alias string
         :param projection: projection string of the request
+
         :return datacube.utils.Geometry: total extent
         """
 
@@ -413,13 +415,17 @@ class ProductResource(object):
         """
         Return periodic extents that correspond to a dataset_type id. It returns all the extent records
         that is present within start and end specified.
+
         :param dataset_type_id: dataset_type id
-        :param start: a time indicating the start of a sequence of months ( the first whole month on
-        or after this date and within the given time range will be the first month )
-        :param end: a time indicating the end of the sequence ( the last whole month on or before this
-        date and within the given time range will be the last month of the sequence
+        :param start:
+            a time indicating the start of a sequence of months ( the first whole month on
+            or after this date and within the given time range will be the first month )
+        :param end:
+            a time indicating the end of the sequence ( the last whole month on or before this
+            date and within the given time range will be the last month of the sequence
         :param offset_alias: Pandas style offset_alias
         :param projection: The requested projection
+
         :return: generator of extents
         """
 
@@ -452,6 +458,7 @@ class ProductResource(object):
         """
         Get ranges record from the database relevant to the product. It returns information
         such as time_min, time_max, and spatial bounds
+
         :param str product_name: The name of the product
         :return: ranges record as stored in the database
         """
@@ -462,10 +469,11 @@ class ProductResource(object):
 
 def _parse_date(time_stamp):
     """
-       Parses a time representation into a datetime object with year, month, day values and timezone
-       :param time_stamp: A time value
-       :return datetime: datetime representation of given time value
-       """
+    Parses a time representation into a datetime object with year, month, day values and timezone
+
+    :param time_stamp: A time value
+    :return datetime: datetime representation of given time value
+    """
     if not isinstance(time_stamp, datetime):
         t = Timestamp(time_stamp)
         time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
