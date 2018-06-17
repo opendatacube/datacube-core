@@ -402,7 +402,7 @@ class ProductResource(object):
         start = _parse_date(start)
         with self._db.connect() as connection:
             result = connection.get_db_extent(dataset_type_id, start, offset_alias)
-            # Project to the requested projection
+            # the crs string is in metadata
             metadata = connection.get_db_extent_meta(dataset_type_id, offset_alias)
             # Create a Geometry object
             geom = Geometry(result, CRS(metadata['crs']))
