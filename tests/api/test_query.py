@@ -96,6 +96,12 @@ def format_test(start_out, end_out):
 
 
 testdata = [
+    ((datetime.datetime(2008, 1, 1), datetime.datetime(2008, 1, 10)),
+     format_test('2008-01-01T00:00:00', '2008-01-10T00:00:00.999999')),
+    ((datetime.datetime(2008, 1, 1), datetime.datetime(2008, 1, 10, 23, 0, 0)),
+     format_test('2008-01-01T00:00:00', '2008-01-10T23:00:00.999999')),
+    ((datetime.datetime(2008, 1, 1), datetime.datetime(2008, 1, 10, 23, 59, 40)),
+     format_test('2008-01-01T00:00:00', '2008-01-10T23:59:40.999999')),
     (('2008'),
      format_test('2008-01-01T00:00:00', '2008-12-31T23:59:59.999999')),
     (('2008', '2008'),
