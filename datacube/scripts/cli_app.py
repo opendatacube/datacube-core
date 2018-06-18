@@ -13,7 +13,6 @@ import datacube.scripts.product
 import datacube.scripts.metadata_type
 import datacube.scripts.system
 import datacube.scripts.user
-import datacube.scripts.product_extent
 
 
 if __name__ == '__main__':
