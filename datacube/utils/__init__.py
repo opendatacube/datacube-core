@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import gzip
+import collections
 import importlib
 import itertools
 import json
@@ -128,7 +129,7 @@ def get_doc_offset(offset, document):
     return value
 
 
-def get_doc_offset_safe(offset, document):
+def get_doc_offset_safe(offset, document, value_if_missing=None):
     """
     :type offset: list[str]
     :type document: dict
@@ -137,12 +138,21 @@ def get_doc_offset_safe(offset, document):
     4
     >>> get_doc_offset_safe(['a', 'b'], {'a': {'b': 4}})
     4
-    >>> get_doc_offset_safe(['a'], {})
+    >>> get_doc_offset_safe(['a'], {}) is None
+    True
+    >>> get_doc_offset_safe(['a', 'b', 'c'], {'a':{'b':{}}}, 10)
+    10
+    >>> get_doc_offset_safe(['a', 'b', 'c'], {'a':{'b':[]}}, 11)
+    11
     """
-    try:
-        return get_doc_offset(offset, document)
-    except KeyError:
-        return None
+    for k in offset:
+        if not isinstance(document, collections.Mapping):
+            return value_if_missing
+
+        document = document.get(k)
+        if document is None:
+            return value_if_missing
+    return document
 
 
 def _parse_time_generic(time):
@@ -777,6 +787,47 @@ class DocReader(object):
 
     def __dir__(self):
         return list(self.fields)
+
+
+class SimpleDocNav(object):
+    """Allows navigation of Dataset metadata document lineage tree without
+    creating Dataset objects.
+
+    """
+
+    def __init__(self, doc):
+        if not isinstance(doc, collections.Mapping):
+            raise ValueError("")
+
+        self._doc = doc
+        self._doc_without = None
+        self._sources_path = ['lineage', 'source_datasets']
+        self._sources = None
+
+    @property
+    def doc(self):
+        return self._doc
+
+    @property
+    def doc_without_lineage_sources(self):
+        if self._doc_without is None:
+            doc_without = deepcopy(self._doc)
+            xx = get_doc_offset_safe(self._sources_path[:-1], doc_without, {})
+            xx[self._sources_path[-1]] = {}
+            self._doc_without = doc_without
+
+        return self._doc_without
+
+    @property
+    def id(self):
+        return self._doc.get('id', None)
+
+    @property
+    def sources(self):
+        if self._sources is None:
+            self._sources = {k: SimpleDocNav(v)
+                             for k, v in get_doc_offset_safe(self._sources_path, self._doc, {}).items()}
+        return self._sources
 
 
 def import_function(func_ref):
