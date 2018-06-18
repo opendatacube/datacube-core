@@ -281,3 +281,30 @@ def traverse_datasets(ds, cbk, mode='post-order', **kwargs):
         raise ValueError('Unsupported traversal mode: {}'.format(mode))
 
     proc(ds, cbk)
+
+
+def flatten_datasets(ds):
+    """Build a dictionary mapping from dataset.id to a list of datasets with that
+    id appearing in the lineage DAG. When DAG is unrolled into a tree, some
+    datasets will be reachable by multiple paths, sometimes these would be
+    exactly the same python object, other times they will be duplicate views of
+    the same "conceptual dataset object". If the same dataset is reachable by
+    three possible paths from the root, it will appear three times in the
+    flattened view.
+
+    ds could be a Dataset object read from DB with `include_sources=True`, or
+    it could be `SimpleDocNav` object created from a dataset metadata document
+    read from a file.
+
+    """
+    def proc(ds, depth=0, name=None, out=None):
+        k = ds.id
+
+        if k not in out:
+            out[k] = []
+
+        out[k].append(ds)
+
+    out = {}
+    traverse_datasets(ds, proc, out=out)
+    return out

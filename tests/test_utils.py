@@ -23,7 +23,7 @@ from datacube.utils import without_lineage_sources, map_with_lookahead, read_doc
 from datacube.utils import mk_part_uri, get_part_from_uri
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
-from datacube.model.utils import xr_apply, traverse_datasets
+from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets
 from datacube.model import MetadataType
 
 from .util import mk_sample_product
@@ -363,6 +363,13 @@ A:..:0
         traverse_datasets(A, visitor, mode=mode, out=out)
         assert '\n'.join(out) == expect
 
+    fv = flatten_datasets(A)
+
+    assert len(fv['A']) == 1
+    assert len(fv['C']) == 2
+    assert len(fv['E']) == 1
+    assert set(fv.keys()) == set('ABCDE')
+
 
 def test_simple_doc_nav():
     def node(name, **kwargs):
@@ -412,3 +419,10 @@ A:..:0
         out = []
         traverse_datasets(rdr, visitor, mode=mode, out=out)
         assert '\n'.join(out) == expect
+
+    fv = flatten_datasets(rdr)
+
+    assert len(fv['A']) == 1
+    assert len(fv['C']) == 2
+    assert len(fv['E']) == 1
+    assert set(fv.keys()) == set('ABCDE')
