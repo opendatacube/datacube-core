@@ -274,8 +274,7 @@ def _time_to_search_dims(time_range):
         if hasattr(time_range, '__iter__') and len(time_range) == 2:
             if all(isinstance(n, datetime.datetime) for n in time_range):
                 timelist = list(time_range)
-                timelist[0], timelist[1] = timelist[0].isoformat(), timelist[0].isoformat()
-                time_range = tuple(timelist)
+                time_range = timelist[0].isoformat(), timelist[1].isoformat()
             time_range = Range(_to_datetime(time_range[0]),
                                _to_datetime(pandas.Period(time_range[1]).end_time.to_pydatetime()))
             if time_range[0] == time_range[1]:
@@ -291,8 +290,7 @@ def _time_to_search_dims(time_range):
             return time_range
         else:
             timelist = list(time_range)
-            timelist[0], timelist[1] = timelist[0].isoformat(), timelist[0].isoformat()
-            time_range = tuple(timelist)
+            time_range = timelist[0].isoformat(), timelist[1].isoformat()
             time_range = Range(_to_datetime(time_range[0]),
                                _to_datetime(pandas.Period(time_range[1]).end_time.to_pydatetime()))
             return time_range
