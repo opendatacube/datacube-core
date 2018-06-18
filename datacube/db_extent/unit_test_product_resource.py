@@ -1,4 +1,5 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
+from pandas import Timestamp
 from datacube.drivers.postgres import PostgresDb
 from datacube.index._products import ProductResource
 from datacube.index._metadata_types import MetadataTypeResource
@@ -6,7 +7,7 @@ import unittest
 
 
 class MockPostgresDb(PostgresDb):
-    def __init__(self):
+    def __init__(self):  # pylint: disable=super-init-not-called
         pass
 
     def connect(self):
@@ -29,63 +30,55 @@ class MockPostgresDbAPI(object):
             {'id': 'uuid11xxxxxxxxxxxxxxxxxxxxxxxxx1', 'extent_meta_ref': 1,
              'start': datetime(year=2015, month=1, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]
-                          }
-             },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
+            },
             {'id': 'uuid11xxxxxxxxxxxxxxxxxxxxxxxxx2', 'extent_meta_ref': 1,
              'start': datetime(year=2016, month=1, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]
-                          }
-             },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
+            },
             {'id': 'uuid11xxxxxxxxxxxxxxxxxxxxxxxxx3', 'extent_meta_ref': 1,
              'start': datetime(year=2017, month=1, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]
-                          }
-             },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
+            },
             {'id': 'uuid11xxxxxxxxxxxxxxxxxxxxxxxxx4', 'extent_meta_ref': 1,
              'start': datetime(year=2018, month=1, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]
-                          }
-             },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
+            },
             {'id': 'uuid32xxxxxxxxxxxxxxxxxxxxxxxxx1', 'extent_meta_ref': 2,
              'start': datetime(year=2018, month=3, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]
-                          }
-             },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
+            },
             {'id': 'uuid32xxxxxxxxxxxxxxxxxxxxxxxxx2', 'extent_meta_ref': 2,
              'start': datetime(year=2018, month=4, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]
-                          }
-             },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
+            },
             {'id': 'uuid32xxxxxxxxxxxxxxxxxxxxxxxxx3', 'extent_meta_ref': 2,
              'start': datetime(year=2018, month=5, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]
-                          }
-             },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
+            },
             {'id': 'uuid32xxxxxxxxxxxxxxxxxxxxxxxxx4', 'extent_meta_ref': 2,
              'start': datetime(year=2018, month=6, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]
-                          }
-             }
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
+            }
         ]
         self.ranges = [
             {'id': 1, 'dataset_type_ref': 11,
              'time_min': datetime(year=2015, month=3, day=19), 'time_max': datetime(year=2018, month=6, day=14),
              'bounds': {}, 'crs': 'EPSG:4326',
              'time_added': datetime(year=2018, month=6, day=14), 'added_by': 'aj9439'
-             },
+            },
             {'id': 2, 'dataset_type_ref': 32,
              'time_min': datetime(year=2018, month=3, day=19), 'time_max': datetime(year=2018, month=6, day=14),
              'bounds': {}, 'crs': 'EPSG:4326',
              'time_added': datetime(year=2018, month=6, day=14), 'added_by': 'aj9439'
-             }
+            }
         ]
 
     def __enter__(self):
@@ -125,8 +118,6 @@ class MockPostgresDbAPI(object):
                             '1Y' indicates a year, '1D' indicates a day.
         :return: 'geometry' field if a database record exits otherwise None
         """
-        from datetime import datetime, timezone
-        from pandas import Timestamp
 
         def _parse_date(time_stamp):
             """
@@ -173,7 +164,7 @@ class TestExtent(unittest.TestCase):
 
         # We will access a real db for setting up the metadata types
         from datacube import Datacube
-        db = Datacube(app='test').index._db
+        db = Datacube(app='test').index._db  # pylint: disable=protected-access
         metadata_type_resource = MetadataTypeResource(db)
 
         self.products = ProductResource(db=self.mock_db, metadata_type_resource=metadata_type_resource)
@@ -182,53 +173,53 @@ class TestExtent(unittest.TestCase):
     def test_db_api_access(self):
         extent = self.products.extent(dataset_type_id=11, start='1-1-2015',
                                       offset_alias='1Y').__geo_interface__['coordinates']
-        self.assertMultiPolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
+        self.assert_multipolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
 
     # test different time representations
     def test_time_values(self):
         extent = self.products.extent(dataset_type_id=11, start='01-01-2015',
                                       offset_alias='1Y').__geo_interface__['coordinates']
-        self.assertMultiPolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
+        self.assert_multipolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
 
         extent = self.products.extent(dataset_type_id=11, start=datetime(year=2015, month=1, day=1),
                                       offset_alias='1Y').__geo_interface__['coordinates']
-        self.assertMultiPolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
+        self.assert_multipolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
 
         extent = self.products.extent(dataset_type_id=11, start=date(year=2015, month=1, day=1),
                                       offset_alias='1Y').__geo_interface__['coordinates']
-        self.assertMultiPolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
+        self.assert_multipolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
 
         extent = self.products.extent(dataset_type_id=11, start='2015',
                                       offset_alias='1Y').__geo_interface__['coordinates']
-        self.assertMultiPolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
+        self.assert_multipolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
 
         extent = self.products.extent(dataset_type_id=11, start='01-2015',
                                       offset_alias='1Y').__geo_interface__['coordinates']
-        self.assertMultiPolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
+        self.assert_multipolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
 
         extent = self.products.extent(dataset_type_id=11, start='1-1-2015',
                                       offset_alias='1Y').__geo_interface__['coordinates']
-        self.assertMultiPolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
+        self.assert_multipolygon(extent, self.mock_db_api.extent[0]['geometry']['coordinates'])
 
     def test_yearly_extents(self):
         extents = self.products.extent_periodic(dataset_type_id=11, start='01-01-2015', end='01-01-2017',
                                                 offset_alias='1Y')
         for item in extents:
-            self.assertMultiPolygon(item['extent'].__geo_interface__['coordinates'],
-                                    self.mock_db_api.extent[0]['geometry']['coordinates'])
+            self.assert_multipolygon(item['extent'].__geo_interface__['coordinates'],
+                                     self.mock_db_api.extent[0]['geometry']['coordinates'])
 
     def test_monthly_extents(self):
         extents = self.products.extent_periodic(dataset_type_id=32, start='01-01-2018', end='01-05-2018',
                                                 offset_alias='1M')
         for item in extents:
-            self.assertMultiPolygon(item['extent'].__geo_interface__['coordinates'],
-                                    self.mock_db_api.extent[0]['geometry']['coordinates'])
+            self.assert_multipolygon(item['extent'].__geo_interface__['coordinates'],
+                                     self.mock_db_api.extent[0]['geometry']['coordinates'])
 
     def test_ranges(self):
         ranges = self.products.ranges('ls8_nbar_scene')
         self.assertEqual(ranges['dataset_type_ref'], 11)
 
-    def assertMultiPolygon(self, p1, p2):
+    def assert_multipolygon(self, p1, p2):
         if not len(p1) == len(p2):
             raise AssertionError('Multipolygons has different sizes')
         else:
