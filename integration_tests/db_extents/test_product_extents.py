@@ -1,9 +1,11 @@
-from datetime import datetime, date, timezone
-from pandas import Timestamp
-from datacube.drivers.postgres import PostgresDb
-from datacube.index._products import ProductResource
-from datacube.index._metadata_types import MetadataTypeResource
 import unittest
+from datetime import datetime, date, timezone
+
+from pandas import Timestamp
+
+from datacube.drivers.postgres import PostgresDb
+from datacube.index._metadata_types import MetadataTypeResource
+from datacube.index._products import ProductResource
 
 
 class MockPostgresDb(PostgresDb):
@@ -30,55 +32,45 @@ class MockPostgresDbAPI(object):
             {'id': 'uuid11xxxxxxxxxxxxxxxxxxxxxxxxx1', 'extent_meta_ref': 1,
              'start': datetime(year=2015, month=1, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
-            },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}},
             {'id': 'uuid11xxxxxxxxxxxxxxxxxxxxxxxxx2', 'extent_meta_ref': 1,
              'start': datetime(year=2016, month=1, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
-            },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}},
             {'id': 'uuid11xxxxxxxxxxxxxxxxxxxxxxxxx3', 'extent_meta_ref': 1,
              'start': datetime(year=2017, month=1, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
-            },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}},
             {'id': 'uuid11xxxxxxxxxxxxxxxxxxxxxxxxx4', 'extent_meta_ref': 1,
              'start': datetime(year=2018, month=1, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
-            },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}},
             {'id': 'uuid32xxxxxxxxxxxxxxxxxxxxxxxxx1', 'extent_meta_ref': 2,
              'start': datetime(year=2018, month=3, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
-            },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}},
             {'id': 'uuid32xxxxxxxxxxxxxxxxxxxxxxxxx2', 'extent_meta_ref': 2,
              'start': datetime(year=2018, month=4, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
-            },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}},
             {'id': 'uuid32xxxxxxxxxxxxxxxxxxxxxxxxx3', 'extent_meta_ref': 2,
              'start': datetime(year=2018, month=5, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
-            },
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}},
             {'id': 'uuid32xxxxxxxxxxxxxxxxxxxxxxxxx4', 'extent_meta_ref': 2,
              'start': datetime(year=2018, month=6, day=1),
              'geometry': {'type': 'Polygon',
-                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}
-            }
+                          'coordinates': [[(0, 0), (2, 0), (2, 2), (0, 2)], [(1, 1), (1.5, 1), (1.5, 1.5)]]}}
         ]
         self.ranges = [
             {'id': 1, 'dataset_type_ref': 11,
              'time_min': datetime(year=2015, month=3, day=19), 'time_max': datetime(year=2018, month=6, day=14),
              'bounds': {}, 'crs': 'EPSG:4326',
-             'time_added': datetime(year=2018, month=6, day=14), 'added_by': 'aj9439'
-            },
+             'time_added': datetime(year=2018, month=6, day=14), 'added_by': 'aj9439'},
             {'id': 2, 'dataset_type_ref': 32,
              'time_min': datetime(year=2018, month=3, day=19), 'time_max': datetime(year=2018, month=6, day=14),
              'bounds': {}, 'crs': 'EPSG:4326',
-             'time_added': datetime(year=2018, month=6, day=14), 'added_by': 'aj9439'
-            }
+             'time_added': datetime(year=2018, month=6, day=14), 'added_by': 'aj9439'}
         ]
 
     def __enter__(self):
