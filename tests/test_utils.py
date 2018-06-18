@@ -377,9 +377,11 @@ def test_simple_doc_nav():
     rdr = SimpleDocNav(A)
 
     assert rdr.doc == A
-    assert rdr.doc_without_lineage_sources == {'id': 'A', 'lineage': {'source_datasets': {}}}
+    assert rdr.doc_without_lineage_sources == node('A')
     assert isinstance(rdr.sources['ae'], SimpleDocNav)
     assert rdr.sources['ab'].sources['bc'].doc == C
+    assert rdr.doc_without_lineage_sources is rdr.doc_without_lineage_sources
+    assert rdr.sources is rdr.sources
 
     def visitor(node, name=None, depth=0, out=None):
         s = '{}:{}:{:d}'.format(node.id, name if name else '..', depth)
