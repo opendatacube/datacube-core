@@ -13,6 +13,7 @@ import json
 import logging
 import pathlib
 import re
+import toolz
 from copy import deepcopy
 from collections import OrderedDict
 from contextlib import contextmanager
@@ -123,10 +124,7 @@ def get_doc_offset(offset, document):
     ...
     KeyError: 'a'
     """
-    value = document
-    for key in offset:
-        value = value[key]
-    return value
+    return toolz.get_in(offset, document, no_default=True)
 
 
 def get_doc_offset_safe(offset, document, value_if_missing=None):
@@ -145,14 +143,7 @@ def get_doc_offset_safe(offset, document, value_if_missing=None):
     >>> get_doc_offset_safe(['a', 'b', 'c'], {'a':{'b':[]}}, 11)
     11
     """
-    for k in offset:
-        if not isinstance(document, collections.Mapping):
-            return value_if_missing
-
-        document = document.get(k)
-        if document is None:
-            return value_if_missing
-    return document
+    return toolz.get_in(offset, document, default=value_if_missing)
 
 
 def _parse_time_generic(time):
@@ -811,10 +802,7 @@ class SimpleDocNav(object):
     @property
     def doc_without_lineage_sources(self):
         if self._doc_without is None:
-            doc_without = deepcopy(self._doc)
-            xx = get_doc_offset_safe(self._sources_path[:-1], doc_without, {})
-            xx[self._sources_path[-1]] = {}
-            self._doc_without = doc_without
+            self._doc_without = toolz.assoc_in(self._doc, self._sources_path, {})
 
         return self._doc_without
 
