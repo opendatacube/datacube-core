@@ -164,6 +164,23 @@ def test_has_dataset(index, telemetry_dataset):
     assert not index.datasets.has('f226a278-e422-11e6-b501-185e0f80a5c0')
 
 
+def test_get_dataset(index, telemetry_dataset):
+    # type: (Index, Dataset) -> None
+
+    assert index.datasets.has(_telemetry_uuid)
+    assert index.datasets.has(str(_telemetry_uuid))
+
+    for tr in (lambda x: x, str):
+        ds = index.datasets.get(tr(_telemetry_uuid))
+        assert ds.id == _telemetry_uuid
+
+        ds, = index.datasets.get_many([tr(_telemetry_uuid)])
+        assert ds.id == _telemetry_uuid
+
+    assert index.datasets.get_many(['f226a278-e422-11e6-b501-185e0f80a5c0',
+                                    'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
+
+
 def test_transactions(index, initialised_postgres_db, local_config, default_metadata_type):
     """
     :type index: datacube.index.index.Index
@@ -226,6 +243,8 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     index.datasets.add(child, sources_policy='ensure')
     assert index.datasets.get(parent.id)
     assert index.datasets.get(child.id)
+
+    assert len(index.datasets.get_many([parent.id, child.id])) == 2
 
     index.datasets.add(child, sources_policy='skip')
     index.datasets.add(child, sources_policy='ensure')

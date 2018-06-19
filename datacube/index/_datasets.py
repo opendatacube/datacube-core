@@ -76,6 +76,16 @@ class DatasetResource(object):
             }
         return datasets[id_][0]
 
+    def get_many(self, ids):
+        def to_uuid(x):
+            return x if isinstance(x, UUID) else UUID(x)
+
+        ids = [to_uuid(i) for i in ids]
+
+        with self._db.connect() as connection:
+            rows = connection.get_datasets(ids)
+            return [self._make(r, full_info=True) for r in rows]
+
     def get_derived(self, id_):
         """
         Get all derived datasets

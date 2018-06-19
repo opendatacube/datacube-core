@@ -354,6 +354,11 @@ class PostgresDbAPI(object):
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
         ).first()
 
+    def get_datasets(self, dataset_ids):
+        return self._connection.execute(
+            select(_DATASET_SELECT_FIELDS).where(DATASET.c.id.in_(dataset_ids))
+        ).fetchall()
+
     def get_derived_datasets(self, dataset_id):
         return self._connection.execute(
             select(
