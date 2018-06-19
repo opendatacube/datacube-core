@@ -11,6 +11,7 @@ import importlib
 import itertools
 import json
 import logging
+import math
 import pathlib
 import re
 import toolz
@@ -562,13 +563,11 @@ def jsonify_document(doc):
 
     def fixup_value(v):
         if isinstance(v, float):
-            if v != v:
+            if math.isfinite(v):
+                return v
+            if math.isnan(v):
                 return "NaN"
-            if v == float("inf"):
-                return "Infinity"
-            if v == float("-inf"):
-                return "-Infinity"
-            return v
+            return "-Infinity" if v < 0 else "Infinity"
         if isinstance(v, (datetime, date)):
             return v.isoformat()
         if isinstance(v, numpy.dtype):
