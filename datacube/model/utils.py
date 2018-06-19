@@ -283,7 +283,7 @@ def traverse_datasets(ds, cbk, mode='post-order', **kwargs):
     proc(ds, cbk)
 
 
-def flatten_datasets(ds):
+def flatten_datasets(ds, with_depth_grouping=False):
     """Build a dictionary mapping from dataset.id to a list of datasets with that
     id appearing in the lineage DAG. When DAG is unrolled into a tree, some
     datasets will be reachable by multiple paths, sometimes these would be
@@ -296,15 +296,32 @@ def flatten_datasets(ds):
     it could be `SimpleDocNav` object created from a dataset metadata document
     read from a file.
 
+    If with_depth_grouping=True, also build depth -> [Ds] mapping and return it
+    along with Id -> [Ds] mapping. In this case top level is depth=0.
     """
-    def proc(ds, depth=0, name=None, out=None):
-        k = ds.id
-
+    def get_list(out, k):
         if k not in out:
             out[k] = []
+        return out[k]
 
-        out[k].append(ds)
+    def proc(ds, depth=0, name=None, id_map=None, depth_map=None):
+        k = ds.id
 
-    out = {}
-    traverse_datasets(ds, proc, out=out)
-    return out
+        get_list(id_map, k).append(ds)
+        if depth_map is not None:
+            get_list(depth_map, depth).append(ds)
+
+    id_map = {}
+    depth_map = {} if with_depth_grouping else None
+
+    traverse_datasets(ds, proc, id_map=id_map, depth_map=depth_map)
+
+    if depth_map:
+        # convert dict Int->V to just a list
+        dout = [None]*len(depth_map)
+        for k, v in depth_map.items():
+            dout[k] = v
+
+        return id_map, dout
+
+    return id_map

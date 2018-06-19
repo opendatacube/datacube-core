@@ -426,3 +426,21 @@ A:..:0
     assert len(fv['C']) == 2
     assert len(fv['E']) == 1
     assert set(fv.keys()) == set('ABCDE')
+
+    fv, dg = flatten_datasets(rdr, with_depth_grouping=True)
+
+    assert len(fv['A']) == 1
+    assert len(fv['C']) == 2
+    assert len(fv['E']) == 1
+    assert set(fv.keys()) == set('ABCDE')
+    assert isinstance(dg, list)
+    assert len(dg) == 4
+    assert [len(l) for l in dg] == [1, 3, 2, 1]
+
+    def to_set(xx):
+        return set(x.id for x in xx)
+
+    assert [set(s) for s in ('A',
+                             'BCE',
+                             'CD',
+                             'D')] == [to_set(xx) for xx in dg]
