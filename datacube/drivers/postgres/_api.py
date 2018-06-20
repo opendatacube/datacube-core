@@ -18,7 +18,7 @@ from sqlalchemy import cast
 from sqlalchemy import delete
 from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
 from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.exc import IntegrityError
 
 from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
@@ -212,30 +212,27 @@ class PostgresDbAPI(object):
         :return: whether it was inserted
         :rtype: bool
         """
-        try:
-            dataset_type_ref = bindparam('dataset_type_ref')
-            ret = self._connection.execute(
-                DATASET.insert().from_select(
-                    ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
+        dataset_type_ref = bindparam('dataset_type_ref')
+        ret = self._connection.execute(
+            insert(DATASET).from_select(
+                ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
+                select([
+                    bindparam('id'), dataset_type_ref,
                     select([
-                        bindparam('id'), dataset_type_ref,
-                        select([
-                            DATASET_TYPE.c.metadata_type_ref
-                        ]).where(
-                            DATASET_TYPE.c.id == dataset_type_ref
-                        ).label('metadata_type_ref'),
-                        bindparam('metadata', type_=JSONB)
-                    ])
-                ),
-                id=dataset_id,
-                dataset_type_ref=dataset_type_id,
-                metadata=metadata_doc
-            )
-            return ret.rowcount > 0
-        except IntegrityError as e:
-            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                raise DuplicateRecordError('Duplicate dataset, not inserting: %s' % dataset_id)
-            raise
+                        DATASET_TYPE.c.metadata_type_ref
+                    ]).where(
+                        DATASET_TYPE.c.id == dataset_type_ref
+                    ).label('metadata_type_ref'),
+                    bindparam('metadata', type_=JSONB)
+                ])
+            ).on_conflict_do_nothing(
+                index_elements=['id']
+            ),
+            id=dataset_id,
+            dataset_type_ref=dataset_type_id,
+            metadata=metadata_doc
+        )
+        return ret.rowcount > 0
 
     def update_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         """
@@ -290,6 +287,16 @@ class PostgresDbAPI(object):
                 )
             ).fetchone()
         )
+
+    def datasets_intersection(self, dataset_ids):
+        """ Compute set intersection: db_dataset_ids & dataset_ids
+        """
+        return [r[0]
+                for r in self._connection.execute(select(
+                    [DATASET.c.id]
+                ).where(
+                    DATASET.c.id.in_(dataset_ids)
+                )).fetchall()]
 
     def get_datasets_for_location(self, uri, mode=None):
         scheme, body = _split_uri(uri)

@@ -143,14 +143,14 @@ def test_index_duplicate_dataset(index, initialised_postgres_db, local_config, d
     assert index.datasets.has(_telemetry_uuid)
 
     # Insert again.
-    with pytest.raises(DuplicateRecordError):
-        with initialised_postgres_db.connect() as connection:
-            was_inserted = connection.insert_dataset(
-                _telemetry_dataset,
-                _telemetry_uuid,
-                dataset_type.id
-            )
-            assert not was_inserted
+    with initialised_postgres_db.connect() as connection:
+        was_inserted = connection.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+        assert was_inserted is False
+
     assert index.datasets.has(_telemetry_uuid)
 
 
@@ -169,6 +169,8 @@ def test_get_dataset(index, telemetry_dataset):
 
     assert index.datasets.has(_telemetry_uuid)
     assert index.datasets.has(str(_telemetry_uuid))
+
+    assert index.datasets.has_many([_telemetry_uuid, 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
 
     for tr in (lambda x: x, str):
         ds = index.datasets.get(tr(_telemetry_uuid))
@@ -238,26 +240,24 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     child = Dataset(type_, child_doc, local_uri=None, sources={'source': parent})
 
     with pytest.raises(MissingRecordError):
-        index.datasets.add(child, sources_policy='skip')
+        index.datasets.add(child, with_lineage=False)
 
-    index.datasets.add(child, sources_policy='ensure')
+    index.datasets.add(child)
     assert index.datasets.get(parent.id)
     assert index.datasets.get(child.id)
 
     assert len(index.datasets.get_many([parent.id, child.id])) == 2
 
-    index.datasets.add(child, sources_policy='skip')
-    index.datasets.add(child, sources_policy='ensure')
-    index.datasets.add(child, sources_policy='verify')
-    # Deprecated property, but it should still work until we remove it completely.
-    index.datasets.add(child, sources_policy='skip')
+    index.datasets.add(child, with_lineage=False)
+    index.datasets.add(child, with_lineage=True)
 
     parent_doc['platform'] = {'code': 'LANDSAT_9'}
-    index.datasets.add(child, sources_policy='ensure')
-    index.datasets.add(child, sources_policy='skip')
+    index.datasets.add(child, with_lineage=True)
+    index.datasets.add(child, with_lineage=False)
 
-    with pytest.raises(DocumentMismatchError):
-        index.datasets.add(child, sources_policy='verify')
+    # backwards compatibility code path checks, don't use this in normal code
+    for p in ('skip', 'ensure', 'verify'):
+        index.datasets.add(child, sources_policy=p)
 
 
 # Make sure that both normal and s3aio index can handle normal data locations correctly

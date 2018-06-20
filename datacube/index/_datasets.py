@@ -11,6 +11,7 @@ from uuid import UUID
 
 from datacube import compat
 from datacube.model import Dataset, DatasetType
+from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, changes
 from datacube.utils.changes import get_doc_changes, check_doc_unchanged
 from . import fields
@@ -109,36 +110,79 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             return connection.contains_dataset(id_)
 
-    def add(self, dataset, sources_policy='verify', **kwargs):
+    def has_many(self, ids_):
+        """
+        Like `has` but operates on a list of ids.
+
+        For every supplied id check if database contains a dataset with that id.
+
+        :param [typing.Union[UUID, str]] ids_: list of dataset ids
+
+        :rtype: [bool]
+        """
+        with self._db.connect() as connection:
+            existing = set(connection.datasets_intersection(ids_))
+
+        return [x in existing for x in ids_]
+
+    def add(self, dataset, with_lineage=None, **kwargs):
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
         :param Dataset dataset: dataset to add
-        :param str sources_policy: how should source datasets included in this dataset be handled:
-
-                ``verify``
-                    Verify that each source exists in the index, and that they are identical.
-
-                ``ensure``
-                    Add source datasets to the index if they doesn't exist.
-
-                ``skip``
-                    don't attempt to index source datasets (use when sources are already indexed)
-
+        :param bool with_lineage: True -- attempt adding lineage if it's missing, False don't
         :rtype: Dataset
         """
-        self._add_sources(dataset, sources_policy)
+
+        if with_lineage is None:
+            policy = kwargs.pop('sources_policy', None)
+            if policy is not None:
+                _LOG.debug('Use of sources_policy is deprecated')
+                with_lineage = (policy != "skip")
+                if policy == 'verify':
+                    _LOG.debug('Verify is no longer done inside add')
+            else:
+                with_lineage = True
+
+        def add_one(ds, transaction):
+            if not transaction.insert_dataset(ds.metadata_doc_without_lineage(),
+                                              ds.id,
+                                              ds.type.id):
+                # duplicate
+                return False
+
+            for classifier, source_dataset in ds.sources.items():
+                transaction.insert_dataset_source(classifier, ds.id, source_dataset.id)
+
+            if ds.uris:
+                self._ensure_new_locations(ds, transaction=transaction)
+
+            return True
 
         _LOG.info('Indexing %s', dataset.id)
 
-        if not self._try_add(dataset):
-            existing = self.get(dataset.id)
-            if existing:
-                check_doc_unchanged(
-                    existing.metadata_doc_without_lineage(),
-                    jsonify_document(dataset.metadata_doc_without_lineage()),
-                    'Dataset {}'.format(dataset.id)
-                )
+        if with_lineage:
+            ds_by_uuid, ds_by_depth = flatten_datasets(dataset, with_depth_grouping=True)
+            all_uuids = list(ds_by_uuid)
+
+            present = {k: v for k, v in zip(all_uuids, self.has_many(all_uuids))}
+
+            if present[dataset.id]:
+                _LOG.warning('Dataset %s is already in the database', dataset.id)
+                return dataset
+
+            added = set()
+
+            with self._db.begin() as transaction:
+                for dss in ds_by_depth[::-1]:
+                    dss = [ds for ds in dss if present[ds.id] is False and ds.id not in added]
+                    for ds in dss:
+                        add_one(ds, transaction)
+                        added.add(ds.id)
+        else:
+            with self._db.begin() as transaction:
+                if add_one(dataset, transaction) is False:
+                    _LOG.warning('Dataset %s is already in the database', dataset.id)
 
         return dataset
 
@@ -169,23 +213,6 @@ class DatasetResource(object):
                 dataset_ids = set(record[0])
                 grouped_fields = tuple(record[1:])
                 yield result_type(*grouped_fields), dataset_ids
-
-    def _add_sources(self, dataset, sources_policy='verify'):
-        if dataset.sources is None:
-            raise ValueError('Dataset has missing (None) sources. Was this loaded without include_sources=True?\n'
-                             'Note that: \n'
-                             '  sources=None means "not loaded", '
-                             '  sources={}   means there are no sources (eg. raw telemetry data)')
-
-        if sources_policy == 'ensure':
-            for source in dataset.sources.values():
-                if not self.has(source.id):
-                    self.add(source, sources_policy=sources_policy)
-        elif sources_policy == 'verify':
-            for source in dataset.sources.values():
-                self.add(source, sources_policy=sources_policy)
-        elif sources_policy != 'skip':
-            raise ValueError('sources_policy must be one of ("verify", "ensure", "skip")')
 
     def can_update(self, dataset, updates_allowed=None):
         """
@@ -557,30 +584,6 @@ class DatasetResource(object):
         :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int)]]
         """
         return next(self._do_time_count(period, query, ensure_single=True))[1]
-
-    def _try_add(self, dataset):
-        was_inserted = False
-
-        if dataset.sources is None:
-            raise ValueError("Dataset has missing (None) sources. Was this loaded without include_sources=True?")
-
-        with self._db.begin() as transaction:
-            try:
-                was_inserted = transaction.insert_dataset(dataset.metadata_doc_without_lineage(),
-                                                          dataset.id,
-                                                          dataset.type.id)
-
-                for classifier, source_dataset in dataset.sources.items():
-                    transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
-
-                # try to update location in the same transaction as insertion.
-                # if insertion fails we'll try updating location later
-                # if insertion succeeds the location bit can't possibly fail
-                if dataset.uris:
-                    self._ensure_new_locations(dataset, transaction=transaction)
-            except DuplicateRecordError as e:
-                _LOG.warning(str(e))
-        return was_inserted
 
     def _get_dataset_types(self, q):
         types = set()

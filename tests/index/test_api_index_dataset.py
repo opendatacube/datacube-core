@@ -184,6 +184,9 @@ class MockDb(object):
     def get_locations(self, dataset):
         return ['file:xxx']
 
+    def datasets_intersection(self, ids):
+        return [k for k in ids if k in self.dataset]
+
     def insert_dataset_location(self, *args, **kwargs):
         return
 
@@ -235,11 +238,6 @@ def test_index_dataset():
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
     assert len(mock_db.dataset) == 3
     assert len(mock_db.dataset_source) == 2
-
-    ds2 = deepcopy(_EXAMPLE_NBAR_DATASET)
-    ds2.metadata_doc['product_type'] = 'zzzz'
-    with pytest.raises(DocumentMismatchError):
-        dataset = datasets.add(ds2)
 
 
 def test_index_already_ingested_source_dataset():
