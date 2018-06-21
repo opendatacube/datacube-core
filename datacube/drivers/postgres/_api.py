@@ -35,11 +35,7 @@ from ._schema import (
     DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
 )
 
-try:
-    from typing import Iterable
-    from typing import Tuple
-except ImportError:
-    pass
+from typing import Iterable, Tuple
 
 
 def _dataset_uri_field(table):

@@ -22,10 +22,7 @@ from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, changes, InvalidDocException, without_lineage_sources
 from datacube.utils.serialise import SafeDatacubeDumper
 
-try:
-    from typing import Iterable
-except ImportError:
-    pass
+from typing import Iterable
 
 _LOG = logging.getLogger('datacube-dataset')
 

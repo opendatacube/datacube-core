@@ -8,6 +8,7 @@ import logging
 import warnings
 from collections import namedtuple
 from uuid import UUID
+from typing import Any, Iterable, Mapping, Set, Tuple, Union
 
 from datacube import compat
 from datacube.model import Dataset, DatasetType
@@ -19,10 +20,6 @@ from .exceptions import DuplicateRecordError
 
 _LOG = logging.getLogger(__name__)
 
-try:
-    from typing import Any, Iterable, Mapping, Set, Tuple, Union
-except ImportError:
-    pass
 
 
 # It's a public api, so we can't reorganise old methods.

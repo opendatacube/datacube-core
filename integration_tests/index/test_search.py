@@ -12,6 +12,7 @@ import uuid
 from decimal import Decimal
 from pathlib import Path
 from uuid import UUID
+from typing import List, Tuple, Iterable, Dict
 
 import pytest
 import yaml
@@ -29,11 +30,6 @@ from datacube.model import DatasetType
 from datacube.model import MetadataType
 from datacube.model import Range
 from datacube.scripts import dataset as dataset_script
-
-try:
-    from typing import List, Tuple, Iterable, Dict
-except ImportError:
-    pass
 
 
 @pytest.fixture
