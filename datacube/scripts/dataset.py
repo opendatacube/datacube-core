@@ -207,21 +207,24 @@ def parse_match_rules_options(index, dtype, auto_match):
               multiple=True)
 @click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
               is_flag=True, default=False)
-@click.option('--sources-policy', type=click.Choice(['verify', 'ensure', 'skip']), default='verify',
-              help="""'verify' - verify source datasets' metadata (default)
-'ensure' - add source dataset if it doesn't exist
-'skip' - dont add the derived dataset if source dataset doesn't exist""")
+@click.option('--auto-add-lineage/--no-auto-add-lineage', is_flag=True, default=True,
+              help=('Default behaviour is to automatically add lineage datasets if they are missing from the database, '
+                    'but this can be disabled if lineage is expected to be present in the DB, '
+                    'in this case add will abort when encountering missing lineage dataset'))
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.option('--ignore-lineage',
-              help="Don't add lineage data to the database",
+              help="Pretend that there is no lineage data in the datasets being indexed",
               is_flag=True, default=False)
 @click.option('--confirm-ignore-lineage',
-              help="Don't add lineage data to the database, without confirmation",
+              help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
               is_flag=True, default=False)
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, product_names, auto_match, sources_policy, dry_run,
+def index_cmd(index, product_names,
+              auto_match,
+              auto_add_lineage,
+              dry_run,
               ignore_lineage,
               confirm_ignore_lineage,
               dataset_paths):
@@ -245,19 +248,19 @@ def index_cmd(index, product_names, auto_match, sources_policy, dry_run,
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
         with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
-            index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter,
+            index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_path_iter,
                                 skip_lineage=confirm_ignore_lineage)
     else:
-        index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths,
+        index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_paths,
                             skip_lineage=confirm_ignore_lineage)
 
 
-def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths, skip_lineage=False):
+def index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_paths, skip_lineage=False):
     for dataset in load_datasets(dataset_paths, rules, skip_lineage=skip_lineage):
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
-                index.datasets.add(dataset, sources_policy=sources_policy)
+                index.datasets.add(dataset, with_lineage=auto_add_lineage)
             except (ValueError, MissingRecordError) as e:
                 _LOG.error('Failed to add dataset %s: %s', dataset.local_uri, e)
 
