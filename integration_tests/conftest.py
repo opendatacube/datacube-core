@@ -11,6 +11,7 @@ from copy import copy, deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -178,6 +179,16 @@ def index(local_config, uninitialised_postgres_db):
     """
     index = index_connect(local_config, validate_connection=False)
     index.init_db()
+    return index
+
+
+@pytest.fixture
+def index_empty(local_config, uninitialised_postgres_db):
+    """
+    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
+    """
+    index = index_connect(local_config, validate_connection=False)
+    index.init_db(with_default_types=False)
     return index
 
 
@@ -533,6 +544,14 @@ def clirunner(global_integration_cli_args, datacube_env_name):
         return result
 
     return _run_cli
+
+
+@pytest.fixture
+def dataset_add_configs():
+    B = INTEGRATION_TESTS_DIR/'data'/'dataset_add'
+    return SimpleNamespace(metadata=str(B/'metadata.yml'),
+                           products=str(B/'products.yml'),
+                           datasets=str(B/'datasets.yml'))
 
 
 def edit_for_fast_ingest(config):

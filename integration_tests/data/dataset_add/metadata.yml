@@ -1,0 +1,12 @@
+---
+name: minimal
+description: minimal metadata definition
+dataset:
+    id: [id]
+    sources: [lineage, source_datasets]
+    label: [label]
+    creation_dt: [creation_dt]
+    search_fields:
+        product_type:
+            description: Product code
+            offset: [product_type]

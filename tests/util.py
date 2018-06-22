@@ -2,12 +2,13 @@
 """
 Useful methods for tests (particularly: reading/writing and checking files)
 """
-from __future__ import absolute_import
-
 import atexit
 import os
 import shutil
 import tempfile
+import json
+import uuid
+from datetime import datetime
 
 import pathlib
 
@@ -246,3 +247,52 @@ def mk_sample_dataset(bands,
         'format': {'name': format},
         'image': {'bands': image_bands}
     }, uris=[uri])
+
+
+def make_graph_abcde(node):
+    """
+      A -> B
+      |    |
+      |    v
+      +--> C -> D
+      |
+      +--> E
+    """
+    D = node('D')
+    E = node('E')
+    C = node('C', cd=D)
+    B = node('B', bc=C)
+    A = node('A', ab=B, ac=C, ae=E)
+    return A, B, C, D, E
+
+
+def gen_dataset_test_dag(idx, t=None, force_tree=False):
+    """Build document suitable for consumption by dataset add
+
+    when force_tree is True pump the object graph through json
+    serialise->deserialise, this converts DAG to a tree (no object sharing,
+    copies instead).
+    """
+    def node_maker(n, t):
+        ns = uuid.UUID('c0fefefe-2470-3b03-803f-e7599f39ceff')
+        postfix = '' if n is None else '{:04d}'.format(n)
+        t = t.isoformat()
+
+        def node(name, **kwargs):
+            return dict(id=str(uuid.uuid5(ns, name + postfix)),
+                        label=name+postfix,
+                        creation_dt=t,
+                        n=n,
+                        product_type=name,
+                        lineage=dict(source_datasets=kwargs))
+
+        return node
+
+    def deref(a):
+        return json.loads(json.dumps(a))
+
+    if t is None:
+        t = datetime.fromordinal(736637 + (0 if idx is None else idx))
+
+    root, *_ = make_graph_abcde(node_maker(idx, t))
+    return deref(root) if force_tree else root

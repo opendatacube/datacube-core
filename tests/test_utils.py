@@ -26,7 +26,7 @@ from datacube.utils.dates import date_sequence
 from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets
 from datacube.model import MetadataType
 
-from .util import mk_sample_product
+from .util import mk_sample_product, make_graph_abcde
 
 
 def test_stats_dates():
@@ -321,14 +321,11 @@ def test_traverse_datasets():
       |
       +--> E
     """
+
     def node(name, **kwargs):
         return SimpleNamespace(id=name, sources=kwargs)
 
-    D = node('D')
-    E = node('E')
-    C = node('C', cd=D)
-    B = node('B', bc=C)
-    A = node('A', ab=B, ac=C, ae=E)
+    A, *_ = make_graph_abcde(node)
 
     def visitor(node, name=None, depth=0, out=None):
         s = '{}:{}:{:d}'.format(node.id, name if name else '..', depth)
@@ -372,15 +369,19 @@ A:..:0
 
 
 def test_simple_doc_nav():
+    """
+      A -> B
+      |    |
+      |    v
+      +--> C -> D
+      |
+      +--> E
+    """
+
     def node(name, **kwargs):
         return dict(id=name, lineage=dict(source_datasets=kwargs))
 
-    D = node('D')
-    E = node('E')
-    C = node('C', cd=D)
-    B = node('B', bc=C)
-    A = node('A', ab=B, ac=C, ae=E)
-
+    A, _, C, _, _ = make_graph_abcde(node)
     rdr = SimpleDocNav(A)
 
     assert rdr.doc == A
