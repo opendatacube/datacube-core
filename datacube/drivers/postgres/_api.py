@@ -13,6 +13,8 @@ from __future__ import absolute_import
 
 import logging
 import uuid
+import datetime
+from pandas import Timestamp
 
 from sqlalchemy import cast
 from sqlalchemy import delete
@@ -32,7 +34,8 @@ from ._fields import (
 )
 from .sql import escape_pg_identifier
 from ._schema import (
-    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE, EXTENT_META, EXTENT, RANGES
+    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE,
+    EXTENT_META, EXTENT_SLICE, DATASET_TYPE_RANGE
 )
 
 
@@ -904,7 +907,92 @@ class PostgresDbAPI(object):
         )
         return res.rowcount > 0
 
-    def get_db_extent_meta(self, dataset_type_ref, offset_alias):
+    @staticmethod
+    def _parse_date(d):
+        # parse the date d
+        if not isinstance(d, datetime.date):
+            t = Timestamp(d)
+            return datetime.date(year=t.year, month=t.month, day=t.day)
+        return d
+
+    def merge_extent_meta(self, dataset_type_ref, start, end, offset_alias, crs):
+        """
+        Merge extent_meta table record with the parameters so that the new time
+        range encloses both existing as well as incoming values. This function fails
+        if there are gaps that are not looked at between existing and incoming time ranges.
+        """
+        start = self._parse_date(start)
+        end = self._parse_date(end)
+
+        metadata = self.get_extent_meta(dataset_type_ref, offset_alias)
+        if metadata:
+            if not (start <= end and start <= metadata['end'] and metadata['start'] <= end):
+                raise ValueError("Existing and incoming ime ranges do not overlap")
+            if not crs == metadata['crs']:
+                raise ValueError("Existing crs {} and incoming crs {} do not match".format(metadata['crs'], crs))
+
+            start = min(start, metadata['start'])
+            end = max(end, metadata['end'])
+
+            self._connection.execute(
+                EXTENT_META.update().where(
+                    and_(
+                        dataset_type_ref=dataset_type_ref,
+                        offset_alias=offset_alias,
+                    )
+                ).values(start=start, end=end, crs=crs)
+            )
+        else:
+            # insert new extent meta data
+            self._connection.execute(
+                EXTENT_META.insert().values(dataset_type_ref=dataset_type_ref, start=start, end=end,
+                                            offset_alias=offset_alias, crs=crs)
+            )
+
+    def update_extent_slice(self, extent_meta_ref, start, extent):
+        """
+        Insert or Update an extent record corresponding to extent_meta id, and start date
+
+        :param extent_meta_ref: extent_meta id
+        :param datetime.date start: start date
+        :param extent: shapely extent object
+        """
+
+        # Check whether extent is GeoJSON like dict and if not try to map to GeoJSON
+        if isinstance(extent, dict):
+            if not all([key in extent.keys() for key in ['type', 'coordinates']]):
+                if hasattr(extent, '__geo_interface__'):
+                    extent = extent.__geo_interface__
+                else:
+                    raise ValueError("extent is not GeoJSON like")
+
+        # See whether an entry already exists in extent
+        res = self._connection.execute(
+            select([
+                EXTENT_SLICE.c.extent_meta_ref
+            ]).where(
+                and_(
+                    EXTENT_SLICE.c.extent_meta_ref == extent_meta_ref,
+                    EXTENT_SLICE.c.start == start,
+                )
+            )).fetchone()
+        if res:
+            # Update the existing entry
+            self._connection.execute(
+                EXTENT_SLICE.update().where(
+                    and_(
+                        EXTENT_SLICE.c.extent_meta_ref == extent_meta_ref,
+                        EXTENT_SLICE.c.start == start,
+                    )
+                ).values(geometry=extent)
+            )
+        else:
+            # Insert a new entry
+            self._connection.execute(
+                EXTENT_SLICE.insert().values(extent_meta_ref=extent_meta_ref, start=start, geometry=extent)
+            )
+
+    def get_extent_meta(self, dataset_type_ref, offset_alias):
         """
         Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
 
@@ -923,7 +1011,7 @@ class PostgresDbAPI(object):
                 )
             )).fetchone()
 
-    def get_db_extent(self, dataset_type_ref, start, offset_alias):
+    def get_extent_slice(self, dataset_type_ref, start, offset_alias):
         """
         Extract and return extent information corresponding to dataset type, start, and offset_alias.
         The start time and product_extent.start are casted to date types during retrieval.
@@ -934,42 +1022,27 @@ class PostgresDbAPI(object):
                             '1Y' indicates a year, '1D' indicates a day.
         :return: 'geometry' field if a database record exits otherwise None
         """
-        from datetime import datetime, timezone
-        from pandas import Timestamp
-        from sqlalchemy import DATE
-
-        def _parse_date(time_stamp):
-            """
-               Parses a time representation into a datetime object with year, month, day values and timezone
-               :param time_stamp: A time value
-               :return datetime: datetime representation of given time value
-               """
-            if not isinstance(time_stamp, datetime):
-                t = Timestamp(time_stamp)
-                time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
-            if not time_stamp.tzinfo:
-                system_tz = datetime.now(timezone.utc).astimezone().tzinfo
-                return time_stamp.replace(tzinfo=system_tz)
-            return time_stamp
 
         # Get extent metadata
-        metadata = self.get_db_extent_meta(dataset_type_ref, offset_alias)
+        metadata = self.get_extent_meta(dataset_type_ref, offset_alias)
         if not bool(metadata):
             return None
 
-        start = _parse_date(start)
+        # parse the date 'start'
+        start = self._parse_date(start)
+
         res = self._connection.execute(
             select([
-                EXTENT.c.geometry
+                EXTENT_SLICE.c.geometry
             ]).where(
                 and_(
-                    EXTENT.c.extent_meta_ref == metadata['id'],
-                    cast(EXTENT.c.start, DATE) == start.date(),
+                    EXTENT_SLICE.c.extent_meta_ref == metadata['id'],
+                    EXTENT_SLICE.c.start == start,
                 )
             )).fetchone()
         return res['geometry'] if res else None
 
-    def get_ranges(self, dataset_type_ref):
+    def get_dataset_type_range(self, dataset_type_ref):
         """
         Returns a ranges record corresponding to a given product id
         :param dataset_type_ref: dataset type id
@@ -978,9 +1051,9 @@ class PostgresDbAPI(object):
         """
         res = self._connection.execute(
             select([
-                RANGES.c.dataset_type_ref, RANGES.c.time_min,
-                RANGES.c.time_max, RANGES.c.bounds, RANGES.c.crs
-            ]).where(RANGES.c.dataset_type_ref == dataset_type_ref)
+                DATASET_TYPE_RANGE.c.dataset_type_ref, DATASET_TYPE_RANGE.c.time_min,
+                DATASET_TYPE_RANGE.c.time_max, DATASET_TYPE_RANGE.c.bounds, DATASET_TYPE_RANGE.c.crs
+            ]).where(DATASET_TYPE_RANGE.c.dataset_type_ref == dataset_type_ref)
         ).fetchone()
         return res if res else None
 

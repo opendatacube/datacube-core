@@ -236,7 +236,7 @@ def extent_upload_periodic(product, index, db, extent_upload, to_time, offset_al
 
     # Extents for yearly durations
     with db.connect() as connection:
-        metadata = connection.get_db_extent_meta(dataset_type_ref, offset_alias)
+        metadata = connection.get_extent_meta(dataset_type_ref, offset_alias)
     if metadata:
         end = parse_time(to_time)
         start = metadata['end']

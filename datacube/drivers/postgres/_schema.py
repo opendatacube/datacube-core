@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import logging
 
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger
-from sqlalchemy import Table, Column, Integer, String, DateTime
+from sqlalchemy import Table, Column, Integer, String, DateTime, Date
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
 
@@ -119,9 +119,9 @@ EXTENT_META = Table(
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
     Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), nullable=False),
 
-    # The start and end times for period index for periodic extents
-    Column('start', DateTime(timezone=True), nullable=False),
-    Column('end', DateTime(timezone=True), nullable=False),
+    # The start and end dates for period index for periodic extents
+    Column('start', Date, nullable=False),
+    Column('end', Date, nullable=False),
 
     # Python Pandas library style offset alias string indicating the length of each period
     Column('offset_alias', String, nullable=False),
@@ -139,23 +139,22 @@ EXTENT_META = Table(
 
 # The spatial extent geometry for various time periods. Refer to extent_meta table to
 # obtain length of time period.
-EXTENT = Table(
-    'extent', _core.METADATA,
-    Column('id', postgres.UUID(as_uuid=True), primary_key=True),
+EXTENT_SLICE = Table(
+    'extent_slice', _core.METADATA,
     Column('extent_meta_ref', None, ForeignKey(EXTENT_META.c.id), nullable=False),
 
-    # The start time of this period
-    Column('start', DateTime(timezone=True), nullable=False),
+    # The start date of this period
+    Column('start', Date, nullable=False),
 
     # The spatial extent geometry
     Column('geometry', postgres.JSONB, nullable=True),
 
-    UniqueConstraint('extent_meta_ref', 'start')
+    PrimaryKeyConstraint('extent_meta_ref', 'start', name='extent_pk')
 )
 
 # Time min/max and rectangular spatial bounds for products
-RANGES = Table(
-    'ranges', _core.METADATA,
+DATASET_TYPE_RANGE = Table(
+    'dataset_type_range', _core.METADATA,
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
     Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), nullable=False),
 

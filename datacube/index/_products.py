@@ -12,9 +12,8 @@ from datacube.utils import InvalidDocException, jsonify_document, changes, _read
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
 from datacube.utils.geometry import CRS, Geometry
-from datetime import datetime, timezone
 from pandas import Timestamp, PeriodIndex
-import warnings
+from datetime import date
 
 _LOG = logging.getLogger(__name__)
 
@@ -403,12 +402,12 @@ class ProductResource(object):
 
         start = _parse_date(start)
         with self._db.connect() as connection:
-            result = connection.get_db_extent(dataset_type_id, start, offset_alias)
+            result = connection.get_extent_slice(dataset_type_id, start, offset_alias)
             # if there is no extent record return None
             if not bool(result):
                 return None
             # the crs string is in metadata
-            metadata = connection.get_db_extent_meta(dataset_type_id, offset_alias)
+            metadata = connection.get_extent_meta(dataset_type_id, offset_alias)
             # Create a Geometry object
             geom = Geometry(result, CRS(metadata['crs']))
             # Project to the requested projection and return
@@ -443,31 +442,27 @@ class ProductResource(object):
 
         # check whether extents exists as per extent_meta table
         with self._db.connect() as connection:
-            metadata = connection.get_db_extent_meta(dataset_type_id, offset_alias)
+            metadata = connection.get_extent_meta(dataset_type_id, offset_alias)
             if not offset_alias == metadata['offset_alias']:
                 raise ValueError('There is no extent_meta record for this offset_alias')
 
-            # make sure metadata['start'] and metadata['end] are timezone aware
-            metadata_start = _parse_date(metadata['start'])
-            metadata_end = _parse_date(metadata['end'])
-
-            if start < metadata_start:
-                start = metadata_start
-            if end > metadata_end:
-                end = metadata_end
+            if start < metadata['start']:
+                start = metadata['start']
+            if end > metadata['end']:
+                end = metadata['end']
 
         # Compute the period index
         dti = PeriodIndex(start=start, end=end, freq=offset_alias)
         for period in dti:
-            yield {'start': period.start_time, 'extent': self.extent(start=period.start_time,
-                                                                     offset_alias=offset_alias,
-                                                                     dataset_type_id=dataset_type_id,
-                                                                     projection=projection)}
+            yield {'start': period.to_timestamp().date(),
+                   'extent': self.extent(start=period.to_timestamp().date(), offset_alias=offset_alias,
+                                         dataset_type_id=dataset_type_id, projection=projection)}
 
     def ranges(self, product_name):
         """
         Get ranges record from the database relevant to the product. It returns information
-        such as time_min, time_max, and spatial bounds
+        such as time_min, time_max, and spatial bounds. The spatial bounds are of the form
+        {'left': left, 'bottom': bottom, 'right': right, 'top': top}
 
         :param str product_name: The name of the product
         :return: ranges record as stored in the database
@@ -475,20 +470,18 @@ class ProductResource(object):
 
         dataset_type_ref = self.get_by_name(product_name).id
         with self._db.connect() as connection:
-            return connection.get_ranges(dataset_type_ref)
+            return connection.get_dataset_type_range(dataset_type_ref)
 
 
-def _parse_date(time_stamp):
+def _parse_date(d):
     """
     Parses a time representation into a datetime object with year, month, day values and timezone
 
-    :param time_stamp: A time value
+    :param d: A time value
     :return datetime: datetime representation of given time value
     """
-    if not isinstance(time_stamp, datetime):
-        t = Timestamp(time_stamp)
-        time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
-    if not time_stamp.tzinfo:
-        system_tz = datetime.now(timezone.utc).astimezone().tzinfo
-        return time_stamp.replace(tzinfo=system_tz)
-    return time_stamp
+
+    if not isinstance(d, date):
+        t = Timestamp(d)
+        d = date(year=t.year, month=t.month, day=t.day)
+    return d

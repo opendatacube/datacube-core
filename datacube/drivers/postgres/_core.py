@@ -201,13 +201,13 @@ def update_schema(engine):
     # Create extent_meta, extent, and ranges tables if they don't exit
     if not has_extents_ranges(engine):
         _LOG.info('Creating extent_meta, extent, and ranges tables')
-        from ._schema import EXTENT_META, EXTENT, RANGES
+        from ._schema import EXTENT_META, EXTENT_SLICE, DATASET_TYPE_RANGE
         with engine.connect() as conn:
             trans = conn.begin()
             try:
                 EXTENT_META.create(bind=conn)
-                EXTENT.create(bind=conn)
-                RANGES.create(bind=conn)
+                EXTENT_SLICE.create(bind=conn)
+                DATASET_TYPE_RANGE.create(bind=conn)
                 trans.commit()
             except:
                 trans.rollback()
