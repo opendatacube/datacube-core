@@ -70,33 +70,33 @@ def assert_multipolygon(p1, p2):
 @pytest.mark.usefixtures("load_extents")
 def test_product_extent(index, extent_data):
     extent_meta, extent_slice = extent_data
-    extent = index.products.extent(dataset_type_id=11, start='1-1-2015',
-                                   offset_alias='1Y').__geo_interface__['coordinates']
+    extent = index.products.extent_slice(dataset_type_id=11, start='1-1-2015',
+                                         offset_alias='1Y').__geo_interface__['coordinates']
     assert_multipolygon(extent, extent_slice[0]['geometry']['coordinates'])
 
     # test different time representations
-    extent = index.products.extent(dataset_type_id=11, start='01-01-2015',
-                                   offset_alias='1Y').__geo_interface__['coordinates']
+    extent = index.products.extent_slice(dataset_type_id=11, start='01-01-2015',
+                                         offset_alias='1Y').__geo_interface__['coordinates']
     assert_multipolygon(extent, extent_slice[0]['geometry']['coordinates'])
 
-    extent = index.products.extent(dataset_type_id=11, start=datetime(year=2015, month=1, day=1),
-                                   offset_alias='1Y').__geo_interface__['coordinates']
+    extent = index.products.extent_slice(dataset_type_id=11, start=datetime(year=2015, month=1, day=1),
+                                         offset_alias='1Y').__geo_interface__['coordinates']
     assert_multipolygon(extent, extent_slice[0]['geometry']['coordinates'])
 
-    extent = index.products.extent(dataset_type_id=11, start=date(year=2015, month=1, day=1),
-                                   offset_alias='1Y').__geo_interface__['coordinates']
+    extent = index.products.extent_slice(dataset_type_id=11, start=date(year=2015, month=1, day=1),
+                                         offset_alias='1Y').__geo_interface__['coordinates']
     assert_multipolygon(extent, extent_slice[0]['geometry']['coordinates'])
 
-    extent = index.products.extent(dataset_type_id=11, start='2015',
-                                   offset_alias='1Y').__geo_interface__['coordinates']
+    extent = index.products.extent_slice(dataset_type_id=11, start='2015',
+                                         offset_alias='1Y').__geo_interface__['coordinates']
     assert_multipolygon(extent, extent_slice[0]['geometry']['coordinates'])
 
-    extent = index.products.extent(dataset_type_id=11, start='01-2015',
-                                   offset_alias='1Y').__geo_interface__['coordinates']
+    extent = index.products.extent_slice(dataset_type_id=11, start='01-2015',
+                                         offset_alias='1Y').__geo_interface__['coordinates']
     assert_multipolygon(extent, extent_slice[0]['geometry']['coordinates'])
 
-    extent = index.products.extent(dataset_type_id=11, start='1-1-2015',
-                                   offset_alias='1Y').__geo_interface__['coordinates']
+    extent = index.products.extent_slice(dataset_type_id=11, start='1-1-2015',
+                                         offset_alias='1Y').__geo_interface__['coordinates']
     assert_multipolygon(extent, extent_slice[0]['geometry']['coordinates'])
 
 

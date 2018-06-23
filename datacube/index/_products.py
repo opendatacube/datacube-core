@@ -388,7 +388,7 @@ class ProductResource(object):
             id_=query_row['id'],
         )
 
-    def extent(self, dataset_type_id, start, offset_alias, projection=None):
+    def extent_slice(self, dataset_type_id, start, offset_alias, projection=None):
         """
         A query of extent specified by dataset_type_id, start, and offset
 
@@ -455,8 +455,8 @@ class ProductResource(object):
         dti = PeriodIndex(start=start, end=end, freq=offset_alias)
         for period in dti:
             yield {'start': period.to_timestamp().date(),
-                   'extent': self.extent(start=period.to_timestamp().date(), offset_alias=offset_alias,
-                                         dataset_type_id=dataset_type_id, projection=projection)}
+                   'extent': self.extent_slice(start=period.to_timestamp().date(), offset_alias=offset_alias,
+                                               dataset_type_id=dataset_type_id, projection=projection)}
 
     def ranges(self, product_name):
         """

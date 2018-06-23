@@ -15,6 +15,10 @@ SQL_NAMING_CONVENTIONS = {
     # tix: test-index, created by hand for testing, particularly in dev.
 }
 SCHEMA_NAME = 'agdc'
+
+from datacube.drivers.postgres._schema import EXTENT_META, EXTENT_SLICE, DATASET_TYPE_RANGE
+
+DB_URL = 'postgresql://aj9439@agdcdev-db.nci.org.au:6432/datacube'
 ENGINE = create_engine('postgresql://aj9439@agdcdev-db.nci.org.au:6432/datacube', poolclass=NullPool)
 
 
@@ -47,5 +51,9 @@ def check_and_create_table(table, db_url, schema_name):
 
 
 if __name__ == '__main__':
-    META = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
-    META.reflect(bind=ENGINE, schema=SCHEMA_NAME, only=lambda name, _: name in ['extent', 'extent_meta', 'ranges'])
+    # META = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
+    # META.reflect(bind=ENGINE, schema=SCHEMA_NAME, only=lambda name, _: name in ['extent', 'extent_meta', 'ranges'])
+
+    check_and_create_table(EXTENT_META, DB_URL, SCHEMA_NAME)
+    check_and_create_table(EXTENT_SLICE, DB_URL, SCHEMA_NAME)
+    check_and_create_table(DATASET_TYPE_RANGE, DB_URL, SCHEMA_NAME)

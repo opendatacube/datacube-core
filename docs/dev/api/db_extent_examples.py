@@ -24,7 +24,7 @@ def main():
     # Get extent of a month using get_extent_direct() and plot it
     dataset_type_ref = dc_idx.products.get_by_name('ls8_nbar_albers').id
     start = datetime.datetime(year=2017, month=1, day=1)
-    extent = dc_idx.products.extent(start=start, offset_alias='1M', dataset_type_id=dataset_type_ref)
+    extent = dc_idx.products.extent_slice(start=start, offset_alias='1M', dataset_type_id=dataset_type_ref)
     ft1 = {'type': 'Feature',
            'geometry': shape(extent)}
     gs1 = gpd.GeoDataFrame(ft1)

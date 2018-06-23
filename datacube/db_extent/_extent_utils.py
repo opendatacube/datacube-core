@@ -4,7 +4,7 @@ from datacube.drivers.postgres._core import SCHEMA_NAME
 from sqlalchemy.pool import NullPool
 import uuid
 from pandas import Timestamp
-from datetime import datetime, timezone
+from datetime import datetime, date, timezone
 import itertools
 
 
@@ -17,19 +17,16 @@ def peek_generator(iterable):
     return itertools.chain([first], iterable)
 
 
-def parse_time(time_stamp):
+def parse_date(d):
     """
     Parses a time representation into a datetime object
-    :param time_stamp: A time value
+    :param d: A time value
     :return datetime: datetime representation of given time value
     """
-    if not isinstance(time_stamp, datetime):
-        t = Timestamp(time_stamp)
-        time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
-    if not time_stamp.tzinfo:
-        system_tz = datetime.now(timezone.utc).astimezone().tzinfo
-        return time_stamp.replace(tzinfo=system_tz)
-    return time_stamp
+    if not isinstance(d, date):
+        t = Timestamp(d)
+        d = date(year=t.year, month=t.month, day=t.day)
+    return d
 
 
 def compute_uuid(dataset_type_ref, start, offset_alias):

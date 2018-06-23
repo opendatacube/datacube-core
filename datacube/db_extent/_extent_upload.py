@@ -1,21 +1,18 @@
 import logging
 import warnings
-from shapely.geometry import asShape, mapping
+from shapely.geometry import asShape
 from shapely.ops import cascaded_union
 import shapely.wkt as wkt
 from datacube import Datacube
 from datacube.utils.geometry import CRS, BoundingBox
 from pandas import period_range, PeriodIndex, Period
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.sql import select
-from datacube.drivers.postgres._core import SCHEMA_NAME
 from datacube.index import Index
 from datacube.drivers.postgres import PostgresDb
 from multiprocessing import Pool
 from datetime import datetime
 import json
 from functools import reduce
-from datacube.db_extent import ExtentMetadata, compute_uuid, parse_time, peek_generator, ExtentIndex
+from datacube.db_extent import parse_date, peek_generator
 
 _LOG = logging.getLogger(__name__)
 # pandas style time period frequencies
@@ -135,18 +132,7 @@ class ExtentUpload(object):
         self._username = username
 
         # Access to tables
-        self._extent_index = destination_index
-        from sqlalchemy.pool import NullPool
-        self._engine = create_engine(destination_index.url, poolclass=NullPool, client_encoding='utf8')
-        meta = MetaData(self._engine, schema=SCHEMA_NAME)
-        meta.reflect(bind=self._engine, only=['extent', 'extent_meta', 'ranges'], schema=SCHEMA_NAME)
-        self._extent_table = meta.tables[SCHEMA_NAME+'.extent']
-        self._extent_meta_table = meta.tables[SCHEMA_NAME+'.extent_meta']
-        self._ranges_table = meta.tables[SCHEMA_NAME + '.ranges']
-        self._dataset_type_table = meta.tables[SCHEMA_NAME+'.dataset_type']
-
-        # Metadata pre-loads
-        self.metadata = ExtentMetadata(destination_index).items
+        self.index = destination_index
 
     @property
     def _loading_datacube(self):
@@ -161,79 +147,8 @@ class ExtentUpload(object):
         index = Index(db)
         return Datacube(index=index)
 
-    def _get_extent_meta_row(self, dataset_type_ref, offset_alias):
-        """
-        Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
-
-        :param dataset_type_ref: dataset type id
-        :param str offset_alias: Pandas style offset period string
-        :return:
-        """
-        extent_meta_query = select([self._extent_meta_table]).\
-            where((dataset_type_ref == self._extent_meta_table.c.dataset_type_ref) &
-                  (offset_alias == self._extent_meta_table.c.offset_alias))
-        with self._engine.begin() as conn:
-            return conn.execute(extent_meta_query).fetchone()
-
-    def _get_extent_row(self, dataset_type_ref, start, offset_alias):
-        """
-        Extract and return extent information corresponding to dataset type, start, and offset_alias
-
-        :param dataset_type_ref: dataset type id
-        :param datetime start: datetime representation of start timestamp
-        :param offset_alias: pandas style period string
-        :return: extent field
-        """
-
-        # compute the id (i.e. uuid) from dataset_type_ref, start, and offset
-        # Alternatively you can get extent_meta id and search for (extent_meta_id, start)
-        extent_uuid = compute_uuid(dataset_type_ref, start, offset_alias)
-
-        extent_query = select([self._extent_table.c.geometry]).\
-            where(self._extent_table.c.id == extent_uuid.hex)
-        with self._engine.begin() as conn:
-            extent_row = conn.execute(extent_query).fetchone()
-            if extent_row:
-                geo = extent_row['geometry']
-            else:
-                raise KeyError("Corresponding extent record does not exist in the extent table")
-            return geo
-
-    def _do_insert_query(self, dataset_type_ref, start, offset_alias, extent):
-        """
-        Insert or Update an extent record corresponding to dataset_type id, start time, and offset
-
-        :param dataset_type_ref: dataset_type id
-        :param datetime start: start time
-        :param str offset_alias: pandas style offset alias string
-        :param extent: new extent
-        """
-
-        # compute the id (i.e. uuid) from dataset_type_ref, start, and offset
-        extent_uuid = compute_uuid(dataset_type_ref, start, offset_alias)
-
-        # See whether an entry already exists in extent
-        extent_query = select([self._extent_table.c.id]).\
-            where(self._extent_table.c.id == extent_uuid.hex)
-        conn = self._engine.connect()
-        extent_row = conn.execute(extent_query).fetchone()
-        if extent_row:
-            # Update the existing entry
-            update = self._extent_table.update().\
-                where(self._extent_table.c.id == extent_row['id']).\
-                values(geometry=mapping(extent))
-            conn.execute(update)
-        else:
-            # Get extent_meta_ref
-            extent_meta_ref = self.metadata[(dataset_type_ref, offset_alias)]['id']
-            # Insert a new entry
-            ins = self._extent_table.insert().values(id=extent_uuid.hex, extent_meta_ref=extent_meta_ref,
-                                                     start=start, geometry=mapping(extent))
-            conn.execute(ins)
-        conn.close()
-
-    def _store_one(self, product_name, dataset_type_ref, period, offset_alias,
-                   offset_pool=DEFAULT_PER_PROCESS_FREQ, projection=None):
+    def compute_extent_one(self, product_name, dataset_type_ref, period, offset_alias,
+                           offset_pool=DEFAULT_PER_PROCESS_FREQ, projection=None):
         """
         Store a record in extent table corresponding to a given (period, offset_alias)
         using multiprocessing pools. Each process execute extent compute corresponding to a offset
@@ -254,16 +169,11 @@ class ExtentUpload(object):
                                                 username=self._username, compute=extent_per_period,
                                                 projection=projection), period_list)
 
-        # Filter out extents of NoneType (this part probably unnecessary now)
+        # Filter out extents of NoneType
         extent_list = [extent for extent in extent_list if extent]
-        full_extent = cascaded_union(extent_list) if extent_list else wkt.loads('MULTIPOLYGON EMPTY')
+        return cascaded_union(extent_list).__geo_interface__ if extent_list else None
 
-        # Format the start time to year-month format
-        start_time = datetime(year=period.start_time.year, month=period.start_time.month, day=period.start_time.day)
-        # Insert the full extent into extent table
-        self._do_insert_query(dataset_type_ref, start_time, offset_alias, full_extent)
-
-    def _store_many(self, product_name, dataset_type_ref, start, end, offset_alias, projection=None):
+    def compute_extent_many(self, product_name, dataset_type_ref, start, end, offset_alias, projection=None):
         """
         Store extent records correspond to each period of length offset within start and end
 
@@ -277,8 +187,9 @@ class ExtentUpload(object):
 
         idx = period_range(start=start, end=end, freq=offset_alias)
         for period in idx:
-            self._store_one(product_name=product_name, dataset_type_ref=dataset_type_ref,
-                            period=period, offset_alias=offset_alias, projection=projection)
+            yield (period, self.compute_extent_one(product_name=product_name, dataset_type_ref=dataset_type_ref,
+                                                   period=period, offset_alias=offset_alias,
+                                                   projection=projection))
 
     def store_extent(self, product_name, start, end, offset_alias=None, projection=None):
         """
@@ -296,92 +207,56 @@ class ExtentUpload(object):
             offset_alias = DEFAULT_FREQ
 
         # Parse the time arguments
-        start = parse_time(start)
-        end = parse_time(end)
+        start = parse_date(start)
+        end = parse_date(end)
 
         # Lets get the dataset_type id
-        dataset_type_ref = self._extent_index.products.get_by_name(product_name).id
+        dataset_type_ref = self.index.products.get_by_name(product_name).id
 
         if dataset_type_ref:
-            conn = self._engine.connect()
-            # Now we are ready to get the extent_metadata id
-            extent_meta_row = self._get_extent_meta_row(dataset_type_ref, offset_alias)
-            if extent_meta_row:
+            # get the extent_metadata
+            with self.index._db.connect() as db_api:
+                metadata = db_api.get_extent_meta(dataset_type_ref, offset_alias)
+            if metadata:
                 # make sure there are no gaps from start to end in the database
                 # new_start_c and new_end_c are for computes
-                new_start_c = extent_meta_row['end'] if start > extent_meta_row['end'] else start
-                new_end_c = extent_meta_row['start'] if end < extent_meta_row['start'] else end
+                new_start_c = metadata['end'] if start > metadata['end'] else start
+                new_end_c = metadata['start'] if end < metadata['start'] else end
 
                 # new_start_d and new_end_d are for extent_meta table to update
-                new_start_d = min(new_start_c, extent_meta_row['start'])
-                new_end_d = max(new_end_c, extent_meta_row['end'])
+                new_start_d = min(new_start_c, metadata['start'])
+                new_end_d = max(new_end_c, metadata['end'])
 
                 # Got to update meta data
-                update = self._extent_meta_table.update(). \
-                    where(self._extent_meta_table.c.id == extent_meta_row['id']). \
-                    values(start=new_start_d, end=new_end_d, crs=projection)
-                conn.execute(update)
+                with self.index._db.connect() as db_api:
+                    db_api.merge_extent_meta(dataset_type_ref,new_start_d, new_end_d, offset_alias, projection)
 
-                # We are pre-loading metadata so got to update those
-                self.metadata = ExtentMetadata(self._extent_index).items
-
-                conn.close()
-                # Time to insert/update new extent data
-                self._store_many(product_name=product_name, dataset_type_ref=dataset_type_ref,
-                                 start=new_start_c, end=new_end_c, offset_alias=offset_alias, projection=projection)
+                # compute new extent data
+                extents = self.compute_extent_many(product_name=product_name, dataset_type_ref=dataset_type_ref,
+                                                   start=new_start_c, end=new_end_c, offset_alias=offset_alias,
+                                                   projection=projection)
+                # Save extents
+                with self.index._db.connect() as db_api:
+                    db_api.update_extent_slice_many(metadata['id'], extents)
 
             else:
                 # insert a new meta entry
-                ins = self._extent_meta_table.insert().values(dataset_type_ref=dataset_type_ref,
-                                                              start=start, end=end,
-                                                              offset_alias=offset_alias,
-                                                              crs=projection)
-                conn.execute(ins)
+                with self.index._db.connect() as db_api:
+                    db_api.merge_extent_meta(dataset_type_ref, start, end, offset_alias, projection)
+                    # get it back to obtain the id
+                    metadata = db_api.get_extent_meta(dataset_type_ref, offset_alias)
+                    if not metadata:
+                        raise KeyError("Extent meta record insert has failed")
+                # compute new extent data
+                extents = self.compute_extent_many(product_name=product_name, dataset_type_ref=dataset_type_ref,
+                                                   start=start, end=end, offset_alias=offset_alias,
+                                                   projection=projection)
+                # Save extents
+                with self.index._db.connect() as db_api:
+                    db_api.update_extent_slice_many(metadata['id'], extents)
 
-                # We are pre-loading metadata so got to update those
-                self.metadata = ExtentMetadata(self._extent_index).items
-
-                conn.close()
-                # Time to insert/update new extent data
-                self._store_many(product_name=product_name, dataset_type_ref=dataset_type_ref,
-                                 start=start, end=end, offset_alias=offset_alias, projection=projection)
         else:
             raise KeyError("dataset_type_ref does not exist")
-
-    def _store_bounds_record(self, dataset_type_ref, lower, upper, bounds, projection):
-        """
-        Store a record in the products_bounds table. It raises KeyError exception if product name is not
-        found in the dataset_type table. The stored values are upper and lower bounds of time, axis aligned
-        spacial bounds, and spacial projection used.
-
-        :param datetime lower: The lower time bound
-        :param datetime upper: The upper time bound
-        :param BoundingBox bounds: The spacial bounds
-        :param str projection: The projection used
-        :return:
-        """
-
-        bounds_json = {'left': bounds.left, 'bottom': bounds.bottom, 'right': bounds.right, 'top': bounds.top}
-
-        conn = self._engine.connect()
-
-        # See whether an entry exists in product_bounds
-        bounds_query = select([self._ranges_table.c.id]).\
-            where(self._ranges_table.c.dataset_type_ref == dataset_type_ref)
-        bounds_row = conn.execute(bounds_query).fetchone()
-        if bounds_row:
-            # Update the existing entry
-            update = self._ranges_table.update().\
-                where(self._ranges_table.c.id == bounds_row['id']).\
-                values(time_min=lower, time_max=upper, bounds=json.dumps(bounds_json), crs=projection)
-            conn.execute(update)
-        else:
-            # Insert a new entry
-            ins = self._ranges_table.insert().values(dataset_type_ref=dataset_type_ref,
-                                                     time_min=lower, time_max=upper,
-                                                     bounds=json.dumps(bounds_json), crs=projection)
-            conn.execute(ins)
-        conn.close()
 
     @staticmethod
     def _empty_box(bound):
@@ -481,7 +356,7 @@ class ExtentUpload(object):
                 bounds = ExtentUpload._bounds_union(bounds, dataset.extent.to_crs(CRS(projection)).boundingbox)
         return lower, upper, bounds
 
-    def _store_bounds(self, product_name, projection=None, time_hints=None):
+    def _store_bounds(self, product_name, crs=None, time_hints=None):
         """
         Store a bounds record in the product_bounds table. It computes max, min bounds in the projected space
         using dataset extents. If projection is not specified, it is assumed that CRS is constant product wide else
@@ -489,50 +364,51 @@ class ExtentUpload(object):
         parameter
 
         :param product_name:
-        :param projection:
+        :param crs:
         :return:
         """
 
         # Get the dataset_type_ref
-        dataset_type_ref = self._extent_index.products.get_by_name(product_name).id
+        dataset_type_ref = self.index.products.get_by_name(product_name).id
         if not dataset_type_ref:
             raise KeyError("dataset_type_ref does not exist")
 
         if time_hints:
             lower, upper, bounds = self._compute_bounds_with_hints(product=product_name,
                                                                    time_hints=time_hints,
-                                                                   projection=projection)
-            self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=lower,
-                                      upper=upper, bounds=bounds, projection=projection)
+                                                                   projection=crs)
+            with self.index._db.connect() as db_api:
+                db_api.update_ranges(dataset_type_ref=dataset_type_ref, time_min=lower,
+                                     time_max=upper, bounds=bounds, crs=crs)
         else:
             dc = self._loading_datacube
             datasets = peek_generator(dc.find_datasets_lazy(product=product_name))
             if datasets:
-                lower, upper, bounds = ExtentUpload._compute_bounds(datasets, projection=projection)
-                self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=lower,
-                                          upper=upper, bounds=bounds, projection=projection)
+                lower, upper, bounds = ExtentUpload._compute_bounds(datasets, projection=crs)
+                with self.index._db.connect() as db_api:
+                    db_api.update_ranges(dataset_type_ref=dataset_type_ref, time_min=lower,
+                                         time_max=upper, bounds=bounds, crs=crs)
 
     def update_bounds(self, product_name, to_time):
-        to_time = parse_time(to_time)
-        # Retrieve the current bounds record
-        bounds = ExtentIndex(datacube_index=self._extent_index).get_bounds(product_name)
-        if bounds:
-            from_time = bounds['time_max']
+        to_time = parse_date(to_time)
+        # Retrieve the current ranges record
+        ranges = self.index.products.ranges(product_name)
+        if ranges:
+            from_time = ranges['time_max']
             if from_time > to_time:
                 return
             dc = self._loading_datacube
             datasets = peek_generator(dc.find_datasets_lazy(product=product_name, time=(from_time, to_time)))
             if datasets:
-                old_lower = bounds['time_min']
-                bds = json.loads(bounds['bounds'])
+                old_lower = ranges['time_min']
+                bds = json.loads(ranges['bounds'])
                 old_bounds = BoundingBox(left=bds['left'], bottom=bds['bottom'], right=bds['right'], top=bds['top'])
-                _, new_upper, new_bounds = ExtentUpload._compute_bounds(datasets,
-                                                                        projection=bounds['crs'])
-                dataset_type_ref = self._extent_index.products.get_by_name(product_name).id
-                self._store_bounds_record(dataset_type_ref=dataset_type_ref, lower=old_lower,
-                                          upper=new_upper,
-                                          bounds=ExtentUpload._bounds_union(old_bounds, new_bounds),
-                                          projection=bounds['crs'])
+                _, new_upper, new_bounds = self._compute_bounds(datasets, projection=ranges['crs'])
+                dataset_type_ref = self.index.products.get_by_name(product_name).id
+                with self.index._db.connect() as db_api:
+                    db_api.update_ranges(dataset_type_ref=dataset_type_ref, time_min=old_lower,
+                                         time_max=new_upper,
+                                         bounds=self._bounds_union(old_bounds, new_bounds), crs=ranges['crs'])
             else:
                 return
         else:
@@ -563,9 +439,9 @@ if __name__ == '__main__':
                               username='aj9439', destination_index=Index(EXTENT_DB))
 
     # load into extents table
-    # EXTENT_IDX.store_extent(product_name='ls8_nbar_scene', start='2013-01',
-    #                         end='2013-05', offset_alias='1D', projection='EPSG:4326')
-    # EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
-    #                         end='2017-05', offset_alias='1M', projection='EPSG:4326')
     # EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
     # EXTENT_IDX.store_bounds(product_name='ls8_nbar_scene', projection='EPSG:4326')
+    EXTENT_IDX.store_extent(product_name='ls8_nbar_scene', start='2013-01',
+                            end='2013-05', offset_alias='1M', projection='EPSG:4326')
+    # EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
+    #                         end='2017-05', offset_alias='1M', projection='EPSG:4326')

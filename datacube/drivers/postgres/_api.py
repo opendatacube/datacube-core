@@ -15,6 +15,7 @@ import logging
 import uuid
 import datetime
 from pandas import Timestamp
+import json
 
 from sqlalchemy import cast
 from sqlalchemy import delete
@@ -927,7 +928,7 @@ class PostgresDbAPI(object):
         metadata = self.get_extent_meta(dataset_type_ref, offset_alias)
         if metadata:
             if not (start <= end and start <= metadata['end'] and metadata['start'] <= end):
-                raise ValueError("Existing and incoming ime ranges do not overlap")
+                raise ValueError("Existing and incoming time ranges do not overlap")
             if not crs == metadata['crs']:
                 raise ValueError("Existing crs {} and incoming crs {} do not match".format(metadata['crs'], crs))
 
@@ -937,8 +938,8 @@ class PostgresDbAPI(object):
             self._connection.execute(
                 EXTENT_META.update().where(
                     and_(
-                        dataset_type_ref=dataset_type_ref,
-                        offset_alias=offset_alias,
+                        dataset_type_ref == dataset_type_ref,
+                        offset_alias == offset_alias,
                     )
                 ).values(start=start, end=end, crs=crs)
             )
@@ -990,6 +991,36 @@ class PostgresDbAPI(object):
             # Insert a new entry
             self._connection.execute(
                 EXTENT_SLICE.insert().values(extent_meta_ref=extent_meta_ref, start=start, geometry=extent)
+            )
+
+    def update_extent_slice_many(self, extent_meta_ref, extents_with_period):
+        for period, extent in extents_with_period:
+            self.update_extent_slice(extent_meta_ref, period.start_time.date(), extent)
+
+    def update_ranges(self, dataset_type_ref, time_min, time_max, bounds, crs):
+        """
+        Store a record in the products_bounds table. The stored values are upper and
+        lower bounds of time, axis aligned spatial bounds, and crs used.
+        """
+
+        bounds_json = {'left': bounds.left, 'bottom': bounds.bottom, 'right': bounds.right, 'top': bounds.top}
+
+        # See whether an entry exists in product_bounds
+        range = self.get_dataset_type_range(dataset_type_ref)
+        if range:
+            # Update the existing entry
+            self._connection.execute(
+                DATASET_TYPE_RANGE.update().where(
+                    DATASET_TYPE_RANGE.c.dataset_type_ref == dataset_type_ref
+                ).values(time_min=time_min, time_max=time_max,
+                         bounds=json.dumps(bounds_json), crs=crs)
+            )
+        else:
+            # Insert a new entry
+            self._connection.execute(
+                DATASET_TYPE_RANGE.insert().values(dataset_type_ref=dataset_type_ref,
+                                                   time_min=time_min, time_max=time_max,
+                                                   bounds=json.dumps(bounds_json), crs=crs)
             )
 
     def get_extent_meta(self, dataset_type_ref, offset_alias):

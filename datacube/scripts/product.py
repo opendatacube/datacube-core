@@ -14,7 +14,7 @@ import yaml.resolver
 from click import echo
 
 from datacube.api.core import dataset_type_to_row
-from datacube.db_extent import parse_time, ExtentUpload
+from datacube.db_extent import parse_date, ExtentUpload
 from datacube.index.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
@@ -238,7 +238,7 @@ def extent_upload_periodic(product, index, db, extent_upload, to_time, offset_al
     with db.connect() as connection:
         metadata = connection.get_extent_meta(dataset_type_ref, offset_alias)
     if metadata:
-        end = parse_time(to_time)
+        end = parse_date(to_time)
         start = metadata['end']
         if start < end:
             extent_upload.store_extent(product_name=product, start=start, end=end,
