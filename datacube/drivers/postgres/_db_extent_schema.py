@@ -3,6 +3,7 @@ from sqlalchemy.schema import Table
 from sqlalchemy.pool import NullPool
 from sqlalchemy.engine import reflection
 import warnings
+from datacube.drivers.postgres._schema import EXTENT_META, EXTENT_SLICE, DATASET_TYPE_RANGE
 
 SQL_NAMING_CONVENTIONS = {
     "ix": 'ix_%(column_0_label)s',
@@ -15,8 +16,6 @@ SQL_NAMING_CONVENTIONS = {
     # tix: test-index, created by hand for testing, particularly in dev.
 }
 SCHEMA_NAME = 'agdc'
-
-from datacube.drivers.postgres._schema import EXTENT_META, EXTENT_SLICE, DATASET_TYPE_RANGE
 
 DB_URL = 'postgresql://aj9439@agdcdev-db.nci.org.au:6432/datacube'
 ENGINE = create_engine('postgresql://aj9439@agdcdev-db.nci.org.au:6432/datacube', poolclass=NullPool)

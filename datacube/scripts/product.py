@@ -16,6 +16,7 @@ from click import echo
 from datacube.api.core import dataset_type_to_row
 from datacube.db_extent import parse_date, ExtentUpload
 from datacube.index.index import Index
+from datacube.drivers.postgres import PostgresDb
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
@@ -242,10 +243,10 @@ def extent_upload_periodic(product, index, db, extent_upload, to_time, offset_al
         start = metadata['end']
         if start < end:
             extent_upload.store_extent(product_name=product, start=start, end=end,
-                                       offset_alias=offset_alias, projection=metadata['crs'])
+                                       offset_alias=offset_alias, crs=metadata['crs'])
     else:
         extent_upload.store_extent(product_name=product, start=bounds['time_min'], end=bounds['time_max'],
-                                   offset_alias=offset_alias, projection=bounds['crs'])
+                                   offset_alias=offset_alias, crs=bounds['crs'])
 
 
 @product_extents.command('update')
@@ -256,10 +257,12 @@ def extent_upload_periodic(product, index, db, extent_upload, to_time, offset_al
 @ui.pass_index()
 def update(index, config, to_time, crs, product_name):
     destination_index = index
+    destination_db = PostgresDb.create(hostname=config['db_hostname'], port=config['db_port'],
+                                       database=config['db_database'], username=config['db_user'])
 
     extent_upload = ExtentUpload(hostname=config['db_hostname'], port=config['db_port'],
                                  database=config['db_database'], username=config['db_user'],
-                                 destination_index=destination_index)
+                                 destination_db=destination_db)
 
     # Process product-bounds
     if destination_index.products.ranges(product_name):
@@ -267,5 +270,5 @@ def update(index, config, to_time, crs, product_name):
     else:
         extent_upload.store_bounds(product_name, projection=crs)
 
-    extent_upload_periodic(product_name, destination_index, index._db, extent_upload, to_time, '1Y')
-    extent_upload_periodic(product_name, destination_index, index._db, extent_upload, to_time, '1M')
+    extent_upload_periodic(product_name, destination_index, destination_db, extent_upload, to_time, '1Y')
+    extent_upload_periodic(product_name, destination_index, destination_db, extent_upload, to_time, '1M')

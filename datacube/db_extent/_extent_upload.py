@@ -43,7 +43,7 @@ class ExtentUpload(object):
         self._destination_db = destination_db
         self.index = Index(destination_db)
 
-    def store_extent(self, product_name, start, end, offset_alias=None, projection=None):
+    def store_extent(self, product_name, start, end, offset_alias=None, crs=None):
         """
         store product extents to the database for each time period indicated by
         offset alias within the specified time range. It updates the extent_meta and extent tables rather than
@@ -53,7 +53,7 @@ class ExtentUpload(object):
         :param start: start time preferably in datetime type of extent computation and storage
         :param end: end time preferably in datetime type of extent computation and storage
         :param offset_alias: pandas style offset alias string indicating the length of each extent record in time
-        :param projection: Geo spacial projection to be applied
+        :param crs: Geo spacial projection to be applied
         """
         if not offset_alias:
             offset_alias = DEFAULT_FREQ
@@ -81,13 +81,13 @@ class ExtentUpload(object):
 
                 # Got to update meta data
                 with self._destination_db.connect() as db_api:
-                    db_api.merge_extent_meta(dataset_type_ref, new_start_d, new_end_d, offset_alias, projection)
+                    db_api.merge_extent_meta(dataset_type_ref, new_start_d, new_end_d, offset_alias, crs)
 
                 # compute new extent data
                 extents = self._source_index.computes.compute_extent_many(product_name=product_name,
                                                                           start=new_start_c, end=new_end_c,
                                                                           offset_alias=offset_alias,
-                                                                          crs=projection)
+                                                                          crs=crs)
                 # Save extents
                 with self._destination_db.connect() as db_api:
                     db_api.update_extent_slice_many(metadata['id'], extents)
@@ -95,7 +95,7 @@ class ExtentUpload(object):
             else:
                 # insert a new meta entry
                 with self._destination_db.connect() as db_api:
-                    db_api.merge_extent_meta(dataset_type_ref, start, end, offset_alias, projection)
+                    db_api.merge_extent_meta(dataset_type_ref, start, end, offset_alias, crs)
                     # get it back to obtain the id
                     metadata = db_api.get_extent_meta(dataset_type_ref, offset_alias)
                     if not metadata:
@@ -104,7 +104,7 @@ class ExtentUpload(object):
                 extents = self._source_index.computes.compute_extent_many(product_name=product_name,
                                                                           start=start, end=end,
                                                                           offset_alias=offset_alias,
-                                                                          crs=projection)
+                                                                          crs=crs)
                 # Save extents
                 with self._destination_db.connect() as db_api:
                     db_api.update_extent_slice_many(metadata['id'], extents)
@@ -231,6 +231,6 @@ if __name__ == '__main__':
     # EXTENT_IDX.store_bounds(product_name='ls8_nbar_albers', projection='EPSG:4326')
     EXTENT_IDX.store_bounds(product_name='ls8_nbar_scene', projection='EPSG:4326')
     EXTENT_IDX.store_extent(product_name='ls8_nbar_scene', start='2013-01',
-                            end='2013-10', offset_alias='1M', projection='EPSG:4326')
+                            end='2013-10', offset_alias='1M', crs='EPSG:4326')
     # EXTENT_IDX.store_extent(product_name='ls8_nbar_albers', start='2017-01',
     #                         end='2017-05', offset_alias='1M', projection='EPSG:4326')
