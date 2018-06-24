@@ -1006,8 +1006,8 @@ class PostgresDbAPI(object):
         bounds_json = {'left': bounds.left, 'bottom': bounds.bottom, 'right': bounds.right, 'top': bounds.top}
 
         # See whether an entry exists in product_bounds
-        range = self.get_dataset_type_range(dataset_type_ref)
-        if range:
+        res = self.get_dataset_type_range(dataset_type_ref)
+        if res:
             # Update the existing entry
             self._connection.execute(
                 DATASET_TYPE_RANGE.update().where(

@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import logging
 
 from datacube.drivers.postgres import PostgresDb
+from datacube.index._computes import ComputeResource
 from datacube.index._datasets import DatasetResource
 from datacube.index._metadata_types import MetadataTypeResource, default_metadata_type_docs
 from datacube.index._products import ProductResource
@@ -43,6 +44,7 @@ class Index(object):
         self.metadata_types = MetadataTypeResource(db)
         self.products = ProductResource(db, self.metadata_types)
         self.datasets = DatasetResource(db, self.products)
+        self.computes = ComputeResource(db, self.datasets)
 
     @property
     def url(self):
