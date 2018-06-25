@@ -1,4 +1,5 @@
 from datacube.utils import read_documents, SimpleDocNav
+from datacube.testutils import gen_dataset_test_dag
 
 
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
@@ -13,3 +14,6 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert ds.id in r.output
     assert ds.sources['ab'].id in r.output
     assert ds.sources['ac'].sources['cd'].id in r.output
+
+    ds_ = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
+    assert ds_.id == ds.id

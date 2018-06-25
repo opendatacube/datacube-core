@@ -12,8 +12,6 @@ from datetime import datetime
 
 import pathlib
 
-from osgeo import gdal
-
 from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
 
@@ -95,66 +93,6 @@ def _write_files_to_dir(directory_path, file_dict):
                     f.write(contents)
                 else:
                     raise Exception('Unexpected file contents: %s' % type(contents))
-
-
-def temp_dir():
-    """
-    Create and return a temporary directory that will be deleted automatically on exit.
-
-    :rtype: pathlib.Path
-    """
-    return write_files({})
-
-
-def temp_file(suffix=""):
-    """
-    Get a temporary file path that will be cleaned up on exit.
-
-    Simpler than NamedTemporaryFile--- just a file path, no open mode or anything.
-    :return:
-    """
-    f = tempfile.mktemp(suffix=suffix)
-
-    def permissive_ignore(file_):
-        if os.path.exists(file_):
-            os.remove(file_)
-
-    atexit.register(permissive_ignore, f)
-    return f
-
-
-def file_of_size(path, size_mb):
-    """
-    Create a blank file of the given size.
-    """
-    with open(path, "wb") as f:
-        f.seek(size_mb * 1024 * 1024 - 1)
-        f.write("\0")
-
-
-def create_empty_dataset(src_filename, out_filename):
-    """
-    Create a new GDAL dataset based on an existing one, but with no data.
-
-    Will contain the same projection, extents, etc, but have a very small filesize.
-
-    These files can be used for automated testing without having to lug enormous files around.
-
-    :param src_filename: Source Filename
-    :param out_filename: Output Filename
-    """
-    inds = gdal.Open(src_filename)
-    driver = inds.GetDriver()
-    band = inds.GetRasterBand(1)
-
-    out = driver.Create(out_filename,
-                        inds.RasterXSize,
-                        inds.RasterYSize,
-                        inds.RasterCount,
-                        band.DataType)
-    out.SetGeoTransform(inds.GetGeoTransform())
-    out.SetProjection(inds.GetProjection())
-    out.FlushCache()
 
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
