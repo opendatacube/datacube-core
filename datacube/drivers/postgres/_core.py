@@ -124,10 +124,10 @@ def has_extents_ranges(engine):
     :param engine: sqlalchemy engine object
     :return:
     """
-    extent_exists = pg_exists(engine, schema_qualified('extent_meta'))
-    extent_meta_exists = pg_exists(engine, schema_qualified('extent'))
-    ranges_exists = pg_exists(engine, schema_qualified('ranges'))
-    return extent_exists and extent_meta_exists and ranges_exists
+    extent__slice_exists = pg_exists(engine, schema_qualified('extent_slice'))
+    extent_meta_exists = pg_exists(engine, schema_qualified('extent_meta'))
+    dataset_type_range_exists = pg_exists(engine, schema_qualified('dataset_type_range'))
+    return extent__slice_exists and extent_meta_exists and dataset_type_range_exists
 
 
 def schema_is_latest(engine):
