@@ -26,7 +26,7 @@ from datacube.utils.dates import date_sequence
 from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets
 from datacube.model import MetadataType
 
-from .util import mk_sample_product, make_graph_abcde
+from datacube.testutils import mk_sample_product, make_graph_abcde
 
 
 def test_stats_dates():

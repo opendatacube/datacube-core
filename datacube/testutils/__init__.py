@@ -167,7 +167,7 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
 
 def mk_sample_product(name,
                       description='Sample',
-                      measurements=['red', 'green', 'blue'],
+                      measurements=('red', 'green', 'blue'),
                       with_grid_spec=False,
                       storage=None):
 
@@ -208,6 +208,7 @@ def mk_sample_product(name,
             return m_merged
 
         assert False and 'Only support str|dict|(name, dtype, nodata)'
+        return {}
 
     measurements = [mk_measurement(m) for m in measurements]
 
@@ -230,6 +231,7 @@ def mk_sample_dataset(bands,
                       product_name='sample',
                       format='GeoTiff',
                       id='12345678123456781234567812345678'):
+    # pylint: disable=redefined-builtin
     image_bands_keys = 'path layer band'.split(' ')
     measurement_keys = 'dtype units nodata aliases name'.split(' ')
 
@@ -258,12 +260,12 @@ def make_graph_abcde(node):
       |
       +--> E
     """
-    D = node('D')
-    E = node('E')
-    C = node('C', cd=D)
-    B = node('B', bc=C)
-    A = node('A', ab=B, ac=C, ae=E)
-    return A, B, C, D, E
+    d = node('D')
+    e = node('E')
+    c = node('C', cd=d)
+    b = node('B', bc=c)
+    a = node('A', ab=b, ac=c, ae=e)
+    return a, b, c, d, e
 
 
 def gen_dataset_test_dag(idx, t=None, force_tree=False):

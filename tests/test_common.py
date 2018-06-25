@@ -7,11 +7,11 @@ from __future__ import absolute_import
 import pytest
 
 from datacube.ui.common import get_metadata_path, find_any_metadata_suffix
-from . import util
+from datacube.testutils import write_files
 
 
 def test_find_metadata_path():
-    files = util.write_files({
+    files = write_files({
         'directory_dataset': {
             'file1.txt': '',
             'file2.txt': '',
@@ -45,7 +45,7 @@ def test_find_metadata_path():
 
 
 def test_find_any_metatadata_suffix():
-    files = util.write_files({
+    files = write_files({
         'directory_dataset': {
             'file1.txt': '',
             'file2.txt': '',

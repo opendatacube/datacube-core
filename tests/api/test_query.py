@@ -18,13 +18,9 @@ import datetime
 import pandas
 
 import pytest
-from dateutil import tz
-
-from ..util import isclose
 
 from datacube.api.query import Query, _datetime_to_timestamp, query_group_by
 from datacube.model import Range
-from datetime import timezone
 
 
 def test_datetime_to_timestamp():
