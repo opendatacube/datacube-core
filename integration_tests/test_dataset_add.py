@@ -4,6 +4,7 @@ from datacube.testutils import gen_dataset_test_dag
 
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
+    index = index_empty
 
     clirunner(['metadata_type', 'add', p.metadata], expect_success=True)
     clirunner(['product', 'add', p.products], expect_success=True)
@@ -17,3 +18,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
 
     ds_ = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
     assert ds_.id == ds.id
+
+    x = index.datasets.get(ds.id, include_sources=True)
+    assert str(x.sources['ab'].id) == ds.sources['ab'].id
+    assert str(x.sources['ac'].sources['cd'].id) == ds.sources['ac'].sources['cd'].id
