@@ -129,6 +129,24 @@ class DatasetResource(object):
         :rtype: Dataset
         """
 
+        def process_bunch(dss, main_ds, transaction):
+            edges = []
+
+            # First insert all new datasets
+            for ds in dss:
+                is_new = transaction.insert_dataset(ds.metadata_doc_without_lineage(), ds.id, ds.type.id)
+                if is_new:
+                    edges.extend((name, ds.id, src.id)
+                                 for name, src in ds.sources.items())
+
+            # Second insert lineage graph edges
+            for ee in edges:
+                transaction.insert_dataset_source(*ee)
+
+            # Finally update location for top-level dataset only
+            if main_ds.uris is not None:
+                self._ensure_new_locations(main_ds, transaction=transaction)
+
         if with_lineage is None:
             policy = kwargs.pop('sources_policy', None)
             if policy is not None:
@@ -139,25 +157,10 @@ class DatasetResource(object):
             else:
                 with_lineage = True
 
-        def add_one(ds, transaction):
-            if not transaction.insert_dataset(ds.metadata_doc_without_lineage(),
-                                              ds.id,
-                                              ds.type.id):
-                # duplicate
-                return False
-
-            for classifier, source_dataset in ds.sources.items():
-                transaction.insert_dataset_source(classifier, ds.id, source_dataset.id)
-
-            if ds.uris:
-                self._ensure_new_locations(ds, transaction=transaction)
-
-            return True
-
         _LOG.info('Indexing %s', dataset.id)
 
         if with_lineage:
-            ds_by_uuid, ds_by_depth = flatten_datasets(dataset, with_depth_grouping=True)
+            ds_by_uuid = flatten_datasets(dataset)
             all_uuids = list(ds_by_uuid)
 
             present = {k: v for k, v in zip(all_uuids, self.has_many(all_uuids))}
@@ -166,18 +169,16 @@ class DatasetResource(object):
                 _LOG.warning('Dataset %s is already in the database', dataset.id)
                 return dataset
 
-            added = set()
-
-            with self._db.begin() as transaction:
-                for dss in ds_by_depth[::-1]:
-                    dss = [ds for ds in dss if present[ds.id] is False and ds.id not in added]
-                    for ds in dss:
-                        add_one(ds, transaction)
-                        added.add(ds.id)
+            dss = [ds for ds in [dss[0] for dss in ds_by_uuid.values()] if not present[ds.id]]
         else:
-            with self._db.begin() as transaction:
-                if add_one(dataset, transaction) is False:
-                    _LOG.warning('Dataset %s is already in the database', dataset.id)
+            if self.has(dataset.id):
+                _LOG.warning('Dataset %s is already in the database', dataset.id)
+                return dataset
+
+            dss = [dataset]
+
+        with self._db.begin() as transaction:
+            process_bunch(dss, dataset, transaction)
 
         return dataset
 
