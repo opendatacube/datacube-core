@@ -20,8 +20,6 @@ from .exceptions import DuplicateRecordError
 
 _LOG = logging.getLogger(__name__)
 
-
-
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
 
@@ -281,21 +279,17 @@ class DatasetResource(object):
         skip_set = set([None] + existing.uris if existing is not None else [])
         new_uris = [uri for uri in dataset.uris if uri not in skip_set]
 
-        def safe_insert_one(uri, transaction):
-            try:
-                transaction.insert_dataset_location(dataset.id, uri)
-            except DuplicateRecordError as e:
-                return False
-            return True
+        def insert_one(uri, transaction):
+            return transaction.insert_dataset_location(dataset.id, uri)
 
         # process in reverse order, since every add is essentially append to
         # front of a stack
         for uri in new_uris[::-1]:
             if transaction is None:
                 with self._db.begin() as tr:
-                    safe_insert_one(uri, tr)
+                    insert_one(uri, tr)
             else:
-                safe_insert_one(uri, transaction)
+                insert_one(uri, transaction)
 
     def archive(self, ids):
         """
@@ -387,11 +381,7 @@ class DatasetResource(object):
             return False
 
         with self._db.connect() as connection:
-            try:
-                connection.insert_dataset_location(id_, uri)
-                return True
-            except DuplicateRecordError:
-                return False
+            return connection.insert_dataset_location(id_, uri)
 
     def get_datasets_for_location(self, uri, mode=None):
         with self._db.connect() as connection:

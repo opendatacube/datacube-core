@@ -253,25 +253,25 @@ class PostgresDbAPI(object):
         """
         Add a location to a dataset if it is not already recorded.
 
-        raises `DuplicateRecordError` dataset has this location recorded in the DB.
+        Returns True if success, False if this location already existed
 
         :type dataset_id: str or uuid.UUID
         :type uri: str
+        :rtype bool:
         """
 
         scheme, body = _split_uri(uri)
 
-        try:
-            self._connection.execute(
-                DATASET_LOCATION.insert(),
-                dataset_ref=dataset_id,
-                uri_scheme=scheme,
-                uri_body=body,
-            )
-        except IntegrityError as e:
-            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                raise DuplicateRecordError('Location already exists: %s' % uri)
-            raise
+        r = self._connection.execute(
+            insert(DATASET_LOCATION).on_conflict_do_nothing(
+                index_elements=['uri_scheme', 'uri_body', 'dataset_ref']
+            ),
+            dataset_ref=dataset_id,
+            uri_scheme=scheme,
+            uri_body=body,
+        )
+
+        return r.rowcount > 0
 
     def contains_dataset(self, dataset_id):
         return bool(
@@ -319,15 +319,16 @@ class PostgresDbAPI(object):
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
         try:
-            self._connection.execute(
-                DATASET_SOURCE.insert(),
+            r = self._connection.execute(
+                insert(DATASET_SOURCE).on_conflict_do_nothing(
+                    index_elements=['classifier', 'dataset_ref']
+                ),
                 classifier=classifier,
                 dataset_ref=dataset_id,
                 source_dataset_ref=source_dataset_id
             )
+            return r.rowcount > 0
         except IntegrityError as e:
-            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                raise DuplicateRecordError('Source already exists')
             if e.orig.pgcode == PGCODE_FOREIGN_KEY_VIOLATION:
                 raise MissingRecordError("Referenced source dataset doesn't exist")
             raise
