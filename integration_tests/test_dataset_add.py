@@ -5,6 +5,9 @@ from datacube.testutils import gen_dataset_test_dag
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
+    r = clirunner(['dataset', 'add', p.datasets], expect_success=False)
+    assert r.exit_code != 0
+    assert 'Found no products' in r.output
 
     clirunner(['metadata_type', 'add', p.metadata], expect_success=True)
     clirunner(['product', 'add', p.products], expect_success=True)

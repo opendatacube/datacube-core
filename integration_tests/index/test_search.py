@@ -219,7 +219,7 @@ def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_pr
     datasets = list(
         dataset_script.load_datasets(
             [example_ls5_dataset_path],
-            dataset_script.load_rules_from_types(index)
+            dataset_script.product_matcher(dataset_script.load_rules_from_types(index))
         )
     )
     assert len(datasets) == 1

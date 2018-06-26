@@ -47,27 +47,45 @@ def dataset_cmd():
     pass
 
 
-def find_matching_product(rules, doc):
-    """:rtype: datacube.model.DatasetType"""
-    matched = [rule for rule in rules if changes.contains(doc, rule.signature)]
-    if not matched:
-        # provide user with information about the failure
-        if len(rules) == 0:
-            raise BadMatch('No rules provided.')
-        elif len(rules) == 1:
-            signature = rules[0].signature
-            relevant_doc = {k: v for k, v in doc.items() if k in signature}
+def product_matcher(rules):
+    assert len(rules) > 0
+
+    def matches(doc, rule):
+        return changes.contains(doc, rule.signature)
+
+    def single_product_matcher(rule):
+        def match(doc):
+            if matches(doc, rule):
+                return rule.product
+
+            relevant_doc = {k: v for k, v in doc.items() if k in rule.signature}
             raise BadMatch('Dataset metadata did not match product signature.'
                            '\nDataset definition:\n %s\n'
                            '\nProduct signature:\n %s\n'
                            % (json.dumps(relevant_doc, indent=4),
-                              json.dumps(signature, indent=4)))
+                              json.dumps(rule.signature, indent=4)))
+
+        return match
+
+    if len(rules) == 1:
+        return single_product_matcher(rules[0])
+
+    def match(doc):
+        matched = [rule.product for rule in rules if changes.contains(doc, rule.signature)]
+
+        if len(matched) == 1:
+            return matched[0]
+
+        doc_id = doc.get('id', '<missing id>')
+
+        if len(matched) == 0:
+            raise BadMatch('No matching Product found for dataset %s' % doc_id)
         else:
-            raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
-    if len(matched) > 1:
-        raise BadMatch('Too many matching Products found for %s. Matched %s.' % (
-            doc.get('id', 'unidentified'), matched))
-    return matched[0].product
+            raise BadMatch('Auto match failed, dataset %s matches several products:\n  %s' % (
+                doc_id,
+                ','.join(p.name for p in matched)))
+
+    return match
 
 
 def check_dataset_consistent(dataset):
@@ -83,16 +101,16 @@ def check_dataset_consistent(dataset):
     return True, None
 
 
-def create_dataset(dataset_doc, uri, rules, skip_lineage=False):
+def create_dataset(dataset_doc, uri, find_product, skip_lineage=False):
     """
     :rtype datacube.model.Dataset:
     """
-    dataset_type = find_matching_product(rules, dataset_doc)
+    dataset_type = find_product(dataset_doc)
     if skip_lineage:
         sources = {}
         dataset_doc = without_lineage_sources(dataset_doc, dataset_type)
     else:
-        sources = {cls: create_dataset(source_doc, None, rules)
+        sources = {cls: create_dataset(source_doc, None, find_product)
                    for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
     return Dataset(dataset_type, dataset_doc, uris=[uri] if uri else None, sources=sources)
 
@@ -101,18 +119,22 @@ def load_rules_from_types(index, product_names=None):
     products = []
     if product_names:
         for name in product_names:
-            type_ = index.products.get_by_name(name)
-            if not type_:
-                _LOG.error('DatasetType %s does not exists', name)
+            product = index.products.get_by_name(name)
+            if not product:
+                _LOG.error('Supplied product name "%s" not present in the database', name)
                 return None
-            products.append(type_)
+            products.append(product)
     else:
         products += index.products.get_all()
+
+    if len(products) == 0:
+        _LOG.error('Found no products in the database')
+        return None
 
     return [SimpleNamespace(product=p, signature=p.metadata_doc) for p in products]
 
 
-def load_datasets(datasets, rules, skip_lineage=False):
+def load_datasets(datasets, find_product, skip_lineage=False):
     for dataset_path in datasets:
         metadata_path = get_metadata_path(Path(dataset_path))
         if not metadata_path or not metadata_path.exists():
@@ -122,7 +144,7 @@ def load_datasets(datasets, rules, skip_lineage=False):
         try:
             for uri, metadata_doc in read_documents(metadata_path, uri=True):
                 try:
-                    dataset = create_dataset(metadata_doc, uri, rules, skip_lineage=skip_lineage)
+                    dataset = create_dataset(metadata_doc, uri, find_product, skip_lineage=skip_lineage)
                 except BadMatch as e:
                     _LOG.error('Unable to create Dataset for %s: %s', uri, e)
                     continue
@@ -240,20 +262,23 @@ def index_cmd(index, product_names,
 
     rules = parse_match_rules_options(index, product_names, auto_match)
     if rules is None:
-        return
+        sys.exit(2)
+
+    assert len(rules) > 0
+    find_product = product_matcher(rules)
 
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
         with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
-            index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_path_iter,
+            index_dataset_paths(auto_add_lineage, dry_run, index, find_product, dataset_path_iter,
                                 skip_lineage=confirm_ignore_lineage)
     else:
-        index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_paths,
+        index_dataset_paths(auto_add_lineage, dry_run, index, find_product, dataset_paths,
                             skip_lineage=confirm_ignore_lineage)
 
 
-def index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_paths, skip_lineage=False):
-    for dataset in load_datasets(dataset_paths, rules, skip_lineage=skip_lineage):
+def index_dataset_paths(auto_add_lineage, dry_run, index, find_product, dataset_paths, skip_lineage=False):
+    for dataset in load_datasets(dataset_paths, find_product, skip_lineage=skip_lineage):
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
