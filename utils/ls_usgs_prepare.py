@@ -33,6 +33,18 @@ images2 = [('1', 'blue'),
            ('7', 'swir2'),
            ('QUALITY', 'quality')]
 
+images3 = [('1', 'green'),
+           ('2', 'red'),
+           ('3', 'nir1'),
+           ('4', 'nir2'),
+           ('QUALITY', 'quality')]
+
+
+images4 = [('4', 'green'),
+           ('5', 'red'),
+           ('6', 'nir1'),
+           ('7', 'nir2'),
+           ('QUALITY', 'quality')]
 try:
     from urllib.request import urlopen
     from urllib.parse import urlparse, urljoin
@@ -89,15 +101,19 @@ def get_coords(geo_ref_points, spatial_ref):
     return {key: transform(p) for key, p in geo_ref_points.items()}
 
 
-def satellite_ref(sat, file_name):
+def satellite_ref(sat, file_name, sid):
     """
     To load the band_names for referencing either LANDSAT8 or LANDSAT7 or LANDSAT5 bands
-    Landsat7 and Landsat5 have same band names
+    Landsat7ETM  and Landsat5TM  have same band names
     """
     name = (Path(file_name)).stem
     name_len = name.split('_')
     if sat == 'LANDSAT_8':
         sat_img = images1
+    elif sat == 'LANDSAT_5' and sid == 'MSS':
+        sat_img = images3
+    elif sat == 'LANDSAT_3':
+        sat_img = images4
     elif len(name_len) > 7:
         sat_img = images2
     else:
@@ -134,8 +150,9 @@ def prepare_dataset(path):
 
     geo_ref_points = get_geo_ref_points(info_pm)
     satellite = info_pm['SPACECRAFT_ID']
+    sensor_id = info_pm['SENSOR_ID']
 
-    images = satellite_ref(satellite, fileinfo)
+    images = satellite_ref(satellite, fileinfo, sensor_id)
     return {
         'id': str(uuid.uuid5(uuid.NAMESPACE_URL, path)),
         'processing_level': level,
