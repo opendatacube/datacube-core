@@ -5,6 +5,7 @@ import os
 import platform
 import sys
 import uuid
+import toolz
 
 import numpy
 import xarray
@@ -13,7 +14,7 @@ from pandas import to_datetime
 
 import datacube
 from datacube.model import Dataset
-from datacube.utils import geometry
+from datacube.utils import geometry, SimpleDocNav, sorted_items
 
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -265,12 +266,12 @@ def traverse_datasets(ds, cbk, mode='post-order', **kwargs):
     def visit_pre_order(ds, func, depth=0, name=None):
         func(ds, depth=depth, name=name, **kwargs)
 
-        for k in sorted(ds.sources):
-            visit_pre_order(ds.sources[k], func, depth=depth+1, name=k)
+        for k, v in sorted_items(ds.sources):
+            visit_pre_order(v, func, depth=depth+1, name=k)
 
     def visit_post_order(ds, func, depth=0, name=None):
-        for k in sorted(ds.sources):
-            visit_post_order(ds.sources[k], func, depth=depth+1, name=k)
+        for k, v in sorted_items(ds.sources):
+            visit_post_order(v, func, depth=depth+1, name=k)
 
         func(ds, depth=depth, name=name, **kwargs)
 
@@ -325,3 +326,67 @@ def flatten_datasets(ds, with_depth_grouping=False):
         return id_map, dout
 
     return id_map
+
+
+def remap_lineage_doc(root, mk_node, **kwargs):
+    def visit(ds):
+        return mk_node(ds.id,
+                       ds.doc_without_lineage_sources,
+                       {k: visit(v) for k, v in sorted_items(ds.sources)},
+                       **kwargs)
+
+    if not isinstance(root, SimpleDocNav):
+        root = SimpleDocNav(root)
+
+    return visit(root)
+
+
+def dedup_lineage(root):
+    """Find duplicate nodes in the lineage tree and replace them with references.
+
+    Will raise `ValueError` when duplicate dataset (same uuid, but different
+    path from root) has either conflicting metadata or conflicting lineage
+    data.
+
+    :param dict|SimpleDocNav root:
+
+    Returns a new document that has the same structure as input document, but
+    with duplicate entries now being aliases rather than copies.
+    """
+
+    def check_sources(a, b):
+        """ True if two dictionaries contain same objects under the same names.
+        same, not just equivalent.
+        """
+        if len(a) != len(b):
+            return False
+
+        for ((ak, av), (bk, bv)) in zip(sorted_items(a), sorted_items(b)):
+            if ak != bk:
+                return False
+            if av is not bv:
+                return False
+
+        return True
+
+    def mk_node(_id, doc, sources, cache, sources_path):
+        existing = cache.get(_id, None)
+        if existing is not None:
+            _ds, _doc, _sources = existing
+
+            if not check_sources(sources, _sources):
+                raise ValueError('Inconsistent lineage for repeated dataset with _id: {}'.format(_id))
+
+            if doc != _doc:
+                raise ValueError('Inconsistent metadata for repeated dataset with _id: {}'.format(_id))
+
+            return _ds
+
+        ds = toolz.assoc_in(doc, sources_path, sources)
+        cache[_id] = (ds, doc, sources)
+        return ds
+
+    if not isinstance(root, SimpleDocNav):
+        root = SimpleDocNav(root)
+
+    return remap_lineage_doc(root, mk_node, cache={}, sources_path=root.sources_path)

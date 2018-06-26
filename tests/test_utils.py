@@ -14,6 +14,7 @@ from hypothesis import given
 from hypothesis.strategies import integers, text
 from pandas import to_datetime
 import pathlib
+import toolz
 import xarray as xr
 import numpy as np
 
@@ -23,10 +24,10 @@ from datacube.utils import without_lineage_sources, map_with_lookahead, read_doc
 from datacube.utils import mk_part_uri, get_part_from_uri
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
-from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets
+from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
 from datacube.model import MetadataType
 
-from datacube.testutils import mk_sample_product, make_graph_abcde
+from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag
 
 
 def test_stats_dates():
@@ -457,3 +458,65 @@ A:..:0
                              'BCE',
                              'CD',
                              'D')] == [to_set(xx) for xx in dg]
+
+
+def test_dedup():
+    ds0 = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
+
+    # make sure ds0 has duplicate C nodes with equivalent data
+    assert ds0.sources['ab'].sources['bc'].doc is not ds0.sources['ac'].doc
+    assert ds0.sources['ab'].sources['bc'].doc == ds0.sources['ac'].doc
+
+    ds = SimpleDocNav(dedup_lineage(ds0))
+    assert ds.sources['ab'].sources['bc'].doc is ds.sources['ac'].doc
+    assert ds.sources['ab'].sources['bc'].sources['cd'].doc is ds.sources['ac'].sources['cd'].doc
+
+    # again but with raw doc
+    ds = SimpleDocNav(dedup_lineage(ds0.doc))
+    assert ds.sources['ab'].sources['bc'].doc is ds.sources['ac'].doc
+    assert ds.sources['ab'].sources['bc'].sources['cd'].doc is ds.sources['ac'].sources['cd'].doc
+
+    # Test that we detect inconsistent metadata for duplicate entries
+    ds0 = SimpleDocNav(gen_dataset_test_dag(3, force_tree=True))
+    ds0.sources['ac'].doc['label'] = 'Modified'
+    ds0 = SimpleDocNav(ds0.doc)
+    assert ds0.sources['ab'].sources['bc'].doc != ds0.sources['ac'].doc
+
+    with pytest.raises(ValueError, match=r'Inconsistent metadata .*'):
+        dedup_lineage(ds0)
+
+    # Test that we detect inconsistent lineage subtrees for duplicate entries
+
+    # Subtest 1: different set of keys
+    ds0 = SimpleDocNav(gen_dataset_test_dag(7, force_tree=True))
+    srcs = toolz.get_in(ds0.sources_path, ds0.sources['ac'].doc)
+
+    assert 'cd' in srcs
+    srcs['cd'] = {}
+    ds0 = SimpleDocNav(ds0.doc)
+
+    with pytest.raises(ValueError, match=r'Inconsistent lineage .*'):
+        dedup_lineage(ds0)
+
+    # Subtest 2: different values for "child" nodes
+    ds0 = SimpleDocNav(gen_dataset_test_dag(7, force_tree=True))
+    srcs = toolz.get_in(ds0.sources_path, ds0.sources['ac'].doc)
+
+    assert 'cd' in srcs
+    srcs['cd']['id'] = '7fe57724-ed44-4beb-a3ab-c275339049be'
+    ds0 = SimpleDocNav(ds0.doc)
+
+    with pytest.raises(ValueError, match=r'Inconsistent lineage .*'):
+        dedup_lineage(ds0)
+
+    # Subtest 3: different name for child
+    ds0 = SimpleDocNav(gen_dataset_test_dag(7, force_tree=True))
+    srcs = toolz.get_in(ds0.sources_path, ds0.sources['ac'].doc)
+
+    assert 'cd' in srcs
+    srcs['CD'] = srcs['cd']
+    del srcs['cd']
+    ds0 = SimpleDocNav(ds0.doc)
+
+    with pytest.raises(ValueError, match=r'Inconsistent lineage .*'):
+        dedup_lineage(ds0)
