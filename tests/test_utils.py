@@ -21,7 +21,7 @@ import numpy as np
 from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp, SimpleDocNav
 from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents, sorted_items
-from datacube.utils import mk_part_uri, get_part_from_uri
+from datacube.utils import mk_part_uri, get_part_from_uri, InvalidDocException
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
@@ -482,7 +482,7 @@ def test_dedup():
     ds0 = SimpleDocNav(ds0.doc)
     assert ds0.sources['ab'].sources['bc'].doc != ds0.sources['ac'].doc
 
-    with pytest.raises(ValueError, match=r'Inconsistent metadata .*'):
+    with pytest.raises(InvalidDocException, match=r'Inconsistent metadata .*'):
         dedup_lineage(ds0)
 
     # Test that we detect inconsistent lineage subtrees for duplicate entries
@@ -495,7 +495,7 @@ def test_dedup():
     srcs['cd'] = {}
     ds0 = SimpleDocNav(ds0.doc)
 
-    with pytest.raises(ValueError, match=r'Inconsistent lineage .*'):
+    with pytest.raises(InvalidDocException, match=r'Inconsistent lineage .*'):
         dedup_lineage(ds0)
 
     # Subtest 2: different values for "child" nodes
@@ -506,7 +506,7 @@ def test_dedup():
     srcs['cd']['id'] = '7fe57724-ed44-4beb-a3ab-c275339049be'
     ds0 = SimpleDocNav(ds0.doc)
 
-    with pytest.raises(ValueError, match=r'Inconsistent lineage .*'):
+    with pytest.raises(InvalidDocException, match=r'Inconsistent lineage .*'):
         dedup_lineage(ds0)
 
     # Subtest 3: different name for child
@@ -518,5 +518,5 @@ def test_dedup():
     del srcs['cd']
     ds0 = SimpleDocNav(ds0.doc)
 
-    with pytest.raises(ValueError, match=r'Inconsistent lineage .*'):
+    with pytest.raises(InvalidDocException, match=r'Inconsistent lineage .*'):
         dedup_lineage(ds0)

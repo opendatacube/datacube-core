@@ -14,7 +14,7 @@ from pandas import to_datetime
 
 import datacube
 from datacube.model import Dataset
-from datacube.utils import geometry, SimpleDocNav, sorted_items
+from datacube.utils import geometry, SimpleDocNav, sorted_items, InvalidDocException
 
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -375,10 +375,10 @@ def dedup_lineage(root):
             _ds, _doc, _sources = existing
 
             if not check_sources(sources, _sources):
-                raise ValueError('Inconsistent lineage for repeated dataset with _id: {}'.format(_id))
+                raise InvalidDocException('Inconsistent lineage for repeated dataset with _id: {}'.format(_id))
 
             if doc != _doc:
-                raise ValueError('Inconsistent metadata for repeated dataset with _id: {}'.format(_id))
+                raise InvalidDocException('Inconsistent metadata for repeated dataset with _id: {}'.format(_id))
 
             return _ds
 
