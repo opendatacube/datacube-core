@@ -6,6 +6,7 @@ import logging
 import sys
 from collections import OrderedDict
 from pathlib import Path
+from types import SimpleNamespace
 
 import click
 import yaml
@@ -48,25 +49,25 @@ def dataset_cmd():
 
 def find_matching_product(rules, doc):
     """:rtype: datacube.model.DatasetType"""
-    matched = [rule for rule in rules if changes.contains(doc, rule['metadata'])]
+    matched = [rule for rule in rules if changes.contains(doc, rule.signature)]
     if not matched:
         # provide user with information about the failure
         if len(rules) == 0:
             raise BadMatch('No rules provided.')
         elif len(rules) == 1:
-            metadata = rules[0]['metadata']
-            relevant_doc = {k: v for k, v in doc.items() if k in metadata}
-            raise BadMatch('Dataset metadata did not match product rules.'
-                           '\nDataset metadata:\n %s\n'
-                           '\nProduct metadata:\n %s\n'
+            signature = rules[0].signature
+            relevant_doc = {k: v for k, v in doc.items() if k in signature}
+            raise BadMatch('Dataset metadata did not match product signature.'
+                           '\nDataset definition:\n %s\n'
+                           '\nProduct signature:\n %s\n'
                            % (json.dumps(relevant_doc, indent=4),
-                              json.dumps(metadata, indent=4)))
+                              json.dumps(signature, indent=4)))
         else:
             raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
     if len(matched) > 1:
         raise BadMatch('Too many matching Products found for %s. Matched %s.' % (
             doc.get('id', 'unidentified'), matched))
-    return matched[0]['type']
+    return matched[0].product
 
 
 def check_dataset_consistent(dataset):
@@ -96,20 +97,19 @@ def create_dataset(dataset_doc, uri, rules, skip_lineage=False):
     return Dataset(dataset_type, dataset_doc, uris=[uri] if uri else None, sources=sources)
 
 
-def load_rules_from_types(index, type_names=None):
-    types = []
-    if type_names:
-        for name in type_names:
+def load_rules_from_types(index, product_names=None):
+    products = []
+    if product_names:
+        for name in product_names:
             type_ = index.products.get_by_name(name)
             if not type_:
                 _LOG.error('DatasetType %s does not exists', name)
                 return None
-            types.append(type_)
+            products.append(type_)
     else:
-        types += index.products.get_all()
+        products += index.products.get_all()
 
-    rules = [{'type': type_, 'metadata': type_.metadata_doc} for type_ in types]
-    return rules
+    return [SimpleNamespace(product=p, signature=p.metadata_doc) for p in products]
 
 
 def load_datasets(datasets, rules, skip_lineage=False):
