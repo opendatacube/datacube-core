@@ -791,7 +791,7 @@ class SimpleDocNav(object):
 
         self._doc = doc
         self._doc_without = None
-        self._sources_path = ['lineage', 'source_datasets']
+        self._sources_path = ('lineage', 'source_datasets')
         self._sources = None
 
     @property
@@ -815,6 +815,10 @@ class SimpleDocNav(object):
             self._sources = {k: SimpleDocNav(v)
                              for k, v in get_doc_offset_safe(self._sources_path, self._doc, {}).items()}
         return self._sources
+
+    @property
+    def sources_path(self):
+        return self._sources_path
 
 
 def import_function(func_ref):

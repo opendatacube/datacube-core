@@ -390,6 +390,7 @@ def test_simple_doc_nav():
     assert rdr.sources['ab'].sources['bc'].doc == C
     assert rdr.doc_without_lineage_sources is rdr.doc_without_lineage_sources
     assert rdr.sources is rdr.sources
+    assert isinstance(rdr.sources_path, tuple)
 
     def visitor(node, name=None, depth=0, out=None):
         s = '{}:{}:{:d}'.format(node.id, name if name else '..', depth)
