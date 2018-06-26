@@ -29,7 +29,8 @@ from datacube.model import Dataset
 from datacube.model import DatasetType
 from datacube.model import MetadataType
 from datacube.model import Range
-from datacube.scripts import dataset as dataset_script
+
+from datacube.testutils import load_dataset_definition
 
 
 @pytest.fixture
@@ -213,18 +214,10 @@ def pseudo_ls8_dataset4(index, initialised_postgres_db, pseudo_ls8_type, pseudo_
 
 
 @pytest.fixture
-def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_products):
-    # type: (Driver, Path, DatasetType) -> Dataset
-    # TODO: We need a higher-level API for indexing paths, rather than reaching inside the cli script
-    datasets = list(
-        dataset_script.load_datasets(
-            [example_ls5_dataset_path],
-            dataset_script.product_matcher(dataset_script.load_rules_from_types(index))
-        )
-    )
-    assert len(datasets) == 1
-    d = index.datasets.add(datasets[0])
-    return index.datasets.get(d.id, include_sources=True)
+def ls5_dataset_w_children(index, clirunner, example_ls5_dataset_path, indexed_ls5_scene_products):
+    clirunner(['dataset', 'add', str(example_ls5_dataset_path)])
+    doc = load_dataset_definition(example_ls5_dataset_path)
+    return index.datasets.get(doc.id, include_sources=True)
 
 
 @pytest.fixture

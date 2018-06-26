@@ -14,6 +14,8 @@ import pathlib
 
 from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
+from datacube.ui.common import get_metadata_path
+from datacube.utils import read_documents, SimpleDocNav
 
 
 def assert_file_structure(folder, expected_structure, root=''):
@@ -236,3 +238,12 @@ def gen_dataset_test_dag(idx, t=None, force_tree=False):
 
     root, *_ = make_graph_abcde(node_maker(idx, t))
     return deref(root) if force_tree else root
+
+
+def load_dataset_definition(path):
+    if not isinstance(path, pathlib.Path):
+        path = pathlib.Path(path)
+
+    fname = get_metadata_path(path)
+    for _, doc in read_documents(fname):
+        return SimpleDocNav(doc)
