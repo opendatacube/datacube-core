@@ -58,6 +58,8 @@ def test_find_any_metatadata_suffix():
         'file_dataset.tif.agdc-md.yaml': '',
         'dataset_metadata.YAML': '',
         'no_metadata.tif': '',
+        'ambigous.yml': '',
+        'ambigous.yaml': '',
     })
 
     path = find_any_metadata_suffix(files.joinpath('dataset_metadata'))
@@ -72,3 +74,6 @@ def test_find_any_metatadata_suffix():
     # Returns none if none exist
     path = find_any_metadata_suffix(files.joinpath('no_metadata'))
     assert path is None
+
+    with pytest.raises(ValueError):
+        find_any_metadata_suffix(files.joinpath('ambigous'))
