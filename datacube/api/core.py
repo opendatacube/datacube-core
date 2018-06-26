@@ -144,7 +144,7 @@ class Datacube(object):
         return measurements
 
     #: pylint: disable=too-many-arguments, too-many-locals
-    def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None, stack=False,
+    def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
              dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, use_threads=False, **query):
         """
         Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
@@ -205,10 +205,6 @@ class Datacube(object):
 
 
         **Output**
-            If the `stack` argument is supplied, the returned data is stacked in a single ``DataArray``.
-            A new dimension is created with the name supplied.
-            This requires all of the data to be of the same datatype.
-
             To reproject or resample the data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
             fields.
 
@@ -252,13 +248,6 @@ class Datacube(object):
 
             Default is (0,0)
 
-        :param stack: The name of the new dimension used to stack the measurements.
-            If provided, the data is returned as a :class:`xarray.DataArray` rather than a :class:`xarray.Dataset`.
-
-            If only one measurement is returned, the dimension name is not used and the dimension is dropped.
-
-        :type stack: str or bool
-
         :param dict dask_chunks:
             If the data should be lazily loaded using :class:`dask.array.Array`,
             specify the chunking size in each output dimension.
@@ -294,14 +283,16 @@ class Datacube(object):
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
 
-        :return: Requested data in a :class:`xarray.Dataset`, or
-            as a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
-
-        :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
+        :return: Requested data in a :class:`xarray.Dataset`
+        :rtype: :class:`xarray.Dataset`
         """
+        if 'stack' in query:
+            raise DeprecationWarning("the `stack` keyword argument is not supported anymore, "
+                                     "please apply `xarray.Dataset.to_array()` to the result instead")
+
         observations = datasets or self.find_datasets(product=product, like=like, **query)
         if not observations:
-            return None if stack else xarray.Dataset()
+            return xarray.Dataset()
 
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
                                grid_spec=self.index.products.get_by_name(product).grid_spec,
@@ -313,16 +304,11 @@ class Datacube(object):
         measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
-        result = self.load_data(grouped, geobox, measurements.values(),
+        result = self.load_data(grouped, geobox, list(measurements.values()),
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
                                 use_threads=use_threads)
-        if not stack:
-            return result
-        else:
-            if not isinstance(stack, string_types):
-                stack = 'measurement'
-            return result.to_array(dim=stack)
+        return result
 
     def product_observations(self, **kwargs):
         warnings.warn("product_observations() has been renamed to find_datasets() and will eventually be removed",

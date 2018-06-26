@@ -374,7 +374,7 @@ class GridWorkflow(object):
         measurements = tile.product.lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
-        dataset = Datacube.load_data(tile.sources, tile.geobox, measurements.values(), dask_chunks=dask_chunks,
+        dataset = Datacube.load_data(tile.sources, tile.geobox, list(measurements.values()), dask_chunks=dask_chunks,
                                      fuse_func=fuse_func, skip_broken_datasets=skip_broken_datasets)
 
         return dataset

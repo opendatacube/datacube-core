@@ -49,7 +49,6 @@ def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ing
         clirunner([
             'dataset',
             'add',
-            '--auto-match',
             str(example_ls5_dataset_path)
         ])
 
@@ -99,7 +98,6 @@ def test_s3_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, 
         clirunner([
             'dataset',
             'add',
-            '--auto-match',
             str(example_ls5_dataset_path)
         ])
 

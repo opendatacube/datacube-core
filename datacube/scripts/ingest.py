@@ -49,7 +49,7 @@ def morph_dataset_type(source_type, config, index, storage_format):
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
-                                         if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
+                                         if k in ('crs', 'tile_size', 'resolution', 'origin')}
 
     output_type.metadata_doc['format'] = {'name': storage_format}
 
@@ -237,6 +237,12 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
+
+    variable_params['dataset'] = {
+        'chunksizes': (1,),
+        'zlib': True,
+        'complevel': 9,
+    }
 
     storage_metadata = driver.write_dataset_to_storage(nudata, file_path,
                                                        global_attributes=global_attributes,

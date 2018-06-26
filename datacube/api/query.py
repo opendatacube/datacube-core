@@ -21,9 +21,13 @@ import logging
 import datetime
 import collections
 import warnings
+import calendar
+import re
+import pandas
 
 from dateutil import tz
 from pandas import to_datetime as pandas_to_datetime
+from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 import numpy as np
 
 from ..compat import string_types, integer_types
@@ -54,7 +58,7 @@ class Query(object):
 
         >>> query.search_terms['time']  # doctest: +NORMALIZE_WHITESPACE
         Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=<UTC>), \
-        end=datetime.datetime(2002, 1, 1, 0, 0, tzinfo=<UTC>))
+        end=datetime.datetime(2002, 1, 1, 23, 59, 59, 999999, tzinfo=tzutc()))
 
         By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
 
@@ -264,15 +268,32 @@ def _to_datetime(t):
 
     return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
 
-
 def _time_to_search_dims(time_range):
-    if hasattr(time_range, '__iter__') and len(time_range) == 2:
-        time_range = Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
-        if time_range[0] == time_range[1]:
-            return time_range[0]
-        return time_range
-    else:
-        return _to_datetime(time_range)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        if hasattr(time_range, '__iter__') and len(time_range) == 2:
+            if all(isinstance(n, datetime.datetime) for n in time_range):
+                timelist = list(time_range)
+                time_range = timelist[0].isoformat(), timelist[1].isoformat()
+            time_range = Range(_to_datetime(time_range[0]),
+                               _to_datetime(pandas.Period(time_range[1]).end_time.to_pydatetime()))
+            if time_range[0] == time_range[1]:
+                return time_range[0]
+            return time_range
+
+        elif isinstance(time_range, str):
+            start_time, end_time = Range(_to_datetime(time_range),
+                                         _to_datetime(pandas.Period(time_range).end_time.to_pydatetime()))
+            if start_time == end_time:
+                return start_time
+            time_range = Range(start_time, end_time)
+            return time_range
+        else:
+            timelist = list(time_range)
+            time_range = timelist[0].isoformat(), timelist[1].isoformat()
+            time_range = Range(_to_datetime(time_range[0]),
+                               _to_datetime(pandas.Period(time_range[1]).end_time.to_pydatetime()))
+            return time_range
 
 
 def _convert_to_solar_time(utc, longitude):

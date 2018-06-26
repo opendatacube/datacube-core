@@ -155,20 +155,27 @@ def xr_iter(data_array):
         yield i, index, entry
 
 
-def xr_apply(data_array, func, dtype):
+def xr_apply(data_array, func, dtype=None, with_numeric_index=False):
     """
     Apply a function to every element of a :class:`xarray.DataArray`
 
     :type data_array: xarray.DataArray
     :param func: function that takes a dict of labels and an element of the array,
         and returns a value of the given dtype
-    :param dtype: The dtype of the returned array
+    :param dtype: The dtype of the returned array, default to the same as original
+    :param with_numeric_index Bool: If true include numeric index: func(index, labels, value)
     :return: The array with output of the function for every element.
     :rtype: xarray.DataArray
     """
+    if dtype is None:
+        dtype = data_array.dtype
+
     data = numpy.empty(shape=data_array.shape, dtype=dtype)
     for i, index, entry in xr_iter(data_array):
-        v = func(index, entry)
+        if with_numeric_index:
+            v = func(i, index, entry)
+        else:
+            v = func(index, entry)
         data[i] = v
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 

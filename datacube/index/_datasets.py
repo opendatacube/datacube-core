@@ -201,7 +201,8 @@ class DatasetResource(object):
         :param dict updates_allowed: Allowed updates
         :rtype: bool,list[change],list[change]
         """
-        existing = self.get(dataset.id, include_sources=True)
+        need_sources = dataset.sources is not None
+        existing = self.get(dataset.id, include_sources=need_sources)
         if not existing:
             raise ValueError('Unknown dataset %s, cannot update – did you intend to add it?' % dataset.id)
 
@@ -369,9 +370,9 @@ class DatasetResource(object):
             except DuplicateRecordError:
                 return False
 
-    def get_datasets_for_location(self, uri):
+    def get_datasets_for_location(self, uri, mode=None):
         with self._db.connect() as connection:
-            return (self._make(row) for row in connection.get_datasets_for_location(uri))
+            return (self._make(row) for row in connection.get_datasets_for_location(uri, mode=mode))
 
     def remove_location(self, id_, uri):
         """
@@ -462,8 +463,8 @@ class DatasetResource(object):
         """
         Perform a search, returning results as Dataset objects.
 
-        :param dict[str,str|float|Range] query:
-        :param int limit:
+        :param Union[str,float,Range,list] query:
+        :param int limit: Limit number of datasets
         :rtype: __generator[Dataset]
         """
         source_filter = query.pop('source_filter', None)
@@ -483,7 +484,7 @@ class DatasetResource(object):
         for product, datasets in self._do_search_by_product(query):
             yield product, self._make_many(datasets)
 
-    def search_returning(self, field_names, **query):
+    def search_returning(self, field_names, limit=None, **query):
         """
         Perform a search, returning only the specified fields.
 
@@ -492,14 +493,16 @@ class DatasetResource(object):
         It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
 
         :param tuple[str] field_names:
-        :param dict[str,str|float|datacube.model.Range] query:
+        :param Union[str,float,Range,list] query:
+        :param int limit: Limit number of datasets
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
         result_type = namedtuple('search_result', field_names)
 
         for _, results in self._do_search_by_product(query,
                                                      return_fields=True,
-                                                     select_field_names=field_names):
+                                                     select_field_names=field_names,
+                                                     limit=limit):
 
             for columns in results:
                 yield result_type(*columns)

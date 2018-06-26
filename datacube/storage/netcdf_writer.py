@@ -96,25 +96,38 @@ def create_variable(nco, name, var, set_crs=False, attrs=None, **kwargs):
     :param kwargs:
     :return:
     """
-    if 'chunksizes' in kwargs:
-        maxsizes = [len(nco.dimensions[dim]) for dim in var.dims]
-        kwargs['chunksizes'] = [min(chunksize, maxsize) if chunksize and maxsize else chunksize
-                                for maxsize, chunksize in zip(maxsizes, kwargs['chunksizes'])]
-
     assert var.dtype.kind != 'U'  # Creates Non CF-Compliant NetCDF File
+
+    def clamp_chunksizes(chunksizes, dim_names):
+        if chunksizes is None:
+            return None
+
+        maxsizes = [len(nco.dimensions[dim]) for dim in dim_names]
+
+        # pad chunksizes to new dimension length if too short
+        chunksizes = tuple(chunksizes) + tuple(maxsizes[len(chunksizes):])
+
+        # clamp
+        return [min(sz, maxsz) for sz, maxsz in zip(chunksizes, maxsizes)]
+
     if var.dtype.kind == 'S' and var.dtype.itemsize > 1:
-        nco.createDimension(name + '_nchar', size=var.dtype.itemsize)
-        data_var = nco.createVariable(varname=name,
-                                      datatype='S1',
-                                      dimensions=tuple(var.dims) + (name + '_nchar',),
-                                      fill_value=getattr(var, 'nodata', None),
-                                      **kwargs)
+        new_dim_name = name + '_nchar'
+        nco.createDimension(new_dim_name, size=var.dtype.itemsize)
+
+        dims = tuple(var.dims) + (new_dim_name,)
+        datatype = numpy.dtype('S1')
     else:
-        data_var = nco.createVariable(varname=name,
-                                      datatype=var.dtype,
-                                      dimensions=var.dims,
-                                      fill_value=getattr(var, 'nodata', None),
-                                      **kwargs)
+        dims = var.dims
+        datatype = var.dtype
+
+    chunksizes = clamp_chunksizes(kwargs.pop('chunksizes', None), dims)
+
+    data_var = nco.createVariable(varname=name,
+                                  datatype=datatype,
+                                  dimensions=dims,
+                                  fill_value=getattr(var, 'nodata', None),
+                                  chunksizes=chunksizes,
+                                  **kwargs)
     if set_crs:
         data_var.grid_mapping = 'crs'
     if getattr(var, 'units', None):

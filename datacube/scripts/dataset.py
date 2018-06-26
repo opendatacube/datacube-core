@@ -5,7 +5,6 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
-from decimal import Decimal
 from pathlib import Path
 
 import click
@@ -13,16 +12,14 @@ import yaml
 import yaml.resolver
 from click import echo
 import json
-from yaml import Node
 
 from datacube.index.index import Index
 from datacube.index.exceptions import MissingRecordError
 from datacube.model import Dataset
-from datacube.model import Range
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, changes, InvalidDocException
+from datacube.utils import read_documents, changes, InvalidDocException, without_lineage_sources
 from datacube.utils.serialise import SafeDatacubeDumper
 
 try:
@@ -37,6 +34,16 @@ class BadMatch(Exception):
     pass
 
 
+def report_old_options(mapping):
+    def maybe_remap(s):
+        if s in mapping:
+            _LOG.warning("DEPRECATED option detected: --%s use --%s instead", s, mapping[s])
+            return mapping[s]
+        else:
+            return s
+    return maybe_remap
+
+
 @cli.group(name='dataset', help='Dataset management commands')
 def dataset_cmd():
     pass
@@ -46,7 +53,19 @@ def find_matching_product(rules, doc):
     """:rtype: datacube.model.DatasetType"""
     matched = [rule for rule in rules if changes.contains(doc, rule['metadata'])]
     if not matched:
-        raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
+        # provide user with information about the failure
+        if len(rules) == 0:
+            raise BadMatch('No rules provided.')
+        elif len(rules) == 1:
+            metadata = rules[0]['metadata']
+            relevant_doc = {k: v for k, v in doc.items() if k in metadata}
+            raise BadMatch('Dataset metadata did not match product rules.'
+                           '\nDataset metadata:\n %s\n'
+                           '\nProduct metadata:\n %s\n'
+                           % (json.dumps(relevant_doc, indent=4),
+                              json.dumps(metadata, indent=4)))
+        else:
+            raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
     if len(matched) > 1:
         raise BadMatch('Too many matching Products found for %s. Matched %s.' % (
             doc.get('id', 'unidentified'), matched))
@@ -66,31 +85,18 @@ def check_dataset_consistent(dataset):
     return True, None
 
 
-def create_dataset(dataset_doc, uri, rules):
+def create_dataset(dataset_doc, uri, rules, skip_lineage=False):
     """
     :rtype datacube.model.Dataset:
     """
     dataset_type = find_matching_product(rules, dataset_doc)
-    sources = {cls: create_dataset(source_doc, None, rules)
-               for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
+    if skip_lineage:
+        sources = {}
+        dataset_doc = without_lineage_sources(dataset_doc, dataset_type)
+    else:
+        sources = {cls: create_dataset(source_doc, None, rules)
+                   for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
     return Dataset(dataset_type, dataset_doc, uris=[uri] if uri else None, sources=sources)
-
-
-def load_rules_from_file(filename, index):
-    rules = next(read_documents(Path(filename)))[1]
-    # TODO: verify schema
-
-    for rule in rules:
-        type_ = index.products.get_by_name(rule['type'])
-        if not type_:
-            _LOG.error('DatasetType %s does not exists', rule['type'])
-            return None
-        if not changes.contains(type_.metadata_doc, rule['metadata']):
-            _LOG.error('DatasetType %s can\'t be matched by its own rule', rule['type'])
-            return None
-        rule['type'] = type_
-
-    return rules
 
 
 def load_rules_from_types(index, type_names=None):
@@ -109,7 +115,7 @@ def load_rules_from_types(index, type_names=None):
     return rules
 
 
-def load_datasets(datasets, rules):
+def load_datasets(datasets, rules, skip_lineage=False):
     for dataset_path in datasets:
         metadata_path = get_metadata_path(Path(dataset_path))
         if not metadata_path or not metadata_path.exists():
@@ -117,11 +123,9 @@ def load_datasets(datasets, rules):
             continue
 
         try:
-            for metadata_path, metadata_doc in read_documents(metadata_path):
-                uri = metadata_path.absolute().as_uri()
-
+            for uri, metadata_doc in read_documents(metadata_path, uri=True):
                 try:
-                    dataset = create_dataset(metadata_doc, uri, rules)
+                    dataset = create_dataset(metadata_doc, uri, rules, skip_lineage=skip_lineage)
                 except BadMatch as e:
                     _LOG.error('Unable to create Dataset for %s: %s', uri, e)
                     continue
@@ -137,47 +141,119 @@ def load_datasets(datasets, rules):
             continue
 
 
-def parse_match_rules_options(index, match_rules, dtype, auto_match):
-    if not (match_rules or dtype or auto_match):
-        auto_match = True
+def load_datasets_for_update(datasets, index):
+    """Load datasets from disk, associate to a product by looking up existing
+    dataset in the index. Datasets not in the database will be logged.
 
-    if match_rules:
-        return load_rules_from_file(match_rules, index)
-    else:
-        assert dtype or auto_match
-        return load_rules_from_types(index, dtype)
+    Doesn't load lineage information
+
+    Generates tuples in the form (new_dataset, existing_dataset)
+    """
+    def mk_dataset(metadata_doc, uri):
+        uuid = metadata_doc.get('id', None)
+
+        if uuid is None:
+            return None, None, "Metadata document it missing id field"
+
+        existing = index.datasets.get(uuid)
+        if existing is None:
+            return None, None, "No such dataset the database: {}".format(uuid)
+
+        return Dataset(existing.type,
+                       without_lineage_sources(metadata_doc, existing.type, inplace=True),
+                       uris=[uri]), existing, None
+
+    for dataset_path in datasets:
+        metadata_path = get_metadata_path(Path(dataset_path))
+        if not metadata_path or not metadata_path.exists():
+            _LOG.error('No supported metadata docs found for dataset %s', dataset_path)
+            continue
+
+        try:
+            for uri, metadata_doc in read_documents(metadata_path, uri=True):
+                dataset, existing, error_msg = mk_dataset(metadata_doc, uri)
+
+                if dataset is None:
+                    _LOG.error("Failure while processing: %s\n" +
+                               " > Reason: %s", metadata_path, error_msg)
+                else:
+                    is_consistent, reason = check_dataset_consistent(dataset)
+                    if is_consistent:
+                        yield dataset, existing
+                    else:
+                        _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
+
+        except InvalidDocException:
+            _LOG.error("Failed reading documents from %s", metadata_path)
+            continue
 
 
-@dataset_cmd.command('add', help="Add datasets to the Data Cube")
-@click.option('--match-rules', '-r', help='Rules to be used to associate datasets with products',
-              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
-@click.option('--dtype', '-t', help='Product to be associated with the datasets',
+def parse_match_rules_options(index, dtype, auto_match):
+    if auto_match is True:
+        _LOG.warning("--auto-match option is deprecated, update your scripts, behaviour is the same without it")
+
+    return load_rules_from_types(index, dtype)
+
+
+@dataset_cmd.command('add',
+                     help="Add datasets to the Data Cube",
+                     context_settings=dict(token_normalize_func=report_old_options({
+                         'dtype': 'product',
+                         't': 'p'
+                     })))
+@click.option('--product', '-p', 'product_names',
+              help=('Only match against products specified with this option, '
+                    'you can supply several by repeating this option with a new product name'),
               multiple=True)
-@click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
+@click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
               is_flag=True, default=False)
 @click.option('--sources-policy', type=click.Choice(['verify', 'ensure', 'skip']), default='verify',
               help="""'verify' - verify source datasets' metadata (default)
 'ensure' - add source dataset if it doesn't exist
 'skip' - dont add the derived dataset if source dataset doesn't exist""")
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.option('--ignore-lineage',
+              help="Don't add lineage data to the database",
+              is_flag=True, default=False)
+@click.option('--confirm-ignore-lineage',
+              help="Don't add lineage data to the database, without confirmation",
+              is_flag=True, default=False)
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, match_rules, dtype, auto_match, sources_policy, dry_run, dataset_paths):
-    rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
+def index_cmd(index, product_names, auto_match, sources_policy, dry_run,
+              ignore_lineage,
+              confirm_ignore_lineage,
+              dataset_paths):
+
+    if confirm_ignore_lineage is False and ignore_lineage is True:
+        if sys.stdin.isatty():
+            confirmed = click.confirm("Requested to skip lineage information, Are you sure?", default=False)
+            if not confirmed:
+                click.echo('OK aborting', err=True)
+                sys.exit(1)
+        else:
+            click.echo("Use --confirm-ignore-lineage from non-interactive scripts. Aborting.")
+            sys.exit(1)
+
+        confirm_ignore_lineage = True
+
+    rules = parse_match_rules_options(index, product_names, auto_match)
     if rules is None:
         return
 
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
         with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
-            index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter)
+            index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter,
+                                skip_lineage=confirm_ignore_lineage)
     else:
-        index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths)
+        index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths,
+                            skip_lineage=confirm_ignore_lineage)
 
 
-def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
-    for dataset in load_datasets(dataset_paths, rules):
+def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths, skip_lineage=False):
+    for dataset in load_datasets(dataset_paths, rules, skip_lineage=skip_lineage):
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
@@ -186,54 +262,96 @@ def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
                 _LOG.error('Failed to add dataset %s: %s', dataset.local_uri, e)
 
 
-def parse_update_rules(allow_any):
-    updates = {}
-    for key_str in allow_any:
-        updates[tuple(key_str.split('.'))] = changes.allow_any
-    return updates
+def parse_update_rules(keys_that_can_change):
+    updates_allowed = {}
+    for key_str in keys_that_can_change:
+        updates_allowed[tuple(key_str.split('.'))] = changes.allow_any
+    return updates_allowed
 
 
 @dataset_cmd.command('update', help="Update datasets in the Data Cube")
-@click.option('--allow-any', help="Allow any changes to the specified key (a.b.c)", multiple=True)
-@click.option('--match-rules', '-r', help='Rules to be used to associate datasets with products',
-              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
-@click.option('--dtype', '-t', help='Product to be associated with the datasets', multiple=True)
-@click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
-              is_flag=True, default=False)
+@click.option('--allow-any', 'keys_that_can_change',
+              help="Allow any changes to the specified key (a.b.c)",
+              multiple=True)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.option('--location-policy',
+              type=click.Choice(['keep', 'archive', 'forget']),
+              default='keep',
+              help='''What to do with previously recorded dataset location
+'keep' - keep as alternative location [default]
+'archive' - mark as archived
+'forget' - remove from the index
+''')
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def update_cmd(index, allow_any, match_rules, dtype, auto_match, dry_run, datasets):
-    rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
-    if rules is None:
-        return
+def update_cmd(index, keys_that_can_change, dry_run, location_policy, datasets):
 
-    updates = parse_update_rules(allow_any)
+    def loc_action(action, new_ds, existing_ds, action_name):
+        if len(existing_ds.uris) == 0:
+            return None
+
+        if len(existing_ds.uris) > 1:
+            _LOG.warning("Refusing to %s old location, there are several", action_name)
+            return None
+
+        new_uri, = new_ds.uris
+        old_uri, = existing_ds.uris
+
+        if new_uri == old_uri:
+            return None
+
+        if dry_run:
+            echo('Will {} old location {}, and add new one {}'.format(action_name, old_uri, new_uri))
+            return True
+
+        return action(existing_ds.id, old_uri)
+
+    def loc_archive(new_ds, existing_ds):
+        return loc_action(index.datasets.archive_location, new_ds, existing_ds, 'archive')
+
+    def loc_forget(new_ds, existing_ds):
+        return loc_action(index.datasets.remove_location, new_ds, existing_ds, 'forget')
+
+    def loc_keep(new_ds, existing_ds):
+        return None
+
+    update_loc = dict(archive=loc_archive,
+                      forget=loc_forget,
+                      keep=loc_keep)[location_policy]
+
+    updates_allowed = parse_update_rules(keys_that_can_change)
 
     success, fail = 0, 0
-    for dataset in load_datasets(datasets, rules):
+    for dataset, existing_ds in load_datasets_for_update(datasets, index):
         _LOG.info('Matched %s', dataset)
+
+        if location_policy != 'keep':
+            if len(existing_ds.uris) > 1:
+                # TODO:
+                pass
 
         if not dry_run:
             try:
-                index.datasets.update(dataset, updates_allowed=updates)
+                index.datasets.update(dataset, updates_allowed=updates_allowed)
+                update_loc(dataset, existing_ds)
                 success += 1
                 echo('Updated %s' % dataset.id)
             except ValueError as e:
                 fail += 1
                 echo('Failed to update %s: %s' % (dataset.id, e))
         else:
-            if update_dry_run(index, updates, dataset):
+            if update_dry_run(index, updates_allowed, dataset):
+                update_loc(dataset, existing_ds)
                 success += 1
             else:
                 fail += 1
     echo('%d successful, %d failed' % (success, fail))
 
 
-def update_dry_run(index, updates, dataset):
+def update_dry_run(index, updates_allowed, dataset):
     try:
-        can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates)
+        can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates_allowed)
     except ValueError as e:
         echo('Cannot update %s: %s' % (dataset.id, e))
         return False
@@ -280,6 +398,7 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False, d
 
     return info
 
+
 def _write_csv(infos):
     writer = csv.DictWriter(sys.stdout, ['id', 'status', 'product', 'location'], extrasaction='ignore')
     writer.writeheader()
@@ -290,6 +409,7 @@ def _write_csv(infos):
         return row
 
     writer.writerows(add_first_location(row) for row in infos)
+
 
 def _write_yaml(infos):
     """
@@ -302,10 +422,12 @@ def _write_yaml(infos):
 
     return yaml.dump_all(infos, sys.stdout, SafeDatacubeDumper, default_flow_style=False, indent=4)
 
+
 _OUTPUT_WRITERS = {
     'csv': _write_csv,
     'yaml': _write_yaml,
 }
+
 
 @dataset_cmd.command('info', help="Display dataset information")
 @click.option('--show-sources', help='Also show source datasets', is_flag=True, default=False)

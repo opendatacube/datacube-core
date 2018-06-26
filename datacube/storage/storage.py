@@ -15,21 +15,17 @@ import math
 from contextlib import contextmanager
 from pathlib import Path
 
-from datacube.compat import urlparse, urljoin, url_parse_module
+import urllib.parse
+from urllib.parse import urlparse, urljoin
 from datacube.config import OPTIONS
 from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset
 from datacube.storage import netcdf_writer
 from datacube.utils import clamp, datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
 from datacube.utils import geometry
-from datacube.utils import is_url, uri_to_local_path
+from datacube.utils import is_url, uri_to_local_path, get_part_from_uri
 
-try:
-    from yaml import CSafeDumper as SafeDumper
-except ImportError:
-    from yaml import SafeDumper
 import numpy
-
 from affine import Affine
 from datacube.compat import integer_types
 import rasterio
@@ -264,72 +260,6 @@ class BandDataSource(object):
                                        **kwargs)
 
 
-# class NetCDFDataSource(object):
-#     def __init__(self, dataset, variable, slab=None, nodata=None):
-#         self.dataset = dataset
-#         self.variable = self.dataset[variable]
-#         self.slab = slab or {}
-#         if nodata is None:
-#             nodata = self.variable.getncattr('_FillValue')
-#         self.nodata = nodata
-#
-#     @property
-#     def crs(self):
-#         crs_var_name = self.variable.grid_mapping
-#         crs_var = self.dataset[crs_var_name]
-#         return geometry.CRS(crs_var.crs_wkt)
-#
-#     @property
-#     def transform(self):
-#         dims = self.crs.dimensions
-#         xres, xoff = data_resolution_and_offset(self.dataset[dims[1]])
-#         yres, yoff = data_resolution_and_offset(self.dataset[dims[0]])
-#         return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
-#
-#     @property
-#     def dtype(self):
-#         return self.variable.dtype
-#
-#     @property
-#     def shape(self):
-#         return self.variable.shape
-#
-#     def read(self, window=None, out_shape=None):
-#         data = self.variable
-#         if window is None:
-#             window = ((0, data.shape[0]), (0, data.shape[1]))
-#         data_shape = (window[0][1]-window[0][0]), (window[1][1]-window[1][0])
-#         if out_shape is None:
-#             out_shape = data_shape
-#         xidx = window[0][0] + ((
-# numpy.arange(out_shape[1])+0.5)*(data_shape[1]/out_shape[1])-0.5).round().astype('int')
-#         yidx = window[1][0] + ((
-# numpy.arange(out_shape[0])+0.5)*(data_shape[0]/out_shape[0])-0.5).round().astype('int')
-#         slab = {self.crs.dimensions[1]: xidx, self.crs.dimensions[0]: yidx}
-#         slab.update(self.slab)
-#         return data[tuple(slab[d] for d in self.variable.dimensions)]
-#
-#     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
-#         dst_poly = geometry.polygon_from_transform(dest.shape[1], dest.shape[0],
-#                                                    dst_transform, dst_crs).to_crs(self.crs)
-#         src_poly = geometry.polygon_from_transform(self.shape[1], self.shape[0],
-#                                                    self.transform, self.crs)
-#         bounds = dst_poly.intersection(src_poly)
-#         geobox = geometry.GeoBox.from_geopolygon(bounds, (self.transform.e, self.transform.a), crs=self.crs)
-#         tmp, _, tmp_transform = _read_decimated(~self.transform * geobox.affine, self, geobox.shape)
-#
-#         return rasterio.warp.reproject(tmp,
-#                                        dest,
-#                                        src_transform=self.transform * tmp_transform,
-#                                        src_crs=str(geobox.crs),
-#                                        src_nodata=self.nodata,
-#                                        dst_transform=dst_transform,
-#                                        dst_crs=str(dst_crs),
-#                                        dst_nodata=dst_nodata,
-#                                        resampling=resampling,
-#                                        **kwargs)
-
-
 class OverrideBandDataSource(object):
     """Wrapper for a rasterio.Band object that overrides nodata, CRS and transform
 
@@ -465,12 +395,14 @@ class RasterDatasetDataSource(RasterioDataSource):
         """
         self._dataset = dataset
         self._measurement = dataset.measurements[measurement_id]
+        self._netcdf = ('netcdf' in dataset.format.lower())
         url = _resolve_url(_choose_location(dataset), self._measurement['path'])
+        self._part = get_part_from_uri(url)
         filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
         nodata = dataset.type.measurements[measurement_id].get('nodata')
         super(RasterDatasetDataSource, self).__init__(filename, nodata=nodata)
 
-    def get_bandnumber(self, src):
+    def get_bandnumber(self, src=None):
 
         # If `band` property is set to an integer it overrides any other logic
         band = self._measurement.get('band')
@@ -480,9 +412,27 @@ class RasterDatasetDataSource(RasterioDataSource):
             else:
                 _LOG.warning('Expected "band" property to be of integer type')
 
-        if 'netcdf' not in self._dataset.format.lower():
+        if not self._netcdf:
             layer_id = self._measurement.get('layer', 1)
             return layer_id if isinstance(layer_id, integer_types) else 1
+
+        # Netcdf only below
+        if self._part is not None:
+            return self._part + 1  # Convert to rasterio 1-based indexing
+
+        if src is None:
+            # File wasnt' open, could be unstacked file in a new format, or
+            # stacked/unstacked in old. We assume caller knows what to do
+            # (maybe based on some side-channel information), so just report
+            # undefined.
+            return None
+
+        if src.count == 1:  # Single-slice netcdf file
+            return 1
+
+        _LOG.debug("Encountered stacked netcdf file without recorded index\n - %s", src.name)
+
+        # Below is backwards compatibility code
 
         tag_name = GDAL_NETCDF_DIM + 'time'
         if tag_name not in src.tags(1):  # TODO: support time-less datasets properly
@@ -512,9 +462,9 @@ def register_scheme(*schemes):
     Register additional uri schemes as supporting relative offsets (etc), so that band/measurement paths can be
     calculated relative to the base uri.
     """
-    url_parse_module.uses_netloc.extend(schemes)
-    url_parse_module.uses_relative.extend(schemes)
-    url_parse_module.uses_params.extend(schemes)
+    urllib.parse.uses_netloc.extend(schemes)
+    urllib.parse.uses_relative.extend(schemes)
+    urllib.parse.uses_params.extend(schemes)
 
 
 # Not recognised by python by default. Doctests below will fail without it.
