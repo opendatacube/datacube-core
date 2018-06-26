@@ -56,6 +56,19 @@ def namedtuples2dicts(namedtuples):
     return {k: dict(v._asdict()) for k, v in namedtuples.items()}
 
 
+def sorted_items(d, key=None, reverse=False):
+    """Given a dictionary `d` return items: (k1, v1), (k2, v2)... sorted in
+    ascending order according to key.
+
+    :param dict d: dictionary
+    :param key: optional function remapping key
+    :param bool reverse: If True return in descending order instead of default ascending
+
+    """
+    key = toolz.first if key is None else toolz.comp(key, toolz.first)
+    return sorted(d.items(), key=key, reverse=reverse)
+
+
 def datetime_to_seconds_since_1970(dt):
     epoch = datetime(1970, 1, 1, 0, 0, 0, tzinfo=tzutc() if dt.tzinfo else None)
     return (dt - epoch).total_seconds()

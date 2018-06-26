@@ -19,7 +19,7 @@ import numpy as np
 
 from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp, SimpleDocNav
-from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents
+from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents, sorted_items
 from datacube.utils import mk_part_uri, get_part_from_uri
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
@@ -310,6 +310,17 @@ def test_xr_apply():
     assert dst.dtype.name == 'uint8'
     assert dst.shape == src.shape
     assert dst.values.tolist() == [0+1, 1+2, 2+3]
+
+
+def test_sorted_items():
+    aa = dict(c=1, b={}, a=[])
+
+    assert ''.join(k for k, _ in sorted_items(aa)) == 'abc'
+    assert ''.join(k for k, _ in sorted_items(aa, key=lambda x: x)) == 'abc'
+    assert ''.join(k for k, _ in sorted_items(aa, reverse=True)) == 'cba'
+
+    remap = dict(c=0, a=1, b=2)
+    assert ''.join(k for k, _ in sorted_items(aa, key=lambda x: remap[x])) == 'cab'
 
 
 def test_traverse_datasets():
