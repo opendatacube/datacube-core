@@ -330,8 +330,7 @@ def flatten_datasets(ds, with_depth_grouping=False):
 
 def remap_lineage_doc(root, mk_node, **kwargs):
     def visit(ds):
-        return mk_node(ds.id,
-                       ds.doc_without_lineage_sources,
+        return mk_node(ds,
                        {k: visit(v) for k, v in sorted_items(ds.sources)},
                        **kwargs)
 
@@ -369,22 +368,24 @@ def dedup_lineage(root):
 
         return True
 
-    def mk_node(_id, doc, sources, cache, sources_path):
-        existing = cache.get(_id, None)
+    def mk_node(ds, sources, cache, sources_path):
+        existing = cache.get(ds.id, None)
+        doc = ds.doc_without_lineage_sources
+
         if existing is not None:
             _ds, _doc, _sources = existing
 
             if not check_sources(sources, _sources):
-                raise InvalidDocException('Inconsistent lineage for repeated dataset with _id: {}'.format(_id))
+                raise InvalidDocException('Inconsistent lineage for repeated dataset with _id: {}'.format(ds.id))
 
             if doc != _doc:
-                raise InvalidDocException('Inconsistent metadata for repeated dataset with _id: {}'.format(_id))
+                raise InvalidDocException('Inconsistent metadata for repeated dataset with _id: {}'.format(ds.id))
 
             return _ds
 
-        ds = toolz.assoc_in(doc, sources_path, sources)
-        cache[_id] = (ds, doc, sources)
-        return ds
+        out_ds = toolz.assoc_in(doc, sources_path, sources)
+        cache[ds.id] = (out_ds, doc, sources)
+        return out_ds
 
     if not isinstance(root, SimpleDocNav):
         root = SimpleDocNav(root)
