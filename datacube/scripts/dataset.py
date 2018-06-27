@@ -9,6 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import click
+import toolz
 import yaml
 import yaml.resolver
 from click import echo
@@ -22,6 +23,7 @@ from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, changes, InvalidDocException, without_lineage_sources, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
+from datacube.model.utils import dedup_lineage, remap_lineage_doc, flatten_datasets
 
 from typing import Iterable
 
@@ -129,20 +131,6 @@ def check_dataset_consistent(dataset):
     return True, None
 
 
-def create_dataset(dataset_doc, uri, find_product, skip_lineage=False):
-    """
-    :rtype datacube.model.Dataset:
-    """
-    dataset_type = find_product(dataset_doc)
-    if skip_lineage:
-        sources = {}
-        dataset_doc = without_lineage_sources(dataset_doc, dataset_type)
-    else:
-        sources = {cls: create_dataset(source_doc, None, find_product)
-                   for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
-    return Dataset(dataset_type, dataset_doc, uris=[uri] if uri else None, sources=sources)
-
-
 def load_rules_from_types(index, product_names=None):
     products = []
     if product_names:
@@ -162,12 +150,81 @@ def load_rules_from_types(index, product_names=None):
     return [SimpleNamespace(product=p, signature=p.metadata_doc) for p in products]
 
 
-def load_datasets(dataset_paths, find_product, skip_lineage=False):
-    for uri, ds in ui_doc_path_stream(dataset_paths):
+def dataset_resolver(index,
+                     product_matching_rules,
+                     fail_on_missing_lineage=False,
+                     verify_lineage=False,
+                     skip_lineage=False):
+    match_product = product_matcher(product_matching_rules)
+
+    def resolve_no_lineage(ds, uri):
+        doc = ds.doc_without_lineage_sources
         try:
-            dataset = create_dataset(ds.doc, uri, find_product, skip_lineage=skip_lineage)
+            product = match_product(doc)
         except BadMatch as e:
-            _LOG.error('Unable to create Dataset for %s: %s', uri, e)
+            return None, e
+
+        return Dataset(product, doc, uris=[uri], sources={}), None
+
+    def resolve(main_ds, uri):
+        try:
+            main_ds = SimpleDocNav(dedup_lineage(main_ds))
+        except InvalidDocException as e:
+            return None, e
+
+        main_uuid = main_ds.id
+
+        ds_by_uuid = toolz.valmap(toolz.first, flatten_datasets(main_ds))
+        all_uuid = list(ds_by_uuid)
+        db_dss = {str(ds.id): ds for ds in index.datasets.get_many(all_uuid)}
+
+        lineage_uuids = set(filter(lambda x: x != main_uuid, all_uuid))
+        missing_lineage = lineage_uuids - set(db_dss)
+
+        if missing_lineage and fail_on_missing_lineage:
+            return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
+
+        if verify_lineage:
+            # TODO: verify lineage datasets that are already present in the DB
+            pass
+
+        def with_cache(v, k, cache):
+            cache[k] = v
+            return v
+
+        def resolve_ds(ds, sources, cache=None):
+            cached = cache.get(ds.id)
+            if cached is not None:
+                return cached
+
+            uris = [uri] if ds.id == main_uuid else []
+
+            doc = ds.doc
+
+            db_ds = db_dss.get(ds.id)
+            if db_ds:
+                product = db_ds.type
+            else:
+                product = match_product(doc)
+
+            return with_cache(Dataset(product, doc, uris=uris, sources=sources), ds.id, cache)
+
+        try:
+            return remap_lineage_doc(main_ds, resolve_ds, cache={}), None
+        except BadMatch as e:
+            return None, e
+
+    return resolve_no_lineage if skip_lineage else resolve
+
+
+def load_datasets(dataset_paths, index, rules, skip_lineage=False, **kwargs):
+    resolve = dataset_resolver(index, rules, skip_lineage=skip_lineage, **kwargs)
+
+    for uri, ds in ui_doc_path_stream(dataset_paths):
+        dataset, err = resolve(ds, uri)
+
+        if dataset is None:
+            _LOG.error('%s', str(err))
             continue
 
         is_consistent, reason = check_dataset_consistent(dataset)
@@ -272,20 +329,19 @@ def index_cmd(index, product_names,
         sys.exit(2)
 
     assert len(rules) > 0
-    find_product = product_matcher(rules)
 
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
         with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
-            index_dataset_paths(auto_add_lineage, dry_run, index, find_product, dataset_path_iter,
+            index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_path_iter,
                                 skip_lineage=confirm_ignore_lineage)
     else:
-        index_dataset_paths(auto_add_lineage, dry_run, index, find_product, dataset_paths,
+        index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_paths,
                             skip_lineage=confirm_ignore_lineage)
 
 
-def index_dataset_paths(auto_add_lineage, dry_run, index, find_product, dataset_paths, skip_lineage=False):
-    for dataset in load_datasets(dataset_paths, find_product, skip_lineage=skip_lineage):
+def index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_paths, skip_lineage=False):
+    for dataset in load_datasets(dataset_paths, index, rules, skip_lineage=skip_lineage):
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
