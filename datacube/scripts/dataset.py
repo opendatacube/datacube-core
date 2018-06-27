@@ -20,7 +20,7 @@ from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, changes, InvalidDocException, without_lineage_sources
+from datacube.utils import read_documents, changes, InvalidDocException, without_lineage_sources, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
 
 from typing import Iterable
@@ -45,6 +45,34 @@ def report_old_options(mapping):
 @cli.group(name='dataset', help='Dataset management commands')
 def dataset_cmd():
     pass
+
+
+def resolve_doc_files(paths, on_error):
+    for p in paths:
+        try:
+            yield get_metadata_path(Path(p))
+        except ValueError as e:
+            on_error(p, e)
+
+
+def doc_path_stream(files, on_error, uri=True):
+    for fname in files:
+        try:
+            for p, doc in read_documents(fname, uri=uri):
+                yield p, SimpleDocNav(doc)
+        except InvalidDocException as e:
+            on_error(fname, e)
+
+
+def ui_doc_path_stream(paths):
+    def on_error1(p, e):
+        _LOG.error('No supported metadata docs found for dataset %s', p)
+
+    def on_error2(p, e):
+        _LOG.error('Failed reading documents from %s', p)
+
+    yield from doc_path_stream(resolve_doc_files(paths, on_error=on_error1),
+                               on_error=on_error2, uri=True)
 
 
 def product_matcher(rules):
@@ -134,33 +162,23 @@ def load_rules_from_types(index, product_names=None):
     return [SimpleNamespace(product=p, signature=p.metadata_doc) for p in products]
 
 
-def load_datasets(datasets, find_product, skip_lineage=False):
-    for dataset_path in datasets:
-        metadata_path = get_metadata_path(Path(dataset_path))
-        if not metadata_path or not metadata_path.exists():
-            _LOG.error('No supported metadata docs found for dataset %s', dataset_path)
-            continue
-
+def load_datasets(dataset_paths, find_product, skip_lineage=False):
+    for uri, ds in ui_doc_path_stream(dataset_paths):
         try:
-            for uri, metadata_doc in read_documents(metadata_path, uri=True):
-                try:
-                    dataset = create_dataset(metadata_doc, uri, find_product, skip_lineage=skip_lineage)
-                except BadMatch as e:
-                    _LOG.error('Unable to create Dataset for %s: %s', uri, e)
-                    continue
-
-                is_consistent, reason = check_dataset_consistent(dataset)
-                if not is_consistent:
-                    _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
-                    continue
-
-                yield dataset
-        except InvalidDocException:
-            _LOG.error("Failed reading documents from %s", metadata_path)
+            dataset = create_dataset(ds.doc, uri, find_product, skip_lineage=skip_lineage)
+        except BadMatch as e:
+            _LOG.error('Unable to create Dataset for %s: %s', uri, e)
             continue
 
+        is_consistent, reason = check_dataset_consistent(dataset)
+        if not is_consistent:
+            _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
+            continue
 
-def load_datasets_for_update(datasets, index):
+        yield dataset
+
+
+def load_datasets_for_update(dataset_paths, index):
     """Load datasets from disk, associate to a product by looking up existing
     dataset in the index. Datasets not in the database will be logged.
 
@@ -168,43 +186,32 @@ def load_datasets_for_update(datasets, index):
 
     Generates tuples in the form (new_dataset, existing_dataset)
     """
-    def mk_dataset(metadata_doc, uri):
-        uuid = metadata_doc.get('id', None)
+    def mk_dataset(ds, uri):
+        uuid = ds.id
 
         if uuid is None:
             return None, None, "Metadata document it missing id field"
 
         existing = index.datasets.get(uuid)
         if existing is None:
-            return None, None, "No such dataset the database: {}".format(uuid)
+            return None, None, "No such dataset in the database: {}".format(uuid)
 
         return Dataset(existing.type,
-                       without_lineage_sources(metadata_doc, existing.type, inplace=True),
+                       ds.doc_without_lineage_sources,
                        uris=[uri]), existing, None
 
-    for dataset_path in datasets:
-        metadata_path = get_metadata_path(Path(dataset_path))
-        if not metadata_path or not metadata_path.exists():
-            _LOG.error('No supported metadata docs found for dataset %s', dataset_path)
-            continue
+    for uri, doc in ui_doc_path_stream(dataset_paths):
+        dataset, existing, error_msg = mk_dataset(doc, uri)
 
-        try:
-            for uri, metadata_doc in read_documents(metadata_path, uri=True):
-                dataset, existing, error_msg = mk_dataset(metadata_doc, uri)
-
-                if dataset is None:
-                    _LOG.error("Failure while processing: %s\n" +
-                               " > Reason: %s", metadata_path, error_msg)
-                else:
-                    is_consistent, reason = check_dataset_consistent(dataset)
-                    if is_consistent:
-                        yield dataset, existing
-                    else:
-                        _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
-
-        except InvalidDocException:
-            _LOG.error("Failed reading documents from %s", metadata_path)
-            continue
+        if dataset is None:
+            _LOG.error("Failure while processing: %s\n" +
+                       " > Reason: %s", uri, error_msg)
+        else:
+            is_consistent, reason = check_dataset_consistent(dataset)
+            if is_consistent:
+                yield dataset, existing
+            else:
+                _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
 
 
 def parse_match_rules_options(index, dtype, auto_match):
