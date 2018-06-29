@@ -6,7 +6,7 @@ What's New
 **********
 
 
-v1.6rc2 (4 June 2018)
+v1.6rc2 (29 June 2018)
 =========================================
 
 Backwards Incompatible Changes
