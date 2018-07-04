@@ -71,3 +71,10 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
 
     check_skip_lineage_test(clirunner, index)
     check_no_product_match(clirunner, index)
+
+    # check --product=nosuchproduct
+    r = clirunner(['dataset', 'add', '--product', 'nosuchproduct', p.datasets],
+                  expect_success=False)
+
+    assert "ERROR Supplied product name" in r.output
+    assert r.exit_code != 0
