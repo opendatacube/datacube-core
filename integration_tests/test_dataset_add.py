@@ -1,5 +1,5 @@
-from datacube.utils import read_documents, SimpleDocNav
-from datacube.testutils import gen_dataset_test_dag
+from datacube.utils import SimpleDocNav
+from datacube.testutils import gen_dataset_test_dag, load_dataset_definition
 
 
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
@@ -12,10 +12,14 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     clirunner(['metadata_type', 'add', p.metadata], expect_success=True)
     clirunner(['product', 'add', p.products], expect_success=True)
     clirunner(['dataset', 'add', p.datasets], expect_success=True)
+    clirunner(['dataset', 'add', p.datasets_bad1], expect_success=False)
+
+    ds = load_dataset_definition(p.datasets)
+    ds_bad1 = load_dataset_definition(p.datasets_bad1)
 
     r = clirunner(['dataset', 'search'], expect_success=True)
-    ds, *_ = list(SimpleDocNav(d) for _, d in read_documents(p.datasets))
     assert ds.id in r.output
+    assert ds_bad1.id not in r.output
     assert ds.sources['ab'].id in r.output
     assert ds.sources['ac'].sources['cd'].id in r.output
 

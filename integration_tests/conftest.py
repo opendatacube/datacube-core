@@ -551,6 +551,7 @@ def dataset_add_configs():
     B = INTEGRATION_TESTS_DIR/'data'/'dataset_add'
     return SimpleNamespace(metadata=str(B/'metadata.yml'),
                            products=str(B/'products.yml'),
+                           datasets_bad1=str(B/'datasets_bad1.yml'),
                            datasets=str(B/'datasets.yml'))
 
 
