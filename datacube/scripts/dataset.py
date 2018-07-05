@@ -356,6 +356,7 @@ def index_cmd(index, product_names,
 
     ds_resolve = dataset_resolver(index, rules,
                                   skip_lineage=confirm_ignore_lineage,
+                                  fail_on_missing_lineage=not auto_add_lineage,
                                   verify_lineage=verify_lineage)
 
     def run_it(dataset_paths):

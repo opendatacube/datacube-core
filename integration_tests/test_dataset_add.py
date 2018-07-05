@@ -42,6 +42,15 @@ def check_no_product_match(clirunner, index):
     ds_ = index.datasets.get(ds.id, include_sources=True)
     assert ds_ is None
 
+    # Ignore lineage but fail to match main dataset
+    r = clirunner(['dataset', 'add',
+                   '--product', 'B',
+                   '--confirm-ignore-lineage',
+                   str(prefix)])
+
+    assert 'ERROR Dataset metadata did not match product signature' in r.output
+    assert index.datasets.has(ds.id) is False
+
 
 def check_with_existing_lineage(clirunner, index):
     """
@@ -71,6 +80,7 @@ def check_with_existing_lineage(clirunner, index):
     assert index.datasets.get(ds.sources['ac'].id) is not None
 
     clirunner(['dataset', 'add',
+               '--no-auto-add-lineage',
                '--product', 'A',
                str(prefix/'main.yml')])
 
@@ -114,6 +124,41 @@ def check_inconsistent_lineage(clirunner, index):
     assert index.datasets.get(ds.sources['ac'].sources['cd'].id) is None
 
 
+def check_missing_lineage(clirunner, index):
+    """
+      A -> B
+      |    |
+      |    v
+      +--> C -> D
+      |
+      +--> E
+
+    Use --no-auto-add-lineage
+    """
+    ds = SimpleDocNav(gen_dataset_test_dag(44, force_tree=True))
+    child_docs = [ds.sources[x].doc for x in ('ae', 'ab', 'ac')]
+
+    prefix = write_files({'lineage.yml': yaml.safe_dump_all(child_docs),
+                          'main.yml': yaml.safe_dump(ds.doc),
+                          })
+
+    r = clirunner(['dataset', 'add',
+                   '--no-auto-add-lineage',
+                   str(prefix/'main.yml')])
+
+    assert 'ERROR Following lineage datasets are missing' in r.output
+    assert index.datasets.has(ds.id) is False
+
+    # now add lineage and try again
+    clirunner(['dataset', 'add', str(prefix/'lineage.yml')])
+    assert index.datasets.has(ds.sources['ae'].id)
+    r = clirunner(['dataset', 'add',
+                   '--no-auto-add-lineage',
+                   str(prefix/'main.yml')])
+
+    assert index.datasets.has(ds.id)
+
+
 def check_missing_metadata_doc(clirunner):
     prefix = write_files({'im.tiff': ''})
     r = clirunner(['dataset', 'add', str(prefix/'im.tiff')])
@@ -153,6 +198,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     check_with_existing_lineage(clirunner, index)
     check_inconsistent_lineage(clirunner, index)
     check_missing_metadata_doc(clirunner)
+    check_missing_lineage(clirunner, index)
 
     # check --product=nosuchproduct
     r = clirunner(['dataset', 'add', '--product', 'nosuchproduct', p.datasets],
