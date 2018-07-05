@@ -294,6 +294,69 @@ metadata:
     assert index.datasets.has(ds.id) is True
 
 
+def test_dataset_add_inconsistent_measurements(dataset_add_configs, index_empty, clirunner):
+    p = dataset_add_configs
+    index = index_empty
+    mk = dataset_maker(0)
+
+    # not set, empty, subset, full set, super-set
+    ds1 = SimpleDocNav(mk('A', product_type='eo',))
+    ds2 = SimpleDocNav(mk('B', product_type='eo', measurements={}))
+    ds3 = SimpleDocNav(mk('C', product_type='eo', measurements={
+        'red': {}
+    }))
+    ds4 = SimpleDocNav(mk('D', product_type='eo', measurements={
+        'red': {},
+        'green': {},
+    }))
+    ds5 = SimpleDocNav(mk('E', product_type='eo', measurements={
+        'red': {},
+        'green': {},
+        'extra': {},
+    }))
+
+    dss = (ds1, ds2, ds3, ds4, ds5)
+    docs = [ds.doc for ds in dss]
+
+    prefix = write_files({
+        'products.yml': '''
+name: eo
+description: test product
+metadata_type: with_measurements
+metadata:
+    product_type: eo
+
+measurements:
+    - name: red
+      dtype: int16
+      nodata: -999
+      units: '1'
+
+    - name: green
+      dtype: int16
+      nodata: -999
+      units: '1'
+    ''',
+        'dataset.yml': yaml.safe_dump_all(docs),
+    })
+
+    clirunner(['metadata_type', 'add', p.metadata])
+    r = clirunner(['product', 'add', str(prefix/'products.yml')])
+
+    pp = list(index.products.get_all())
+    assert len(pp) == 1
+
+    r = clirunner(['dataset', 'add', str(prefix/'dataset.yml')])
+    print(r.output)
+
+    r = clirunner(['dataset', 'search', '-f', 'csv'])
+    assert ds1.id not in r.output
+    assert ds2.id not in r.output
+    assert ds3.id not in r.output
+    assert ds4.id in r.output
+    assert ds5.id in r.output
+
+
 def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty

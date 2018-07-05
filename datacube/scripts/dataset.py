@@ -125,8 +125,16 @@ def check_dataset_consistent(dataset):
     :return: (Is consistent, [error message|None])
     :rtype: (bool, str or None)
     """
+    product_measurements = set(dataset.type.measurements.keys())
+
+    if len(product_measurements) == 0:
+        return True, None
+
+    if dataset.measurements is None:
+        return False, "No measurements defined for a dataset"
+
     # It the type expects measurements, ensure our dataset contains them all.
-    if not set(dataset.type.measurements.keys()).issubset(dataset.measurements.keys()):
+    if not product_measurements.issubset(dataset.measurements.keys()):
         return False, "measurement fields don't match type specification"
 
     return True, None
