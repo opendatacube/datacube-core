@@ -293,13 +293,6 @@ def load_datasets_for_update(dataset_paths, index):
                 _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
 
 
-def parse_match_rules_options(index, dtype, auto_match):
-    if auto_match is True:
-        _LOG.warning("--auto-match option is deprecated, update your scripts, behaviour is the same without it")
-
-    return load_rules_from_types(index, dtype)
-
-
 @dataset_cmd.command('add',
                      help="Add datasets to the Data Cube",
                      context_settings=dict(token_normalize_func=report_old_options({
@@ -351,7 +344,10 @@ def index_cmd(index, product_names,
 
         confirm_ignore_lineage = True
 
-    rules = parse_match_rules_options(index, product_names, auto_match)
+    if auto_match is True:
+        _LOG.warning("--auto-match option is deprecated, update your scripts, behaviour is the same without it")
+
+    rules = load_rules_from_types(index, product_names)
     if rules is None:
         sys.exit(2)
 

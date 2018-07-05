@@ -193,10 +193,10 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert r.exit_code != 0
     assert 'Found no products' in r.output
 
-    clirunner(['metadata_type', 'add', p.metadata], expect_success=True)
-    clirunner(['product', 'add', p.products], expect_success=True)
-    clirunner(['dataset', 'add', p.datasets], expect_success=True)
-    clirunner(['dataset', 'add', p.datasets_bad1], expect_success=False)
+    clirunner(['metadata_type', 'add', p.metadata])
+    clirunner(['product', 'add', p.products])
+    clirunner(['dataset', 'add', p.datasets])
+    clirunner(['dataset', 'add', p.datasets_bad1])
 
     ds = load_dataset_definition(p.datasets)
     ds_bad1 = load_dataset_definition(p.datasets_bad1)
@@ -238,3 +238,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
 
     assert "ERROR Supplied product name" in r.output
     assert r.exit_code != 0
+
+    # Check that deprecated option is accepted
+    r = clirunner(['dataset', 'add', '--auto-match', p.datasets])
+    assert 'WARNING --auto-match option is deprecated' in r.output
