@@ -189,7 +189,7 @@ def dataset_resolver(index,
 
         ds_by_uuid = toolz.valmap(toolz.first, flatten_datasets(main_ds))
         all_uuid = list(ds_by_uuid)
-        db_dss = {str(ds.id): ds for ds in index.datasets.get_many(all_uuid)}
+        db_dss = {str(ds.id): ds for ds in index.datasets.bulk_get(all_uuid)}
 
         lineage_uuids = set(filter(lambda x: x != main_uuid, all_uuid))
         missing_lineage = lineage_uuids - set(db_dss)

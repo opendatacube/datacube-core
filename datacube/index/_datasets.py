@@ -72,7 +72,7 @@ class DatasetResource(object):
             }
         return datasets[id_][0]
 
-    def get_many(self, ids):
+    def bulk_get(self, ids):
         def to_uuid(x):
             return x if isinstance(x, UUID) else UUID(x)
 
@@ -105,7 +105,7 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             return connection.contains_dataset(id_)
 
-    def has_many(self, ids_):
+    def bulk_has(self, ids_):
         """
         Like `has` but operates on a list of ids.
 
@@ -163,7 +163,7 @@ class DatasetResource(object):
             ds_by_uuid = flatten_datasets(dataset)
             all_uuids = list(ds_by_uuid)
 
-            present = {k: v for k, v in zip(all_uuids, self.has_many(all_uuids))}
+            present = {k: v for k, v in zip(all_uuids, self.bulk_has(all_uuids))}
 
             if present[dataset.id]:
                 _LOG.warning('Dataset %s is already in the database', dataset.id)

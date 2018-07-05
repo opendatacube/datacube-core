@@ -170,16 +170,16 @@ def test_get_dataset(index, telemetry_dataset):
     assert index.datasets.has(_telemetry_uuid)
     assert index.datasets.has(str(_telemetry_uuid))
 
-    assert index.datasets.has_many([_telemetry_uuid, 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
+    assert index.datasets.bulk_has([_telemetry_uuid, 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
 
     for tr in (lambda x: x, str):
         ds = index.datasets.get(tr(_telemetry_uuid))
         assert ds.id == _telemetry_uuid
 
-        ds, = index.datasets.get_many([tr(_telemetry_uuid)])
+        ds, = index.datasets.bulk_get([tr(_telemetry_uuid)])
         assert ds.id == _telemetry_uuid
 
-    assert index.datasets.get_many(['f226a278-e422-11e6-b501-185e0f80a5c0',
+    assert index.datasets.bulk_get(['f226a278-e422-11e6-b501-185e0f80a5c0',
                                     'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
 
 
@@ -246,7 +246,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     assert index.datasets.get(parent.id)
     assert index.datasets.get(child.id)
 
-    assert len(index.datasets.get_many([parent.id, child.id])) == 2
+    assert len(index.datasets.bulk_get([parent.id, child.id])) == 2
 
     index.datasets.add(child, with_lineage=False)
     index.datasets.add(child, with_lineage=True)
