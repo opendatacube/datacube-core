@@ -292,3 +292,56 @@ metadata:
                    str(prefix/'dataset.yml')])
 
     assert index.datasets.has(ds.id) is True
+
+
+def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
+    p = dataset_add_configs
+    index = index_empty
+
+    clirunner(['metadata_type', 'add', p.metadata])
+    clirunner(['product', 'add', p.products])
+    clirunner(['dataset', 'add', p.datasets])
+
+    ds = load_dataset_definition(p.datasets)
+
+    assert index.datasets.has(ds.id) is True
+
+    # First do dry run
+    r = clirunner(['dataset', 'archive', '--dry-run', ds.id])
+    r = clirunner(['dataset', 'archive',
+                   '--dry-run',
+                   '--archive-derived',
+                   ds.sources['ae'].id])
+    assert ds.id in r.output
+    assert ds.sources['ae'].id in r.output
+
+    assert index.datasets.has(ds.id) is True
+
+    # Run for real
+    r = clirunner(['dataset', 'archive', ds.id])
+    r = clirunner(['dataset', 'info', ds.id])
+    assert 'status: archived' in r.output
+
+    # restore dry run
+    r = clirunner(['dataset', 'restore', '--dry-run', ds.id])
+    r = clirunner(['dataset', 'info', ds.id])
+    assert 'status: archived' in r.output
+
+    # restore for real
+    r = clirunner(['dataset', 'restore', ds.id])
+    r = clirunner(['dataset', 'info', ds.id])
+    assert 'status: active' in r.output
+
+    # archive derived
+    d_id = ds.sources['ac'].sources['cd'].id
+    r = clirunner(['dataset', 'archive', '--archive-derived', d_id])
+
+    r = clirunner(['dataset', 'info', ds.id, ds.sources['ab'].id, ds.sources['ac'].id])
+    assert 'status: active' not in r.output
+    assert 'status: archived' in r.output
+
+    # restore derived
+    r = clirunner(['dataset', 'restore', '--restore-derived', d_id])
+    r = clirunner(['dataset', 'info', ds.id, ds.sources['ab'].id, ds.sources['ac'].id])
+    assert 'status: active' in r.output
+    assert 'status: archived' not in r.output
