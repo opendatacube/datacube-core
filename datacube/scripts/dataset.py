@@ -21,9 +21,10 @@ from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, changes, InvalidDocException, without_lineage_sources, SimpleDocNav
+from datacube.utils import read_documents, changes, InvalidDocException, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.model.utils import dedup_lineage, remap_lineage_doc, flatten_datasets
+from datacube.utils.changes import get_doc_changes
 
 from typing import Iterable
 
@@ -153,7 +154,7 @@ def load_rules_from_types(index, product_names=None):
 def dataset_resolver(index,
                      product_matching_rules,
                      fail_on_missing_lineage=False,
-                     verify_lineage=False,
+                     verify_lineage=True,
                      skip_lineage=False):
     match_product = product_matcher(product_matching_rules)
 
@@ -217,11 +218,9 @@ def dataset_resolver(index,
     return resolve_no_lineage if skip_lineage else resolve
 
 
-def load_datasets(dataset_paths, index, rules, skip_lineage=False, **kwargs):
-    resolve = dataset_resolver(index, rules, skip_lineage=skip_lineage, **kwargs)
-
+def load_datasets(dataset_paths, ds_resolve):
     for uri, ds in ui_doc_path_stream(dataset_paths):
-        dataset, err = resolve(ds, uri)
+        dataset, err = ds_resolve(ds, uri)
 
         if dataset is None:
             _LOG.error('%s', str(err))
@@ -330,18 +329,29 @@ def index_cmd(index, product_names,
 
     assert len(rules) > 0
 
+    verify_lineage = not confirm_ignore_lineage
+
+    ds_resolve = dataset_resolver(index, rules,
+                                  skip_lineage=confirm_ignore_lineage,
+                                  verify_lineage=verify_lineage)
+
+    def run_it(dataset_paths):
+        dss = load_datasets(dataset_paths, ds_resolve)
+        index_datasets(dss,
+                       index,
+                       auto_add_lineage=auto_add_lineage,
+                       dry_run=dry_run)
+
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
-        with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
-            index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_path_iter,
-                                skip_lineage=confirm_ignore_lineage)
+        with click.progressbar(dataset_paths, label='Indexing datasets') as pp:
+            run_it(pp)
     else:
-        index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_paths,
-                            skip_lineage=confirm_ignore_lineage)
+        run_it(dataset_paths)
 
 
-def index_dataset_paths(auto_add_lineage, dry_run, index, rules, dataset_paths, skip_lineage=False):
-    for dataset in load_datasets(dataset_paths, index, rules, skip_lineage=skip_lineage):
+def index_datasets(dss, index, auto_add_lineage, dry_run):
+    for dataset in dss:
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
