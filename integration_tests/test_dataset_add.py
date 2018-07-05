@@ -114,6 +114,12 @@ def check_inconsistent_lineage(clirunner, index):
     assert index.datasets.get(ds.sources['ac'].sources['cd'].id) is None
 
 
+def check_missing_metadata_doc(clirunner):
+    prefix = write_files({'im.tiff': ''})
+    r = clirunner(['dataset', 'add', str(prefix/'im.tiff')])
+    assert "ERROR No supported metadata docs found for dataset" in r.output
+
+
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
@@ -146,6 +152,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     check_no_product_match(clirunner, index)
     check_with_existing_lineage(clirunner, index)
     check_inconsistent_lineage(clirunner, index)
+    check_missing_metadata_doc(clirunner)
 
     # check --product=nosuchproduct
     r = clirunner(['dataset', 'add', '--product', 'nosuchproduct', p.datasets],
