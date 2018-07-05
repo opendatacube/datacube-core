@@ -174,6 +174,18 @@ def check_missing_metadata_doc(clirunner):
     assert "ERROR No supported metadata docs found for dataset" in r.output
 
 
+def check_no_confirm(clirunner, path):
+    r = clirunner(['dataset', 'add', '--ignore-lineage', str(path)], expect_success=False)
+    assert r.exit_code != 0
+    assert 'Use --confirm-ignore-lineage from non-interactive scripts' in r.output
+
+
+def check_bad_yaml(clirunner, index):
+    prefix = write_files({'broken.yml': '"'})
+    r = clirunner(['dataset', 'add', str(prefix/'broken.yml')])
+    assert 'ERROR Failed reading documents from ' in r.output
+
+
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
@@ -195,6 +207,15 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert ds.sources['ab'].id in r.output
     assert ds.sources['ac'].sources['cd'].id in r.output
 
+    r = clirunner(['dataset', 'info', '-f', 'csv', ds.id])
+    assert ds.id in r.output
+
+    r = clirunner(['dataset', 'info', '-f', 'yaml', '--show-sources', ds.id])
+    assert ds.sources['ae'].id in r.output
+
+    r = clirunner(['dataset', 'info', '-f', 'yaml', '--show-derived', ds.sources['ae'].id])
+    assert ds.id in r.output
+
     ds_ = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
     assert ds_.id == ds.id
 
@@ -208,6 +229,8 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     check_inconsistent_lineage(clirunner, index)
     check_missing_metadata_doc(clirunner)
     check_missing_lineage(clirunner, index)
+    check_no_confirm(clirunner, p.datasets)
+    check_bad_yaml(clirunner, index)
 
     # check --product=nosuchproduct
     r = clirunner(['dataset', 'add', '--product', 'nosuchproduct', p.datasets],
