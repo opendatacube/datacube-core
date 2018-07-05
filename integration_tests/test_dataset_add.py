@@ -3,6 +3,7 @@ import toolz
 
 from datacube.utils import SimpleDocNav
 from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files
+from datacube.testutils import dataset_maker
 
 
 def check_skip_lineage_test(clirunner, index):
@@ -242,3 +243,52 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     # Check that deprecated option is accepted
     r = clirunner(['dataset', 'add', '--auto-match', p.datasets])
     assert 'WARNING --auto-match option is deprecated' in r.output
+
+
+def test_dataset_add_ambgious_products(dataset_add_configs, index_empty, clirunner):
+    p = dataset_add_configs
+    index = index_empty
+    mk = dataset_maker(0)
+
+    ds = SimpleDocNav(mk('A',
+                         product_type='eo',
+                         flag_a='a',
+                         flag_b='b'))
+
+    prefix = write_files({
+        'products.yml': '''
+name: A
+description: test product A
+metadata_type: minimal
+metadata:
+    product_type: eo
+    flag_a: a
+
+---
+name: B
+description: test product B
+metadata_type: minimal
+metadata:
+    product_type: eo
+    flag_b: b
+    ''',
+        'dataset.yml': yaml.safe_dump(ds.doc),
+    })
+
+    clirunner(['metadata_type', 'add', p.metadata])
+    clirunner(['product', 'add', str(prefix/'products.yml')])
+
+    pp = list(index.products.get_all())
+    assert len(pp) == 2
+
+    r = clirunner(['dataset', 'add', str(prefix/'dataset.yml')])
+    assert 'ERROR Auto match failed' in r.output
+    assert 'matches several products' in r.output
+    assert index.datasets.has(ds.id) is False
+
+    # check that forcing product works
+    r = clirunner(['dataset', 'add',
+                   '--product', 'A',
+                   str(prefix/'dataset.yml')])
+
+    assert index.datasets.has(ds.id) is True
