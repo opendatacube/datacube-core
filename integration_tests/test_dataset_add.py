@@ -118,10 +118,19 @@ def check_inconsistent_lineage(clirunner, index):
 
     assert 'ERROR Inconsistent lineage dataset' in r.output
 
-    assert index.datasets.get(ds.id) is None
-    assert index.datasets.get(ds.sources['ab'].id) is None
-    assert index.datasets.get(ds.sources['ac'].id) is None
-    assert index.datasets.get(ds.sources['ac'].sources['cd'].id) is None
+    assert index.datasets.has(ds.id) is False
+    assert index.datasets.has(ds.sources['ab'].id) is False
+    assert index.datasets.has(ds.sources['ac'].id) is False
+    assert index.datasets.has(ds.sources['ac'].sources['cd'].id) is False
+
+    # now again but skipping verification check
+    r = clirunner(['dataset', 'add', '--no-verify-lineage',
+                   str(prefix/'main.yml')])
+
+    assert index.datasets.has(ds.id)
+    assert index.datasets.has(ds.sources['ab'].id)
+    assert index.datasets.has(ds.sources['ac'].id)
+    assert index.datasets.has(ds.sources['ac'].sources['cd'].id)
 
 
 def check_missing_lineage(clirunner, index):

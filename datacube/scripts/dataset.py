@@ -316,6 +316,10 @@ def parse_match_rules_options(index, dtype, auto_match):
               help=('Default behaviour is to automatically add lineage datasets if they are missing from the database, '
                     'but this can be disabled if lineage is expected to be present in the DB, '
                     'in this case add will abort when encountering missing lineage dataset'))
+@click.option('--verify-lineage/--no-verify-lineage', is_flag=True, default=True,
+              help=('Lineage referenced in the metadata document should be the same as in DB, '
+                    'default behaviour is to skip those top-level datasets that have lineage data '
+                    'different from the version in the DB. This option allows omitting verification step.'))
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.option('--ignore-lineage',
               help="Pretend that there is no lineage data in the datasets being indexed",
@@ -329,6 +333,7 @@ def parse_match_rules_options(index, dtype, auto_match):
 def index_cmd(index, product_names,
               auto_match,
               auto_add_lineage,
+              verify_lineage,
               dry_run,
               ignore_lineage,
               confirm_ignore_lineage,
@@ -351,8 +356,6 @@ def index_cmd(index, product_names,
         sys.exit(2)
 
     assert len(rules) > 0
-
-    verify_lineage = not confirm_ignore_lineage
 
     ds_resolve = dataset_resolver(index, rules,
                                   skip_lineage=confirm_ignore_lineage,
