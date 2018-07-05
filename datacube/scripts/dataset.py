@@ -151,6 +151,18 @@ def load_rules_from_types(index, product_names=None):
     return [SimpleNamespace(product=p, signature=p.metadata_doc) for p in products]
 
 
+def check_consistent(a, b):
+    diffs = get_doc_changes(a, b)
+    if len(diffs) == 0:
+        return True, None
+
+    def render_diff(offset, a, b):
+        offset = '.'.join(map(str, offset))
+        return '{}: {!r}!={!r}'.format(offset, a, b)
+
+    return False, ", ".join([render_diff(offset, a, b) for offset, a, b in diffs])
+
+
 def dataset_resolver(index,
                      product_matching_rules,
                      fail_on_missing_lineage=False,
@@ -186,8 +198,19 @@ def dataset_resolver(index,
             return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
 
         if verify_lineage:
-            # TODO: verify lineage datasets that are already present in the DB
-            pass
+            bad_lineage = []
+
+            for uuid in lineage_uuids:
+                if uuid in db_dss:
+                    ok, err = check_consistent(ds_by_uuid[uuid].doc_without_lineage_sources,
+                                               db_dss[uuid].metadata_doc)
+                    if not ok:
+                        bad_lineage.append((uuid, err))
+
+            if len(bad_lineage) > 0:
+                error_report = '\n'.join('Inconsistent lineage dataset {}:\n> {}'.format(uuid, err)
+                                         for uuid, err in bad_lineage)
+                return None, error_report
 
         def with_cache(v, k, cache):
             cache[k] = v

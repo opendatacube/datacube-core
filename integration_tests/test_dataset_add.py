@@ -1,6 +1,8 @@
+import yaml
+import toolz
+
 from datacube.utils import SimpleDocNav
 from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files
-import yaml
 
 
 def check_skip_lineage_test(clirunner, index):
@@ -41,6 +43,77 @@ def check_no_product_match(clirunner, index):
     assert ds_ is None
 
 
+def check_with_existing_lineage(clirunner, index):
+    """
+      A -> B
+      |    |
+      |    v
+      +--> C -> D
+      |
+      +--> E
+
+    Add nodes BCE(D) with auto-matching, then add node A with product restricted to A only.
+    """
+
+    ds = SimpleDocNav(gen_dataset_test_dag(33, force_tree=True))
+
+    child_docs = [ds.sources[x].doc for x in ('ab', 'ac', 'ae')]
+
+    prefix = write_files({'lineage.yml':
+                          yaml.safe_dump_all(child_docs),
+                          'main.yml':
+                          yaml.safe_dump(ds.doc),
+                          })
+
+    clirunner(['dataset', 'add', str(prefix/'lineage.yml')])
+    assert index.datasets.get(ds.sources['ae'].id) is not None
+    assert index.datasets.get(ds.sources['ab'].id) is not None
+    assert index.datasets.get(ds.sources['ac'].id) is not None
+
+    clirunner(['dataset', 'add',
+               '--product', 'A',
+               str(prefix/'main.yml')])
+
+    assert index.datasets.get(ds.id) is not None
+
+
+def check_inconsistent_lineage(clirunner, index):
+    """
+      A -> B
+      |    |
+      |    v
+      +--> C -> D
+      |
+      +--> E
+
+    Add node E,
+    then try adding A with modified E in the lineage, should fail to add ABCD
+    """
+    ds = SimpleDocNav(gen_dataset_test_dag(1313, force_tree=True))
+
+    child_docs = [ds.sources[x].doc for x in ('ae',)]
+    modified_doc = toolz.assoc_in(ds.doc, 'lineage.source_datasets.ae.label'.split('.'), 'modified')
+
+    prefix = write_files({'lineage.yml':
+                          yaml.safe_dump_all(child_docs),
+                          'main.yml':
+                          yaml.safe_dump(modified_doc),
+                          })
+
+    clirunner(['dataset', 'add', str(prefix/'lineage.yml')])
+    assert index.datasets.get(ds.sources['ae'].id) is not None
+
+    r = clirunner(['dataset', 'add',
+                   str(prefix/'main.yml')])
+
+    assert 'ERROR Inconsistent lineage dataset' in r.output
+
+    assert index.datasets.get(ds.id) is None
+    assert index.datasets.get(ds.sources['ab'].id) is None
+    assert index.datasets.get(ds.sources['ac'].id) is None
+    assert index.datasets.get(ds.sources['ac'].sources['cd'].id) is None
+
+
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
@@ -71,6 +144,8 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
 
     check_skip_lineage_test(clirunner, index)
     check_no_product_match(clirunner, index)
+    check_with_existing_lineage(clirunner, index)
+    check_inconsistent_lineage(clirunner, index)
 
     # check --product=nosuchproduct
     r = clirunner(['dataset', 'add', '--product', 'nosuchproduct', p.datasets],
