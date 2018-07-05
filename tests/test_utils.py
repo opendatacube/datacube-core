@@ -27,7 +27,7 @@ from datacube.utils.dates import date_sequence
 from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
 from datacube.model import MetadataType
 
-from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag
+from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
 
 
 def test_stats_dates():
@@ -322,6 +322,28 @@ def test_sorted_items():
 
     remap = dict(c=0, a=1, b=2)
     assert ''.join(k for k, _ in sorted_items(aa, key=lambda x: remap[x])) == 'cab'
+
+
+def test_dataset_maker():
+    mk = dataset_maker(0)
+    assert mk('aa') == mk('aa')
+
+    a = SimpleDocNav(mk('A'))
+    b = SimpleDocNav(mk('B'))
+
+    assert a.id != b.id
+    assert a.doc['creation_dt'] == b.doc['creation_dt']
+    assert isinstance(a.id, str)
+    assert a.sources == {}
+
+    a1, a2 = [dataset_maker(i)('A', product_type='eo') for i in (0, 1)]
+    assert a1['id'] != a2['id']
+    assert a1['creation_dt'] != a2['creation_dt']
+    assert a1['product_type'] == 'eo'
+
+    c = SimpleDocNav(mk('C', sources=dict(a=a.doc, b=b.doc)))
+    assert c.sources['a'].doc is a.doc
+    assert c.sources['b'].doc is b.doc
 
 
 def test_traverse_datasets():
