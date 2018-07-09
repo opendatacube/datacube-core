@@ -271,30 +271,33 @@ def _to_datetime(t):
 def _time_to_search_dims(time_range):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-        if hasattr(time_range, '__iter__') and len(time_range) == 2:
-            if all(isinstance(n, datetime.datetime) for n in time_range):
-                timelist = list(time_range)
-                time_range = timelist[0].isoformat(), timelist[1].isoformat()
-            time_range = Range(_to_datetime(time_range[0]),
-                               _to_datetime(pandas.Period(time_range[1]).end_time.to_pydatetime()))
-            if time_range[0] == time_range[1]:
-                return time_range[0]
-            return time_range
 
-        elif isinstance(time_range, str):
-            start_time, end_time = Range(_to_datetime(time_range),
-                                         _to_datetime(pandas.Period(time_range).end_time.to_pydatetime()))
-            if start_time == end_time:
-                return start_time
-            time_range = Range(start_time, end_time)
-            return time_range
-        else:
-            timelist = list(time_range)
-            time_range = timelist[0].isoformat(), timelist[1].isoformat()
-            time_range = Range(_to_datetime(time_range[0]),
-                               _to_datetime(pandas.Period(time_range[1]).end_time.to_pydatetime()))
-            return time_range
+        tr_start, tr_end = time_range, time_range
 
+        #pylint: disable=bad-whitespace
+        if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
+            l = list(time_range)
+            tr_start, tr_end = l[0], l[-1]
+
+        # Attempt conversion to isoformat
+        # allows pandas.Period to handle
+        # date and datetime objects
+        if hasattr(tr_start, 'isoformat'):
+            tr_start = tr_start.isoformat()
+        if hasattr(tr_end, 'isoformat'):
+            tr_end   = tr_end.isoformat()
+
+        start = _to_datetime(tr_start)
+        end   = _to_datetime(pandas.Period(tr_end)
+                             .end_time
+                             .to_pydatetime()
+                            )
+
+        tr = Range(start, end)
+        if start == end:
+            return tr[0]
+
+        return tr
 
 def _convert_to_solar_time(utc, longitude):
     seconds_per_degree = 240
