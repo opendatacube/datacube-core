@@ -316,21 +316,22 @@ class Dataset(object):
         return without_lineage_sources(self.metadata_doc, self.metadata_type)
 
 
-class Measurement(object):
-    REQUIRED_KEYS = ['name', 'dtype', 'nodata', 'units']
-    OPTIONAL_KEYS = ['aliases', 'spectral_definition', 'flags_definition']
+class Measurement(dict):
+    REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
+    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
 
     def __init__(self, **measurement_dict):
+        data = {}
         for key in self.REQUIRED_KEYS:
-            setattr(self, key, measurement_dict[key])
+            data[key] = measurement_dict[key]
 
         for key in self.OPTIONAL_KEYS:
             if key in measurement_dict:
-                setattr(self, key, measurement_dict[key])
+                data[key] = measurement_dict[key]
+        super(Measurement, self).__init__(data)
 
     def __repr__(self):
-        attrs = ", ".join("{}={}".format(key, value) for key, value in vars(self).items())
-        return "Measurement({})".format(attrs)
+        return "Measurement({})".format(super(Measurement, self).__repr__())
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
@@ -422,7 +423,7 @@ class DatasetType(object):
 
         :type: dict[str, dict]
         """
-        return OrderedDict((m['name'], m) for m in self.definition.get('measurements', []))
+        return OrderedDict((m['name'], Measurement(**m)) for m in self.definition.get('measurements', []))
 
     @property
     def dimensions(self):
