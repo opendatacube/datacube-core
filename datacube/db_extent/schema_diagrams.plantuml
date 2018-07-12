@@ -1,0 +1,29 @@
+@startuml
+class extent {
+    id : postgres.UUID
+    extent_meta_ref : extent_meta.id
+    start : Datetime
+    geometry : postgres.JSONB
+}
+class extent_meta {
+    id : SmallInteger
+    dataset_type_ref : dataset_type.id
+    start : Datetime
+    end : Datetime
+    offset_alias : postgres.JSONB
+    crs : String
+}
+class ranges {
+    id : SmallInteger
+    dataset_type_ref : dataset_type.id
+    time_min : Datetime
+    time_max : Datetime
+    bounds : postgres.JSONB
+    crs : String
+}
+class dataset_type
+
+dataset_type }-- extent_meta
+dataset_type -- ranges
+extent_meta }-- extent
+@enduml

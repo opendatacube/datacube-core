@@ -1,7 +1,7 @@
 # coding=utf-8
 
 # We often have one-arg-per column, so these checks aren't so useful.
-# pylint: disable=too-many-arguments,too-many-public-methods
+# pylint: disable=too-many-arguments,too-many-public-methods,too-many-lines
 
 # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
 # pylint: disable=singleton-comparison
@@ -32,8 +32,9 @@ from ._fields import (
 )
 from .sql import escape_pg_identifier
 from ._schema import (
-    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
+    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE, EXTENT_META, EXTENT, RANGES
 )
+
 
 try:
     from typing import Iterable
@@ -902,6 +903,84 @@ class PostgresDbAPI(object):
             )
         )
         return res.rowcount > 0
+
+    def get_db_extent_meta(self, dataset_type_ref, offset_alias):
+        """
+        Extract a row corresponding to dataset_type id and offset_alias from extent_meta table
+        :param dataset_type_ref: dataset type id
+        :param str offset_alias: Pandas style offset period string. for example '1M' indicate a month,
+                                 '1Y' indicates a year, '1D' indicates a day.
+        :return: single extent_meta row matching the parameters
+        """
+        return self._connection.execute(
+            select([
+                EXTENT_META
+            ]).where(
+                and_(
+                    dataset_type_ref == EXTENT_META.c.dataset_type_ref,
+                    offset_alias == EXTENT_META.c.offset_alias,
+                )
+            )).fetchone()
+
+    def get_db_extent(self, dataset_type_ref, start, offset_alias):
+        """
+        Extract and return extent information corresponding to dataset type, start, and offset_alias.
+        The start time and db_extent.start are casted to date types during retrieval.
+        :param dataset_type_ref: dataset type id
+        :param datetime.datetime start: datetime representation of start timestamp
+        :param offset_alias: pandas style period string, for example '1M' indicate a month,
+                            '1Y' indicates a year, '1D' indicates a day.
+        :return: 'geometry' field if a database record exits otherwise None
+        """
+        from datetime import datetime, timezone
+        from pandas import Timestamp
+        from sqlalchemy import DATE
+
+        def _parse_date(time_stamp):
+            """
+               Parses a time representation into a datetime object with year, month, day values and timezone
+               :param time_stamp: A time value
+               :return datetime: datetime representation of given time value
+               """
+            if not isinstance(time_stamp, datetime):
+                t = Timestamp(time_stamp)
+                time_stamp = datetime(year=t.year, month=t.month, day=t.day, tzinfo=t.tzinfo)
+            if not time_stamp.tzinfo:
+                system_tz = datetime.now(timezone.utc).astimezone().tzinfo
+                return time_stamp.replace(tzinfo=system_tz)
+            return time_stamp
+
+        # Get extent metadata
+        metadata = self.get_db_extent_meta(dataset_type_ref, offset_alias)
+        if not bool(metadata):
+            return None
+
+        start = _parse_date(start)
+        res = self._connection.execute(
+            select([
+                EXTENT.c.geometry
+            ]).where(
+                and_(
+                    EXTENT.c.extent_meta_ref == metadata['id'],
+                    cast(EXTENT.c.start, DATE) == start.date(),
+                )
+            )).fetchone()
+        return res['geometry'] if res else None
+
+    def get_ranges(self, dataset_type_ref):
+        """
+        Returns a ranges record corresponding to a given product id
+        :param dataset_type_ref: dataset type id
+        :return sqlalchemy.engine.result.RowProxy: a row corresponding to product name, if exists otherwise
+        return None
+        """
+        res = self._connection.execute(
+            select([
+                RANGES.c.dataset_type_ref, RANGES.c.time_min,
+                RANGES.c.time_max, RANGES.c.bounds, RANGES.c.crs
+            ]).where(RANGES.c.dataset_type_ref == dataset_type_ref)
+        ).fetchone()
+        return res if res else None
 
     def __repr__(self):
         return "PostgresDb<connection={!r}>".format(self._connection)
