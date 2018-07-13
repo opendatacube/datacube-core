@@ -1,0 +1,64 @@
+#   A -> B
+#   |    |
+#   |    v
+#   +--> C -> D
+#   |
+#   +--> E
+#
+#   Two views of node C are inconsistent, so should fail to add top-level A
+---
+creation_dt: '2017-11-17T00:00:00'
+id: 3c110b22-f998-5d77-9f74-f73c45ada7ac
+label: A0013
+n: 13
+product_type: A
+lineage:
+  source_datasets:
+    ab:
+      creation_dt: '2017-11-17T00:00:00'
+      id: 0d3baeb0-c597-5bcb-8876-208e357609da
+      label: B0013
+      lineage:
+        source_datasets:
+          bc:
+            creation_dt: '2017-11-17T00:00:00'
+            id: f5165c33-98af-5431-8766-8850bc862a6d
+            label: C0013
+            lineage:
+              source_datasets:
+                cd:
+                  creation_dt: '2017-11-17T00:00:00'
+                  id: 3b22ea24-2e72-5504-816d-3c5b06285980
+                  label: D0013
+                  lineage:
+                    source_datasets: {}
+                  n: 13
+                  product_type: D
+            n: 13
+            product_type: C
+      n: 13
+      product_type: B
+    ac:
+      creation_dt: '2017-11-17T00:10:00'
+      id: f5165c33-98af-5431-8766-8850bc862a6d
+      label: changed
+      lineage:
+        source_datasets:
+          cd:
+            creation_dt: '2017-11-17T00:00:00'
+            id: 3b22ea24-2e72-5504-816d-3c5b06285980
+            label: D0013
+            lineage:
+              source_datasets: {}
+            n: 13
+            product_type: D
+      n: 13
+      product_type: C
+    ae:
+      creation_dt: '2017-11-17T00:00:00'
+      id: 51b463cf-a013-5a61-8fc5-5e1caaeff8bd
+      label: E0013
+      lineage:
+        source_datasets: {}
+      n: 13
+      product_type: E

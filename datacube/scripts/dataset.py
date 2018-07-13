@@ -6,8 +6,10 @@ import logging
 import sys
 from collections import OrderedDict
 from pathlib import Path
+from types import SimpleNamespace
 
 import click
+import toolz
 import yaml
 import yaml.resolver
 from click import echo
@@ -19,13 +21,12 @@ from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, changes, InvalidDocException, without_lineage_sources
+from datacube.utils import read_documents, changes, InvalidDocException, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
+from datacube.model.utils import dedup_lineage, remap_lineage_doc, flatten_datasets
+from datacube.utils.changes import get_doc_changes
 
-try:
-    from typing import Iterable
-except ImportError:
-    pass
+from typing import Iterable
 
 _LOG = logging.getLogger('datacube-dataset')
 
@@ -49,27 +50,73 @@ def dataset_cmd():
     pass
 
 
-def find_matching_product(rules, doc):
-    """:rtype: datacube.model.DatasetType"""
-    matched = [rule for rule in rules if changes.contains(doc, rule['metadata'])]
-    if not matched:
-        # provide user with information about the failure
-        if len(rules) == 0:
-            raise BadMatch('No rules provided.')
-        elif len(rules) == 1:
-            metadata = rules[0]['metadata']
-            relevant_doc = {k: v for k, v in doc.items() if k in metadata}
-            raise BadMatch('Dataset metadata did not match product rules.'
-                           '\nDataset metadata:\n %s\n'
-                           '\nProduct metadata:\n %s\n'
+def resolve_doc_files(paths, on_error):
+    for p in paths:
+        try:
+            yield get_metadata_path(Path(p))
+        except ValueError as e:
+            on_error(p, e)
+
+
+def doc_path_stream(files, on_error, uri=True):
+    for fname in files:
+        try:
+            for p, doc in read_documents(fname, uri=uri):
+                yield p, SimpleDocNav(doc)
+        except InvalidDocException as e:
+            on_error(fname, e)
+
+
+def ui_doc_path_stream(paths):
+    def on_error1(p, e):
+        _LOG.error('No supported metadata docs found for dataset %s', p)
+
+    def on_error2(p, e):
+        _LOG.error('Failed reading documents from %s', p)
+
+    yield from doc_path_stream(resolve_doc_files(paths, on_error=on_error1),
+                               on_error=on_error2, uri=True)
+
+
+def product_matcher(rules):
+    assert len(rules) > 0
+
+    def matches(doc, rule):
+        return changes.contains(doc, rule.signature)
+
+    def single_product_matcher(rule):
+        def match(doc):
+            if matches(doc, rule):
+                return rule.product
+
+            relevant_doc = {k: v for k, v in doc.items() if k in rule.signature}
+            raise BadMatch('Dataset metadata did not match product signature.'
+                           '\nDataset definition:\n %s\n'
+                           '\nProduct signature:\n %s\n'
                            % (json.dumps(relevant_doc, indent=4),
-                              json.dumps(metadata, indent=4)))
+                              json.dumps(rule.signature, indent=4)))
+
+        return match
+
+    if len(rules) == 1:
+        return single_product_matcher(rules[0])
+
+    def match(doc):
+        matched = [rule.product for rule in rules if changes.contains(doc, rule.signature)]
+
+        if len(matched) == 1:
+            return matched[0]
+
+        doc_id = doc.get('id', '<missing id>')
+
+        if len(matched) == 0:
+            raise BadMatch('No matching Product found for dataset %s' % doc_id)
         else:
-            raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
-    if len(matched) > 1:
-        raise BadMatch('Too many matching Products found for %s. Matched %s.' % (
-            doc.get('id', 'unidentified'), matched))
-    return matched[0]['type']
+            raise BadMatch('Auto match failed, dataset %s matches several products:\n  %s' % (
+                doc_id,
+                ','.join(p.name for p in matched)))
+
+    return match
 
 
 def check_dataset_consistent(dataset):
@@ -78,70 +125,147 @@ def check_dataset_consistent(dataset):
     :return: (Is consistent, [error message|None])
     :rtype: (bool, str or None)
     """
+    product_measurements = set(dataset.type.measurements.keys())
+
+    if len(product_measurements) == 0:
+        return True, None
+
+    if dataset.measurements is None:
+        return False, "No measurements defined for a dataset"
+
     # It the type expects measurements, ensure our dataset contains them all.
-    if not set(dataset.type.measurements.keys()).issubset(dataset.measurements.keys()):
+    if not product_measurements.issubset(dataset.measurements.keys()):
         return False, "measurement fields don't match type specification"
 
     return True, None
 
 
-def create_dataset(dataset_doc, uri, rules, skip_lineage=False):
-    """
-    :rtype datacube.model.Dataset:
-    """
-    dataset_type = find_matching_product(rules, dataset_doc)
-    if skip_lineage:
-        sources = {}
-        dataset_doc = without_lineage_sources(dataset_doc, dataset_type)
-    else:
-        sources = {cls: create_dataset(source_doc, None, rules)
-                   for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
-    return Dataset(dataset_type, dataset_doc, uris=[uri] if uri else None, sources=sources)
-
-
-def load_rules_from_types(index, type_names=None):
-    types = []
-    if type_names:
-        for name in type_names:
-            type_ = index.products.get_by_name(name)
-            if not type_:
-                _LOG.error('DatasetType %s does not exists', name)
+def load_rules_from_types(index, product_names=None):
+    products = []
+    if product_names:
+        for name in product_names:
+            product = index.products.get_by_name(name)
+            if not product:
+                _LOG.error('Supplied product name "%s" not present in the database', name)
                 return None
-            types.append(type_)
+            products.append(product)
     else:
-        types += index.products.get_all()
+        products += index.products.get_all()
 
-    rules = [{'type': type_, 'metadata': type_.metadata_doc} for type_ in types]
-    return rules
+    if len(products) == 0:
+        _LOG.error('Found no products in the database')
+        return None
+
+    return [SimpleNamespace(product=p, signature=p.metadata_doc) for p in products]
 
 
-def load_datasets(datasets, rules, skip_lineage=False):
-    for dataset_path in datasets:
-        metadata_path = get_metadata_path(Path(dataset_path))
-        if not metadata_path or not metadata_path.exists():
-            _LOG.error('No supported metadata docs found for dataset %s', dataset_path)
-            continue
+def check_consistent(a, b):
+    diffs = get_doc_changes(a, b)
+    if len(diffs) == 0:
+        return True, None
+
+    def render_diff(offset, a, b):
+        offset = '.'.join(map(str, offset))
+        return '{}: {!r}!={!r}'.format(offset, a, b)
+
+    return False, ", ".join([render_diff(offset, a, b) for offset, a, b in diffs])
+
+
+def dataset_resolver(index,
+                     product_matching_rules,
+                     fail_on_missing_lineage=False,
+                     verify_lineage=True,
+                     skip_lineage=False):
+    match_product = product_matcher(product_matching_rules)
+
+    def resolve_no_lineage(ds, uri):
+        doc = ds.doc_without_lineage_sources
+        try:
+            product = match_product(doc)
+        except BadMatch as e:
+            return None, e
+
+        return Dataset(product, doc, uris=[uri], sources={}), None
+
+    def resolve(main_ds, uri):
+        try:
+            main_ds = SimpleDocNav(dedup_lineage(main_ds))
+        except InvalidDocException as e:
+            return None, e
+
+        main_uuid = main_ds.id
+
+        ds_by_uuid = toolz.valmap(toolz.first, flatten_datasets(main_ds))
+        all_uuid = list(ds_by_uuid)
+        db_dss = {str(ds.id): ds for ds in index.datasets.bulk_get(all_uuid)}
+
+        lineage_uuids = set(filter(lambda x: x != main_uuid, all_uuid))
+        missing_lineage = lineage_uuids - set(db_dss)
+
+        if missing_lineage and fail_on_missing_lineage:
+            return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
+
+        if verify_lineage:
+            bad_lineage = []
+
+            for uuid in lineage_uuids:
+                if uuid in db_dss:
+                    ok, err = check_consistent(ds_by_uuid[uuid].doc_without_lineage_sources,
+                                               db_dss[uuid].metadata_doc)
+                    if not ok:
+                        bad_lineage.append((uuid, err))
+
+            if len(bad_lineage) > 0:
+                error_report = '\n'.join('Inconsistent lineage dataset {}:\n> {}'.format(uuid, err)
+                                         for uuid, err in bad_lineage)
+                return None, error_report
+
+        def with_cache(v, k, cache):
+            cache[k] = v
+            return v
+
+        def resolve_ds(ds, sources, cache=None):
+            cached = cache.get(ds.id)
+            if cached is not None:
+                return cached
+
+            uris = [uri] if ds.id == main_uuid else []
+
+            doc = ds.doc
+
+            db_ds = db_dss.get(ds.id)
+            if db_ds:
+                product = db_ds.type
+            else:
+                product = match_product(doc)
+
+            return with_cache(Dataset(product, doc, uris=uris, sources=sources), ds.id, cache)
 
         try:
-            for uri, metadata_doc in read_documents(metadata_path, uri=True):
-                try:
-                    dataset = create_dataset(metadata_doc, uri, rules, skip_lineage=skip_lineage)
-                except BadMatch as e:
-                    _LOG.error('Unable to create Dataset for %s: %s', uri, e)
-                    continue
+            return remap_lineage_doc(main_ds, resolve_ds, cache={}), None
+        except BadMatch as e:
+            return None, e
 
-                is_consistent, reason = check_dataset_consistent(dataset)
-                if not is_consistent:
-                    _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
-                    continue
+    return resolve_no_lineage if skip_lineage else resolve
 
-                yield dataset
-        except InvalidDocException:
-            _LOG.error("Failed reading documents from %s", metadata_path)
+
+def load_datasets(dataset_paths, ds_resolve):
+    for uri, ds in ui_doc_path_stream(dataset_paths):
+        dataset, err = ds_resolve(ds, uri)
+
+        if dataset is None:
+            _LOG.error('%s', str(err))
             continue
 
+        is_consistent, reason = check_dataset_consistent(dataset)
+        if not is_consistent:
+            _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
+            continue
 
-def load_datasets_for_update(datasets, index):
+        yield dataset
+
+
+def load_datasets_for_update(dataset_paths, index):
     """Load datasets from disk, associate to a product by looking up existing
     dataset in the index. Datasets not in the database will be logged.
 
@@ -149,50 +273,32 @@ def load_datasets_for_update(datasets, index):
 
     Generates tuples in the form (new_dataset, existing_dataset)
     """
-    def mk_dataset(metadata_doc, uri):
-        uuid = metadata_doc.get('id', None)
+    def mk_dataset(ds, uri):
+        uuid = ds.id
 
         if uuid is None:
             return None, None, "Metadata document it missing id field"
 
         existing = index.datasets.get(uuid)
         if existing is None:
-            return None, None, "No such dataset the database: {}".format(uuid)
+            return None, None, "No such dataset in the database: {}".format(uuid)
 
         return Dataset(existing.type,
-                       without_lineage_sources(metadata_doc, existing.type, inplace=True),
+                       ds.doc_without_lineage_sources,
                        uris=[uri]), existing, None
 
-    for dataset_path in datasets:
-        metadata_path = get_metadata_path(Path(dataset_path))
-        if not metadata_path or not metadata_path.exists():
-            _LOG.error('No supported metadata docs found for dataset %s', dataset_path)
-            continue
+    for uri, doc in ui_doc_path_stream(dataset_paths):
+        dataset, existing, error_msg = mk_dataset(doc, uri)
 
-        try:
-            for uri, metadata_doc in read_documents(metadata_path, uri=True):
-                dataset, existing, error_msg = mk_dataset(metadata_doc, uri)
-
-                if dataset is None:
-                    _LOG.error("Failure while processing: %s\n" +
-                               " > Reason: %s", metadata_path, error_msg)
-                else:
-                    is_consistent, reason = check_dataset_consistent(dataset)
-                    if is_consistent:
-                        yield dataset, existing
-                    else:
-                        _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
-
-        except InvalidDocException:
-            _LOG.error("Failed reading documents from %s", metadata_path)
-            continue
-
-
-def parse_match_rules_options(index, dtype, auto_match):
-    if auto_match is True:
-        _LOG.warning("--auto-match option is deprecated, update your scripts, behaviour is the same without it")
-
-    return load_rules_from_types(index, dtype)
+        if dataset is None:
+            _LOG.error("Failure while processing: %s\n" +
+                       " > Reason: %s", uri, error_msg)
+        else:
+            is_consistent, reason = check_dataset_consistent(dataset)
+            if is_consistent:
+                yield dataset, existing
+            else:
+                _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
 
 
 @dataset_cmd.command('add',
@@ -207,21 +313,29 @@ def parse_match_rules_options(index, dtype, auto_match):
               multiple=True)
 @click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
               is_flag=True, default=False)
-@click.option('--sources-policy', type=click.Choice(['verify', 'ensure', 'skip']), default='verify',
-              help="""'verify' - verify source datasets' metadata (default)
-'ensure' - add source dataset if it doesn't exist
-'skip' - dont add the derived dataset if source dataset doesn't exist""")
+@click.option('--auto-add-lineage/--no-auto-add-lineage', is_flag=True, default=True,
+              help=('Default behaviour is to automatically add lineage datasets if they are missing from the database, '
+                    'but this can be disabled if lineage is expected to be present in the DB, '
+                    'in this case add will abort when encountering missing lineage dataset'))
+@click.option('--verify-lineage/--no-verify-lineage', is_flag=True, default=True,
+              help=('Lineage referenced in the metadata document should be the same as in DB, '
+                    'default behaviour is to skip those top-level datasets that have lineage data '
+                    'different from the version in the DB. This option allows omitting verification step.'))
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.option('--ignore-lineage',
-              help="Don't add lineage data to the database",
+              help="Pretend that there is no lineage data in the datasets being indexed",
               is_flag=True, default=False)
 @click.option('--confirm-ignore-lineage',
-              help="Don't add lineage data to the database, without confirmation",
+              help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
               is_flag=True, default=False)
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, product_names, auto_match, sources_policy, dry_run,
+def index_cmd(index, product_names,
+              auto_match,
+              auto_add_lineage,
+              verify_lineage,
+              dry_run,
               ignore_lineage,
               confirm_ignore_lineage,
               dataset_paths):
@@ -238,26 +352,41 @@ def index_cmd(index, product_names, auto_match, sources_policy, dry_run,
 
         confirm_ignore_lineage = True
 
-    rules = parse_match_rules_options(index, product_names, auto_match)
+    if auto_match is True:
+        _LOG.warning("--auto-match option is deprecated, update your scripts, behaviour is the same without it")
+
+    rules = load_rules_from_types(index, product_names)
     if rules is None:
-        return
+        sys.exit(2)
+
+    assert len(rules) > 0
+
+    ds_resolve = dataset_resolver(index, rules,
+                                  skip_lineage=confirm_ignore_lineage,
+                                  fail_on_missing_lineage=not auto_add_lineage,
+                                  verify_lineage=verify_lineage)
+
+    def run_it(dataset_paths):
+        dss = load_datasets(dataset_paths, ds_resolve)
+        index_datasets(dss,
+                       index,
+                       auto_add_lineage=auto_add_lineage,
+                       dry_run=dry_run)
 
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
-        with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
-            index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter,
-                                skip_lineage=confirm_ignore_lineage)
+        with click.progressbar(dataset_paths, label='Indexing datasets') as pp:
+            run_it(pp)
     else:
-        index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths,
-                            skip_lineage=confirm_ignore_lineage)
+        run_it(dataset_paths)
 
 
-def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths, skip_lineage=False):
-    for dataset in load_datasets(dataset_paths, rules, skip_lineage=skip_lineage):
+def index_datasets(dss, index, auto_add_lineage, dry_run):
+    for dataset in dss:
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
-                index.datasets.add(dataset, sources_policy=sources_policy)
+                index.datasets.add(dataset, with_lineage=auto_add_lineage)
             except (ValueError, MissingRecordError) as e:
                 _LOG.error('Failed to add dataset %s: %s', dataset.local_uri, e)
 

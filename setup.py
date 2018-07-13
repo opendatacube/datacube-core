@@ -109,6 +109,7 @@ setup(
         'rasterio>=0.9a10',  # required for zip reading, 0.9 gets around 1.0a ordering problems
         'singledispatch',
         'sqlalchemy',
+        'toolz',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
     ],
     extras_require=extras_require,

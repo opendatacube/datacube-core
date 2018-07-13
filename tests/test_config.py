@@ -8,11 +8,11 @@ import configparser
 from textwrap import dedent
 
 from datacube.config import LocalConfig
-from tests import util
+from datacube.testutils import write_files
 
 
 def test_find_config():
-    files = util.write_files({
+    files = write_files({
         'base.conf': dedent("""\
             [datacube]
             db_hostname: fakehost.test.lan

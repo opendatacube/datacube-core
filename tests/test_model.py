@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 
 import numpy
-from .util import mk_sample_dataset, mk_sample_product
+from datacube.testutils import mk_sample_dataset, mk_sample_product
 from datacube.model import GridSpec
 from datacube.utils import geometry
 from datacube.storage.storage import measurement_paths
