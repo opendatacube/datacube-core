@@ -439,9 +439,10 @@ class Datacube(object):
 
         for measurement in measurements:
             data = results.pop(0)
-            measurement['crs'] = geobox.crs
+            attrs = measurement.attrs()
+            attrs['crs'] = geobox.crs
             dims = tuple(coords.keys()) + tuple(geobox.dimensions)
-            result[measurement['name']] = (dims, data, measurement)
+            result[measurement['name']] = (dims, data, attrs)
 
         return result
 
