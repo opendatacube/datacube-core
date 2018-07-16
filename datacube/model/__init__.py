@@ -325,6 +325,9 @@ class Measurement(dict):
     def __repr__(self):
         return "Measurement({})".format(super(Measurement, self).__repr__())
 
+    def copy(self):
+        return Measurement(**self)
+
     def attrs(self):
         """This returns attributes filtered for display in a dataset."""
         return {key: value for key, value in self.items() if key not in self.FILTER_ATTR_KEYS}
