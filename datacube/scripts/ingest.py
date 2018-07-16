@@ -14,7 +14,7 @@ from datetime import datetime
 import datacube
 from datacube.api.core import Datacube
 from datacube.index.index import Index
-from datacube.model import DatasetType, Range, GeoPolygon
+from datacube.model import DatasetType, Range, GeoPolygon, Measurement
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
 from datacube.utils import read_documents
@@ -58,7 +58,7 @@ def morph_dataset_type(source_type, config, index, storage_format):
 
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
-        return measurement
+        return Measurement(**measurement)
 
     output_type.definition['measurements'] = [merge_measurement(output_type.measurements[spec['src_varname']], spec)
                                               for spec in config['measurements']]
@@ -110,7 +110,7 @@ def get_filename(config, tile_index, sources, **kwargs):
 def get_measurements(source_type, config):
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k) or measurement[k] for k in ('nodata', 'dtype', 'resampling_method')})
-        return measurement
+        return Measurement(**measurement)
 
     return [merge_measurement(source_type.measurements[spec['src_varname']].copy(), spec)
             for spec in config['measurements']]
