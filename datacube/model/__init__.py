@@ -318,7 +318,6 @@ class Dataset(object):
 
 class Measurement(dict):
     REQUIRED_KEYS = {'name', 'dtype', 'nodata', 'units'}
-    FILTER_ATTR_KEYS = ('name', 'dtype')
 
     def __init__(self, **measurement_dict):
         missing_keys = self.REQUIRED_KEYS - set(measurement_dict)
@@ -329,10 +328,6 @@ class Measurement(dict):
 
     def __repr__(self):
         return "Measurement({})".format(super(Measurement, self).__repr__())
-
-    def attrs(self):
-        """This returns attributes filtered for display in a dataset."""
-        return {key: value for key, value in self.items() if key not in self.FILTER_ATTR_KEYS}
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
