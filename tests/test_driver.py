@@ -6,7 +6,7 @@ from collections import namedtuple
 from datacube.drivers import new_datasource, reader_drivers, writer_drivers, index_drivers
 from datacube.drivers.indexes import IndexDriverCache
 from datacube.storage.storage import RasterDatasetDataSource
-from .util import mk_sample_dataset
+from datacube.testutils import mk_sample_dataset
 
 S3_dataset = namedtuple('S3_dataset', ['macro_shape'])
 

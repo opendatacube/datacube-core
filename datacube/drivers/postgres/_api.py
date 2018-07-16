@@ -18,7 +18,7 @@ from sqlalchemy import cast
 from sqlalchemy import delete
 from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
 from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.exc import IntegrityError
 
 from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
@@ -35,11 +35,7 @@ from ._schema import (
     DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
 )
 
-try:
-    from typing import Iterable
-    from typing import Tuple
-except ImportError:
-    pass
+from typing import Iterable, Tuple
 
 
 def _dataset_uri_field(table):
@@ -61,7 +57,8 @@ _DATASET_SELECT_FIELDS = (
                 SELECTED_DATASET_LOCATION.c.archived == None
             )
         ).order_by(
-            SELECTED_DATASET_LOCATION.c.added.desc()
+            SELECTED_DATASET_LOCATION.c.added.desc(),
+            SELECTED_DATASET_LOCATION.c.id.desc()
         ).label('uris')
     ).label('uris')
 )
@@ -211,30 +208,27 @@ class PostgresDbAPI(object):
         :return: whether it was inserted
         :rtype: bool
         """
-        try:
-            dataset_type_ref = bindparam('dataset_type_ref')
-            ret = self._connection.execute(
-                DATASET.insert().from_select(
-                    ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
+        dataset_type_ref = bindparam('dataset_type_ref')
+        ret = self._connection.execute(
+            insert(DATASET).from_select(
+                ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
+                select([
+                    bindparam('id'), dataset_type_ref,
                     select([
-                        bindparam('id'), dataset_type_ref,
-                        select([
-                            DATASET_TYPE.c.metadata_type_ref
-                        ]).where(
-                            DATASET_TYPE.c.id == dataset_type_ref
-                        ).label('metadata_type_ref'),
-                        bindparam('metadata', type_=JSONB)
-                    ])
-                ),
-                id=dataset_id,
-                dataset_type_ref=dataset_type_id,
-                metadata=metadata_doc
-            )
-            return ret.rowcount > 0
-        except IntegrityError as e:
-            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                raise DuplicateRecordError('Duplicate dataset, not inserting: %s' % dataset_id)
-            raise
+                        DATASET_TYPE.c.metadata_type_ref
+                    ]).where(
+                        DATASET_TYPE.c.id == dataset_type_ref
+                    ).label('metadata_type_ref'),
+                    bindparam('metadata', type_=JSONB)
+                ])
+            ).on_conflict_do_nothing(
+                index_elements=['id']
+            ),
+            id=dataset_id,
+            dataset_type_ref=dataset_type_id,
+            metadata=metadata_doc
+        )
+        return ret.rowcount > 0
 
     def update_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         """
@@ -255,27 +249,29 @@ class PostgresDbAPI(object):
         )
         return res.rowcount > 0
 
-    def ensure_dataset_locations(self, dataset_id, uris):
+    def insert_dataset_location(self, dataset_id, uri):
         """
         Add a location to a dataset if it is not already recorded.
+
+        Returns True if success, False if this location already existed
+
         :type dataset_id: str or uuid.UUID
-        :type uris: list[str]
+        :type uri: str
+        :rtype bool:
         """
 
-        for uri in uris:
-            scheme, body = _split_uri(uri)
+        scheme, body = _split_uri(uri)
 
-            try:
-                self._connection.execute(
-                    DATASET_LOCATION.insert(),
-                    dataset_ref=dataset_id,
-                    uri_scheme=scheme,
-                    uri_body=body,
-                )
-            except IntegrityError as e:
-                if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                    raise DuplicateRecordError('Location already exists: %s' % uri)
-                raise
+        r = self._connection.execute(
+            insert(DATASET_LOCATION).on_conflict_do_nothing(
+                index_elements=['uri_scheme', 'uri_body', 'dataset_ref']
+            ),
+            dataset_ref=dataset_id,
+            uri_scheme=scheme,
+            uri_body=body,
+        )
+
+        return r.rowcount > 0
 
     def contains_dataset(self, dataset_id):
         return bool(
@@ -287,6 +283,16 @@ class PostgresDbAPI(object):
                 )
             ).fetchone()
         )
+
+    def datasets_intersection(self, dataset_ids):
+        """ Compute set intersection: db_dataset_ids & dataset_ids
+        """
+        return [r[0]
+                for r in self._connection.execute(select(
+                    [DATASET.c.id]
+                ).where(
+                    DATASET.c.id.in_(dataset_ids)
+                )).fetchall()]
 
     def get_datasets_for_location(self, uri, mode=None):
         scheme, body = _split_uri(uri)
@@ -313,15 +319,16 @@ class PostgresDbAPI(object):
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
         try:
-            self._connection.execute(
-                DATASET_SOURCE.insert(),
+            r = self._connection.execute(
+                insert(DATASET_SOURCE).on_conflict_do_nothing(
+                    index_elements=['classifier', 'dataset_ref']
+                ),
                 classifier=classifier,
                 dataset_ref=dataset_id,
                 source_dataset_ref=source_dataset_id
             )
+            return r.rowcount > 0
         except IntegrityError as e:
-            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                raise DuplicateRecordError('Source already exists')
             if e.orig.pgcode == PGCODE_FOREIGN_KEY_VIOLATION:
                 raise MissingRecordError("Referenced source dataset doesn't exist")
             raise
@@ -350,6 +357,11 @@ class PostgresDbAPI(object):
         return self._connection.execute(
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
         ).first()
+
+    def get_datasets(self, dataset_ids):
+        return self._connection.execute(
+            select(_DATASET_SELECT_FIELDS).where(DATASET.c.id.in_(dataset_ids))
+        ).fetchall()
 
     def get_derived_datasets(self, dataset_id):
         return self._connection.execute(
@@ -656,12 +668,13 @@ class PostgresDbAPI(object):
             METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
         ).first()
 
-    def add_dataset_type(self,
-                         name,
-                         metadata,
-                         metadata_type_id,
-                         search_fields,
-                         definition, concurrently=True):
+    def insert_dataset_type(self,
+                            name,
+                            metadata,
+                            metadata_type_id,
+                            search_fields,
+                            definition,
+                            concurrently=True):
 
         res = self._connection.execute(
             DATASET_TYPE.insert().values(
@@ -714,7 +727,7 @@ class PostgresDbAPI(object):
                                         rebuild_view=True)
         return type_id
 
-    def add_metadata_type(self, name, definition, concurrently=False):
+    def insert_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(
             METADATA_TYPE.insert().values(
                 name=name,
@@ -831,7 +844,8 @@ class PostgresDbAPI(object):
                 ]).where(
                     and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived == None)
                 ).order_by(
-                    DATASET_LOCATION.c.added.desc()
+                    DATASET_LOCATION.c.added.desc(),
+                    DATASET_LOCATION.c.id.desc()
                 )
             ).fetchall()
         ]

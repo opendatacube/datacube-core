@@ -5,6 +5,20 @@
 What's New
 **********
 
+Backwards Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Assume fixed paths for `id` and `sources` metadata fields (:issue:`482`)
+- Removed `--sources-policy=skip|verify|ensure` option of `dataset add` command,
+  instead use `--[no-]auto-add-lineage` and `--[no-]verify-lineage` (:issue:`451`)
+
+Changes
+~~~~~~~
+
+- Allow indexing without lineage `dataset add --ignore-lineage` (:pull:`485`)
+- Various improvements to indexing, mostly to do with handling of lineage (:issue:`480`)
+
+
 
 v1.6rc3 (?)
 =========================================
@@ -46,7 +60,7 @@ Backwards Incompatible Changes
     23:59:59.999 on 31st of March, 2008.
 
   Example 2:
-    To specify a search time between 1st of January and 29th of February, 2008 
+    To specify a search time between 1st of January and 29th of February, 2008
     (inclusive), use a search query like `time=('2008-01', '2008-02')`. This query
     is equivalent to using any of the following in the second time element:
 
@@ -95,7 +109,7 @@ Changes
   -  `indexed_by` (user who indexed the dataset)
   -  `creation_time` (creation of dataset: when it was processed)
   -  `label` (the label for a dataset)
-    
+
   (See :pull:`432` for more details)
 
 Bug Fixes

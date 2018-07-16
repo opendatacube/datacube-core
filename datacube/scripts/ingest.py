@@ -266,7 +266,7 @@ def _index_datasets(index, results):
             extra_args['storage_metadata'] = datasets.attrs['storage_metadata']
 
         for dataset in datasets.values:
-            index.datasets.add(dataset, sources_policy='skip', **extra_args)
+            index.datasets.add(dataset, with_lineage=False, **extra_args)
             n += 1
     return n
 

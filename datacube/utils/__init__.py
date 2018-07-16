@@ -6,12 +6,15 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import gzip
+import collections
 import importlib
 import itertools
 import json
 import logging
+import math
 import pathlib
 import re
+import toolz
 from copy import deepcopy
 from collections import OrderedDict
 from contextlib import contextmanager
@@ -51,6 +54,19 @@ def namedtuples2dicts(namedtuples):
     :return: dict of dicts
     """
     return {k: dict(v._asdict()) for k, v in namedtuples.items()}
+
+
+def sorted_items(d, key=None, reverse=False):
+    """Given a dictionary `d` return items: (k1, v1), (k2, v2)... sorted in
+    ascending order according to key.
+
+    :param dict d: dictionary
+    :param key: optional function remapping key
+    :param bool reverse: If True return in descending order instead of default ascending
+
+    """
+    key = toolz.first if key is None else toolz.comp(key, toolz.first)
+    return sorted(d.items(), key=key, reverse=reverse)
 
 
 def datetime_to_seconds_since_1970(dt):
@@ -122,13 +138,10 @@ def get_doc_offset(offset, document):
     ...
     KeyError: 'a'
     """
-    value = document
-    for key in offset:
-        value = value[key]
-    return value
+    return toolz.get_in(offset, document, no_default=True)
 
 
-def get_doc_offset_safe(offset, document):
+def get_doc_offset_safe(offset, document, value_if_missing=None):
     """
     :type offset: list[str]
     :type document: dict
@@ -137,12 +150,14 @@ def get_doc_offset_safe(offset, document):
     4
     >>> get_doc_offset_safe(['a', 'b'], {'a': {'b': 4}})
     4
-    >>> get_doc_offset_safe(['a'], {})
+    >>> get_doc_offset_safe(['a'], {}) is None
+    True
+    >>> get_doc_offset_safe(['a', 'b', 'c'], {'a':{'b':{}}}, 10)
+    10
+    >>> get_doc_offset_safe(['a', 'b', 'c'], {'a':{'b':[]}}, 11)
+    11
     """
-    try:
-        return get_doc_offset(offset, document)
-    except KeyError:
-        return None
+    return toolz.get_in(offset, document, default=value_if_missing)
 
 
 def _parse_time_generic(time):
@@ -561,13 +576,11 @@ def jsonify_document(doc):
 
     def fixup_value(v):
         if isinstance(v, float):
-            if v != v:
+            if math.isfinite(v):
+                return v
+            if math.isnan(v):
                 return "NaN"
-            if v == float("inf"):
-                return "Infinity"
-            if v == float("-inf"):
-                return "-Infinity"
-            return v
+            return "-Infinity" if v < 0 else "Infinity"
         if isinstance(v, (datetime, date)):
             return v.isoformat()
         if isinstance(v, numpy.dtype):
@@ -777,6 +790,48 @@ class DocReader(object):
 
     def __dir__(self):
         return list(self.fields)
+
+
+class SimpleDocNav(object):
+    """Allows navigation of Dataset metadata document lineage tree without
+    creating Dataset objects.
+
+    """
+
+    def __init__(self, doc):
+        if not isinstance(doc, collections.Mapping):
+            raise ValueError("")
+
+        self._doc = doc
+        self._doc_without = None
+        self._sources_path = ('lineage', 'source_datasets')
+        self._sources = None
+
+    @property
+    def doc(self):
+        return self._doc
+
+    @property
+    def doc_without_lineage_sources(self):
+        if self._doc_without is None:
+            self._doc_without = toolz.assoc_in(self._doc, self._sources_path, {})
+
+        return self._doc_without
+
+    @property
+    def id(self):
+        return self._doc.get('id', None)
+
+    @property
+    def sources(self):
+        if self._sources is None:
+            self._sources = {k: SimpleDocNav(v)
+                             for k, v in get_doc_offset_safe(self._sources_path, self._doc, {}).items()}
+        return self._sources
+
+    @property
+    def sources_path(self):
+        return self._sources_path
 
 
 def import_function(func_ref):
