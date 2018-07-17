@@ -120,7 +120,7 @@ def satellite_ref(sat):
         sat_img = images2
         prod_type = 'LEDAPS'
     elif sat == 'LANDSAT_5':
-        sat_img = images2[:6]
+        sat_img = images2
         prod_type = 'LEDAPS'
     else:
         raise ValueError("Landsat Error")
@@ -206,7 +206,7 @@ def prep_dataset(path, metadata):
 
 def prepare_datasets(path, metadata):
     doc = prep_dataset(path, metadata)
-    return absolutify_paths(doc, path)
+    return doc
 
 
 def absolutify_paths(doc, path):
@@ -219,7 +219,7 @@ def absolutify_paths(doc, path):
 @click.option('--output', required=True, help="Write datasets into this file",
               type=click.Path(exists=True, writable=True, dir_okay=False))
 @click.argument('metadata',
-                type=click.Path(exists=True, readable=True, writable=True),
+                type=click.Path(exists=True, readable=True),
                 nargs=-1)
 def main(output, metadata):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
