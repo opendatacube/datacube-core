@@ -335,6 +335,8 @@ class Measurement(dict):
         return "Measurement({})".format(super(Measurement, self).__repr__())
 
     def copy(self):
+        """Required as the super class `dict` method returns a `dict`
+           and does not preserve Measurement class"""
         return Measurement(**self)
 
     def dataarray_attrs(self):
