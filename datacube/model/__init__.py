@@ -317,15 +317,19 @@ class Dataset(object):
 
 
 class Measurement(dict):
-    REQUIRED_KEYS = {'name', 'dtype', 'nodata', 'units'}
+    REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
+    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
     FILTER_ATTR_KEYS = ('name', 'dtype')
 
     def __init__(self, **measurement_dict):
-        missing_keys = self.REQUIRED_KEYS - set(measurement_dict)
+        missing_keys = set(self.REQUIRED_KEYS) - set(measurement_dict)
         if missing_keys:
             raise ValueError("Measurent required keys missing: {}".format(missing_keys))
 
-        super(Measurement, self).__init__(measurement_dict)
+        measurement_data = {key: value for key, value in measurement_dict.items()
+                            if key in self.REQUIRED_KEYS + self.OPTIONAL_KEYS}
+
+        super().__init__(measurement_data)
 
     def __repr__(self):
         return "Measurement({})".format(super(Measurement, self).__repr__())
@@ -333,8 +337,8 @@ class Measurement(dict):
     def copy(self):
         return Measurement(**self)
 
-    def attrs(self):
-        """This returns attributes filtered for display in a dataset."""
+    def dataarray_attrs(self):
+        """This returns attributes filtered for display in a dataarray."""
         return {key: value for key, value in self.items() if key not in self.FILTER_ATTR_KEYS}
 
 
