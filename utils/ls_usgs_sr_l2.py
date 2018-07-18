@@ -120,7 +120,7 @@ def satellite_ref(sat):
         sat_img = images2
         prod_type = 'LEDAPS'
     elif sat == 'LANDSAT_5':
-        sat_img = images2[:6]
+        sat_img = images2
         prod_type = 'LEDAPS'
     else:
         raise ValueError("Landsat Error")
@@ -204,9 +204,12 @@ def prep_dataset(path, metadata):
     return doc
 
 
-def prepare_datasets(path, metadata):
+def prepare_datasets(path, metadata, output):
     doc = prep_dataset(path, metadata)
-    return absolutify_paths(doc, path)
+    if os.path.dirname((os.path.join(path, metadata))) == os.path.dirname(output):
+        return doc
+    else:
+        return absolutify_paths(doc, path)
 
 
 def absolutify_paths(doc, path):
@@ -216,12 +219,13 @@ def absolutify_paths(doc, path):
 
 
 @click.command(help="Prepare USGS Landsat Surface Reflectance product to index into datacube")
-@click.option('--output', required=True, help="Write datasets into this file",
-              type=click.Path(exists=True, writable=True, dir_okay=False))
+@click.option('--output', required=False, help="Write datasets into this file",
+              type=click.Path(exists=False, writable=True, dir_okay=False))
 @click.argument('metadata',
-                type=click.Path(exists=True, readable=True, writable=True),
+                type=click.Path(exists=True, readable=True),
                 nargs=-1)
 def main(output, metadata):
+    output = os.path.abspath(output)
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
     with open(output, 'w') as stream:
         for dataset in metadata:
@@ -229,7 +233,7 @@ def main(output, metadata):
             logging.info("Processing %s", path)
             for file in os.listdir(str(path)):
                 if file.endswith(".xml") and (not file.endswith('aux.xml')):
-                    yaml.dump(prepare_datasets(path, file), stream, explicit_start=True)
+                    yaml.dump(prepare_datasets(path, file, output), stream, explicit_start=True)
                     logging.info("Writing %s", output)
 
 

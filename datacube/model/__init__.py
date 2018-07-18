@@ -14,7 +14,7 @@ from uuid import UUID
 from affine import Affine
 
 from datacube.compat import urlparse
-from datacube.utils import geometry
+from datacube.utils import geometry, without_lineage_sources
 from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects, schema_validated, DocReader
 from datacube.utils.geometry import (CRS as _CRS,
                                      GeoBox as _GeoBox,
@@ -309,6 +309,11 @@ class Dataset(object):
     @property
     def metadata(self):
         return self.metadata_type.dataset_reader(self.metadata_doc)
+
+    def metadata_doc_without_lineage(self):
+        """ Return metadata document without nested lineage datasets
+        """
+        return without_lineage_sources(self.metadata_doc, self.metadata_type)
 
 
 class Measurement(object):
