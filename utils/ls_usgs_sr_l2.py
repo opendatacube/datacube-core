@@ -225,7 +225,7 @@ def absolutify_paths(doc, path):
                 type=click.Path(exists=True, readable=True),
                 nargs=-1)
 def main(output, metadata):
-    output=os.path.abspath(output)
+    output = os.path.abspath(output)
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
     with open(output, 'w') as stream:
         for dataset in metadata:
