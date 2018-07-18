@@ -216,7 +216,7 @@ def absolutify_paths(doc, path):
 
 
 @click.command(help="Prepare USGS Landsat Surface Reflectance product to index into datacube")
-@click.option('--output', required=True, help="Write datasets into this file",
+@click.option('--output', required=False, help="Write datasets into this file",
               type=click.Path(exists=True, writable=True, dir_okay=False))
 @click.argument('metadata',
                 type=click.Path(exists=True, readable=True),
