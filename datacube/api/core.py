@@ -439,17 +439,8 @@ class Datacube(object):
 
         for measurement in measurements:
             data = results.pop(0)
-
-            attrs = {
-                'nodata': measurement.get('nodata'),
-                'units': measurement.get('units', '1'),
-                'crs': geobox.crs
-            }
-            if 'flags_definition' in measurement:
-                attrs['flags_definition'] = measurement['flags_definition']
-            if 'spectral_definition' in measurement:
-                attrs['spectral_definition'] = measurement['spectral_definition']
-
+            attrs = measurement.dataarray_attrs()
+            attrs['crs'] = geobox.crs
             dims = tuple(coords.keys()) + tuple(geobox.dimensions)
             result[measurement['name']] = (dims, data, attrs)
 

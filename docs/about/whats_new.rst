@@ -20,6 +20,16 @@ Changes
 
 
 
+v1.6rc3 (?)
+=========================================
+
+Changes
+~~~~~~~
+
+- The `datacube.model.Measurement` class was put to use for loading in attributes and made to inherit
+  from `dict` to preserve current behavior. (:pull:`502`)
+
+
 v1.6rc2 (29 June 2018)
 =========================================
 

@@ -316,21 +316,32 @@ class Dataset(object):
         return without_lineage_sources(self.metadata_doc, self.metadata_type)
 
 
-class Measurement(object):
-    REQUIRED_KEYS = ['name', 'dtype', 'nodata', 'units']
-    OPTIONAL_KEYS = ['aliases', 'spectral_definition', 'flags_definition']
+class Measurement(dict):
+    REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
+    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
+    FILTER_ATTR_KEYS = ('name', 'dtype')
 
     def __init__(self, **measurement_dict):
-        for key in self.REQUIRED_KEYS:
-            setattr(self, key, measurement_dict[key])
+        missing_keys = set(self.REQUIRED_KEYS) - set(measurement_dict)
+        if missing_keys:
+            raise ValueError("Measurent required keys missing: {}".format(missing_keys))
 
-        for key in self.OPTIONAL_KEYS:
-            if key in measurement_dict:
-                setattr(self, key, measurement_dict[key])
+        measurement_data = {key: value for key, value in measurement_dict.items()
+                            if key in self.REQUIRED_KEYS + self.OPTIONAL_KEYS}
+
+        super().__init__(measurement_data)
 
     def __repr__(self):
-        attrs = ", ".join("{}={}".format(key, value) for key, value in vars(self).items())
-        return "Measurement({})".format(attrs)
+        return "Measurement({})".format(super(Measurement, self).__repr__())
+
+    def copy(self):
+        """Required as the super class `dict` method returns a `dict`
+           and does not preserve Measurement class"""
+        return Measurement(**self)
+
+    def dataarray_attrs(self):
+        """This returns attributes filtered for display in a dataarray."""
+        return {key: value for key, value in self.items() if key not in self.FILTER_ATTR_KEYS}
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
@@ -422,7 +433,7 @@ class DatasetType(object):
 
         :type: dict[str, dict]
         """
-        return OrderedDict((m['name'], m) for m in self.definition.get('measurements', []))
+        return OrderedDict((m['name'], Measurement(**m)) for m in self.definition.get('measurements', []))
 
     @property
     def dimensions(self):
