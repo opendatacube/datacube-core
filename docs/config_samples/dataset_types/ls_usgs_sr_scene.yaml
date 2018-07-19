@@ -47,6 +47,16 @@ measurements:
       dtype: int16
       nodata: -9999
       units: '1'
+    - name: 'bt1'
+      aliases: [band_10, bt_band10]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'bt2'
+      aliases: [band_11, bt_band11]
+      dtype: int16
+      nodata: -9999
+      units: '1'
     - name: 'pixel_qa'
       aliases: [pixel_qa]
       dtype: uint16
@@ -209,6 +219,11 @@ measurements:
       dtype: int16
       nodata: -9999
       units: '1'
+    - name: 'thermal'
+      aliases: [band_6, bt_band6]
+      dtype: int16
+      nodata: -9999
+      units: '1'
     - name: 'sr_atmos_opacity'
       aliases: [atmos_op]
       dtype: uint8
@@ -368,6 +383,11 @@ measurements:
       units: '1'
     - name: 'swir2'
       aliases: [band_7, sr_band7]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'thermal'
+      aliases: [band_6, bt_band6]
       dtype: int16
       nodata: -9999
       units: '1'
