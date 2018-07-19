@@ -13,6 +13,7 @@ import rasterio.warp
 import click
 from osgeo import osr
 import os
+from pathlib import Path
 # image boundary imports
 import rasterio
 from rasterio.errors import RasterioIOError
@@ -32,8 +33,8 @@ ls8_images = {
     'pixel_qa': 'pixel_qa',
     'radsat_qa': 'radsat_qa',
     'sr_aerosol': 'sr_aerosol',
-    'bt_band10': 'bt1',
-    'bt_band11': 'bt2',
+    'bt_band10': 'lwir1',
+    'bt_band11': 'lwir2',
 }
 
 ls5_7_images = {
@@ -43,7 +44,7 @@ ls5_7_images = {
     'sr_band4': 'nir',
     'sr_band5': 'swir1',
     'sr_band7': 'swir2',
-    'bt_band6': 'thermal',
+    'bt_band6': 'lwir',
     'pixel_qa': 'pixel_qa',
     'radsat_qa': 'radsat_qa',
     'sr_atmos_opacity': 'sr_atmos_opacity',
@@ -177,7 +178,7 @@ def prep_dataset(path, metadata):
     # prune to only include files that are present on disk
     image_files = {k: file
                    for k, file in image_files.items()
-                   if (path/file).exists()}
+                   if (Path(path)/file).exists()}
 
     sample_file = image_files['blue']
     geo_ref_points, spatial_ref = get_projection(path, sample_file)

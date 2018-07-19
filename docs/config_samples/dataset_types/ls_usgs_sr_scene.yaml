@@ -47,12 +47,12 @@ measurements:
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'bt1'
+    - name: 'lwir1'
       aliases: [band_10, bt_band10]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'bt2'
+    - name: 'lwir2'
       aliases: [band_11, bt_band11]
       dtype: int16
       nodata: -9999
@@ -219,7 +219,7 @@ measurements:
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'thermal'
+    - name: 'lwir'
       aliases: [band_6, bt_band6]
       dtype: int16
       nodata: -9999
@@ -386,7 +386,7 @@ measurements:
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'thermal'
+    - name: 'lwir'
       aliases: [band_6, bt_band6]
       dtype: int16
       nodata: -9999
