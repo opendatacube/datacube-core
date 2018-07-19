@@ -280,9 +280,8 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
     updates_allowed = parse_update_rules(keys_that_can_change)
 
     success, fail = 0, 0
-    doc_stream = ui_doc_path_stream(dataset_paths)
 
-    for dataset, existing_ds in load_datasets_for_update(doc_stream, index):
+    for dataset, existing_ds in load_datasets_for_update(ui_doc_path_stream(dataset_paths), index):
         _LOG.info('Matched %s', dataset)
 
         if location_policy != 'keep':
