@@ -2,13 +2,6 @@ name: ls8_usgs_sr_scene
 description: Landsat 8 USGS Collection 1 Level2 Surface Reflectance LaSRC. 30m UTM based projection.
 metadata_type: eo
 
-storage:
-    crs: PROJCS["WGS 84",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",105],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]]
-
-    resolution:
-        x: 30
-        y: -30
-
 metadata:
     platform:
         code: LANDSAT_8
@@ -19,38 +12,38 @@ metadata:
         name: GeoTiff
 
 measurements:
-    - name: 'sr_band1'
-      aliases: [band_1, coastal_aerosol]
+    - name: 'coastal_aerosol'
+      aliases: [band_1, sr_band1]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band2'
-      aliases: [band_2, blue]
+    - name: 'blue'
+      aliases: [band_2, sr_band2]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band3'
-      aliases: [band_3, green]
+    - name: 'green'
+      aliases: [band_3, sr_band3]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band4'
-      aliases: [band_4, red]
+    - name: 'red'
+      aliases: [band_4, sr_band4]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band5'
-      aliases: [band_5, nir]
+    - name: 'nir'
+      aliases: [band_5, sr_band5]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band6'
-      aliases: [band_6, swir1]
+    - name: 'swir1'
+      aliases: [band_6, sr_band6]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band7'
-      aliases: [band_7, swir2]
+    - name: 'swir2'
+      aliases: [band_7, sr_band7]
       dtype: int16
       nodata: -9999
       units: '1'
@@ -127,12 +120,6 @@ name: ls7_usgs_sr_scene
 description: Landsat 7 USGS Collection 1 Level2 Surface Reflectance LEDAPS. 30m UTM based projection.
 metadata_type: eo
 
-storage:
-    crs: PROJCS["WGS 84",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",105],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]]
-    resolution:
-        x: 30
-        y: -30
-
 metadata:
     platform:
         code: LANDSAT_7
@@ -143,33 +130,33 @@ metadata:
         name: GeoTiff
 
 measurements:
-    - name: 'sr_band1'
-      aliases: [band_1, blue]
+    - name: 'blue'
+      aliases: [band_1, sr_band1]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band2'
-      aliases: [band_2, green]
+    - name: 'green'
+      aliases: [band_2, sr_band2]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band3'
-      aliases: [band_3, red]
+    - name: 'red'
+      aliases: [band_3, sr_band3]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band4'
-      aliases: [band_4, nir]
+    - name: 'nir'
+      aliases: [band_4, sr_band4]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band5'
-      aliases: [band_5, swir1]
+    - name: 'swir1'
+      aliases: [band_5, sr_band5]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band7'
-      aliases: [band_7, swir2]
+    - name: 'swir2'
+      aliases: [band_7, sr_band7]
       dtype: int16
       nodata: -9999
       units: '1'
@@ -245,12 +232,6 @@ measurements:
 name: ls5_usgs_sr_scene
 description: Landsat 5 USGS Collection 1 Level2 Surface Reflectance LEDAPS. 30m UTM based projection.
 metadata_type: eo
-
-storage:
-    crs: PROJCS["WGS 84",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",105],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]]
-    resolution:
-        x: 30
-        y: -30
 
 metadata:
     platform:
