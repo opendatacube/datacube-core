@@ -1,8 +1,13 @@
 import string
 from datetime import datetime, timedelta
+from pathlib import Path
 
+import pytest
 from hypothesis.strategies import (
     composite, floats, sampled_from, lists, tuples, datetimes, uuids, text)
+
+from datacube.utils.geometry import CRS, point
+from integration_tests.utils import prepare_test_ingestion_configuration
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
@@ -48,8 +53,7 @@ def image_paths(draw):
 
 
 @composite
-def extents(draw):
-    crs, lat_bounds, lon_bounds = draw(crses)
+def extents(draw, lat_bounds, lon_bounds):
     center_dt = draw(reasonable_dates)
 
     time_range = timedelta(seconds=12)
@@ -64,14 +68,30 @@ def extents(draw):
             'ul': {'lat': max_lat, 'lon': min_lon},
             'ur': {'lat': max_lat, 'lon': max_lon},
         }
-
     }
 
 
-def grid_spatial():
+def extent_point_projector(crs):
+    crs = CRS(crs)
+
+    def reproject_point(pos):
+        pos = point(pos['lon'], pos['lat'], CRS('EPSG:4326'))
+        coords = pos.to_crs(crs).coords[0]
+        return {'x': coords[0], 'y': coords[1]}
+
+    return reproject_point
+
+
+def extent_to_grid_spatial(extent, crs):
+    """Convert an extent in WGS84 to a grid spatial in the supplied CRS"""
+    reprojector = extent_point_projector(crs)
     return {
         'projection': {
-            'geo_ref_points'
+            'geo_ref_points': {
+                corner: reprojector(pos)
+                for corner, pos in extent['coord'].items()
+            },
+            'spatial_reference': crs
         }
     }
 
@@ -99,12 +119,15 @@ def image():
 
 @composite
 def scene_datasets(draw):
+    crs, lat_bounds, lon_bounds = draw(crses)
+    extent = draw(extents(lat_bounds, lon_bounds))
     return {
         'id': draw(uuids()),
         'acquisition': draw(acquisition_details()),
         'creation_dt': draw(reasonable_dates),
-        'extent': draw(extents()),
-        'image': draw(image()),
+        'extent': extent,
+        'grid_spatial': extent_to_grid_spatial(extent, crs),
+        'image': image(),
         'format': {
             'name': 'GeoTIFF'},
         'instrument': {
@@ -116,3 +139,35 @@ def scene_datasets(draw):
         'processing_level': 'P54',
         'product_type': 'nbar'
     }
+
+def create_tmp_scene_datasets(tmpdir, num=2):
+    for i in range(num):
+
+
+
+PROJECT_ROOT = Path(__file__).parents[1]
+CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
+LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
+LS5_MATCH_RULES = CONFIG_SAMPLES / 'match_rules' / 'ls5_scenes.yaml'
+LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
+LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
+
+INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
+
+
+@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
+@pytest.mark.usefixtures('default_metadata_type',
+                         'indexed_ls5_scene_products')
+def test_full_ingestion(clirunner, index, tmpdir, ingest_configs):
+    config = INGESTER_CONFIGS / ingest_configs['ls5_nbar_albers']
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config, mode='fast_ingest')
+    valid_uuids = []
+    for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
+        valid_uuids.append(uuid)
+        clirunner([
+            'dataset',
+            'add',
+            str(example_ls5_dataset_path)
+        ])
+
+    ensure_datasets_are_indexed(index, valid_uuids)

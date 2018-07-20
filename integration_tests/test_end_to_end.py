@@ -8,8 +8,7 @@ import pytest
 import rasterio
 
 from datacube.compat import string_types
-from integration_tests.utils import assert_click_command
-from integration_tests.conftest import prepare_test_ingestion_configuration
+from integration_tests.utils import assert_click_command, prepare_test_ingestion_configuration
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
