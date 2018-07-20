@@ -12,7 +12,7 @@ from affine import Affine
 
 from datacube.api.query import query_group_by
 from datacube.utils import geometry, read_documents, netcdf_extract_string
-from integration_tests.conftest import prepare_test_ingestion_configuration
+from integration_tests.utils import prepare_test_ingestion_configuration
 from .conftest import GEOTIFF
 
 PROJECT_ROOT = Path(__file__).parents[1]
