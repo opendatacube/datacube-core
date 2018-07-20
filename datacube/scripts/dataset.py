@@ -5,7 +5,6 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
-from pathlib import Path
 
 import click
 import yaml
@@ -18,8 +17,8 @@ from datacube.model import Dataset
 from datacube.index.hl import Doc2Dataset, check_dataset_consistent
 from datacube.ui import click as ui
 from datacube.ui.click import cli
-from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, changes, InvalidDocException, SimpleDocNav
+from datacube.ui.common import ui_path_doc_stream
+from datacube.utils import changes
 from datacube.utils.serialise import SafeDatacubeDumper
 
 from typing import Iterable
@@ -40,34 +39,6 @@ def report_old_options(mapping):
 @cli.group(name='dataset', help='Dataset management commands')
 def dataset_cmd():
     pass
-
-
-def resolve_doc_files(paths, on_error):
-    for p in paths:
-        try:
-            yield get_metadata_path(Path(p))
-        except ValueError as e:
-            on_error(p, e)
-
-
-def doc_path_stream(files, on_error, uri=True):
-    for fname in files:
-        try:
-            for p, doc in read_documents(fname, uri=uri):
-                yield p, SimpleDocNav(doc)
-        except InvalidDocException as e:
-            on_error(fname, e)
-
-
-def ui_doc_path_stream(paths):
-    def on_error1(p, e):
-        _LOG.error('No supported metadata docs found for dataset %s', p)
-
-    def on_error2(p, e):
-        _LOG.error('Failed reading documents from %s', p)
-
-    yield from doc_path_stream(resolve_doc_files(paths, on_error=on_error1),
-                               on_error=on_error2, uri=True)
 
 
 def dataset_stream(doc_stream, ds_resolve):
@@ -194,7 +165,7 @@ def index_cmd(index, product_names,
         sys.exit(2)
 
     def run_it(dataset_paths):
-        doc_stream = ui_doc_path_stream(dataset_paths)
+        doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
         dss = dataset_stream(doc_stream, ds_resolve)
         index_datasets(dss,
                        index,
@@ -281,7 +252,8 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
 
     success, fail = 0, 0
 
-    for dataset, existing_ds in load_datasets_for_update(ui_doc_path_stream(dataset_paths), index):
+    for dataset, existing_ds in load_datasets_for_update(
+            ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True), index):
         _LOG.info('Matched %s', dataset)
 
         if location_policy != 'keep':
