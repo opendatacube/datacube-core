@@ -15,7 +15,7 @@ from click import echo
 from datacube.index.index import Index
 from datacube.index.exceptions import MissingRecordError
 from datacube.model import Dataset
-from datacube.index.hl import load_rules_from_types, dataset_resolver, check_dataset_consistent
+from datacube.index.hl import Doc2Dataset, check_dataset_consistent
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
@@ -80,11 +80,6 @@ def dataset_stream(doc_stream, ds_resolve):
 
         if dataset is None:
             _LOG.error('%s', str(err))
-            continue
-
-        is_consistent, reason = check_dataset_consistent(dataset)
-        if not is_consistent:
-            _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
             continue
 
         yield dataset
@@ -187,19 +182,16 @@ def index_cmd(index, product_names,
     if auto_match is True:
         _LOG.warning("--auto-match option is deprecated, update your scripts, behaviour is the same without it")
 
-    rules, error_msg = load_rules_from_types(index,
-                                             product_names,
-                                             excluding=exclude_product_names)
-    if rules is None:
-        _LOG.error(error_msg)
+    try:
+        ds_resolve = Doc2Dataset(index,
+                                 product_names,
+                                 exclude_products=exclude_product_names,
+                                 skip_lineage=confirm_ignore_lineage,
+                                 fail_on_missing_lineage=not auto_add_lineage,
+                                 verify_lineage=verify_lineage)
+    except ValueError as e:
+        _LOG.error(e)
         sys.exit(2)
-
-    assert len(rules) > 0
-
-    ds_resolve = dataset_resolver(index, rules,
-                                  skip_lineage=confirm_ignore_lineage,
-                                  fail_on_missing_lineage=not auto_add_lineage,
-                                  verify_lineage=verify_lineage)
 
     def run_it(dataset_paths):
         doc_stream = ui_doc_path_stream(dataset_paths)
