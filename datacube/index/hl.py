@@ -189,3 +189,71 @@ def dataset_resolver(index,
             return None, e
 
     return resolve_no_lineage if skip_lineage else resolve
+
+
+class Doc2Dataset(object):
+    """Helper class for constructing `Dataset` objects from metadata document.
+
+    User needs to supply index, which products to consider for matching and what
+    to do with lineage.
+
+    """
+    def __init__(self,
+                 index,
+                 products=None,
+                 exclude_products=None,
+                 fail_on_missing_lineage=False,
+                 verify_lineage=True,
+                 skip_lineage=False):
+        """
+        :param index: Database
+
+        :param products: List of product names against which to match datasets
+        (including lineage datasets), if not supplied will consider all
+        products.
+
+        :param exclude_products: List of products to exclude from matching
+
+        :param fail_on_missing_lineage: If True fail resolve if any lineage
+        datasets are missing from the DB
+
+        :param verify_lineage: If True check that lineage datasets in the
+        supplied document are identical to dB versions
+
+        :param skip_lineage: If True ignore lineage sub-tree in the supplied
+        document and construct dataset without lineage datasets
+
+        """
+        rules, err_msg = load_rules_from_types(index,
+                                               product_names=products,
+                                               excluding=exclude_products)
+        if rules is None:
+            raise ValueError(err_msg)
+
+        self._ds_resolve = dataset_resolver(index,
+                                            rules,
+                                            fail_on_missing_lineage=fail_on_missing_lineage,
+                                            verify_lineage=verify_lineage,
+                                            skip_lineage=skip_lineage)
+
+    def __call__(self, doc, uri):
+        """Attempt to construct dataset from metadata document and a uri.
+
+        :param doc: Dictionary or SimpleDocNav object
+        :param uri: String "location" property of the Dataset
+
+        :return: (dataset, None) is successful,
+        :return: (None, ErrorMessage) on failure
+        """
+        if not isinstance(doc, SimpleDocNav):
+            doc = SimpleDocNav(doc)
+
+        dataset, err = self._ds_resolve(doc, uri)
+        if dataset is None:
+            return None, err
+
+        is_consistent, reason = check_dataset_consistent(dataset)
+        if not is_consistent:
+            return None, reason
+
+        return dataset, None
