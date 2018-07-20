@@ -16,6 +16,7 @@ Changes
 ~~~~~~~
 
 - Allow indexing without lineage `dataset add --ignore-lineage` (:pull:`485`)
+- New option `dataset add --exclude-product <name>` allows excluding some products from auto-matching
 - Various improvements to indexing, mostly to do with handling of lineage (:issue:`480`)
 
 
