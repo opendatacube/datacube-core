@@ -137,6 +137,11 @@ def load_datasets_for_update(doc_stream, index):
               help=('Only match against products specified with this option, '
                     'you can supply several by repeating this option with a new product name'),
               multiple=True)
+@click.option('--exclude-product', '-x', 'exclude_product_names',
+              help=('Attempt to match to all products in the DB except for products '
+                    'specified with this option, '
+                    'you can supply several by repeating this option with a new product name'),
+              multiple=True)
 @click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
               is_flag=True, default=False)
 @click.option('--auto-add-lineage/--no-auto-add-lineage', is_flag=True, default=True,
@@ -158,6 +163,7 @@ def load_datasets_for_update(doc_stream, index):
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
 def index_cmd(index, product_names,
+              exclude_product_names,
               auto_match,
               auto_add_lineage,
               verify_lineage,
@@ -181,7 +187,9 @@ def index_cmd(index, product_names,
     if auto_match is True:
         _LOG.warning("--auto-match option is deprecated, update your scripts, behaviour is the same without it")
 
-    rules, error_msg = load_rules_from_types(index, product_names)
+    rules, error_msg = load_rules_from_types(index,
+                                             product_names,
+                                             excluding=exclude_product_names)
     if rules is None:
         _LOG.error(error_msg)
         sys.exit(2)
