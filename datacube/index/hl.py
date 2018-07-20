@@ -14,7 +14,7 @@ class BadMatch(Exception):
     pass
 
 
-def load_rules_from_types(index, product_names=None):
+def load_rules_from_types(index, product_names=None, excluding=None):
     products = []
     if product_names:
         for name in product_names:
@@ -24,6 +24,10 @@ def load_rules_from_types(index, product_names=None):
             products.append(product)
     else:
         products += index.products.get_all()
+
+    if excluding is not None:
+        excluding = set(excluding)
+        products = [p for p in products if p.name not in excluding]
 
     if len(products) == 0:
         return None, 'Found no products in the database'

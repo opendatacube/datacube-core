@@ -248,12 +248,12 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
 def test_dataset_add_ambgious_products(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
-    mk = dataset_maker(0)
 
-    ds = SimpleDocNav(mk('A',
-                         product_type='eo',
-                         flag_a='a',
-                         flag_b='b'))
+    dss = [SimpleDocNav(dataset_maker(i)(
+        'A',
+        product_type='eo',
+        flag_a='a',
+        flag_b='b')) for i in [1, 2]]
 
     prefix = write_files({
         'products.yml': '''
@@ -272,7 +272,8 @@ metadata:
     product_type: eo
     flag_b: b
     ''',
-        'dataset.yml': yaml.safe_dump(ds.doc),
+        'dataset1.yml': yaml.safe_dump(dss[0].doc),
+        'dataset2.yml': yaml.safe_dump(dss[1].doc),
     })
 
     clirunner(['metadata_type', 'add', p.metadata])
@@ -281,15 +282,25 @@ metadata:
     pp = list(index.products.get_all())
     assert len(pp) == 2
 
-    r = clirunner(['dataset', 'add', str(prefix/'dataset.yml')])
-    assert 'ERROR Auto match failed' in r.output
-    assert 'matches several products' in r.output
-    assert index.datasets.has(ds.id) is False
+    for ds, i in zip(dss, (1, 2)):
+        r = clirunner(['dataset', 'add', str(prefix/('dataset%d.yml' % i))])
+        assert 'ERROR Auto match failed' in r.output
+        assert 'matches several products' in r.output
+        assert index.datasets.has(ds.id) is False
 
     # check that forcing product works
+    ds, fname = dss[0], 'dataset1.yml'
     r = clirunner(['dataset', 'add',
                    '--product', 'A',
-                   str(prefix/'dataset.yml')])
+                   str(prefix/fname)])
+
+    assert index.datasets.has(ds.id) is True
+
+    # check that forcing via exclude works
+    ds, fname = dss[1], 'dataset2.yml'
+    r = clirunner(['dataset', 'add',
+                   '--exclude-product', 'B',
+                   str(prefix/fname)])
 
     assert index.datasets.has(ds.id) is True
 
