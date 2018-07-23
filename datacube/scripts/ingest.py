@@ -287,7 +287,7 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
 
     # Count of storage unit/s indexed successfully or failed to index
     index_successful = index_failed = 0
-    
+
     # Count of storage unit/s failed during file creation
     f_failed = 0
 
