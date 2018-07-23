@@ -285,23 +285,22 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
 
     pending = []
     n_successful = n_failed = 0
+    f_failed = 0
 
     tasks = iter(tasks)
-    while True:
-        pending += [submit_task(task) for task in itertools.islice(tasks, max(0, queue_size - len(pending)))]
-        if not pending:
-            break
-
+    pending += [submit_task(task) for task in itertools.islice(tasks, max(0, queue_size - len(pending)))]
+    total = pending
+    while pending:
         completed, failed, pending = executor.get_ready(pending)
-        _LOG.info('completed %s, failed %s, pending %s', len(completed), len(failed), len(pending))
 
         for future in failed:
             try:
                 executor.result(future)
             except Exception:  # pylint: disable=broad-except
                 _LOG.exception('Task failed')
-                n_failed += 1
+                f_failed += 1
 
+        _LOG.info('Storage unit creation (completed: %s, failed: %s, pending: %s)', (len(total) - len(pending) - f_failed), f_failed, len(pending))
         if not completed:
             time.sleep(1)
             continue
@@ -313,8 +312,10 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
             results = executor.results(completed)
             n_successful += _index_datasets(index, results)
         except Exception as e:  # pylint: disable=broad-except
-            _LOG.exception('Gather failed')
-            pending += completed
+            _LOG.exception('Gather failed during indexing')
+            n_failed += 1
+
+        _LOG.info('Index storage unit (successful: %s, failed: %s)', n_successful, n_failed)
 
     return n_successful, n_failed
 
