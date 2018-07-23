@@ -282,7 +282,11 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
                                **task)
 
     pending = []
-    n_successful = n_failed = 0
+
+    # Count of storage unit/s indexed successfully or failed to index
+    index_successful = index_failed = 0
+    
+    # Count of storage unit/s failed during file creation
     f_failed = 0
 
     tasks = iter(tasks)
@@ -294,11 +298,11 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
         for future in failed:
             try:
                 executor.result(future)
-            except Exception:  # pylint: disable=broad-except
-                _LOG.exception('Task failed')
+            except Exception as err:  # pylint: disable=broad-except
+                _LOG.exception('Failed to create storage unit file (Exception: %s) ', str(err))
                 f_failed += 1
 
-        _LOG.info('Storage unit creation (completed: %s, failed: %s, pending: %s)',
+        _LOG.info('Storage unit file creation status (completed: %s, failed: %s, pending: %s)',
                   (len(total) - len(pending) - f_failed),
                   f_failed,
                   len(pending))
@@ -311,14 +315,14 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
             # maybe limit gather to 50-100 results and put the rest into a index backlog
             # this will also keep the queue full
             results = executor.results(completed)
-            n_successful += _index_datasets(index, results)
-        except Exception as e:  # pylint: disable=broad-except
-            _LOG.exception('Gather failed during indexing')
-            n_failed += 1
+            index_successful += _index_datasets(index, results)
+        except Exception as err:  # pylint: disable=broad-except
+            _LOG.exception('Failed to index storage unit file (Exception: %s)', str(err))
+            index_failed += 1
 
-        _LOG.info('Index storage unit (successful: %s, failed: %s)', n_successful, n_failed)
+        _LOG.info('Storage unit files indexed (successful: %s, failed: %s)', index_successful, index_failed)
 
-    return n_successful, n_failed
+    return index_successful, index_failed
 
 
 def _validate_year(ctx, param, value):
