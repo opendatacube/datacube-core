@@ -331,6 +331,10 @@ class Measurement(dict):
 
         super().__init__(measurement_data)
 
+    def __getattr__(self, key):
+        """ Allow access to items as attributes. """
+        return self[key]
+
     def __repr__(self):
         return "Measurement({})".format(super(Measurement, self).__repr__())
 
