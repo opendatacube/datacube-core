@@ -6,3 +6,5 @@ rules:
       required_status_checks:
         contexts:
         - continuous-integration/travis-ci
+    merge_strategy:
+      method: rebase
