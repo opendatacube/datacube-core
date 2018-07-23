@@ -298,7 +298,10 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
                 _LOG.exception('Task failed')
                 f_failed += 1
 
-        _LOG.info('Storage unit creation (completed: %s, failed: %s, pending: %s)', (len(total) - len(pending) - f_failed), f_failed, len(pending))
+        _LOG.info('Storage unit creation (completed: %s, failed: %s, pending: %s)',
+                  (len(total) - len(pending) - f_failed),
+                  f_failed,
+                  len(pending))
         if not completed:
             time.sleep(1)
             continue
