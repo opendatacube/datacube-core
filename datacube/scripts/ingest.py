@@ -144,6 +144,8 @@ def ensure_output_type(index, config, storage_format, allow_product_changes=Fals
                 raise ValueError("Ingest config differs from the existing output product, "
                                  "but allow_product_changes=False")
             output_type = index.products.update(output_type)
+        else:
+            output_type = existing
     else:
         output_type = index.products.add(output_type)
 

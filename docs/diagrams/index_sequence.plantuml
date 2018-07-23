@@ -3,7 +3,7 @@ title Initialise Database
 participant Test
 participant Index
 participant PostgresDb
-participant "PostgresDbAPI\nWTF is this thing" as PostgresDbAPI
+participant PostgresDbAPI
 
 
 note over Index: Entry point is ""connect()""\nin ""index/_api.py""
