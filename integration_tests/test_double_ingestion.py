@@ -2,7 +2,10 @@ import string
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import numpy as np
 import pytest
+import rasterio
+import yaml
 from hypothesis.strategies import (
     composite, floats, sampled_from, lists, tuples, datetimes, uuids, text)
 
@@ -111,7 +114,7 @@ def image():
     return {
         'bands': {
             '1': {
-                'path': 'scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B10.tif'
+                'path': 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B10.tif'
             }
         }
     }
@@ -122,7 +125,7 @@ def scene_datasets(draw):
     crs, lat_bounds, lon_bounds = draw(crses)
     extent = draw(extents(lat_bounds, lon_bounds))
     return {
-        'id': draw(uuids()),
+        'id': str(draw(uuids())),
         'acquisition': draw(acquisition_details()),
         'creation_dt': draw(reasonable_dates),
         'extent': extent,
@@ -140,34 +143,112 @@ def scene_datasets(draw):
         'product_type': 'nbar'
     }
 
-def create_tmp_scene_datasets(tmpdir, num=2):
-    for i in range(num):
 
+def create_test_scene_datasets(tmpdir, num=2):
+    paths_to_datasets = []
+    for i in range(num):
+        ls5_dataset = scene_datasets().example()
+        dataset_file = _create_test_dataset_directory(ls5_dataset, tmpdir)
+        paths_to_datasets.append(dataset_file)
+    return paths_to_datasets
+
+
+def _create_test_dataset_directory(dataset_dict, tmpdir):
+    # Make directory name
+    dir_name = dataset_dict['platform']['code'] + dataset_dict['id'][:5]
+
+    # Create directory
+    new_dir = tmpdir.mkdir(dir_name)
+
+    _make_geotiffs(new_dir, dataset_dict)
+    dataset_file = new_dir.join('agdc-metadata.yaml')
+    dataset_file.write(yaml.safe_dump(dataset_dict))
+    return dataset_file
+
+
+def _make_geotiffs(output_dir, dataset_dict, shape=(100, 100)):
+    """
+    Generate custom geotiff files, one per band.
+
+    Create appropriate GeoTIFF files
+
+    Create ``num_bands`` TIFF files inside ``tiffs_dir``.
+
+    Return a dictionary mapping band_number to filename, eg::
+
+        {
+            0: '/tmp/tiffs/band01_time01.tif',
+            1: '/tmp/tiffs/band02_time01.tif'
+        }
+    """
+    tiffs = {}
+    width, height = shape
+    pixel_width = (dataset_dict['grid_spatial']['projection']['geo_ref_points']['ul']['x'] -
+                   dataset_dict['grid_spatial']['projection']['geo_ref_points']['ur']['x']) / width
+    pixel_height = (dataset_dict['grid_spatial']['projection']['geo_ref_points']['ul']['y'] -
+                    dataset_dict['grid_spatial']['projection']['geo_ref_points']['ll']['y']) / height
+    metadata = {'count': 1,
+                'crs': dataset_dict['grid_spatial']['projection']['spatial_reference'],
+                'driver': 'GTiff',
+                'dtype': 'int16',
+                'width': width,
+                'height': height,
+                'nodata': -999.0,
+                'transform': [pixel_width,
+                              0.0,
+                              dataset_dict['grid_spatial']['projection']['geo_ref_points']['ul']['x'],
+                              0.0,
+                              pixel_height,
+                              dataset_dict['grid_spatial']['projection']['geo_ref_points']['ul']['y']]}
+
+    for band_num, band_info in dataset_dict['image']['bands'].items():
+        path = Path(output_dir) / band_info['path']
+        with rasterio.open(path, 'w', **metadata) as dst:
+            # Write data in "corners" (rounded down by 100, for a size of 100x100)
+            data = np.zeros((height, width), dtype=np.int16)
+            data[:] = np.arange(height * width
+                                ).reshape((height, width)) + 10 * int(band_num)
+            dst.write(data, 1)
+        tiffs[band_num] = path
+    return tiffs
 
 
 PROJECT_ROOT = Path(__file__).parents[1]
-CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
-LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
-LS5_MATCH_RULES = CONFIG_SAMPLES / 'match_rules' / 'ls5_scenes.yaml'
-LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
-LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
 
-INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
+INGESTER_CONFIGS = PROJECT_ROOT / 'docs/config_samples/' / 'ingester'
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
-def test_full_ingestion(clirunner, index, tmpdir, ingest_configs):
+def test_double_ingestion(clirunner, index, tmpdir, ingest_configs):
+    # Make a test ingestor configuration
     config = INGESTER_CONFIGS / ingest_configs['ls5_nbar_albers']
-    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config, mode='fast_ingest')
-    valid_uuids = []
-    for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
-        valid_uuids.append(uuid)
-        clirunner([
-            'dataset',
-            'add',
-            str(example_ls5_dataset_path)
-        ])
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None,
+                                                               config, mode='fast_ingest')
 
-    ensure_datasets_are_indexed(index, valid_uuids)
+    index_dataset = lambda path: clirunner(['dataset', 'add', str(path)])
+
+    # Create and Index some example scene datasets
+    dataset_paths = create_test_scene_datasets(tmpdir)
+    for path in dataset_paths:
+        index_dataset(path)
+
+    # Ingest them
+    clirunner([
+        'ingest',
+        '--config-file',
+        str(config_path)
+    ])
+
+    # Create and Index some more scene datasets
+    dataset_paths = create_test_scene_datasets(tmpdir)
+    for path in dataset_paths:
+        index_dataset(path)
+
+    # Make sure that we can ingest the new scenes
+    clirunner([
+        'ingest',
+        '--config-file',
+        str(config_path)
+    ])
