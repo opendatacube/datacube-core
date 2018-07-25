@@ -301,14 +301,16 @@ class Datacube(object):
         group_by = query_group_by(**query)
         grouped = self.group_datasets(observations, group_by)
 
-        measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
-        measurements = set_resampling_method(measurements, resampling)
+        datacube_product = self.index.products.get_by_name(product)
+        measurement_dicts = set_resampling_method(datacube_product.lookup_measurements(measurements),
+                                                  resampling)
 
-        result = self.load_data(grouped, geobox, list(measurements.values()),
+        result = self.load_data(grouped, geobox, list(measurement_dicts.values()),
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
                                 use_threads=use_threads)
-        return result
+
+        return apply_aliases(result, datacube_product, measurements)
 
     def product_observations(self, **kwargs):
         warnings.warn("product_observations() has been renamed to find_datasets() and will eventually be removed",
@@ -568,6 +570,17 @@ class Datacube(object):
     def __exit__(self, type_, value, traceback):
         self.close()
 
+
+def apply_aliases(data, product, measurements):
+    """
+    If measurements are referred to by their aliases,
+    rename data arrays to reflect that.
+    """
+    if measurements is None:
+        return data
+
+    return data.rename({product.canonical_measurement(provided_name): provided_name
+                        for provided_name in measurements})
 
 def output_geobox(like=None, output_crs=None, resolution=None, align=None,
                   grid_spec=None, datasets=None, **query):

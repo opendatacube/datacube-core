@@ -10,7 +10,7 @@ import pandas as pd
 
 from ..utils import intersects
 from .query import Query, query_group_by
-from .core import Datacube, set_resampling_method
+from .core import Datacube, set_resampling_method, apply_aliases
 
 _LOG = logging.getLogger(__name__)
 
@@ -371,13 +371,14 @@ class GridWorkflow(object):
         .. seealso::
             :meth:`list_tiles` :meth:`list_cells`
         """
-        measurements = tile.product.lookup_measurements(measurements)
-        measurements = set_resampling_method(measurements, resampling)
+        measurement_dicts = set_resampling_method(tile.product.lookup_measurements(measurements),
+                                                  resampling)
 
-        dataset = Datacube.load_data(tile.sources, tile.geobox, list(measurements.values()), dask_chunks=dask_chunks,
-                                     fuse_func=fuse_func, skip_broken_datasets=skip_broken_datasets)
+        dataset = Datacube.load_data(tile.sources, tile.geobox, list(measurement_dicts.values()),
+                                     dask_chunks=dask_chunks, fuse_func=fuse_func,
+                                     skip_broken_datasets=skip_broken_datasets)
 
-        return dataset
+        return apply_aliases(dataset, tile.product, measurements)
 
     def update_tile_lineage(self, tile):
         for i in range(tile.sources.size):

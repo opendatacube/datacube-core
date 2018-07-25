@@ -483,6 +483,14 @@ class DatasetType(object):
 
         return GridSpec(crs=crs, tile_size=tile_size, resolution=resolution, origin=origin)
 
+    def canonical_measurement(self, measurement):
+        for m in self.measurements:
+            if measurement == m:
+                return measurement
+            elif measurement in self.measurements[m]['aliases']:
+                return m
+        raise KeyError(measurement)
+
     def lookup_measurements(self, measurements=None):
         """
         Find measurements by name
@@ -493,7 +501,8 @@ class DatasetType(object):
         my_measurements = self.measurements
         if measurements is None:
             return my_measurements
-        return OrderedDict((measurement, my_measurements[measurement]) for measurement in measurements)
+        canonical = [self.canonical_measurement(measurement) for measurement in measurements]
+        return OrderedDict((measurement, my_measurements[measurement]) for measurement in canonical)
 
     def dataset_reader(self, dataset_doc):
         return self.metadata_type.dataset_reader(dataset_doc)
