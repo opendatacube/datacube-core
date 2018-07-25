@@ -24,6 +24,7 @@ DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 EPSG_CODES = [('EPSG:32755', (-80, 0), (144, 150))]
 crses = sampled_from(EPSG_CODES)
 REASONABLE_DATES = datetimes(min_value=datetime(1980, 1, 1), max_value=datetime(2030, 1, 1))
+FILENAMES = text(alphabet=string.ascii_letters + string.digits + '-_', min_size=3)
 
 
 @composite
@@ -117,7 +118,7 @@ def scene_datasets(draw):
         'image': {
             'bands': {
                 '1': {
-                    'path': 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B10.tif'
+                    'path': draw(FILENAMES) + '.tif'
                 }
             }
         },
