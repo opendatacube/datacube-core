@@ -44,6 +44,7 @@ GEOTIFF = {
     }
 }
 
+
 @contextmanager
 def alter_log_level(logger, level=logging.WARN):
     previous_level = logger.getEffectiveLevel()
@@ -61,21 +62,6 @@ def assert_click_command(command, args):
     print(result.output)
     assert not result.exception
     assert result.exit_code == 0
-
-
-def create_empty_geotiff(path):
-    # Example method, not used
-    metadata = {'count': 1,
-                'crs': 'EPSG:28355',
-                'driver': 'GTiff',
-                'dtype': 'int16',
-                'height': 8521,
-                'nodata': -999.0,
-                'transform': [25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0],
-                'compress': 'lzw',
-                'width': 9721}
-    with rasterio.open(path, 'w', **metadata) as dst:
-        pass
 
 
 def limit_num_measurements(dataset_type):
@@ -114,7 +100,7 @@ def prepare_test_ingestion_configuration(tmpdir,
 
     config_path = tmpdir.join(filename.name)
     with open(str(config_path), 'w') as stream:
-        yaml.dump(config, stream)
+        yaml.safe_dump(config, stream)
     return config_path, config
 
 
@@ -236,8 +222,6 @@ def shrink_storage_type(storage_type, variables, shrink_factors):
         storage['resolution'][var] = storage['resolution'][var] * shrink_factors[0]
         storage['chunking'][var] = storage['chunking'][var] / shrink_factors[1]
     return storage_type
-
-
 
 
 def load_test_products(filename, metadata_type=None):

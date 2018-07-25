@@ -24,7 +24,8 @@ def test_double_ingestion(clirunner, index, tmpdir, ingest_configs):
     config_path, config = prepare_test_ingestion_configuration(tmpdir, None,
                                                                config, mode='fast_ingest')
 
-    index_dataset = lambda path: clirunner(['dataset', 'add', str(path)])
+    def index_dataset(path):
+        return clirunner(['dataset', 'add', str(path)])
 
     # Create and Index some example scene datasets
     dataset_paths = generate_test_scenes(tmpdir)
