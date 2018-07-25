@@ -56,6 +56,11 @@ GDAL_NETCDF_DIM = ('NETCDF_DIM_'
 # comparison operators, since '1.0a10' is less than '1.0a9'
 RASTERIO_WARP_BUG = (str(rasterio.__version__) in set('1.0a%d' % i for i in range(9)))
 
+# rasterio has issues with reprojecting datasets with more than 1 band
+# https://github.com/mapbox/rasterio/issues/1350
+# It is tagged as a post 1.0 fix
+RASTERIO_REPROJECT_BAND_BUG = ("1.0" in str(rasterio.__version__))
+
 
 def _rasterio_resampling_method(resampling):
     return RESAMPLING_METHODS[resampling.lower()]
@@ -344,8 +349,11 @@ class RasterioDataSource(DataSource):
                 # cannot read multiband data into a numpy array during reprojection
                 # We override it here to force the reading and reprojection into separate steps
                 # TODO: Remove when we no longer care about those versions of rasterio
+                # The 1.0 releases of rasterio also contain an issue confirmed with multiband GeoTIFFs
+                # We apply the same override if we are using a version with the bug and
+                # rasterio reports using the GeoTIFF driver
                 bandnumber = self.get_bandnumber(src)
-                if bandnumber > 1 and RASTERIO_WARP_BUG:
+                if (RASTERIO_WARP_BUG and bandnumber > 1) or (RASTERIO_REPROJECT_BAND_BUG and src.driver == "GTiff"):
                     override = True
 
                 band = rasterio.band(src, bandnumber)
