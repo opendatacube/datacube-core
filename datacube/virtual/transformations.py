@@ -37,7 +37,7 @@ def selective_apply(data, apply_to=None, key_map=None, value_map=None):
 
 
 class MakeMask(Transformation):
-    def __init__(self, mask_measurement_name, **flags):
+    def __init__(self, mask_measurement_name, flags):
         self.mask_measurement_name = mask_measurement_name
         self.flags = flags
 
@@ -47,7 +47,7 @@ class MakeMask(Transformation):
                                           .format(self.mask_measurement_name))
 
         def worker(_, value):
-            result = value.__dict__.copy()
+            result = value.copy()
             result['dtype'] = 'bool'
             return Measurement(**result)
 
@@ -61,15 +61,15 @@ class MakeMask(Transformation):
         return selective_apply(data, apply_to=[self.mask_measurement_name], value_map=worker)
 
 
-def make_mask(product, mask_measurement_name, **flags):
+def make_mask(product, mask_measurement_name, flags):
     """
     Create a mask that would only keep pixels for which the measurement with `mask_measurement_name`
     of the `product` satisfies `flags`.
     """
-    return transform(product, MakeMask(mask_measurement_name, **flags))
+    return transform(product, MakeMask(mask_measurement_name, flags))
 
 
-class MaskBy(Transformation):
+class ApplyMask(Transformation):
     def __init__(self, mask_measurement_name, apply_to=None,
                  preserve_dtype=True, fallback_dtype='float32'):
         self.mask_measurement_name = mask_measurement_name
@@ -86,7 +86,7 @@ class MaskBy(Transformation):
             if self.preserve_dtype:
                 return value
 
-            result = value.__dict__.copy()
+            result = value.copy()
             result['dtype'] = self.fallback_dtype
             return Measurement(**result)
 
@@ -107,15 +107,15 @@ class MaskBy(Transformation):
         return selective_apply(rest, apply_to=self.apply_to, value_map=worker)
 
 
-def mask_by(product, mask_measurement_name, apply_to=None,
-            preserve_dtype=True, fallback_dtype='float32', **flags):
+def mask_by_flags(product, mask_measurement_name, flags,
+                  apply_to=None, preserve_dtype=True, fallback_dtype='float32'):
     """
     Only keep pixels for which the measurement with `mask_measurement_name` of the
     `product` satisfies `flags`.
     """
-    return transform(make_mask(product, mask_measurement_name, **flags),
-                     MaskBy(mask_measurement_name, apply_to=apply_to,
-                            preserve_dtype=preserve_dtype, fallback_dtype=fallback_dtype))
+    return transform(make_mask(product, mask_measurement_name, flags),
+                     ApplyMask(mask_measurement_name, apply_to=apply_to,
+                               preserve_dtype=preserve_dtype, fallback_dtype=fallback_dtype))
 
 
 class ToFloat(Transformation):
@@ -125,7 +125,7 @@ class ToFloat(Transformation):
 
     def measurements(self, input_measurements):
         def worker(_, value):
-            result = value.__dict__.copy()
+            result = value.copy()
             result['dtype'] = self.dtype
             return Measurement(**result)
 
@@ -157,7 +157,7 @@ class Rename(Transformation):
             return self.name_dict[key]
 
         def value_map(key, value):
-            result = value.__dict__.copy()
+            result = value.copy()
             result['name'] = self.name_dict[key]
             return Measurement(**result)
 

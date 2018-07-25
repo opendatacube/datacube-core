@@ -3,8 +3,6 @@ Utility to convert a virtual product specification (a recipe) into a usable
 virtual product object.
 """
 
-# TODO: remove transform.args
-
 from datacube.utils import import_function
 from datacube.virtual.impl import VirtualProductException, Transformation
 from datacube.virtual.impl import Collate, Juxtapose, Transform, BasicProduct
@@ -26,14 +24,14 @@ def create(recipe):
         return Juxtapose(*[create(child) for child in get('juxtapose', [])])
 
     if 'transform' in recipe:
-        child = get('child')
+        child = get('source')
         cls = get('transform')
 
         if cls is None:
             raise VirtualProductException("no transformation provided in {}".format(recipe))
 
         if child is None:
-            raise VirtualProductException("no child for transformation in {}".format(recipe))
+            raise VirtualProductException("no source for transformation in {}".format(recipe))
 
         if not callable(cls):
             if isinstance(cls, str):
@@ -41,7 +39,7 @@ def create(recipe):
             else:
                 raise VirtualProductException("not a transformation class: {}".format(cls))
 
-        obj = cls(**{key: value for key, value in recipe.items() if key not in ['transform', 'child']})
+        obj = cls(**{key: value for key, value in recipe.items() if key not in ['transform', 'source']})
         if not isinstance(obj, Transformation):
             raise VirtualProductException("not a transformation object: {}".format(obj))
 
@@ -80,19 +78,17 @@ def reconstruct(product):
                 if value is not None}
 
     if isinstance(product, Collate):
-        return {'collate': specified(children=[reconstruct(child) for child in product.children],
-                                     index_measurement_name=product.index_measurement_name)}
+        return specified(collate=[reconstruct(child) for child in product.children],
+                         index_measurement_name=product.index_measurement_name)
 
     if isinstance(product, Juxtapose):
-        return {'juxtapose': specified(children=[reconstruct(child) for child in product.children])}
+        return {'juxtapose': [reconstruct(child) for child in product.children]}
 
     if isinstance(product, Transform):
-        child = reconstruct(product.child)
-        args = vars(product.transformation)
-        if args == {}:
-            args = None
+        source = reconstruct(product.source)
+        args = specified(**vars(product.transformation))
         transformation = qualified_name(type(product.transformation))
-        return {'transform': specified(child=child, transformation=transformation, args=specified(**args))}
+        return specified(source=source, transform=transformation, **args)
 
     if isinstance(product, BasicProduct):
         def unresolve_func(key, value):

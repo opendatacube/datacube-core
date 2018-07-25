@@ -1,9 +1,11 @@
+# TODO: alias support
 # TODO: needs an aggregation phase (use xarray.DataArray.groupby?)
-# TODO: collate index_measurement
 # TODO: measurement dependency tracking
+# TODO: ability to select measurements higher up in the tree
 # TODO: a mechanism for per-leaf settings
-# TODO: a mechanism for ancestor dataset tracking
+# TODO: lineage tracking per observation
 # TODO: what does GridWorkflow do more than this?
+# TODO: provision for splitting the tasks before and after grouping
 """
 Implementation of virtual products. Provides an interface for the products in the datacube
 to query and to load data, and combinators to combine multiple products into "virtual"
@@ -14,6 +16,7 @@ from functools import reduce
 import warnings
 
 import xarray
+import numpy
 
 from datacube import Datacube
 from datacube.compat import string_types
@@ -56,6 +59,8 @@ class VirtualProduct(ABC):
         :param query: to specify a spatial sub-region
         """
 
+    # TODO: provide `load_lazy` and `load_strict` instead
+
     @abstractmethod
     def fetch_data(self, grouped, product_definitions, **load_settings):
         # type: (GroupedDatasetPile, Dict[str, Dict], Dict[str, Any]) -> xarray.Dataset
@@ -68,13 +73,6 @@ class VirtualProduct(ABC):
         datasets = self.find_datasets(dc, **query)
         grouped = self.group_datasets(datasets, **query)
         return self.fetch_data(grouped, product_definitions, **query).sortby('time')
-
-        # to fetch one observation at a time:
-        # observations = [self.fetch_data(observation, product_definitions)
-        #                 for observation in grouped.split(dim='time')]
-        # data = xarray.concat(observations, dim='time')
-
-        # return data
 
 
 class DatasetPile(object):
@@ -237,13 +235,13 @@ class BasicProduct(VirtualProduct):
         else:
             resampling = {}
 
-        measurements = [{**vars(measurement), **resampling}
+        # load_settings should not contain `measurements`
+        measurements = [Measurement(**measurement, **resampling)
                         for _, measurement in self.output_measurements(product_definitions).items()]
 
         def unwrap(_, value):
             return value.pile
 
-        # intentionally does not implement the `stack` feature of `Datacube.load`
         return Datacube.load_data(grouped.map(unwrap).pile,
                                   grouped.geobox, measurements,
                                   fuse_func=merged.get('fuse_func'),
@@ -258,10 +256,17 @@ class BasicProduct(VirtualProduct):
 class Transformation(ABC):
     @abstractmethod
     def measurements(self, input_measurements):
+        """
+        Returns the list of output measurements from this transformation.
+        """
         pass
 
     @abstractmethod
     def compute(self, data):
+        """
+        Perform computation on `data` that results in an `xarray.Dataset`
+        having measurements reported by the `measurements` method.
+        """
         pass
 
 
@@ -269,29 +274,32 @@ class Transform(VirtualProduct):
     """
     Apply some computation to the loaded data.
     """
-    def __init__(self, child, transformation):
-        self.child = child
+    def __init__(self, source, transformation):
+        self.source = source
         self.transformation = transformation
 
     def output_measurements(self, product_definitions):
-        child_measurements = self.child.output_measurements(product_definitions)
+        source_measurements = self.source.output_measurements(product_definitions)
 
-        return self.transformation.measurements(child_measurements)
+        return self.transformation.measurements(source_measurements)
 
     def find_datasets(self, dc, **query):
-        return self.child.find_datasets(dc, **query)
+        return self.source.find_datasets(dc, **query)
 
     def group_datasets(self, datasets, **query):
-        return self.child.group_datasets(datasets, **query)
+        return self.source.group_datasets(datasets, **query)
 
     def fetch_data(self, grouped, product_definitions, **load_settings):
-        child_data = self.child.fetch_data(grouped, product_definitions, **load_settings)
+        # validate data to be loaded
+        _ = self.output_measurements(product_definitions)
 
-        return self.transformation.compute(child_data)
+        source_data = self.source.fetch_data(grouped, product_definitions, **load_settings)
+
+        return self.transformation.compute(source_data)
 
     def __repr__(self):
-        return ("Transform(child={}, transformation={})"
-                .format(repr(self.child), repr(self.transformation)))
+        return ("Transform(source={}, transformation={})"
+                .format(repr(self.source), repr(self.transformation)))
 
 
 class Collate(VirtualProduct):
@@ -372,20 +380,35 @@ class Collate(VirtualProduct):
                 if data is not None:
                     return data
 
-            raise ValueError("Every child of CollatedDatasetPile object is None")
+            raise ValueError("Every child of GroupedDatasetPile object is None")
 
-        def fetch_child(child, r):
+        def fetch_child(child, source_index, r):
             size = reduce(lambda x, y: x * y, r.shape, 1)
 
             if size > 0:
-                # TODO: merge with source_index here
-                # requires passing source_index to this
-                return child.fetch_data(r, product_definitions, **load_settings)
+                result = child.fetch_data(r, product_definitions, **load_settings)
+                name = self.index_measurement_name
+
+                if name is None:
+                    return result
+
+                # implication for dask?
+                measurement = self.index_measurement[name]
+                shape = select_unique([result[band].shape for band in result.data_vars])
+                array = numpy.full(shape, source_index, dtype=measurement.dtype)
+                first = result[list(result.data_vars)[0]]
+                result[name] = xarray.DataArray(array, dims=first.dims, coords=first.coords,
+                                                name=name).assign_attrs(units=measurement.units,
+                                                                        nodata=measurement.nodata)
+                return result
             else:
                 # empty raster
                 return None
 
-        groups = [fetch_child(child, grouped.filter(is_from(source_index)).map(strip_source))
+        # validate data to be loaded
+        _ = self.output_measurements(product_definitions)
+
+        groups = [fetch_child(child, source_index, grouped.filter(is_from(source_index)).map(strip_source))
                   for source_index, child in enumerate(self.children)]
 
         non_empty = [g for g in groups if g is not None]
@@ -463,6 +486,9 @@ class Juxtapose(VirtualProduct):
         def fetch_recipe(source_index):
             child_groups = grouped.map(select_child(source_index))
             return GroupedDatasetPile(child_groups.pile, geobox)
+
+        # validate data to be loaded
+        _ = self.output_measurements(product_definitions)
 
         groups = [child.fetch_data(fetch_recipe(source_index), product_definitions, **load_settings)
                   for source_index, child in enumerate(self.children)]
