@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Need pip to install more python packages later.
     # The libdpkg-perl is needed to build pyproj
     python3-pip python3-wheel libdpkg-perl \
+    # Git to work out the ODC version number
+    git \
     # G++ because GDAL decided it needed compiling
     g++ \
     && rm -rf /var/lib/apt/lists/*
