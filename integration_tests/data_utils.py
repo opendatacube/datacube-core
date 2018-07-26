@@ -145,15 +145,18 @@ def generate_test_scenes(tmpdir, num=2):
 
 
 def write_test_scene_to_disk(dataset_dict, tmpdir):
+    tmpdir = Path(str(tmpdir))
     # Make directory name
     dir_name = dataset_dict['platform']['code'] + dataset_dict['id'][:5]
 
     # Create directory
-    new_dir = tmpdir.mkdir(dir_name)
+    new_dir = tmpdir / dir_name
+    new_dir.mkdir()
 
     _make_geotiffs(new_dir, dataset_dict)
-    dataset_file = new_dir.join('agdc-metadata.yaml')
-    dataset_file.write(yaml.safe_dump(dataset_dict))
+    dataset_file = new_dir / 'agdc-metadata.yaml'
+    with dataset_file.open('w') as out:
+        yaml.safe_dump(dataset_dict, out)
     return dataset_file
 
 
