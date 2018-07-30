@@ -19,7 +19,6 @@ import xarray
 import numpy
 
 from datacube import Datacube
-from datacube.compat import string_types
 from datacube.model import Measurement, Range
 from datacube.model.utils import xr_apply
 from datacube.api.query import Query, query_group_by, query_geopolygon
@@ -254,10 +253,24 @@ class BasicProduct(VirtualProduct):
 
 
 class Transformation(ABC):
+    """
+    A user-defined on-the-fly data transformation.
+
+    The data coming in and out of the `compute` method are `xarray.Dataset` objects.
+    The measurements are stored as `xarray.DataArray` objects inside it.
+
+    The `measurements` method transforms the list of `datacube.model.Measurement` objects
+    describing the measurements of the input data into the list of
+    `datacube.model.Measurement` objects describing the measurements of the output data
+    produced by the `compute` method.
+    """
+
     @abstractmethod
     def measurements(self, input_measurements):
         """
         Returns the list of output measurements from this transformation.
+        Assumes the `data` provided to `compute` will have measurements
+        given by the list `input_measurements`.
         """
         pass
 

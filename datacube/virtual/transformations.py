@@ -1,6 +1,5 @@
 # TODO: nice repr for the built-in transformations?
 
-import numpy
 import xarray
 
 from datacube.storage.masking import make_mask as make_mask_prim
