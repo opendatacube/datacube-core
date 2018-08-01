@@ -5,7 +5,7 @@ import toolz
 from types import SimpleNamespace
 
 from datacube.model import Dataset
-from datacube.utils import changes, InvalidDocException, SimpleDocNav
+from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
 
@@ -152,7 +152,7 @@ def dataset_resolver(index,
 
             for uuid in lineage_uuids:
                 if uuid in db_dss:
-                    ok, err = check_consistent(ds_by_uuid[uuid].doc_without_lineage_sources,
+                    ok, err = check_consistent(jsonify_document(ds_by_uuid[uuid].doc_without_lineage_sources),
                                                db_dss[uuid].metadata_doc)
                     if not ok:
                         bad_lineage.append((uuid, err))
