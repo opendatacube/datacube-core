@@ -118,7 +118,8 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             existing = set(connection.datasets_intersection(ids_))
 
-        return [x in existing for x in ids_]
+        return [x in existing for x in
+                map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
     def add(self, dataset, with_lineage=None, **kwargs):
         """

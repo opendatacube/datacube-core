@@ -163,6 +163,9 @@ def test_has_dataset(index, telemetry_dataset):
     assert not index.datasets.has(UUID('f226a278-e422-11e6-b501-185e0f80a5c0'))
     assert not index.datasets.has('f226a278-e422-11e6-b501-185e0f80a5c0')
 
+    assert index.datasets.bulk_has([_telemetry_uuid, UUID('f226a278-e422-11e6-b501-185e0f80a5c0')]) == [True, False]
+    assert index.datasets.bulk_has([str(_telemetry_uuid), 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
+
 
 def test_get_dataset(index, telemetry_dataset):
     # type: (Index, Dataset) -> None
