@@ -1,3 +1,4 @@
+import math
 import yaml
 import toolz
 
@@ -303,6 +304,45 @@ metadata:
                    str(prefix/fname)])
 
     assert index.datasets.has(ds.id) is True
+
+
+def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner):
+    p = dataset_add_configs
+    index = index_empty
+
+    clirunner(['metadata_type', 'add', p.metadata])
+    clirunner(['product', 'add', p.products])
+
+    mk = dataset_maker(0)
+
+    c = mk('C', product_type='C',
+           val_is_nan=math.nan,
+           val_is_inf=math.inf,
+           val_is_neginf=-math.inf)
+
+    b = mk('B', sources={'bc': c}, product_type='B')
+    a = mk('A', sources={'ac': c}, product_type='A')
+
+    prefix = write_files({
+        'dataset.yml': yaml.safe_dump_all([a, b]),
+    })
+
+    r = clirunner(['dataset', 'add',
+                   '--auto-add-lineage',
+                   '--verify-lineage',
+                   str(prefix/'dataset.yml')])
+
+    assert "ERROR" not in r.output
+
+    a, b, c = [SimpleDocNav(v) for v in (a, b, c)]
+
+    assert index.datasets.bulk_has([a.id, b.id, c.id]) == [True, True, True]
+
+    c_doc = index.datasets.get(c.id).metadata_doc
+
+    assert c_doc['val_is_nan'] == 'NaN'
+    assert c_doc['val_is_inf'] == 'Infinity'
+    assert c_doc['val_is_neginf'] == '-Infinity'
 
 
 def test_dataset_add_inconsistent_measurements(dataset_add_configs, index_empty, clirunner):
