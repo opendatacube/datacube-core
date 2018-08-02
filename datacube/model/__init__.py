@@ -487,7 +487,7 @@ class DatasetType(object):
         for m in self.measurements:
             if measurement == m:
                 return measurement
-            elif measurement in self.measurements[m]['aliases']:
+            elif measurement in self.measurements[m].get('aliases', []):
                 return m
         raise KeyError(measurement)
 
