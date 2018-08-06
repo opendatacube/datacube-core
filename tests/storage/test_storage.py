@@ -135,15 +135,29 @@ def test_mixed_result_when_first_source_partially_empty():
     assert (output_data == [[1, 1], [2, 2]]).all()
 
 
-class FakeBandDataSource(object):
-    def __init__(self, value, *args, **kwargs):
-        self.value = value
+def test_mixed_result_when_first_source_partially_empty_with_nan_nodata():
+    crs = geometry.CRS('EPSG:4326')
+    shape = (2, 2)
+    no_data = np.nan
 
+    source1 = FakeDatasetSource([[1, 1], [no_data, no_data]], crs=crs)
+    source2 = FakeDatasetSource([[2, 2], [2, 2]], crs=crs)
+    sources = [source1, source2]
+
+    output_data = np.full(shape, fill_value=no_data, dtype='float64')
+    reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
+
+    assert (output_data == [[1, 1], [2, 2]]).all()
+
+
+class FakeBandDataSource(object):
+    def __init__(self, value, nodata, shape=(2, 2), *args, **kwargs):
+        self.value = value
         self.crs = geometry.CRS('EPSG:4326')
         self.transform = Affine.identity()
-        self.dtype = np.dtype('int16')
-        self.shape = (2, 2)
-        self.nodata = -999
+        self.dtype = np.int16 if not np.isnan(nodata) else np.float64
+        self.shape = shape
+        self.nodata = nodata
 
     def read(self, window=None, out_shape=None):
         """Read data in the native format, returning a numpy array
@@ -155,7 +169,7 @@ class FakeBandDataSource(object):
 
 
 class FakeDatasetSource(DataSource):
-    def __init__(self, value, bandnumber=1, nodata=None, shape=(2, 2), crs=None, transform=None,
+    def __init__(self, value, bandnumber=1, nodata=-999, shape=(2, 2), crs=None, transform=None,
                  band_source_class=FakeBandDataSource):
         super(FakeDatasetSource, self).__init__()
         self.value = value
@@ -164,6 +178,7 @@ class FakeDatasetSource(DataSource):
         self.transform = transform
         self.band_source_class = band_source_class
         self.shape = shape
+        self.nodata = nodata
 
     def get_bandnumber(self, src):
         return self.bandnumber
@@ -181,7 +196,7 @@ class FakeDatasetSource(DataSource):
     @contextmanager
     def open(self):
         """Context manager which returns a :class:`BandDataSource`"""
-        yield self.band_source_class(value=self.value, shape=self.shape)
+        yield self.band_source_class(value=self.value, nodata=self.nodata, shape=self.shape)
 
 
 class BrokenBandDataSource(FakeBandDataSource):
@@ -443,8 +458,11 @@ def test_read_from_fake_source():
 
 
 class TestRasterDataReading(object):
-    def xtest_failed_data_read(self, make_sample_geotiff):
-        sample_geotiff_path, geobox, written_data = make_sample_geotiff
+    @pytest.mark.parametrize("dst_nodata", [
+        np.nan, float("nan"), -999
+    ])
+    def xtest_failed_data_read(self, make_sample_geotiff, dst_nodata):
+        sample_geotiff_path, geobox, written_data = make_sample_geotiff(dst_nodata)
 
         src_transform = Affine(25.0, 0.0, 1200000.0,
                                0.0, -25.0, -4200000.0)
@@ -462,14 +480,16 @@ class TestRasterDataReading(object):
 
         assert np.all(written_data == dest)
 
-    def test_read_with_rasterfiledatasource(self, make_sample_geotiff):
-        sample_geotiff_path, geobox, written_data = make_sample_geotiff
+    @pytest.mark.parametrize("dst_nodata", [
+        np.nan, float("nan"), -999
+    ])
+    def test_read_with_rasterfiledatasource(self, make_sample_geotiff, dst_nodata):
+        sample_geotiff_path, geobox, written_data = make_sample_geotiff(dst_nodata)
 
         source = RasterFileDataSource(str(sample_geotiff_path), 1)
 
         dest = np.zeros_like(written_data)
         dst_transform = geobox.transform
-        dst_nodata = -999
         dst_projection = geometry.CRS('EPSG:3577')
         dst_resampling = Resampling.nearest
 
@@ -492,7 +512,10 @@ class TestRasterDataReading(object):
         dest = np.zeros_like(written_data)
 
         read_from_source(source, dest, offset_transform, dst_nodata, dst_projection, dst_resampling)
-        assert np.all(dst_nodata == dest)
+        if np.isnan(dst_nodata):
+            assert np.all(np.isnan(dest))
+        else:
+            assert np.all(dst_nodata == dest)
 
     @pytest.mark.parametrize("dst_transform", [
         Affine(25.0, 0.0, 1273275.0, 0.0, -25.0, -4172325.0),
@@ -573,24 +596,30 @@ def make_sample_netcdf(tmpdir):
 @pytest.fixture
 def make_sample_geotiff(tmpdir):
     """ Make a sample geotiff, filled with random data, and twice as tall as it is wide. """
-    sample_geotiff = str(tmpdir.mkdir('tiffs').join('sample.tif'))
+    def internal_make_sample_geotiff(nodata=-999):
+        sample_geotiff = str(tmpdir.mkdir('tiffs').join('sample.tif'))
 
-    geobox = GeoBox(100, 200, affine=Affine(25.0, 0.0, 0, 0.0, -25.0, 0), crs=CRS('EPSG:3577'))
+        geobox = GeoBox(100, 200, affine=Affine(25.0, 0.0, 0, 0.0, -25.0, 0), crs=CRS('EPSG:3577'))
+        if np.isnan(nodata):
+            out_dtype = 'float64'
+            sample_data = 10000 * np.random.random_sample(size=geobox.shape)
+        else:
+            out_dtype = 'int16'
+            sample_data = np.random.randint(10000, size=geobox.shape, dtype=out_dtype)
+        rio_args = {
+            'height': geobox.height,
+            'width': geobox.width,
+            'count': 1,
+            'dtype': out_dtype,
+            'crs': 'EPSG:3577',
+            'transform': geobox.transform,
+            'nodata': nodata
+        }
+        with rasterio.open(sample_geotiff, 'w', driver='GTiff', **rio_args) as dst:
+            dst.write(sample_data, 1)
 
-    sample_data = np.random.randint(10000, size=geobox.shape, dtype='int16')
-    rio_args = {
-        'height': geobox.height,
-        'width': geobox.width,
-        'count': 1,
-        'dtype': 'int16',
-        'crs': 'EPSG:3577',
-        'transform': geobox.transform,
-        'nodata': -999
-    }
-    with rasterio.open(sample_geotiff, 'w', driver='GTiff', **rio_args) as dst:
-        dst.write(sample_data, 1)
-
-    return sample_geotiff, geobox, sample_data
+        return sample_geotiff, geobox, sample_data
+    return internal_make_sample_geotiff
 
 
 _EXAMPLE_METADATA_TYPE = MetadataType(
