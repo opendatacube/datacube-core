@@ -7,6 +7,7 @@ from datacube.index._datasets import DatasetResource
 from datacube.index._metadata_types import MetadataTypeResource, default_metadata_type_docs
 from datacube.index._products import ProductResource
 from datacube.index._users import UserResource
+from datacube.model import MetadataType
 
 _LOG = logging.getLogger(__name__)
 
@@ -55,6 +56,10 @@ class Index(object):
                                     validate_connection=validate_connection)
         return cls(db)
 
+    @classmethod
+    def get_dataset_fields(cls, doc):
+        return PostgresDb.get_dataset_fields(doc)
+
     def init_db(self, with_default_types=True, with_permissions=True):
         is_new = self._db.init(with_permissions=with_permissions)
 
@@ -90,6 +95,16 @@ class DefaultIndexDriver(object):
     @staticmethod
     def connect_to_index(config, application_name=None, validate_connection=True):
         return Index.from_config(config, application_name, validate_connection)
+
+    @staticmethod
+    def metadata_type_from_doc(definition):
+        """
+        :param dict definition:
+        :rtype: datacube.model.MetadataType
+        """
+        MetadataType.validate(definition)
+        return MetadataType(definition,
+                            dataset_search_fields=Index.get_dataset_fields(definition))
 
 
 def index_driver_init():

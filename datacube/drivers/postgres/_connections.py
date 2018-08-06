@@ -235,7 +235,8 @@ class PostgresDb(object):
     def give_me_a_connection(self):
         return self._engine.connect()
 
-    def get_dataset_fields(self, metadata_type_definition):
+    @classmethod
+    def get_dataset_fields(cls, metadata_type_definition):
         return _api.get_dataset_fields(metadata_type_definition)
 
     def __repr__(self):
