@@ -159,7 +159,8 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
                 _LOG.debug('Failed Read: %s', src, exc_info=1)
                 return
             dest = dest[offset[0]:offset[0] + tmp.shape[0], offset[1]:offset[1] + tmp.shape[1]]
-            numpy.copyto(dest, tmp, where=(tmp != src.nodata))
+            where_valid_data = (tmp != src.nodata) if not numpy.isnan(src.nodata) else ~numpy.isnan(tmp)
+            numpy.copyto(dest, tmp, where=where_valid_data)
         else:
             if dest.dtype == numpy.dtype('int8'):
                 dest = dest.view(dtype='uint8')
@@ -192,7 +193,8 @@ def reproject_and_fuse(datasources, destination, dst_transform, dst_projection, 
         :type dest: numpy.ndarray
         :type src: numpy.ndarray
         """
-        numpy.copyto(dest, src, where=(dest == dst_nodata))
+        where_nodata = (dest == dst_nodata) if not numpy.isnan(dst_nodata) else numpy.isnan(dest)
+        numpy.copyto(dest, src, where=where_nodata)
 
     fuse_func = fuse_func or copyto_fuser
 
