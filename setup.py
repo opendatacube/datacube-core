@@ -104,7 +104,7 @@ setup(
         'pypeg2',
         'python-dateutil',
         'pyyaml',
-        'rasterio~=1.0',
+        'rasterio>=1.0.2',  # Multi-band re-project fixed in that version
         'singledispatch',
         'sqlalchemy',
         'toolz',
