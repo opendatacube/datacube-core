@@ -739,3 +739,13 @@ class GridSpec(object):
 
     def __repr__(self):
         return self.__str__()
+
+
+def metadata_from_doc(doc):
+    """Construct MetadataType that is not tied to any particular db index. This is
+    useful when there is a need to interpret dataset metadata documents
+    according to metadata spec.
+    """
+    from .fields import get_dataset_fields
+    MetadataType.validate(doc)
+    return MetadataType(doc, get_dataset_fields(doc))
