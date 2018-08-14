@@ -76,6 +76,12 @@ dataset:
        min_offset: [[x,a], [x,b], [x,c], [x,d]]
        max_offset: [[x,a], [x,b], [x,c], [x,d]]
 
+     float_range:
+       type: float-range
+       description: float-range is alias for numeric-range
+       min_offset: [[a]]
+       max_offset: [[b]]
+
      ab:
        type: integer-range
        min_offset: [[a]]
@@ -133,6 +139,9 @@ def test_get_dataset_range_fields():
     # partially missing Range
     assert xx['ab'].extract(dict(a=3)) == Range(3, None)
     assert xx['ab'].extract(dict(b=4)) == Range(None, 4)
+
+    # float-range conversion
+    assert xx['float_range'].type_name == 'numeric-range'
 
 
 def test_metadata_from_doc():

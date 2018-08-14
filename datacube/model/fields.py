@@ -89,6 +89,7 @@ def parse_search_field(doc, name=''):
 
     if raw_type == 'float':  # float-range is supposed to be supported, but not just float?
         raw_type = 'numeric'
+        _type = 'numeric-range'
 
     if raw_type not in parsers:
         raise ValueError('Unsupported search field type: ' + str(_type))
