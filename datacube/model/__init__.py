@@ -462,27 +462,24 @@ class DatasetType(object):
 
         :rtype: GridSpec
         """
-        if 'storage' not in self.definition:
+        storage = self.definition.get('storage')
+        if storage is None:
             return None
-        storage = self.definition['storage']
 
-        if 'crs' not in storage:
+        crs = storage.get('crs')
+        if crs is None:
             return None
-        crs = geometry.CRS(str(storage['crs']).strip())
 
-        tile_size = None
-        if 'tile_size' in storage:
-            tile_size = [storage['tile_size'][dim] for dim in crs.dimensions]
+        crs = geometry.CRS(str(crs).strip())
 
-        resolution = None
-        if 'resolution' in storage:
-            resolution = [storage['resolution'][dim] for dim in crs.dimensions]
+        def extract_point(name):
+            xx = storage.get(name, None)
+            return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
 
-        origin = None
-        if 'origin' in storage:
-            origin = [storage['origin'][dim] for dim in crs.dimensions]
+        gs_params = {name: extract_point(name)
+                     for name in ('tile_size', 'resolution', 'origin')}
 
-        return GridSpec(crs=crs, tile_size=tile_size, resolution=resolution, origin=origin)
+        return GridSpec(crs=crs, **gs_params)
 
     def canonical_measurement(self, measurement):
         for m in self.measurements:
