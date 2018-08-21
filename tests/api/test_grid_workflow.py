@@ -48,6 +48,10 @@ def test_gridworkflow():
     # test backend : that it finds the expected cell/dataset
     assert list(gw.cell_observations(**query).keys()) == [(1, -2)]
 
+    # again but with geopolygon
+    assert list(gw.cell_observations(**query,
+                                     geopolygon=gridspec.tile_geobox((1, -2)).extent).keys()) == [(1, -2)]
+
     # test frontend
     assert len(gw.list_tiles(**query)) == 1
 
