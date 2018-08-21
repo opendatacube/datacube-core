@@ -666,7 +666,7 @@ class GridSpec(object):
     def tiles(self, bounds):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
-        the grid and inside the specified `bounds`.
+        the grid and overlapping with the specified `bounds` rectangle.
 
         .. note::
 
@@ -686,7 +686,7 @@ class GridSpec(object):
     def tiles_inside_geopolygon(self, geopolygon, tile_buffer=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
-        the grid and inside the specified `polygon`.
+        the grid and overlapping with the specified `geopolygon`.
 
         .. note::
 
@@ -694,7 +694,8 @@ class GridSpec(object):
            dimension order.
 
         :param geometry.Geometry geopolygon: Polygon to tile
-        :param tile_buffer:
+        :param tile_buffer: Optional <float,float> tuple, (extra padding for the query
+                            in native units of this GridSpec)
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         geopolygon = geopolygon.to_crs(self.crs)
