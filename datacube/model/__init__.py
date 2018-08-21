@@ -683,7 +683,7 @@ class GridSpec(object):
                 tile_index = (x, y)
                 yield tile_index, self.tile_geobox(tile_index)
 
-    def tiles_inside_geopolygon(self, geopolygon, tile_buffer=(0, 0)):
+    def tiles_inside_geopolygon(self, geopolygon, tile_buffer=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and inside the specified `polygon`.
@@ -697,15 +697,15 @@ class GridSpec(object):
         :param tile_buffer:
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
-        result = []
         geopolygon = geopolygon.to_crs(self.crs)
-        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox.buffered(*tile_buffer)):
-            if tile_buffer:
-                tile_geobox = tile_geobox.buffered(*tile_buffer)
+        bbox = geopolygon.boundingbox
+        bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
+
+        for tile_index, tile_geobox in self.tiles(bbox):
+            tile_geobox = tile_geobox.buffered(*tile_buffer) if tile_buffer else tile_geobox
 
             if intersects(tile_geobox.extent, geopolygon):
-                result.append((tile_index, tile_geobox))
-        return result
+                yield (tile_index, tile_geobox)
 
     @staticmethod
     def grid_range(lower, upper, step):
