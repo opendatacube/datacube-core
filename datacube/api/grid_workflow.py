@@ -155,7 +155,7 @@ class GridWorkflow(object):
             grid_spec = product and product.grid_spec
         self.grid_spec = grid_spec
 
-    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=(0, 0), **indexers):
+    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=None, **indexers):
         """
         List datasets, grouped by cell.
 
@@ -175,7 +175,10 @@ class GridWorkflow(object):
 
             :class:`datacube.api.query.Query`
         """
-        if tile_buffer != (0, 0) and geopolygon is not None:
+        # pylint: disable=too-many-locals
+        # TODO: split this method into 3: cell/polygon/unconstrained querying
+
+        if tile_buffer is not None and geopolygon is not None:
             raise ValueError('Cannot process tile_buffering and geopolygon together.')
         cells = {}
 
@@ -206,8 +209,10 @@ class GridWorkflow(object):
                     # Go through our datasets and see which tiles each dataset produces, and whether they intersect
                     # our query geopolygon.
                     dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
-                    for tile_index, tile_geobox in self.grid_spec.tiles(
-                            dataset_extent.boundingbox.buffered(*tile_buffer)):
+                    bbox = dataset_extent.boundingbox
+                    bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
+
+                    for tile_index, tile_geobox in self.grid_spec.tiles(bbox):
                         if tile_index in query_tiles and intersects(tile_geobox.extent, dataset_extent):
                             add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
