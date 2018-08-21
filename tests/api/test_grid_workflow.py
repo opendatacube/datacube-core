@@ -1,4 +1,4 @@
-
+import pytest
 import numpy
 from datacube.model import GridSpec
 from datacube.utils import geometry
@@ -51,6 +51,10 @@ def test_gridworkflow():
     # again but with geopolygon
     assert list(gw.cell_observations(**query,
                                      geopolygon=gridspec.tile_geobox((1, -2)).extent).keys()) == [(1, -2)]
+
+    with pytest.raises(ValueError):
+        list(gw.cell_observations(**query, tile_buffer=(1, 1),
+                                  geopolygon=gridspec.tile_geobox((1, -2)).extent).keys())
 
     # test frontend
     assert len(gw.list_tiles(**query)) == 1
