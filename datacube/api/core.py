@@ -17,7 +17,6 @@ try:
     import SharedArray as sa
 except ImportError:
     pass
-from affine import Affine
 from dask import array as da
 
 try:
@@ -29,7 +28,7 @@ from six.moves import zip
 from datacube.config import LocalConfig
 from datacube.compat import string_types
 from datacube.storage.storage import reproject_and_fuse
-from datacube.utils import geometry, intersects, data_resolution_and_offset
+from datacube.utils import geometry, intersects
 from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
@@ -581,6 +580,7 @@ def apply_aliases(data, product, measurements):
 
     return data.rename({product.canonical_measurement(provided_name): provided_name
                         for provided_name in measurements})
+
 
 def output_geobox(like=None, output_crs=None, resolution=None, align=None,
                   grid_spec=None, datasets=None, **query):
