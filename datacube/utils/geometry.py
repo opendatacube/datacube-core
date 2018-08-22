@@ -367,6 +367,7 @@ class Geometry(object):
     intersects = _wrap_binary_bool(ogr.Geometry.Intersects)
     touches = _wrap_binary_bool(ogr.Geometry.Touches)
     within = _wrap_binary_bool(ogr.Geometry.Within)
+    overlaps = _wrap_binary_bool(ogr.Geometry.Overlaps)
 
     difference = _wrap_binary_geom(ogr.Geometry.Difference)
     intersection = _wrap_binary_geom(ogr.Geometry.Intersection)
