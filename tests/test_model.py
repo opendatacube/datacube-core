@@ -17,6 +17,15 @@ def test_gridspec():
     assert numpy.isclose(cells[(2, 0)].coordinates['longitude'].values, numpy.linspace(12.05, 12.95, num=10)).all()
     assert numpy.isclose(cells[(2, 0)].coordinates['latitude'].values, numpy.linspace(10.95, 10.05, num=10)).all()
 
+    # check geobox_cache
+    cache = {}
+    poly = gs.tile_geobox((3, 4)).extent
+    (c1, gbox1),  = list(gs.tiles_inside_geopolygon(poly, geobox_cache=cache))
+    (c2, gbox2),  = list(gs.tiles_inside_geopolygon(poly, geobox_cache=cache))
+
+    assert c1 == (3, 4) and c2 == c1
+    assert gbox1 is gbox2
+
 
 def test_gridspec_upperleft():
     """ Test to ensure grid indexes can be counted correctly from bottom left or top left
