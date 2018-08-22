@@ -660,7 +660,7 @@ class GridSpec(object):
         geobox = geometry.GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
         return geobox
 
-    def tiles(self, bounds):
+    def tiles(self, bounds, geobox_cache=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `bounds` rectangle.
@@ -671,16 +671,27 @@ class GridSpec(object):
            dimension order.
 
         :param BoundingBox bounds: Boundary coordinates of the required grid
+        :param dict geobox_cache: Optional cache to re-use geoboxes instead of creating new one each time
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
+        def geobox(tile_index):
+            if geobox_cache is None:
+                return self.tile_geobox(tile_index)
+
+            gbox = geobox_cache.get(tile_index)
+            if gbox is None:
+                gbox = self.tile_geobox(tile_index)
+                geobox_cache[tile_index] = gbox
+            return gbox
+
         tile_size_y, tile_size_x = self.tile_size
         tile_origin_y, tile_origin_x = self.origin
         for y in GridSpec.grid_range(bounds.bottom - tile_origin_y, bounds.top - tile_origin_y, tile_size_y):
             for x in GridSpec.grid_range(bounds.left - tile_origin_x, bounds.right - tile_origin_x, tile_size_x):
                 tile_index = (x, y)
-                yield tile_index, self.tile_geobox(tile_index)
+                yield tile_index, geobox(tile_index)
 
-    def tiles_inside_geopolygon(self, geopolygon, tile_buffer=None):
+    def tiles_inside_geopolygon(self, geopolygon, tile_buffer=None, geobox_cache=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `geopolygon`.
@@ -693,13 +704,14 @@ class GridSpec(object):
         :param geometry.Geometry geopolygon: Polygon to tile
         :param tile_buffer: Optional <float,float> tuple, (extra padding for the query
                             in native units of this GridSpec)
+        :param dict geobox_cache: Optional cache to re-use geoboxes instead of creating new one each time
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         geopolygon = geopolygon.to_crs(self.crs)
         bbox = geopolygon.boundingbox
         bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
 
-        for tile_index, tile_geobox in self.tiles(bbox):
+        for tile_index, tile_geobox in self.tiles(bbox, geobox_cache):
             tile_geobox = tile_geobox.buffered(*tile_buffer) if tile_buffer else tile_geobox
 
             if intersects(tile_geobox.extent, geopolygon):

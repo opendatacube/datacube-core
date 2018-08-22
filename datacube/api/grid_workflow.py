@@ -198,12 +198,13 @@ class GridWorkflow(object):
             return cells
         else:
             datasets, query = self._find_datasets(geopolygon, indexers)
+            geobox_cache = {}
 
             if query.geopolygon:
                 # Get a rough region of tiles
                 query_tiles = set(
                     tile_index for tile_index, tile_geobox in
-                    self.grid_spec.tiles_inside_geopolygon(query.geopolygon))
+                    self.grid_spec.tiles_inside_geopolygon(query.geopolygon, geobox_cache=geobox_cache))
 
                 for dataset in datasets:
                     # Go through our datasets and see which tiles each dataset produces, and whether they intersect
@@ -212,14 +213,15 @@ class GridWorkflow(object):
                     bbox = dataset_extent.boundingbox
                     bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
 
-                    for tile_index, tile_geobox in self.grid_spec.tiles(bbox):
+                    for tile_index, tile_geobox in self.grid_spec.tiles(bbox, geobox_cache=geobox_cache):
                         if tile_index in query_tiles and intersects(tile_geobox.extent, dataset_extent):
                             add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             else:
                 for dataset in datasets:
                     for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent,
-                                                                                          tile_buffer=tile_buffer):
+                                                                                          tile_buffer=tile_buffer,
+                                                                                          geobox_cache=geobox_cache):
                         add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             return cells
