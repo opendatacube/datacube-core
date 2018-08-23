@@ -346,8 +346,7 @@ class Datacube(object):
         datasets = self.index.datasets.search(limit=limit,
                                               **query.search_terms)
 
-        for dataset in select_datasets_inside_polygon(datasets, query.geopolygon):
-            yield dataset
+        return datasets if query.geopolygon is None else select_datasets_inside_polygon(datasets, query.geopolygon)
 
     @staticmethod
     def product_sources(datasets, group_by):
@@ -614,8 +613,9 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
 def select_datasets_inside_polygon(datasets, polygon):
     # Check against the bounding box of the original scene, can throw away some portions
+    assert polygon is not None
     for dataset in datasets:
-        if polygon is None or intersects(polygon.to_crs(dataset.crs), dataset.extent):
+        if intersects(polygon.to_crs(dataset.crs), dataset.extent):
             yield dataset
 
 
