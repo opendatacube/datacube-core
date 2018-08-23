@@ -437,7 +437,7 @@ class DatasetResource(object):
             was_restored = connection.restore_location(id_, uri)
             return was_restored
 
-    def _make(self, dataset_res, full_info=False):
+    def _make(self, dataset_res, full_info=False, product=None):
         """
         :rtype Dataset
 
@@ -448,8 +448,10 @@ class DatasetResource(object):
         else:
             uris = []
 
+        product = product or self.types.get(dataset_res.dataset_type_ref)
+
         return Dataset(
-            type_=self.types.get(dataset_res.dataset_type_ref),
+            type_=product,
             metadata_doc=dataset_res.metadata,
             uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,
@@ -457,11 +459,11 @@ class DatasetResource(object):
             archived_time=dataset_res.archived
         )
 
-    def _make_many(self, query_result):
+    def _make_many(self, query_result, product=None):
         """
         :rtype list[Dataset]
         """
-        return (self._make(dataset) for dataset in query_result)
+        return (self._make(dataset, product=product) for dataset in query_result)
 
     def search_by_metadata(self, metadata):
         """
@@ -485,11 +487,10 @@ class DatasetResource(object):
         :rtype: __generator[Dataset]
         """
         source_filter = query.pop('source_filter', None)
-        for _, datasets in self._do_search_by_product(query,
-                                                      source_filter=source_filter,
-                                                      limit=limit):
-            for dataset in self._make_many(datasets):
-                yield dataset
+        for product, datasets in self._do_search_by_product(query,
+                                                            source_filter=source_filter,
+                                                            limit=limit):
+            yield from self._make_many(datasets, product)
 
     def search_by_product(self, **query):
         """
@@ -499,7 +500,7 @@ class DatasetResource(object):
         :rtype: __generator[(DatasetType,  __generator[Dataset])]]
         """
         for product, datasets in self._do_search_by_product(query):
-            yield product, self._make_many(datasets)
+            yield product, self._make_many(datasets, product)
 
     def search_returning(self, field_names, limit=None, **query):
         """
