@@ -147,8 +147,8 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
         array_transform = ~src.transform * dst_transform
         # if the CRS is the same use native reads if possible (NN or 1:1 scaling)
         can_use_native_read = (src.crs == dst_projection and
-                                  _no_scale(array_transform) and
-                                  (resampling == Resampling.nearest or _no_fractional_translate(array_transform)))
+                               _no_scale(array_transform) and
+                               (resampling == Resampling.nearest or _no_fractional_translate(array_transform)))
         if can_use_native_read:
             dest.fill(dst_nodata)
             try:
