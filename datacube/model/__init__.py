@@ -319,12 +319,12 @@ class Dataset(object):
 class Measurement(dict):
     REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
     OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
-    FILTER_ATTR_KEYS = ('name', 'dtype')
+    FILTER_ATTR_KEYS = ('name', 'dtype', 'aliases')
 
     def __init__(self, **measurement_dict):
         missing_keys = set(self.REQUIRED_KEYS) - set(measurement_dict)
         if missing_keys:
-            raise ValueError("Measurent required keys missing: {}".format(missing_keys))
+            raise ValueError("Measurement required keys missing: {}".format(missing_keys))
 
         measurement_data = {key: value for key, value in measurement_dict.items()
                             if key in self.REQUIRED_KEYS + self.OPTIONAL_KEYS}
