@@ -112,7 +112,7 @@ def _calc_offsets2(off, scale, src_size, dst_size):
         return _calc_offsets_impl(off, scale, src_size, dst_size)
 
 
-def _read_decimated(array_transform, src, dest_shape):
+def _read_native(array_transform, src, dest_shape):
     dy_dx = (array_transform.f, array_transform.c)
     sy_sx = (array_transform.e, array_transform.a)
     read, write, read_shape, write_shape = zip(*map(_calc_offsets2, dy_dx, sy_sx, src.shape, dest_shape))
@@ -152,7 +152,7 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
         if can_use_decimated_read:
             dest.fill(dst_nodata)
             try:
-                tmp, offset, _ = _read_decimated(array_transform, src, dest.shape)
+                tmp, offset, _ = _read_native(array_transform, src, dest.shape)
                 if tmp is None:
                     return
             except ValueError:
