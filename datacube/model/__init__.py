@@ -301,7 +301,7 @@ class Dataset(object):
     def __str__(self):
         return "Dataset <id={id} type={type} location={loc}>".format(id=self.id,
                                                                      type=self.type.name,
-                                                                     loc=self.local_path)
+                                                                     loc=self.uris[0])
 
     def __repr__(self):
         return self.__str__()
