@@ -299,9 +299,10 @@ class Dataset(object):
         return hash(self.id)
 
     def __str__(self):
+        str_loc = 'not available' if not self.uris else self.uris[0]
         return "Dataset <id={id} type={type} location={loc}>".format(id=self.id,
                                                                      type=self.type.name,
-                                                                     loc=self.uris[0])
+                                                                     loc=str_loc)
 
     def __repr__(self):
         return self.__str__()
