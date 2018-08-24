@@ -1,0 +1,7 @@
+.appveyor
+.circleci
+.github
+.travis
+contrib
+examples
+integration_tests

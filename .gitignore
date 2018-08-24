@@ -43,6 +43,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis
+.pytest_cache
 
 # Translations
 *.mo
@@ -66,7 +67,9 @@ target/
 docs/html/
 
 # Generated Documentation
-docs/dev/generate/
+generate/
+docs/notebooks/
 
 #Local Visual Studio Code configurations
 .vscode/
+

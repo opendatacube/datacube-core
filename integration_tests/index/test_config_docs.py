@@ -5,16 +5,18 @@ Module
 from __future__ import absolute_import
 
 import copy
+import json
 
 import pytest
 import yaml
 
 from datacube.drivers.postgres._fields import NumericRangeDocField, PgField
 from datacube.index.index import Index
-from datacube.index.metadata_types import default_metadata_type_docs
+from datacube.index._metadata_types import default_metadata_type_docs
 from datacube.model import MetadataType, DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes
+import datacube.scripts.cli_app
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',
@@ -53,7 +55,7 @@ _DATASET_METADATA = {
 
 def test_metadata_indexes_views_exist(initialised_postgres_db, default_metadata_type):
     """
-    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
+    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     :type default_metadata_type: datacube.model.MetadataType
     """
     # Metadata indexes should no longer exist.
@@ -65,7 +67,7 @@ def test_metadata_indexes_views_exist(initialised_postgres_db, default_metadata_
 
 def test_dataset_indexes_views_exist(initialised_postgres_db, ls5_telem_type):
     """
-    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
+    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     :type ls5_telem_type: datacube.model.DatasetType
     """
     assert ls5_telem_type.name == 'ls5_telem_test'

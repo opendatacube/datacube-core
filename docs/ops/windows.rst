@@ -18,8 +18,8 @@ Manual Installation (Fallback)
 
 Only follow these steps if the Miniconda installation does not suit your needs.
 
-Python Python 3 environment
-------------------------------------
+Python 3 environment
+--------------------
 
 1. Download and install a standard python release from http://www.python.org/
 . The :term:`AGDC` supports 3.5 or newer.
@@ -65,7 +65,7 @@ On windows systems by default there are no ready configured compilers, and so
 libraries needed for some python modules must be obtained in precompiled 
 (binary) form.
 
-Download and install binary wheels from http://www.lfd.uci.edu/~gohlke/pythonlibs/
+Download and install binary wheels from https://www.lfd.uci.edu/~gohlke/pythonlibs/
 
 You will need to download at least:
 

@@ -15,148 +15,12 @@
 from __future__ import absolute_import, division, print_function
 
 import datetime
+import pandas
 
 import pytest
-from dateutil import tz
 
-from ..util import isclose
-
-from datacube.api.query import Query, DescriptorQuery, _datetime_to_timestamp, query_group_by
+from datacube.api.query import Query, _datetime_to_timestamp, query_group_by
 from datacube.model import Range
-
-
-def test_convert_descriptor_query_to_search_query():
-    descriptor_query = {
-        'dimensions': {
-            'latitude': {
-                'range': (-35.5, -36.5),
-            },
-            'longitude': {
-                'range': (148.3, 149.9)
-            },
-            'time': {
-                'range': (datetime.datetime(2001, 5, 7), datetime.datetime(2002, 3, 9))
-            }
-        }
-    }
-    descriptor_query_dimensions = descriptor_query['dimensions']
-    query = DescriptorQuery(descriptor_query)
-    search_query = query.search_terms
-    assert min(descriptor_query_dimensions['latitude']['range']) == search_query['lat'].begin
-    assert max(descriptor_query_dimensions['latitude']['range']) == search_query['lat'].end
-    assert min(descriptor_query_dimensions['longitude']['range']) == search_query['lon'].begin
-    assert max(descriptor_query_dimensions['longitude']['range']) == search_query['lon'].end
-    assert datetime.datetime(2001, 5, 7, tzinfo=tz.tzutc()) == search_query['time'].begin
-    assert datetime.datetime(2002, 3, 9, tzinfo=tz.tzutc()) == search_query['time'].end
-
-
-def test_convert_descriptor_query_to_search_query_with_slices():
-    descriptor_query = {
-        'dimensions': {
-            'latitude': {
-                'range': (-35.5, -36.5),
-                'array_range': (100, 200)
-            },
-            'longitude': {
-                'range': (148.3, 149.9),
-                'array_range': (100, 200)
-            },
-            'time': {
-                'range': (datetime.datetime(2001, 5, 7), datetime.datetime(2002, 3, 9)),
-                'array_range': (5, 10)
-            }
-        }
-    }
-    query = DescriptorQuery(descriptor_query)
-    assert query.slices
-    assert query.slices['latitude'] == slice(100, 200)
-    assert query.slices['longitude'] == slice(100, 200)
-    assert query.slices['time'] == slice(5, 10)
-
-
-def test_convert_descriptor_query_to_search_query_with_groupby():
-    descriptor_query = {
-        'dimensions': {
-            'time': {
-                'range': (datetime.datetime(2001, 5, 7), datetime.datetime(2002, 3, 9)),
-                'group_by': 'solar_day'
-            }
-        }
-    }
-    query = DescriptorQuery(descriptor_query)
-    assert query.group_by
-    assert callable(query.group_by.group_by_func)
-    assert query.group_by.dimension == 'time'
-    assert query.group_by.units == 'seconds since 1970-01-01 00:00:00'
-
-
-def test_convert_descriptor_query_to_search_query_with_crs_conversion():
-    descriptor_query = {
-        'dimensions': {
-            'latitude': {
-                'range': (-3971790.0737348166, -4101004.3359463234),
-                'crs': 'EPSG:3577',
-            },
-            'longitude': {
-                'range': (1458629.8414059384, 1616407.8831088375),
-                'crs': 'EPSG:3577',
-            }
-        }
-    }
-    expected_result = {
-        'lat': Range(-36.6715565808, -35.3276413143),
-        'lon': Range(148.145408153, 150.070966341),
-    }
-    query = DescriptorQuery(descriptor_query)
-    search_query = query.search_terms
-    assert all(map(isclose, search_query['lat'], expected_result['lat']))
-    assert all(map(isclose, search_query['lon'], expected_result['lon']))
-
-
-def test_convert_descriptor_query_to_search_query_with_single_value():
-    descriptor_query = {
-        'dimensions': {
-            'latitude': {
-                'range': -3971790.0737348166,
-                'crs': 'EPSG:3577',
-            },
-            'longitude': {
-                'range': 1458629.8414059384,
-                'crs': 'EPSG:3577',
-            }
-        }
-    }
-    expected_lat = -35.51609212286858
-    expected_lon = 148.1454081528769
-    query = DescriptorQuery(descriptor_query)
-    search_query = query.search_terms
-    assert abs(expected_lat - search_query['lat']) <= 1e-8
-    assert abs(expected_lon - search_query['lon']) <= 1e-8
-
-
-def test_descriptor_handles_bad_input():
-    with pytest.raises(ValueError):
-        descriptor_query = "Not a descriptor"
-        DescriptorQuery(descriptor_query)
-
-    with pytest.raises(ValueError):
-        descriptor_query = ["Not a descriptor"]
-        DescriptorQuery(descriptor_query)
-
-    with pytest.raises(ValueError):
-        descriptor_query = {
-            'dimensions': {
-                'latitude': {
-                    'range': -35,
-                    'crs': 'EPSG:4326',
-                },
-                'longitude': {
-                    'range': 1458629.8414059384,
-                    'crs': 'EPSG:3577',
-                }
-            }
-        }
-        DescriptorQuery(descriptor_query)
 
 
 def test_datetime_to_timestamp():
@@ -220,3 +84,65 @@ def test_query_kwargs():
 
     with pytest.raises(LookupError):
         query_group_by(group_by='magic')
+
+
+def format_test(start_out, end_out):
+    return Range(pandas.to_datetime(start_out, utc=True).to_pydatetime(),
+                 pandas.to_datetime(end_out, utc=True).to_pydatetime())
+
+
+testdata = [
+    ((datetime.datetime(2008, 1, 1), datetime.datetime(2008, 1, 10)),
+     format_test('2008-01-01T00:00:00', '2008-01-10T00:00:00.999999')),
+    ((datetime.datetime(2008, 1, 1), datetime.datetime(2008, 1, 10, 23, 0, 0)),
+     format_test('2008-01-01T00:00:00', '2008-01-10T23:00:00.999999')),
+    ((datetime.datetime(2008, 1, 1), datetime.datetime(2008, 1, 10, 23, 59, 40)),
+     format_test('2008-01-01T00:00:00', '2008-01-10T23:59:40.999999')),
+    (('2008'),
+     format_test('2008-01-01T00:00:00', '2008-12-31T23:59:59.999999')),
+    (('2008', '2008'),
+     format_test('2008-01-01T00:00:00', '2008-12-31T23:59:59.999999')),
+    (('2008', '2009'),
+     format_test('2008-01-01T00:00:00', '2009-12-31T23:59:59.999999')),
+    (('2008-03', '2009'),
+     format_test('2008-03-01T00:00', '2009-12-31T23:59:59.999999')),
+    (('2008-03', '2009-10'),
+     format_test('2008-03-01T00:00', '2009-10-31T23:59:59.999999')),
+    (('2008', '2009-10'),
+     format_test('2008-01-01T00:00', '2009-10-31T23:59:59.999999')),
+    (('2008-03-03', '2008-11'),
+     format_test('2008-03-03T00:00:00', '2008-11-30T23:59:59.999999')),
+    (('2008-11-14', '2008-11-30'),
+     format_test('2008-11-14T00:00:00', '2008-11-30T23:59:59.999999')),
+    (('2008-11-14', '2008-11-29'),
+     format_test('2008-11-14T00:00:00', '2008-11-29T23:59:59.999999')),
+    (('2008-11-14', '2008-11'),
+     format_test('2008-11-14T00:00:00', '2008-11-30T23:59:59.999999')),
+    (('2008-11-14', '2008'),
+     format_test('2008-11-14T00:00:00', '2008-12-31T23:59:59.999999')),
+    (('2008-11-14'),
+     format_test('2008-11-14T00:00:00', '2008-11-14T23:59:59.999999')),
+    (('2008-11-14', '2009-02-02'),
+     format_test('2008-11-14T00:00:00', '2009-02-02T23:59:59.999999')),
+    (('2008-11-14T23:33:57', '2008-11-14 23:33:57'),
+     format_test('2008-11-14T23:33:57', '2008-11-14T23:33:57.999999')),
+    (('2008-11-14 23:33', '2008-11-14 23:34'),
+     format_test('2008-11-14T23:33:00', '2008-11-14T23:34:59.999999')),
+    (('2008-11-14T23:00:00', '2008-11-14 23:35'),
+     format_test('2008-11-14T23:00', '2008-11-14T23:35:59.999999')),
+    (('2008-11-10T11', '2008-11-16 14:01'),
+     format_test('2008-11-10T11:00', '2008-11-16T14:01:59.999999')),
+    ((datetime.date(1995, 1, 1), datetime.date(1999, 1, 1)),
+     format_test('1995-01-01T00:00:00', '1999-01-01T23:59:59.999999')),
+    ((datetime.datetime(2008, 1, 1), datetime.date(2008, 1, 4), datetime.datetime(2008, 1, 10, 23, 59, 40)),
+     format_test('2008-01-01T00:00:00', '2008-01-10T23:59:40.999999')),
+    ((datetime.date(2008, 1, 1)),
+     format_test('2008-01-01T00:00:00', '2008-01-01T23:59:59.999999'))
+]
+
+
+@pytest.mark.parametrize('time_param,expected', testdata)
+def test_time_handling(time_param, expected):
+    query = Query(time=time_param)
+    assert 'time' in query.search_terms
+    assert query.search_terms['time'] == expected

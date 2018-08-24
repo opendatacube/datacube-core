@@ -2,7 +2,7 @@ from __future__ import absolute_import, print_function
 
 import logging
 
-from pkg_resources import iter_entry_points
+from pkg_resources import iter_entry_points, DistributionNotFound
 
 _LOG = logging.getLogger(__name__)
 
@@ -25,11 +25,16 @@ def load_drivers(group):
     """
 
     def safe_load(ep):
-        # pylint: disable=bare-except
+        # pylint: disable=broad-except,bare-except
         try:
-            driver_init = ep.resolve()
-        except:
+            driver_init = ep.load()
+        except DistributionNotFound:
+            # This happens when entry points were marked with extra features,
+            # but extra feature were not requested for installation
+            return None
+        except Exception as e:
             _LOG.warning('Failed to resolve driver %s::%s', group, ep.name)
+            _LOG.warning('Error was: %s', repr(e))
             return None
 
         try:

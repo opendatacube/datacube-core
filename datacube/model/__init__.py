@@ -14,7 +14,7 @@ from uuid import UUID
 from affine import Affine
 
 from datacube.compat import urlparse
-from datacube.utils import geometry
+from datacube.utils import geometry, without_lineage_sources
 from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects, schema_validated, DocReader
 from datacube.utils.geometry import (CRS as _CRS,
                                      GeoBox as _GeoBox,
@@ -29,6 +29,7 @@ CellIndex = namedtuple('CellIndex', ('x', 'y'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
+DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
@@ -309,16 +310,42 @@ class Dataset(object):
     def metadata(self):
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
+    def metadata_doc_without_lineage(self):
+        """ Return metadata document without nested lineage datasets
+        """
+        return without_lineage_sources(self.metadata_doc, self.metadata_type)
 
-class Measurement(object):
-    def __init__(self, measurement_dict):
-        self.name = measurement_dict['name']
-        self.dtype = measurement_dict['dtype']
-        self.nodata = measurement_dict['nodata']
-        self.units = measurement_dict['units']
-        self.aliases = measurement_dict['aliases']
-        self.spectral_definition = measurement_dict['spectral_definition']
-        self.flags_definition = measurement_dict['flags_definition']
+
+class Measurement(dict):
+    REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
+    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
+    FILTER_ATTR_KEYS = ('name', 'dtype', 'aliases')
+
+    def __init__(self, **measurement_dict):
+        missing_keys = set(self.REQUIRED_KEYS) - set(measurement_dict)
+        if missing_keys:
+            raise ValueError("Measurement required keys missing: {}".format(missing_keys))
+
+        measurement_data = {key: value for key, value in measurement_dict.items()
+                            if key in self.REQUIRED_KEYS + self.OPTIONAL_KEYS}
+
+        super().__init__(measurement_data)
+
+    def __getattr__(self, key):
+        """ Allow access to items as attributes. """
+        return self[key]
+
+    def __repr__(self):
+        return "Measurement({})".format(super(Measurement, self).__repr__())
+
+    def copy(self):
+        """Required as the super class `dict` method returns a `dict`
+           and does not preserve Measurement class"""
+        return Measurement(**self)
+
+    def dataarray_attrs(self):
+        """This returns attributes filtered for display in a dataarray."""
+        return {key: value for key, value in self.items() if key not in self.FILTER_ATTR_KEYS}
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
@@ -410,7 +437,7 @@ class DatasetType(object):
 
         :type: dict[str, dict]
         """
-        return OrderedDict((m['name'], m) for m in self.definition.get('measurements', []))
+        return OrderedDict((m['name'], Measurement(**m)) for m in self.definition.get('measurements', []))
 
     @property
     def dimensions(self):
@@ -420,7 +447,12 @@ class DatasetType(object):
         :type: tuple[str]
         """
         assert self.metadata_type.name == 'eo'
-        return ('time',) + self.grid_spec.dimensions
+        if self.grid_spec is not None:
+            spatial_dims = self.grid_spec.dimensions
+        else:
+            spatial_dims = DEFAULT_SPATIAL_DIMS
+
+        return ('time',) + spatial_dims
 
     @cached_property
     def grid_spec(self):
@@ -451,6 +483,14 @@ class DatasetType(object):
 
         return GridSpec(crs=crs, tile_size=tile_size, resolution=resolution, origin=origin)
 
+    def canonical_measurement(self, measurement):
+        for m in self.measurements:
+            if measurement == m:
+                return measurement
+            elif measurement in self.measurements[m].get('aliases', []):
+                return m
+        raise KeyError(measurement)
+
     def lookup_measurements(self, measurements=None):
         """
         Find measurements by name
@@ -461,7 +501,8 @@ class DatasetType(object):
         my_measurements = self.measurements
         if measurements is None:
             return my_measurements
-        return OrderedDict((measurement, my_measurements[measurement]) for measurement in measurements)
+        canonical = [self.canonical_measurement(measurement) for measurement in measurements]
+        return OrderedDict((measurement, my_measurements[measurement]) for measurement in canonical)
 
     def dataset_reader(self, dataset_doc):
         return self.metadata_type.dataset_reader(dataset_doc)
@@ -557,6 +598,15 @@ class GridSpec(object):
         self.resolution = resolution
         #: :type: (float, float)
         self.origin = origin or (0.0, 0.0)
+
+    def __eq__(self, other):
+        if not isinstance(other, GridSpec):
+            return False
+
+        return (self.crs == other.crs
+                and self.tile_size == other.tile_size
+                and self.resolution == other.resolution
+                and self.origin == other.origin)
 
     @property
     def dimensions(self):
@@ -689,3 +739,13 @@ class GridSpec(object):
 
     def __repr__(self):
         return self.__str__()
+
+
+def metadata_from_doc(doc):
+    """Construct MetadataType that is not tied to any particular db index. This is
+    useful when there is a need to interpret dataset metadata documents
+    according to metadata spec.
+    """
+    from .fields import get_dataset_fields
+    MetadataType.validate(doc)
+    return MetadataType(doc, get_dataset_fields(doc))

@@ -10,7 +10,7 @@ import pandas as pd
 
 from ..utils import intersects
 from .query import Query, query_group_by
-from .core import Datacube, set_resampling_method
+from .core import Datacube, set_resampling_method, apply_aliases
 
 _LOG = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ class GridWorkflow(object):
 
         Either grid_spec or product must be supplied.
 
-        :param Index index: The database index to use.
+        :param datacube.index.Index index: The database index to use.
         :param GridSpec grid_spec: The grid projection and resolution
         :param str product: The name of an existing product, if no grid_spec is supplied.
         """
@@ -371,17 +371,14 @@ class GridWorkflow(object):
         .. seealso::
             :meth:`list_tiles` :meth:`list_cells`
         """
-        observations = []
-        for dataset in tile.sources.values:
-            observations += dataset
+        measurement_dicts = set_resampling_method(tile.product.lookup_measurements(measurements),
+                                                  resampling)
 
-        measurements = tile.product.lookup_measurements(measurements)
-        measurements = set_resampling_method(measurements, resampling)
+        dataset = Datacube.load_data(tile.sources, tile.geobox, list(measurement_dicts.values()),
+                                     dask_chunks=dask_chunks, fuse_func=fuse_func,
+                                     skip_broken_datasets=skip_broken_datasets)
 
-        dataset = Datacube.load_data(tile.sources, tile.geobox, measurements.values(), dask_chunks=dask_chunks,
-                                     fuse_func=fuse_func, skip_broken_datasets=skip_broken_datasets)
-
-        return dataset
+        return apply_aliases(dataset, tile.product, measurements)
 
     def update_tile_lineage(self, tile):
         for i in range(tile.sources.size):

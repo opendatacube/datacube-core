@@ -1,7 +1,7 @@
 .. _user_config:
 
 User Configuration
-==================
+******************
 
 
 It is possible to connect to multiple Data Cube indexes from within the one python process.
@@ -11,7 +11,7 @@ to them.
 
 
 Types of Indexes
-----------------
+================
 At the moment, there are two types of indexes supported, but in the future we expect to support more. The two
 indexes currently are the standard PostgreSQL backed index, and the other is an extension to the standard index, with
 additional support for data stored in the ``S3 AIO`` format.
@@ -22,7 +22,7 @@ The type of index driver to use is defined by the `index_driver` option in each 
 .. _runtime-config-doc:
 
 Runtime Config
---------------
+==============
 
 The runtime config specifies configuration options for the current user, such as
 available Data Cube instances and which to use by default.
@@ -74,7 +74,7 @@ Example:
 
     [s3_test]
     db_hostname: staging.dea.ga.gov.au
-    index_driver: s3aio
+    index_driver: s3aio_index
 
 Note that the staging environment only specifies the hostname, all other fields will use default values (dbname
 datacube, current username, password loaded from ``~/.pgpass``)

@@ -3,7 +3,7 @@
 .. _indexing:
 
 Indexing Data
-=============
+*************
 
 Once you have the Data Cube software installed and connected to a database, you
 can start to load in some data. This step is performed using the **datacube**
@@ -15,7 +15,7 @@ the data itself is copied, moved or transformed. This is therefore a relatively
 safe and fast process.
 
 Prerequisites for Indexing Data
--------------------------------
+===============================
 
  * A working Data Cube setup
  * Some *Analysis Ready Data* to load
@@ -24,7 +24,7 @@ Prerequisites for Indexing Data
 
 
 Sample Earth Observation Data
------------------------------
+=============================
 
 The U.S. Geological Survey provides many freely available, Analysis Ready,
 earth observation data products. The following are a good place to start
@@ -38,7 +38,7 @@ looking.
     * `MCD43A3 - Albedo 16-Day L3 Global 500m`__
     * `MCD43A4 - Nadir BRDF-Adjusted Reflectance 16-Day L3 Global 500m`__
 
-__ http://landsat.usgs.gov/CDR_LSR.php
+__ https://landsat.usgs.gov/landsat-surface-reflectance-data-products
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3
@@ -51,7 +51,7 @@ Once you have downloaded some data, it will need :ref:`metadata preparation
 .. _product-definitions:
 
 Product Definition
-------------------
+==================
 
 The Data Cube can handle many different types of data, and requires a bit of
 information up front to know what to do with them. This is the task of a
@@ -73,7 +73,7 @@ A set of example Product definitions are supplied in
 and other Earth Observation Data.
 
 Loading Product Definitions
----------------------------
+===========================
 
 To load Products into your Data Cube run::
 
@@ -81,7 +81,8 @@ To load Products into your Data Cube run::
 
 
 Dataset Documents
------------------
+=================
+
 Every dataset requires a metadata document describing what the data represents and where it has come
 from, as well has what format it is stored in. At a minimum, you need the dimensions or fields your want to
 search by, such as lat, lon and time, but you can include any information you deem useful.
@@ -110,12 +111,12 @@ For more information see :ref:`dataset-metadata-doc`.
 
 
 Adding Some Data
-----------------
+================
 
 Everything is now ready, and we can use the **datacube** tool to add one or more
 datasets into our Cube by running::
 
-    datacube dataset add --auto-match <path-to-dataset>
+    datacube dataset add <path-to-dataset>
 
 
 

@@ -1,0 +1,35 @@
+@startuml
+
+start
+:""dc.load(**query)"";
+:Parse query;
+:Find matching ""datacube.Dataset""s;
+if (User defined area in query?) then (yes)
+  :Use polygon\nfrom user;
+else (no)
+  :Calculate polygon\nfrom all Datasets;
+endif
+
+:Group ""Datasets"" by time;
+
+'while (for each band)
+  partition "For each Band" {
+
+:Create output array;
+'      while (for each time)
+          partition "For each Time" {
+'            while (for each Dataset)
+            partition "For each Dataset" {
+              :Load portion Data from File;
+              :Fuse into Array;
+              }
+'            endwhile
+            :Copy into output array;
+      }
+'      endwhile
+  }
+'endwhile
+:Return arrays as ""xarray.Dataset"";
+stop
+
+@enduml

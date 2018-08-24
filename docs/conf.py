@@ -61,16 +61,21 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
+    'sphinx.ext.mathjax',
     'sphinxcontrib.plantuml',
+    'sphinx_click.ext',
     'click_utils'
 ]
-
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
+
+source_parsers = {
+   '.md': 'recommonmark.parser.CommonMarkParser',
+}
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
@@ -130,18 +135,15 @@ pygments_style = 'friendly'
 
 autosummary_generate = True
 
-extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'GH')}
+extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
+            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
-    'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
-    'xarray': ('http://xarray.pydata.org/en/stable/', None),
-    'dask': ('http://dask.pydata.org/en/stable/', None),
+    'xarray': ('https://xarray.pydata.org/en/stable/', None),
+    'dask': ('https://dask.pydata.org/en/stable/', None),
 }
-
-click_utils_commands = {'datacube-search': 'datacube.scripts.search_tool:cli',
-                        'datacube': 'datacube.scripts.cli_app:cli',
-                        'datacube-simple-replica': 'datacube_apps.simple_replica:replicate'}
 
 graphviz_output_format = 'svg'
 
@@ -156,6 +158,9 @@ else:
         import sphinx_rtd_theme
         html_theme = 'sphinx_rtd_theme'
         html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+        html_theme_options = {
+            'collapse_navigation': False
+        }
     except ImportError:
         html_theme = 'alabaster'
 
@@ -235,16 +240,16 @@ htmlhelp_basename = 'ODCdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
-
-    # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
-
-    # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
-}
+#latex_elements = {
+#    # The paper size ('letterpaper' or 'a4paper').
+#    #'papersize': 'letterpaper',
+#
+#    # The font size ('10pt', '11pt' or '12pt').
+#    #'pointsize': '10pt',
+#
+#    # Additional stuff for the LaTeX preamble.
+#    #'preamble': '',
+#}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
@@ -341,6 +346,7 @@ NATIVE_MODULES = [
     'sshtunnel',
     'tqdm',
     'cloudpickle',
+    'zstd',
 ]
 
 from mock import Mock as MagicMock

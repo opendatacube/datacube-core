@@ -153,7 +153,6 @@ class CRS(object):
 
         if self.geographic:
             return int(self._crs.GetAuthorityCode('GEOGCS'))
-
         return None
 
     @property
@@ -248,7 +247,8 @@ class CRS(object):
 
 def _make_point(pt):
     geom = ogr.Geometry(ogr.wkbPoint)
-    geom.AddPoint_2D(*pt)
+    # Ignore the third dimension
+    geom.AddPoint_2D(*pt[0:2])
     return geom
 
 
@@ -846,6 +846,14 @@ class GeoBox(object):
             affine=self.affine,
             crs=self.extent.crs
         )
+
+    def __eq__(self, other):
+        if not isinstance(other, GeoBox):
+            return False
+
+        return (self.shape == other.shape
+                and self.transform == other.transform
+                and self.crs == other.crs)
 
 
 def _round_to_res(value, res, acc=0.1):

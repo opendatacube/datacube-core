@@ -183,8 +183,10 @@ def test_unary_intersection():
 
 class TestCRSEqualityComparisons(object):
     def test_sinusoidal_comparison(self):
-        a = geometry.CRS("""PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",
-                           DATUM["Not specified (based on custom spheroid)",SPHEROID["Custom spheroid",6371007.181,0]],
+        a = geometry.CRS("""PROJCS["unnamed",
+                                GEOGCS["Unknown datum based upon the custom spheroid",
+                                DATUM["Not specified (based on custom spheroid)",
+                                    SPHEROID["Custom spheroid",6371007.181,0]],
                            PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],
                            PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],
                            PARAMETER["false_northing",0],UNIT["Meter",1]]""")
@@ -201,8 +203,10 @@ class TestCRSEqualityComparisons(object):
         assert a != geometry.CRS('EPSG:4326')
 
     def test_grs80_comparison(self):
-        a = geometry.CRS("""GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],
-                            PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
+        a = geometry.CRS("""GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",
+                                DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],
+                                PRIMEM["Greenwich",0],
+                                UNIT["degree",0.0174532925199433]]""")
         b = geometry.CRS("""GEOGCS["GRS 1980(IUGG, 1980)",DATUM["unknown",SPHEROID["GRS80",6378137,298.257222101]],
                             PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
         c = geometry.CRS('+proj=longlat +no_defs +ellps=GRS80')
@@ -327,3 +331,19 @@ def test_3d_geometry_converted_to_2d_geometry():
     assert {2} == set(len(pt) for pt in g_3d.boundary.coords)  # All coordinates are 2D
 
     assert g_2d == g_3d  # 3D geometry has been converted to a 2D by dropping the Z axis
+
+
+def test_3d_point_converted_to_2d_point():
+    point = (-35.5029340, 145.9312455, 0.0)
+
+    point_3d = {'coordinates': point,
+                'type': 'Point'}
+    point_2d = {'coordinates': (point[0], point[1]),
+                'type': 'Point'}
+
+    p_2d = geometry.Geometry(point_2d)
+    p_3d = geometry.Geometry(point_3d)
+
+    assert len(p_3d.coords[0]) == 2
+
+    assert p_2d == p_3d

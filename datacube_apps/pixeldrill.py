@@ -504,16 +504,16 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
                          time=timerange,
                          latitude=latrange,
                          longitude=lonrange,
-                         group_by=groupby,
-                         stack='band')
+                         group_by=groupby)
 
         # Check that we have data returned
 
-        if dcdata is None:
+        if dcdata.data_vars == {}:
             print('loading data failed, no data in that range.')
             sys.exit(1)
 
         # Extract times and band information
+        dcdata = dcdata.to_array(dim='band')
 
         times = dcdata.coords['time'].to_index().tolist()
         bands = dcdata.coords['band'].to_index().tolist()

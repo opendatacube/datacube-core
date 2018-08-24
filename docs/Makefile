@@ -47,7 +47,7 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	rm -rf $(BUILDDIR)/* dev/generate/
+	rm -rf $(BUILDDIR)/* dev/api/generate/
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
@@ -177,4 +177,4 @@ pseudoxml:
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
 
 livehtml:
-	sphinx-autobuild -b html -p 8123 --ignore "*_tmp_*" --ignore "*_old_*" -z ../datacube --ignore "dev/generate/*" $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	sphinx-autobuild -b html -p 8123 --ignore "*_tmp_*" --ignore "*_old_*" --watch "../datacube" --ignore "notebooks/*" --ignore "dev/api/generate/*" $(ALLSPHINXOPTS) $(BUILDDIR)/html

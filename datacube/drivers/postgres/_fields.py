@@ -19,15 +19,12 @@ from sqlalchemy.sql import ColumnElement
 
 from datacube import compat
 from datacube import utils
-from .sql import FLOAT8RANGE
 from datacube.index.fields import Expression, Field
 from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
+from .sql import FLOAT8RANGE
 
-try:
-    from typing import Any, Callable, Tuple, Union
-except ImportError:
-    pass
+from typing import Any, Callable, Tuple, Union
 
 
 class PgField(Field):
@@ -218,6 +215,8 @@ class SimpleDocField(PgDocField):
 
 
 class IntDocField(SimpleDocField):
+    type_name = 'integer'
+
     def value_to_alchemy(self, value):
         return cast(value, postgres.INTEGER)
 
@@ -229,6 +228,8 @@ class IntDocField(SimpleDocField):
 
 
 class NumericDocField(SimpleDocField):
+    type_name = 'numeric'
+
     def value_to_alchemy(self, value):
         return cast(value, postgres.NUMERIC)
 
@@ -240,6 +241,8 @@ class NumericDocField(SimpleDocField):
 
 
 class DoubleDocField(SimpleDocField):
+    type_name = 'double'
+
     def value_to_alchemy(self, value):
         return cast(value, postgres.DOUBLE_PRECISION)
 
@@ -251,6 +254,8 @@ class DoubleDocField(SimpleDocField):
 
 
 class DateDocField(SimpleDocField):
+    type_name = 'datetime'
+
     def value_to_alchemy(self, value):
         # type: (Union[datetime, date, str, ColumnElement]) -> Union[datetime, date, str, ColumnElement]
         """
@@ -336,6 +341,7 @@ class RangeDocField(PgDocField):
 
 class NumericRangeDocField(RangeDocField):
     FIELD_CLASS = NumericDocField
+    type_name = 'numeric-range'
 
     def value_to_alchemy(self, value):
         low, high = value
@@ -355,6 +361,7 @@ class NumericRangeDocField(RangeDocField):
 
 class IntRangeDocField(RangeDocField):
     FIELD_CLASS = IntDocField
+    type_name = 'integer-range'
 
     def value_to_alchemy(self, value):
         low, high = value
@@ -374,6 +381,7 @@ class IntRangeDocField(RangeDocField):
 
 class DoubleRangeDocField(RangeDocField):
     FIELD_CLASS = DoubleDocField
+    type_name = 'double-range'
 
     def value_to_alchemy(self, value):
         low, high = value
@@ -393,6 +401,7 @@ class DoubleRangeDocField(RangeDocField):
 
 class DateRangeDocField(RangeDocField):
     FIELD_CLASS = DateDocField
+    type_name = 'datetime-range'
 
     def value_to_alchemy(self, value):
         low, high = value
@@ -540,25 +549,32 @@ def parse_fields(doc, table_column):
     :rtype: dict[str, PgField]
     """
 
+    # Implementations of fields for this driver
+    types = {
+        SimpleDocField,
+        IntDocField,
+        DoubleDocField,
+        DateDocField,
+
+        NumericRangeDocField,
+        IntRangeDocField,
+        DoubleRangeDocField,
+        DateRangeDocField,
+    }
+    type_map = {f.type_name: f for f in types}
+    # An alias for backwards compatibility
+    type_map['float-range'] = NumericRangeDocField
+
+    # No later field should have overridden string
+    assert type_map['string'] == SimpleDocField
+
     def _get_field(name, descriptor, column):
         """
-
         :type name: str
         :type descriptor: dict
         :param column: SQLAlchemy table column
         :rtype: PgField
         """
-        type_map = {
-            'numeric-range': NumericRangeDocField,
-            'double-range': DoubleRangeDocField,
-            'integer-range': IntRangeDocField,
-            'datetime-range': DateRangeDocField,
-            'string': SimpleDocField,
-            'integer': IntDocField,
-            'double': DoubleDocField,
-            # For backwards compatibility
-            'float-range': NumericRangeDocField,
-        }
         ctorargs = descriptor.copy()
         type_name = ctorargs.pop('type', 'string')
         description = ctorargs.pop('description', None)

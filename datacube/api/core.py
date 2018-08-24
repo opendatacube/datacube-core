@@ -40,30 +40,6 @@ THREADING_REQS_AVAILABLE = ('SharedArray' in sys.modules and 'pathos.threading' 
 Group = namedtuple('Group', ['key', 'datasets'])
 
 
-def _xarray_affine(obj):
-    dims = obj.crs.dimensions
-    xres, xoff = data_resolution_and_offset(obj[dims[1]].values)
-    yres, yoff = data_resolution_and_offset(obj[dims[0]].values)
-    return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
-
-
-def _xarray_extent(obj):
-    return obj.geobox.extent
-
-
-def _xarray_geobox(obj):
-    dims = obj.crs.dimensions
-    return geometry.GeoBox(obj[dims[1]].size, obj[dims[0]].size, obj.affine, obj.crs)
-
-
-xarray.Dataset.geobox = property(_xarray_geobox)
-xarray.Dataset.affine = property(_xarray_affine)
-xarray.Dataset.extent = property(_xarray_extent)
-xarray.DataArray.geobox = property(_xarray_geobox)
-xarray.DataArray.affine = property(_xarray_affine)
-xarray.DataArray.extent = property(_xarray_extent)
-
-
 class Datacube(object):
     """
     Interface to search, read and write a datacube.
@@ -83,7 +59,7 @@ class Datacube(object):
         If no index or config is given, the default configuration is used for database connection.
 
         :param Index index: The database index to use.
-        :type index: :py:class:`datacube.index._api.Index` or None.
+        :type index: :py:class:`datacube.index.Index` or None.
 
         :param Union[LocalConfig|str] config: A config object or a path to a config file that defines the connection.
 
@@ -127,7 +103,7 @@ class Datacube(object):
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
         :rtype: pandas.DataFrame or list(dict)
         """
-        rows = [datatset_type_to_row(dataset_type) for dataset_type in self.index.products.get_all()]
+        rows = [dataset_type_to_row(dataset_type) for dataset_type in self.index.products.get_all()]
         if not with_pandas:
             return rows
 
@@ -168,9 +144,9 @@ class Datacube(object):
         return measurements
 
     #: pylint: disable=too-many-arguments, too-many-locals
-    def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None, stack=False,
-             dask_chunks=None, like=None, geobox=None, fuse_func=None, align=None, datasets=None, 
-             use_threads=False, **query):
+    def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
+             dask_chunks=None, like=None, geobox=None, fuse_func=None, align=None, datasets=None, use_threads=False,
+             **query):
         """
         Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -230,10 +206,6 @@ class Datacube(object):
 
 
         **Output**
-            If the `stack` argument is supplied, the returned data is stacked in a single ``DataArray``.
-            A new dimension is created with the name supplied.
-            This requires all of the data to be of the same datatype.
-
             To reproject or resample the data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
             fields.
 
@@ -277,13 +249,6 @@ class Datacube(object):
 
             Default is (0,0)
 
-        :param stack: The name of the new dimension used to stack the measurements.
-            If provided, the data is returned as a :class:`xarray.DataArray` rather than a :class:`xarray.Dataset`.
-
-            If only one measurement is returned, the dimension name is not used and the dimension is dropped.
-
-        :type stack: str or bool
-
         :param dict dask_chunks:
             If the data should be lazily loaded using :class:`dask.array.Array`,
             specify the chunking size in each output dimension.
@@ -322,60 +287,41 @@ class Datacube(object):
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
 
-        :return: Requested data in a :class:`xarray.Dataset`, or
-            as a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
-
-        :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
+        :return: Requested data in a :class:`xarray.Dataset`
+        :rtype: :class:`xarray.Dataset`
         """
-        if geobox:
+
+        if 'stack' in query:
+            raise DeprecationWarning("the `stack` keyword argument is not supported anymore, "
+                                     "please apply `xarray.Dataset.to_array()` to the result instead")
+
+        observations = datasets or self.find_datasets(product=product, like=like, **query)
+        if not observations:
+            return xarray.Dataset()
+
+        if geobox is not None:
             assert (like is None) and ('geopolygon' not in query.keys()) \
                 and ({output_crs, resolution, align} == {None}), \
                 "'geobox' is not compatible with 'like', 'geopolygon', 'output_crs', 'resolution' or 'align'"
             query['geopolygon'] = geobox.extent
-
-        observations = datasets or self.find_datasets(product=product, like=like, **query)
-        if not observations:
-            return None if stack else xarray.Dataset()
-
-        if like:
-            assert output_crs is None, "'like' and 'output_crs' are not supported together"
-            assert resolution is None, "'like' and 'resolution' are not supported together"
-            assert align is None, "'like' and 'align' are not supported together"
-            geobox = like.geobox
-        elif not geobox:
-            if output_crs:
-                if not resolution:
-                    raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
-                crs = geometry.CRS(output_crs)
-            else:
-                grid_spec = self.index.products.get_by_name(product).grid_spec
-                if not grid_spec or not grid_spec.crs:
-                    raise RuntimeError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
-                crs = grid_spec.crs
-                if not resolution:
-                    if not grid_spec.resolution:
-                        raise RuntimeError("Product has no default resolution. Must specify 'resolution'")
-                    resolution = grid_spec.resolution
-                    align = align or grid_spec.alignment
-            geobox = geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, crs),
-                                                     resolution, crs, align)
+        else:
+            geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
+                                   grid_spec=self.index.products.get_by_name(product).grid_spec,
+                                   datasets=observations, **query)
 
         group_by = query_group_by(**query)
         grouped = self.group_datasets(observations, group_by)
 
-        measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
-        measurements = set_resampling_method(measurements, resampling)
+        datacube_product = self.index.products.get_by_name(product)
+        measurement_dicts = set_resampling_method(datacube_product.lookup_measurements(measurements),
+                                                  resampling)
 
-        result = self.load_data(grouped, geobox, measurements.values(),
+        result = self.load_data(grouped, geobox, list(measurement_dicts.values()),
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
                                 use_threads=use_threads)
-        if not stack:
-            return result
-        else:
-            if not isinstance(stack, string_types):
-                stack = 'measurement'
-            return result.to_array(dim=stack)
+
+        return apply_aliases(result, datacube_product, measurements)
 
     def product_observations(self, **kwargs):
         warnings.warn("product_observations() has been renamed to find_datasets() and will eventually be removed",
@@ -412,14 +358,8 @@ class Datacube(object):
         datasets = self.index.datasets.search(limit=limit,
                                               **query.search_terms)
 
-        polygon = query.geopolygon
-        for dataset in datasets:
-            if polygon:
-                # Check against the bounding box of the original scene, can throw away some portions
-                if intersects(polygon.to_crs(dataset.crs), dataset.extent):
-                    yield dataset
-            else:
-                yield dataset
+        for dataset in select_datasets_inside_polygon(datasets, query.geopolygon):
+            yield dataset
 
     @staticmethod
     def product_sources(datasets, group_by):
@@ -512,17 +452,8 @@ class Datacube(object):
 
         for measurement in measurements:
             data = results.pop(0)
-
-            attrs = {
-                'nodata': measurement.get('nodata'),
-                'units': measurement.get('units', '1'),
-                'crs': geobox.crs
-            }
-            if 'flags_definition' in measurement:
-                attrs['flags_definition'] = measurement['flags_definition']
-            if 'spectral_definition' in measurement:
-                attrs['spectral_definition'] = measurement['spectral_definition']
-
+            attrs = measurement.dataarray_attrs()
+            attrs['crs'] = geobox.crs
             dims = tuple(coords.keys()) + tuple(geobox.dimensions)
             result[measurement['name']] = (dims, data, attrs)
 
@@ -651,6 +582,54 @@ class Datacube(object):
         self.close()
 
 
+def apply_aliases(data, product, measurements):
+    """
+    If measurements are referred to by their aliases,
+    rename data arrays to reflect that.
+    """
+    if measurements is None:
+        return data
+
+    return data.rename({product.canonical_measurement(provided_name): provided_name
+                        for provided_name in measurements})
+
+def output_geobox(like=None, output_crs=None, resolution=None, align=None,
+                  grid_spec=None, datasets=None, **query):
+    """ Configure output geobox from user provided output specs. """
+
+    if like is not None:
+        assert output_crs is None, "'like' and 'output_crs' are not supported together"
+        assert resolution is None, "'like' and 'resolution' are not supported together"
+        assert align is None, "'like' and 'align' are not supported together"
+        return like.geobox
+
+    if output_crs is not None:
+        # user provided specifications
+        if resolution is None:
+            raise ValueError("Must specify 'resolution' when specifying 'output_crs'")
+        crs = geometry.CRS(output_crs)
+    else:
+        # specification from grid_spec
+        if grid_spec is None or grid_spec.crs is None:
+            raise ValueError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
+        crs = grid_spec.crs
+        if resolution is None:
+            if grid_spec.resolution is None:
+                raise ValueError("Product has no default resolution. Must specify 'resolution'")
+            resolution = grid_spec.resolution
+        align = align or grid_spec.alignment
+
+    return geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(datasets, crs),
+                                           resolution, crs, align)
+
+
+def select_datasets_inside_polygon(datasets, polygon):
+    # Check against the bounding box of the original scene, can throw away some portions
+    for dataset in datasets:
+        if polygon is None or intersects(polygon.to_crs(dataset.crs), dataset.extent):
+            yield dataset
+
+
 def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_func=None, prepend_dims=0):
     prepend_shape = (1,) * prepend_dims
     data = numpy.full(geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
@@ -695,7 +674,7 @@ def set_resampling_method(measurements, resampling=None):
     return measurements
 
 
-def datatset_type_to_row(dt):
+def dataset_type_to_row(dt):
     row = {
         'id': dt.id,
         'name': dt.name,
@@ -704,7 +683,7 @@ def datatset_type_to_row(dt):
     row.update(dt.fields)
     if dt.grid_spec is not None:
         row.update({
-            'crs': dt.grid_spec.crs,
+            'crs': str(dt.grid_spec.crs),
             'spatial_dimensions': dt.grid_spec.dimensions,
             'tile_size': dt.grid_spec.tile_size,
             'resolution': dt.grid_spec.resolution,

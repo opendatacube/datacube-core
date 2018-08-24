@@ -2,6 +2,7 @@
 
 import versioneer
 from setuptools import setup, find_packages
+import os
 
 tests_require = [
     'compliance-checker',
@@ -19,15 +20,30 @@ extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
     'interactive': ['matplotlib', 'fiona'],
     'distributed': ['distributed', 'dask[distributed]'],
-    'analytics': ['scipy', 'pyparsing', 'numexpr'],
     'doc': ['Sphinx', 'setuptools'],
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'celery': ['celery>=4', 'redis'],
-    's3': ['boto3==1.4.3', 'SharedArray', 'pathos', 'zstandard'],
+    's3': ['boto3', 'SharedArray', 'pathos', 'zstandard'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
+
+extra_plugins = dict(read=[], write=[], index=[])
+
+if os.name != 'nt':
+    extra_plugins['read'].extend([
+        's3aio = datacube.drivers.s3.driver:reader_driver_init [s3]',
+        's3aio_test = datacube.drivers.s3.driver:reader_test_driver_init [s3]',
+    ])
+    extra_plugins['write'].extend([
+        's3aio = datacube.drivers.s3.driver:writer_driver_init [s3]',
+        's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init [s3]',
+    ])
+
+    extra_plugins['index'].extend([
+        's3aio_index = datacube.drivers.s3aio_index:index_driver_init [s3]',
+    ])
 
 setup(
     name='datacube',
@@ -36,8 +52,8 @@ setup(
     python_requires='>=3.5.2',
 
     url='https://github.com/opendatacube/datacube-core',
-    author='AGDC Collaboration',
-    maintainer='AGDC Collaboration',
+    author='Open Data Cube',
+    maintainer='Open Data Cube',
     maintainer_email='',
     description='An analysis environment for satellite and other earth observation data',
     long_description=open('README.rst').read(),
@@ -88,9 +104,10 @@ setup(
         'pypeg2',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=0.9a10',  # required for zip reading, 0.9 gets around 1.0a ordering problems
+        'rasterio>=1.0.2',  # Multi-band re-project fixed in that version
         'singledispatch',
         'sqlalchemy',
+        'toolz',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
     ],
     extras_require=extras_require,
@@ -110,17 +127,15 @@ setup(
         ],
         'datacube.plugins.io.read': [
             'netcdf = datacube.drivers.netcdf.driver:reader_driver_init',
-            's3aio = datacube.drivers.s3.driver:reader_driver_init',
-            's3aio_test = datacube.drivers.s3.driver:reader_test_driver_init'
+            *extra_plugins['read'],
         ],
         'datacube.plugins.io.write': [
             'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
-            's3aio = datacube.drivers.s3.driver:writer_driver_init',
-            's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init',
+            *extra_plugins['write'],
         ],
         'datacube.plugins.index': [
             'default = datacube.index.index:index_driver_init',
-            's3aio_index = datacube.drivers.s3aio_index:index_driver_init',
+            *extra_plugins['index'],
         ],
     },
 )
