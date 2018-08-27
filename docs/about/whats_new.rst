@@ -5,6 +5,12 @@
 What's New
 **********
 
+v1.6.1 (27 August 2018)
+=======================
+
+Correction release. By mistake, v1.6.0 was identical to v1.6rc2!
+
+
 v1.6.0 (23 August 2018)
 =======================
 
