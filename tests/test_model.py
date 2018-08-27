@@ -12,7 +12,7 @@ from datacube.storage.storage import measurement_paths
 def test_gridspec():
     gs = GridSpec(crs=geometry.CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(10, 10))
     poly = geometry.polygon([(10, 12.2), (10.8, 13), (13, 10.8), (12.2, 10), (10, 12.2)], crs=geometry.CRS('EPSG:4326'))
-    cells = {index: geobox for index, geobox in list(gs.tiles_inside_geopolygon(poly))}
+    cells = {index: geobox for index, geobox in list(gs.tiles_from_geopolygon(poly))}
     assert set(cells.keys()) == {(0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
     assert numpy.isclose(cells[(2, 0)].coordinates['longitude'].values, numpy.linspace(12.05, 12.95, num=10)).all()
     assert numpy.isclose(cells[(2, 0)].coordinates['latitude'].values, numpy.linspace(10.95, 10.05, num=10)).all()
@@ -20,8 +20,8 @@ def test_gridspec():
     # check geobox_cache
     cache = {}
     poly = gs.tile_geobox((3, 4)).extent
-    (c1, gbox1),  = list(gs.tiles_inside_geopolygon(poly, geobox_cache=cache))
-    (c2, gbox2),  = list(gs.tiles_inside_geopolygon(poly, geobox_cache=cache))
+    (c1, gbox1),  = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
+    (c2, gbox2),  = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
 
     assert c1 == (3, 4) and c2 == c1
     assert gbox1 is gbox2

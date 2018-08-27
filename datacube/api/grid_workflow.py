@@ -204,7 +204,7 @@ class GridWorkflow(object):
                 # Get a rough region of tiles
                 query_tiles = set(
                     tile_index for tile_index, tile_geobox in
-                    self.grid_spec.tiles_inside_geopolygon(query.geopolygon, geobox_cache=geobox_cache))
+                    self.grid_spec.tiles_from_geopolygon(query.geopolygon, geobox_cache=geobox_cache))
 
                 for dataset in datasets:
                     # Go through our datasets and see which tiles each dataset produces, and whether they intersect
@@ -219,9 +219,9 @@ class GridWorkflow(object):
 
             else:
                 for dataset in datasets:
-                    for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent,
-                                                                                          tile_buffer=tile_buffer,
-                                                                                          geobox_cache=geobox_cache):
+                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(dataset.extent,
+                                                                                        tile_buffer=tile_buffer,
+                                                                                        geobox_cache=geobox_cache):
                         add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             return cells
