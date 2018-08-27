@@ -691,7 +691,7 @@ class GridSpec(object):
                 tile_index = (x, y)
                 yield tile_index, geobox(tile_index)
 
-    def tiles_inside_geopolygon(self, geopolygon, tile_buffer=None, geobox_cache=None):
+    def tiles_from_geopolygon(self, geopolygon, tile_buffer=None, geobox_cache=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `geopolygon`.
