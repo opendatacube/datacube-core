@@ -52,9 +52,10 @@ def test_gridworkflow():
     assert list(gw.cell_observations(**query,
                                      geopolygon=gridspec.tile_geobox((1, -2)).extent).keys()) == [(1, -2)]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as e:
         list(gw.cell_observations(**query, tile_buffer=(1, 1),
                                   geopolygon=gridspec.tile_geobox((1, -2)).extent).keys())
+    assert str(e.value) == 'Cannot process tile_buffering and geopolygon together.'
 
     # test frontend
     assert len(gw.list_tiles(**query)) == 1
