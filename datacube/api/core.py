@@ -720,12 +720,16 @@ def _calculate_chunk_sizes(sources, geobox, dask_chunks):
     return irr_chunks, grid_chunks
 
 
+def _tokenize_dataset(dataset):
+    return 'dataset-{}'.format(dataset.id.hex)
+
+
 # pylint: disable=too-many-locals
 def _make_dask_array(sources, geobox, measurement,
                      skip_broken_datasets=False,
                      fuse_func=None,
                      dask_chunks=None):
-    dsk_name = 'datacube_' + measurement['name']
+    dsk_name = 'datacube_load_{name}-{token}'.format(name=measurement['name'], token=uuid.uuid4().hex)
 
     irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
     sliced_irr_chunks = (1,) * sources.ndim
@@ -734,9 +738,15 @@ def _make_dask_array(sources, geobox, measurement,
     geobox_subsets = _chunk_geobox(geobox, grid_chunks)
 
     for irr_index, datasets in numpy.ndenumerate(sources.values):
+        for dataset in datasets:
+            ds_token = _tokenize_dataset(dataset)
+            dsk[ds_token] = dataset
+
         for grid_index, subset_geobox in geobox_subsets.items():
+            dataset_keys = [_tokenize_dataset(d) for d in
+                            select_datasets_inside_polygon(datasets, subset_geobox.extent)]
             dsk[(dsk_name,) + irr_index + grid_index] = (fuse_lazy,
-                                                         datasets, subset_geobox, measurement,
+                                                         dataset_keys, subset_geobox, measurement,
                                                          skip_broken_datasets, fuse_func,
                                                          sources.ndim)
 
