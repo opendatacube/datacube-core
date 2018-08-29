@@ -239,7 +239,8 @@ class Datacube(object):
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
 
-            Defaults to ``'nearest'``.
+            Default is to use value specified in the product definition for a
+            given band, or ``'nearest'`` if that is not set either.
 
         :param (float,float) align:
             Load data such that point 'align' lies on the pixel boundary.
