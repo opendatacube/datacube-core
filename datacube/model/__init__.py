@@ -331,10 +331,10 @@ class Measurement(dict):
 
     def __getattr__(self, key):
         """ Allow access to items as attributes. """
-        if key in self:
-            return self[key]
-
-        raise AttributeError("'Measurement' object has no attribute '{}'".format(key))
+        v = self.get(key, self)
+        if v is self:
+            raise AttributeError("'Measurement' object has no attribute '{}'".format(key))
+        return v
 
     def __repr__(self):
         return "Measurement({})".format(super(Measurement, self).__repr__())

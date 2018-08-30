@@ -86,6 +86,9 @@ def test_measurement():
     assert m.bob == 10
     assert m.dataarray_attrs() == {'nodata': 255, 'units': '1', 'bob': 10}
 
+    m['none'] = None
+    assert m.none is None
+
     m['resampling_method'] = 'cubic'
     assert 'resampling_method' not in m.dataarray_attrs()
 
