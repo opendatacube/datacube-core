@@ -397,7 +397,7 @@ class Datacube(object):
             A GeoBox defining the output spatial projection and resolution
 
         :param measurements:
-            list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
+            list of :class:`datacube.model.Measurement`
 
         :param data_func:
             function to fill the storage with data. It is called once for each measurement, with the measurement
@@ -417,7 +417,7 @@ class Datacube(object):
 
         def empty_func(measurement_):
             coord_shape = tuple(coord_.size for coord_ in coords.values())
-            return numpy.full(coord_shape + geobox.shape, measurement_['nodata'], dtype=measurement_['dtype'])
+            return numpy.full(coord_shape + geobox.shape, measurement_.nodata, dtype=measurement_.dtype)
 
         data_func = data_func or empty_func
 
@@ -443,7 +443,7 @@ class Datacube(object):
             attrs = measurement.dataarray_attrs()
             attrs['crs'] = geobox.crs
             dims = tuple(coords.keys()) + tuple(geobox.dimensions)
-            result[measurement['name']] = (dims, data, attrs)
+            result[measurement.name] = (dims, data, attrs)
 
         return result
 
@@ -466,7 +466,7 @@ class Datacube(object):
             A GeoBox defining the output spatial projection and resolution
 
         :param measurements:
-            list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
+            list of `Measurement` objects
 
         :param fuse_func:
             function to merge successive arrays as an output
@@ -494,7 +494,7 @@ class Datacube(object):
         if dask_chunks is None:
             def data_func(measurement):
                 if not use_threads:
-                    data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+                    data = numpy.full(sources.shape + geobox.shape, measurement.nodata, dtype=measurement.dtype)
                     for index, datasets in numpy.ndenumerate(sources.values):
                         _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
                                           skip_broken_datasets=skip_broken_datasets)
@@ -505,9 +505,9 @@ class Datacube(object):
                                           skip_broken_datasets=skip_broken_datasets)
 
                     array_name = '_'.join(['DCCORE', str(uuid.uuid4()), str(os.getpid())])
-                    sa.create(array_name, shape=sources.shape + geobox.shape, dtype=measurement['dtype'])
+                    sa.create(array_name, shape=sources.shape + geobox.shape, dtype=measurement.dtype)
                     data = sa.attach(array_name)
-                    data[:] = measurement['nodata']
+                    data[:] = measurement.nodata
 
                     pool = ThreadPool(32)
                     pool.map(work_load_data, repeat(array_name), *zip(*numpy.ndenumerate(sources.values)))
@@ -538,7 +538,7 @@ class Datacube(object):
 
         :param xarray.DataArray sources: DataArray holding a list of :class:`datacube.model.Dataset` objects
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
-        :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
+        :param measurement: `Measurement` object
         :param fuse_func: function to merge successive arrays as an output
         :param dict dask_chunks: If the data should be loaded as needed using :class:`dask.array.Array`,
             specify the chunk size in each output direction.
@@ -547,7 +547,7 @@ class Datacube(object):
         :rtype: :class:`xarray.DataArray`
         """
         dataset = Datacube.load_data(sources, geobox, [measurement], fuse_func=fuse_func, dask_chunks=dask_chunks)
-        dataarray = dataset[measurement['name']]
+        dataarray = dataset[measurement.name]
         dataarray.attrs['crs'] = dataset.crs
         return dataarray
 
@@ -622,7 +622,7 @@ def select_datasets_inside_polygon(datasets, polygon):
 
 def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_func=None, prepend_dims=0):
     prepend_shape = (1,) * prepend_dims
-    data = numpy.full(geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+    data = numpy.full(geobox.shape, measurement.nodata, dtype=measurement.dtype)
     _fuse_measurement(data, datasets, geobox, measurement,
                       skip_broken_datasets=skip_broken_datasets,
                       fuse_func=fuse_func)
@@ -632,11 +632,11 @@ def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_fu
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
                       fuse_func=None):
-    reproject_and_fuse([new_datasource(dataset, measurement['name']) for dataset in datasets],
+    reproject_and_fuse([new_datasource(dataset, measurement.name) for dataset in datasets],
                        dest,
                        geobox.affine,
                        geobox.crs,
-                       dest.dtype.type(measurement['nodata']),
+                       dest.dtype.type(measurement.nodata),
                        resampling=measurement.get('resampling_method', 'nearest'),
                        fuse_func=fuse_func,
                        skip_broken_datasets=skip_broken_datasets)
