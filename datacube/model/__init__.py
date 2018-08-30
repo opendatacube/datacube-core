@@ -320,17 +320,14 @@ class Dataset(object):
 class Measurement(dict):
     REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
     OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
-    FILTER_ATTR_KEYS = ('name', 'dtype', 'aliases')
+    ATTR_BLACKLIST = set(['name', 'dtype', 'aliases', 'resampling_method'])
 
-    def __init__(self, **measurement_dict):
-        missing_keys = set(self.REQUIRED_KEYS) - set(measurement_dict)
+    def __init__(self, **kwargs):
+        missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
         if missing_keys:
             raise ValueError("Measurement required keys missing: {}".format(missing_keys))
 
-        measurement_data = {key: value for key, value in measurement_dict.items()
-                            if key in self.REQUIRED_KEYS + self.OPTIONAL_KEYS}
-
-        super().__init__(measurement_data)
+        super().__init__(**kwargs)
 
     def __getattr__(self, key):
         """ Allow access to items as attributes. """
@@ -349,7 +346,7 @@ class Measurement(dict):
 
     def dataarray_attrs(self):
         """This returns attributes filtered for display in a dataarray."""
-        return {key: value for key, value in self.items() if key not in self.FILTER_ATTR_KEYS}
+        return {key: value for key, value in self.items() if key not in self.ATTR_BLACKLIST}
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
