@@ -131,7 +131,8 @@ def test_gridworkflow():
         args = list(args)
         assert args[0] is loadable.sources
         assert args[1] is loadable.geobox
-        assert list(args[2])[0] is measurement
+        assert list(args[2].values())[0] is measurement
+        assert 'resampling' in kwargs
 
     # ------- check single cell index extract -------
     tile = gw.list_tiles(cell_index=(1, -2), **query)
