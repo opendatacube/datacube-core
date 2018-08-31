@@ -109,7 +109,7 @@ def get_filename(config, tile_index, sources, **kwargs):
 
 def get_measurements(source_type, config):
     def merge_measurement(measurement, spec):
-        measurement.update({k: spec.get(k) or measurement[k] for k in ('nodata', 'dtype', 'resampling_method')})
+        measurement.update({k: spec.get(k) or measurement[k] for k in ('nodata', 'dtype')})
         return Measurement(**measurement)
 
     return [merge_measurement(source_type.measurements[spec['src_varname']].copy(), spec)
@@ -118,6 +118,12 @@ def get_measurements(source_type, config):
 
 def get_namemap(config):
     return {spec['src_varname']: spec['name'] for spec in config['measurements']}
+
+
+def get_resampling(config):
+    """ What resampling strategy to use for each input band
+    """
+    return {spec['src_varname']: spec.get('resampling_method') for spec in config['measurements']}
 
 
 def ensure_output_type(index, config, storage_format, allow_product_changes=False):
@@ -212,13 +218,17 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
         raise ValueError('Something went wrong: no longer can find driver pointed by storage.driver option')
 
     namemap = get_namemap(config)
+    # TODO: get_measurements possibly changes dtype, not sure load_data would like that
     measurements = get_measurements(source_type, config)
+    resampling = get_resampling(config)
     variable_params = get_variable_params(config)
     global_attributes = config['global_attributes']
 
     with datacube.set_options(reproject_threads=1):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
-        data = Datacube.load_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
+        data = Datacube.load_data(tile.sources, tile.geobox, measurements,
+                                  resampling=resampling,
+                                  fuse_func=fuse_func)
 
     nudata = data.rename(namemap)
     file_path = get_filename(config, tile_index, tile.sources)
