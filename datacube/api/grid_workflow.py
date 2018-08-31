@@ -364,7 +364,10 @@ class GridWorkflow(object):
         :param fuse_func: Function to fuse together a tile that has been pre-grouped by calling
             :meth:`list_cells` with a ``group_by`` parameter.
 
-        :param str resampling: The resampling method to use if re-projection is required.
+        :param str|dict resampling:
+
+            The resampling method to use if re-projection is required, could be
+            configured per band using a dictionary (:meth: `load_data`)
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
 

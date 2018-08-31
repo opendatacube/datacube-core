@@ -234,10 +234,11 @@ class Datacube(object):
 
             Typically when using most CRSs, the first number would be negative.
 
-        :param str resampling:
+        :param str|dict resampling:
             The resampling method to use if re-projection is required.
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
+            .. seealso:: :meth:`load_data`
 
         :param (float,float) align:
             Load data such that point 'align' lies on the pixel boundary.
@@ -467,10 +468,15 @@ class Datacube(object):
         :param measurements:
             list of `Measurement` objects
 
-        :param str resampling:
-            The resampling method to use if re-projection is required.
+        :param str|dict resampling:
+            The resampling method to use if re-projection is required. This could be a string or
+            a dictionary mapping band name to resampling mode. When using a dict use ``'*'`` to
+            indicate "apply to all other bands", for example ``{'*': 'cubic', 'fmask': 'nearest'}`` would
+            use `cubic` for all bands except ``fmask`` for which `nearest` will be used.
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
+
+            Default is to use ``nearest`` for all bands.
 
         :param fuse_func:
             function to merge successive arrays as an output
@@ -524,16 +530,20 @@ class Datacube(object):
                                         fuse_func=fuse_func,
                                         dask_chunks=dask_chunks)
 
-        def with_resampling(m, resampling_method):
+        def with_resampling(m, resampling, default=None):
             m = m.copy()
-            m['resampling_method'] = resampling_method
+            m['resampling_method'] = resampling.get(m.name, default)
             return m
+
+        if isinstance(resampling, str):
+            resampling = {'*': resampling}
 
         if isinstance(measurements, dict):
             measurements = list(measurements.values())
 
         if resampling is not None:
-            measurements = [with_resampling(m, resampling) for m in measurements]
+            measurements = [with_resampling(m, resampling, default=resampling.get('*'))
+                            for m in measurements]
 
         return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
                                        geobox, measurements, data_func, use_threads)
