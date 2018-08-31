@@ -239,9 +239,6 @@ class Datacube(object):
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
 
-            Default is to use value specified in the product definition for a
-            given band, or ``'nearest'`` if that is not set either.
-
         :param (float,float) align:
             Load data such that point 'align' lies on the pixel boundary.
             Units are in the co-ordinate space of the output CRS.
@@ -302,10 +299,11 @@ class Datacube(object):
         grouped = self.group_datasets(observations, group_by)
 
         datacube_product = self.index.products.get_by_name(product)
-        measurement_dicts = set_resampling_method(datacube_product.lookup_measurements(measurements),
-                                                  resampling)
+        measurement_dicts = datacube_product.lookup_measurements(measurements)
 
-        result = self.load_data(grouped, geobox, list(measurement_dicts.values()),
+        result = self.load_data(grouped, geobox,
+                                measurement_dicts,
+                                resampling=resampling,
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
                                 use_threads=use_threads)
@@ -454,7 +452,8 @@ class Datacube(object):
         return Datacube.load_data(*args, **kwargs)
 
     @staticmethod
-    def load_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
+    def load_data(sources, geobox, measurements, resampling=None,
+                  fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
                   use_threads=False):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
@@ -467,6 +466,11 @@ class Datacube(object):
 
         :param measurements:
             list of `Measurement` objects
+
+        :param str resampling:
+            The resampling method to use if re-projection is required.
+
+            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
 
         :param fuse_func:
             function to merge successive arrays as an output
@@ -519,6 +523,17 @@ class Datacube(object):
                                         skip_broken_datasets=skip_broken_datasets,
                                         fuse_func=fuse_func,
                                         dask_chunks=dask_chunks)
+
+        def with_resampling(m, resampling_method):
+            m = m.copy()
+            m['resampling_method'] = resampling_method
+            return m
+
+        if isinstance(measurements, dict):
+            measurements = list(measurements.values())
+
+        if resampling is not None:
+            measurements = [with_resampling(m, resampling) for m in measurements]
 
         return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
                                        geobox, measurements, data_func, use_threads)
@@ -648,20 +663,6 @@ def get_bounds(datasets, crs):
     top = max([d.extent.to_crs(crs).boundingbox.top for d in datasets])
     bottom = min([d.extent.to_crs(crs).boundingbox.bottom for d in datasets])
     return geometry.box(left, bottom, right, top, crs=crs)
-
-
-def set_resampling_method(measurements, resampling=None):
-    if resampling is None:
-        return measurements
-
-    def make_resampled_measurement(measurement):
-        measurement = measurement.copy()
-        measurement['resampling_method'] = resampling
-        return measurement
-
-    measurements = OrderedDict((name, make_resampled_measurement(measurement))
-                               for name, measurement in measurements.items())
-    return measurements
 
 
 def dataset_type_to_row(dt):
