@@ -318,6 +318,22 @@ class Dataset(object):
 
 
 class Measurement(dict):
+    """
+    Describes a single data variable of a Product or Dataset.
+
+    Must include, which can be used when loading and interpreting data:
+
+     - name
+     - dtype - eg: int8, int16, float32
+     - nodata - What value represent No Data
+     - units
+
+    Attributes can be accessed using ``dict []`` syntax.
+
+    Can also include attributes like alternative names 'aliases', and spectral and bit flags
+    definitions to aid with interpreting the data.
+
+    """
     REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
     OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
     ATTR_BLACKLIST = set(['name', 'dtype', 'aliases', 'resampling_method'])
