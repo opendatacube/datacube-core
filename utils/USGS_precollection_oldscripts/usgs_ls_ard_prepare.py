@@ -226,7 +226,7 @@ def dataset_folder(fields):
 
 
 def prepare_datasets(nbar_path):
-    fields=({})
+    fields=( {} )
     fields.update({'level': 'ARD', 'type': 'LS_USGS_ARD', 'creation_dt': (
             (crazy_parse("2014" + '0101T00:00:00')) )})
     nbar = prep_dataset(fields, nbar_path)
