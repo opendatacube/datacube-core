@@ -23,6 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     # G++ because GDAL decided it needed compiling
     g++ \
+    # numpy requires headers for cf_units
+    libudunits2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Get the code, and put it in /code
