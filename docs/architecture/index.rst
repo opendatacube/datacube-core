@@ -7,10 +7,8 @@ Architecture Guide
 
    intro.rst
    data_model.rst
-   data_load.rst
    metadata_index.rst
-   storage.rst
+   data_loading.rst
    driver.rst
-   virtual.md
    applications.rst
    data_management.rst

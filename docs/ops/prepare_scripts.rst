@@ -24,7 +24,7 @@ A specific example for USGS collection 1 MTL format is :download:`USGS Landsat P
 1. Preparing USGS Landsat Collection 1 - LEVEL1
 ============================================
 
-Download the USGS Collection 1 landsat scenes from any of the link below:
+Download the USGS Collection 1 landsat scenes from any of the links below:
 
 * `Earth-Explorer <https://earthexplorer.usgs.gov>`_
 * `GloVis <https://glovis.usgs.gov>`_

@@ -55,6 +55,11 @@ GDAL_NETCDF_DIM = ('NETCDF_DIM_'
                    if str(rasterio.__gdal_version__) >= '1.10.0' else
                    'NETCDF_DIMENSION_')
 
+# rasterio 1.0aX series had warp bug until 1.0a9 So we use workaround code for
+# these versions only, because of silly numbering scheme we can't use simple
+# comparison operators, since '1.0a10' is less than '1.0a9'
+RASTERIO_WARP_BUG = (str(rasterio.__version__) in set('1.0a%d' % i for i in range(9)))
+
 
 def _rasterio_resampling_method(resampling):
     return RESAMPLING_METHODS[resampling.lower()]
@@ -399,12 +404,12 @@ class RasterioDataSource(DataSource):
                     override = True
                     crs = self.get_crs()
 
-                # The 1.0 onwards release of rasterio has a bug that means it
+                # The [1.0a1-1.0a8] releases of rasterio had a bug that means it
                 # cannot read multiband data into a numpy array during reprojection
                 # We override it here to force the reading and reprojection into separate steps
-                # TODO: Remove when rasterio bug fixed
+                # TODO: Remove when we no longer care about those versions of rasterio
                 bandnumber = self.get_bandnumber(src)
-                if bandnumber > 1 and str(rasterio.__version__) >= '1.0':
+                if bandnumber > 1 and RASTERIO_WARP_BUG:
                     override = True
 
                 band = rasterio.band(src, bandnumber)

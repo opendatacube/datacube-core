@@ -258,11 +258,11 @@ def test_search_dataset_equals(index, pseudo_ls8_dataset):
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Wrong sensor name
-    datasets = index.datasets.search_eager(
-        platform='LANDSAT-8',
-        instrument='TM',
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            platform='LANDSAT-8',
+            instrument='TM',
+        )
 
 
 def test_search_dataset_by_metadata(index, pseudo_ls8_dataset):
@@ -603,12 +603,12 @@ def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_tele
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results when searching for a different dataset type.
-    datasets = index.datasets.search_eager(
-        product=ls5_telem_type.name,
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS'
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            product=ls5_telem_type.name,
+            platform='LANDSAT_8',
+            instrument='OLI_TIRS'
+        )
 
     # One result when no types specified.
     datasets = index.datasets.search_eager(
@@ -619,12 +619,12 @@ def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_tele
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results for different metadata type.
-    datasets = index.datasets.search_eager(
-        metadata_type='telemetry',
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS'
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            metadata_type='telemetry',
+            platform='LANDSAT_8',
+            instrument='OLI_TIRS'
+        )
 
 
 def test_search_special_fields(index, pseudo_ls8_type, pseudo_ls8_dataset,
@@ -643,11 +643,11 @@ def test_search_special_fields(index, pseudo_ls8_type, pseudo_ls8_dataset,
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Unknown field: no results
-    datasets = index.datasets.search_eager(
-        platform='LANDSAT_8',
-        flavour='chocolate',
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            platform='LANDSAT_8',
+            flavour='chocolate',
+        )
 
 
 def test_search_by_uri(index, ls5_dataset_w_children):
@@ -662,12 +662,12 @@ def test_search_by_uri(index, ls5_dataset_w_children):
 
 def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
     # Should return no results.
-    datasets = index.datasets.search_eager(
-        product=pseudo_ls8_type.name,
-        # The telemetry type is not of type storage_unit.
-        metadata_type='storage_unit'
-    )
-    assert len(datasets) == 0
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            product=pseudo_ls8_type.name,
+            # The telemetry type is not of type storage_unit.
+            metadata_type='storage_unit'
+        )
 
 
 def test_fetch_all_of_md_type(index, pseudo_ls8_dataset):
@@ -687,10 +687,10 @@ def test_fetch_all_of_md_type(index, pseudo_ls8_dataset):
     assert results[0].id == pseudo_ls8_dataset.id
 
     # No results for another.
-    results = index.datasets.search_eager(
-        metadata_type='telemetry'
-    )
-    assert len(results) == 0
+    with pytest.raises(ValueError):
+        results = index.datasets.search_eager(
+            metadata_type='telemetry'
+        )
 
 
 def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_telem_type):
@@ -1109,6 +1109,10 @@ def test_csv_search_via_cli(clirunner, pseudo_ls8_type, pseudo_ls8_dataset, pseu
         rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 0
 
+    def no_such_product(*args):
+        with pytest.raises(ValueError):
+            rows = _cli_csv_search(('datasets',) + args, clirunner)
+
     matches_both(' -40 < lat < -10')
     matches_both('product=' + pseudo_ls8_type.name)
 
@@ -1119,7 +1123,7 @@ def test_csv_search_via_cli(clirunner, pseudo_ls8_type, pseudo_ls8_dataset, pseu
     matches_1('platform=LANDSAT_8', '2014-07-24<time<2014-07-27')
 
     # One matching field, one non-matching
-    matches_none('2014-07-24<time<2014-07-27', 'platform=LANDSAT_5')
+    no_such_product('2014-07-24<time<2014-07-27', 'platform=LANDSAT_5')
 
     # Test date shorthand
     matches_both('2014-7 < time < 2014-8')

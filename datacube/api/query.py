@@ -194,10 +194,13 @@ def query_geopolygon(geopolygon=None, **kwargs):
     elif len(crs) > 1:
         raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
 
-    if geopolygon and spatial_dims:
+    if geopolygon is not None and len(spatial_dims) > 0:
         raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS + CRS_KEYS,))
 
-    return geopolygon or _range_to_geopolygon(**spatial_dims)
+    if geopolygon is None:
+        return _range_to_geopolygon(**spatial_dims)
+
+    return geopolygon
 
 
 def query_group_by(group_by='time', **kwargs):

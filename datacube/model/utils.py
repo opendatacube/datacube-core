@@ -83,10 +83,17 @@ def new_dataset_info():
     }
 
 
-def band_info(band_names):
+def band_info(band_names, band_uris=None):
+    """
+    :param list band_names: names of the bands
+    :param dict band_uris: mapping from names to dicts with 'path' and 'layer' specs
+    """
+    if band_uris is None:
+        band_uris = {name: {'path': '', 'layer': name} for name in band_names}
+
     return {
         'image': {
-            'bands': {name: {'path': '', 'layer': name} for name in band_names}
+            'bands': {name: band_uris[name] for name in band_names}
         }
     }
 
@@ -166,7 +173,8 @@ def xr_apply(data_array, func, dtype):
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 
 
-def make_dataset(product, sources, extent, center_time, valid_data=None, uri=None, app_info=None):
+def make_dataset(product, sources, extent, center_time,
+                 valid_data=None, uri=None, app_info=None, band_uris=None):
     """
     Create :class:`datacube.model.Dataset` for the data
 
@@ -177,13 +185,14 @@ def make_dataset(product, sources, extent, center_time, valid_data=None, uri=Non
     :param center_time: time of the central point of the dataset
     :param str uri: The uri of the dataset
     :param dict app_info: Additional metadata to be stored about the generation of the product
+    :param dict band_uris: band name to uri mapping
     :rtype: class:`Dataset`
     """
     document = {}
     merge(document, product.metadata_doc)
     merge(document, new_dataset_info())
     merge(document, machine_info())
-    merge(document, band_info(product.measurements.keys()))
+    merge(document, band_info(product.measurements.keys(), band_uris=band_uris))
     merge(document, source_info(sources))
     merge(document, geobox_info(extent, valid_data))
     merge(document, time_info(center_time))
