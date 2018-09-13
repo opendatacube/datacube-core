@@ -24,10 +24,7 @@ from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
 from .sql import FLOAT8RANGE
 
-try:
-    from typing import Any, Callable, Tuple, Union
-except ImportError:
-    pass
+from typing import Any, Callable, Tuple, Union
 
 
 class PgField(Field):

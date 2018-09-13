@@ -6,6 +6,10 @@ git:
   # we can reach the last tagged version.
   depth: 99999
 
+env:
+  global:
+    - CC_TEST_REPORTER_ID=56b5f09a9339c3ada591c94a6430823aee15e426fbcd9990e04fe936e40c8582
+
 language: python
 python:
   - "3.5"
@@ -27,6 +31,7 @@ addons:
       - sourceline: ppa:nextgis/ppa
     packages:
       - gdal-bin
+      - gdal-data
       - libgdal-dev
       - libgdal20
       - libudunits2-0
@@ -43,11 +48,12 @@ before_install:
   - export CPLUS_INCLUDE_PATH=/usr/include/gdal
   - export C_INCLUDE_PATH=/usr/include/gdal
   - pip install coveralls
+  - pip install --requirement requirements-test.txt
 
 
 install:
 # Install datacube
-  - pip install '.[test,celery,s3]' --upgrade
+  - pip install '.[test,celery,s3]'
   - pip install ./tests/drivers/fail_drivers --no-deps --upgrade  # used to test exception paths in driver loader
 
 # Print installed packages in case we need to debug them
@@ -57,6 +63,11 @@ install:
   - df -h
   - df -i
 
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+
 script:
 # Ensure we are running against the correct python version
   - '[[ $(python --version 2>&1) == *"$TRAVIS_PYTHON_VERSION"* ]]'
@@ -64,18 +75,21 @@ script:
 # Run all the linting and tests
   - ./check-code.sh integration_tests
 
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
+
 after_success:
   - test $TRAVIS_PYTHON_VERSION = "3.6" && coveralls
 
 before_deploy:
-  - python setup.py sdist --dist-dir dist/$TRAVIS_PYTHON_VERSION
-  - DEPLOY_PATH=$TRAVIS_REPO_SLUG/${TRAVIS_TAG:-$TRAVIS_BRANCH}  # eg opendatacube/datacube-core/datacube-1.4.2
+  - python setup.py sdist bdist_wheel
 
 # On success, upload a package to an S3 Bucket. Used for continuous deployment.
 deploy:
-  # Deploy the source dist tarball to s3 for tags or the develop branch, so that it can be installed on other systems
-  # For tags, the object will be opendatacube/datacube-core/datacube-1.4.2/3.6/datacube-1.4.2.tar.gz
-  # For develop, the object will be opendatacube/datacube-core/develop/3.6/datacube-1.4.1+91.g43bd4e12.tar.gz
+  # Deploy the sdist tarball and bdist_wheel to s3 for tags or the develop branch
+  # It can be installed via pip install --extra-index-url https://packages.dea.gadevs.ga/ datacube
+  # For tags, the object will be datacube/datacube-1.4.2.tar.gz
+  # For develop, the object will be datacube/datacube-1.4.1+91.g43bd4e12.tar.gz
   - provider: s3
     access_key_id: "AKIAJMZN4F5L5KXPQKVQ"
     secret_access_key:
@@ -83,13 +97,23 @@ deploy:
     bucket: "datacube-core-deployment"
     region: "ap-southeast-2"
     local_dir: dist
-    upload_dir: $DEPLOY_PATH
+    upload_dir: datacube
     skip_cleanup: true
     on:
       all_branches: true  # Let the condition below decide if the branch is to be deployed
       condition: $TRAVIS_BRANCH = "develop" || ! -z "${TRAVIS_TAG}"  # develop branch or tags
       repo: opendatacube/datacube-core
       python: "3.6"
+  - provider: pypi
+    user: damien.ayers
+    password:
+      secure: "D868pBc2xCF67O2MjLc+OeuIJjIFxSOEhmm7D7lmWqqkJPf+af8qmIBmjJQoyegpiI0n6wwORG65V7E0rCvJlcNtbDwcCYNbGYoFqptZ1OjRedSjr72Vn+45hkgXcyqCyuNf9kikCZv3VkR4yLvput5j9glHAESarrKAQahLdObzJ1cHdPokEPYD1ibyT+wM5jmQJx5Q1Cp3P+c7EE7DTm/g1HL9g4vAx/b729dMVodGrly0gRzH99ivKDMUaUcMRlIABFJvl4qxNn6O7X3SUaEzqKy2gqMzCcjlqwU4rrfTizy5fxPD7r2RJ3RZFv1iPMGF1qLCutN6JzBZltKHVcObUXmm+5ZEGcarpzllkp4gmFcSI47TLLMgQ2nn9UVfmeYqAnbBkjNLZS4/8CfhZFn/QY0gqmZUSo8sdwSqOgACbMwUN5F0qdm/Cq66kS/0iTM4WeShYrhkDX5txFQM11DVPC3fuxs2PhastnwBMPybhEqj0dhCOS1u4bStJN2vAygFTkuHWEZYsI4tyyXb6q1rtx6palbKgTS1UI/+HCh0fhdBPMTjciFldWxkf9ZyVMMcxKSEavqfan78OMfXo2xnn3HgsyiOXtKzrIngPt/8amKIQ7L2cjdG/bGxE9TtH2wU9hLk4g7BQDR13lv8s3l4DsW/6B5lO2lodZ14nfE="
+    distributions: sdist bdist_wheel
+    on:
+      branch: stable
+      tags: true
+      python: 3.6
+      repo: opendatacube/datacube-core
 
 notifications:
   slack:

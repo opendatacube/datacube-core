@@ -21,9 +21,13 @@ import logging
 import datetime
 import collections
 import warnings
+import calendar
+import re
+import pandas
 
 from dateutil import tz
 from pandas import to_datetime as pandas_to_datetime
+from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 import numpy as np
 
 from ..compat import string_types, integer_types
@@ -50,11 +54,11 @@ class Query(object):
 
         >>> query = Query(product='ls5_nbar_albers', time=('2001-01-01', '2002-01-01'))
 
-        Use by accessing :attr:`search_terms`::
+        Use by accessing :attr:`search_terms`:
 
         >>> query.search_terms['time']  # doctest: +NORMALIZE_WHITESPACE
         Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=<UTC>), \
-        end=datetime.datetime(2002, 1, 1, 0, 0, tzinfo=<UTC>))
+        end=datetime.datetime(2002, 1, 1, 23, 59, 59, 999999, tzinfo=tzutc()))
 
         By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
 
@@ -138,52 +142,6 @@ class Query(object):
         """.format(type=self.product,
                    search=self.search,
                    geopolygon=self.geopolygon)
-
-
-class DescriptorQuery(Query):
-    """
-    Representation of an old `get_descriptor()/get_data()` style query for the :class:`datacube.API`.
-    """
-    def __init__(self, descriptor_request=None):
-        super(DescriptorQuery, self).__init__()
-
-        if descriptor_request is None:
-            descriptor_request = {}
-        if not isinstance(descriptor_request, collections.Mapping):
-            raise ValueError('Could not understand descriptor {}'.format(descriptor_request))
-
-        if 'storage_type' in descriptor_request:
-            self.product = descriptor_request['storage_type']
-        defined_keys = ('dimensions', 'variables', 'product', 'storage_type')
-        self.search = {key: value for key, value in descriptor_request.items() if key not in defined_keys}
-
-        if 'product' in descriptor_request:
-            self.search['product_type'] = descriptor_request['product']
-
-        if 'variables' in descriptor_request:
-            self.measurements = descriptor_request['variables']
-
-        group_by_name = 'time'
-        if 'dimensions' in descriptor_request:
-            dims = descriptor_request['dimensions']
-
-            spatial_dims = {dim: v for dim, v in dims.items() if dim in SPATIAL_KEYS}
-            range_params = {dim: v['range'] for dim, v in spatial_dims.items() if 'range' in v}
-            crs = {c for dim, v in dims.items() for k, c in v.items() if k in CRS_KEYS}
-            if len(crs) == 1:
-                range_params['crs'] = crs.pop()
-            elif len(crs) > 1:
-                raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
-            self.geopolygon = _range_to_geopolygon(**range_params)
-
-            other_dims = {dim: v for dim, v in dims.items()
-                          if dim not in ['latitude', 'lat', 'y', 'longitude', 'lon', 'x']}
-            self.search.update(_range_to_search(**other_dims))
-            self.slices = {dim: slice(*v['array_range']) for dim, v in dims.items() if 'array_range' in v}
-            groups = [v['group_by'] for dim, v in dims.items() if 'group_by' in v]
-            if groups:
-                group_by_name = groups[0]
-        self.group_by = query_group_by(group_by_name)
 
 
 def query_geopolygon(geopolygon=None, **kwargs):
@@ -273,20 +231,6 @@ def _value_to_range(value):
         return float(value[0]), float(value[-1])
 
 
-def _range_to_search(**kwargs):
-    search = {}
-    for key, value in kwargs.items():
-        if key.lower() in ('time', 't'):
-            time_range = value['range']
-            search['time'] = _time_to_search_dims(time_range)
-        elif key not in ['latitude', 'lat', 'y'] + ['longitude', 'lon', 'x']:
-            if isinstance(value, collections.Sequence) and len(value) == 2:
-                search[key] = Range(*value)
-            else:
-                search[key] = value
-    return search
-
-
 def _values_to_search(**kwargs):
     search = {}
     for key, value in kwargs.items():
@@ -324,16 +268,36 @@ def _to_datetime(t):
 
     return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
 
-
 def _time_to_search_dims(time_range):
-    if hasattr(time_range, '__iter__') and len(time_range) == 2:
-        time_range = Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
-        if time_range[0] == time_range[1]:
-            return time_range[0]
-        return time_range
-    else:
-        return _to_datetime(time_range)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
 
+        tr_start, tr_end = time_range, time_range
+
+        #pylint: disable=bad-whitespace
+        if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
+            l = list(time_range)
+            tr_start, tr_end = l[0], l[-1]
+
+        # Attempt conversion to isoformat
+        # allows pandas.Period to handle
+        # date and datetime objects
+        if hasattr(tr_start, 'isoformat'):
+            tr_start = tr_start.isoformat()
+        if hasattr(tr_end, 'isoformat'):
+            tr_end   = tr_end.isoformat()
+
+        start = _to_datetime(tr_start)
+        end   = _to_datetime(pandas.Period(tr_end)
+                             .end_time
+                             .to_pydatetime()
+                            )
+
+        tr = Range(start, end)
+        if start == end:
+            return tr[0]
+
+        return tr
 
 def _convert_to_solar_time(utc, longitude):
     seconds_per_degree = 240

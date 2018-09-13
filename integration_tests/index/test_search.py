@@ -12,6 +12,7 @@ import uuid
 from decimal import Decimal
 from pathlib import Path
 from uuid import UUID
+from typing import List, Tuple, Iterable, Dict
 
 import pytest
 import yaml
@@ -20,18 +21,16 @@ from psycopg2._range import NumericRange
 
 import datacube.scripts.cli_app
 import datacube.scripts.search_tool
+from datacube.config import LocalConfig
 from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgres._connections import DEFAULT_DB_USER
 from datacube.index.index import Index
 from datacube.model import Dataset
 from datacube.model import DatasetType
 from datacube.model import MetadataType
 from datacube.model import Range
-from datacube.scripts import dataset as dataset_script
 
-try:
-    from typing import List
-except ImportError:
-    pass
+from datacube.testutils import load_dataset_definition
 
 
 @pytest.fixture
@@ -215,18 +214,10 @@ def pseudo_ls8_dataset4(index, initialised_postgres_db, pseudo_ls8_type, pseudo_
 
 
 @pytest.fixture
-def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_products):
-    # type: (Driver, Path, DatasetType) -> Dataset
-    # TODO: We need a higher-level API for indexing paths, rather than reaching inside the cli script
-    datasets = list(
-        dataset_script.load_datasets(
-            [example_ls5_dataset_path],
-            dataset_script.load_rules_from_types(index)
-        )
-    )
-    assert len(datasets) == 1
-    d = index.datasets.add(datasets[0])
-    return index.datasets.get(d.id, include_sources=True)
+def ls5_dataset_w_children(index, clirunner, example_ls5_dataset_path, indexed_ls5_scene_products):
+    clirunner(['dataset', 'add', str(example_ls5_dataset_path)])
+    doc = load_dataset_definition(example_ls5_dataset_path)
+    return index.datasets.get(doc.id, include_sources=True)
 
 
 @pytest.fixture
@@ -396,20 +387,40 @@ def test_search_globally(index, pseudo_ls8_dataset):
     assert results[0].sources is None
 
 
+def _load_product_query(
+        lazy_results: Dict[DatasetType, Iterable[Dataset]]
+) -> Dict[str, List[Dataset]]:
+    """
+    search_by_product() returns two levels of laziness. load them all into memory
+    for easy comparison/counts
+    """
+    products = {}
+    for product, datasets in lazy_results:
+        assert product.name not in products, "search_by_product() returned a product twice"
+        products[product.name] = list(datasets)
+    return products
+
+
 def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_products,
                            ls5_dataset_w_children):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.Index
     """
-    # Expect one product with our one dataset.
-    products = list(index.datasets.search_by_product(
+
+    # Query all the test data, the counts should match expected
+    results = _load_product_query(index.datasets.search_by_product())
+    assert len(results) == 7
+    dataset_count = sum(len(ds) for ds in results.values())
+    assert dataset_count == 4
+
+    # Query one product
+    products = _load_product_query(index.datasets.search_by_product(
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
     ))
     assert len(products) == 1
-    product, datasets = products[0]
-    assert product.id == pseudo_ls8_type.id
-    assert next(datasets).id == pseudo_ls8_dataset.id
+    [dataset] = products[pseudo_ls8_type.name]
+    assert dataset.id == pseudo_ls8_dataset.id
 
 
 def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
@@ -420,6 +431,15 @@ def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
     datasets = list(index.datasets.search(limit=0))
     assert len(datasets) == 0
     datasets = list(index.datasets.search(limit=5))
+    assert len(datasets) == 2
+
+    datasets = list(index.datasets.search_returning(('id',)))
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search_returning(('id',), limit=1))
+    assert len(datasets) == 1
+    datasets = list(index.datasets.search_returning(('id',), limit=0))
+    assert len(datasets) == 0
+    datasets = list(index.datasets.search_returning(('id',), limit=5))
     assert len(datasets) == 2
 
 
@@ -487,11 +507,14 @@ def test_search_or_expressions(index,
     assert datasets[0].id == pseudo_ls8_dataset.id
 
 
-def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_products):
-    # type: (Index, DatasetType, Dataset, list) -> None
+def test_search_returning(index, local_config, pseudo_ls8_type, pseudo_ls8_dataset,
+                          ls5_dataset_w_children):
+    # type: (Index, LocalConfig, DatasetType, Dataset, list) -> None
     """
     :type index: datacube.index._api.Index
     """
+
+    assert index.datasets.count() == 4, "Expected four test datasets"
 
     # Expect one product with our one dataset.
     results = list(index.datasets.search_returning(
@@ -500,8 +523,8 @@ def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls
         instrument='OLI_TIRS',
     ))
     assert len(results) == 1
-    id, path_range, sat_range = results[0]
-    assert id == pseudo_ls8_dataset.id
+    id_, path_range, sat_range = results[0]
+    assert id_ == pseudo_ls8_dataset.id
     # TODO: output nicer types?
     assert path_range == NumericRange(Decimal('116'), Decimal('116'), '[]')
     assert sat_range == NumericRange(Decimal('74'), Decimal('84'), '[]')
@@ -512,9 +535,30 @@ def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls
         instrument='OLI_TIRS',
     ))
     assert len(results) == 1
-    id, document = results[0]
-    assert id == pseudo_ls8_dataset.id
+    id_, document = results[0]
+    assert id_ == pseudo_ls8_dataset.id
     assert document == pseudo_ls8_dataset.metadata_doc
+
+    my_username = local_config.get('db_username', DEFAULT_DB_USER)
+
+    # Mixture of document and native fields
+    results = list(index.datasets.search_returning(
+        ('id', 'creation_time', 'format', 'label'),
+        platform='LANDSAT_8',
+        indexed_by=my_username,
+    ))
+    assert len(results) == 1
+
+    # type: (uuid.UUID, datetime.datetime, str, str)
+    id_, creation_time, format_, label = results[0]
+
+    assert id_ == pseudo_ls8_dataset.id
+    assert format_ == 'PSEUDOMD'
+
+    # It's always UTC in the document
+    expected_time = creation_time.astimezone(tz.tzutc()).replace(tzinfo=None)
+    assert expected_time.isoformat() == pseudo_ls8_dataset.metadata_doc['creation_dt']
+    assert label == pseudo_ls8_dataset.metadata_doc['ga_label']
 
 
 def test_search_returning_rows(index, pseudo_ls8_type,
@@ -850,7 +894,6 @@ def test_source_filter(clirunner, index, example_ls5_dataset_path):
         [
             'dataset',
             'add',
-            '--auto-match',
             str(example_ls5_dataset_path)
         ]
     )
@@ -951,9 +994,11 @@ def test_cli_info(index, clirunner, pseudo_ls8_dataset, pseudo_ls8_dataset2):
         '- file:///tmp/location2',
         '- file:///tmp/location1',
         'fields:',
+        '    creation_time: 2015-04-22 06:32:04',
         '    format: PSEUDOMD',
         '    gsi: null',
         '    instrument: OLI_TIRS',
+        '    label: LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_116_074_20150330T022553Z20150330T022657',
         '    lat: {begin: -31.37116, end: -29.23394}',
         '    lon: {begin: 149.78434, end: 152.21782}',
         '    orbit: null',
@@ -1144,8 +1189,9 @@ def test_csv_search_via_cli(clirunner, pseudo_ls8_type, pseudo_ls8_dataset, pseu
 
 
 # Headers are currently in alphabetical order.
-_EXPECTED_OUTPUT_HEADER = 'dataset_type_id,format,gsi,id,instrument,lat,lon,metadata_doc,metadata_type,' \
-                          'metadata_type_id,orbit,platform,product,product_type,sat_path,sat_row,time,uri'
+_EXPECTED_OUTPUT_HEADER = 'creation_time,dataset_type_id,format,gsi,id,indexed_by,indexed_time,' \
+                          'instrument,label,lat,lon,metadata_doc,metadata_type,metadata_type_id,' \
+                          'orbit,platform,product,product_type,sat_path,sat_row,time,uri'
 
 
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,

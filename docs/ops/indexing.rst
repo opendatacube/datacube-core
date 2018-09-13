@@ -23,6 +23,7 @@ Prerequisites for Indexing Data
 (Links to some freely available :ref:`sample-eo-data`.)
 
 
+
 Steps to Adding Data
 ====================
 
@@ -167,7 +168,9 @@ Adding Data - Indexing
 Everything is now ready, and we can use the **datacube** tool to add one or more
 datasets into our Cube by running::
 
+
     datacube dataset add --auto-match <path-to-dataset-document-yaml>
+
 
 
 .. _sample-eo-data:

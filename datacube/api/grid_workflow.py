@@ -10,7 +10,7 @@ import pandas as pd
 
 from ..utils import intersects
 from .query import Query, query_group_by
-from .core import Datacube, set_resampling_method
+from .core import Datacube, apply_aliases
 
 _LOG = logging.getLogger(__name__)
 
@@ -155,7 +155,7 @@ class GridWorkflow(object):
             grid_spec = product and product.grid_spec
         self.grid_spec = grid_spec
 
-    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=(0, 0), **indexers):
+    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=None, **indexers):
         """
         List datasets, grouped by cell.
 
@@ -175,7 +175,10 @@ class GridWorkflow(object):
 
             :class:`datacube.api.query.Query`
         """
-        if tile_buffer != (0, 0) and geopolygon is not None:
+        # pylint: disable=too-many-locals
+        # TODO: split this method into 3: cell/polygon/unconstrained querying
+
+        if tile_buffer is not None and geopolygon is not None:
             raise ValueError('Cannot process tile_buffering and geopolygon together.')
         cells = {}
 
@@ -195,26 +198,30 @@ class GridWorkflow(object):
             return cells
         else:
             datasets, query = self._find_datasets(geopolygon, indexers)
+            geobox_cache = {}
 
             if query.geopolygon:
                 # Get a rough region of tiles
                 query_tiles = set(
                     tile_index for tile_index, tile_geobox in
-                    self.grid_spec.tiles_inside_geopolygon(query.geopolygon))
+                    self.grid_spec.tiles_from_geopolygon(query.geopolygon, geobox_cache=geobox_cache))
 
                 for dataset in datasets:
                     # Go through our datasets and see which tiles each dataset produces, and whether they intersect
                     # our query geopolygon.
                     dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
-                    for tile_index, tile_geobox in self.grid_spec.tiles(
-                            dataset_extent.boundingbox.buffered(*tile_buffer)):
+                    bbox = dataset_extent.boundingbox
+                    bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
+
+                    for tile_index, tile_geobox in self.grid_spec.tiles(bbox, geobox_cache=geobox_cache):
                         if tile_index in query_tiles and intersects(tile_geobox.extent, dataset_extent):
                             add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             else:
                 for dataset in datasets:
-                    for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent,
-                                                                                          tile_buffer=tile_buffer):
+                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(dataset.extent,
+                                                                                        tile_buffer=tile_buffer,
+                                                                                        geobox_cache=geobox_cache):
                         add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             return cells
@@ -357,7 +364,10 @@ class GridWorkflow(object):
         :param fuse_func: Function to fuse together a tile that has been pre-grouped by calling
             :meth:`list_cells` with a ``group_by`` parameter.
 
-        :param str resampling: The resampling method to use if re-projection is required.
+        :param str|dict resampling:
+
+            The resampling method to use if re-projection is required, could be
+            configured per band using a dictionary (:meth: `load_data`)
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
 
@@ -371,13 +381,14 @@ class GridWorkflow(object):
         .. seealso::
             :meth:`list_tiles` :meth:`list_cells`
         """
-        measurements = tile.product.lookup_measurements(measurements)
-        measurements = set_resampling_method(measurements, resampling)
+        measurement_dicts = tile.product.lookup_measurements(measurements)
 
-        dataset = Datacube.load_data(tile.sources, tile.geobox, measurements.values(), dask_chunks=dask_chunks,
-                                     fuse_func=fuse_func, skip_broken_datasets=skip_broken_datasets)
+        dataset = Datacube.load_data(tile.sources, tile.geobox,
+                                     measurement_dicts, resampling=resampling,
+                                     dask_chunks=dask_chunks, fuse_func=fuse_func,
+                                     skip_broken_datasets=skip_broken_datasets)
 
-        return dataset
+        return apply_aliases(dataset, tile.product, measurements)
 
     def update_tile_lineage(self, tile):
         for i in range(tile.sources.size):

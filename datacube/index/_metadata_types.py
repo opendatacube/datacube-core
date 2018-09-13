@@ -74,7 +74,7 @@ class MetadataTypeResource(object):
             )
         else:
             with self._db.connect() as connection:
-                connection.add_metadata_type(
+                connection.insert_metadata_type(
                     name=metadata_type.name,
                     definition=metadata_type.definition,
                     concurrently=not allow_table_lock
@@ -256,6 +256,6 @@ class MetadataTypeResource(object):
         """
         return MetadataType(
             definition,
-            dataset_search_fields=self._db.get_dataset_fields(definition['dataset']['search_fields']),
+            dataset_search_fields=self._db.get_dataset_fields(definition),
             id_=id_
         )

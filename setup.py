@@ -23,7 +23,7 @@ extras_require = {
     'doc': ['Sphinx', 'setuptools'],
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'celery': ['celery>=4', 'redis'],
-    's3': ['boto3==1.4.3', 'SharedArray', 'pathos', 'zstandard'],
+    's3': ['boto3', 'SharedArray', 'pathos', 'zstandard'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.
@@ -52,8 +52,8 @@ setup(
     python_requires='>=3.5.2',
 
     url='https://github.com/opendatacube/datacube-core',
-    author='AGDC Collaboration',
-    maintainer='AGDC Collaboration',
+    author='Open Data Cube',
+    maintainer='Open Data Cube',
     maintainer_email='',
     description='An analysis environment for satellite and other earth observation data',
     long_description=open('README.rst').read(),
@@ -104,9 +104,10 @@ setup(
         'pypeg2',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=0.9a10',  # required for zip reading, 0.9 gets around 1.0a ordering problems
+        'rasterio>=1.0.2',  # Multi-band re-project fixed in that version
         'singledispatch',
         'sqlalchemy',
+        'toolz',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
     ],
     extras_require=extras_require,

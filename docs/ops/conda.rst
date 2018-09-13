@@ -17,7 +17,7 @@ Add conda-forge channel
     conda config --add channels conda-forge
 
 conda-forge channel provides multitude of community maintained packages.
-Find out more about it here https://conda-forge.github.io
+Find out more about it here https://conda-forge.org/
 
 Create the environment
 ----------------------

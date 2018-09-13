@@ -2,13 +2,6 @@ name: ls8_usgs_sr_scene
 description: Landsat 8 USGS Collection 1 Level2 Surface Reflectance LaSRC. 30m UTM based projection.
 metadata_type: eo
 
-storage:
-    crs: PROJCS["WGS 84",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",105],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]]
-
-    resolution:
-        x: 30
-        y: -30
-
 metadata:
     platform:
         code: LANDSAT_8
@@ -19,38 +12,48 @@ metadata:
         name: GeoTiff
 
 measurements:
-    - name: 'sr_band1'
-      aliases: [band_1, coastal_aerosol]
+    - name: 'coastal_aerosol'
+      aliases: [band_1, sr_band1]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band2'
-      aliases: [band_2, blue]
+    - name: 'blue'
+      aliases: [band_2, sr_band2]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band3'
-      aliases: [band_3, green]
+    - name: 'green'
+      aliases: [band_3, sr_band3]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band4'
-      aliases: [band_4, red]
+    - name: 'red'
+      aliases: [band_4, sr_band4]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band5'
-      aliases: [band_5, nir]
+    - name: 'nir'
+      aliases: [band_5, sr_band5]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band6'
-      aliases: [band_6, swir1]
+    - name: 'swir1'
+      aliases: [band_6, sr_band6]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band7'
-      aliases: [band_7, swir2]
+    - name: 'swir2'
+      aliases: [band_7, sr_band7]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'lwir1'
+      aliases: [band_10, bt_band10]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'lwir2'
+      aliases: [band_11, bt_band11]
       dtype: int16
       nodata: -9999
       units: '1'
@@ -80,6 +83,55 @@ measurements:
             8192: Unused
             16384: Unused
             32786: Unused
+        nodata:
+          bits: 0
+          values:
+            0: false
+            1: true
+        clear:
+          bits: 1
+          values:
+            0: no_clear_land
+            1: clear_land
+        water:
+          bits: 2
+          values:
+            0: no_water
+            1: water
+        cloud_shadow:
+          bits: 3
+          values:
+            0: no_cloud_shadow
+            1: cloud_shadow
+        snow:
+          bits: 4
+          values:
+            0: no_snow
+            1: snow
+        cloud:
+          bits: 5
+          values:
+            0: no_cloud
+            1: cloud
+        cloud_confidence:
+          bits: [6, 7]
+          values:
+            0: none
+            1: low
+            2: medium
+            3: high
+        cirrus_confidence:
+          bits: [8, 9]
+          values:
+            0: none
+            1: low
+            2: medium
+            3: high
+        terrain_occlusion:
+          bits: 10
+          values:
+            0: no_occlusion
+            1: occlusion
     - name: 'sr_aerosol'
       aliases: [sr_aerosol_qa, aerosol_qa, aerosol]
       dtype: uint8
@@ -127,12 +179,6 @@ name: ls7_usgs_sr_scene
 description: Landsat 7 USGS Collection 1 Level2 Surface Reflectance LEDAPS. 30m UTM based projection.
 metadata_type: eo
 
-storage:
-    crs: PROJCS["WGS 84",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",105],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]]
-    resolution:
-        x: 30
-        y: -30
-
 metadata:
     platform:
         code: LANDSAT_7
@@ -143,33 +189,38 @@ metadata:
         name: GeoTiff
 
 measurements:
-    - name: 'sr_band1'
-      aliases: [band_1, blue]
+    - name: 'blue'
+      aliases: [band_1, sr_band1]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band2'
-      aliases: [band_2, green]
+    - name: 'green'
+      aliases: [band_2, sr_band2]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band3'
-      aliases: [band_3, red]
+    - name: 'red'
+      aliases: [band_3, sr_band3]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band4'
-      aliases: [band_4, nir]
+    - name: 'nir'
+      aliases: [band_4, sr_band4]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band5'
-      aliases: [band_5, swir1]
+    - name: 'swir1'
+      aliases: [band_5, sr_band5]
       dtype: int16
       nodata: -9999
       units: '1'
-    - name: 'sr_band7'
-      aliases: [band_7, swir2]
+    - name: 'swir2'
+      aliases: [band_7, sr_band7]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'lwir'
+      aliases: [band_6, bt_band6]
       dtype: int16
       nodata: -9999
       units: '1'
@@ -204,6 +255,55 @@ measurements:
             8192: Unused
             16384: Unused
             32786: Unused
+        nodata:
+          bits: 0
+          values:
+            0: false
+            1: true
+        clear:
+          bits: 1
+          values:
+            0: no_clear_land
+            1: clear_land
+        water:
+          bits: 2
+          values:
+            0: no_water
+            1: water
+        cloud_shadow:
+          bits: 3
+          values:
+            0: no_cloud_shadow
+            1: cloud_shadow
+        snow:
+          bits: 4
+          values:
+            0: no_snow
+            1: snow
+        cloud:
+          bits: 5
+          values:
+            0: no_cloud
+            1: cloud
+        cloud_confidence:
+          bits: [6, 7]
+          values:
+            0: none
+            1: low
+            2: medium
+            3: high
+        cirrus_confidence:
+          bits: [8, 9]
+          values:
+            0: none
+            1: low
+            2: medium
+            3: high
+        terrain_occlusion:
+          bits: 10
+          values:
+            0: no_occlusion
+            1: occlusion
     - name: 'radsat_qa'
       aliases: [radsat_qa]
       dtype: uint8
@@ -240,4 +340,109 @@ measurements:
             32: Land/Water
             64: Unused
             128: Unused
+---
 
+name: ls5_usgs_sr_scene
+description: Landsat 5 USGS Collection 1 Level2 Surface Reflectance LEDAPS. 30m UTM based projection.
+metadata_type: eo
+
+metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: LEDAPS
+    format:
+        name: GeoTiff
+
+measurements:
+    - name: 'blue'
+      aliases: [band_1, sr_band1]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'green'
+      aliases: [band_2, sr_band2]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'red'
+      aliases: [band_3, sr_band3]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'nir'
+      aliases: [band_4, sr_band4]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'swir1'
+      aliases: [band_5, sr_band5]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'swir2'
+      aliases: [band_7, sr_band7]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'lwir'
+      aliases: [band_6, bt_band6]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+    - name: 'pixel_qa'
+      aliases: [pixel_qa]
+      dtype: uint16
+      nodata: 1
+      units: '1'
+      flags_definition:
+        nodata:
+          bits: 0
+          values:
+            0: false
+            1: true
+        clear:
+          bits: 1
+          values:
+            0: no_clear_land
+            1: clear_land
+        water:
+          bits: 2
+          values:
+            0: no_water
+            1: water
+        cloud_shadow:
+          bits: 3
+          values:
+            0: no_cloud_shadow
+            1: cloud_shadow
+        snow:
+          bits: 4
+          values:
+            0: no_snow
+            1: snow
+        cloud:
+          bits: 5
+          values:
+            0: no_cloud
+            1: cloud
+        cloud_confidence:
+          bits: [6, 7]
+          values:
+            0: none
+            1: low
+            2: medium
+            3: high
+        cirrus_confidence:
+          bits: [8, 9]
+          values:
+            0: none
+            1: low
+            2: medium
+            3: high
+        terrain_occlusion:
+          bits: 10
+          values:
+            0: no_occlusion
+            1: occlusion

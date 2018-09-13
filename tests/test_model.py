@@ -1,10 +1,8 @@
 # coding=utf-8
-
-from __future__ import absolute_import
-
+import pytest
 import numpy
-from .util import mk_sample_dataset
-from datacube.model import GridSpec
+from datacube.testutils import mk_sample_dataset, mk_sample_product
+from datacube.model import GridSpec, Measurement
 from datacube.utils import geometry
 from datacube.storage.storage import measurement_paths
 
@@ -12,10 +10,19 @@ from datacube.storage.storage import measurement_paths
 def test_gridspec():
     gs = GridSpec(crs=geometry.CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(10, 10))
     poly = geometry.polygon([(10, 12.2), (10.8, 13), (13, 10.8), (12.2, 10), (10, 12.2)], crs=geometry.CRS('EPSG:4326'))
-    cells = {index: geobox for index, geobox in list(gs.tiles_inside_geopolygon(poly))}
+    cells = {index: geobox for index, geobox in list(gs.tiles_from_geopolygon(poly))}
     assert set(cells.keys()) == {(0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
     assert numpy.isclose(cells[(2, 0)].coordinates['longitude'].values, numpy.linspace(12.05, 12.95, num=10)).all()
     assert numpy.isclose(cells[(2, 0)].coordinates['latitude'].values, numpy.linspace(10.95, 10.05, num=10)).all()
+
+    # check geobox_cache
+    cache = {}
+    poly = gs.tile_geobox((3, 4)).extent
+    (c1, gbox1),  = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
+    (c2, gbox2),  = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
+
+    assert c1 == (3, 4) and c2 == c1
+    assert gbox1 is gbox2
 
 
 def test_gridspec_upperleft():
@@ -53,3 +60,51 @@ def test_dataset_measurement_paths():
 
     for k, v in paths.items():
         assert v == 'file:///tmp/' + k + '.tiff'
+
+
+def test_product_dimensions():
+    product = mk_sample_product('test_product')
+    assert product.grid_spec is None
+    assert product.dimensions == ('time', 'y', 'x')
+
+    product = mk_sample_product('test_product', with_grid_spec=True)
+    assert product.grid_spec is not None
+    assert product.dimensions == ('time', 'y', 'x')
+
+
+def test_measurement():
+    # Can create a measurement
+    m = Measurement(name='t', dtype='uint8', nodata=255, units='1')
+
+    # retrieve it's vital stats
+    assert m.name == 't'
+    assert m.dtype == 'uint8'
+    assert m.nodata == 255
+    assert m.units == '1'
+
+    # retrieve the information required for filling a DataArray
+    assert m.dataarray_attrs() == {'nodata': 255, 'units': '1'}
+
+    # Can add a new attribute by name and ensure it updates the DataArray attrs too
+    m['bob'] = 10
+    assert m.bob == 10
+    assert m.dataarray_attrs() == {'nodata': 255, 'units': '1', 'bob': 10}
+
+    m['none'] = None
+    assert m.none is None
+
+    # Resampling method is special and *not* needed for DataArray attrs
+    m['resampling_method'] = 'cubic'
+    assert 'resampling_method' not in m.dataarray_attrs()
+
+    # It's possible to copy and update a Measurement instance
+    m2 = m.copy()
+    assert m2.bob == 10
+    assert m2.dataarray_attrs() == m.dataarray_attrs()
+
+    # Must specify *all* required keys. name, dtype, nodata and units
+    with pytest.raises(ValueError) as e:
+        Measurement(name='x', units='1', nodata=0)
+
+    assert 'required keys missing:' in str(e.value)
+    assert 'dtype' in str(e.value)

@@ -9,7 +9,7 @@ The Data Cube is a set of python code with dependencies including:
 
 * Python 3.5+ (3.6 recommended)
 * GDAL
-* PostgeSQL database
+* PostgreSQL database
 
 These dependencies along with the target operating system environment should be considered when deciding how to install Data Cube to meet your system requirements.
 

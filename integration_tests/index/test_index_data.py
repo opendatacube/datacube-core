@@ -143,14 +143,14 @@ def test_index_duplicate_dataset(index, initialised_postgres_db, local_config, d
     assert index.datasets.has(_telemetry_uuid)
 
     # Insert again.
-    with pytest.raises(DuplicateRecordError):
-        with initialised_postgres_db.connect() as connection:
-            was_inserted = connection.insert_dataset(
-                _telemetry_dataset,
-                _telemetry_uuid,
-                dataset_type.id
-            )
-            assert not was_inserted
+    with initialised_postgres_db.connect() as connection:
+        was_inserted = connection.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+        assert was_inserted is False
+
     assert index.datasets.has(_telemetry_uuid)
 
 
@@ -162,6 +162,28 @@ def test_has_dataset(index, telemetry_dataset):
 
     assert not index.datasets.has(UUID('f226a278-e422-11e6-b501-185e0f80a5c0'))
     assert not index.datasets.has('f226a278-e422-11e6-b501-185e0f80a5c0')
+
+    assert index.datasets.bulk_has([_telemetry_uuid, UUID('f226a278-e422-11e6-b501-185e0f80a5c0')]) == [True, False]
+    assert index.datasets.bulk_has([str(_telemetry_uuid), 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
+
+
+def test_get_dataset(index, telemetry_dataset):
+    # type: (Index, Dataset) -> None
+
+    assert index.datasets.has(_telemetry_uuid)
+    assert index.datasets.has(str(_telemetry_uuid))
+
+    assert index.datasets.bulk_has([_telemetry_uuid, 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
+
+    for tr in (lambda x: x, str):
+        ds = index.datasets.get(tr(_telemetry_uuid))
+        assert ds.id == _telemetry_uuid
+
+        ds, = index.datasets.bulk_get([tr(_telemetry_uuid)])
+        assert ds.id == _telemetry_uuid
+
+    assert index.datasets.bulk_get(['f226a278-e422-11e6-b501-185e0f80a5c0',
+                                    'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
 
 
 def test_transactions(index, initialised_postgres_db, local_config, default_metadata_type):
@@ -221,24 +243,24 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     child = Dataset(type_, child_doc, local_uri=None, sources={'source': parent})
 
     with pytest.raises(MissingRecordError):
-        index.datasets.add(child, sources_policy='skip')
+        index.datasets.add(child, with_lineage=False)
 
-    index.datasets.add(child, sources_policy='ensure')
+    index.datasets.add(child)
     assert index.datasets.get(parent.id)
     assert index.datasets.get(child.id)
 
-    index.datasets.add(child, sources_policy='skip')
-    index.datasets.add(child, sources_policy='ensure')
-    index.datasets.add(child, sources_policy='verify')
-    # Deprecated property, but it should still work until we remove it completely.
-    index.datasets.add(child, sources_policy='skip')
+    assert len(index.datasets.bulk_get([parent.id, child.id])) == 2
+
+    index.datasets.add(child, with_lineage=False)
+    index.datasets.add(child, with_lineage=True)
 
     parent_doc['platform'] = {'code': 'LANDSAT_9'}
-    index.datasets.add(child, sources_policy='ensure')
-    index.datasets.add(child, sources_policy='skip')
+    index.datasets.add(child, with_lineage=True)
+    index.datasets.add(child, with_lineage=False)
 
-    with pytest.raises(DocumentMismatchError):
-        index.datasets.add(child, sources_policy='verify')
+    # backwards compatibility code path checks, don't use this in normal code
+    for p in ('skip', 'ensure', 'verify'):
+        index.datasets.add(child, sources_policy=p)
 
 
 # Make sure that both normal and s3aio index can handle normal data locations correctly
@@ -305,14 +327,20 @@ def test_index_dataset_with_location(index, default_metadata_type):
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
 
-    # Ingesting with a new path should add the second one too.
+    # Indexing with a new path should NOT add the second one.
     dataset.uris = [second_file.as_uri()]
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset.id)
-    assert len(locations) == 2
+    assert len(locations) == 1
+
+    # Add location manually instead
+    index.datasets.add_location(dataset.id, second_file.as_uri())
+    stored = index.datasets.get(dataset.id)
+    assert len(stored.uris) == 2
+
     # Newest to oldest.
-    assert locations == [second_file.as_uri(), first_file.as_uri()]
+    assert stored.uris == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
     assert stored.local_path == Path(second_file)
 
@@ -336,7 +364,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     locations = index.datasets.get_locations(dataset.id)
     assert locations == [second_file.as_uri(), first_file.as_uri()]
 
-    # Ingestion again without location should have no effect.
+    # Indexing again without location should have no effect.
     dataset.uri = None
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
@@ -347,13 +375,35 @@ def test_index_dataset_with_location(index, default_metadata_type):
     # And the second one is newer, so it should be returned as the default local path:
     assert stored.local_path == Path(second_file)
 
+    # Check order of uris is preserved when indexing with more than one
+    second_ds_doc = copy.deepcopy(_telemetry_dataset)
+    second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a589'
+    index.datasets.add(Dataset(type_, second_ds_doc, uris=['file:///a', 'file:///b'], sources={}))
+
+    # test order using get_locations function
+    assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///a', 'file:///b']
+
+    # test order using datasets.get(), it has custom query as it turns out
+    assert index.datasets.get(second_ds_doc['id']).uris == ['file:///a', 'file:///b']
+
+    # test update, this should prepend file:///c, file:///d to the existing list
+    index.datasets.update(Dataset(type_, second_ds_doc, uris=['file:///a', 'file:///c', 'file:///d'], sources={}))
+    assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///c', 'file:///d', 'file:///a', 'file:///b']
+    assert index.datasets.get(second_ds_doc['id']).uris == ['file:///c', 'file:///d', 'file:///a', 'file:///b']
+
     # Ability to get datasets for a location
     # Add a second dataset with a different location (to catch lack of joins, filtering etc)
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a5c0'
     index.datasets.add(Dataset(type_, second_ds_doc, uris=[second_file.as_uri()], sources={}))
-    dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri())]
-    assert dataset_ids == [dataset.id]
+    for mode in ('exact', 'prefix', None):
+        dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri(), mode=mode)]
+        assert dataset_ids == [dataset.id]
+
+    assert list(index.datasets.get_datasets_for_location(first_file.as_uri() + "#part=100")) == []
+
+    with pytest.raises(ValueError):
+        list(index.datasets.get_datasets_for_location(first_file.as_uri(), mode="nosuchmode"))
 
 
 def utc_now():

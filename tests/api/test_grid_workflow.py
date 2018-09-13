@@ -1,4 +1,4 @@
-
+import pytest
 import numpy
 from datacube.model import GridSpec
 from datacube.utils import geometry
@@ -47,6 +47,15 @@ def test_gridworkflow():
 
     # test backend : that it finds the expected cell/dataset
     assert list(gw.cell_observations(**query).keys()) == [(1, -2)]
+
+    # again but with geopolygon
+    assert list(gw.cell_observations(**query,
+                                     geopolygon=gridspec.tile_geobox((1, -2)).extent).keys()) == [(1, -2)]
+
+    with pytest.raises(ValueError) as e:
+        list(gw.cell_observations(**query, tile_buffer=(1, 1),
+                                  geopolygon=gridspec.tile_geobox((1, -2)).extent).keys())
+    assert str(e.value) == 'Cannot process tile_buffering and geopolygon together.'
 
     # test frontend
     assert len(gw.list_tiles(**query)) == 1
@@ -122,7 +131,8 @@ def test_gridworkflow():
         args = list(args)
         assert args[0] is loadable.sources
         assert args[1] is loadable.geobox
-        assert list(args[2])[0] is measurement
+        assert list(args[2].values())[0] is measurement
+        assert 'resampling' in kwargs
 
     # ------- check single cell index extract -------
     tile = gw.list_tiles(cell_index=(1, -2), **query)

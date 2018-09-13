@@ -88,7 +88,7 @@ loop for each time/irregular dimension slice
     activate BandSource
     DataSource -> BandSource: open() returns BandSource
     alt Non reprojecting read
-        BandSource -> BandSource: _read_decimated()
+        BandSource -> BandSource: _read_native()
     else ReProjecting read
         BandSource -> BandSource: reproject()
     end

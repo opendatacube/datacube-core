@@ -20,7 +20,7 @@ Required software
 
 Postgres:
 
-    Download and install the EnterpriseDB distribution from `here <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads#macosx>`_
+    Download and install the EnterpriseDB distribution from `here <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads>`_
 
  
 .. include:: common_install.rst

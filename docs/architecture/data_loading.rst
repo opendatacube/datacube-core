@@ -127,7 +127,7 @@ listed below
 
 It is assumed that individual storage units within a
 :class:`datacube.model.Dataset` are of the same format. In fact storage
-format is usually shared by all datasets belonging to the same `Product`_,
+format is usually shared by all datasets belonging to the same :ref:`Product`,
 although it is possible to index different formats under one product.
 
 Data load in detail
@@ -362,6 +362,6 @@ Storage Classes
 
 
 
-.. _rasterio: https://mapbox.github.io/rasterio/
+.. _rasterio: https://rasterio.readthedocs.io/en/latest/
 .. _xarray: https://xarray.pydata.org/
 .. _dask: https://dask.pydata.org/

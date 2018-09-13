@@ -188,6 +188,7 @@ def test_create_string_variable(tmpdir, s1, s2, s3):
     str_var = 'str_var'
     nco = create_netcdf(tmpnetcdf_filename)
     coord = create_coordinate(nco, 'greg', numpy.array([1.0, 3.0, 9.0]), 'cubic gregs')
+    assert coord is not None
 
     dtype = numpy.dtype('S100')
     data = numpy.array([s1, s2, s3], dtype=dtype)
@@ -205,17 +206,37 @@ def test_create_string_variable(tmpdir, s1, s2, s3):
 
 def test_chunksizes(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
-    coord1 = create_coordinate(nco, 'greg', numpy.array([1.0, 2.0, 3.0]), 'cubic gregs')
-    coord2 = create_coordinate(nco, 'bleh', numpy.array([1.0, 2.0, 3.0, 4.0, 5.0]), 'metric blehs')
 
-    no_chunks = create_variable(nco, 'no_chunks', Variable(numpy.dtype('int16'), None, ('greg', 'bleh'), None))
-    min_max_chunks = create_variable(nco, 'min_max_chunks', Variable(numpy.dtype('int16'), None,
-                                                                     ('greg', 'bleh'), None), chunksizes=[2, 50])
+    x = numpy.arange(3, dtype='float32')
+    y = numpy.arange(5, dtype='float32')
+
+    coord1 = create_coordinate(nco, 'x', x, 'm')
+    coord2 = create_coordinate(nco, 'y', y, 'm')
+
+    assert coord1 is not None and coord2 is not None
+
+    no_chunks = create_variable(nco, 'no_chunks',
+                                Variable(numpy.dtype('int16'), None, ('x', 'y'), None))
+
+    min_max_chunks = create_variable(nco, 'min_max_chunks',
+                                     Variable(numpy.dtype('int16'), None, ('x', 'y'), None),
+                                     chunksizes=(2, 50))
+
+    assert no_chunks is not None
+    assert min_max_chunks is not None
+
+    strings = numpy.array(["AAa", 'bbb', 'CcC'], dtype='S')
+    strings = xr.DataArray(strings, dims=['x'], coords={'x': x})
+    create_variable(nco, 'strings_unchunked', strings)
+    create_variable(nco, 'strings_chunked', strings, chunksizes=(1,))
+
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert nco['no_chunks'].chunking() == 'contiguous'
         assert nco['min_max_chunks'].chunking() == [2, 5]
+        assert nco['strings_unchunked'].chunking() == 'contiguous'
+        assert nco['strings_chunked'].chunking() == [1, 3]
 
 
 EXAMPLE_FLAGS_DEF = {

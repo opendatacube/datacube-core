@@ -14,7 +14,7 @@ from datetime import datetime
 import datacube
 from datacube.api.core import Datacube
 from datacube.index.index import Index
-from datacube.model import DatasetType, Range, GeoPolygon
+from datacube.model import DatasetType, Range, GeoPolygon, Measurement
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
 from datacube.utils import read_documents
@@ -23,7 +23,7 @@ from datacube.drivers import storage_writer_by_name
 
 from datacube.ui.click import cli
 
-_LOG = logging.getLogger('agdc-ingest')
+_LOG = logging.getLogger('datacube-ingest')
 
 FUSER_KEY = 'fuse_data'
 
@@ -49,7 +49,7 @@ def morph_dataset_type(source_type, config, index, storage_format):
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
-                                         if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
+                                         if k in ('crs', 'tile_size', 'resolution', 'origin')}
 
     output_type.metadata_doc['format'] = {'name': storage_format}
 
@@ -58,7 +58,7 @@ def morph_dataset_type(source_type, config, index, storage_format):
 
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
-        return measurement
+        return Measurement(**measurement)
 
     output_type.definition['measurements'] = [merge_measurement(output_type.measurements[spec['src_varname']], spec)
                                               for spec in config['measurements']]
@@ -88,8 +88,7 @@ def get_app_metadata(config, config_file):
         'lineage': {
             'algorithm': {
                 'name': 'datacube-ingest',
-                'version': config.get('version', 'unknown'),
-                'repo_url': 'https://github.com/GeoscienceAustralia/datacube-ingester.git',
+                'repo_url': 'https://github.com/opendatacube/datacube-core.git',
                 'parameters': {'configuration_file': config_file}
             },
         }
@@ -110,8 +109,8 @@ def get_filename(config, tile_index, sources, **kwargs):
 
 def get_measurements(source_type, config):
     def merge_measurement(measurement, spec):
-        measurement.update({k: spec.get(k) or measurement[k] for k in ('nodata', 'dtype', 'resampling_method')})
-        return measurement
+        measurement.update({k: spec.get(k) or measurement[k] for k in ('nodata', 'dtype')})
+        return Measurement(**measurement)
 
     return [merge_measurement(source_type.measurements[spec['src_varname']].copy(), spec)
             for spec in config['measurements']]
@@ -119,6 +118,12 @@ def get_measurements(source_type, config):
 
 def get_namemap(config):
     return {spec['src_varname']: spec['name'] for spec in config['measurements']}
+
+
+def get_resampling(config):
+    """ What resampling strategy to use for each input band
+    """
+    return {spec['src_varname']: spec.get('resampling_method') for spec in config['measurements']}
 
 
 def ensure_output_type(index, config, storage_format, allow_product_changes=False):
@@ -145,6 +150,8 @@ def ensure_output_type(index, config, storage_format, allow_product_changes=Fals
                 raise ValueError("Ingest config differs from the existing output product, "
                                  "but allow_product_changes=False")
             output_type = index.products.update(output_type)
+        else:
+            output_type = existing
     else:
         output_type = index.products.add(output_type)
 
@@ -156,10 +163,10 @@ def get_full_lineage(index, id_):
     return index.datasets.get(id_, include_sources=True)
 
 
-def load_config_from_file(index, config):
-    config_name = Path(config).name
-    _, config = next(read_documents(Path(config)))
-    config['filename'] = config_name
+def load_config_from_file(path):
+    config_file = Path(path)
+    _, config = next(read_documents(config_file))
+    config['filename'] = str(config_file.absolute())
 
     return config
 
@@ -211,13 +218,17 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
         raise ValueError('Something went wrong: no longer can find driver pointed by storage.driver option')
 
     namemap = get_namemap(config)
+    # TODO: get_measurements possibly changes dtype, not sure load_data would like that
     measurements = get_measurements(source_type, config)
+    resampling = get_resampling(config)
     variable_params = get_variable_params(config)
     global_attributes = config['global_attributes']
 
     with datacube.set_options(reproject_threads=1):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
-        data = Datacube.load_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
+        data = Datacube.load_data(tile.sources, tile.geobox, measurements,
+                                  resampling=resampling,
+                                  fuse_func=fuse_func)
 
     nudata = data.rename(namemap)
     file_path = get_filename(config, tile_index, tile.sources)
@@ -238,6 +249,12 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
+
+    variable_params['dataset'] = {
+        'chunksizes': (1,),
+        'zlib': True,
+        'complevel': 9,
+    }
 
     storage_metadata = driver.write_dataset_to_storage(nudata, file_path,
                                                        global_attributes=global_attributes,
@@ -261,7 +278,7 @@ def _index_datasets(index, results):
             extra_args['storage_metadata'] = datasets.attrs['storage_metadata']
 
         for dataset in datasets.values:
-            index.datasets.add(dataset, sources_policy='skip', **extra_args)
+            index.datasets.add(dataset, with_lineage=False, **extra_args)
             n += 1
     return n
 
@@ -277,24 +294,30 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
                                **task)
 
     pending = []
-    n_successful = n_failed = 0
+
+    # Count of storage unit/s indexed successfully or failed to index
+    index_successful = index_failed = 0
+
+    # Count of storage unit/s failed during file creation
+    f_failed = 0
 
     tasks = iter(tasks)
-    while True:
-        pending += [submit_task(task) for task in itertools.islice(tasks, max(0, queue_size - len(pending)))]
-        if not pending:
-            break
-
+    pending += [submit_task(task) for task in itertools.islice(tasks, max(0, queue_size - len(pending)))]
+    total = pending
+    while pending:
         completed, failed, pending = executor.get_ready(pending)
-        _LOG.info('completed %s, failed %s, pending %s', len(completed), len(failed), len(pending))
 
         for future in failed:
             try:
                 executor.result(future)
-            except Exception:  # pylint: disable=broad-except
-                _LOG.exception('Task failed')
-                n_failed += 1
+            except Exception as err:  # pylint: disable=broad-except
+                _LOG.exception('Failed to create storage unit file (Exception: %s) ', str(err))
+                f_failed += 1
 
+        _LOG.info('Storage unit file creation status (completed: %s, failed: %s, pending: %s)',
+                  (len(total) - len(pending) - f_failed),
+                  f_failed,
+                  len(pending))
         if not completed:
             time.sleep(1)
             continue
@@ -304,12 +327,14 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
             # maybe limit gather to 50-100 results and put the rest into a index backlog
             # this will also keep the queue full
             results = executor.results(completed)
-            n_successful += _index_datasets(index, results)
-        except Exception as e:  # pylint: disable=broad-except
-            _LOG.exception('Gather failed')
-            pending += completed
+            index_successful += _index_datasets(index, results)
+        except Exception as err:  # pylint: disable=broad-except
+            _LOG.exception('Failed to index storage unit file (Exception: %s)', str(err))
+            index_failed += 1
 
-    return n_successful, n_failed
+        _LOG.info('Storage unit files indexed (successful: %s, failed: %s)', index_successful, index_failed)
+
+    return index_successful, index_failed
 
 
 def _validate_year(ctx, param, value):
@@ -323,6 +348,15 @@ def _validate_year(ctx, param, value):
     except ValueError:
         raise click.BadParameter('year must be specified as a single year (eg 1996) '
                                  'or as an inclusive range (eg 1996-2001)')
+
+
+def get_driver_from_config(config):
+    driver_name = config['storage']['driver']
+    driver = storage_writer_by_name(driver_name)
+    if driver is None:
+        click.echo('Failed to load requested storage driver: ' + driver_name)
+        sys.exit(2)
+    return driver
 
 
 @cli.command('ingest', help="Ingest datasets")
@@ -339,7 +373,7 @@ def _validate_year(ctx, param, value):
 @click.option('--allow-product-changes', is_flag=True, default=False,
               help='Allow the output product definition to be updated if it differs.')
 @ui.executor_cli_options
-@ui.pass_index(app_name='agdc-ingest')
+@ui.pass_index(app_name='datacube-ingest')
 def ingest_cmd(index,
                config_file,
                year,
@@ -351,16 +385,8 @@ def ingest_cmd(index,
                allow_product_changes):
     # pylint: disable=too-many-locals
 
-    def get_driver_from_config(config):
-        driver_name = config['storage']['driver']
-        driver = storage_writer_by_name(driver_name)
-        if driver is None:
-            click.echo('Failed to load requested storage driver: ' + driver_name)
-            sys.exit(2)
-        return driver
-
     if config_file:
-        config = load_config_from_file(index, config_file)
+        config = load_config_from_file(config_file)
         driver = get_driver_from_config(config)
         source_type, output_type = ensure_output_type(index, config, driver.format,
                                                       allow_product_changes=allow_product_changes)
@@ -373,17 +399,14 @@ def ingest_cmd(index,
                                                       allow_product_changes=allow_product_changes)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
-        return 1
+        sys.exit(-1)
 
     if dry_run:
         check_existing_files(get_filename(config, task['tile_index'], task['tile'].sources) for task in tasks)
-        return 0
-
-    if save_tasks:
+    elif save_tasks:
         save_tasks_(config, tasks, save_tasks)
-        return 0
+    else:
+        successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
+        click.echo('%d successful, %d failed' % (successful, failed))
 
-    successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
-    click.echo('%d successful, %d failed' % (successful, failed))
-
-    sys.exit(failed)
+        sys.exit(failed)

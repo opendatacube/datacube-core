@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 
-import datacube.scripts.cli_app
 from datacube.drivers.postgres import _dynamic
 from datacube.drivers.postgres._core import drop_db, has_schema, SCHEMA_NAME
 
@@ -42,6 +41,7 @@ def test_add_example_dataset_types(clirunner, initialised_postgres_db, default_m
         print('Adding mapping {}'.format(mapping_path))
 
         result = clirunner(['-v', 'product', 'add', mapping_path])
+        assert result.exit_code == 0
 
         mappings_count = _dataset_type_count(initialised_postgres_db)
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
@@ -80,9 +80,9 @@ def test_config_check(clirunner, initialised_postgres_db, local_config):
         ]
     )
 
-    host_regex = re.compile('.*Host:\s+{}.*'.format(local_config['db_hostname']),
+    host_regex = re.compile(r'.*Host:\s+{}.*'.format(local_config['db_hostname']),
                             flags=re.DOTALL)  # Match across newlines
-    user_regex = re.compile('.*User:\s+{}.*'.format(local_config['db_username']),
+    user_regex = re.compile(r'.*User:\s+{}.*'.format(local_config['db_username']),
                             flags=re.DOTALL)
     assert host_regex.match(result.output)
     assert user_regex.match(result.output)
@@ -100,6 +100,7 @@ def test_list_users_does_not_fail(clirunner, local_config, initialised_postgres_
             'user', 'list'
         ]
     )
+    assert result.exit_code == 0
 
 
 def test_db_init_noop(clirunner, local_config, ls5_telem_type):
@@ -148,6 +149,13 @@ def test_db_init(clirunner, initialised_postgres_db):
 
     with initialised_postgres_db.connect() as connection:
         assert has_schema(initialised_postgres_db._engine, connection._connection)
+
+
+def test_add_no_such_product(clirunner, initialised_postgres_db):
+    result = clirunner(['dataset', 'add', '--dtype', 'no_such_product'], expect_success=False)
+    assert result.exit_code != 0
+    assert "DEPRECATED option detected" in result.output
+    assert "ERROR Supplied product name" in result.output
 
 
 @pytest.fixture(params=[
