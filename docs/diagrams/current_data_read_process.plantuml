@@ -40,7 +40,7 @@ loop for each measurement/band
         DataSource -> BandSource: open() returns BandSource
         activate BandSource
         alt Non reprojecting read
-            BandSource -> BandSource: _read_decimated()
+            BandSource -> BandSource: _read_native()
         else ReProjecting read
             BandSource -> BandSource: reproject()
         end

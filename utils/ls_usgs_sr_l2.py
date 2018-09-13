@@ -8,14 +8,12 @@ import logging
 import uuid
 from xml.etree import ElementTree
 import re
-from pathlib import Path
 import yaml
-from dateutil import parser
-from datetime import timedelta
 import rasterio.warp
 import click
 from osgeo import osr
 import os
+from pathlib import Path
 # image boundary imports
 import rasterio
 from rasterio.errors import RasterioIOError
@@ -24,27 +22,34 @@ import shapely.affinity
 import shapely.geometry
 import shapely.ops
 
-images1 = ['sr_band1',
-           'sr_band2',
-           'sr_band3',
-           'sr_band4',
-           'sr_band5',
-           'sr_band6',
-           'sr_band7',
-           'pixel_qa',
-           'radsat_qa',
-           'sr_aerosol']
+ls8_images = {
+    'sr_band1': 'coastal_aerosol',
+    'sr_band2': 'blue',
+    'sr_band3': 'green',
+    'sr_band4': 'red',
+    'sr_band5': 'nir',
+    'sr_band6': 'swir1',
+    'sr_band7': 'swir2',
+    'pixel_qa': 'pixel_qa',
+    'radsat_qa': 'radsat_qa',
+    'sr_aerosol': 'sr_aerosol',
+    'bt_band10': 'lwir1',
+    'bt_band11': 'lwir2',
+}
 
-images2 = ['sr_band1',
-           'sr_band2',
-           'sr_band3',
-           'sr_band4',
-           'sr_band5',
-           'sr_band7',
-           'pixel_qa',
-           'radsat_qa',
-           'sr_atmos_opacity',
-           'sr_cloud_qa']
+ls5_7_images = {
+    'sr_band1': 'blue',
+    'sr_band2': 'green',
+    'sr_band3': 'red',
+    'sr_band4': 'nir',
+    'sr_band5': 'swir1',
+    'sr_band7': 'swir2',
+    'bt_band6': 'lwir',
+    'pixel_qa': 'pixel_qa',
+    'radsat_qa': 'radsat_qa',
+    'sr_atmos_opacity': 'sr_atmos_opacity',
+    'sr_cloud_qa': 'sr_cloud_qa',
+}
 
 
 def safe_valid_region(images, mask_value=None):
@@ -113,18 +118,15 @@ def satellite_ref(sat):
     To load the band_names for referencing either LANDSAT8 or LANDSAT7 or LANDSAT5 bands
     Landsat7 and Landsat5 have same band names
     """
-    if sat == 'LANDSAT_8':
-        sat_img = images1
-        prod_type = 'LaSRC'
-    elif sat == 'LANDSAT_7':
-        sat_img = images2
-        prod_type = 'LEDAPS'
-    elif sat == 'LANDSAT_5':
-        sat_img = images2[:6]
-        prod_type = 'LEDAPS'
-    else:
+    lookup = dict(
+        LANDSAT_8=(ls8_images, 'LaSRC'),
+        LANDSAT_7=(ls5_7_images, 'LEDAPS'),
+        LANDSAT_5=(ls5_7_images, 'LEDAPS'),
+    )
+    r = lookup.get(sat, None)
+    if r is None:
         raise ValueError("Landsat Error")
-    return sat_img, prod_type
+    return r
 
 
 def get_projection(realpath, path):
@@ -164,12 +166,22 @@ def prep_dataset(path, metadata):
     scene_center_time = doc.find('.//scene_center_time').text
     center_dt = acquisition_date + " " + scene_center_time
     level = doc.find('.//product_id').text.split('_')[1]
-    lpgs_metadata_file = doc.find('.//lpgs_metadata_file').text
     start_time = center_dt
     end_time = center_dt
     images, product_type = satellite_ref(satellite)
     image_path = doc.find('.//product_id').text
-    geo_ref_points, spatial_ref = get_projection(path, image_path + '_' + images1[0] + '.tif')
+
+    image_files = {db_name: '{prefix}_{band}.tif'.format(prefix=image_path,
+                                                         band=disk_name)
+                   for disk_name, db_name in images.items()}
+
+    # prune to only include files that are present on disk
+    image_files = {k: file
+                   for k, file in image_files.items()
+                   if (Path(path)/file).exists()}
+
+    sample_file = image_files['blue']
+    geo_ref_points, spatial_ref = get_projection(path, sample_file)
     doc = {
         'id': str(uuid.uuid4()),
         'processing_level': str(level),
@@ -192,10 +204,10 @@ def prep_dataset(path, metadata):
         },
         'image': {
             'bands': {
-                image: {
-                    'path': image_path + '_' + image + '.tif',
+                db_name: {
+                    'path': path,
                     'layer': 1,
-                } for image in images
+                } for db_name, path in image_files.items()
             }
         },
 
@@ -204,9 +216,12 @@ def prep_dataset(path, metadata):
     return doc
 
 
-def prepare_datasets(path, metadata):
+def prepare_datasets(path, metadata, output):
     doc = prep_dataset(path, metadata)
-    return absolutify_paths(doc, path)
+    if os.path.dirname((os.path.join(path, metadata))) == os.path.dirname(output):
+        return doc
+    else:
+        return absolutify_paths(doc, path)
 
 
 def absolutify_paths(doc, path):
@@ -216,12 +231,13 @@ def absolutify_paths(doc, path):
 
 
 @click.command(help="Prepare USGS Landsat Surface Reflectance product to index into datacube")
-@click.option('--output', required=True, help="Write datasets into this file",
-              type=click.Path(exists=True, writable=True, dir_okay=False))
+@click.option('--output', required=False, help="Write datasets into this file",
+              type=click.Path(exists=False, writable=True, dir_okay=False))
 @click.argument('metadata',
-                type=click.Path(exists=True, readable=True, writable=True),
+                type=click.Path(exists=True, readable=True),
                 nargs=-1)
 def main(output, metadata):
+    output = os.path.abspath(output)
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
     with open(output, 'w') as stream:
         for dataset in metadata:
@@ -229,7 +245,7 @@ def main(output, metadata):
             logging.info("Processing %s", path)
             for file in os.listdir(str(path)):
                 if file.endswith(".xml") and (not file.endswith('aux.xml')):
-                    yaml.dump(prepare_datasets(path, file), stream, explicit_start=True)
+                    yaml.dump(prepare_datasets(path, file, output), stream, explicit_start=True)
                     logging.info("Writing %s", output)
 
 

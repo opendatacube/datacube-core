@@ -1,12 +1,15 @@
 from __future__ import absolute_import
 import pytest
+import yaml
 
 from collections import namedtuple
 
-from datacube.drivers import new_datasource, reader_drivers, writer_drivers, index_drivers
+from datacube.drivers import new_datasource, reader_drivers, writer_drivers
+from datacube.drivers import index_drivers, index_driver_by_name
 from datacube.drivers.indexes import IndexDriverCache
 from datacube.storage.storage import RasterDatasetDataSource
-from .util import mk_sample_dataset
+from datacube.testutils import mk_sample_dataset
+from datacube.model import MetadataType
 
 S3_dataset = namedtuple('S3_dataset', ['macro_shape'])
 
@@ -73,3 +76,27 @@ def test_netcdf_driver_import():
         import datacube.drivers.netcdf.driver
     except ImportError:
         assert False and 'Failed to load netcdf writer driver'
+
+
+def test_metadata_type_from_doc():
+    metadata_doc = yaml.safe_load('''
+name: minimal
+description: minimal metadata definition
+dataset:
+    id: [id]
+    sources: [lineage, source_datasets]
+    label: [label]
+    creation_dt: [creation_dt]
+    search_fields:
+        some_custom_field:
+            description: some custom field
+            offset: [a,b,c,custom]
+    ''')
+
+    for name in index_drivers():
+        driver = index_driver_by_name(name)
+        metadata = driver.metadata_type_from_doc(metadata_doc)
+        assert isinstance(metadata, MetadataType)
+        assert metadata.id is None
+        assert metadata.name == 'minimal'
+        assert 'some_custom_field' in metadata.dataset_fields

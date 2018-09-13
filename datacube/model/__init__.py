@@ -14,7 +14,7 @@ from uuid import UUID
 from affine import Affine
 
 from datacube.compat import urlparse
-from datacube.utils import geometry
+from datacube.utils import geometry, without_lineage_sources
 from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects, schema_validated, DocReader
 from datacube.utils.geometry import (CRS as _CRS,
                                      GeoBox as _GeoBox,
@@ -29,6 +29,7 @@ CellIndex = namedtuple('CellIndex', ('x', 'y'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
+DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
@@ -298,9 +299,10 @@ class Dataset(object):
         return hash(self.id)
 
     def __str__(self):
+        str_loc = 'not available' if not self.uris else self.uris[0]
         return "Dataset <id={id} type={type} location={loc}>".format(id=self.id,
                                                                      type=self.type.name,
-                                                                     loc=self.local_path)
+                                                                     loc=str_loc)
 
     def __repr__(self):
         return self.__str__()
@@ -309,16 +311,58 @@ class Dataset(object):
     def metadata(self):
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
+    def metadata_doc_without_lineage(self):
+        """ Return metadata document without nested lineage datasets
+        """
+        return without_lineage_sources(self.metadata_doc, self.metadata_type)
 
-class Measurement(object):
-    def __init__(self, measurement_dict):
-        self.name = measurement_dict['name']
-        self.dtype = measurement_dict['dtype']
-        self.nodata = measurement_dict['nodata']
-        self.units = measurement_dict['units']
-        self.aliases = measurement_dict['aliases']
-        self.spectral_definition = measurement_dict['spectral_definition']
-        self.flags_definition = measurement_dict['flags_definition']
+
+class Measurement(dict):
+    """
+    Describes a single data variable of a Product or Dataset.
+
+    Must include, which can be used when loading and interpreting data:
+
+     - name
+     - dtype - eg: int8, int16, float32
+     - nodata - What value represent No Data
+     - units
+
+    Attributes can be accessed using ``dict []`` syntax.
+
+    Can also include attributes like alternative names 'aliases', and spectral and bit flags
+    definitions to aid with interpreting the data.
+
+    """
+    REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
+    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
+    ATTR_BLACKLIST = set(['name', 'dtype', 'aliases', 'resampling_method'])
+
+    def __init__(self, **kwargs):
+        missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
+        if missing_keys:
+            raise ValueError("Measurement required keys missing: {}".format(missing_keys))
+
+        super().__init__(**kwargs)
+
+    def __getattr__(self, key):
+        """ Allow access to items as attributes. """
+        v = self.get(key, self)
+        if v is self:
+            raise AttributeError("'Measurement' object has no attribute '{}'".format(key))
+        return v
+
+    def __repr__(self):
+        return "Measurement({})".format(super(Measurement, self).__repr__())
+
+    def copy(self):
+        """Required as the super class `dict` method returns a `dict`
+           and does not preserve Measurement class"""
+        return Measurement(**self)
+
+    def dataarray_attrs(self):
+        """This returns attributes filtered for display in a dataarray."""
+        return {key: value for key, value in self.items() if key not in self.ATTR_BLACKLIST}
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
@@ -410,7 +454,7 @@ class DatasetType(object):
 
         :type: dict[str, dict]
         """
-        return OrderedDict((m['name'], m) for m in self.definition.get('measurements', []))
+        return OrderedDict((m['name'], Measurement(**m)) for m in self.definition.get('measurements', []))
 
     @property
     def dimensions(self):
@@ -420,7 +464,12 @@ class DatasetType(object):
         :type: tuple[str]
         """
         assert self.metadata_type.name == 'eo'
-        return ('time',) + self.grid_spec.dimensions
+        if self.grid_spec is not None:
+            spatial_dims = self.grid_spec.dimensions
+        else:
+            spatial_dims = DEFAULT_SPATIAL_DIMS
+
+        return ('time',) + spatial_dims
 
     @cached_property
     def grid_spec(self):
@@ -429,27 +478,32 @@ class DatasetType(object):
 
         :rtype: GridSpec
         """
-        if 'storage' not in self.definition:
+        storage = self.definition.get('storage')
+        if storage is None:
             return None
-        storage = self.definition['storage']
 
-        if 'crs' not in storage:
+        crs = storage.get('crs')
+        if crs is None:
             return None
-        crs = geometry.CRS(str(storage['crs']).strip())
 
-        tile_size = None
-        if 'tile_size' in storage:
-            tile_size = [storage['tile_size'][dim] for dim in crs.dimensions]
+        crs = geometry.CRS(str(crs).strip())
 
-        resolution = None
-        if 'resolution' in storage:
-            resolution = [storage['resolution'][dim] for dim in crs.dimensions]
+        def extract_point(name):
+            xx = storage.get(name, None)
+            return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
 
-        origin = None
-        if 'origin' in storage:
-            origin = [storage['origin'][dim] for dim in crs.dimensions]
+        gs_params = {name: extract_point(name)
+                     for name in ('tile_size', 'resolution', 'origin')}
 
-        return GridSpec(crs=crs, tile_size=tile_size, resolution=resolution, origin=origin)
+        return GridSpec(crs=crs, **gs_params)
+
+    def canonical_measurement(self, measurement):
+        for m in self.measurements:
+            if measurement == m:
+                return measurement
+            elif measurement in self.measurements[m].get('aliases', []):
+                return m
+        raise KeyError(measurement)
 
     def lookup_measurements(self, measurements=None):
         """
@@ -461,7 +515,8 @@ class DatasetType(object):
         my_measurements = self.measurements
         if measurements is None:
             return my_measurements
-        return OrderedDict((measurement, my_measurements[measurement]) for measurement in measurements)
+        canonical = [self.canonical_measurement(measurement) for measurement in measurements]
+        return OrderedDict((measurement, my_measurements[measurement]) for measurement in canonical)
 
     def dataset_reader(self, dataset_doc):
         return self.metadata_type.dataset_reader(dataset_doc)
@@ -558,6 +613,15 @@ class GridSpec(object):
         #: :type: (float, float)
         self.origin = origin or (0.0, 0.0)
 
+    def __eq__(self, other):
+        if not isinstance(other, GridSpec):
+            return False
+
+        return (self.crs == other.crs
+                and self.tile_size == other.tile_size
+                and self.resolution == other.resolution
+                and self.origin == other.origin)
+
     @property
     def dimensions(self):
         """
@@ -612,10 +676,10 @@ class GridSpec(object):
         geobox = geometry.GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
         return geobox
 
-    def tiles(self, bounds):
+    def tiles(self, bounds, geobox_cache=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
-        the grid and inside the specified `bounds`.
+        the grid and overlapping with the specified `bounds` rectangle.
 
         .. note::
 
@@ -623,19 +687,30 @@ class GridSpec(object):
            dimension order.
 
         :param BoundingBox bounds: Boundary coordinates of the required grid
+        :param dict geobox_cache: Optional cache to re-use geoboxes instead of creating new one each time
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
+        def geobox(tile_index):
+            if geobox_cache is None:
+                return self.tile_geobox(tile_index)
+
+            gbox = geobox_cache.get(tile_index)
+            if gbox is None:
+                gbox = self.tile_geobox(tile_index)
+                geobox_cache[tile_index] = gbox
+            return gbox
+
         tile_size_y, tile_size_x = self.tile_size
         tile_origin_y, tile_origin_x = self.origin
         for y in GridSpec.grid_range(bounds.bottom - tile_origin_y, bounds.top - tile_origin_y, tile_size_y):
             for x in GridSpec.grid_range(bounds.left - tile_origin_x, bounds.right - tile_origin_x, tile_size_x):
                 tile_index = (x, y)
-                yield tile_index, self.tile_geobox(tile_index)
+                yield tile_index, geobox(tile_index)
 
-    def tiles_inside_geopolygon(self, geopolygon, tile_buffer=(0, 0)):
+    def tiles_from_geopolygon(self, geopolygon, tile_buffer=None, geobox_cache=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
-        the grid and inside the specified `polygon`.
+        the grid and overlapping with the specified `geopolygon`.
 
         .. note::
 
@@ -643,18 +718,20 @@ class GridSpec(object):
            dimension order.
 
         :param geometry.Geometry geopolygon: Polygon to tile
-        :param tile_buffer:
+        :param tile_buffer: Optional <float,float> tuple, (extra padding for the query
+                            in native units of this GridSpec)
+        :param dict geobox_cache: Optional cache to re-use geoboxes instead of creating new one each time
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
-        result = []
         geopolygon = geopolygon.to_crs(self.crs)
-        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox.buffered(*tile_buffer)):
-            if tile_buffer:
-                tile_geobox = tile_geobox.buffered(*tile_buffer)
+        bbox = geopolygon.boundingbox
+        bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
+
+        for tile_index, tile_geobox in self.tiles(bbox, geobox_cache):
+            tile_geobox = tile_geobox.buffered(*tile_buffer) if tile_buffer else tile_geobox
 
             if intersects(tile_geobox.extent, geopolygon):
-                result.append((tile_index, tile_geobox))
-        return result
+                yield (tile_index, tile_geobox)
 
     @staticmethod
     def grid_range(lower, upper, step):
@@ -689,3 +766,13 @@ class GridSpec(object):
 
     def __repr__(self):
         return self.__str__()
+
+
+def metadata_from_doc(doc):
+    """Construct MetadataType that is not tied to any particular db index. This is
+    useful when there is a need to interpret dataset metadata documents
+    according to metadata spec.
+    """
+    from .fields import get_dataset_fields
+    MetadataType.validate(doc)
+    return MetadataType(doc, get_dataset_fields(doc))

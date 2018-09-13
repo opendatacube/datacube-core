@@ -70,7 +70,7 @@ Support
 
 The best way to get help with the Data Cube is to open an issue on Github_.
 
-.. _Github: http://github.com/opendatacube/datacube-core/issues
+.. _Github: https://github.com/opendatacube/datacube-core/issues
 
 
 Indices and tables

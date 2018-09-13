@@ -4,18 +4,21 @@ Serialise function used in YAML output
 """
 from __future__ import absolute_import, division, print_function
 
-import os
 from collections import OrderedDict
-from datetime import datetime, date
+from datetime import datetime
 from decimal import Decimal
 
 import yaml
 from datacube.model import Range
 
-class SafeDatacubeDumper(yaml.SafeDumper): # pylint: disable=too-many-ancestors
+
+class SafeDatacubeDumper(yaml.SafeDumper):  # pylint: disable=too-many-ancestors
     pass
+
+
 def _dict_representer(dumper, data):
     return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+
 
 def _range_representer(dumper, data):
     # type: (yaml.Dumper, Range) -> Node
@@ -33,11 +36,14 @@ def _range_representer(dumper, data):
         flow_style=True
     )
 
+
 def _reduced_accuracy_decimal_representer(dumper, data):
     # type: (yaml.Dumper, Decimal) -> Node
     return dumper.represent_float(
         float(data)
     )
+
+
 SafeDatacubeDumper.add_representer(OrderedDict, _dict_representer)
 SafeDatacubeDumper.add_representer(Range, _range_representer)
 SafeDatacubeDumper.add_representer(Decimal, _reduced_accuracy_decimal_representer)

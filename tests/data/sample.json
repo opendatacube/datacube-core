@@ -1,0 +1,7 @@
+{
+  "description": "File containing json document",
+  "data": {
+    "number": 1,
+    "list": [1, 2, 3]
+  }
+}

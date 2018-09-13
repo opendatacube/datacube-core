@@ -8,21 +8,17 @@ import logging
 import warnings
 from collections import namedtuple
 from uuid import UUID
+from typing import Any, Iterable, Mapping, Set, Tuple, Union
 
 from datacube import compat
 from datacube.model import Dataset, DatasetType
+from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, changes
 from datacube.utils.changes import get_doc_changes, check_doc_unchanged
 from . import fields
 from .exceptions import DuplicateRecordError
 
 _LOG = logging.getLogger(__name__)
-
-try:
-    from typing import Any, Iterable, Mapping, Set, Tuple, Union
-except ImportError:
-    pass
-
 
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
@@ -76,6 +72,16 @@ class DatasetResource(object):
             }
         return datasets[id_][0]
 
+    def bulk_get(self, ids):
+        def to_uuid(x):
+            return x if isinstance(x, UUID) else UUID(x)
+
+        ids = [to_uuid(i) for i in ids]
+
+        with self._db.connect() as connection:
+            rows = connection.get_datasets(ids)
+            return [self._make(r, full_info=True) for r in rows]
+
     def get_derived(self, id_):
         """
         Get all derived datasets
@@ -99,52 +105,81 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             return connection.contains_dataset(id_)
 
-    def add(self, dataset, sources_policy='verify', **kwargs):
+    def bulk_has(self, ids_):
+        """
+        Like `has` but operates on a list of ids.
+
+        For every supplied id check if database contains a dataset with that id.
+
+        :param [typing.Union[UUID, str]] ids_: list of dataset ids
+
+        :rtype: [bool]
+        """
+        with self._db.connect() as connection:
+            existing = set(connection.datasets_intersection(ids_))
+
+        return [x in existing for x in
+                map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
+
+    def add(self, dataset, with_lineage=None, **kwargs):
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
         :param Dataset dataset: dataset to add
-        :param str sources_policy: how should source datasets included in this dataset be handled:
-
-                ``verify``
-                    Verify that each source exists in the index, and that they are identical.
-
-                ``ensure``
-                    Add source datasets to the index if they doesn't exist.
-
-                ``skip``
-                    don't attempt to index source datasets (use when sources are already indexed)
-
+        :param bool with_lineage: True -- attempt adding lineage if it's missing, False don't
         :rtype: Dataset
         """
-        if 'skip_sources' in kwargs and kwargs['skip_sources']:
-            warnings.warn('"skip_sources" is deprecated, use "sources_policy=\'skip\'"', DeprecationWarning)
-            sources_policy = 'skip'
-        self._add_sources(dataset, sources_policy)
 
-        sources_tmp = dataset.metadata.sources
-        dataset.metadata.sources = {}
-        try:
-            _LOG.info('Indexing %s', dataset.id)
+        def process_bunch(dss, main_ds, transaction):
+            edges = []
 
-            if not self._try_add(dataset):
-                existing = self.get(dataset.id)
-                if existing:
-                    check_doc_unchanged(
-                        existing.metadata_doc,
-                        jsonify_document(dataset.metadata_doc),
-                        'Dataset {}'.format(dataset.id)
-                    )
+            # First insert all new datasets
+            for ds in dss:
+                is_new = transaction.insert_dataset(ds.metadata_doc_without_lineage(), ds.id, ds.type.id)
+                if is_new:
+                    edges.extend((name, ds.id, src.id)
+                                 for name, src in ds.sources.items())
 
-                # reinsert attempt? try updating the location
-                if dataset.uris:
-                    try:
-                        with self._db.begin() as transaction:
-                            transaction.ensure_dataset_locations(dataset.id, dataset.uris)
-                    except DuplicateRecordError as e:
-                        _LOG.warning(str(e))
-        finally:
-            dataset.metadata.sources = sources_tmp
+            # Second insert lineage graph edges
+            for ee in edges:
+                transaction.insert_dataset_source(*ee)
+
+            # Finally update location for top-level dataset only
+            if main_ds.uris is not None:
+                self._ensure_new_locations(main_ds, transaction=transaction)
+
+        if with_lineage is None:
+            policy = kwargs.pop('sources_policy', None)
+            if policy is not None:
+                _LOG.debug('Use of sources_policy is deprecated')
+                with_lineage = (policy != "skip")
+                if policy == 'verify':
+                    _LOG.debug('Verify is no longer done inside add')
+            else:
+                with_lineage = True
+
+        _LOG.info('Indexing %s', dataset.id)
+
+        if with_lineage:
+            ds_by_uuid = flatten_datasets(dataset)
+            all_uuids = list(ds_by_uuid)
+
+            present = {k: v for k, v in zip(all_uuids, self.bulk_has(all_uuids))}
+
+            if present[dataset.id]:
+                _LOG.warning('Dataset %s is already in the database', dataset.id)
+                return dataset
+
+            dss = [ds for ds in [dss[0] for dss in ds_by_uuid.values()] if not present[ds.id]]
+        else:
+            if self.has(dataset.id):
+                _LOG.warning('Dataset %s is already in the database', dataset.id)
+                return dataset
+
+            dss = [dataset]
+
+        with self._db.begin() as transaction:
+            process_bunch(dss, dataset, transaction)
 
         return dataset
 
@@ -176,23 +211,6 @@ class DatasetResource(object):
                 grouped_fields = tuple(record[1:])
                 yield result_type(*grouped_fields), dataset_ids
 
-    def _add_sources(self, dataset, sources_policy='verify'):
-        if dataset.sources is None:
-            raise ValueError('Dataset has missing (None) sources. Was this loaded without include_sources=True?\n'
-                             'Note that: \n'
-                             '  sources=None means "not loaded", '
-                             '  sources={}   means there are no sources (eg. raw telemetry data)')
-
-        if sources_policy == 'ensure':
-            for source in dataset.sources.values():
-                if not self.has(source.id):
-                    self.add(source, sources_policy=sources_policy)
-        elif sources_policy == 'verify':
-            for source in dataset.sources.values():
-                self.add(source, sources_policy=sources_policy)
-        elif sources_policy != 'skip':
-            raise ValueError('sources_policy must be one of ("verify", "ensure", "skip")')
-
     def can_update(self, dataset, updates_allowed=None):
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
@@ -201,7 +219,8 @@ class DatasetResource(object):
         :param dict updates_allowed: Allowed updates
         :rtype: bool,list[change],list[change]
         """
-        existing = self.get(dataset.id, include_sources=True)
+        need_sources = dataset.sources is not None
+        existing = self.get(dataset.id, include_sources=need_sources)
         if not existing:
             raise ValueError('Unknown dataset %s, cannot update – did you intend to add it?' % dataset.id)
 
@@ -249,29 +268,30 @@ class DatasetResource(object):
         for offset, old_val, new_val in unsafe_changes:
             _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
-        sources_tmp = dataset.metadata.sources
-        dataset.metadata.sources = {}
-        try:
-            product = self.types.get_by_name(dataset.type.name)
-            with self._db.begin() as transaction:
-                if not transaction.update_dataset(dataset.metadata_doc, dataset.id, product.id):
-                    raise ValueError("Failed to update dataset %s..." % dataset.id)
+        product = self.types.get_by_name(dataset.type.name)
+        with self._db.begin() as transaction:
+            if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
+                raise ValueError("Failed to update dataset %s..." % dataset.id)
 
-            self._ensure_new_locations(dataset, existing)
-        finally:
-            dataset.metadata.sources = sources_tmp
+        self._ensure_new_locations(dataset, existing)
 
         return dataset
 
-    def _ensure_new_locations(self, dataset, existing):
-        new_uris = set(dataset.uris) - set(existing.uris)
-        if new_uris:
-            for uri in new_uris:
-                # We have to do each in separate transactions because the method catches exceptions,
-                # which will invalidate the transaction.
-                # We probably want to do so anyway, as they are independently valid.
-                with self._db.begin() as transaction:
-                    transaction.ensure_dataset_locations(dataset.id, [uri] if uri else None)
+    def _ensure_new_locations(self, dataset, existing=None, transaction=None):
+        skip_set = set([None] + existing.uris if existing is not None else [])
+        new_uris = [uri for uri in dataset.uris if uri not in skip_set]
+
+        def insert_one(uri, transaction):
+            return transaction.insert_dataset_location(dataset.id, uri)
+
+        # process in reverse order, since every add is essentially append to
+        # front of a stack
+        for uri in new_uris[::-1]:
+            if transaction is None:
+                with self._db.begin() as tr:
+                    insert_one(uri, tr)
+            else:
+                insert_one(uri, transaction)
 
     def archive(self, ids):
         """
@@ -363,15 +383,11 @@ class DatasetResource(object):
             return False
 
         with self._db.connect() as connection:
-            try:
-                connection.ensure_dataset_locations(id_, [uri])
-                return True
-            except DuplicateRecordError:
-                return False
+            return connection.insert_dataset_location(id_, uri)
 
-    def get_datasets_for_location(self, uri):
+    def get_datasets_for_location(self, uri, mode=None):
         with self._db.connect() as connection:
-            return (self._make(row) for row in connection.get_datasets_for_location(uri))
+            return (self._make(row) for row in connection.get_datasets_for_location(uri, mode=mode))
 
     def remove_location(self, id_, uri):
         """
@@ -421,17 +437,21 @@ class DatasetResource(object):
             was_restored = connection.restore_location(id_, uri)
             return was_restored
 
-    def _make(self, dataset_res, full_info=False):
+    def _make(self, dataset_res, full_info=False, product=None):
         """
         :rtype Dataset
 
         :param bool full_info: Include all available fields
         """
-        uris = dataset_res.uris
-        if uris:
-            uris = [uri for uri in uris if uri] if uris else []
+        if dataset_res.uris:
+            uris = [uri for uri in dataset_res.uris if uri]
+        else:
+            uris = []
+
+        product = product or self.types.get(dataset_res.dataset_type_ref)
+
         return Dataset(
-            type_=self.types.get(dataset_res.dataset_type_ref),
+            type_=product,
             metadata_doc=dataset_res.metadata,
             uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,
@@ -439,11 +459,11 @@ class DatasetResource(object):
             archived_time=dataset_res.archived
         )
 
-    def _make_many(self, query_result):
+    def _make_many(self, query_result, product=None):
         """
         :rtype list[Dataset]
         """
-        return (self._make(dataset) for dataset in query_result)
+        return (self._make(dataset, product=product) for dataset in query_result)
 
     def search_by_metadata(self, metadata):
         """
@@ -462,16 +482,15 @@ class DatasetResource(object):
         """
         Perform a search, returning results as Dataset objects.
 
-        :param dict[str,str|float|Range] query:
-        :param int limit:
+        :param Union[str,float,Range,list] query:
+        :param int limit: Limit number of datasets
         :rtype: __generator[Dataset]
         """
         source_filter = query.pop('source_filter', None)
-        for _, datasets in self._do_search_by_product(query,
-                                                      source_filter=source_filter,
-                                                      limit=limit):
-            for dataset in self._make_many(datasets):
-                yield dataset
+        for product, datasets in self._do_search_by_product(query,
+                                                            source_filter=source_filter,
+                                                            limit=limit):
+            yield from self._make_many(datasets, product)
 
     def search_by_product(self, **query):
         """
@@ -481,9 +500,9 @@ class DatasetResource(object):
         :rtype: __generator[(DatasetType,  __generator[Dataset])]]
         """
         for product, datasets in self._do_search_by_product(query):
-            yield product, self._make_many(datasets)
+            yield product, self._make_many(datasets, product)
 
-    def search_returning(self, field_names, **query):
+    def search_returning(self, field_names, limit=None, **query):
         """
         Perform a search, returning only the specified fields.
 
@@ -492,14 +511,16 @@ class DatasetResource(object):
         It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
 
         :param tuple[str] field_names:
-        :param dict[str,str|float|datacube.model.Range] query:
+        :param Union[str,float,Range,list] query:
+        :param int limit: Limit number of datasets
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
         result_type = namedtuple('search_result', field_names)
 
         for _, results in self._do_search_by_product(query,
                                                      return_fields=True,
-                                                     select_field_names=field_names):
+                                                     select_field_names=field_names,
+                                                     limit=limit):
 
             for columns in results:
                 yield result_type(*columns)
@@ -553,32 +574,6 @@ class DatasetResource(object):
         :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int)]]
         """
         return next(self._do_time_count(period, query, ensure_single=True))[1]
-
-    def _try_add(self, dataset):
-        was_inserted = False
-
-        product = self.types.get_by_name(dataset.type.name)
-        if product is None:
-            _LOG.warning('Adding product "%s" as it doesn\'t exist.', dataset.type.name)
-            product = self.types.add(dataset.type)
-        if dataset.sources is None:
-            raise ValueError("Dataset has missing (None) sources. Was this loaded without include_sources=True?")
-
-        with self._db.begin() as transaction:
-            try:
-                was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, product.id)
-
-                for classifier, source_dataset in dataset.sources.items():
-                    transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
-
-                # try to update location in the same transaction as insertion.
-                # if insertion fails we'll try updating location later
-                # if insertion succeeds the location bit can't possibly fail
-                if dataset.uris:
-                    transaction.ensure_dataset_locations(dataset.id, dataset.uris)
-            except DuplicateRecordError as e:
-                _LOG.warning(str(e))
-        return was_inserted
 
     def _get_dataset_types(self, q):
         types = set()

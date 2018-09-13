@@ -35,8 +35,8 @@ try:
     import pwd
 
     DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name
-except ImportError:
-    # No default on Windows
+except (ImportError, KeyError):
+    # No default on Windows and some other systems
     DEFAULT_DB_USER = None
 DEFAULT_DB_PORT = 5432
 
@@ -235,8 +235,9 @@ class PostgresDb(object):
     def give_me_a_connection(self):
         return self._engine.connect()
 
-    def get_dataset_fields(self, search_fields_definition):
-        return _api.get_dataset_fields(search_fields_definition)
+    @classmethod
+    def get_dataset_fields(cls, metadata_type_definition):
+        return _api.get_dataset_fields(metadata_type_definition)
 
     def __repr__(self):
         return "PostgresDb<engine={!r}>".format(self._engine)

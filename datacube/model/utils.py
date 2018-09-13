@@ -5,6 +5,7 @@ import os
 import platform
 import sys
 import uuid
+import toolz
 
 import numpy
 import xarray
@@ -13,7 +14,7 @@ from pandas import to_datetime
 
 import datacube
 from datacube.model import Dataset
-from datacube.utils import geometry
+from datacube.utils import geometry, SimpleDocNav, sorted_items, InvalidDocException
 
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -155,20 +156,27 @@ def xr_iter(data_array):
         yield i, index, entry
 
 
-def xr_apply(data_array, func, dtype):
+def xr_apply(data_array, func, dtype=None, with_numeric_index=False):
     """
     Apply a function to every element of a :class:`xarray.DataArray`
 
     :type data_array: xarray.DataArray
     :param func: function that takes a dict of labels and an element of the array,
         and returns a value of the given dtype
-    :param dtype: The dtype of the returned array
+    :param dtype: The dtype of the returned array, default to the same as original
+    :param with_numeric_index Bool: If true include numeric index: func(index, labels, value)
     :return: The array with output of the function for every element.
     :rtype: xarray.DataArray
     """
+    if dtype is None:
+        dtype = data_array.dtype
+
     data = numpy.empty(shape=data_array.shape, dtype=dtype)
     for i, index, entry in xr_iter(data_array):
-        v = func(index, entry)
+        if with_numeric_index:
+            v = func(i, index, entry)
+        else:
+            v = func(index, entry)
         data[i] = v
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 
@@ -227,3 +235,159 @@ def merge(a, b, path=None):
         else:
             a[key] = b[key]
     return a
+
+
+def traverse_datasets(ds, cbk, mode='post-order', **kwargs):
+    """Perform depth first traversal of lineage tree. Note that we assume it's a
+    tree, even though it might be a DAG (Directed Acyclic Graph). If it is a
+    DAG it will be treated as if it was a tree with some nodes appearing twice or more
+    times in this tree.
+
+    Order of traversal of nodes on the same level is in default sort order for
+    strings (assuming your keys are strings, which is the case for Dataset
+    object). NOTE: this could be problematic as order might be dependent on
+    locale settings.
+
+    If given a graph with cycles this will blow the stack, so don't do that.
+
+    ds -- Dataset with lineage to iterate over, but really anything that has
+          `sources` attribute which contains a dict from string to the same
+          thing.
+
+    cbk :: (Dataset, depth=0, name=None, **kwargs) -> None
+
+    mode: post-order | pre-order
+
+    mode=post-order -- Visit all lineage first, only then visit top level
+    mode=pre-order --  Visit top level first, only then visit lineage
+
+    """
+
+    def visit_pre_order(ds, func, depth=0, name=None):
+        func(ds, depth=depth, name=name, **kwargs)
+
+        for k, v in sorted_items(ds.sources):
+            visit_pre_order(v, func, depth=depth+1, name=k)
+
+    def visit_post_order(ds, func, depth=0, name=None):
+        for k, v in sorted_items(ds.sources):
+            visit_post_order(v, func, depth=depth+1, name=k)
+
+        func(ds, depth=depth, name=name, **kwargs)
+
+    proc = {'post-order': visit_post_order,
+            'pre-order': visit_pre_order}.get(mode, None)
+
+    if proc is None:
+        raise ValueError('Unsupported traversal mode: {}'.format(mode))
+
+    proc(ds, cbk)
+
+
+def flatten_datasets(ds, with_depth_grouping=False):
+    """Build a dictionary mapping from dataset.id to a list of datasets with that
+    id appearing in the lineage DAG. When DAG is unrolled into a tree, some
+    datasets will be reachable by multiple paths, sometimes these would be
+    exactly the same python object, other times they will be duplicate views of
+    the same "conceptual dataset object". If the same dataset is reachable by
+    three possible paths from the root, it will appear three times in the
+    flattened view.
+
+    ds could be a Dataset object read from DB with `include_sources=True`, or
+    it could be `SimpleDocNav` object created from a dataset metadata document
+    read from a file.
+
+    If with_depth_grouping=True, also build depth -> [Ds] mapping and return it
+    along with Id -> [Ds] mapping. In this case top level is depth=0.
+    """
+    def get_list(out, k):
+        if k not in out:
+            out[k] = []
+        return out[k]
+
+    def proc(ds, depth=0, name=None, id_map=None, depth_map=None):
+        k = ds.id
+
+        get_list(id_map, k).append(ds)
+        if depth_map is not None:
+            get_list(depth_map, depth).append(ds)
+
+    id_map = {}
+    depth_map = {} if with_depth_grouping else None
+
+    traverse_datasets(ds, proc, id_map=id_map, depth_map=depth_map)
+
+    if depth_map:
+        # convert dict Int->V to just a list
+        dout = [None]*len(depth_map)
+        for k, v in depth_map.items():
+            dout[k] = v
+
+        return id_map, dout
+
+    return id_map
+
+
+def remap_lineage_doc(root, mk_node, **kwargs):
+    def visit(ds):
+        return mk_node(ds,
+                       {k: visit(v) for k, v in sorted_items(ds.sources)},
+                       **kwargs)
+
+    if not isinstance(root, SimpleDocNav):
+        root = SimpleDocNav(root)
+
+    return visit(root)
+
+
+def dedup_lineage(root):
+    """Find duplicate nodes in the lineage tree and replace them with references.
+
+    Will raise `ValueError` when duplicate dataset (same uuid, but different
+    path from root) has either conflicting metadata or conflicting lineage
+    data.
+
+    :param dict|SimpleDocNav root:
+
+    Returns a new document that has the same structure as input document, but
+    with duplicate entries now being aliases rather than copies.
+    """
+
+    def check_sources(a, b):
+        """ True if two dictionaries contain same objects under the same names.
+        same, not just equivalent.
+        """
+        if len(a) != len(b):
+            return False
+
+        for ((ak, av), (bk, bv)) in zip(sorted_items(a), sorted_items(b)):
+            if ak != bk:
+                return False
+            if av is not bv:
+                return False
+
+        return True
+
+    def mk_node(ds, sources, cache, sources_path):
+        existing = cache.get(ds.id, None)
+        doc = ds.doc_without_lineage_sources
+
+        if existing is not None:
+            _ds, _doc, _sources = existing
+
+            if not check_sources(sources, _sources):
+                raise InvalidDocException('Inconsistent lineage for repeated dataset with _id: {}'.format(ds.id))
+
+            if doc != _doc:
+                raise InvalidDocException('Inconsistent metadata for repeated dataset with _id: {}'.format(ds.id))
+
+            return _ds
+
+        out_ds = toolz.assoc_in(doc, sources_path, sources)
+        cache[ds.id] = (out_ds, doc, sources)
+        return out_ds
+
+    if not isinstance(root, SimpleDocNav):
+        root = SimpleDocNav(root)
+
+    return remap_lineage_doc(root, mk_node, cache={}, sources_path=root.sources_path)

@@ -10,7 +10,7 @@ Python 3.5+ is required. Python 3.6 is recommended.
 Anaconda Python
 ---------------
 
-`Install Anaconda Python <https://www.continuum.io/downloads>`_
+`Install Anaconda Python <https://www.anaconda.com/download/>`_
 
 Add conda-forge to package channels::
 

@@ -73,15 +73,15 @@ class DatasetResource(BaseDatasetResource):
     additional s3 information to specific tables.
     """
 
-    def add(self, dataset, sources_policy='verify', **kwargs):
-        saved_dataset = super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
+    def add(self, dataset, with_lineage=None, **kwargs):
+        saved_dataset = super(DatasetResource, self).add(dataset, with_lineage=with_lineage, **kwargs)
 
         if dataset.format == FORMAT:
             storage_metadata = kwargs['storage_metadata']  # It's an error to not include this
             self.add_datasets_to_s3_tables([dataset.id], storage_metadata)
         return saved_dataset
 
-    def add_multiple(self, datasets, sources_policy='verify'):
+    def add_multiple(self, datasets, with_lineage=None):
         """Index several datasets.
 
         Perform the normal indexing, followed by the s3 specific
@@ -91,7 +91,7 @@ class DatasetResource(BaseDatasetResource):
         :param datasets: The datasets to be indexed. It must contain
           an attribute named `storage_metadata` otherwise a ValueError
           is raised.
-        :param str sources_policy: The sources policy.
+        :param bool with_lineage: Whether to recursively add lineage, default: yes
         :return: The number of datasets indexed.
         :rtype: int
 
@@ -104,7 +104,7 @@ class DatasetResource(BaseDatasetResource):
         # dataset_refs = []
         # n = 0
         # for dataset in datasets.values:
-        #     self.add(dataset, sources_policy=sources_policy)
+        #     self.add(dataset, with_lineage=with_lineage)
         #     dataset_refs.append(dataset.id)
         #     n += 1
         # if n == len(datasets):
@@ -225,13 +225,13 @@ class DatasetResource(BaseDatasetResource):
                 # Add mappings
                 self._add_s3_dataset_mappings(transaction, s3_dataset_id, band, dataset_refs)
 
-    def _make(self, dataset_res, full_info=False):
+    def _make(self, dataset_res, full_info=False, product=None):
         """
         :rtype Dataset
 
         :param bool full_info: Include all available fields
         """
-        dataset = super(DatasetResource, self)._make(dataset_res, full_info)
+        dataset = super(DatasetResource, self)._make(dataset_res, full_info=full_info, product=product)
         self._extend_dataset_with_s3_metadata(dataset)
         return dataset
 

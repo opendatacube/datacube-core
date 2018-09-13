@@ -25,15 +25,16 @@ def load_drivers(group):
     """
 
     def safe_load(ep):
-        # pylint: disable=bare-except
+        # pylint: disable=broad-except,bare-except
         try:
             driver_init = ep.load()
         except DistributionNotFound:
             # This happens when entry points were marked with extra features,
             # but extra feature were not requested for installation
             return None
-        except:
+        except Exception as e:
             _LOG.warning('Failed to resolve driver %s::%s', group, ep.name)
+            _LOG.warning('Error was: %s', repr(e))
             return None
 
         try:

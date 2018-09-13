@@ -1,0 +1,18 @@
+description: Document 1 of 3
+data:
+  number: 1
+  list: [1,2,3]
+
+---
+
+description: Document 2 of 3
+data:
+  number: 2
+  list: [1,2,3]
+
+---
+
+description: Document 3 of 3
+data:
+  number: 3
+  list: [1,2,3]

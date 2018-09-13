@@ -16,17 +16,15 @@ import click
 import dask.array as da
 import dask
 from dateutil import tz
-import pandas as pd
 from pathlib import Path
 
 import datacube
-from datacube.api import Tile
 from datacube.model import Dataset
 from datacube.model.utils import xr_apply, datasets_to_doc
+from datacube.utils import mk_part_uri
 from datacube.storage import netcdf_writer
 from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.ui import task_app
-from datacube.ui.click import to_pathlib
 
 _LOG = logging.getLogger(__name__)
 
@@ -82,7 +80,7 @@ def make_stacker_tasks(index, config, cell_index=None, time=None, **kwargs):
                               year, cell_index_key, only_filename)
 
 
-def make_stacker_config(index, config, export_path=None, **query):
+def make_stacker_config(index, config, export_path=None, check_data=None, **query):
     config['product'] = index.products.get_by_name(config['output_type'])
 
     if export_path is not None:
@@ -90,6 +88,9 @@ def make_stacker_config(index, config, export_path=None, **query):
         config['index_datasets'] = False
     else:
         config['index_datasets'] = True
+
+    if check_data is not None:
+        config['check_data_identical'] = check_data
 
     if not os.access(config['location'], os.W_OK):
         _LOG.warning('Current user appears not have write access output location: %s', config['location'])
@@ -138,6 +139,12 @@ def do_stack_task(config, task):
 
     variable_params = config['variable_params']
 
+    variable_params['dataset'] = {
+        'chunksizes': (1,),
+        'zlib': True,
+        'complevel': 9,
+    }
+
     output_filename = Path(task['output_filename'])
     output_uri = output_filename.absolute().as_uri()
     temp_filename = get_temp_file(output_filename)
@@ -181,7 +188,7 @@ def do_stack_task(config, task):
 def write_data_variables(data_vars, nco):
     for name, variable in data_vars.items():
         try:
-            with dask.set_options(get=dask.async.get_sync):
+            with dask.set_options(get=dask.local.get_sync):
                 da.store(variable.data, nco[name], lock=True)
         except ValueError:
             nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
@@ -189,7 +196,8 @@ def write_data_variables(data_vars, nco):
 
 
 def check_identical(data1, data2, output_filename):
-    with dask.set_options(get=dask.async.get_sync):
+    _LOG.debug('Verifying file: "%s"', output_filename)
+    with dask.set_options(get=dask.local.get_sync):
         if not all((data1 == data2).all().values()):
             _LOG.error("Mismatch found for %s, not indexing", output_filename)
             raise ValueError("Mismatch found for %s, not indexing" % output_filename)
@@ -197,19 +205,21 @@ def check_identical(data1, data2, output_filename):
 
 
 def make_updated_tile(old_datasets, new_uri, geobox):
-    def update_dataset_location(labels, dataset):
-        # type: (object, Dataset) -> list
+    def update_dataset_location(idx, labels, dataset):
+        # type: ((int,), object, Dataset) -> list
+        idx, = idx
         new_dataset = copy.copy(dataset)
-        new_dataset.uris = [new_uri]
+        new_dataset.uris = [mk_part_uri(new_uri, idx)]
         return [new_dataset]
 
-    updated_datasets = xr_apply(old_datasets, update_dataset_location, dtype='O')
+    updated_datasets = xr_apply(old_datasets, update_dataset_location, with_numeric_index=True)
     return datacube.api.Tile(sources=updated_datasets, geobox=geobox)
 
 
 def process_result(index, result):
-    datasets, new_uri = result
-    for dataset in datasets.values:
+    datasets, new_common_uri = result
+    for idx, dataset in enumerate(datasets.values):
+        new_uri = mk_part_uri(new_common_uri, idx)
         _LOG.info('Updating dataset location: %s', dataset.local_path)
         old_uri = dataset.local_uri
         index.datasets.add_location(dataset.id, new_uri)
@@ -226,6 +236,8 @@ def process_result(index, result):
               help='Write the stacked files to an external location without updating the index',
               default=None,
               type=click.Path(exists=True, writable=True, file_okay=False))
+@click.option('--check-data/--no-check-data', is_flag=True, default=None,
+              help="Overrides config option: check_data_identical")
 @task_app.queue_size_option
 @task_app.task_app_options
 @task_app.task_app(make_config=make_stacker_config, make_tasks=make_stacker_tasks)

@@ -1,6 +1,5 @@
 name: odc
 channels:
-- conda-forge/label/dev
 - conda-forge
 - defaults
 - nodefaults
@@ -13,7 +12,7 @@ dependencies:
 - cachetools
 - cloudpickle >= 0.4.0 # pickle logger objects
 - numpy
-- rasterio >= 0.9a10 # to handle weird 1.0a ordering...
+- rasterio >= 1.0.2  # multi-band reproject bugs got fixed in that version 
 - singledispatch
 - netcdf4
 - psycopg2

@@ -98,7 +98,7 @@ class ProductResource(object):
                 metadata_type = self.metadata_type_resource.add(product.metadata_type,
                                                                 allow_table_lock=allow_table_lock)
             with self._db.connect() as connection:
-                connection.add_dataset_type(
+                connection.insert_dataset_type(
                     name=product.name,
                     metadata=product.metadata_doc,
                     metadata_type_id=metadata_type.id,

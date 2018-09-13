@@ -8,10 +8,8 @@ import click
 import sys
 from click import echo
 
-from collections import OrderedDict
 import yaml
 import yaml.resolver
-from yaml import Node
 import csv
 from datacube.api.core import dataset_type_to_row
 import pandas as pd
@@ -113,6 +111,7 @@ def update_products(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
                                                                                  len(safe_changes)))
     sys.exit(failures)
 
+
 def build_product_list(index):
     lstdct = []
     for product in index.products.search():
@@ -120,13 +119,14 @@ def build_product_list(index):
         lstdct.append(info)
     return lstdct
 
+
 def _write_csv(index):
-    writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description',\
-                            'ancillary_quality', 'latgqa_cep90', 'product_type',\
-                            'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path',\
-                            'gqa_iterative_stddev_xy', 'time', 'sat_row', 'orbit', 'gqa',\
-                            'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_size',\
-                            'spatial_dimensions'], extrasaction='ignore')
+    writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description',
+                                         'ancillary_quality', 'latgqa_cep90', 'product_type',
+                                         'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path',
+                                         'gqa_iterative_stddev_xy', 'time', 'sat_row', 'orbit', 'gqa',
+                                         'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_size',
+                                         'spatial_dimensions'], extrasaction='ignore')
     writer.writeheader()
 
     def add_first_name(row):
@@ -135,6 +135,7 @@ def _write_csv(index):
         return row
 
     writer.writerows(add_first_name(row) for row in index)
+
 
 def _write_yaml(index):
     """
@@ -150,6 +151,7 @@ def _write_yaml(index):
     except TypeError:
         return yaml.dump(index.definition, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
 
+
 def _write_tab(products):
     products = pd.DataFrame(products)
 
@@ -157,19 +159,21 @@ def _write_tab(products):
         echo('No products discovered :(')
         return
 
-    echo(products.to_string(columns=('id', 'name', 'description', 'ancillary_quality',\
-                                     'product_type', 'gqa_abs_iterative_mean_xy',\
-                                     'gqa_ref_source', 'sat_path',\
-                                     'gqa_iterative_stddev_xy', 'time', 'sat_row',\
-                                     'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',\
+    echo(products.to_string(columns=('id', 'name', 'description', 'ancillary_quality',
+                                     'product_type', 'gqa_abs_iterative_mean_xy',
+                                     'gqa_ref_source', 'sat_path',
+                                     'gqa_iterative_stddev_xy', 'time', 'sat_row',
+                                     'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
                                      'resolution', 'tile_size', 'spatial_dimensions'),
                             justify='left'))
+
 
 LIST_OUTPUT_WRITERS = {
     'csv': _write_csv,
     'yaml': _write_yaml,
     'tab': _write_tab,
 }
+
 
 @product_cli.command('list')
 @click.option('-f', help='Output format',
@@ -181,9 +185,11 @@ def list_products(dc, f):
     """
     LIST_OUTPUT_WRITERS[f](build_product_list(dc.index))
 
+
 def build_product_show(index, product_name):
     product_def = index.products.get_by_name(product_name)
     return product_def
+
 
 def _write_json(product_def):
     click.echo_via_pager(json.dumps(product_def.definition, indent=4))
@@ -193,6 +199,7 @@ SHOW_OUTPUT_WRITERS = {
     'yaml': _write_yaml,
     'json': _write_json,
 }
+
 
 @product_cli.command('show')
 @click.option('-f', help='Output format',

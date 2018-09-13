@@ -17,7 +17,7 @@ Required software
 
 Postgres:
 
-    Download and install from `here <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads#windows>`_.
+    Download and install from `here <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads>`_.
 
     
 
@@ -29,7 +29,7 @@ Python 3.5+ is required. Python 3.6 is recommended.
 Anaconda Python
 ---------------
 
-`Install Anaconda Python <https://www.continuum.io/downloads#windows>`_
+`Install Anaconda Python <https://www.anaconda.com/download/>`_
 
 Add conda-forge to package channels::
 

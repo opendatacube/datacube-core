@@ -3,14 +3,12 @@ from __future__ import absolute_import
 import imp
 import shutil
 from pathlib import Path
-
 import numpy
 import pytest
 import rasterio
 
 from datacube.compat import string_types
-from integration_tests.utils import assert_click_command
-from integration_tests.conftest import prepare_test_ingestion_configuration
+from integration_tests.utils import assert_click_command, prepare_test_ingestion_configuration
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
@@ -78,8 +76,35 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
     clirunner(['-v', 'product', 'add', str(LS5_DATASET_TYPES)])
 
     # Index the Datasets
-    clirunner(['-v', 'dataset', 'add', '--auto-match',
+    #  - do test run first to increase test coverage
+    clirunner(['-v', 'dataset', 'add', '--dry-run',
                str(lbg_nbar), str(lbg_pq)])
+
+    #  - do actual indexing
+    clirunner(['-v', 'dataset', 'add',
+               str(lbg_nbar), str(lbg_pq)])
+
+    #  - this will be no-op but with ignore lineage
+    clirunner(['-v', 'dataset', 'add',
+               '--confirm-ignore-lineage',
+               str(lbg_nbar), str(lbg_pq)])
+
+    # Test no-op update
+    for policy in ['archive', 'forget', 'keep']:
+        clirunner(['-v', 'dataset', 'update',
+                   '--dry-run',
+                   '--location-policy', policy,
+                   str(lbg_nbar), str(lbg_pq)])
+
+        # Test no changes needed update
+        clirunner(['-v', 'dataset', 'update',
+                   '--location-policy', policy,
+                   str(lbg_nbar), str(lbg_pq)])
+
+    # TODO: test location update
+    # 1. Make a copy of a file
+    # 2. Call dataset update with archive/forget
+    # 3. Check location
 
     # Ingest NBAR
     clirunner(['-v', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
@@ -95,7 +120,7 @@ def check_open_with_dc(index):
     from datacube.api.core import Datacube
     dc = Datacube(index=index)
 
-    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], stack='variable')
+    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue']).to_array(dim='variable')
     assert data_array.shape
     assert (data_array != -999).any()
 
@@ -107,14 +132,15 @@ def check_open_with_dc(index):
     assert data_array['blue'].shape[1:] == (1, 1)
     assert (data_array.blue != -999).any()
 
-    data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150), stack='variable')
+    data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150)).to_array(dim='variable')
+
     assert data_array.ndim == 4
     assert 'variable' in data_array.dims
     assert (data_array != -999).any()
 
     with rasterio.Env():
         lazy_data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150),
-                                  stack='variable', dask_chunks={'time': 1, 'x': 1000, 'y': 1000})
+                                  dask_chunks={'time': 1, 'x': 1000, 'y': 1000}).to_array(dim='variable')
         assert lazy_data_array.data.dask
         assert lazy_data_array.ndim == data_array.ndim
         assert 'variable' in lazy_data_array.dims

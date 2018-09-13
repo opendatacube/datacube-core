@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:10.3
+    environment:
+      - POSTGRES_DB=opendatacube
+      - POSTGRES_PASSWORD=opendatacubepassword
+      - POSTGRES_USER=opendatacube
+
+  odc:
+    build:
+      context: .
+    depends_on: 
+      - postgres
+    environment:
+      - DB_HOSTNAME=postgres
+      - DB_USERNAME=opendatacube
+      - DB_PASSWORD=opendatacubepassword
+      - DB_DATABASE=opendatacube
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/opt/odc

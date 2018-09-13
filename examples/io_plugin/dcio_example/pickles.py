@@ -49,7 +49,7 @@ class PickleDataSource(object):
             if out_shape is None or out_shape == data.shape:
                 return data
 
-            raise NotImplementedError('Decimated reading not supported for this data source')
+            raise NotImplementedError('Native reading not supported for this data source')
 
         def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
             source = self.read()

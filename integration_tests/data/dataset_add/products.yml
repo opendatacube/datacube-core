@@ -1,0 +1,43 @@
+##  jinja2.Template('''{% for name in products %}
+##  ---
+##  name: {{name}}
+##  description: test product {{name}}
+##  metadata_type: minimal
+##  metadata:
+##  product_type: {{name}}
+##  {% endfor %}''').render(products='ABCDE')
+##  
+---
+name: A
+description: test product A
+metadata_type: minimal
+metadata:
+    product_type: A
+
+---
+name: B
+description: test product B
+metadata_type: minimal
+metadata:
+    product_type: B
+
+---
+name: C
+description: test product C
+metadata_type: minimal
+metadata:
+    product_type: C
+
+---
+name: D
+description: test product D
+metadata_type: minimal
+metadata:
+    product_type: D
+
+---
+name: E
+description: test product E
+metadata_type: minimal
+metadata:
+    product_type: E

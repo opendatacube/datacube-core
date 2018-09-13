@@ -2,19 +2,22 @@
 """
 Useful methods for tests (particularly: reading/writing and checking files)
 """
-from __future__ import absolute_import
-
 import atexit
 import os
 import shutil
 import tempfile
+import json
+import uuid
+from datetime import datetime
 
 import pathlib
 
-from osgeo import gdal
-
 from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
+from datacube.ui.common import get_metadata_path
+from datacube.utils import read_documents, SimpleDocNav
+
+_DEFAULT = object()
 
 
 def assert_file_structure(folder, expected_structure, root=''):
@@ -96,66 +99,6 @@ def _write_files_to_dir(directory_path, file_dict):
                     raise Exception('Unexpected file contents: %s' % type(contents))
 
 
-def temp_dir():
-    """
-    Create and return a temporary directory that will be deleted automatically on exit.
-
-    :rtype: pathlib.Path
-    """
-    return write_files({})
-
-
-def temp_file(suffix=""):
-    """
-    Get a temporary file path that will be cleaned up on exit.
-
-    Simpler than NamedTemporaryFile--- just a file path, no open mode or anything.
-    :return:
-    """
-    f = tempfile.mktemp(suffix=suffix)
-
-    def permissive_ignore(file_):
-        if os.path.exists(file_):
-            os.remove(file_)
-
-    atexit.register(permissive_ignore, f)
-    return f
-
-
-def file_of_size(path, size_mb):
-    """
-    Create a blank file of the given size.
-    """
-    with open(path, "wb") as f:
-        f.seek(size_mb * 1024 * 1024 - 1)
-        f.write("\0")
-
-
-def create_empty_dataset(src_filename, out_filename):
-    """
-    Create a new GDAL dataset based on an existing one, but with no data.
-
-    Will contain the same projection, extents, etc, but have a very small filesize.
-
-    These files can be used for automated testing without having to lug enormous files around.
-
-    :param src_filename: Source Filename
-    :param out_filename: Output Filename
-    """
-    inds = gdal.Open(src_filename)
-    driver = inds.GetDriver()
-    band = inds.GetRasterBand(1)
-
-    out = driver.Create(out_filename,
-                        inds.RasterXSize,
-                        inds.RasterYSize,
-                        inds.RasterCount,
-                        band.DataType)
-    out.SetGeoTransform(inds.GetGeoTransform())
-    out.SetProjection(inds.GetProjection())
-    out.FlushCache()
-
-
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     """
     Testing aproximate equality for floats
@@ -166,7 +109,14 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
 
 def mk_sample_product(name,
                       description='Sample',
-                      measurements=['red', 'green', 'blue']):
+                      measurements=('red', 'green', 'blue'),
+                      with_grid_spec=False,
+                      storage=None):
+
+    if storage is None and with_grid_spec is True:
+        storage = {'crs': 'EPSG:3577',
+                   'resolution': {'x': 25, 'y': -25},
+                   'tile_size': {'x': 100000.0, 'y': 100000.0}}
 
     eo_type = MetadataType({
         'name': 'eo',
@@ -200,16 +150,22 @@ def mk_sample_product(name,
             return m_merged
 
         assert False and 'Only support str|dict|(name, dtype, nodata)'
+        return {}
 
     measurements = [mk_measurement(m) for m in measurements]
 
-    return DatasetType(eo_type, dict(
+    definition = dict(
         name=name,
         description=description,
         metadata_type='eo',
         metadata={},
         measurements=measurements
-    ))
+    )
+
+    if storage is not None:
+        definition['storage'] = storage
+
+    return DatasetType(eo_type, definition)
 
 
 def mk_sample_dataset(bands,
@@ -217,6 +173,7 @@ def mk_sample_dataset(bands,
                       product_name='sample',
                       format='GeoTiff',
                       id='12345678123456781234567812345678'):
+    # pylint: disable=redefined-builtin
     image_bands_keys = 'path layer band'.split(' ')
     measurement_keys = 'dtype units nodata aliases name'.split(' ')
 
@@ -234,3 +191,80 @@ def mk_sample_dataset(bands,
         'format': {'name': format},
         'image': {'bands': image_bands}
     }, uris=[uri])
+
+
+def make_graph_abcde(node):
+    """
+      A -> B
+      |    |
+      |    v
+      +--> C -> D
+      |
+      +--> E
+    """
+    d = node('D')
+    e = node('E')
+    c = node('C', cd=d)
+    b = node('B', bc=c)
+    a = node('A', ab=b, ac=c, ae=e)
+    return a, b, c, d, e
+
+
+def dataset_maker(idx, t=None):
+    """ Return function that generates "dataset documents"
+
+    (name, sources={}, **kwargs) -> dict
+    """
+    ns = uuid.UUID('c0fefefe-2470-3b03-803f-e7599f39ceff')
+    postfix = '' if idx is None else '{:04d}'.format(idx)
+
+    if t is None:
+        t = datetime.fromordinal(736637 + (0 if idx is None else idx))
+
+    t = t.isoformat()
+
+    def make(name, sources=_DEFAULT, **kwargs):
+        if sources is _DEFAULT:
+            sources = {}
+
+        return dict(id=str(uuid.uuid5(ns, name + postfix)),
+                    label=name+postfix,
+                    creation_dt=t,
+                    n=idx,
+                    lineage=dict(source_datasets=sources),
+                    **kwargs)
+
+    return make
+
+
+def gen_dataset_test_dag(idx, t=None, force_tree=False):
+    """Build document suitable for consumption by dataset add
+
+    when force_tree is True pump the object graph through json
+    serialise->deserialise, this converts DAG to a tree (no object sharing,
+    copies instead).
+    """
+    def node_maker(n, t):
+        mk = dataset_maker(n, t)
+
+        def node(name, **kwargs):
+            return mk(name,
+                      product_type=name,
+                      sources=kwargs)
+
+        return node
+
+    def deref(a):
+        return json.loads(json.dumps(a))
+
+    root, *_ = make_graph_abcde(node_maker(idx, t))
+    return deref(root) if force_tree else root
+
+
+def load_dataset_definition(path):
+    if not isinstance(path, pathlib.Path):
+        path = pathlib.Path(path)
+
+    fname = get_metadata_path(path)
+    for _, doc in read_documents(fname):
+        return SimpleDocNav(doc)
