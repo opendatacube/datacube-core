@@ -61,8 +61,8 @@ A product definition example:
 
 .. code-block:: yaml
 
-     name: ls8_level1
-     description: Landsat 8 Level 1 Collection-1 OLI-TIRS
+     name: ls8_level1_scene
+     description: Landsat 8 Level 1 Collection-1
      metadata_type: eo
 
      metadata:
@@ -72,48 +72,48 @@ A product definition example:
              name: OLI_TIRS
          product_type: level1
          format:
-             name: GeoTiff
+             name: GeoTIFF
      measurements:
          - name: 'coastal_aerosol'
            aliases: [band_1, coastal_aerosol]
            dtype: int16
-           nodata: -9999
+           nodata: -999
            units: '1'
 
          - name: 'blue'
            aliases: [band_2, blue]
            dtype: int16
-           nodata: -9999
+           nodata: -999
            units: '1'
 
          - name: 'green'
            aliases: [band_3, green]
            dtype: int16
-           nodata: -9999
+           nodata: -999
            units: '1'
 
          - name: 'red'
            aliases: [band_4, red]
            dtype: int16
-           nodata: -9999
+           nodata: -999
            units: '1'
 
          - name: 'nir'
            aliases: [band_5, nir]
            dtype: int16
-           nodata: -9999
+           nodata: -999
            units: '1'
 
          - name: 'swir1'
            aliases: [band_6, swir1]
            dtype: int16
-           nodata: -9999
+           nodata: -999
            units: '1'
 
          - name: 'swir2'
            aliases: [band_7, swir2]
            dtype: int16
-           nodata: -9999
+           nodata: -999
            units: '1'
 
 More detailed information on the structure of a product definition document can be found :ref:`here <product-doc>`

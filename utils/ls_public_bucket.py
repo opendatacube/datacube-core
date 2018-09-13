@@ -84,7 +84,7 @@ def get_coords(geo_ref_points, spatial_ref):
 
 def satellite_ref(sat):
     """
-    To load the band_names for referencing either LANDSAT8 or LANDSAT7 bands
+    To load the band_names for referencing  LANDSAT8, LANDSAT7 and LANDSAT_5 bands
     """
     if sat == 'LANDSAT_8':
         sat_img = bands_ls8
@@ -106,6 +106,10 @@ def get_s3_url(bucket_name, obj_key):
 
 
 def absolutify_paths(doc, bucket_name, obj_key):
+    """
+    Create a S3 url for all the indexed datasets
+
+    """
     objt_key = format_obj_key(obj_key)
     for band in doc['image']['bands'].values():
         band['path'] = get_s3_url(bucket_name, objt_key + '/'+band['path'])
@@ -113,6 +117,13 @@ def absolutify_paths(doc, bucket_name, obj_key):
 
 
 def make_metadata_doc(mtl_data, bucket_name, object_key):
+    """
+    Extract useful information to index to datacube from the scene based metadata
+    :param mtl_data: metadata read from the MTL.txt
+    :param bucket_name: AWS public bucket name
+    :param object_key: Prefix to pass the particular path and row
+    :return:
+    """
     mtl_product_info = mtl_data['PRODUCT_METADATA']
     mtl_metadata_info = mtl_data['METADATA_FILE_INFO']
     satellite = mtl_product_info['SPACECRAFT_ID']
@@ -143,7 +154,7 @@ def make_metadata_doc(mtl_data, bucket_name, object_key):
             'center_dt': sensing_time,
             'coord': coordinates,
                   },
-        'format': {'name': 'GeoTiff'},
+        'format': {'name': 'GeoTIFF'},
         'grid_spatial': {
             'projection': {
                 'geo_ref_points': geo_ref_points,
@@ -165,6 +176,12 @@ def make_metadata_doc(mtl_data, bucket_name, object_key):
 
 
 def get_metadata_docs(bucket_name, prefix):
+    """
+    Read MTL.txt for each scene for a particular path and row and convert it into a string
+    :param bucket_name: AWS bucket name
+    :param prefix: Pass the prefix to read particular path/row MTL data
+    :return:
+    """
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(bucket_name)
     logging.info("Bucket : %s", bucket_name)
@@ -185,6 +202,7 @@ def make_rules(index):
 
 
 def add_dataset(doc, uri, rules, index):
+
     dataset = create_dataset(doc, uri, rules)
 
     try:
@@ -209,6 +227,14 @@ def add_datacube_dataset(bucket_name, config, prefix):
 @click.option('--config', '-c', help=" Pass the config file to access the database", type=click.Path(exists=True))
 @click.option('--prefix', '-p', help="Pass the prefix of the object to the bucket")
 def main(bucket_name, config, prefix):
+    """
+    Read the scene based metadata which is in 'MTL.txt' format, extract a yaml file from the metadata and
+    add the dataset to database
+    :param bucket_name: AWS public bucket name
+    :param config: Config file to access database
+    :param prefix: To select Collection 1 data and WRS path/row
+    :return: Index datasets using datacube
+    """
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
     add_datacube_dataset(bucket_name, config, prefix)
 

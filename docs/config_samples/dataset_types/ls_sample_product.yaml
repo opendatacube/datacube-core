@@ -1,5 +1,5 @@
-name: ls8_level1
-description: Landsat 8 Level 1 Collection-1 OLI-TIRS
+name: ls8_level1_scene
+description: Landsat 8 Level 1 Collection-1
 metadata_type: eo
 
 metadata:
@@ -9,129 +9,46 @@ metadata:
         name: OLI_TIRS
     product_type: level1
     format:
-        name: GeoTiff
+        name: GeoTIFF
 measurements:
     - name: 'coastal_aerosol'
       aliases: [band_1, coastal_aerosol]
       dtype: int16
-      nodata: -9999
+      nodata: -999
       units: '1'
 
     - name: 'blue'
       aliases: [band_2, blue]
       dtype: int16
-      nodata: -9999
+      nodata: -999
       units: '1'
 
     - name: 'green'
       aliases: [band_3, green]
       dtype: int16
-      nodata: -9999
+      nodata: -999
       units: '1'
 
     - name: 'red'
       aliases: [band_4, red]
       dtype: int16
-      nodata: -9999
+      nodata: -999
       units: '1'
 
     - name: 'nir'
       aliases: [band_5, nir]
       dtype: int16
-      nodata: -9999
+      nodata: -999
       units: '1'
 
     - name: 'swir1'
       aliases: [band_6, swir1]
       dtype: int16
-      nodata: -9999
+      nodata: -999
       units: '1'
 
     - name: 'swir2'
       aliases: [band_7, swir2]
       dtype: int16
-      nodata: -9999
+      nodata: -999
       units: '1'
-
-    - name: 'panchromatic'
-      aliases: [band_8, panchromatic]
-      dtype: int16
-      nodata: -9999
-      units: '1'
-
-    - name: 'cirrus'
-      aliases: [band_9, cirrus]
-      dtype: int16
-      nodata: -9999
-      units: '1'
-
-    - name: 'lwir1'
-      aliases: [band_10, lwir1]
-      dtype: int16
-      nodata: -9999
-      units: '1'
-
-    - name: 'lwir2'
-      aliases: [band_11, lwir2]
-      dtype: int16
-      nodata: -9999
-      units: '1'
-
-    - name: 'quality'
-      aliases: [QUALITY, quality]
-      dtype: int16
-      nodata: 0
-      units: '1'
-      flags_definition:
-        designated_fill:
-          bits: [0]
-          description: Used to identify fill values
-          values: {0: false, 1: true}
-        terrain_occlusion:
-          bits: [1]
-          description: Terrain Occlusion
-          values: {0: false, 1: true}
-        radiometric_saturation:
-          bits: [2,3]
-          description: Radiometric saturation bits, represents how many bands contains saturation
-          values:
-            0: none
-            1: 1-2
-            2: 3-4
-            3: <=5
-        cloud:
-          bits: [4]
-          description: Cloud
-          values: {0: false, 1: true}
-        cloud_confidence:
-          bits: [5,6]
-          description: Cloud Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
-          values:
-            0: Not Determined
-            1: Low
-            2: Medium
-            3: High
-        cloud_shadow_conf:
-          bits: [7,8]
-          description: Cloud Shadow Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
-          values:
-            0: Not Determined
-            1: Low
-            2: Medium
-            3: High
-        snow_ice_conf:
-          bits: [9,10]
-          description: Snow/Ice Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
-          values:
-            0: Not Determined
-            1: Low
-            2: Medium
-            3: High
-        cirrus_confidence:
-          bits: [11,12]
-          description: Cirrus Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
-          values:
-            0: Not Determined
-            1: Low
-            2: Medium
-            3: High
