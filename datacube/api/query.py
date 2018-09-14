@@ -303,10 +303,16 @@ def _convert_to_solar_time(utc, longitude):
     return utc + offset
 
 
-def solar_day(dataset):
+def solar_day(dataset, longitude=None):
     utc = dataset.center_time
-    bb = dataset.extent.to_crs(geometry.CRS('WGS84')).boundingbox
-    assert bb.left < bb.right  # TODO: Handle dateline?
-    longitude = (bb.left + bb.right) * 0.5
+
+    if longitude is None:
+        m = dataset.metadata
+        if hasattr(m, 'lon'):
+            lon = m.lon
+            longitude = (lon.begin + lon.end)*0.5
+        else:
+            raise ValueError('Cannot compute solar_day: dataset is missing spatial info')
+
     solar_time = _convert_to_solar_time(utc, longitude)
     return np.datetime64(solar_time.date(), 'D')
