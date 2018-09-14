@@ -1,12 +1,9 @@
-# TODO: nice repr for the built-in transformations?
-
 import xarray
 
 from datacube.storage.masking import make_mask as make_mask_prim
 from datacube.storage.masking import mask_invalid_data as mask_invalid_data_prim
 
-from .impl import VirtualProductException, Measurement
-from .impl import Transform as transform, Transformation
+from .impl import VirtualProductException, Transformation, Measurement
 
 
 def selective_apply_dict(dictionary, apply_to=None, key_map=None, value_map=None):
@@ -36,6 +33,11 @@ def selective_apply(data, apply_to=None, key_map=None, value_map=None):
 
 
 class MakeMask(Transformation):
+    """
+    Create a mask that would only keep pixels for which the measurement with `mask_measurement_name`
+    of the `product` satisfies `flags`.
+    """
+
     def __init__(self, mask_measurement_name, flags):
         self.mask_measurement_name = mask_measurement_name
         self.flags = flags
@@ -58,14 +60,6 @@ class MakeMask(Transformation):
             return make_mask_prim(value, **self.flags)
 
         return selective_apply(data, apply_to=[self.mask_measurement_name], value_map=worker)
-
-
-def make_mask(product, mask_measurement_name, flags):
-    """
-    Create a mask that would only keep pixels for which the measurement with `mask_measurement_name`
-    of the `product` satisfies `flags`.
-    """
-    return transform(product, MakeMask(mask_measurement_name, flags))
 
 
 class ApplyMask(Transformation):
@@ -106,17 +100,6 @@ class ApplyMask(Transformation):
         return selective_apply(rest, apply_to=self.apply_to, value_map=worker)
 
 
-def mask_by_flags(product, mask_measurement_name, flags,
-                  apply_to=None, preserve_dtype=True, fallback_dtype='float32'):
-    """
-    Only keep pixels for which the measurement with `mask_measurement_name` of the
-    `product` satisfies `flags`.
-    """
-    return transform(make_mask(product, mask_measurement_name, flags),
-                     ApplyMask(mask_measurement_name, apply_to=apply_to,
-                               preserve_dtype=preserve_dtype, fallback_dtype=fallback_dtype))
-
-
 class ToFloat(Transformation):
     def __init__(self, apply_to=None, dtype='float32'):
         self.apply_to = apply_to
@@ -140,32 +123,21 @@ class ToFloat(Transformation):
         return selective_apply(data, apply_to=self.apply_to, value_map=worker)
 
 
-def to_float(product, apply_to=None, dtype='float32'):
-    """
-    Convert the dataset to float. Replaces `nodata` values with `Nan`s.
-    """
-    return transform(product, ToFloat(apply_to=apply_to, dtype=dtype))
-
-
 class Rename(Transformation):
-    def __init__(self, name_dict):
-        self.name_dict = name_dict
+    def __init__(self, measurement_names):
+        self.measurement_names = measurement_names
 
     def measurements(self, input_measurements):
         def key_map(key):
-            return self.name_dict[key]
+            return self.measurement_names[key]
 
         def value_map(key, value):
             result = value.copy()
-            result['name'] = self.name_dict[key]
+            result['name'] = self.measurement_names[key]
             return Measurement(**result)
 
-        return selective_apply_dict(input_measurements, apply_to=self.name_dict,
+        return selective_apply_dict(input_measurements, apply_to=self.measurement_names,
                                     key_map=key_map, value_map=value_map)
 
     def compute(self, data):
-        return data.rename(self.name_dict)
-
-
-def rename(product, name_dict):
-    return transform(product, Rename(name_dict))
+        return data.rename(self.measurement_names)
