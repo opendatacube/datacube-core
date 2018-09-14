@@ -21,13 +21,10 @@ import logging
 import datetime
 import collections
 import warnings
-import calendar
-import re
 import pandas
 
 from dateutil import tz
 from pandas import to_datetime as pandas_to_datetime
-from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 import numpy as np
 
 from ..compat import string_types, integer_types
@@ -268,13 +265,13 @@ def _to_datetime(t):
 
     return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
 
+
 def _time_to_search_dims(time_range):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
 
         tr_start, tr_end = time_range, time_range
 
-        #pylint: disable=bad-whitespace
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
             l = list(time_range)
             tr_start, tr_end = l[0], l[-1]
@@ -285,19 +282,19 @@ def _time_to_search_dims(time_range):
         if hasattr(tr_start, 'isoformat'):
             tr_start = tr_start.isoformat()
         if hasattr(tr_end, 'isoformat'):
-            tr_end   = tr_end.isoformat()
+            tr_end = tr_end.isoformat()
 
         start = _to_datetime(tr_start)
-        end   = _to_datetime(pandas.Period(tr_end)
-                             .end_time
-                             .to_pydatetime()
-                            )
+        end = _to_datetime(pandas.Period(tr_end)
+                           .end_time
+                           .to_pydatetime())
 
         tr = Range(start, end)
         if start == end:
             return tr[0]
 
         return tr
+
 
 def _convert_to_solar_time(utc, longitude):
     seconds_per_degree = 240
