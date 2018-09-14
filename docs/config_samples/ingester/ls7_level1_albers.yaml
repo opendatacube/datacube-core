@@ -1,0 +1,73 @@
+source_type: {product_name}
+output_type: ls7_level1_albers
+
+description: Landsat 7 level1, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
+
+location: '/your/folder/where/you_save_tiles'
+file_path_template: 'LS7_ETM_NBART/LS7_ETM_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+
+storage:
+  driver: NetCDF CF
+
+  crs: EPSG:3577
+  tile_size:
+          x: 100000.0
+          y: 100000.0
+  resolution:
+          x: 25
+          y: -25
+  chunking:
+      x: 200
+      y: 200
+      time: 1
+  dimension_order: ['time', 'y', 'x']
+
+measurements:
+    - name: blue
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '1'
+      zlib: True
+      attrs:
+          alias: "band_1"
+    - name: green
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '2'
+      zlib: True
+      attrs:
+          alias: "band_2"
+    - name: red
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '3'
+      zlib: True
+      attrs:
+          alias: "band_3"
+    - name: nir
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '4'
+      zlib: True
+      attrs:
+          alias: "band_4"
+    - name: swir1
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '5'
+      zlib: True
+      attrs:
+          alias: "band_5"
+    - name: swir2
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '7'
+      zlib: True
+      attrs:
+          alias: "band_7"
