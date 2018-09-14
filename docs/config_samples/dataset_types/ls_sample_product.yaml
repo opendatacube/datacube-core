@@ -1,4 +1,4 @@
-name: ls8_level1_scene
+name: ls8_level1_col1_scene
 description: Landsat 8 Level 1 Collection-1
 metadata_type: eo
 
@@ -8,6 +8,7 @@ metadata:
     instrument:
         name: OLI_TIRS
     product_type: level1
+    collection: '1'
     format:
         name: GeoTIFF
 measurements:
