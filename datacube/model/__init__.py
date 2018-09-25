@@ -566,7 +566,8 @@ GeoPolygon.from_boundingbox = _polygon_from_boundingbox
 def _polygon_from_sources_extents(sources, geobox):
     sources_union = geometry.unary_union(source.extent.to_crs(geobox.crs) for source in sources)
     valid_data = geobox.extent.intersection(sources_union)
-    return valid_data
+    resolution = min([abs(x) for x in geobox.resolution])
+    return valid_data.simplify(tolerance=resolution * 0.01)
 
 
 GeoPolygon.from_sources_extents = _polygon_from_sources_extents
