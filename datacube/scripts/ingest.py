@@ -13,7 +13,6 @@ from datetime import datetime
 
 import datacube
 from datacube.api.core import Datacube
-from datacube.index.index import Index
 from datacube.model import DatasetType, Range, GeoPolygon, Measurement
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
@@ -293,30 +292,39 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
                                output_type=output_type,
                                **task)
 
-    pending = []
+    task_pending = []
 
     # Count of storage unit/s indexed successfully or failed to index
     index_successful = index_failed = 0
 
     # Count of storage unit/s failed during file creation
-    f_failed = 0
+    failed_count = 0
 
     tasks = iter(tasks)
-    pending += [submit_task(task) for task in itertools.islice(tasks, max(0, queue_size - len(pending)))]
-    total = pending
-    while pending:
-        completed, failed, pending = executor.get_ready(pending)
+
+    # Fetch max number of tiles for ingest process
+    num_of_tiles = max(len(tasks), queue_size)
+
+    while True:
+        task_pending += [submit_task(task) for task in itertools.islice(tasks,
+                                                                        num_of_tiles)]
+        if not task_pending:
+            break
+
+        completed, failed, pending = executor.get_ready(task_pending)
 
         for future in failed:
             try:
                 executor.result(future)
             except Exception as err:  # pylint: disable=broad-except
-                _LOG.exception('Failed to create storage unit file (Exception: %s) ', str(err))
-                f_failed += 1
+                _LOG.exception('Failed to create storage unit file (Exception: %s)\n\n',
+                               str(err),
+                               exc_info=True)
+                failed_count += 1
 
         _LOG.info('Storage unit file creation status (completed: %s, failed: %s, pending: %s)',
-                  (len(total) - len(pending) - f_failed),
-                  f_failed,
+                  (len(num_of_tiles) - len(pending) - failed_count),
+                  failed_count,
                   len(pending))
         if not completed:
             time.sleep(1)
@@ -329,7 +337,9 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
             results = executor.results(completed)
             index_successful += _index_datasets(index, results)
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception('Failed to index storage unit file (Exception: %s)', str(err))
+            _LOG.exception('Failed to index storage unit file (Exception: %s)\n\n',
+                           str(err),
+                           exc_info=True)
             index_failed += 1
 
         _LOG.info('Storage unit files indexed (successful: %s, failed: %s)', index_successful, index_failed)
@@ -381,8 +391,8 @@ def ingest_cmd(index,
                save_tasks,
                load_tasks,
                dry_run,
-               executor,
-               allow_product_changes):
+               allow_product_changes,
+               executor):
     # pylint: disable=too-many-locals
 
     if config_file:
