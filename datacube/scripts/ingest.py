@@ -303,7 +303,7 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
     tasks = iter(tasks)
 
     # Fetch max number of tiles for ingest process
-    num_of_tiles = max(len(tasks), queue_size)
+    num_of_tiles = max(len(list(tasks)), queue_size)
 
     while True:
         task_pending += [submit_task(task) for task in itertools.islice(tasks,
