@@ -9,6 +9,7 @@ of our tests when we can roll it into more tests.
 import string
 from datetime import datetime, timedelta
 from pathlib import Path
+from uuid import UUID
 
 import numpy as np
 import rasterio
@@ -136,18 +137,18 @@ def scene_datasets(draw):
 
 
 def generate_test_scenes(tmpdir, num=2):
-    paths_to_datasets = []
+    sample_test_scenes = {}
     for i in range(num):
         ls5_dataset = scene_datasets().example()
-        dataset_file = write_test_scene_to_disk(ls5_dataset, tmpdir)
-        paths_to_datasets.append(dataset_file)
-    return paths_to_datasets
+        dataset_file = write_test_scene_to_disk(ls5_dataset, tmpdir, i)
+        sample_test_scenes[UUID(ls5_dataset['id'])] = dataset_file
+    return sample_test_scenes
 
 
-def write_test_scene_to_disk(dataset_dict, tmpdir):
+def write_test_scene_to_disk(dataset_dict, tmpdir, dirnum):
     tmpdir = Path(str(tmpdir))
     # Make directory name
-    dir_name = dataset_dict['platform']['code'] + dataset_dict['id'][:10]
+    dir_name = dataset_dict['platform']['code'] + dataset_dict['id'][:5] + '_' + str(dirnum)
 
     # Create directory
     new_dir = tmpdir / dir_name

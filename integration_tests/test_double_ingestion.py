@@ -28,8 +28,8 @@ def test_double_ingestion(clirunner, index, tmpdir, ingest_configs):
         return clirunner(['dataset', 'add', str(path)])
 
     # Create and Index some example scene datasets
-    dataset_paths = generate_test_scenes(tmpdir)
-    for path in dataset_paths:
+    sample_datasets = generate_test_scenes(tmpdir)
+    for _, path in sample_datasets.items():
         index_dataset(path)
 
     # Ingest them
@@ -40,8 +40,8 @@ def test_double_ingestion(clirunner, index, tmpdir, ingest_configs):
     ])
 
     # Create and Index some more scene datasets
-    dataset_paths = generate_test_scenes(tmpdir)
-    for path in dataset_paths:
+    sample_datasets = generate_test_scenes(tmpdir)
+    for _, path in sample_datasets.items():
         index_dataset(path)
 
     # Make sure that we can ingest the new scenes

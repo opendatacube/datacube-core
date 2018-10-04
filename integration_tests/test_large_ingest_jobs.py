@@ -4,6 +4,8 @@ import pytest
 
 from integration_tests.data_utils import generate_test_scenes
 from integration_tests.utils import prepare_test_ingestion_configuration
+from integration_tests.test_full_ingestion import check_open_with_api, check_data_with_api, ensure_datasets_are_indexed
+
 
 PROJECT_ROOT = Path(__file__).parents[1]
 
@@ -26,37 +28,40 @@ def test_large_ingest_jobs(clirunner, index, tmpdir, ingest_configs):
                                                                config,
                                                                mode='fast_ingest')
 
-    # Create and Index some example scene datasets
-    dataset_paths = generate_test_scenes(tmpdir, num=3000)
-    for path in dataset_paths:
-        clirunner(['dataset', 'add', str(path)])
+    # Create and Index 3202 ls5_nbar_scene datasets
+    example_ls5_datasets = generate_test_scenes(tmpdir, num=3202)
+    valid_uuids = []
+    for uuid, ls5_dataset_path in example_ls5_datasets.items():
+        valid_uuids.append(uuid)
+        clirunner([
+            'dataset',
+            'add',
+            str(ls5_dataset_path)
+        ])
+
+    ensure_datasets_are_indexed(index, valid_uuids)
 
     # Run ingest dry-run but do not index files
     clirunner([
         'ingest',
         '--config-file',
         str(config_path),
-        '--year 2010',
-        '--queue-size 3201',
+        '--queue-size',
+        '3201',
         '--dry-run',
-        '--allow-product-changes'
     ])
 
-    # Create and Index some more scene datasets and ingest again
-    dataset_paths = generate_test_scenes(tmpdir, num=500)
-    for path in dataset_paths:
-        clirunner(['dataset', 'add', str(path)])
-
-    # Ingest all scenes (Though queue size is 3201, all tiles should be
-    # processed)
+    # Ingest all scenes (Though the queue size is 3201, all tiles (> 3201) shall be ingested)
     clirunner([
         'ingest',
         '--config-file',
         str(config_path),
-        '--year 2010',
-        '--queue-size 3201',
-        '--allow-product-changes'
+        '--queue-size',
+        '3201',
+        '--allow-product-changes',
     ])
 
     datasets = index.datasets.search_eager(product='ls5_nbar_albers')
     assert len(datasets) > 3201
+    check_open_with_api(index, len(valid_uuids))
+    check_data_with_api(index, len(valid_uuids))
