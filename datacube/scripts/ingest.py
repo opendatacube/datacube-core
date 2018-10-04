@@ -293,32 +293,35 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
                                output_type=output_type,
                                **task)
 
-    pending = []
+    task_pending = []
 
     # Count of storage unit/s indexed successfully or failed to index
-    index_successful = index_failed = 0
-
-    # Count of storage unit/s failed during file creation
-    f_failed = 0
+    indexing_successful = indexing_failed = 0
 
     tasks = iter(tasks)
-    pending += [submit_task(task) for task in itertools.islice(tasks, max(0, queue_size - len(pending)))]
-    total = pending
-    while pending:
-        completed, failed, pending = executor.get_ready(pending)
 
-        for future in failed:
+    # Fetch max number of tiles for ingest process
+    num_of_tiles = max(0, queue_size)
+
+    while True:
+        task_pending += [submit_task(task) for task in itertools.islice(tasks,
+                                                                        num_of_tiles)]
+        if not task_pending:
+            break
+
+        nc_files_created, nc_file_creation_failed, pending_nc_creation = executor.get_ready(task_pending)
+
+        for future in nc_file_creation_failed:
             try:
                 executor.result(future)
             except Exception as err:  # pylint: disable=broad-except
-                _LOG.exception('Failed to create storage unit file (Exception: %s) ', str(err))
-                f_failed += 1
+                _LOG.exception('Failed to create storage unit file (Exception: %s) ', str(err), exc_info=True)
 
         _LOG.info('Storage unit file creation status (completed: %s, failed: %s, pending: %s)',
-                  (len(total) - len(pending) - f_failed),
-                  f_failed,
-                  len(pending))
-        if not completed:
+                  len(nc_files_created),
+                  len(nc_file_creation_failed),
+                  len(pending_nc_creation))
+        if not nc_files_created:
             time.sleep(1)
             continue
 
@@ -326,15 +329,15 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
             # TODO: ideally we wouldn't block here indefinitely
             # maybe limit gather to 50-100 results and put the rest into a index backlog
             # this will also keep the queue full
-            results = executor.results(completed)
-            index_successful += _index_datasets(index, results)
+            results = executor.results(nc_files_created)
+            indexing_successful += _index_datasets(index, results)
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception('Failed to index storage unit file (Exception: %s)', str(err))
-            index_failed += 1
+            _LOG.exception('Failed to index storage unit file (Exception: %s)', str(err), exc_info=True)
+            indexing_failed += 1
 
-        _LOG.info('Storage unit files indexed (successful: %s, failed: %s)', index_successful, index_failed)
+        _LOG.info('Storage unit files indexed (successful: %s, failed: %s)', indexing_successful, indexing_failed)
 
-    return index_successful, index_failed
+    return indexing_successful, indexing_failed
 
 
 def _validate_year(ctx, param, value):
@@ -381,8 +384,8 @@ def ingest_cmd(index,
                save_tasks,
                load_tasks,
                dry_run,
-               executor,
-               allow_product_changes):
+               allow_product_changes,
+               executor):
     # pylint: disable=too-many-locals
 
     if config_file:

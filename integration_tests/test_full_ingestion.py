@@ -36,6 +36,7 @@ JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
+@pytest.mark.timeout(20)
 @pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
@@ -121,6 +122,7 @@ def test_s3_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, 
     check_data_with_api(index, len(valid_uuids))
 
 
+@pytest.mark.timeout(20)
 @pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
