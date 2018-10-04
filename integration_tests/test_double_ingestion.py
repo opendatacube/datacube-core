@@ -37,17 +37,17 @@ def test_double_ingestion(clirunner, index, tmpdir, ingest_configs, example_ls5_
         for uuid, ls5_dataset_path in example_ls5_dataset_paths.items():
             valid_uuids.append(uuid)
             index_dataset(ls5_dataset_path)
-    
+
         # Ensure that datasets are actually indexed
         ensure_datasets_are_indexed(index, valid_uuids)
-    
+
         # Ingest them
         clirunner([
             'ingest',
             '--config-file',
             str(config_path)
         ])
-    
+
         # Validate that the ingestion is working as expected
         datasets = index.datasets.search_eager(product='ls5_nbar_albers')
         assert len(datasets) > 0
@@ -55,7 +55,7 @@ def test_double_ingestion(clirunner, index, tmpdir, ingest_configs, example_ls5_
 
         check_open_with_api(index, len(valid_uuids))
         check_data_with_api(index, len(valid_uuids))
-    
+
         # NetCDF specific checks, based on the saved NetCDF file
         ds_path = str(datasets[0].local_path)
         with netCDF4.Dataset(ds_path) as nco:
@@ -64,7 +64,7 @@ def test_double_ingestion(clirunner, index, tmpdir, ingest_configs, example_ls5_
             check_cf_compliance(nco)
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset_paths)
             check_attributes(nco, config['global_attributes'])
-        
+
             name = config['measurements'][0]['name']
             check_attributes(nco[name], config['measurements'][0]['attrs'])
         check_open_with_xarray(ds_path)
@@ -77,4 +77,3 @@ def test_double_ingestion(clirunner, index, tmpdir, ingest_configs, example_ls5_
     ######################
     # Create and Index some more scene datasets
     ingest_products()
-
