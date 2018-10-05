@@ -209,7 +209,7 @@ def check_open_with_api(index, time_slices):
     chunk_profile = {'time': 1, 'x': 100, 'y': 100}
     lazy_data = dc.load_data(sources, geobox, input_type.measurements.values(), dask_chunks=chunk_profile)
     assert lazy_data.blue.shape == (time_slices, 200, 200)
-    assert lazy_data.blue.load() == data.blue
+    assert (lazy_data.blue.load() == data.blue).all()
 
 
 def check_data_with_api(index, time_slices):
