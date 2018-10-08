@@ -139,7 +139,7 @@ def test_process_all_ingest_jobs(clirunner, index, tmpdir, example_ls5_dataset_p
         return clirunner(['dataset', 'add', str(path)])
 
     # Number of scenes generated is 3 (as per NUM_TIME_SLICES const from conftest.py)
-    # Though the queue size is 2, all the scenes (3) should be processed by ingest function
+    # Set the queue size to process 2 tiles
     queue_size = 2
     valid_uuids = []
     for uuid, ls5_dataset_path in example_ls5_dataset_paths.items():
@@ -149,7 +149,7 @@ def test_process_all_ingest_jobs(clirunner, index, tmpdir, example_ls5_dataset_p
     # Ensure that datasets are actually indexed
     ensure_datasets_are_indexed(index, valid_uuids)
 
-    # Ingest all scenes (Though the queue size is 3201, all tiles (> 3201) shall be ingested)
+    # Ingest all scenes (Though the queue size is 2, all 3 tiles will be ingested)
     clirunner([
         'ingest',
         '--config-file',
