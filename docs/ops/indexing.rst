@@ -200,3 +200,124 @@ Once you have downloaded some data, it will need :ref:`metadata preparation
 <prepare-scripts>` before use in the Data Cube.
 
 
+Indexing Data on Amazon(AWS S3)
+================
+Cloud storage is a sought after feature for most storage platforms. Options currently exist that allow for a users to store, index, and retrieve data from Amazon S3 buckets using the open data cube. The following sections outline this process.  
+
+Configuring AWS CLI Credentials
+-----------------------------
+
+Install the AWS CLI package and configure it with your Amazon AWS credentials. For a more detailed tutorial on AWS CLI configurations, visit the official AWS docs  The
+only two fields required to be configured are the ``Access Key``, and
+``Secret Access Key``. These keys can be found on your AWS login
+security page. Try not to lose your ``Secret Access Key`` as you will
+not be able to view it again and you will have to request a new one.
+
+::
+
+    pip install boto3 ruamel.yaml 
+    sudo apt-get install awscli -y
+    aws configure
+
+Add the ca-certificates requisite for S3 indexing and export them to the
+environment variable the data cube will look for. If you forget this
+step you will see an error upon attempting to load the indexed dataset.
+
+::
+
+    sudo apt-get install ca-certificates
+    export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+
+You may want to add the line
+``export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt`` to your
+``.bashrc`` file to make these changes permanent.
+
+
+Download Indexing Scripts
+-----------------------------
+
+
+In order to utilize the convenience of S3 indexing, we must retrieve
+scripts necessary for S3 indexing. The direct links are provided below
+since, at the time of this document, they are not all included in the
+latest release (1.6.1).
+
+::
+
+    cd ~/Datacube
+    mkdir -p S3_scripts
+    cd S3_scripts
+    wget https://raw.githubusercontent.com/opendatacube/datacube-core/develop/datacube/index/hl.py
+    wget https://raw.githubusercontent.com/opendatacube/datacube-dataset-config/master/scripts/index_from_s3_bucket.py
+    wget https://raw.githubusercontent.com/opendatacube/datacube-core/develop/docs/config_samples/dataset_types/ls_usgs.yaml
+
+Once the necessary scripts have been gathered, it is time to install the
+AWS CLI package and configure it with your Amazon AWS credentials. The
+only two fields required to be configured are the ``Access Key``, and
+``Secret Access Key``. These keys can be found on your AWS login
+security page. Try not to lose your ``Secret Access Key`` as you will
+not be able to view it again and you will have to request a new one.
+
+::
+
+    pip install boto3 ruamel.yaml 
+    sudo apt-get install awscli -y
+    aws configure
+
+Add the ca-certificates requisite for S3 indexing and export them to the
+environment variable the data cube will look for. If you forget this
+step you will see an error upon attempting to load the indexed dataset.
+
+::
+
+    sudo apt-get install ca-certificates
+    export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+
+You may want to add the line
+``export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt`` to your
+``.bashrc`` file to make these changes permanent.
+
+S3 Indexing Example
+-----------------------------
+
+For this example we will be indexing from Amazon AWS' ``landsat-pds``.
+This dataset is constantly updated and is free for use. It contains an
+incredible amount of Landsat 8 data downloaded directly from USGS and
+hosted on their public S3 bucket. More information can be found here:
+https://registry.opendata.aws/landsat-8/.
+
+Add a product that matches the metadata for the data found on the S3
+bucket. If using a different dataset, you may have to use or create a
+``yaml`` product definition file if an exact match is not readily
+available.
+
+::
+
+    datacube product add ~/Datacube/S3_scripts/ls_usgs.yaml
+
+This is an example of indexing an S3 dataset from AWS' landsat-pds.
+Notice how ``MTL.txt`` is the file that is parsed to index the dataset.
+``-p`` is the option for the path of the directory from the landsat-pds
+main directory. ``--suffix`` refers to the suffix of the metadata file
+to process, it will not always be an ``MTL.txt`` but for landsat-pds, it
+will be.
+
+::
+
+    cd ~/Datacube/S3_scripts
+    python3 index_from_s3_bucket.py landsat-pds -p c1/L8/139/045/ --suffix="MTL.txt"
+
+This is an example that works with the command above to illustrate the
+Python usage. The ``dc.load`` would just use bounds defined within the
+data that was indexed. ``output_crs`` and ``resolution`` will be
+required for this command to work. These commands will need to be
+entered into a notebook or in a Python console, accessed with the
+command ``python``
+
+::
+
+    import datacube
+
+    dc = datacube.Datacube()
+
+    ds = dc.load("ls8_level1_usgs",output_crs="EPSG:4326", resolution=(-30, 30), latitude=(21,21.2), longitude=(86.7, 86.9))
