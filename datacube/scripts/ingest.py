@@ -83,13 +83,14 @@ def get_variable_params(config):
     return variable_params
 
 
-def get_app_metadata(config, config_file):
+def get_app_metadata(config_file):
     doc = {
         'lineage': {
             'algorithm': {
                 'name': 'datacube-ingest',
                 'repo_url': 'https://github.com/opendatacube/datacube-core.git',
-                'parameters': {'configuration_file': config_file}
+                'parameters': {'configuration_file': config_file},
+                'version': datacube.__version__,
             },
         }
     }
@@ -103,7 +104,7 @@ def get_filename(config, tile_index, sources, **kwargs):
         tile_index=tile_index,
         start_time=to_datetime(sources.time.values[0]).strftime(time_format),
         end_time=to_datetime(sources.time.values[-1]).strftime(time_format),
-        version=config['taskfile_version'],
+        version=config['taskfile_utctime'],
         **kwargs))
 
 
@@ -172,7 +173,7 @@ def load_config_from_file(path):
 
 
 def create_task_list(index, output_type, year, source_type, config):
-    config['taskfile_version'] = int(time.time())
+    config['taskfile_utctime'] = int(time.time())
 
     query = {}
     if year:
@@ -244,7 +245,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
                             extent=tile.geobox.extent,
                             center_time=labels['time'],
                             uri=mk_uri(file_path),
-                            app_info=get_app_metadata(config, config['filename']),
+                            app_info=get_app_metadata(config['filename']),
                             valid_data=GeoPolygon.from_sources_extents(sources, tile.geobox))
 
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset

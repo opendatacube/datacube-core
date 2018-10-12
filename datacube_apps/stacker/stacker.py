@@ -33,7 +33,7 @@ APP_NAME = 'datacube-stacker'
 
 def get_filename(config, cell_index, year):
     file_path_template = str(Path(config['location'], config['file_path_template']))
-    return file_path_template.format(tile_index=cell_index, start_time=year, version=config['taskfile_version'])
+    return file_path_template.format(tile_index=cell_index, start_time=year, version=config['taskfile_utctime'])
 
 
 def get_temp_file(final_output_path):
@@ -107,7 +107,7 @@ def make_stacker_config(index, config, export_path=None, check_data=None, **quer
 
     config['variable_params'] = variable_params
 
-    config['taskfile_version'] = int(datacube.utils.datetime_to_seconds_since_1970(datetime.datetime.now()))
+    config['taskfile_utctime'] = int(datacube.utils.datetime_to_seconds_since_1970(datetime.datetime.now()))
 
     return config
 
@@ -120,7 +120,7 @@ def get_history_attribute(config, task):
         ver=datacube.__version__,
         args=', '.join([config['app_config_file'],
                         str(config['version']),
-                        str(config['taskfile_version']),
+                        str(config['taskfile_utctime']),
                         task['output_filename'],
                         str(task['year']),
                         str(task['cell_index'])
