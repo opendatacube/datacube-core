@@ -74,7 +74,6 @@ def get_history_attribute(config, task):
         app=APP_NAME,
         ver=datacube.__version__,
         args=', '.join([config['app_config_file'],
-                        str(config['version']),
                         task['output_filename'],
                         str(task['cell_index'])]),
         comment='Created NCML file to aggregate multiple NetCDF files along the time dimension'
