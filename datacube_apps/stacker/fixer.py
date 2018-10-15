@@ -145,7 +145,6 @@ def build_history_string(config, task, keep_original=True):
         app=APP_NAME,
         ver=datacube.__version__,
         args=', '.join([config['app_config_file'],
-                        str(config['version']),
                         str(config['taskfile_utctime']),
                         task['output_filename'],
                         str(task['start_time']),
