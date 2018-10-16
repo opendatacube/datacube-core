@@ -191,10 +191,10 @@ looking.
     * `MCD43A4 - Nadir BRDF-Adjusted Reflectance 16-Day L3 Global 500m`__
 
 __ http://landsat.usgs.gov/CDR_LSR.php
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a4
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1_v006
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2_v006
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3_v006
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a4_v006
 
 Once you have downloaded some data, it will need :ref:`metadata preparation
 <prepare-scripts>` before use in the Data Cube.
