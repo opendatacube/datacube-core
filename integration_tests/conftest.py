@@ -15,6 +15,7 @@ from uuid import uuid4
 import pytest
 import yaml
 from click.testing import CliRunner
+from hypothesis import HealthCheck, settings
 
 import datacube.scripts.cli_app
 import datacube.utils
@@ -53,6 +54,14 @@ LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
 
 CONFIG_FILE_PATHS = [str(INTEGRATION_TESTS_DIR / 'agdcintegration.conf'),
                      os.path.expanduser('~/.datacube_integration.conf')]
+
+# Configure Hypothesis to allow slower tests, because we're testing datasets
+# and disk IO rather than scalar values in memory.  Ask @Zac-HD for details.
+settings.register_profile(
+    'opendatacube', timeout=-1, deadline=5000, max_examples=10,
+    suppress_health_check=[HealthCheck.too_slow]
+)
+settings.load_profile('opendatacube')
 
 
 @pytest.fixture
