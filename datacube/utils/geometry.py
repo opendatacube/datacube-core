@@ -459,6 +459,7 @@ class Geometry(object):
     def to_crs(self, crs, resolution=None, wrapdateline=False):
         """
         Convert geometry to a different Coordinate Reference System
+
         :param CRS crs: CRS to convert to
         :param float resolution: Subdivide the geometry such it has no segment longer then the given distance.
         :param bool wrapdateline: Attempt to gracefully handle geometry that intersects the dateline
