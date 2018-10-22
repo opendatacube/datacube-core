@@ -19,8 +19,7 @@ Prerequisites for Indexing Data
 ===============================
 
  * A working Data Cube setup
- * Some data to load
-(Links to some freely available :ref:`sample-eo-data`.)
+ * Some data to load (Links to some freely available :ref:`sample-eo-data`.)
 
 
 
@@ -30,9 +29,11 @@ Steps to Adding Data
  * Create a new product
      Before the data itself can be added, a product describing the data must be created.
      Requires creation of a :ref:`product-definitions` document (yaml)
+
  * Index the data
      After this step the data is accessible through the datacube.
      Requires datacube friendly :ref:`dataset-documents` for data which is to be indexed
+
  * :ref:`Ingest <ingestion>` the data(optional)
      After indexing the data you can choose to ingest. This provides the ability to tile the original data into a faster storage format or a new projection system.
      Requires creation of an ingestion configuration file (yaml).
@@ -163,7 +164,7 @@ For more information see :ref:`dataset-metadata-doc`.
 
 
 Adding Data - Indexing
-================
+======================
 
 Everything is now ready, and we can use the **datacube** tool to add one or more
 datasets into our Cube by running::
@@ -201,11 +202,12 @@ Once you have downloaded some data, it will need :ref:`metadata preparation
 
 
 Indexing Data on Amazon(AWS S3)
-================
+===============================
+
 Cloud storage is a sought after feature for most storage platforms. Options currently exist that allow for a users to store, index, and retrieve data from Amazon S3 buckets using the open data cube. The following sections outline this process.  
 
 Configuring AWS CLI Credentials
------------------------------
+-------------------------------
 
 Install the AWS CLI package and configure it with your Amazon AWS credentials. For a more detailed tutorial on AWS CLI configurations, visit the official AWS docs  The
 only two fields required to be configured are the ``Access Key``, and
@@ -234,7 +236,7 @@ You may want to add the line
 
 
 Download Indexing Scripts
------------------------------
+-------------------------
 
 
 In order to utilize the convenience of S3 indexing, we must retrieve
