@@ -138,7 +138,7 @@ def scene_datasets(draw):
 def write_test_scene_to_disk(dataset_dict, tmpdir):
     tmpdir = Path(str(tmpdir))
     # Make directory name
-    dir_name = dataset_dict['platform']['code'] + dataset_dict['id'][:5]
+    dir_name = dataset_dict['platform']['code'] + dataset_dict['id']
 
     # Create directory
     new_dir = tmpdir / dir_name
