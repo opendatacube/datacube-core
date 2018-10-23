@@ -116,7 +116,7 @@ When connected to an ODC Database, these methods are available for
 searching and querying::
 
    dc = Datacube()
-   dc.index.{method}
+   dc.index.datasets.{method}
 
 .. currentmodule:: datacube.index._datasets.DatasetResource
 
@@ -152,7 +152,7 @@ When connected to an ODC Database, these methods are available for
 adding, updating and deleting datasets::
 
    dc = Datacube()
-   dc.index.{method}
+   dc.index.datasets.{method}
 
 .. autosummary::
    :nosignatures:
@@ -173,7 +173,7 @@ When connected to an ODC Database, these methods are available for
 discovering information about Products::
 
    dc = Datacube()
-   dc.index.{method}
+   dc.index.products.{method}
 
 .. currentmodule:: datacube.index._products.ProductResource
 
@@ -200,7 +200,7 @@ When connected to an ODC Database, these methods are available for
 discovering information about Products::
 
    dc = Datacube()
-   dc.index.{method}
+   dc.index.products.{method}
 
 .. currentmodule:: datacube.index._products.ProductResource
 
