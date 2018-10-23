@@ -33,7 +33,6 @@ from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
 
-_LOG = logging.getLogger(__name__)
 THREADING_REQS_AVAILABLE = ('SharedArray' in sys.modules and 'pathos.threading' in sys.modules)
 
 Group = namedtuple('Group', ['key', 'datasets'])
@@ -657,14 +656,7 @@ def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_fu
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
                       fuse_func=None):
-    valid_datasets = []
-    for dataset in datasets:
-        if not dataset.local_uri:
-            _LOG.error("Locationless dataset found in the database: %r" % dataset)
-        else:
-            valid_datasets.append(dataset)
-
-    reproject_and_fuse([new_datasource(dataset, measurement.name) for dataset in valid_datasets],
+    reproject_and_fuse([new_datasource(dataset, measurement.name) for dataset in datasets if dataset.local_uri],
                        dest,
                        geobox.affine,
                        geobox.crs,
