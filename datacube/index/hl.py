@@ -197,6 +197,23 @@ class Doc2Dataset(object):
     User needs to supply index, which products to consider for matching and what
     to do with lineage.
 
+    :param index: Database
+
+    :param products: List of product names against which to match datasets
+                     (including lineage datasets), if not supplied will consider all
+                     products.
+
+    :param exclude_products: List of products to exclude from matching
+
+    :param fail_on_missing_lineage: If True fail resolve if any lineage
+                                    datasets are missing from the DB
+
+    :param verify_lineage: If True check that lineage datasets in the
+                           supplied document are identical to dB versions
+
+    :param skip_lineage: If True ignore lineage sub-tree in the supplied
+                         document and construct dataset without lineage datasets
+
     """
     def __init__(self,
                  index,
@@ -205,25 +222,6 @@ class Doc2Dataset(object):
                  fail_on_missing_lineage=False,
                  verify_lineage=True,
                  skip_lineage=False):
-        """
-        :param index: Database
-
-        :param products: List of product names against which to match datasets
-        (including lineage datasets), if not supplied will consider all
-        products.
-
-        :param exclude_products: List of products to exclude from matching
-
-        :param fail_on_missing_lineage: If True fail resolve if any lineage
-        datasets are missing from the DB
-
-        :param verify_lineage: If True check that lineage datasets in the
-        supplied document are identical to dB versions
-
-        :param skip_lineage: If True ignore lineage sub-tree in the supplied
-        document and construct dataset without lineage datasets
-
-        """
         rules, err_msg = load_rules_from_types(index,
                                                product_names=products,
                                                excluding=exclude_products)

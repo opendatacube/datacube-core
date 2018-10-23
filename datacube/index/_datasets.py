@@ -313,15 +313,17 @@ class DatasetResource(object):
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
-    def get_field_names(self, type_name=None):
+    def get_field_names(self, product_name=None):
         """
-        :param str type_name:
+        Get the list of possible search fields for a Product
+
+        :param str product_name:
         :rtype: set[str]
         """
-        if type_name is None:
+        if product_name is None:
             types = self.types.get_all()
         else:
-            types = [self.types.get_by_name(type_name)]
+            types = [self.types.get_by_name(product_name)]
 
         out = set()
         for type_ in types:
@@ -330,6 +332,8 @@ class DatasetResource(object):
 
     def get_locations(self, id_):
         """
+        Get the list of storage locations for the given dataset id
+
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
@@ -342,6 +346,8 @@ class DatasetResource(object):
 
     def get_archived_locations(self, id_):
         """
+        Find locations which have been archived for a dataset
+
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
@@ -386,6 +392,13 @@ class DatasetResource(object):
             return connection.insert_dataset_location(id_, uri)
 
     def get_datasets_for_location(self, uri, mode=None):
+        """
+        Find datasets that exist at the given URI
+
+        :param uri: search uri
+        :param str mode: 'exact' or 'prefix'
+        :return:
+        """
         with self._db.connect() as connection:
             return (self._make(row) for row in connection.get_datasets_for_location(uri, mode=mode))
 

@@ -8,14 +8,17 @@ import cachetools
 import numpy
 from affine import Affine
 from osgeo import ogr, osr
-from rasterio.coords import BoundingBox as _BoundingBox
 
 from datacube import compat
 
 Coordinate = namedtuple('Coordinate', ('values', 'units'))
+_BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
 
 
-class BoundingBox(_BoundingBox):  # pylint: disable=duplicate-bases
+class BoundingBox(_BoundingBox):
+    """Bounding box, defining extent in cartesian coordinates.
+    """
+
     def buffered(self, ybuff, xbuff):
         """
         Return a new BoundingBox, buffered in the x and y dimensions.
@@ -110,6 +113,7 @@ class CRS(object):
     ... except InvalidCRSError as e:
     ...    print(e)
     Not a valid CRS: 'PROJCS["...
+
     """
 
     def __init__(self, crs_str):
