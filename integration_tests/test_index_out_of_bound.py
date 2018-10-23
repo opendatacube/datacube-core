@@ -30,8 +30,7 @@ def test_index_out_of_bound_error(clirunner, index, tmpdir, example_ls5_dataset_
     def index_dataset(path):
         return clirunner(['dataset', 'add', str(path)])
 
-    # Number of scenes generated is 3 (as per NUM_TIME_SLICES const from conftest.py)
-    # Set the queue size to process 2 tiles
+    # Set the queue size to process 3 tiles
     queue_size = 2
     valid_uuids = []
     for uuid, ls5_dataset_path in example_ls5_dataset_paths.items():
@@ -69,8 +68,9 @@ def test_index_out_of_bound_error(clirunner, index, tmpdir, example_ls5_dataset_
     assert len(datasets) > 0
     assert datasets[0].managed
 
-    # Out of three indexed datasets, two succeeds where as one with no location fails
-    check_open_with_api(index, len(valid_uuids))
+    # Out of three indexed datasets, two succeeds.
+    # The storage unit file is not created for dataset with no location
+    check_open_with_api(index, len(valid_uuids)-1)
 
     # NetCDF specific checks, based on the saved NetCDF file
     ds_path = str(datasets[0].local_path)
