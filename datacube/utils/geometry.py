@@ -579,54 +579,85 @@ def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
 
 def point(x, y, crs):
     """
+    Create a 2D Point
+
     >>> point(10, 10, crs=None)
     Geometry(POINT (10 10), None)
+
+    :rtype: Geometry
     """
     return Geometry({'type': 'Point', 'coordinates': (x, y)}, crs=crs)
 
 
 def multipoint(coords, crs):
     """
+    Create a 2D MultiPoint Geometry
+
     >>> multipoint([(10, 10), (20, 20)], None)
     Geometry(MULTIPOINT (10 10,20 20), None)
+
+    :param list coords: list of x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'MultiPoint', 'coordinates': coords}, crs=crs)
 
 
 def line(coords, crs):
     """
+    Create a 2D LineString (Connected set of lines)
+
     >>> line([(10, 10), (20, 20), (30, 40)], None)
     Geometry(LINESTRING (10 10,20 20,30 40), None)
+
+    :param list coords: list of x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'LineString', 'coordinates': coords}, crs=crs)
 
 
 def multiline(coords, crs):
     """
+    Create a 2D MultiLineString (Multiple disconnected sets of lines)
+
     >>> multiline([[(10, 10), (20, 20), (30, 40)], [(50, 60), (70, 80), (90, 99)]], None)
     Geometry(MULTILINESTRING ((10 10,20 20,30 40),(50 60,70 80,90 99)), None)
+
+    :param list coords: list of lists of x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'MultiLineString', 'coordinates': coords}, crs=crs)
 
 
 def polygon(outer, crs, *inners):
     """
+    Create a 2D Polygon
+
     >>> polygon([(10, 10), (20, 20), (20, 10), (10, 10)], None)
     Geometry(POLYGON ((10 10,20 20,20 10,10 10)), None)
+
+    :param list coords: list of 2d x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 
 
 def multipolygon(coords, crs):
     """
+    Create a 2D MultiPolygon
+
     >>> multipolygon([[[(10, 10), (20, 20), (20, 10), (10, 10)]], [[(40, 10), (50, 20), (50, 10), (40, 10)]]], None)
     Geometry(MULTIPOLYGON (((10 10,20 20,20 10,10 10)),((40 10,50 20,50 10,40 10))), None)
+
+    :param list coords: list of lists of x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'MultiPolygon', 'coordinates': coords}, crs=crs)
 
 
 def box(left, bottom, right, top, crs):
     """
+    Create a 2D Box (Polygon)
+
     >>> box(10, 10, 20, 20, None)
     Geometry(POLYGON ((10 10,10 20,20 20,20 10,10 10)), None)
     """
@@ -635,6 +666,15 @@ def box(left, bottom, right, top, crs):
 
 
 def polygon_from_transform(width, height, transform, crs):
+    """
+    Create a 2D Polygon from an affine transform
+
+    :param float width:
+    :param float height:
+    :param Affine transform:
+    :param crs: CRS
+    :rtype:  Geometry
+    """
     points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
     transform.itransform(points)
     return polygon(points, crs=crs)

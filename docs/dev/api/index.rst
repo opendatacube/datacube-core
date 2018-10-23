@@ -113,7 +113,9 @@ Dataset Querying
 ----------------
 
 When connected to an ODC Database, these methods are available for
-searching and querying::
+searching and querying:
+
+.. code-block:: python
 
    dc = Datacube()
    dc.index.datasets.{method}
@@ -122,6 +124,7 @@ searching and querying::
 
 .. autosummary::
    :nosignatures:
+   :toctree: generate/
 
    get
    search
@@ -149,13 +152,14 @@ Dataset Writing
 ---------------
 
 When connected to an ODC Database, these methods are available for
-adding, updating and deleting datasets::
+adding, updating and archiving datasets::
 
    dc = Datacube()
    dc.index.datasets.{method}
 
 .. autosummary::
    :nosignatures:
+   :toctree: generate/
 
    add
    add_location
@@ -179,6 +183,7 @@ discovering information about Products::
 
 .. autosummary::
    :nosignatures:
+   :toctree: generate/
 
    from_doc
    add
@@ -206,12 +211,25 @@ discovering information about Products::
 
 .. autosummary::
    :nosignatures:
+   :toctree: generate/
 
    from_doc
    add
    update
    update_document
    add_document
+
+Database Index Connections
+--------------------------
+
+.. currentmodule:: datacube
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generate/
+
+   index.index_connect
+   index.Index
 
 Dataset to Product Matching
 ---------------------------
@@ -341,7 +359,6 @@ Everything Else
 .. toctree::
    :maxdepth: 1
 
-   dcindex.rst
    analytics_engine.rst
    s3block.rst
 

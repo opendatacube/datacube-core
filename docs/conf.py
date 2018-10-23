@@ -364,7 +364,7 @@ sys.modules['rasterio.coords'].BoundingBox = Mock
 
 def setup(app):
     # Fix bug where code isn't being highlighted
-    app.add_stylesheet('_static/pygments.css')
+    app.add_stylesheet('pygments.css')
 
 
 # Clean up generated documentation files that RTD seems to be having trouble with
