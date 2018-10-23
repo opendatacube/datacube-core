@@ -30,7 +30,7 @@ def test_index_out_of_bound_error(clirunner, index, tmpdir, example_ls5_dataset_
     def index_dataset(path):
         return clirunner(['dataset', 'add', str(path)])
 
-    # Set the queue size to process 3 tiles
+    # Set the queue size to process 5 tiles
     queue_size = 5
     valid_uuids = []
     for uuid, ls5_dataset_path in example_ls5_dataset_paths.items():
