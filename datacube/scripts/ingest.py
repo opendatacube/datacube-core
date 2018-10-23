@@ -230,7 +230,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
         datasets = tile.sources.sum().item()
         for dataset in datasets:
-            if not dataset.local_uri:
+            if not dataset.uris:
                 _LOG.error('Locationless dataset found in the database: %r', dataset)
 
         data = Datacube.load_data(tile.sources, tile.geobox, measurements,
