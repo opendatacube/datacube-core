@@ -86,8 +86,8 @@ Grid Processing API Internals
    GridWorkflow.group_into_cells
    GridWorkflow.tile_sources
 
-ODC Data Model
-==============
+Internal Data Model
+===================
 
 .. currentmodule:: datacube.model
 
@@ -231,8 +231,8 @@ Geometry Utilities
 
 Open Data Cube includes a set of CRS aware geometry utilities.
 
-Classes
--------
+Geometry Classes
+----------------
 
 .. autosummary::
    :nosignatures:
