@@ -656,7 +656,7 @@ def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_fu
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
                       fuse_func=None):
-    reproject_and_fuse([new_datasource(dataset, measurement.name) for dataset in datasets if dataset.local_uri],
+    reproject_and_fuse([new_datasource(dataset, measurement.name) for dataset in datasets if dataset.uris],
                        dest,
                        geobox.affine,
                        geobox.crs,
