@@ -1,16 +1,17 @@
 from collections import OrderedDict
 from datetime import datetime
+from types import SimpleNamespace
 
 import pytest
 import yaml
 import mock
 import numpy
 
-from datacube import Datacube
 from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
 from datacube.utils import geometry
 from datacube.virtual import construct
 from datacube.virtual.impl import Datacube
+from datacube.virtual.utils import product_definitions_from_index
 
 
 def example_metadata_type():
@@ -97,7 +98,6 @@ def cloud_free_nbar():
     return construct(**recipe)
 
 
-@pytest.fixture
 def product_definitions():
     blue = dict(name='blue', dtype='int16', nodata=-999, units='1')
     green = dict(name='green', dtype='int16', nodata=-999, units='1')
@@ -116,12 +116,25 @@ def product_definitions():
     pixelquality = dict(name='pixelquality', dtype='int16', nodata=0, units='1',
                         flags_definition=flags)
 
-    return {
-        'ls7_nbar_albers': {'measurements': [blue, green]},
-        'ls8_nbar_albers': {'measurements': [blue, green]},
-        'ls7_pq_albers': {'measurements': [pixelquality]},
-        'ls8_pq_albers': {'measurements': [pixelquality]}
-    }
+    return [
+        SimpleNamespace(name='ls7_nbar_albers', definition={'measurements': [blue, green]}),
+        SimpleNamespace(name='ls8_nbar_albers', definition={'measurements': [blue, green]}),
+        SimpleNamespace(name='ls7_pq_albers', definition={'measurements': [pixelquality]}),
+        SimpleNamespace(name='ls8_pq_albers', definition={'measurements': [pixelquality]})
+    ]
+
+
+def load_data(*args, **kwargs):
+    sources, geobox, measurements = args
+
+    # this returns nodata bands which are good enough for this test
+    result = Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
+                                     geobox, measurements)
+    return result
+
+
+def group_datasets(*args, **kwargs):
+    return Datacube.group_datasets(*args, **kwargs)
 
 
 @pytest.fixture
@@ -156,6 +169,7 @@ def dc():
         else:
             return []
 
+    result.index.products.get_all = product_definitions
     result.index.products.get_by_name = example_product
     result.index.datasets.search = search
     return result
@@ -175,8 +189,12 @@ def test_name_resolution(cloud_free_nbar):
         assert callable(prod['transform'])
 
 
-def test_output_measurements(cloud_free_nbar, product_definitions):
-    measurements = cloud_free_nbar.output_measurements(product_definitions)
+def test_str(cloud_free_nbar):
+    assert str(cloud_free_nbar)
+
+
+def test_output_measurements(cloud_free_nbar, dc):
+    measurements = cloud_free_nbar.output_measurements(product_definitions_from_index(dc.index))
     assert 'blue' in measurements
     assert 'green' in measurements
     assert 'source_index' in measurements
@@ -191,23 +209,11 @@ def test_group_datasets(cloud_free_nbar, dc, query):
     assert time == 2
 
 
-def test_load_data(cloud_free_nbar, dc, query, product_definitions):
-    query_result = cloud_free_nbar.query(dc, **query)
-    group = cloud_free_nbar.group(query_result, **query)
-
-    original_datacube = Datacube
-
-    def load_data(*args, **kwargs):
-        sources, geobox, measurements = args
-
-        # this returns nodata bands which are good enough for this test
-        result = original_datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                                  geobox, measurements)
-        return result
-
+def test_load_data(cloud_free_nbar, dc, query):
     with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
         mock_datacube.load_data = load_data
-        data = cloud_free_nbar.fetch(group, product_definitions)
+        mock_datacube.group_datasets = group_datasets
+        data = cloud_free_nbar.load(dc, **query)
 
     assert 'blue' in data
     assert 'green' in data
@@ -217,3 +223,44 @@ def test_load_data(cloud_free_nbar, dc, query, product_definitions):
     assert numpy.array_equal(numpy.unique(data.blue.values), numpy.array([-999]))
     assert numpy.array_equal(numpy.unique(data.green.values), numpy.array([-999]))
     assert numpy.array_equal(numpy.unique(data.source_index.values), numpy.array([0, 1]))
+
+
+def test_rename(dc, query):
+    rename_recipe = yaml.load("""
+        transform: rename
+        measurement_names:
+            green: verde
+        input:
+            product: ls8_nbar_albers
+            measurements: [blue, green]
+    """)
+
+    rename = construct(**rename_recipe)
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = rename.load(dc, **query)
+
+    assert 'verde' in data
+    assert 'blue' in data
+    assert 'green' not in data
+
+
+def test_to_float(dc, query):
+    to_float_recipe = yaml.load("""
+        transform: to_float
+        input:
+            product: ls8_nbar_albers
+            measurements: [blue]
+    """)
+
+    to_float = construct(**to_float_recipe)
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = to_float.load(dc, **query)
+
+    assert numpy.all(numpy.isnan(data.blue.values))
+    assert data.blue.dtype == 'float32'
