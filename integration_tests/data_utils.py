@@ -142,7 +142,7 @@ def write_test_scene_to_disk(dataset_dict, tmpdir):
 
     # Create directory
     new_dir = tmpdir / dir_name
-    new_dir.mkdir()
+    new_dir.mkdir(exist_ok=True)
 
     _make_geotiffs(new_dir, dataset_dict)
     dataset_file = new_dir / 'agdc-metadata.yaml'
