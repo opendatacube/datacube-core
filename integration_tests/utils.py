@@ -84,7 +84,7 @@ def prepare_test_ingestion_configuration(tmpdir,
 
     filename = Path(filename)
     if output_dir is None:
-        output_dir = tmpdir.mkdir(filename.stem)
+        output_dir = tmpdir.ensure(filename.stem)
     config = load_yaml_file(filename)[0]
 
     if mode is not None:
