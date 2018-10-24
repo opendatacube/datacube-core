@@ -2,7 +2,7 @@
 # TODO: needs an aggregation phase (use xarray.DataArray.groupby?)
 # TODO: measurement dependency tracking
 # TODO: ability to select measurements higher up in the tree
-# TODO: a mechanism for set settings for the leaf notes
+# TODO: a mechanism to set settings for the leaf notes
 # TODO: lineage tracking per observation
 # TODO: integrate GridWorkflow functionality
 
