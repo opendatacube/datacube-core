@@ -47,13 +47,13 @@ before_install:
 # Set paths for building python-gdal
   - export CPLUS_INCLUDE_PATH=/usr/include/gdal
   - export C_INCLUDE_PATH=/usr/include/gdal
-  - pip install coveralls codecov
-  - pip install --requirement requirements-test.txt
+  - pip install --progress=off coveralls codecov
+  - pip install --progress=off --requirement requirements-test.txt
 
 
 install:
 # Install datacube
-  - pip install '.[test,celery,s3]'
+  - pip install --progress=off '.[test,celery,s3]'
   - pip install ./tests/drivers/fail_drivers --no-deps --upgrade  # used to test exception paths in driver loader
 
 # Print installed packages in case we need to debug them

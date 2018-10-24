@@ -22,7 +22,6 @@ dask==0.17.2
 dill==0.2.7.1
 docopt==0.6.2
 docutils==0.14
-GDAL==2.2.4
 graphviz==0.8.2
 hypothesis==3.55.3
 idna==2.6
@@ -55,6 +54,7 @@ psycopg2==2.7.4
 py==1.5.3
 pycodestyle==2.4.0
 pycparser==2.18
+pygdal==2.3.2.4
 pygeoif==0.7
 pylint==1.8.4
 pyparsing==2.2.0
@@ -67,7 +67,7 @@ python-dateutil==2.7.2
 pytz==2018.4
 pytzdata==2018.4
 PyYAML==3.12
-rasterio==1.0.2
+rasterio>=1.0.7
 redis==2.10.6
 regex==2017.7.28
 requests==2.18.4
