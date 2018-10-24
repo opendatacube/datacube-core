@@ -1,13 +1,16 @@
+from collections import OrderedDict
 from datetime import datetime
-import uuid
 
 import pytest
 import yaml
 import mock
+import numpy
 
+from datacube import Datacube
 from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
 from datacube.utils import geometry
 from datacube.virtual import construct
+from datacube.virtual.impl import Datacube
 
 
 def example_metadata_type():
@@ -53,7 +56,7 @@ def example_grid_spatial():
 
 
 @pytest.fixture
-def cloud_free_nbar_recipe():
+def cloud_free_nbar():
     recipe = yaml.load("""
     collate:
       - transform: apply_mask
@@ -96,24 +99,28 @@ def cloud_free_nbar_recipe():
 
 @pytest.fixture
 def product_definitions():
+    blue = dict(name='blue', dtype='int16', nodata=-999, units='1')
+    green = dict(name='green', dtype='int16', nodata=-999, units='1')
+    flags = {"cloud_acca": {"bits": 10, "values": {"0": "cloud", "1": "no_cloud"}},
+             "contiguous": {"bits": 8, "values": {"0": False, "1": True}},
+             "cloud_fmask": {"bits": 11, "values": {"0": "cloud", "1": "no_cloud"}},
+             "nir_saturated": {"bits": 3, "values": {"0": True, "1": False}},
+             "red_saturated": {"bits": 2, "values": {"0": True, "1": False}},
+             "blue_saturated": {"bits": 0, "values": {"0": True, "1": False}},
+             "green_saturated": {"bits": 1, "values": {"0": True, "1": False}},
+             "swir1_saturated": {"bits": 4, "values": {"0": True, "1": False}},
+             "swir2_saturated": {"bits": 7, "values": {"0": True, "1": False}},
+             "cloud_shadow_acca": {"bits": 12, "values": {"0": "cloud_shadow", "1": "no_cloud_shadow"}},
+             "cloud_shadow_fmask": {"bits": 13, "values": {"0": "cloud_shadow", "1": "no_cloud_shadow"}}}
+
+    pixelquality = dict(name='pixelquality', dtype='int16', nodata=0, units='1',
+                        flags_definition=flags)
+
     return {
-        'ls7_nbar_albers': {
-            'measurements': [dict(name='blue', dtype='int16', nodata=-999, units='1'),
-                             dict(name='green', dtype='int16', nodata=-999, units='1')]
-        },
-
-        'ls8_nbar_albers': {
-            'measurements': [dict(name='blue', dtype='int16', nodata=-999, units='1'),
-                             dict(name='green', dtype='int16', nodata=-999, units='1')]
-        },
-
-        'ls7_pq_albers': {
-            'measurements': [dict(name='pixelquality', dtype='int16', nodata=0, units='1')]
-        },
-
-        'ls8_pq_albers': {
-            'measurements': [dict(name='pixelquality', dtype='int16', nodata=0, units='1')]
-        }
+        'ls7_nbar_albers': {'measurements': [blue, green]},
+        'ls8_nbar_albers': {'measurements': [blue, green]},
+        'ls7_pq_albers': {'measurements': [pixelquality]},
+        'ls8_pq_albers': {'measurements': [pixelquality]}
     }
 
 
@@ -122,9 +129,15 @@ def dc():
     result = mock.MagicMock()
     result.index.datasets.get_field_names.return_value = {'id', 'product', 'time'}
 
-    def example_dataset(product, center_time):
+    ids = ['87a68652-b76a-450f-b44f-e5192243218e',
+           'af9deddf-daf3-4e93-8f36-21437b52817c',
+           '0c5d304f-7cd8-425e-8b0f-0f72b4fc4e6e',
+           '9dcfc6f6-aa36-47ef-9501-177fa39e7e7d',
+           'dda8b22e-27f5-40a5-99d4-b94810f545d0']
+
+    def example_dataset(product, id, center_time):
         result = Dataset(example_product(product),
-                         dict(id=str(uuid.uuid4()), grid_spatial=example_grid_spatial()),
+                         dict(id=id, grid_spatial=example_grid_spatial()),
                          uris=['file://test.zzz'])
         result.center_time = center_time
         return result
@@ -132,14 +145,14 @@ def dc():
     def search(*args, **kwargs):
         product = kwargs['product']
         if product == 'ls8_nbar_albers':
-            return [example_dataset(product, datetime(2014, 2, 7, 23, 57, 26)),
-                    example_dataset(product, datetime(2014, 1, 1, 23, 57, 26))]
+            return [example_dataset(product, ids[0], datetime(2014, 2, 7, 23, 57, 26)),
+                    example_dataset(product, ids[1], datetime(2014, 1, 1, 23, 57, 26))]
         elif product == 'ls8_pq_albers':
-            return [example_dataset(product, datetime(2014, 2, 7, 23, 57, 26))]
+            return [example_dataset(product, ids[2], datetime(2014, 2, 7, 23, 57, 26))]
         elif product == 'ls7_nbar_albers':
-            return [example_dataset(product, datetime(2014, 1, 22, 23, 57, 36))]
+            return [example_dataset(product, ids[3], datetime(2014, 1, 22, 23, 57, 36))]
         elif product == 'ls7_pq_albers':
-            return [example_dataset(product, datetime(2014, 1, 22, 23, 57, 36))]
+            return [example_dataset(product, ids[4], datetime(2014, 1, 22, 23, 57, 36))]
         else:
             return []
 
@@ -157,22 +170,50 @@ def query():
     }
 
 
-def test_name_resolution(cloud_free_nbar_recipe):
-    for prod in cloud_free_nbar_recipe['collate']:
+def test_name_resolution(cloud_free_nbar):
+    for prod in cloud_free_nbar['collate']:
         assert callable(prod['transform'])
 
 
-def test_output_measurements(cloud_free_nbar_recipe, product_definitions):
-    measurements = cloud_free_nbar_recipe.output_measurements(product_definitions)
+def test_output_measurements(cloud_free_nbar, product_definitions):
+    measurements = cloud_free_nbar.output_measurements(product_definitions)
     assert 'blue' in measurements
     assert 'green' in measurements
     assert 'source_index' in measurements
     assert 'pixelquality' not in measurements
 
 
-def test_group_datasets(cloud_free_nbar_recipe, dc, query):
-    query_result = cloud_free_nbar_recipe.query(dc, **query)
-    group = cloud_free_nbar_recipe.group(query_result, **query)
+def test_group_datasets(cloud_free_nbar, dc, query):
+    query_result = cloud_free_nbar.query(dc, **query)
+    group = cloud_free_nbar.group(query_result, **query)
 
     time, _, _ = group.shape
     assert time == 2
+
+
+def test_load_data(cloud_free_nbar, dc, query, product_definitions):
+    query_result = cloud_free_nbar.query(dc, **query)
+    group = cloud_free_nbar.group(query_result, **query)
+
+    original_datacube = Datacube
+
+    def load_data(*args, **kwargs):
+        sources, geobox, measurements = args
+
+        # this returns nodata bands which are good enough for this test
+        result = original_datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
+                                                  geobox, measurements)
+        return result
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        data = cloud_free_nbar.fetch(group, product_definitions)
+
+    assert 'blue' in data
+    assert 'green' in data
+    assert 'source_index' in data
+    assert 'pixelquality' not in data
+
+    assert numpy.array_equal(numpy.unique(data.blue.values), numpy.array([-999]))
+    assert numpy.array_equal(numpy.unique(data.green.values), numpy.array([-999]))
+    assert numpy.array_equal(numpy.unique(data.source_index.values), numpy.array([0, 1]))
