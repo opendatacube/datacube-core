@@ -700,7 +700,7 @@ def normalise_path(p, base=None):
     assert isinstance(base, (str, pathlib.Path, type(None)))
 
     def norm(p):
-        return pathlib.Path(os.path.normpath(p))
+        return pathlib.Path(os.path.normpath(str(p)))
 
     if isinstance(p, str):
         p = pathlib.Path(p)
