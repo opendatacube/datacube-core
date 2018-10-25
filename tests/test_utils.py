@@ -570,6 +570,9 @@ def test_default_base_dir():
     set_pwd(cwd/'deeper')
     assert default_base_dir() == cwd
 
+    set_pwd(cwd.parent)
+    assert default_base_dir() == cwd
+
     # PWD == cwd
     set_pwd(cwd)
     assert default_base_dir() == cwd

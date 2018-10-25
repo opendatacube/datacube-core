@@ -682,7 +682,12 @@ def default_base_dir():
     if not pwd.is_absolute():
         return cwd
 
-    if cwd != pwd.resolve():
+    try:
+        pwd_resolved = pwd.resolve()
+    except IOError:
+        return cwd
+
+    if cwd != pwd_resolved:
         return cwd
 
     return pwd
