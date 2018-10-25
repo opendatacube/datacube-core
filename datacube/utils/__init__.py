@@ -368,7 +368,7 @@ def read_documents(*paths, uri=False):
     }
 
     def process_file(path):
-        path = pathlib.Path(path)
+        path = normalise_path(path)
         suffix = path.suffix.lower()
 
         compressed = suffix == '.gz'
@@ -388,11 +388,11 @@ def read_documents(*paths, uri=False):
         else:
             def add_uri_no_part(x):
                 idx, doc = x
-                return path.absolute().as_uri(), doc
+                return path.as_uri(), doc
 
             def add_uri_with_part(x):
                 idx, doc = x
-                return mk_part_uri(path.absolute().as_uri(), idx), doc
+                return mk_part_uri(path.as_uri(), idx), doc
 
             yield from map_with_lookahead(enumerate(proc(path, compressed)),
                                           if_one=add_uri_no_part,
