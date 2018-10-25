@@ -548,6 +548,9 @@ def test_dedup():
 def test_default_base_dir():
     Path = pathlib.Path
 
+    def set_pwd(p):
+        os.environ['PWD'] = str(p)
+
     pwd_backup = os.environ.get('PWD', None)
     cwd = Path('.').resolve()
 
@@ -560,15 +563,15 @@ def test_default_base_dir():
     assert default_base_dir() == cwd
 
     # should work when PWD is not absolute path
-    os.environ.putenv('PWD', 'this/is/not/a/valid/path')
+    set_pwd('this/is/not/a/valid/path')
     assert default_base_dir() == cwd
 
     # should be cwd when PWD points to some other dir
-    os.environ.putenv('PWD', str(cwd/'deeper'))
+    set_pwd(cwd/'deeper')
     assert default_base_dir() == cwd
 
     # PWD == cwd
-    os.environ.putenv('PWD', str(cwd))
+    set_pwd(cwd)
     assert default_base_dir() == cwd
 
     # TODO:
@@ -578,7 +581,7 @@ def test_default_base_dir():
 
     # restore environment (should probably do it even test fails, eh)
     if pwd_backup:
-        os.environ.putenv('PWD', pwd_backup)
+        set_pwd(pwd_backup)
 
 
 def test_normalise_path():
