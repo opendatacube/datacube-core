@@ -45,7 +45,8 @@ before_install:
   - df -i
 
 # Clean up AWS env variables
-  - [[ ! -v AWS_SECRET_ACCESS_KEY ]] && unset AWS_ACCESS_KEY_ID
+  - |
+    [[ ! -v AWS_SECRET_ACCESS_KEY ]] && unset AWS_ACCESS_KEY_ID || true
 
 # Set paths for building python-gdal
   - export CPLUS_INCLUDE_PATH=/usr/include/gdal
