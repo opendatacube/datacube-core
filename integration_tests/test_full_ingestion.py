@@ -8,6 +8,7 @@ from uuid import UUID
 import netCDF4
 import pytest
 import yaml
+import rasterio
 from affine import Affine
 
 from datacube.api.query import query_group_by
@@ -253,17 +254,23 @@ def check_open_with_xarray(file_path):
 
 
 def check_open_with_api(index, time_slices):
-    from datacube import Datacube
-    dc = Datacube(index=index)
+    with rasterio.Env():
+        from datacube import Datacube
+        dc = Datacube(index=index)
 
-    input_type_name = 'ls5_nbar_albers'
-    input_type = dc.index.products.get_by_name(input_type_name)
-    geobox = geometry.GeoBox(200, 200, Affine(25, 0.0, 638000, 0.0, -25, 6276000), geometry.CRS('EPSG:28355'))
-    observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
-    group_by = query_group_by('time')
-    sources = dc.group_datasets(observations, group_by)
-    data = dc.load_data(sources, geobox, input_type.measurements.values())
-    assert data.blue.shape == (time_slices, 200, 200)
+        input_type_name = 'ls5_nbar_albers'
+        input_type = dc.index.products.get_by_name(input_type_name)
+        geobox = geometry.GeoBox(200, 200, Affine(25, 0.0, 638000, 0.0, -25, 6276000), geometry.CRS('EPSG:28355'))
+        observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
+        group_by = query_group_by('time')
+        sources = dc.group_datasets(observations, group_by)
+        data = dc.load_data(sources, geobox, input_type.measurements.values())
+        assert data.blue.shape == (time_slices, 200, 200)
+
+        chunk_profile = {'time': 1, 'x': 100, 'y': 100}
+        lazy_data = dc.load_data(sources, geobox, input_type.measurements.values(), dask_chunks=chunk_profile)
+        assert lazy_data.blue.shape == (time_slices, 200, 200)
+        assert (lazy_data.blue.load() == data.blue).all()
 
 
 def check_data_with_api(index, time_slices):

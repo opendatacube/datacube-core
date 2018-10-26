@@ -17,7 +17,7 @@ from datacube.index.index import Index
 from datacube.model import DatasetType, Range, GeoPolygon, Measurement
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
-from datacube.utils import read_documents
+from datacube.utils import read_documents, normalise_path
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
 from datacube.drivers import storage_writer_by_name
 
@@ -83,13 +83,14 @@ def get_variable_params(config):
     return variable_params
 
 
-def get_app_metadata(config, config_file):
+def get_app_metadata(config_file):
     doc = {
         'lineage': {
             'algorithm': {
                 'name': 'datacube-ingest',
                 'repo_url': 'https://github.com/opendatacube/datacube-core.git',
-                'parameters': {'configuration_file': config_file}
+                'parameters': {'configuration_file': config_file},
+                'version': datacube.__version__,
             },
         }
     }
@@ -103,7 +104,7 @@ def get_filename(config, tile_index, sources, **kwargs):
         tile_index=tile_index,
         start_time=to_datetime(sources.time.values[0]).strftime(time_format),
         end_time=to_datetime(sources.time.values[-1]).strftime(time_format),
-        version=config['taskfile_version'],
+        version=config['taskfile_utctime'],
         **kwargs))
 
 
@@ -166,13 +167,13 @@ def get_full_lineage(index, id_):
 def load_config_from_file(path):
     config_file = Path(path)
     _, config = next(read_documents(config_file))
-    config['filename'] = str(config_file.absolute())
+    config['filename'] = str(normalise_path(config_file))
 
     return config
 
 
 def create_task_list(index, output_type, year, source_type, config):
-    config['taskfile_version'] = int(time.time())
+    config['taskfile_utctime'] = int(time.time())
 
     query = {}
     if year:
@@ -226,6 +227,12 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
     with datacube.set_options(reproject_threads=1):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
+
+        datasets = tile.sources.sum().item()
+        for dataset in datasets:
+            if not dataset.uris:
+                _LOG.error('Locationless dataset found in the database: %r', dataset)
+
         data = Datacube.load_data(tile.sources, tile.geobox, measurements,
                                   resampling=resampling,
                                   fuse_func=fuse_func)
@@ -235,7 +242,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
     def mk_uri(file_path):
         if driver.uri_scheme == "file":
-            return file_path.absolute().as_uri()
+            return normalise_path(file_path).as_uri()
         return '{}://{}'.format(driver.uri_scheme, file_path)
 
     def _make_dataset(labels, sources):
@@ -244,7 +251,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
                             extent=tile.geobox.extent,
                             center_time=labels['time'],
                             uri=mk_uri(file_path),
-                            app_info=get_app_metadata(config, config['filename']),
+                            app_info=get_app_metadata(config['filename']),
                             valid_data=GeoPolygon.from_sources_extents(sources, tile.geobox))
 
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset

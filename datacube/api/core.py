@@ -33,7 +33,6 @@ from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
 
-_LOG = logging.getLogger(__name__)
 THREADING_REQS_AVAILABLE = ('SharedArray' in sys.modules and 'pathos.threading' in sys.modules)
 
 Group = namedtuple('Group', ['key', 'datasets'])
@@ -288,7 +287,7 @@ class Datacube(object):
             raise DeprecationWarning("the `stack` keyword argument is not supported anymore, "
                                      "please apply `xarray.Dataset.to_array()` to the result instead")
 
-        observations = datasets or self.find_datasets(product=product, like=like, **query)
+        observations = datasets or self.find_datasets(product=product, like=like, ensure_location=True, **query)
         if not observations:
             return xarray.Dataset()
 
@@ -328,11 +327,12 @@ class Datacube(object):
         """
         return list(self.find_datasets_lazy(**search_terms))
 
-    def find_datasets_lazy(self, limit=None, **kwargs):
+    def find_datasets_lazy(self, limit=None, ensure_location=False, **kwargs):
         """
         Find datasets matching query.
 
         :param kwargs: see :class:`datacube.api.query.Query`
+        :param ensure_location: only return datasets that have locations
         :param limit: if provided, limit the maximum number of datasets returned
         :return: iterator of datasets
         :rtype: __generator[:class:`datacube.model.Dataset`]
@@ -346,7 +346,13 @@ class Datacube(object):
         datasets = self.index.datasets.search(limit=limit,
                                               **query.search_terms)
 
-        return datasets if query.geopolygon is None else select_datasets_inside_polygon(datasets, query.geopolygon)
+        if query.geopolygon is not None:
+            datasets = select_datasets_inside_polygon(datasets, query.geopolygon)
+
+        if ensure_location:
+            datasets = (dataset for dataset in datasets if dataset.uris)
+
+        return datasets
 
     @staticmethod
     def product_sources(datasets, group_by):
@@ -720,12 +726,16 @@ def _calculate_chunk_sizes(sources, geobox, dask_chunks):
     return irr_chunks, grid_chunks
 
 
+def _tokenize_dataset(dataset):
+    return 'dataset-{}'.format(dataset.id.hex)
+
+
 # pylint: disable=too-many-locals
 def _make_dask_array(sources, geobox, measurement,
                      skip_broken_datasets=False,
                      fuse_func=None,
                      dask_chunks=None):
-    dsk_name = 'datacube_' + measurement['name']
+    dsk_name = 'datacube_load_{name}-{token}'.format(name=measurement['name'], token=uuid.uuid4().hex)
 
     irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
     sliced_irr_chunks = (1,) * sources.ndim
@@ -734,9 +744,15 @@ def _make_dask_array(sources, geobox, measurement,
     geobox_subsets = _chunk_geobox(geobox, grid_chunks)
 
     for irr_index, datasets in numpy.ndenumerate(sources.values):
+        for dataset in datasets:
+            ds_token = _tokenize_dataset(dataset)
+            dsk[ds_token] = dataset
+
         for grid_index, subset_geobox in geobox_subsets.items():
+            dataset_keys = [_tokenize_dataset(d) for d in
+                            select_datasets_inside_polygon(datasets, subset_geobox.extent)]
             dsk[(dsk_name,) + irr_index + grid_index] = (fuse_lazy,
-                                                         datasets, subset_geobox, measurement,
+                                                         dataset_keys, subset_geobox, measurement,
                                                          skip_broken_datasets, fuse_func,
                                                          sources.ndim)
 

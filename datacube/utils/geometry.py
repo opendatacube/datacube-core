@@ -8,14 +8,17 @@ import cachetools
 import numpy
 from affine import Affine
 from osgeo import ogr, osr
-from rasterio.coords import BoundingBox as _BoundingBox
 
 from datacube import compat
 
 Coordinate = namedtuple('Coordinate', ('values', 'units'))
+_BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
 
 
-class BoundingBox(_BoundingBox):  # pylint: disable=duplicate-bases
+class BoundingBox(_BoundingBox):
+    """Bounding box, defining extent in cartesian coordinates.
+    """
+
     def buffered(self, ybuff, xbuff):
         """
         Return a new BoundingBox, buffered in the x and y dimensions.
@@ -110,6 +113,7 @@ class CRS(object):
     ... except InvalidCRSError as e:
     ...    print(e)
     Not a valid CRS: 'PROJCS["...
+
     """
 
     def __init__(self, crs_str):
@@ -459,6 +463,7 @@ class Geometry(object):
     def to_crs(self, crs, resolution=None, wrapdateline=False):
         """
         Convert geometry to a different Coordinate Reference System
+
         :param CRS crs: CRS to convert to
         :param float resolution: Subdivide the geometry such it has no segment longer then the given distance.
         :param bool wrapdateline: Attempt to gracefully handle geometry that intersects the dateline
@@ -574,54 +579,85 @@ def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
 
 def point(x, y, crs):
     """
+    Create a 2D Point
+
     >>> point(10, 10, crs=None)
     Geometry(POINT (10 10), None)
+
+    :rtype: Geometry
     """
     return Geometry({'type': 'Point', 'coordinates': (x, y)}, crs=crs)
 
 
 def multipoint(coords, crs):
     """
+    Create a 2D MultiPoint Geometry
+
     >>> multipoint([(10, 10), (20, 20)], None)
     Geometry(MULTIPOINT (10 10,20 20), None)
+
+    :param list coords: list of x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'MultiPoint', 'coordinates': coords}, crs=crs)
 
 
 def line(coords, crs):
     """
+    Create a 2D LineString (Connected set of lines)
+
     >>> line([(10, 10), (20, 20), (30, 40)], None)
     Geometry(LINESTRING (10 10,20 20,30 40), None)
+
+    :param list coords: list of x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'LineString', 'coordinates': coords}, crs=crs)
 
 
 def multiline(coords, crs):
     """
+    Create a 2D MultiLineString (Multiple disconnected sets of lines)
+
     >>> multiline([[(10, 10), (20, 20), (30, 40)], [(50, 60), (70, 80), (90, 99)]], None)
     Geometry(MULTILINESTRING ((10 10,20 20,30 40),(50 60,70 80,90 99)), None)
+
+    :param list coords: list of lists of x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'MultiLineString', 'coordinates': coords}, crs=crs)
 
 
 def polygon(outer, crs, *inners):
     """
+    Create a 2D Polygon
+
     >>> polygon([(10, 10), (20, 20), (20, 10), (10, 10)], None)
     Geometry(POLYGON ((10 10,20 20,20 10,10 10)), None)
+
+    :param list coords: list of 2d x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 
 
 def multipolygon(coords, crs):
     """
+    Create a 2D MultiPolygon
+
     >>> multipolygon([[[(10, 10), (20, 20), (20, 10), (10, 10)]], [[(40, 10), (50, 20), (50, 10), (40, 10)]]], None)
     Geometry(MULTIPOLYGON (((10 10,20 20,20 10,10 10)),((40 10,50 20,50 10,40 10))), None)
+
+    :param list coords: list of lists of x,y coordinate tuples
+    :rtype: Geometry
     """
     return Geometry({'type': 'MultiPolygon', 'coordinates': coords}, crs=crs)
 
 
 def box(left, bottom, right, top, crs):
     """
+    Create a 2D Box (Polygon)
+
     >>> box(10, 10, 20, 20, None)
     Geometry(POLYGON ((10 10,10 20,20 20,20 10,10 10)), None)
     """
@@ -630,6 +666,15 @@ def box(left, bottom, right, top, crs):
 
 
 def polygon_from_transform(width, height, transform, crs):
+    """
+    Create a 2D Polygon from an affine transform
+
+    :param float width:
+    :param float height:
+    :param Affine transform:
+    :param crs: CRS
+    :rtype:  Geometry
+    """
     points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
     transform.itransform(points)
     return polygon(points, crs=crs)

@@ -39,7 +39,7 @@ APP_NAME = 'datacube-fixer'
 
 def make_filename(config, cell_index, start_time):
     file_path_template = str(Path(config['location'], config['file_path_template']))
-    return file_path_template.format(tile_index=cell_index, start_time=start_time, version=config['taskfile_version'])
+    return file_path_template.format(tile_index=cell_index, start_time=start_time, version=config['taskfile_utctime'])
 
 
 def get_temp_file(final_output_path):
@@ -122,7 +122,7 @@ def make_fixer_config(index, config, export_path=None, **query):
 
     config['variable_params'] = variable_params
 
-    config['taskfile_version'] = int(datacube.utils.datetime_to_seconds_since_1970(datetime.datetime.now()))
+    config['taskfile_utctime'] = int(datacube.utils.datetime_to_seconds_since_1970(datetime.datetime.now()))
 
     return config
 
@@ -145,8 +145,7 @@ def build_history_string(config, task, keep_original=True):
         app=APP_NAME,
         ver=datacube.__version__,
         args=', '.join([config['app_config_file'],
-                        str(config['version']),
-                        str(config['taskfile_version']),
+                        str(config['taskfile_utctime']),
                         task['output_filename'],
                         str(task['start_time']),
                         str(task['cell_index'])

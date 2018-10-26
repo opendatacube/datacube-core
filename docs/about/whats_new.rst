@@ -10,6 +10,9 @@ v1.7dev
 
 - Allow specifying different resampling methods for different data variables of
   the same Product. (:pull:`551`)
+- Bugfixes and improved performance of `dask`-backed arrays (:pull:`547`)
+- Improve :ref:`api-reference` documentation.
+- Bug fix (Index out of bounds causing ingestion failures)
 
 
 v1.6.1 (27 August 2018)

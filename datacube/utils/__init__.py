@@ -368,7 +368,7 @@ def read_documents(*paths, uri=False):
     }
 
     def process_file(path):
-        path = pathlib.Path(path)
+        path = normalise_path(path)
         suffix = path.suffix.lower()
 
         compressed = suffix == '.gz'
@@ -388,11 +388,11 @@ def read_documents(*paths, uri=False):
         else:
             def add_uri_no_part(x):
                 idx, doc = x
-                return path.absolute().as_uri(), doc
+                return path.as_uri(), doc
 
             def add_uri_with_part(x):
                 idx, doc = x
-                return mk_part_uri(path.absolute().as_uri(), idx), doc
+                return mk_part_uri(path.as_uri(), idx), doc
 
             yield from map_with_lookahead(enumerate(proc(path, compressed)),
                                           if_one=add_uri_no_part,
@@ -659,6 +659,69 @@ def uri_to_local_path(local_uri):
     path = url2pathname(components.path)
 
     return pathlib.Path(path)
+
+
+def default_base_dir():
+    """Return absolute path to current directory. If PWD environment variable is
+       set correctly return that, note that PWD might be set to "symlinked"
+       path instead of "real" path.
+
+       Only return PWD instead of cwd when:
+
+       1. PWD exists (i.e. launched from interactive shell)
+       2. Contains Absolute path (sanity check)
+       3. Absolute ath in PWD resolves to the same directory as cwd (process didn't call chdir after starting)
+    """
+    cwd = pathlib.Path('.').resolve()
+
+    pwd = os.environ.get('PWD')
+    if pwd is None:
+        return cwd
+
+    pwd = pathlib.Path(pwd)
+    if not pwd.is_absolute():
+        return cwd
+
+    try:
+        pwd_resolved = pwd.resolve()
+    except IOError:
+        return cwd
+
+    if cwd != pwd_resolved:
+        return cwd
+
+    return pwd
+
+
+def normalise_path(p, base=None):
+    """Turn path into absolute path resolving any `../` and `.`
+
+       If path is relative pre-pend `base` path to it, `base` if set should be
+       an absolute path. If not set, current working directory (as seen by the
+       user launching the process, including any possible symlinks) will be
+       used.
+    """
+    assert isinstance(p, (str, pathlib.Path))
+    assert isinstance(base, (str, pathlib.Path, type(None)))
+
+    def norm(p):
+        return pathlib.Path(os.path.normpath(str(p)))
+
+    if isinstance(p, str):
+        p = pathlib.Path(p)
+
+    if isinstance(base, str):
+        base = pathlib.Path(base)
+
+    if p.is_absolute():
+        return norm(p)
+
+    if base is None:
+        base = default_base_dir()
+    elif not base.is_absolute():
+        raise ValueError("Expect base to be an absolute path")
+
+    return norm(base/p)
 
 
 def schema_validated(schema):

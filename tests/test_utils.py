@@ -22,6 +22,7 @@ from datacube.helpers import write_geotiff
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp, SimpleDocNav
 from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents, sorted_items
 from datacube.utils import mk_part_uri, get_part_from_uri, InvalidDocException
+from datacube.utils import normalise_path, default_base_dir
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
@@ -542,3 +543,65 @@ def test_dedup():
 
     with pytest.raises(InvalidDocException, match=r'Inconsistent lineage .*'):
         dedup_lineage(ds0)
+
+
+def test_default_base_dir():
+    Path = pathlib.Path
+
+    def set_pwd(p):
+        os.environ['PWD'] = str(p)
+
+    pwd_backup = os.environ.get('PWD', None)
+    cwd = Path('.').resolve()
+
+    # Default base dir (once resolved) will never be different from cwd
+    assert default_base_dir().resolve() == cwd
+
+    # should work when PWD is not set
+    os.environ.pop('PWD', None)
+    assert 'PWD' not in os.environ
+    assert default_base_dir() == cwd
+
+    # should work when PWD is not absolute path
+    set_pwd('this/is/not/a/valid/path')
+    assert default_base_dir() == cwd
+
+    # should be cwd when PWD points to some other dir
+    set_pwd(cwd/'deeper')
+    assert default_base_dir() == cwd
+
+    set_pwd(cwd.parent)
+    assert default_base_dir() == cwd
+
+    # PWD == cwd
+    set_pwd(cwd)
+    assert default_base_dir() == cwd
+
+    # TODO:
+    # - create symlink to current directory in temp
+    # - set PWD to that link
+    # - make sure that returned path is the same as symlink and different from cwd
+
+    # restore environment (should probably do it even test fails, eh)
+    if pwd_backup:
+        set_pwd(pwd_backup)
+
+
+def test_normalise_path():
+    Path = pathlib.Path
+
+    cwd = Path('.').resolve()
+    assert normalise_path('.').resolve() == cwd
+
+    p = Path('/a/b/c/d.txt')
+    assert normalise_path(p) == Path(p)
+    assert normalise_path(str(p)) == Path(p)
+
+    base = Path('/a/b/')
+    p = Path('c/d.txt')
+    assert normalise_path(p, base) == (base/p)
+    assert normalise_path(str(p), str(base)) == (base/p)
+    assert normalise_path(p) == (cwd/p)
+
+    with pytest.raises(ValueError):
+        normalise_path(p, 'not/absolute/path')
