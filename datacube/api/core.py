@@ -287,7 +287,7 @@ class Datacube(object):
             raise DeprecationWarning("the `stack` keyword argument is not supported anymore, "
                                      "please apply `xarray.Dataset.to_array()` to the result instead")
 
-        observations = datasets or self.find_datasets(product=product, ensure_location=True, like=like, **query)
+        observations = datasets or self.find_datasets(product=product, like=like, ensure_location=True, **query)
         if not observations:
             return xarray.Dataset()
 
@@ -327,7 +327,7 @@ class Datacube(object):
         """
         return list(self.find_datasets_lazy(**search_terms))
 
-    def find_datasets_lazy(self, ensure_location=False, limit=None, **kwargs):
+    def find_datasets_lazy(self, limit=None, ensure_location=False, **kwargs):
         """
         Find datasets matching query.
 
