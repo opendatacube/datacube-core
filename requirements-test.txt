@@ -7,7 +7,7 @@ boto3==1.4.3
 botocore==1.4.93
 cachetools==2.0.1
 celery==4.1.0
-certifi==2018.1.18
+certifi==2018.10.15
 cf-units==1.2.0
 cffi==1.11.5
 chardet==3.0.4
