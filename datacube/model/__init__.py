@@ -573,16 +573,6 @@ def _polygon_from_sources_extents(sources, geobox):
 GeoPolygon.from_sources_extents = _polygon_from_sources_extents
 
 
-class FlagsDefinition(object):
-    def __init__(self, flags_def_dict):
-        self.flags_def_dict = flags_def_dict
-
-
-class SpectralDefinition(object):
-    def __init__(self, spec_def_dict):
-        self.spec_def_dict = spec_def_dict
-
-
 class GridSpec(object):
     """
     Definition for a regular spatial grid
