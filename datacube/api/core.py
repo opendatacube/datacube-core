@@ -287,7 +287,7 @@ class Datacube(object):
             raise DeprecationWarning("the `stack` keyword argument is not supported anymore, "
                                      "please apply `xarray.Dataset.to_array()` to the result instead")
 
-        observations = datasets or self.find_datasets(product=product, like=like, **query)
+        observations = datasets or self.find_datasets(product=product, ensure_location=True, like=like, **query)
         if not observations:
             return xarray.Dataset()
 
@@ -327,11 +327,12 @@ class Datacube(object):
         """
         return list(self.find_datasets_lazy(**search_terms))
 
-    def find_datasets_lazy(self, limit=None, **kwargs):
+    def find_datasets_lazy(self, ensure_location=False, limit=None, **kwargs):
         """
         Find datasets matching query.
 
         :param kwargs: see :class:`datacube.api.query.Query`
+        :param ensure_location: only return datasets that have locations
         :param limit: if provided, limit the maximum number of datasets returned
         :return: iterator of datasets
         :rtype: __generator[:class:`datacube.model.Dataset`]
@@ -345,7 +346,13 @@ class Datacube(object):
         datasets = self.index.datasets.search(limit=limit,
                                               **query.search_terms)
 
-        return datasets if query.geopolygon is None else select_datasets_inside_polygon(datasets, query.geopolygon)
+        if query.geopolygon is not None:
+            datasets = select_datasets_inside_polygon(datasets, query.geopolygon)
+
+        if ensure_location:
+            datasets = (dataset for dataset in datasets if dataset.uris)
+
+        return datasets
 
     @staticmethod
     def product_sources(datasets, group_by):
@@ -656,7 +663,7 @@ def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_fu
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
                       fuse_func=None):
-    reproject_and_fuse([new_datasource(dataset, measurement.name) for dataset in datasets if dataset.uris],
+    reproject_and_fuse([new_datasource(dataset, measurement.name) for dataset in datasets],
                        dest,
                        geobox.affine,
                        geobox.crs,
