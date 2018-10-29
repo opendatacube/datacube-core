@@ -73,7 +73,7 @@ def save_tasks(config, tasks, taskfile):
         os.remove(taskfile)
         return 0
     else:
-        _LOG.info('Saved config and %d tasks to %s', i, taskfile)
+        _LOG.info('Saved config and %d tasks to %s', i - 1, taskfile)
     return i - 1
 
 
