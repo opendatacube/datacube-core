@@ -614,7 +614,7 @@ def apply_aliases(data, product, measurements):
 
 
 def output_geobox(like=None, output_crs=None, resolution=None, align=None,
-                  grid_spec=None, datasets=None, **query):
+                  grid_spec=None, datasets=None, geopolygon=None, **query):
     """ Configure output geobox from user provided output specs. """
 
     if like is not None:
@@ -639,8 +639,13 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
             resolution = grid_spec.resolution
         align = align or grid_spec.alignment
 
-    return geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(datasets, crs),
-                                           resolution, crs, align)
+    if geopolygon is None:
+        geopolygon = query_geopolygon(**query)
+
+        if geopolygon is None:
+            geopolygon = get_bounds(datasets, crs)
+
+    return geometry.GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
 
 
 def select_datasets_inside_polygon(datasets, polygon):
