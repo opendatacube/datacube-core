@@ -1,3 +1,5 @@
+import yaml
+
 from .impl import VirtualProduct, Transformation, VirtualProductException
 from .transformations import MakeMask, ApplyMask, ToFloat, Rename
 from .utils import reject_keys
@@ -96,5 +98,11 @@ def construct(**recipe):
     """
     Create a virtual product from a specification dictionary.
     """
-
     return DEFAULT_RESOLVER.construct(**recipe)
+
+
+def construct_from_yaml(recipe):
+    """
+    Create a virtual product from a yaml recipe.
+    """
+    return construct(**yaml.load(recipe, Loader=yaml.CLoader))
