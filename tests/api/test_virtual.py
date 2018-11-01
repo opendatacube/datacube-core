@@ -3,13 +3,12 @@ from datetime import datetime
 from types import SimpleNamespace
 
 import pytest
-import yaml
 import mock
 import numpy
 
 from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
 from datacube.utils import geometry
-from datacube.virtual import construct
+from datacube.virtual import construct_from_yaml
 from datacube.virtual.impl import Datacube
 from datacube.virtual.utils import product_definitions_from_index
 
@@ -58,7 +57,7 @@ def example_grid_spatial():
 
 @pytest.fixture
 def cloud_free_nbar():
-    recipe = yaml.load("""
+    return construct_from_yaml("""
     collate:
       - transform: apply_mask
         mask_measurement_name: pixelquality
@@ -94,8 +93,6 @@ def cloud_free_nbar():
               - product: ls7_pq_albers
     index_measurement_name: source_index
     """)
-
-    return construct(**recipe)
 
 
 def product_definitions():
@@ -226,7 +223,7 @@ def test_load_data(cloud_free_nbar, dc, query):
 
 
 def test_rename(dc, query):
-    rename_recipe = yaml.load("""
+    rename = construct_from_yaml("""
         transform: rename
         measurement_names:
             green: verde
@@ -234,8 +231,6 @@ def test_rename(dc, query):
             product: ls8_nbar_albers
             measurements: [blue, green]
     """)
-
-    rename = construct(**rename_recipe)
 
     with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
         mock_datacube.load_data = load_data
@@ -248,14 +243,12 @@ def test_rename(dc, query):
 
 
 def test_to_float(dc, query):
-    to_float_recipe = yaml.load("""
+    to_float = construct_from_yaml("""
         transform: to_float
         input:
             product: ls8_nbar_albers
             measurements: [blue]
     """)
-
-    to_float = construct(**to_float_recipe)
 
     with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
         mock_datacube.load_data = load_data
