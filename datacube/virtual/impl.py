@@ -39,9 +39,10 @@ class VirtualProductException(Exception):
 
 class QueryResult:
     """ Result of `VirtualProduct.query`. """
-    def __init__(self, pile, grid_spec):
+    def __init__(self, pile, grid_spec, geopolygon):
         self.pile = tuple(pile)
         self.grid_spec = grid_spec
+        self.geopolygon = geopolygon
 
 
 class DatasetPile:
@@ -280,6 +281,7 @@ class VirtualProduct(Mapping):
             datasets = select_datasets_inside_polygon(dc.index.datasets.search(**query.search_terms),
                                                       query.geopolygon)
 
+            # should we put it in the Transformation class?
             if get('dataset_predicate') is not None:
                 datasets = [dataset
                             for dataset in datasets
@@ -289,7 +291,7 @@ class VirtualProduct(Mapping):
             # this can also possibly extracted from the product definitions but this is easier
             grid_spec = dc.index.products.get_by_name(self._product).grid_spec
 
-            return QueryResult(datasets, grid_spec)
+            return QueryResult(datasets, grid_spec, query.geopolygon)
 
         elif 'transform' in self:
             return self._input.query(dc, **search_terms)
@@ -299,7 +301,8 @@ class VirtualProduct(Mapping):
                       for child in self._children]
 
             grid_spec = select_unique([datasets.grid_spec for datasets in result])
-            return QueryResult(result, grid_spec)
+            geopolygon = select_unique([datasets.geopolygon for datasets in result])
+            return QueryResult(result, grid_spec, geopolygon)
 
         else:
             raise VirtualProductException("virtual product was not validated")
@@ -314,26 +317,29 @@ class VirtualProduct(Mapping):
         :param query: to specify a spatial sub-region
         """
         grid_spec = datasets.grid_spec
+        geopolygon = datasets.geopolygon
 
         if 'product' in self:
             # select only those inside the ROI
-            # ROI could be smaller than the query for `query`
-            spatial_query = reject_keys(search_terms, self._NON_SPATIAL_KEYS)
-            selected = list(select_datasets_inside_polygon(datasets.pile,
-                                                           query_geopolygon(**spatial_query)))
+            # ROI could be smaller than the query for the `query` method
+            if query_geopolygon(**search_terms) is not None:
+                geopolygon = query_geopolygon(**search_terms)
+                selected = list(select_datasets_inside_polygon(datasets.pile, geopolygon))
+            else:
+                selected = list(datasets.pile)
 
             # geobox
             merged = merge_search_terms(select_keys(self, self._NON_SPATIAL_KEYS),
-                                        select_keys(spatial_query, self._NON_SPATIAL_KEYS))
+                                        select_keys(search_terms, self._NON_SPATIAL_KEYS))
 
             geobox = output_geobox(datasets=selected, grid_spec=grid_spec,
-                                   **select_keys(merged, self._GEOBOX_KEYS), **spatial_query)
+                                   geopolygon=geopolygon, **select_keys(merged, self._GEOBOX_KEYS))
 
             # group by time
             group_query = query_group_by(**select_keys(merged, self._GROUPING_KEYS))
 
             def wrap(_, value):
-                return QueryResult(value, grid_spec)
+                return QueryResult(value, grid_spec, geopolygon)
 
             # information needed for Datacube.load_data
             return DatasetPile(Datacube.group_datasets(selected, group_query), geobox).map(wrap)
@@ -350,7 +356,7 @@ class VirtualProduct(Mapping):
                 def tag(_, value):
                     in_position = [value if i == source_index else None
                                    for i, _ in enumerate(datasets.pile)]
-                    return QueryResult(in_position, grid_spec)
+                    return QueryResult(in_position, grid_spec, geopolygon)
 
                 return grouped.map(tag)
 
@@ -373,7 +379,7 @@ class VirtualProduct(Mapping):
 
             def tuplify(indexes, _):
                 return QueryResult([grouped.pile.sel(**indexes).item() for grouped in child_groups],
-                                   grid_spec)
+                                   grid_spec, geopolygon)
 
             return DatasetPile(child_groups[0].map(tuplify).pile,
                                select_unique([grouped.geobox for grouped in groups]))
