@@ -28,7 +28,7 @@ from datacube.model import Measurement
 from datacube.model.utils import xr_apply
 from datacube.utils import import_function
 
-from .utils import product_definitions_from_index, qualified_name
+from .utils import product_definitions_from_index, qualified_name, merge_dicts
 from .utils import select_unique, select_keys, reject_keys, merge_search_terms
 
 
@@ -39,19 +39,21 @@ class VirtualProductException(Exception):
 
 class QueryResult:
     """ Result of `VirtualProduct.query`. """
-    def __init__(self, pile, grid_spec, geopolygon):
+    def __init__(self, pile, grid_spec, geopolygon, product_definitions):
         self.pile = tuple(pile)
         self.grid_spec = grid_spec
         self.geopolygon = geopolygon
+        self.product_definitions = product_definitions
 
 
 class DatasetPile:
     """ Result of `VirtualProduct.group`. """
     # our replacement for grid_workflow.Tile basically
     # TODO: copy the Tile API
-    def __init__(self, pile, geobox):
+    def __init__(self, pile, geobox, product_definitions):
         self.pile = pile
         self.geobox = geobox
+        self.product_definitions = product_definitions
 
     @property
     def dims(self):
@@ -73,16 +75,17 @@ class DatasetPile:
         pile = self.pile
 
         return DatasetPile(_fast_slice(pile, chunk[:len(pile.shape)]),
-                           self.geobox[chunk[len(pile.shape):]])
+                           self.geobox[chunk[len(pile.shape):]],
+                           self.product_definitions)
 
     def map(self, func, dtype='O'):
-        return DatasetPile(xr_apply(self.pile, func, dtype=dtype), self.geobox)
+        return DatasetPile(xr_apply(self.pile, func, dtype=dtype), self.geobox, self.product_definitions)
 
     def filter(self, predicate):
         mask = self.map(predicate, dtype='bool')
 
         # NOTE: this could possibly result in an empty pile
-        return DatasetPile(self.pile[mask.pile], self.geobox)
+        return DatasetPile(self.pile[mask.pile], self.geobox, self.product_definitions)
 
     def split(self, dim='time'):
         # this is slightly different from Tile.split
@@ -90,7 +93,7 @@ class DatasetPile:
 
         [length] = pile[dim].shape
         for i in range(length):
-            yield DatasetPile(pile.isel(**{dim: slice(i, i + 1)}), self.geobox)
+            yield DatasetPile(pile.isel(**{dim: slice(i, i + 1)}), self.geobox, self.product_definitions)
 
 
 class Transformation(ABC):
@@ -289,9 +292,10 @@ class VirtualProduct(Mapping):
 
             # gather information from the index before it disappears from sight
             # this can also possibly extracted from the product definitions but this is easier
-            grid_spec = dc.index.products.get_by_name(self._product).grid_spec
+            product = dc.index.products.get_by_name(self._product)
 
-            return QueryResult(datasets, grid_spec, query.geopolygon)
+            return QueryResult(datasets, product.grid_spec, query.geopolygon,
+                               {product.name: product.definition})
 
         elif 'transform' in self:
             return self._input.query(dc, **search_terms)
@@ -302,7 +306,8 @@ class VirtualProduct(Mapping):
 
             grid_spec = select_unique([datasets.grid_spec for datasets in result])
             geopolygon = select_unique([datasets.geopolygon for datasets in result])
-            return QueryResult(result, grid_spec, geopolygon)
+            return QueryResult(result, grid_spec, geopolygon,
+                               merge_dicts([datasets.product_definitions for datasets in result]))
 
         else:
             raise VirtualProductException("virtual product was not validated")
@@ -339,10 +344,12 @@ class VirtualProduct(Mapping):
             group_query = query_group_by(**select_keys(merged, self._GROUPING_KEYS))
 
             def wrap(_, value):
-                return QueryResult(value, grid_spec, geopolygon)
+                return QueryResult(value, grid_spec, geopolygon, datasets.product_definitions)
 
             # information needed for Datacube.load_data
-            return DatasetPile(Datacube.group_datasets(selected, group_query), geobox).map(wrap)
+            return DatasetPile(Datacube.group_datasets(selected, group_query),
+                               geobox,
+                               datasets.product_definitions).map(wrap)
 
         elif 'transform' in self:
             return self._input.group(datasets, **search_terms)
@@ -356,7 +363,7 @@ class VirtualProduct(Mapping):
                 def tag(_, value):
                     in_position = [value if i == source_index else None
                                    for i, _ in enumerate(datasets.pile)]
-                    return QueryResult(in_position, grid_spec, geopolygon)
+                    return QueryResult(in_position, grid_spec, geopolygon, datasets.product_definitions)
 
                 return grouped.map(tag)
 
@@ -365,7 +372,8 @@ class VirtualProduct(Mapping):
                       in enumerate(zip(self._children, datasets.pile))]
 
             return DatasetPile(xarray.concat([grouped.pile for grouped in groups], dim='time'),
-                               select_unique([grouped.geobox for grouped in groups]))
+                               select_unique([grouped.geobox for grouped in groups]),
+                               merge_dicts([grouped.product_definitions for grouped in groups]))
 
         elif 'juxtapose' in self:
             self._assert(len(datasets.pile) == len(self._children), "invalid dataset pile")
@@ -374,25 +382,27 @@ class VirtualProduct(Mapping):
                       for product, datasets in zip(self._children, datasets.pile)]
 
             aligned_piles = xarray.align(*[grouped.pile for grouped in groups])
-            child_groups = [DatasetPile(aligned_piles[i], grouped.geobox)
+            child_groups = [DatasetPile(aligned_piles[i], grouped.geobox, grouped.product_definitions)
                             for i, grouped in enumerate(groups)]
 
             def tuplify(indexes, _):
                 return QueryResult([grouped.pile.sel(**indexes).item() for grouped in child_groups],
-                                   grid_spec, geopolygon)
+                                   grid_spec, geopolygon, datasets.product_definitions)
 
             return DatasetPile(child_groups[0].map(tuplify).pile,
-                               select_unique([grouped.geobox for grouped in groups]))
+                               select_unique([grouped.geobox for grouped in groups]),
+                               merge_dicts([grouped.product_definitions for grouped in groups]))
 
         else:
             raise VirtualProductException("virtual product was not validated")
 
-    def fetch(self, grouped, product_definitions, **load_settings):
+    def fetch(self, grouped, **load_settings):
         # type: (DatasetPile, Dict[str, Dict], Dict[str, Any]) -> xarray.Dataset
         """ Convert grouped datasets to `xarray.Dataset`. """
         # TODO: provide `load_lazy` and `load_strict` instead
 
         # validate data to be loaded
+        product_definitions = grouped.product_definitions
         _ = self.output_measurements(product_definitions)
 
         if 'product' in self:
@@ -412,7 +422,7 @@ class VirtualProduct(Mapping):
                                       use_threads=merged.get('use_threads'))
 
         elif 'transform' in self:
-            return self._transformation.compute(self._input.fetch(grouped, product_definitions, **load_settings))
+            return self._transformation.compute(self._input.fetch(grouped, **load_settings))
 
         elif 'collate' in self:
             def is_from(source_index):
@@ -432,7 +442,7 @@ class VirtualProduct(Mapping):
                 size = reduce(lambda x, y: x * y, r.shape, 1)
 
                 if size > 0:
-                    result = child.fetch(r, product_definitions, **load_settings)
+                    result = child.fetch(r, **load_settings)
                     name = self.get('index_measurement_name')
 
                     if name is None:
@@ -467,9 +477,9 @@ class VirtualProduct(Mapping):
 
             def fetch_recipe(source_index):
                 child_groups = grouped.map(select_child(source_index))
-                return DatasetPile(child_groups.pile, grouped.geobox)
+                return DatasetPile(child_groups.pile, grouped.geobox, grouped.product_definitions)
 
-            groups = [child.fetch(fetch_recipe(source_index), product_definitions, **load_settings)
+            groups = [child.fetch(fetch_recipe(source_index), **load_settings)
                       for source_index, child in enumerate(self._children)]
 
             return xarray.merge(groups).assign_attrs(**select_unique([g.attrs for g in groups]))
@@ -507,7 +517,6 @@ class VirtualProduct(Mapping):
     def load(self, dc, **query):
         # type: (Datacube, Dict[str, Any]) -> xarray.Dataset
         """ Mimic `datacube.Datacube.load`. For illustrative purposes. May be removed in the future. """
-        product_definitions = product_definitions_from_index(dc.index)
         datasets = self.query(dc, **query)
         grouped = self.group(datasets, **query)
-        return self.fetch(grouped, product_definitions, **query).sortby('time')
+        return self.fetch(grouped, **query).sortby('time')

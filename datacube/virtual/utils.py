@@ -32,6 +32,23 @@ def reject_keys(settings, keys):
             for key, value in settings.items() if key not in keys}
 
 
+def merge_dicts(dicts):
+    """
+    Merge a list of dictionaries into one.
+    Later entries override the earlier ones.
+    """
+    if len(dicts) == 0:
+        return {}
+    if len(dicts) == 1:
+        return dicts[0]
+
+    first, *rest = dicts
+    result = dict(first)
+    for other in rest:
+        result.update(other)
+    return result
+
+
 def merge_search_terms(original, override, keys=None):
     def pick(key, a, b):
         if a == b:

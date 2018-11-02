@@ -25,11 +25,32 @@ def example_metadata_type():
 
 
 def example_product(name):
+    blue = dict(name='blue', dtype='int16', nodata=-999, units='1')
+    green = dict(name='green', dtype='int16', nodata=-999, units='1')
+    flags = {"cloud_acca": {"bits": 10, "values": {"0": "cloud", "1": "no_cloud"}},
+             "contiguous": {"bits": 8, "values": {"0": False, "1": True}},
+             "cloud_fmask": {"bits": 11, "values": {"0": "cloud", "1": "no_cloud"}},
+             "nir_saturated": {"bits": 3, "values": {"0": True, "1": False}},
+             "red_saturated": {"bits": 2, "values": {"0": True, "1": False}},
+             "blue_saturated": {"bits": 0, "values": {"0": True, "1": False}},
+             "green_saturated": {"bits": 1, "values": {"0": True, "1": False}},
+             "swir1_saturated": {"bits": 4, "values": {"0": True, "1": False}},
+             "swir2_saturated": {"bits": 7, "values": {"0": True, "1": False}},
+             "cloud_shadow_acca": {"bits": 12, "values": {"0": "cloud_shadow", "1": "no_cloud_shadow"}},
+             "cloud_shadow_fmask": {"bits": 13, "values": {"0": "cloud_shadow", "1": "no_cloud_shadow"}}}
+
+    pixelquality = dict(name='pixelquality', dtype='int16', nodata=0, units='1',
+                        flags_definition=flags)
+
     result = DatasetType(example_metadata_type(),
                          dict(name=name, description="", metadata_type='eo', metadata={}))
     result.grid_spec = GridSpec(crs=geometry.CRS('EPSG:3577'),
                                 tile_size=(100000., 100000.),
                                 resolution=(-25, 25))
+    if '_pq_' in name:
+        result.definition = {'name': name, 'measurements': [pixelquality]}
+    else:
+        result.definition = {'name': name, 'measurements': [blue, green]}
     return result
 
 
@@ -95,32 +116,6 @@ def cloud_free_nbar():
     """)
 
 
-def product_definitions():
-    blue = dict(name='blue', dtype='int16', nodata=-999, units='1')
-    green = dict(name='green', dtype='int16', nodata=-999, units='1')
-    flags = {"cloud_acca": {"bits": 10, "values": {"0": "cloud", "1": "no_cloud"}},
-             "contiguous": {"bits": 8, "values": {"0": False, "1": True}},
-             "cloud_fmask": {"bits": 11, "values": {"0": "cloud", "1": "no_cloud"}},
-             "nir_saturated": {"bits": 3, "values": {"0": True, "1": False}},
-             "red_saturated": {"bits": 2, "values": {"0": True, "1": False}},
-             "blue_saturated": {"bits": 0, "values": {"0": True, "1": False}},
-             "green_saturated": {"bits": 1, "values": {"0": True, "1": False}},
-             "swir1_saturated": {"bits": 4, "values": {"0": True, "1": False}},
-             "swir2_saturated": {"bits": 7, "values": {"0": True, "1": False}},
-             "cloud_shadow_acca": {"bits": 12, "values": {"0": "cloud_shadow", "1": "no_cloud_shadow"}},
-             "cloud_shadow_fmask": {"bits": 13, "values": {"0": "cloud_shadow", "1": "no_cloud_shadow"}}}
-
-    pixelquality = dict(name='pixelquality', dtype='int16', nodata=0, units='1',
-                        flags_definition=flags)
-
-    return [
-        SimpleNamespace(name='ls7_nbar_albers', definition={'measurements': [blue, green]}),
-        SimpleNamespace(name='ls8_nbar_albers', definition={'measurements': [blue, green]}),
-        SimpleNamespace(name='ls7_pq_albers', definition={'measurements': [pixelquality]}),
-        SimpleNamespace(name='ls8_pq_albers', definition={'measurements': [pixelquality]})
-    ]
-
-
 def load_data(*args, **kwargs):
     sources, geobox, measurements = args
 
@@ -166,7 +161,11 @@ def dc():
         else:
             return []
 
-    result.index.products.get_all = product_definitions
+    result.index.products.get_all = lambda: [example_product(x)
+                                             for x in ['ls7_pq_albers',
+                                                       'ls8_pq_albers',
+                                                       'ls7_nbar_albers',
+                                                       'ls8_nbar_albers']]
     result.index.products.get_by_name = example_product
     result.index.datasets.search = search
     return result
