@@ -204,6 +204,13 @@ class VirtualProduct(Mapping):
         """ The name of an existing datacube product. """
         return self['product']
 
+    @property
+    def _kind(self):
+        """ One of product, transform, collate, or juxtapose. """
+        candidates = [key for key in list(self) if key in ['product', 'transform', 'collate', 'juxtapose']]
+        self._assert(len(candidates) == 1, "ambiguous kind")
+        return candidates[0]
+
     # public interface
 
     def output_measurements(self, product_definitions):
@@ -307,7 +314,7 @@ class VirtualProduct(Mapping):
             result = [child.query(dc, **search_terms)
                       for child in self._children]
 
-            return QueryResult([datasets.pile for datasets in result],
+            return QueryResult({self._kind: [datasets.pile for datasets in result]},
                                select_unique([datasets.grid_spec for datasets in result]),
                                select_unique([datasets.geopolygon for datasets in result]),
                                merge_dicts([datasets.product_definitions for datasets in result]))
@@ -355,7 +362,8 @@ class VirtualProduct(Mapping):
             return self._input.group(datasets, **search_terms)
 
         elif 'collate' in self:
-            self._assert(len(datasets.pile) == len(self._children), "invalid dataset pile")
+            self._assert('collate' in datasets.pile and len(datasets.pile['collate']) == len(self._children),
+                         "invalid dataset pile")
 
             def build(source_index, product, dataset_pile):
                 grouped = product.group(QueryResult(dataset_pile, datasets.grid_spec,
@@ -369,19 +377,20 @@ class VirtualProduct(Mapping):
 
             groups = [build(source_index, product, dataset_pile)
                       for source_index, (product, dataset_pile)
-                      in enumerate(zip(self._children, datasets.pile))]
+                      in enumerate(zip(self._children, datasets.pile['collate']))]
 
             return DatasetPile(xarray.concat([grouped.pile for grouped in groups], dim='time'),
                                select_unique([grouped.geobox for grouped in groups]),
                                merge_dicts([grouped.product_definitions for grouped in groups]))
 
         elif 'juxtapose' in self:
-            self._assert(len(datasets.pile) == len(self._children), "invalid dataset pile")
+            self._assert('juxtapose' in datasets.pile and len(datasets.pile['juxtapose']) == len(self._children),
+                         "invalid dataset pile")
 
             groups = [product.group(QueryResult(dataset_pile, datasets.grid_spec,
                                                 datasets.geopolygon, datasets.product_definitions),
                                     **search_terms)
-                      for product, dataset_pile in zip(self._children, datasets.pile)]
+                      for product, dataset_pile in zip(self._children, datasets.pile['juxtapose'])]
 
             aligned_piles = xarray.align(*[grouped.pile for grouped in groups])
 
