@@ -221,6 +221,25 @@ def test_load_data(cloud_free_nbar, dc, query):
     assert numpy.array_equal(numpy.unique(data.source_index.values), numpy.array([0, 1]))
 
 
+def test_select(dc, query):
+    select = construct_from_yaml("""
+        transform: select
+        measurement_names:
+            - green
+        input:
+            product: ls8_nbar_albers
+            measurements: [blue, green]
+    """)
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = select.load(dc, **query)
+
+    assert 'green' in data
+    assert 'blue' not in data
+
+
 def test_rename(dc, query):
     rename = construct_from_yaml("""
         transform: rename
