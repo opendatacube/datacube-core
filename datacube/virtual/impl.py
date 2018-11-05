@@ -40,7 +40,7 @@ class VirtualProductException(Exception):
 class QueryResult:
     """ Result of `VirtualProduct.query`. """
     def __init__(self, pile, grid_spec, geopolygon, product_definitions):
-        self.pile = tuple(pile)
+        self.pile = pile
         self.grid_spec = grid_spec
         self.geopolygon = geopolygon
         self.product_definitions = product_definitions
@@ -294,7 +294,7 @@ class VirtualProduct(Mapping):
             # this can also possibly extracted from the product definitions but this is easier
             product = dc.index.products.get_by_name(self._product)
 
-            return QueryResult(datasets, product.grid_spec, query.geopolygon,
+            return QueryResult(list(datasets), product.grid_spec, query.geopolygon,
                                {product.name: product.definition})
 
         elif 'transform' in self:
@@ -304,9 +304,9 @@ class VirtualProduct(Mapping):
             result = [child.query(dc, **search_terms)
                       for child in self._children]
 
-            grid_spec = select_unique([datasets.grid_spec for datasets in result])
-            geopolygon = select_unique([datasets.geopolygon for datasets in result])
-            return QueryResult(result, grid_spec, geopolygon,
+            return QueryResult([datasets.pile for datasets in result],
+                               select_unique([datasets.grid_spec for datasets in result]),
+                               select_unique([datasets.geopolygon for datasets in result]),
                                merge_dicts([datasets.product_definitions for datasets in result]))
 
         else:
@@ -343,13 +343,10 @@ class VirtualProduct(Mapping):
             # group by time
             group_query = query_group_by(**select_keys(merged, self._GROUPING_KEYS))
 
-            def wrap(_, value):
-                return QueryResult(value, grid_spec, geopolygon, datasets.product_definitions)
-
             # information needed for Datacube.load_data
             return DatasetPile(Datacube.group_datasets(selected, group_query),
                                geobox,
-                               datasets.product_definitions).map(wrap)
+                               datasets.product_definitions)
 
         elif 'transform' in self:
             return self._input.group(datasets, **search_terms)
@@ -358,12 +355,12 @@ class VirtualProduct(Mapping):
             self._assert(len(datasets.pile) == len(self._children), "invalid dataset pile")
 
             def build(source_index, product, dataset_pile):
-                grouped = product.group(dataset_pile, **search_terms)
+                grouped = product.group(QueryResult(dataset_pile, datasets.grid_spec,
+                                                    datasets.geopolygon, datasets.product_definitions),
+                                        **search_terms)
 
                 def tag(_, value):
-                    in_position = [value if i == source_index else None
-                                   for i, _ in enumerate(datasets.pile)]
-                    return QueryResult(in_position, grid_spec, geopolygon, datasets.product_definitions)
+                    return {'collate': (source_index, value)}
 
                 return grouped.map(tag)
 
@@ -378,18 +375,17 @@ class VirtualProduct(Mapping):
         elif 'juxtapose' in self:
             self._assert(len(datasets.pile) == len(self._children), "invalid dataset pile")
 
-            groups = [product.group(datasets, **search_terms)
-                      for product, datasets in zip(self._children, datasets.pile)]
+            groups = [product.group(QueryResult(dataset_pile, datasets.grid_spec,
+                                                datasets.geopolygon, datasets.product_definitions),
+                                    **search_terms)
+                      for product, dataset_pile in zip(self._children, datasets.pile)]
 
             aligned_piles = xarray.align(*[grouped.pile for grouped in groups])
-            child_groups = [DatasetPile(aligned_piles[i], grouped.geobox, grouped.product_definitions)
-                            for i, grouped in enumerate(groups)]
 
             def tuplify(indexes, _):
-                return QueryResult([grouped.pile.sel(**indexes).item() for grouped in child_groups],
-                                   grid_spec, geopolygon, datasets.product_definitions)
+                return {'juxtapose': [pile.sel(**indexes).item() for pile in aligned_piles]}
 
-            return DatasetPile(child_groups[0].map(tuplify).pile,
+            return DatasetPile(xr_apply(aligned_piles[0], tuplify),
                                select_unique([grouped.geobox for grouped in groups]),
                                merge_dicts([grouped.product_definitions for grouped in groups]))
 
@@ -412,10 +408,7 @@ class VirtualProduct(Mapping):
             # load_settings should not contain `measurements`
             measurements = list(self.output_measurements(product_definitions).values())
 
-            def unwrap(_, value):
-                return value.pile
-
-            return Datacube.load_data(grouped.map(unwrap).pile,
+            return Datacube.load_data(grouped.pile,
                                       grouped.geobox, measurements,
                                       fuse_func=merged.get('fuse_func'),
                                       dask_chunks=merged.get('dask_chunks'),
@@ -427,16 +420,13 @@ class VirtualProduct(Mapping):
         elif 'collate' in self:
             def is_from(source_index):
                 def result(_, value):
-                    return value.pile[source_index] is not None
+                    self._assert('collate' in value, "malformed dataset pile in collate")
+                    return value['collate'][0] == source_index
 
                 return result
 
             def strip_source(_, value):
-                for data in value.pile:
-                    if data is not None:
-                        return data
-
-                raise ValueError("Every child of DatasetPile object is None")
+                return value['collate'][1]
 
             def fetch_child(child, source_index, r):
                 size = reduce(lambda x, y: x * y, r.shape, 1)
@@ -471,7 +461,8 @@ class VirtualProduct(Mapping):
         elif 'juxtapose' in self:
             def select_child(source_index):
                 def result(_, value):
-                    return value.pile[source_index]
+                    self._assert('juxtapose' in value, "malformed dataset pile in juxtapose")
+                    return value['juxtapose'][source_index]
 
                 return result
 
