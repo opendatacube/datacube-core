@@ -141,3 +141,18 @@ class Rename(Transformation):
 
     def compute(self, data):
         return data.rename(self.measurement_names)
+
+
+class Select(Transformation):
+    def __init__(self, measurement_names):
+        self.measurement_names = measurement_names
+
+    def measurements(self, input_measurements):
+        return {key: value
+                for key, value in input_measurements.items()
+                if key in self.measurement_names}
+
+    def compute(self, data):
+        return data.drop([measurement
+                          for measurement in data.data_vars
+                          if measurement not in self.measurement_names])

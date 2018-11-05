@@ -1,7 +1,6 @@
-# TODO: alias support
+# TODO: alias support (output_measurement changes too)
 # TODO: needs an aggregation phase (use xarray.DataArray.groupby?)
 # TODO: measurement dependency tracking
-# TODO: ability to select measurements higher up in the tree
 # TODO: a mechanism to set settings for the leaf notes
 # TODO: lineage tracking per observation
 # TODO: integrate GridWorkflow functionality
@@ -103,18 +102,18 @@ class Transformation(ABC):
     The data coming in and out of the `compute` method are `xarray.Dataset` objects.
     The measurements are stored as `xarray.DataArray` objects inside it.
 
-    The `measurements` method transforms the list of `datacube.model.Measurement` objects
-    describing the measurements of the input data into the list of
-    `datacube.model.Measurement` objects describing the measurements of the output data
+    The `measurements` method transforms the dictionary mapping measurement names
+    to `datacube.model.Measurement` objects describing the input data
+    into a dictionary describing the measurements of the output data
     produced by the `compute` method.
     """
 
     @abstractmethod
     def measurements(self, input_measurements):
         """
-        Returns the list of output measurements from this transformation.
+        Returns the dictionary describing the output measurements from this transformation.
         Assumes the `data` provided to `compute` will have measurements
-        given by the list `input_measurements`.
+        given by the dictionary `input_measurements`.
         """
         pass
 
@@ -174,7 +173,11 @@ class VirtualProduct(Mapping):
         """ The `Transformation` object associated with a transform product. """
         cls = self['transform']
 
-        obj = cls(**{key: value for key, value in self.items() if key not in ['transform', 'input']})
+        try:
+            obj = cls(**{key: value for key, value in self.items() if key not in ['transform', 'input']})
+        except TypeError:
+            raise VirtualProductException("transformation {} could not be instantiated".format(cls))
+
         self._assert(isinstance(obj, Transformation), "not a transformation object: {}".format(obj))
 
         return obj
@@ -405,7 +408,7 @@ class VirtualProduct(Mapping):
             merged = merge_search_terms(select_keys(self, self._LOAD_KEYS),
                                         select_keys(load_settings, self._LOAD_KEYS))
 
-            # load_settings should not contain `measurements`
+            # load_settings should not contain `measurements` for now
             measurements = list(self.output_measurements(product_definitions).values())
 
             return Datacube.load_data(grouped.pile,

@@ -1,7 +1,7 @@
 import yaml
 
 from .impl import VirtualProduct, Transformation, VirtualProductException
-from .transformations import MakeMask, ApplyMask, ToFloat, Rename
+from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select
 from .utils import reject_keys
 
 from datacube.model import Measurement
@@ -90,7 +90,8 @@ class NameResolver:
 DEFAULT_RESOLVER = NameResolver(make_mask=MakeMask,
                                 apply_mask=ApplyMask,
                                 to_float=ToFloat,
-                                rename=Rename)
+                                rename=Rename,
+                                select=Select)
 
 
 def construct(**recipe):
