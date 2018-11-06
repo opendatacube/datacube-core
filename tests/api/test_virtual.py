@@ -8,9 +8,12 @@ import numpy
 
 from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
 from datacube.utils import geometry
-from datacube.virtual import construct_from_yaml
+from datacube.virtual import construct_from_yaml, VirtualProductException
 from datacube.virtual.impl import Datacube
 from datacube.virtual.utils import product_definitions_from_index
+
+
+PRODUCT_LIST = ['ls7_pq_albers', 'ls8_pq_albers', 'ls7_nbar_albers', 'ls8_nbar_albers']
 
 
 def example_metadata_type():
@@ -25,6 +28,9 @@ def example_metadata_type():
 
 
 def example_product(name):
+    if name not in PRODUCT_LIST:
+        return None
+
     blue = dict(name='blue', dtype='int16', nodata=-999, units='1')
     green = dict(name='green', dtype='int16', nodata=-999, units='1')
     flags = {"cloud_acca": {"bits": 10, "values": {"0": "cloud", "1": "no_cloud"}},
@@ -161,11 +167,7 @@ def dc():
         else:
             return []
 
-    result.index.products.get_all = lambda: [example_product(x)
-                                             for x in ['ls7_pq_albers',
-                                                       'ls8_pq_albers',
-                                                       'ls7_nbar_albers',
-                                                       'ls8_nbar_albers']]
+    result.index.products.get_all = lambda: [example_product(x) for x in PRODUCT_LIST]
     result.index.products.get_by_name = example_product
     result.index.datasets.search = search
     return result
@@ -219,6 +221,13 @@ def test_load_data(cloud_free_nbar, dc, query):
     assert numpy.array_equal(numpy.unique(data.blue.values), numpy.array([-999]))
     assert numpy.array_equal(numpy.unique(data.green.values), numpy.array([-999]))
     assert numpy.array_equal(numpy.unique(data.source_index.values), numpy.array([0, 1]))
+
+
+def test_misspelled_product(dc, query):
+    ls8_nbar = construct_from_yaml("product: ls8_nbar")
+
+    with pytest.raises(VirtualProductException):
+        datasets = ls8_nbar.query(dc, **query)
 
 
 def test_select(dc, query):

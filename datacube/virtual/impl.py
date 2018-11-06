@@ -283,6 +283,10 @@ class VirtualProduct(Mapping):
         get = self.get
 
         if 'product' in self:
+            product = dc.index.products.get_by_name(self._product)
+            if product is None:
+                raise VirtualProductException("could not find product {}".format(self._product))
+
             originals = Query(dc.index, **reject_keys(self, self._NON_QUERY_KEYS))
             overrides = Query(dc.index, **reject_keys(search_terms, self._NON_QUERY_KEYS))
 
@@ -299,10 +303,6 @@ class VirtualProduct(Mapping):
                 datasets = [dataset
                             for dataset in datasets
                             if get('dataset_predicate')(dataset)]
-
-            # gather information from the index before it disappears from sight
-            # this can also possibly extracted from the product definitions but this is easier
-            product = dc.index.products.get_by_name(self._product)
 
             return QueryResult(list(datasets), product.grid_spec, query.geopolygon,
                                {product.name: product.definition})
