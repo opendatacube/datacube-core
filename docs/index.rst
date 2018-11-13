@@ -60,6 +60,7 @@ and  related data from multiple satellite and other acquisition systems.
 
    dev/api/index.rst
    dev/setup/index.rst
+   dev/virtual-products.rst
    architecture/index.rst
    about/release_process.rst
 
