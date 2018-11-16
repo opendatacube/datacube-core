@@ -215,7 +215,7 @@ only two fields required to be configured are the ``Access Key``, and
 security page. Try not to lose your ``Secret Access Key`` as you will
 not be able to view it again and you will have to request a new one.
 
-::
+.. code-block:: bash
 
     pip install boto3 ruamel.yaml 
     sudo apt-get install awscli -y
@@ -225,7 +225,7 @@ Add the ca-certificates requisite for S3 indexing and export them to the
 environment variable the data cube will look for. If you forget this
 step you will see an error upon attempting to load the indexed dataset.
 
-::
+.. code-block:: bash
 
     sudo apt-get install ca-certificates
     export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
@@ -244,7 +244,7 @@ scripts necessary for S3 indexing. The direct links are provided below
 since, at the time of this document, they are not all included in the
 latest release (1.6.1).
 
-::
+.. code-block:: bash
 
     cd ~/Datacube
     mkdir -p S3_scripts
@@ -260,7 +260,7 @@ only two fields required to be configured are the ``Access Key``, and
 security page. Try not to lose your ``Secret Access Key`` as you will
 not be able to view it again and you will have to request a new one.
 
-::
+.. code-block:: bash
 
     pip install boto3 ruamel.yaml 
     sudo apt-get install awscli -y
@@ -270,7 +270,7 @@ Add the ca-certificates requisite for S3 indexing and export them to the
 environment variable the data cube will look for. If you forget this
 step you will see an error upon attempting to load the indexed dataset.
 
-::
+.. code-block:: bash
 
     sudo apt-get install ca-certificates
     export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
@@ -293,7 +293,7 @@ bucket. If using a different dataset, you may have to use or create a
 ``yaml`` product definition file if an exact match is not readily
 available.
 
-::
+.. code-block:: bash
 
     datacube product add ~/Datacube/S3_scripts/ls_usgs.yaml
 
@@ -304,7 +304,7 @@ main directory. ``--suffix`` refers to the suffix of the metadata file
 to process, it will not always be an ``MTL.txt`` but for landsat-pds, it
 will be.
 
-::
+.. code-block:: bash
 
     cd ~/Datacube/S3_scripts
     python3 index_from_s3_bucket.py landsat-pds -p c1/L8/139/045/ --suffix="MTL.txt"
@@ -316,7 +316,7 @@ required for this command to work. These commands will need to be
 entered into a notebook or in a Python console, accessed with the
 command ``python``
 
-::
+.. code-block:: python
 
     import datacube
 
