@@ -2,9 +2,6 @@
 Existing Deployments
 ====================
 
-.. note::
-
-   This is not a comprehensive list.
 
 
 Digital Earth Australia
@@ -33,6 +30,10 @@ Vietnam Open Data Cube
 
 http://datacube.vn/
 
+
+.. note::
+
+   This is not a comprehensive list.
 
 ..
 
