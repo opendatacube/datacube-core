@@ -1,4 +1,5 @@
 
+.. _jupyter-notebooks:
 
 Jupyter Notebooks
 =================
