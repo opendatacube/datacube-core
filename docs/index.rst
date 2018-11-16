@@ -30,10 +30,11 @@ and  related data from multiple satellite and other acquisition systems.
 
    user/intro.rst
    user/deployments.rst
-   user/ecosystem.rst
    user/notebooks.rst
    user/code_recipes.rst
 
+..
+   user/ecosystem.rst
 
 
 .. toctree::
