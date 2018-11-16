@@ -1,7 +1,7 @@
-.. _user_config:
+.. _environment_config:
 
-User Configuration
-******************
+Environment Configuration
+*************************
 
 
 It is possible to connect to multiple Data Cube indexes from within the one python process.
