@@ -1,7 +1,9 @@
 
-.. image:: _static/odc-logo-horizontal.svg
-   :align: center
-   :alt: Open Data Cube Logo
+
+..
+   .. image:: _static/odc-logo-horizontal.svg
+      :align: center
+      :alt: Open Data Cube Logo
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
    Open Data Cube Manual
