@@ -23,6 +23,9 @@ such as QGIS and Web Maps. It supports the WMS and WCS standards.
 
 .. _datacube-ows: https://github.com/opendatacube/datacube-ows
 
+Examples of this web server can be found in the `Australian National Map`_ service.
+
+.. _`Australian National Map`: https://nationalmap.gov.au/#share=s-vxBnRpMFBbIKgL2qtflVRbYNOhE
 
 
 Data Cube Explorer
