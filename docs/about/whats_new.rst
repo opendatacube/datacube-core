@@ -13,6 +13,7 @@ v1.7dev
 - Bugfixes and improved performance of `dask`-backed arrays (:pull:`547`)
 - Improve :ref:`api-reference` documentation.
 - Bug fix (Index out of bounds causing ingestion failures)
+- Add "virtual products" (:pull:`522`, :pull:`597`) for multi-product loading
 
 
 v1.6.1 (27 August 2018)
