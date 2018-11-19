@@ -73,47 +73,6 @@ class CRS(object):
     """
     Wrapper around `osr.SpatialReference` providing a more pythonic interface
 
-    >>> crs = CRS('EPSG:3577')
-    >>> crs.geographic
-    False
-    >>> crs.projected
-    True
-    >>> crs.dimensions
-    ('y', 'x')
-    >>> crs = CRS('EPSG:4326')
-    >>> crs.geographic
-    True
-    >>> crs.projected
-    False
-    >>> crs.epsg
-    4326
-    >>> crs.dimensions
-    ('latitude', 'longitude')
-    >>> crs = CRS('EPSG:3577')
-    >>> crs.epsg
-    3577
-    >>> crs.dimensions
-    ('y', 'x')
-    >>> CRS('EPSG:3577') == CRS('EPSG:3577')
-    True
-    >>> CRS('EPSG:3577') == CRS('EPSG:4326')
-    False
-    >>> # Due to Py 2 and 3 inconsistency in traceback formatting, we need to wrap the exceptions. Yuck.
-    >>> try:
-    ...    CRS('cupcakes')
-    ... except InvalidCRSError as e:
-    ...    print(e)
-    Not a valid CRS: 'cupcakes'
-    >>> # This one validly parses, but returns "Corrupt data" from gdal when used.
-    >>> try:
-    ...     CRS('PROJCS["unnamed",'
-    ...     'GEOGCS["WGS 84", DATUM["WGS_1984", SPHEROID["WGS 84",6378137,298.257223563, AUTHORITY["EPSG","7030"]],'
-    ...     'AUTHORITY["EPSG","6326"]], PRIMEM["Greenwich",0, AUTHORITY["EPSG","8901"]],'
-    ...     'UNIT["degree",0.0174532925199433, AUTHORITY["EPSG","9122"]], AUTHORITY["EPSG","4326"]]]')
-    ... except InvalidCRSError as e:
-    ...    print(e)
-    Not a valid CRS: 'PROJCS["...
-
     """
 
     def __init__(self, crs_str):
