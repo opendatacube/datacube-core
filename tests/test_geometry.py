@@ -347,3 +347,38 @@ def test_3d_point_converted_to_2d_point():
     assert len(p_3d.coords[0]) == 2
 
     assert p_2d == p_3d
+
+
+def test_crs():
+    CRS = geometry.CRS
+
+    crs = CRS('EPSG:3577')
+    assert crs.geographic is False
+    assert crs.projected is True
+    assert crs.dimensions == ('y', 'x')
+    assert crs.epsg == 3577
+    assert crs.units == ('metre', 'metre')
+    assert isinstance(repr(crs), str)
+
+    crs = CRS('EPSG:4326')
+    assert crs.geographic is True
+    assert crs.projected is False
+    assert crs.dimensions == ('latitude', 'longitude')
+    assert crs.epsg == 4326
+
+    assert CRS('EPSG:3577') == CRS('EPSG:3577')
+    assert (CRS('EPSG:3577') != CRS('EPSG:3577')) is False
+    assert (CRS('EPSG:3577') == CRS('EPSG:4326')) is False
+    assert CRS('EPSG:3577') != CRS('EPSG:4326')
+
+    bad_crs = ['cupcakes',
+               ('PROJCS["unnamed",'
+                'GEOGCS["WGS 84", DATUM["WGS_1984", SPHEROID["WGS 84",6378137,298.257223563, AUTHORITY["EPSG","7030"]],'
+                'AUTHORITY["EPSG","6326"]], PRIMEM["Greenwich",0, AUTHORITY["EPSG","8901"]],'
+                'UNIT["degree",0.0174532925199433, AUTHORITY["EPSG","9122"]], AUTHORITY["EPSG","4326"]]]')]
+
+    for bad in bad_crs:
+        with pytest.raises(geometry.InvalidCRSError) as e:
+            CRS('cupcakes')
+
+        assert 'Not a valid CRS:' in str(e)
