@@ -4,7 +4,7 @@ import pytest
 import pickle
 
 from datacube.utils import geometry
-from datacube.utils.geometry.tools import decompose_rws, affine_from_pts
+from datacube.utils.geometry import decompose_rws, affine_from_pts, get_scale_at_point
 
 
 def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
@@ -517,3 +517,25 @@ def test_fit():
 
     run_test(mkA(), 3)
     run_test(mkA(), 10)
+
+
+def test_scale_at_point():
+    def mk_transform(sx, sy):
+        A = mkA(37, scale=(sx, sy), translation=(2127, 93891))
+
+        def transofrom(pts):
+            return [A*x for x in pts]
+
+        return transofrom
+
+    tol = 1e-4
+    pt = (0, 0)
+    for sx, sy in [(3, 4), (0.4, 0.333)]:
+        tr = mk_transform(sx, sy)
+        sx_, sy_ = get_scale_at_point(pt, tr)
+        assert abs(sx - sx_) < tol
+        assert abs(sy - sy_) < tol
+
+        sx_, sy_ = get_scale_at_point(pt, tr, 0.1)
+        assert abs(sx - sx_) < tol
+        assert abs(sy - sy_) < tol
