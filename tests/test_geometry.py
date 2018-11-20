@@ -1,13 +1,14 @@
 import numpy as np
 import osgeo
 import pytest
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import pickle
 
 from datacube.utils import geometry
+
+
+def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
+    from affine import Affine
+    return Affine.translation(*translation)*Affine.rotation(rot)*Affine.shear(shear)*Affine.scale(*scale)
 
 
 def test_pickleable():
@@ -386,3 +387,81 @@ def test_crs():
             CRS('cupcakes')
 
         assert 'Not a valid CRS:' in str(e)
+
+
+def test_polygon_path():
+    from datacube.utils.geometry.tools import polygon_path
+
+    pp = polygon_path([0, 1])
+    assert pp.shape == (2, 5)
+    assert set(pp.ravel()) == {0, 1}
+
+    pp2 = polygon_path([0, 1], [0, 1])
+    assert (pp2 == pp).all()
+
+    pp = polygon_path([0, 1], [2, 3])
+    assert set(pp[0].ravel()) == {0, 1}
+    assert set(pp[1].ravel()) == {2, 3}
+
+
+def test_gbox_boundary():
+    from datacube.utils.geometry.tools import gbox_boundary
+    import numpy as np
+
+    xx = np.zeros((2, 6))
+
+    bb = gbox_boundary(xx, 3)
+
+    assert bb.shape == (4 + (3-2)*4, 2)
+    assert set(bb.T[0]) == {0.0, 3.0, 6.0}
+    assert set(bb.T[1]) == {0.0, 1.0, 2.0}
+
+
+def test_geobox_scale_down():
+    from datacube.utils.geometry import GeoBox, CRS, scaled_down_geobox
+
+    crs = CRS('EPSG:3857')
+
+    A = mkA(0, (111.2, 111.2), translation=(125_671, 251_465))
+    for s in [2, 3, 4, 8, 13, 16]:
+        gbox = GeoBox(233*s, 755*s, A, crs)
+        gbox_ = scaled_down_geobox(gbox, s)
+
+        assert gbox_.width == 233
+        assert gbox_.height == 755
+        assert gbox_.crs is crs
+        assert gbox_.extent.contains(gbox.extent)
+        assert gbox.extent.difference(gbox.extent).area == 0.0
+
+    gbox = GeoBox(1, 1, A, crs)
+    for s in [2, 3, 5]:
+        gbox_ = scaled_down_geobox(gbox, 3)
+
+        assert gbox_.shape == (1, 1)
+        assert gbox_.crs is crs
+        assert gbox_.extent.contains(gbox.extent)
+
+
+def test_roi_tools():
+    from datacube.utils.geometry import (
+        roi_is_empty,
+        roi_shape,
+        scaled_down_roi,
+        scaled_up_roi,
+        scaled_down_shape,
+    )
+    from numpy import s_
+
+    assert roi_shape(s_[2:4, 3:4]) == (2, 1)
+    assert roi_shape(s_[:4, :7]) == (4, 7)
+
+    assert roi_is_empty(s_[:4, :5]) is False
+    assert roi_is_empty(s_[1:1, :10]) is True
+    assert roi_is_empty(s_[7:3, :10]) is True
+
+    roi = s_[0:8, 0:4]
+    roi_ = scaled_down_roi(roi, 2)
+    assert roi_shape(roi_) == (4, 2)
+    assert scaled_down_roi(scaled_up_roi(roi, 3), 3) == roi
+
+    assert scaled_down_shape(roi_shape(roi), 2) == roi_shape(scaled_down_roi(roi, 2))
