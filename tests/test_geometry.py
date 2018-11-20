@@ -4,6 +4,7 @@ import pytest
 import pickle
 
 from datacube.utils import geometry
+from datacube.utils.geometry.tools import decompose_rws, affine_from_pts
 
 
 def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
@@ -465,3 +466,54 @@ def test_roi_tools():
     assert scaled_down_roi(scaled_up_roi(roi, 3), 3) == roi
 
     assert scaled_down_shape(roi_shape(roi), 2) == roi_shape(scaled_down_roi(roi, 2))
+
+
+def get_diff(A, B):
+    from math import sqrt
+    return sqrt(sum((a-b)**2 for a, b in zip(A, B)))
+
+
+def test_affine_rsw():
+
+    def run_test(a, scale, shear=0, translation=(0, 0), tol=1e-8):
+        A = mkA(a, scale=scale, shear=shear, translation=translation)
+
+        R, W, S = decompose_rws(A)
+
+        assert get_diff(A, R*W*S) < tol
+        assert get_diff(S, mkA(0, scale)) < tol
+        assert get_diff(R, mkA(a, translation=translation)) < tol
+
+    for a in (0, 12, 45, 33, 67, 89, 90, 120, 170):
+        run_test(a, (1, 1))
+        run_test(a, (0.5, 2))
+        run_test(-a, (0.5, 2))
+
+        run_test(a, (1, 2))
+        run_test(-a, (1, 2))
+
+        run_test(a, (2, -1))
+        run_test(-a, (2, -1))
+
+    run_test(0, (3, 4), 10)
+    run_test(-33, (3, -1), 10, translation=(100, -333))
+
+
+def test_fit():
+    from random import uniform
+
+    def run_test(A, n, tol=1e-5):
+        X = [(uniform(0, 1), uniform(0, 1))
+             for _ in range(n)]
+        Y = [A*x for x in X]
+        A_ = affine_from_pts(X, Y)
+
+        assert get_diff(A, A_) < tol
+
+    A = mkA(13, scale=(3, 4), shear=3, translation=(100, -3000))
+
+    run_test(A, 3)
+    run_test(A, 10)
+
+    run_test(mkA(), 3)
+    run_test(mkA(), 10)
