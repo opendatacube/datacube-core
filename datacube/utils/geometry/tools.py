@@ -196,3 +196,53 @@ def get_scale_at_point(pt, tr, r=None):
     A = affine_from_pts(XX, YY)
     _, _, S = decompose_rws(A)
     return (abs(S.a), abs(S.e))
+
+
+def _same_crs_pix_transform(src, dst):
+    assert src.crs == dst.crs
+
+    def transorm(pts, A):
+        return [A*pt[:2] for pt in pts]
+
+    _fwd = (~dst.transform) * src.transform  # src -> dst
+    _bwd = ~_fwd                             # dst -> src
+
+    def pt_tr(pts):
+        return transorm(pts, _fwd)
+    pt_tr.back = lambda pts: transorm(pts, _bwd)
+    return pt_tr
+
+
+def native_pix_transform(src, dst):
+    """
+
+    direction: from src to dst
+    .back: goes the other way
+    """
+    # pylint: disable=invalid-name
+
+    from types import SimpleNamespace
+    from ._base import mk_osr_point_transform
+
+    # Special case CRS_in == CRS_out
+    if src.crs == dst.crs:
+        return _same_crs_pix_transform(src, dst)
+
+    _in = SimpleNamespace(crs=src.crs, A=src.transform)
+    _out = SimpleNamespace(crs=dst.crs, A=dst.transform)
+
+    _fwd = mk_osr_point_transform(_in.crs, _out.crs)
+    _bwd = mk_osr_point_transform(_out.crs, _in.crs)
+
+    _fwd = (_in.A, _fwd, ~_out.A)
+    _bwd = (_out.A, _bwd, ~_in.A)
+
+    def transform(pts, params):
+        A, f, B = params
+        return [B*pt[:2] for pt in f.TransformPoints([A*pt[:2] for pt in pts])]
+
+    def tr(pts):
+        return transform(pts, _fwd)
+    tr.back = lambda pts: transform(pts, _bwd)
+
+    return tr

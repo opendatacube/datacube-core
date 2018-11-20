@@ -4,7 +4,13 @@ import pytest
 import pickle
 
 from datacube.utils import geometry
-from datacube.utils.geometry import decompose_rws, affine_from_pts, get_scale_at_point
+from datacube.utils.geometry import (
+    decompose_rws,
+    affine_from_pts,
+    get_scale_at_point,
+    native_pix_transform,
+    scaled_down_geobox,
+)
 
 epsg4326 = geometry.CRS('EPSG:4326')
 epsg3577 = geometry.CRS('EPSG:3577')
@@ -271,6 +277,24 @@ def test_geobox():
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.top - polygon.boundingbox.top)
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.bottom - polygon.boundingbox.bottom)
 
+    A = mkA(0, scale=(10, -10),
+            translation=(-48800, -2983006))
+
+    w, h = 512, 256
+    gbox = geometry.GeoBox(w, h, A, epsg3577)
+
+    assert gbox.shape == (h, w)
+    assert gbox.transform == A
+    assert gbox.extent.crs == gbox.crs
+    assert gbox.geographic_extent.crs == epsg4326
+    assert gbox.extent.boundingbox.height == h*10.0
+    assert gbox.extent.boundingbox.width == w*10.0
+    assert isinstance(str(gbox), str)
+    assert 'EPSG:3577' in repr(gbox)
+
+    gbox = geometry.GeoBox(1, 1, mkA(0), epsg4326)
+    assert gbox.geographic_extent.crs == epsg4326
+
 
 @pytest.mark.xfail(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
                    reason='Fails under GDAL 2.1')
@@ -437,7 +461,7 @@ def test_gbox_boundary():
 
 
 def test_geobox_scale_down():
-    from datacube.utils.geometry import GeoBox, CRS, scaled_down_geobox
+    from datacube.utils.geometry import GeoBox, CRS
 
     crs = CRS('EPSG:3857')
 
@@ -559,3 +583,42 @@ def test_scale_at_point():
         sx_, sy_ = get_scale_at_point(pt, tr, 0.1)
         assert abs(sx - sx_) < tol
         assert abs(sy - sy_) < tol
+
+
+def test_pix_transform():
+    pt = tuple([int(x/10)*10 for x in
+                geometry.point(145, -35, epsg4326).to_crs(epsg3577).coords[0]])
+
+    A = mkA(scale=(20, -20), translation=pt)
+
+    src = geometry.GeoBox(1024, 512, A, epsg3577)
+    dst = geometry.GeoBox.from_geopolygon(src.geographic_extent,
+                                          (0.0001, -0.0001))
+
+    tr = native_pix_transform(src, dst)
+
+    pts_src = [(0, 0), (10, 20), (300, 200)]
+    pts_dst = tr(pts_src)
+    pts_src_ = tr.back(pts_dst)
+
+    np.testing.assert_almost_equal(pts_src, pts_src_)
+
+    # check identity transform
+    tr = native_pix_transform(src, src)
+
+    pts_src = [(0, 0), (10, 20), (300, 200)]
+    pts_dst = tr(pts_src)
+    pts_src_ = tr.back(pts_dst)
+
+    np.testing.assert_almost_equal(pts_src, pts_src_)
+    np.testing.assert_almost_equal(pts_src, pts_dst)
+
+    # check scale only change
+    tr = native_pix_transform(src, scaled_down_geobox(src, 2))
+    pts_dst = tr(pts_src)
+    pts_src_ = tr.back(pts_dst)
+
+    np.testing.assert_almost_equal(pts_dst,
+                                   [(x/2, y/2) for (x, y) in pts_src])
+
+    np.testing.assert_almost_equal(pts_src, pts_src_)
