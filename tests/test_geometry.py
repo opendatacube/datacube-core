@@ -10,10 +10,18 @@ from datacube.utils.geometry import (
     get_scale_at_point,
     native_pix_transform,
     scaled_down_geobox,
+    compute_reproject_roi,
 )
+from datacube.model import GridSpec
 
 epsg4326 = geometry.CRS('EPSG:4326')
 epsg3577 = geometry.CRS('EPSG:3577')
+epsg3857 = geometry.CRS('EPSG:3857')
+
+AlbersGS = GridSpec(crs=epsg3577,
+                    tile_size=(100000.0, 100000.0),
+                    resolution=(-25, 25),
+                    origin=(0.0, 0.0))
 
 
 def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
@@ -628,3 +636,21 @@ def test_pix_transform():
                                    [(x/2, y/2) for (x, y) in pts_src])
 
     np.testing.assert_almost_equal(pts_src, pts_src_)
+
+
+def test_compute_reproject_roi():
+    src = AlbersGS.tile_geobox((15, -40))
+    dst = geometry.GeoBox.from_geopolygon(src.extent.to_crs(epsg3857).buffer(10),
+                                          resolution=src.resolution)
+
+    roi, scale = compute_reproject_roi(src, dst)
+
+    assert roi == np.s_[0:src.height, 0:src.width]
+    assert 0 < scale < 1
+
+    # check pure translation case
+    roi_ = np.s_[113:src.height-100, 33:src.width-10]
+    roi, scale = compute_reproject_roi(src, src[roi_], padding=0)
+
+    assert roi == roi_
+    assert scale == 1

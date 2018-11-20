@@ -172,6 +172,18 @@ def affine_from_pts(X, Y):
                   d, e, f)
 
 
+def get_scale_from_linear_transform(A):
+    """ Given an linear transform compute scale change.
+
+    1. Y = A*X + t
+    2. Extract scale components of A
+
+    Returns (sx, sy), where sx > 0, sy > 0
+    """
+    _, _, S = decompose_rws(A)
+    return (abs(S.a), abs(S.e))
+
+
 def get_scale_at_point(pt, tr, r=None):
     """ Given an arbitrary locally linear transform estimate scale change around a point.
 
@@ -194,8 +206,7 @@ def get_scale_at_point(pt, tr, r=None):
         XX = [(float(x*r+x0), float(y*r+y0)) for x, y in pts0]
     YY = tr(XX)
     A = affine_from_pts(XX, YY)
-    _, _, S = decompose_rws(A)
-    return (abs(S.a), abs(S.e))
+    return get_scale_from_linear_transform(A)
 
 
 def _same_crs_pix_transform(src, dst):
@@ -250,3 +261,39 @@ def native_pix_transform(src, dst):
     tr.linear = None
 
     return tr
+
+
+def compute_reproject_roi(src, dst, padding=1, align=None):
+    """ Compute ROI of src to read and read scale.
+    """
+    pts_per_side = 5
+
+    tr = native_pix_transform(src, dst)
+
+    if tr.linear is not None:
+        pts_per_side = 2
+
+    XY = np.vstack(tr.back(gbox_boundary(dst, pts_per_side)))
+
+    _in = np.floor(XY.min(axis=0)).astype('int32') - padding
+    _out = np.ceil(XY.max(axis=0)).astype('int32') + padding
+
+    if align is not None:
+        _in = align_down(_in, align)
+        _out = align_up(_out, align)
+
+    xx = np.asarray([_in[0], _out[0]])
+    yy = np.asarray([_in[1], _out[1]])
+
+    xx = np.clip(xx, 0, src.width, out=xx)
+    yy = np.clip(yy, 0, src.height, out=yy)
+
+    if tr.linear is not None:
+        scale = get_scale_from_linear_transform(tr.linear)
+    else:
+        center_pt = xx.mean(), yy.mean()
+        scale = get_scale_at_point(center_pt, tr)
+
+    scale = min(1/s for s in scale)
+
+    return (slice(yy[0], yy[1]), slice(xx[0], xx[1])), scale
