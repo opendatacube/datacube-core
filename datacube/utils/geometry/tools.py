@@ -210,6 +210,8 @@ def _same_crs_pix_transform(src, dst):
     def pt_tr(pts):
         return transorm(pts, _fwd)
     pt_tr.back = lambda pts: transorm(pts, _bwd)
+    pt_tr.linear = _fwd
+
     return pt_tr
 
 
@@ -218,6 +220,7 @@ def native_pix_transform(src, dst):
 
     direction: from src to dst
     .back: goes the other way
+    .linear: None|Affine linear transform src->dst if transform is linear (i.e. same CRS)
     """
     # pylint: disable=invalid-name
 
@@ -244,5 +247,6 @@ def native_pix_transform(src, dst):
     def tr(pts):
         return transform(pts, _fwd)
     tr.back = lambda pts: transform(pts, _bwd)
+    tr.linear = None
 
     return tr

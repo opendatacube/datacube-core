@@ -48,6 +48,8 @@ def test_geobox_simple():
     np.testing.assert_almost_equal(t.coords['latitude'].values[:10], expect_lat)
     np.testing.assert_almost_equal(t.coords['longitude'].values[:10], expect_lon)
 
+    assert (t == "some random thing") is False
+
 
 def test_props():
     crs = epsg4326
@@ -81,6 +83,7 @@ def test_props():
     assert pt.json['coordinates'] == (3.0, 4.0)
     assert 'Point' in str(pt)
     assert bool(pt) is True
+    assert pt.__nonzero__() is True
 
 
 def test_tests():
@@ -602,6 +605,7 @@ def test_pix_transform():
     pts_src_ = tr.back(pts_dst)
 
     np.testing.assert_almost_equal(pts_src, pts_src_)
+    assert tr.linear is None
 
     # check identity transform
     tr = native_pix_transform(src, src)
@@ -612,12 +616,14 @@ def test_pix_transform():
 
     np.testing.assert_almost_equal(pts_src, pts_src_)
     np.testing.assert_almost_equal(pts_src, pts_dst)
+    assert tr.linear is not None
 
     # check scale only change
     tr = native_pix_transform(src, scaled_down_geobox(src, 2))
     pts_dst = tr(pts_src)
     pts_src_ = tr.back(pts_dst)
 
+    assert tr.linear is not None
     np.testing.assert_almost_equal(pts_dst,
                                    [(x/2, y/2) for (x, y) in pts_src])
 
