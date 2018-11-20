@@ -467,6 +467,8 @@ def test_roi_tools():
 
     assert scaled_down_shape(roi_shape(roi), 2) == roi_shape(scaled_down_roi(roi, 2))
 
+    assert roi_shape(scaled_up_roi(roi, 10000, (40, 50))) == (40, 50)
+
 
 def get_diff(A, B):
     from math import sqrt
