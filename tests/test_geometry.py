@@ -423,7 +423,7 @@ def test_geobox_scale_down():
 
     crs = CRS('EPSG:3857')
 
-    A = mkA(0, (111.2, 111.2), translation=(125_671, 251_465))
+    A = mkA(0, (111.2, 111.2), translation=(125671, 251465))
     for s in [2, 3, 4, 8, 13, 16]:
         gbox = GeoBox(233*s, 755*s, A, crs)
         gbox_ = scaled_down_geobox(gbox, s)
