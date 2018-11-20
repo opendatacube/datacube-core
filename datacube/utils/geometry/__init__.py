@@ -28,6 +28,9 @@ from .tools import (
     scaled_down_shape,
     scaled_down_roi,
     scaled_up_roi,
+    decompose_rws,
+    affine_from_pts,
+    get_scale_at_point,
 )
 
 __all__ = [
@@ -54,4 +57,7 @@ __all__ = [
     "scaled_down_shape",
     "scaled_down_roi",
     "scaled_up_roi",
+    "decompose_rws",
+    "affine_from_pts",
+    "get_scale_at_point",
 ]
