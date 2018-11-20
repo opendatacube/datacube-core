@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import numpy as np
 import osgeo
 import pytest
@@ -366,10 +364,16 @@ def test_crs():
     assert crs.dimensions == ('latitude', 'longitude')
     assert crs.epsg == 4326
 
+    crs2 = CRS(crs)
+    assert crs2 == crs
+
     assert CRS('EPSG:3577') == CRS('EPSG:3577')
+    assert CRS('EPSG:3577') == 'EPSG:3577'
     assert (CRS('EPSG:3577') != CRS('EPSG:3577')) is False
     assert (CRS('EPSG:3577') == CRS('EPSG:4326')) is False
+    assert (CRS('EPSG:3577') == 'EPSG:4326') is False
     assert CRS('EPSG:3577') != CRS('EPSG:4326')
+    assert CRS('EPSG:3577') != 'EPSG:4326'
 
     bad_crs = ['cupcakes',
                ('PROJCS["unnamed",'
