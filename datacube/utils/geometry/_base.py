@@ -203,6 +203,9 @@ class CRS(object):
         return self._crs.IsSame(other._crs) != 1  # pylint: disable=protected-access
 
 
+def mk_osr_point_transform(src_crs, dst_crs):
+    return osr.CoordinateTransformation(src_crs._crs, dst_crs._crs)  # pylint: disable=protected-access
+
 ###################################################
 # Helper methods to build ogr.Geometry from geojson
 ###################################################
@@ -436,11 +439,11 @@ class Geometry(object):
         if resolution is None:
             resolution = 1 if self.crs.geographic else 100000
 
-        transform = osr.CoordinateTransformation(self.crs._crs, crs._crs)  # pylint: disable=protected-access
+        transform = mk_osr_point_transform(self.crs, crs)
         clone = self._geom.Clone()
 
         if wrapdateline and crs.geographic:
-            rtransform = osr.CoordinateTransformation(crs._crs, self.crs._crs)  # pylint: disable=protected-access
+            rtransform = mk_osr_point_transform(crs, self.crs)
             clone = _chop_along_antimeridian(clone, transform, rtransform)
 
         clone.Segmentize(resolution)

@@ -30,6 +30,7 @@ from .tools import (
     decompose_rws,
     affine_from_pts,
     get_scale_at_point,
+    native_pix_transform,
 )
 
 __all__ = [
@@ -58,4 +59,5 @@ __all__ = [
     "decompose_rws",
     "affine_from_pts",
     "get_scale_at_point",
+    "native_pix_transform",
 ]
