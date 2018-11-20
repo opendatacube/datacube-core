@@ -6,6 +6,9 @@ import pickle
 from datacube.utils import geometry
 from datacube.utils.geometry import decompose_rws, affine_from_pts, get_scale_at_point
 
+epsg4326 = geometry.CRS('EPSG:4326')
+epsg3577 = geometry.CRS('EPSG:3577')
+
 
 def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
     from affine import Affine
@@ -13,7 +16,7 @@ def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
 
 
 def test_pickleable():
-    poly = geometry.polygon([(10, 20), (20, 20), (20, 10), (10, 20)], crs=geometry.CRS('EPSG:4326'))
+    poly = geometry.polygon([(10, 20), (20, 20), (20, 10), (10, 20)], crs=epsg4326)
     pickled = pickle.dumps(poly, pickle.HIGHEST_PROTOCOL)
     unpickled = pickle.loads(pickled)
     assert poly == unpickled
@@ -23,7 +26,7 @@ def test_geobox_simple():
     from affine import Affine
     t = geometry.GeoBox(4000, 4000,
                         Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0),
-                        geometry.CRS('EPSG:4326'))
+                        epsg4326)
 
     expect_lon = np.asarray([151.000125,  151.000375,  151.000625,  151.000875,  151.001125,
                              151.001375,  151.001625,  151.001875,  151.002125,  151.002375])
@@ -41,34 +44,45 @@ def test_geobox_simple():
 
 
 def test_props():
-    box1 = geometry.box(10, 10, 30, 30, crs=geometry.CRS('EPSG:4326'))
+    crs = epsg4326
+
+    box1 = geometry.box(10, 10, 30, 30, crs=crs)
     assert box1
     assert box1.is_valid
     assert not box1.is_empty
     assert box1.area == 400.0
     assert box1.boundary.length == 80.0
-    assert box1.centroid == geometry.point(20, 20, geometry.CRS('EPSG:4326'))
+    assert box1.centroid == geometry.point(20, 20, crs)
 
-    triangle = geometry.polygon([(10, 20), (20, 20), (20, 10), (10, 20)], crs=geometry.CRS('EPSG:4326'))
+    triangle = geometry.polygon([(10, 20), (20, 20), (20, 10), (10, 20)], crs=crs)
     assert triangle.envelope == geometry.BoundingBox(10, 10, 20, 20)
 
     outer = next(iter(box1))
     assert outer.length == 80.0
 
-    box1copy = geometry.box(10, 10, 30, 30, crs=geometry.CRS('EPSG:4326'))
+    box1copy = geometry.box(10, 10, 30, 30, crs=crs)
     assert box1 == box1copy
     assert box1.convex_hull == box1copy  # NOTE: this might fail because of point order
 
-    box2 = geometry.box(20, 10, 40, 30, crs=geometry.CRS('EPSG:4326'))
+    box2 = geometry.box(20, 10, 40, 30, crs=crs)
     assert box1 != box2
+
+    bbox = geometry.BoundingBox(1, 0, 10, 13)
+    assert bbox.width == 9
+    assert bbox.height == 13
+
+    pt = geometry.point(3, 4, crs)
+    assert pt.json['coordinates'] == (3.0, 4.0)
+    assert 'Point' in str(pt)
+    assert bool(pt) is True
 
 
 def test_tests():
-    box1 = geometry.box(10, 10, 30, 30, crs=geometry.CRS('EPSG:4326'))
-    box2 = geometry.box(20, 10, 40, 30, crs=geometry.CRS('EPSG:4326'))
-    box3 = geometry.box(30, 10, 50, 30, crs=geometry.CRS('EPSG:4326'))
-    box4 = geometry.box(40, 10, 60, 30, crs=geometry.CRS('EPSG:4326'))
-    minibox = geometry.box(15, 15, 25, 25, crs=geometry.CRS('EPSG:4326'))
+    box1 = geometry.box(10, 10, 30, 30, crs=epsg4326)
+    box2 = geometry.box(20, 10, 40, 30, crs=epsg4326)
+    box3 = geometry.box(30, 10, 50, 30, crs=epsg4326)
+    box4 = geometry.box(40, 10, 60, 30, crs=epsg4326)
+    minibox = geometry.box(15, 15, 25, 25, crs=epsg4326)
 
     assert not box1.touches(box2)
     assert box1.touches(box3)
@@ -98,9 +112,9 @@ def test_tests():
 
 
 def test_ops():
-    box1 = geometry.box(10, 10, 30, 30, crs=geometry.CRS('EPSG:4326'))
-    box2 = geometry.box(20, 10, 40, 30, crs=geometry.CRS('EPSG:4326'))
-    box4 = geometry.box(40, 10, 60, 30, crs=geometry.CRS('EPSG:4326'))
+    box1 = geometry.box(10, 10, 30, 30, crs=epsg4326)
+    box2 = geometry.box(20, 10, 40, 30, crs=epsg4326)
+    box4 = geometry.box(40, 10, 60, 30, crs=epsg4326)
 
     union1 = box1.union(box2)
     assert union1.area == 600.0
@@ -122,10 +136,10 @@ def test_ops():
 
 
 def test_unary_union():
-    box1 = geometry.box(10, 10, 30, 30, crs=geometry.CRS('EPSG:4326'))
-    box2 = geometry.box(20, 10, 40, 30, crs=geometry.CRS('EPSG:4326'))
-    box3 = geometry.box(30, 10, 50, 30, crs=geometry.CRS('EPSG:4326'))
-    box4 = geometry.box(40, 10, 60, 30, crs=geometry.CRS('EPSG:4326'))
+    box1 = geometry.box(10, 10, 30, 30, crs=epsg4326)
+    box2 = geometry.box(20, 10, 40, 30, crs=epsg4326)
+    box3 = geometry.box(30, 10, 50, 30, crs=epsg4326)
+    box4 = geometry.box(40, 10, 60, 30, crs=epsg4326)
 
     union0 = geometry.unary_union([box1])
     assert union0 == box1
@@ -146,14 +160,18 @@ def test_unary_union():
     assert union4.type == 'Polygon'
     assert union4.area == 2.5 * box1.area
 
+    with pytest.raises(ValueError):
+        pt = geometry.point(6, 7, epsg4326)
+        geometry.unary_union([pt, pt])
+
 
 def test_unary_intersection():
-    box1 = geometry.box(10, 10, 30, 30, crs=geometry.CRS('EPSG:4326'))
-    box2 = geometry.box(15, 10, 35, 30, crs=geometry.CRS('EPSG:4326'))
-    box3 = geometry.box(20, 10, 40, 30, crs=geometry.CRS('EPSG:4326'))
-    box4 = geometry.box(25, 10, 45, 30, crs=geometry.CRS('EPSG:4326'))
-    box5 = geometry.box(30, 10, 50, 30, crs=geometry.CRS('EPSG:4326'))
-    box6 = geometry.box(35, 10, 55, 30, crs=geometry.CRS('EPSG:4326'))
+    box1 = geometry.box(10, 10, 30, 30, crs=epsg4326)
+    box2 = geometry.box(15, 10, 35, 30, crs=epsg4326)
+    box3 = geometry.box(20, 10, 40, 30, crs=epsg4326)
+    box4 = geometry.box(25, 10, 45, 30, crs=epsg4326)
+    box5 = geometry.box(30, 10, 50, 30, crs=epsg4326)
+    box6 = geometry.box(35, 10, 55, 30, crs=epsg4326)
 
     inter1 = geometry.unary_intersection([box1])
     assert bool(inter1)
@@ -200,7 +218,7 @@ class TestCRSEqualityComparisons(object):
         assert a == c
         assert b == c
 
-        assert a != geometry.CRS('EPSG:4326')
+        assert a != epsg4326
 
     def test_grs80_comparison(self):
         a = geometry.CRS("""GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",
@@ -214,7 +232,7 @@ class TestCRSEqualityComparisons(object):
         assert a == c
         assert b == c
 
-        assert a != geometry.CRS('EPSG:4326')
+        assert a != epsg4326
 
     def test_australian_albers_comparison(self):
         a = geometry.CRS("""PROJCS["GDA94_Australian_Albers",GEOGCS["GCS_GDA_1994",
@@ -228,11 +246,11 @@ class TestCRSEqualityComparisons(object):
                             PARAMETER["false_easting",0],
                             PARAMETER["false_northing",0],
                             UNIT["Meter",1]]""")
-        b = geometry.CRS('EPSG:3577')
+        b = epsg3577
 
         assert a == b
 
-        assert a != geometry.CRS('EPSG:4326')
+        assert a != epsg4326
 
 
 def test_geobox():
@@ -244,7 +262,7 @@ def test_geobox():
          (148.2697, -35.20111)],
     ]
     for points in points_list:
-        polygon = geometry.polygon(points, crs=geometry.CRS('EPSG:3577'))
+        polygon = geometry.polygon(points, crs=epsg3577)
         resolution = (-25, 25)
         geobox = geometry.GeoBox.from_geopolygon(polygon, resolution)
 
@@ -266,8 +284,8 @@ def test_wrap_dateline():
                            PARAMETER["false_easting",0],
                            PARAMETER["false_northing",0],
                            UNIT["Meter",1]]""")
-    albers_crs = geometry.CRS('EPSG:3577')
-    geog_crs = geometry.CRS('EPSG:4326')
+    albers_crs = epsg3577
+    geog_crs = epsg4326
 
     wrap = geometry.polygon([(12231455.716333, -5559752.598333),
                              (12231455.716333, -4447802.078667),
@@ -352,7 +370,7 @@ def test_3d_point_converted_to_2d_point():
 def test_crs():
     CRS = geometry.CRS
 
-    crs = CRS('EPSG:3577')
+    crs = epsg3577
     assert crs.geographic is False
     assert crs.projected is True
     assert crs.dimensions == ('y', 'x')
@@ -360,7 +378,7 @@ def test_crs():
     assert crs.units == ('metre', 'metre')
     assert isinstance(repr(crs), str)
 
-    crs = CRS('EPSG:4326')
+    crs = epsg4326
     assert crs.geographic is True
     assert crs.projected is False
     assert crs.dimensions == ('latitude', 'longitude')
@@ -369,13 +387,13 @@ def test_crs():
     crs2 = CRS(crs)
     assert crs2 == crs
 
-    assert CRS('EPSG:3577') == CRS('EPSG:3577')
-    assert CRS('EPSG:3577') == 'EPSG:3577'
-    assert (CRS('EPSG:3577') != CRS('EPSG:3577')) is False
-    assert (CRS('EPSG:3577') == CRS('EPSG:4326')) is False
-    assert (CRS('EPSG:3577') == 'EPSG:4326') is False
-    assert CRS('EPSG:3577') != CRS('EPSG:4326')
-    assert CRS('EPSG:3577') != 'EPSG:4326'
+    assert epsg3577 == epsg3577
+    assert epsg3577 == 'EPSG:3577'
+    assert (epsg3577 != epsg3577) is False
+    assert (epsg3577 == epsg4326) is False
+    assert (epsg3577 == 'EPSG:4326') is False
+    assert epsg3577 != epsg4326
+    assert epsg3577 != 'EPSG:4326'
 
     bad_crs = ['cupcakes',
                ('PROJCS["unnamed",'
