@@ -4,7 +4,6 @@
 from ._base import (
     Coordinate,
     BoundingBox,
-    CRSProjProxy,
     InvalidCRSError,
     CRS,
     Geometry,
@@ -36,7 +35,6 @@ from .tools import (
 __all__ = [
     "Coordinate",
     "BoundingBox",
-    "CRSProjProxy",
     "InvalidCRSError",
     "CRS",
     "Geometry",
