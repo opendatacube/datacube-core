@@ -31,6 +31,7 @@ from .tools import (
     affine_from_pts,
     get_scale_at_point,
     native_pix_transform,
+    compute_reproject_roi,
 )
 
 __all__ = [
@@ -60,4 +61,5 @@ __all__ = [
     "affine_from_pts",
     "get_scale_at_point",
     "native_pix_transform",
+    "compute_reproject_roi",
 ]
