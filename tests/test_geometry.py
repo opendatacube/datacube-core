@@ -654,3 +654,10 @@ def test_compute_reproject_roi():
 
     assert roi == roi_
     assert scale == 1
+
+    # check pure translation case
+    roi_ = np.s_[113:src.height-100, 33:src.width-10]
+    roi, scale = compute_reproject_roi(src, src[roi_], align=256)
+
+    assert roi == np.s_[0:src.height, 0:src.width]
+    assert scale == 1
