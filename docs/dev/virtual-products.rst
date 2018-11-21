@@ -1,79 +1,251 @@
-===============================
-Datacube Virtual Product Design
-===============================
-
-Background
-----------
-Many common use cases of Datacube (DC) involve combining temporally and spatially similar sets of data to produce output data. An example is using Product Quality (PQ) products with other products to perform cloud masking. Issues have been encountered with dataset merging previously in Datacube stats (see https://gist.github.com/Kirill888/a4b52d0077fa4e36b351c22827782492) and in Datacube WMS there are times where only TIRS sensor datasets are available, causing unexpected results. As such the creation of Virtual Products (VPs) has been considered as a way to provide users a way to easily define common patterns used in Datacube work and to solve issues seen in software which uses Datacube surrounding the merging and transformation of data without having to create bespoke code each time.
-
-
-Products in Datacube
---------------------
-In the current version of DC (1.5.4), products are unique strings which associate that string (the product name) with metadata about Datasets. This metadata includes information such as the measurements that the product contains, the grid specification and the mapping of raw fields in the dataset to computed fields (e.g. from_dt and to_dt which product a time measurement). In DC the products are represented by a `DatasetType` which has a `MetadataType`. Each `Dataset` has a `DatasetType` and the `DatasetType` and `MetadataType` are typically loaded from JSON documents stored in a database. See also (http://damien-agdc.readthedocs.io/en/extradocs/dev/data_model.html)
-
+================
 Virtual Products
-----------------
+================
 
-Scope
-~~~~~
-Our principle design goals for Virtual Products (VPs) are:
+Introduction
+------------
 
-- *A common interface for products*: Our representation of a product (both virtual and concrete)
-  should provide methods to query data and load data (possibly among other things) so that the
-  user need not be concerned with how a product is constructed (whether it is virtual or concrete,
-  or performs on-the-fly computation).
+Virtual products enable ODC users to declaratively combine data from multiple products and perform on-the-fly
+computation while the data is loaded. The workflow is deduced from a lightweight configuration that can help datacube
+optimize the query to avoid loading data that would be eventually discarded.
 
-- *Multi-product query optimization*: When observations from different products are expected
-  to be in one-to-one correspondence (such as NBAR and PQ when producing cloud-free NBAR),
-  the "missing" observations in the correspondence should be filtered out so that they are not
-  actually loaded.
+An example virtual product would be a cloud-free surface reflectance (SR) product derived from a base surface
+reflectance product and a pixel quality (PQ) product that classifies cloud. Virtual products are especially useful
+when the datasets from the different products have the same spatio-temporal extent and the operations are to be applied
+pixel-by-pixel.
 
-- *Multi-sensor aggregation*: A common pattern in scientific applications is to combine similar
-  data (perhaps after some post-processing) collected by different sensors, such as Landsat 5, 7,
-  or 8.
+Functionalities related to virtual products are mainly in the :mod:`datacube.virtual` module.
 
-- *On-the-fly computation*: The ability to apply a data transformation to each observation as soon as
-  the data is loaded. Often the actual loaded data is not needed afterwards and may be safely discarded.
-  We aim to greatly reduce the peak resident memory size required for large scale computations.
 
-Current design
+Design
+------
+
+Currently, virtual products are constructed by applying a fixed set of combinators to either existing products or other
+virtual products. That is, a virtual product can be viewed as a tree whose nodes are combinators and leaves are
+ordinary datacube products.
+
+Continuing the example in the previous section, consider the configuration (or the "recipe") for a cloud-free SR
+product from SR products for two sensors (``ls7_nbar_albers`` and ``ls8_nbar_albers``) and their corresponding
+PQ products (``ls7_pq_albers`` and ``ls8_pq_albers``):
+
+.. code:: python
+
+    from datacube.virtual import construct_from_yaml
+
+    cloud_free_ls_nbar = construct_from_yaml("""
+        collate:
+          - transform: apply_mask
+            mask_measurement_name: pixelquality
+            input:
+                juxtapose:
+                  - product: ls7_nbar_albers
+                    measurements: [red, green, blue]
+                  - transform: make_mask
+                    input:
+                        product: ls7_pq_albers
+                    flags:
+                        blue_saturated: false
+                        cloud_acca: no_cloud
+                        cloud_fmask: no_cloud
+                        cloud_shadow_acca: no_cloud_shadow
+                        cloud_shadow_fmask: no_cloud_shadow
+                        contiguous: true
+                        green_saturated: false
+                        nir_saturated: false
+                        red_saturated: false
+                        swir1_saturated: false
+                        swir2_saturated: false
+                    mask_measurement_name: pixelquality
+          - transform: apply_mask
+            mask_measurement_name: pixelquality
+            input:
+                juxtapose:
+                  - product: ls8_nbar_albers
+                    measurements: [red, green, blue]
+                  - transform: make_mask
+                    input:
+                        product: ls8_pq_albers
+                    flags:
+                        blue_saturated: false
+                        cloud_acca: no_cloud
+                        cloud_fmask: no_cloud
+                        cloud_shadow_acca: no_cloud_shadow
+                        cloud_shadow_fmask: no_cloud_shadow
+                        contiguous: true
+                        green_saturated: false
+                        nir_saturated: false
+                        red_saturated: false
+                        swir1_saturated: false
+                        swir2_saturated: false
+                    mask_measurement_name: pixelquality
+        """)
+
+The virtual product ``cloud_free_ls_nbar`` can now be used to load cloud-free SR imagery. The dataflow for loading the
+data reflects the tree structure of the recipe:
+
+.. image:: ../diagrams/cloud_free.svg
+
+
+Grammar
+-------
+
+Currently, there are four combinators for creating virtual products:
+
+1. ``product``
 ~~~~~~~~~~~~~~
-A Virtual Product in general is a tree. The leaf nodes are the concrete products in our datacube.
-Other nodes in the tree represent modes of combining the data fetched from the leaf nodes
-and transformations to be applied to that data.
 
-Combinators
-    Combinators are functions which accept 1 or more Virtual Products and return a Virtual Product. The following combinators will be available:
+The recipe to construct a virtual product from an existing datacube product has the form:
 
-    `Collate`: `List A -> A`
-        For example: Combining the sensor readings for LS5 on 05/07/95, LS6 on 06/11/95, LS8 on 07/11/95 into one dataset.
+.. code-block:: text
 
-    `Juxtapose`: `A -> B -> A x B`
-        Similar to a `JOIN` in SQL, could be outer or inner. This could be used for apply PQ for cloud masking in combination with Transform.
+    {'product': <product-name>, **settings}
 
-    `Transform`: `A -> B`
-        Synonymous with the `map` function of the `mapreduce` paradigm. Will require some transformation function which accepts a dataset and returns a dataset. This combinator may also modify the type of the dataset.
+where ``settings`` can include :meth:`datacube.Datacube.load` settings such as:
 
-Methods & Workflow (High Level API)
+- ``measurements``
+- ``output_crs``, ``resolution``, ``align``
+- ``resampling``
+- ``group_by``, ``fuse_func``
 
-    `construct`
-        Constructing a Virtual Product will set its child Virtual Products as well as any functions it requires to operate. The construction will not access the database.
+The ``product`` nodes are at the leaves of the virtual product syntax tree.
 
-    `validate`
-        The validation function will check the measurement types of the inputs and outputs and ensure that they are compatible. In most cases this will be checking that they match, however with a `Transform` there may be a change.
 
-    `query`
-        The query function will retreieve datasets which match a query. The product being queried may be virtual. Access to the database will cease after this stage.
+2. ``collate``
+~~~~~~~~~~~~~~
 
-    `fetch`
-        The fetch function will use the results of the `query`, direct or deserialized, and load the datasets. At this stage combinators working on data can apply their functions or predicates; for example `Filter` can execute. Once completed, the output for the top level Virtual Product will be the desired Virtual Dataset.
+This combinator concatenates observations from multiple sensors having the same set of measurements. The recipe
+for a ``collate`` node has the form:
 
-Potential Approaches
---------------------
-Virtual Product Module
-~~~~~~~~~~~~~~~~~~~~~~
-This approach would not modify any opendatacube-core code. Instead a new module would be created that defined `VirtualProduct`. This module would make use of the `datacube` module and API.
+.. code-block:: text
 
-The module would query the properties of the `DatasetTypes` (a.k.a. products) used in the definition of the `VirtualProduct` and conduct type and sanity checking on combinators. After passing the checks the storage location of datasets for the given query (e.g. geoboxed or time bounded), the database would be queried using `datacube`. Advanced versions could intelligently walk the product tree to determine how to construct a SQL query for the various products and / or cache query results.
+    {'collate': [<virtual-product-1>,
+                 <virtual-product-2>,
+                 ...,
+                 <virtual-product-N>]}
 
-The module would then load the datasets from their location (e.g. disk, aws s3, etc.). Once the datasets are loaded, combinators are applied to the datasets and the results until the final result is created and returned. Again intelligent caching of result could be applied in this stage.
+Observations from different sensors get interlaced:
+
+.. image:: ../diagrams/collate.svg
+
+Optionally, the source product of a pixel can be captured by introducing another measurement in the loaded data
+that consists of the index of the source product:
+
+.. code-block:: text
+
+    {'collate': [<virtual-product-1>,
+                 <virtual-product-2>,
+                 ...,
+                 <virtual-product-N>],
+     'index_measurement_name': <measurement-name>}
+
+
+3. ``transform``
+~~~~~~~~~~~~~~~~
+
+This node applies an on-the-fly data transformation on the loaded data. The recipe for a ``transform`` has the form:
+
+.. code-block:: text
+
+    {'transform': <transformation-class>,
+     'input': <input-virtual-product>,
+     **settings}
+
+where the ``settings`` are keyword arguments to the initializer of the transformation class that implements the
+``datacube.virtual.Transformation`` interface:
+
+.. code:: python
+
+   class Transformation:
+       def __init__(self, **settings):
+           """ Initialize the transformation object with the given settings. """
+
+       def compute(self, data):
+           """ xarray.Dataset -> xarray.Dataset """
+
+       def measurements(self, input_measurements):
+           """ Dict[str, Measurement] -> Dict[str, Measurement] """
+
+ODC has a (growing) set of built-in transformations:
+
+- ``make_mask``
+- ``apply_mask``
+- ``to_float``
+- ``rename``
+- ``select``
+
+For more information on transformations, see :ref:`user-defined-virtual-product-transforms`.
+
+
+4. ``juxtapose``
+~~~~~~~~~~~~~~~~
+
+This node merges disjoint sets of measurements from different products into one.
+The form of the recipe is:
+
+.. code-block:: text
+
+    {'juxtapose': [<virtual-product-1>,
+                   <virtual-product-2>,
+                   ...,
+                   <virtual-product-N>]}
+
+Observations without corresponding entries in the other products will get dropped.
+
+.. image:: ../diagrams/juxtapose.svg
+
+
+Using virtual products
+----------------------
+
+Virtual products provide a common interface to query and then to load the data. The relevant methods are:
+
+    ``query(dc, **search_terms)``
+        Retrieves datasets that match the ``search_terms`` from the database index of the datacube instance ``dc``.
+
+    ``group(datasets, **search_terms)``
+        Groups the datasets from ``query`` by the timestamps, and optionally restricts the region of interest. Does not
+        connect to the database.
+        
+    ``fetch(grouped, **load_settings)``
+        Loads the data from the grouped datasets according to ``load_settings``. Does not connect to the database. The
+        on-the-fly transformations are applied at this stage. The ``resampling`` method or ``dask_chunks`` size can be
+        specified in the ``load_settings``.
+
+Currently, virtual products also provide a ``load(dc, **query)`` method that roughly correspond to ``dc.load``.
+However, this method exists only to facilitate code migration, and its extensive use is not recommended. It implements
+the pipeline:
+
+.. image:: ../diagrams/virtual_product_load.svg
+
+For advanced use cases, the intermediate objects ``QueryResult`` and ``DatasetPile`` may be directly manipulated.
+
+.. _user-defined-virtual-product-transforms:
+
+User-defined transformations
+----------------------------
+
+Custom transformations must inherit from :class:`datacube.virtual.Transformation`. If the user-defined transformation class
+is already installed in the Python environment the datacube instance is running from, the recipe may refer to it by its
+fully qualified name. Otherwise, for example for a transformation defined in a Notebook, the virtual product using the
+custom transformation is best constructed using the combinators directly.
+
+For example, calculating the NDVI from a SR product (say, ``ls8_nbar_albers``) would look like:
+
+.. code-block:: python
+
+    from datacube.virtual import construct, Transformation, Measurement
+
+    class NDVI(Transformation):
+        def compute(self, data):
+            result = ((data.nir - data.red) / (data.nir + data.red))
+            return result.to_dataset(name='NDVI')
+
+        def measurements(self, input_measurements):
+            return {'NDVI': Measurement(name='NDVI', dtype='float32', nodata=float('nan'), units='1')}
+
+    ndvi = construct(transform=NDVI, input=dict(product='ls8_nbar_albers', measurements=['red', 'nir'])
+
+    ndvi_data = ndvi.load(dc, **search_terms)
+
+for the required geo-spatial ``search_terms``. Note that the ``measurement`` method describes the output from
+the ``compute`` method.
