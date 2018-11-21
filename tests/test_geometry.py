@@ -270,6 +270,15 @@ class TestCRSEqualityComparisons(object):
         assert a != epsg4326
 
 
+def test_no_epsg():
+    c = geometry.CRS('+proj=longlat +no_defs +ellps=GRS80')
+    b = geometry.CRS("""GEOGCS["GRS 1980(IUGG, 1980)",DATUM["unknown",SPHEROID["GRS80",6378137,298.257222101]],
+                        PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
+
+    assert c.epsg is None
+    assert b.epsg is None
+
+
 def test_geobox():
     points_list = [
         [(148.2697, -35.20111), (149.31254, -35.20111), (149.31254, -36.331431), (148.2697, -36.331431)],

@@ -107,16 +107,18 @@ class CRS(object):
     @property
     def epsg(self):
         """
-        EPSG Code of the CRS
+        EPSG Code of the CRS or None
 
-        :type: int
+        :type: int | None
         """
         if self.projected:
-            return int(self._crs.GetAuthorityCode('PROJCS'))
+            code = self._crs.GetAuthorityCode('PROJCS')
+        elif self.geographic:
+            code = self._crs.GetAuthorityCode('GEOGCS')
+        else:
+            code = None
 
-        if self.geographic:
-            return int(self._crs.GetAuthorityCode('GEOGCS'))
-        return None
+        return None if code is None else int(code)
 
     @property
     def proj(self):
