@@ -151,6 +151,20 @@ def test_ops():
     symdiff1 = box1.symmetric_difference(box2)
     assert symdiff1.area == 400.0
 
+    # test segmented
+    line = geometry.line([(0, 0), (0, 5), (10, 5)], epsg4326)
+    line2 = line.segmented(2)
+    assert line.crs is line2.crs
+    assert line.length == line2.length
+    assert len(line.coords) < len(line2.coords)
+
+    # test interpolate
+    pt = line.interpolate(1)
+    assert pt.crs is line.crs
+    assert pt.coords[0] == (0, 1)
+
+    assert pt.interpolate(3) is None
+
 
 def test_unary_union():
     box1 = geometry.box(10, 10, 30, 30, crs=epsg4326)

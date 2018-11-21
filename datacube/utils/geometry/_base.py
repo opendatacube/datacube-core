@@ -411,12 +411,22 @@ class Geometry(object):
         }
 
     def segmented(self, resolution):
+        """
+        Possibly add more points to the geometry so that no edge is longer than `resolution`
+        """
         clone = self._geom.Clone()
         clone.Segmentize(resolution)
         return _make_geom_from_ogr(clone, self.crs)
 
     def interpolate(self, distance):
-        return _make_geom_from_ogr(self._geom.Value(distance), self.crs)
+        """
+        Returns a point distance units along the line or None if underlying
+        geometry doesn't support this operation.
+        """
+        geom = self._geom.Value(distance)
+        if geom is None:
+            return None
+        return _make_geom_from_ogr(geom, self.crs)
 
     def buffer(self, distance, quadsecs=30):
         return _make_geom_from_ogr(self._geom.Buffer(distance, quadsecs), self.crs)
