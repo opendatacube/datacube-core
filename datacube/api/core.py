@@ -404,9 +404,6 @@ class Datacube(object):
         for name, coord in geobox.coordinates.items():
             result[name] = (name, coord.values, {'units': coord.units})
 
-        def work_measurements(measurement, data_func):
-            return data_func(measurement)
-
         results = [data_func(a) for a in measurements]
 
         for measurement in measurements:
