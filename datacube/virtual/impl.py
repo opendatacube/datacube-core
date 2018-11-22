@@ -25,9 +25,8 @@ from datacube.api.grid_workflow import _fast_slice
 from datacube.api.query import Query, query_group_by, query_geopolygon
 from datacube.model import Measurement
 from datacube.model.utils import xr_apply
-from datacube.utils import import_function
 
-from .utils import product_definitions_from_index, qualified_name, merge_dicts
+from .utils import qualified_name, merge_dicts
 from .utils import select_unique, select_keys, reject_keys, merge_search_terms
 
 
@@ -139,7 +138,7 @@ class VirtualProduct(Mapping):
 
     _GEOBOX_KEYS = ['output_crs', 'resolution', 'align']
     _GROUPING_KEYS = ['group_by']
-    _LOAD_KEYS = ['measurements', 'fuse_func', 'resampling', 'stack', 'dask_chunks', 'use_threads']
+    _LOAD_KEYS = ['measurements', 'fuse_func', 'resampling', 'stack', 'dask_chunks']
     _ADDITIONAL_KEYS = ['dataset_predicate']
 
     _NON_SPATIAL_KEYS = _GEOBOX_KEYS + _GROUPING_KEYS
@@ -423,8 +422,7 @@ class VirtualProduct(Mapping):
             return Datacube.load_data(grouped.pile,
                                       grouped.geobox, measurements,
                                       fuse_func=merged.get('fuse_func'),
-                                      dask_chunks=merged.get('dask_chunks'),
-                                      use_threads=merged.get('use_threads'))
+                                      dask_chunks=merged.get('dask_chunks'))
 
         elif 'transform' in self:
             return self._transformation.compute(self._input.fetch(grouped, **load_settings))

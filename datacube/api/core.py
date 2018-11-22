@@ -1,29 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
-import logging
-import os
-import sys
 import uuid
 import warnings
 from collections import namedtuple, OrderedDict
-from itertools import groupby, repeat
+from itertools import groupby
 from math import ceil
 
 import numpy
 import pandas
 import xarray
 
-try:
-    import SharedArray as sa
-except ImportError:
-    pass
 from dask import array as da
-
-try:
-    from pathos.threading import ThreadPool
-except ImportError:
-    pass
-from six.moves import zip
 
 from datacube.config import LocalConfig
 from datacube.compat import string_types
@@ -32,8 +19,6 @@ from datacube.utils import geometry, intersects
 from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
-
-THREADING_REQS_AVAILABLE = ('SharedArray' in sys.modules and 'pathos.threading' in sys.modules)
 
 Group = namedtuple('Group', ['key', 'datasets'])
 
@@ -143,7 +128,7 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
-             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, use_threads=False, **query):
+             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, **query):
         """
         Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -270,12 +255,6 @@ class Datacube(object):
             Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects, these will be loaded
             instead of performing a database lookup.
 
-        :param bool use_threads:
-            Optional. If this is set to True, IO will be multi-thread.
-            May not work for all drivers due to locking/GIL.
-
-            Default is False.
-
         :param int limit:
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
@@ -305,8 +284,7 @@ class Datacube(object):
                                 measurement_dicts,
                                 resampling=resampling,
                                 fuse_func=fuse_func,
-                                dask_chunks=dask_chunks,
-                                use_threads=use_threads)
+                                dask_chunks=dask_chunks)
 
         return apply_aliases(result, datacube_product, measurements)
 
@@ -388,7 +366,7 @@ class Datacube(object):
         return sources
 
     @staticmethod
-    def create_storage(coords, geobox, measurements, data_func=None, use_threads=False):
+    def create_storage(coords, geobox, measurements, data_func=None):
         """
         Create a :class:`xarray.Dataset` and (optionally) fill it with data.
 
@@ -408,12 +386,6 @@ class Datacube(object):
             function to fill the storage with data. It is called once for each measurement, with the measurement
             as an argument. It should return an appropriately shaped numpy array. If not provided, an empty
             :class:`xarray.Dataset` is returned.
-
-        :param bool use_threads:
-            Optional. If this is set to True, IO will be multi-thread.
-            May not work for all drivers due to locking/GIL.
-
-            Default is False.
 
         :rtype: :class:`xarray.Dataset`
 
@@ -435,13 +407,7 @@ class Datacube(object):
         def work_measurements(measurement, data_func):
             return data_func(measurement)
 
-        use_threads = use_threads and THREADING_REQS_AVAILABLE
-
-        if use_threads:
-            pool = ThreadPool(32)
-            results = pool.map(work_measurements, measurements, repeat(data_func))
-        else:
-            results = [data_func(a) for a in measurements]
+        results = [data_func(a) for a in measurements]
 
         for measurement in measurements:
             data = results.pop(0)
@@ -460,8 +426,7 @@ class Datacube(object):
 
     @staticmethod
     def load_data(sources, geobox, measurements, resampling=None,
-                  fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
-                  use_threads=False):
+                  fuse_func=None, dask_chunks=None, skip_broken_datasets=False):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
 
@@ -494,40 +459,16 @@ class Datacube(object):
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
-        :param bool use_threads:
-            Optional. If this is set to True, IO will be multi-thread.
-            May not work for all drivers due to locking/GIL.
-
-            Default is False.
-
         :rtype: xarray.Dataset
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
-        if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
-            use_threads = False
-
         if dask_chunks is None:
             def data_func(measurement):
-                if not use_threads:
-                    data = numpy.full(sources.shape + geobox.shape, measurement.nodata, dtype=measurement.dtype)
-                    for index, datasets in numpy.ndenumerate(sources.values):
-                        _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                          skip_broken_datasets=skip_broken_datasets)
-                else:
-                    def work_load_data(array_name, index, datasets):
-                        data = sa.attach(array_name)
-                        _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                          skip_broken_datasets=skip_broken_datasets)
-
-                    array_name = '_'.join(['DCCORE', str(uuid.uuid4()), str(os.getpid())])
-                    sa.create(array_name, shape=sources.shape + geobox.shape, dtype=measurement.dtype)
-                    data = sa.attach(array_name)
-                    data[:] = measurement.nodata
-
-                    pool = ThreadPool(32)
-                    pool.map(work_load_data, repeat(array_name), *zip(*numpy.ndenumerate(sources.values)))
-                    sa.delete(array_name)
+                data = numpy.full(sources.shape + geobox.shape, measurement.nodata, dtype=measurement.dtype)
+                for index, datasets in numpy.ndenumerate(sources.values):
+                    _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
+                                      skip_broken_datasets=skip_broken_datasets)
                 return data
         else:
             def data_func(measurement):
@@ -552,7 +493,7 @@ class Datacube(object):
                             for m in measurements]
 
         return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                       geobox, measurements, data_func, use_threads)
+                                       geobox, measurements, data_func)
 
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
