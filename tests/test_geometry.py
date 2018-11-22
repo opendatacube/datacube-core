@@ -11,6 +11,7 @@ from datacube.utils.geometry import (
     native_pix_transform,
     scaled_down_geobox,
     compute_reproject_roi,
+    roi_normalise,
 )
 from datacube.model import GridSpec
 
@@ -523,6 +524,7 @@ def test_roi_tools():
     from datacube.utils.geometry import (
         roi_is_empty,
         roi_shape,
+        roi_normalise,
         scaled_down_roi,
         scaled_up_roi,
         scaled_down_shape,
@@ -544,6 +546,13 @@ def test_roi_tools():
     assert scaled_down_shape(roi_shape(roi), 2) == roi_shape(scaled_down_roi(roi, 2))
 
     assert roi_shape(scaled_up_roi(roi, 10000, (40, 50))) == (40, 50)
+
+    assert roi_normalise(s_[3:4], 40) == s_[3:4]
+    assert roi_normalise(s_[:4], (40,)) == s_[0:4]
+    assert roi_normalise(s_[:], (40,)) == s_[0:40]
+    assert roi_normalise(s_[:-1], (3,)) == s_[0:2]
+    assert roi_normalise(s_[-2:-1, :], (10, 20)) == s_[8:9, 0:20]
+    assert roi_normalise(s_[-2:-1, :, 3:4], (10, 20, 100)) == s_[8:9, 0:20, 3:4]
 
 
 def get_diff(A, B):
