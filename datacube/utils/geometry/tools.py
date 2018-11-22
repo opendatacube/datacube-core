@@ -1,5 +1,4 @@
 import numpy as np
-from . import GeoBox
 from affine import Affine
 
 
@@ -36,28 +35,6 @@ def gbox_boundary(gbox, pts_per_side=16):
     yy = np.linspace(0, H, pts_per_side, dtype='float32')
 
     return polygon_path(xx, yy).T[:-1]
-
-
-def scaled_down_geobox(src_geobox, scaler: int):
-    """Given a source geobox and integer scaler compute geobox of a scaled down image.
-
-        Output geobox will be padded when shape is not a multiple of scaler.
-        Example: 5x4, scaler=2 -> 3x2
-
-        NOTE: here we assume that pixel coordinates are 0,0 at the top-left
-              corner of a top-left pixel.
-
-    """
-    assert scaler > 1
-
-    H, W = [X//scaler + (1 if X % scaler else 0)
-            for X in src_geobox.shape]
-
-    # Since 0,0 is at the corner of a pixel, not center, there is no
-    # translation between pixel plane coords due to scaling
-    A = src_geobox.transform * Affine.scale(scaler, scaler)
-
-    return GeoBox(W, H, A, src_geobox.crs)
 
 
 def align_down(x, align):
