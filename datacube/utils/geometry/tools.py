@@ -1,4 +1,5 @@
 import numpy as np
+import collections
 from affine import Affine
 
 
@@ -72,6 +73,37 @@ def roi_shape(roi):
 
 def roi_is_empty(roi):
     return any(d <= 0 for d in roi_shape(roi))
+
+
+def roi_normalise(roi, shape):
+    """
+    Fill in missing .start/.stop, also deal with negative values, which are
+    treated as offsets from the end.
+
+    .step parameter is left unchanged.
+
+    Example:
+          np.s_[:3, 4:  ], (10, 20) -> np._s[0:3, 4:20]
+          np.s_[:3,  :-3], (10, 20) -> np._s[0:3, 0:17]
+
+    """
+
+    def fill_if_none(x, val_if_none):
+        return val_if_none if x is None else x
+
+    def norm_slice(s, n):
+        start = fill_if_none(s.start, 0)
+        stop = fill_if_none(s.stop, n)
+        start, stop = [x if x >= 0 else n+x for x in (start, stop)]
+        return slice(start, stop, s.step)
+
+    if not isinstance(shape, collections.Sequence):
+        shape = (shape,)
+
+    if not isinstance(roi, tuple):
+        return norm_slice(roi, shape[0])
+
+    return tuple([norm_slice(s, n) for s, n in zip(roi, shape)])
 
 
 def decompose_rws(A):
@@ -150,7 +182,7 @@ def affine_from_pts(X, Y):
 
 
 def get_scale_from_linear_transform(A):
-    """ Given an linear transform compute scale change.
+    """ Given a linear transform compute scale change.
 
     1. Y = A*X + t
     2. Extract scale components of A

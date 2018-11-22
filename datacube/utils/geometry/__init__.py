@@ -24,6 +24,7 @@ from ._base import (
 from .tools import (
     roi_is_empty,
     roi_shape,
+    roi_normalise,
     scaled_down_shape,
     scaled_down_roi,
     scaled_up_roi,
@@ -53,6 +54,7 @@ __all__ = [
     "unary_intersection",
     "roi_is_empty",
     "roi_shape",
+    "roi_normalise",
     "scaled_down_geobox",
     "scaled_down_shape",
     "scaled_down_roi",

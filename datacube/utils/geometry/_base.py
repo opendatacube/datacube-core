@@ -111,12 +111,11 @@ class CRS(object):
 
         :type: int | None
         """
+        code = None
         if self.projected:
             code = self._crs.GetAuthorityCode('PROJCS')
         elif self.geographic:
             code = self._crs.GetAuthorityCode('GEOGCS')
-        else:
-            code = None
 
         return None if code is None else int(code)
 
