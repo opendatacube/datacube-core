@@ -10,6 +10,7 @@ from affine import Affine
 from osgeo import ogr, osr
 
 from datacube import compat
+from .tools import roi_normalise, roi_shape
 
 Coordinate = namedtuple('Coordinate', ('values', 'units'))
 _BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
@@ -194,7 +195,8 @@ class CRS(object):
 
         def to_canonincal_proj4(crs):
             return set(crs.ExportToProj4().split() + ['+wktext'])
-        proj4_repr_is_same = to_canonincal_proj4(self._crs) == to_canonincal_proj4(other._crs)  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        proj4_repr_is_same = to_canonincal_proj4(self._crs) == to_canonincal_proj4(other._crs)
         return proj4_repr_is_same
 
     def __ne__(self, other):
@@ -769,21 +771,34 @@ class GeoBox(object):
         """
         Produce a tile buffered by ybuff, xbuff (in CRS units)
         """
-        w, h = (_round_to_res(buf, res) for buf, res in zip((ybuff, xbuff), self.resolution))
-        return self[-h:self.height+h, -w:self.width+w]
+        by, bx = (_round_to_res(buf, res) for buf, res in zip((ybuff, xbuff), self.resolution))
+        affine = self.affine * Affine.translation(-bx, -by)
 
-    def __getitem__(self, item):
-        indexes = [slice(index.start or 0, index.stop or size, index.step or 1)
-                   for size, index in zip(self.shape, item)]
-        for index in indexes:
-            if index.step != 1:
-                raise NotImplementedError('scaling not implemented, yet')
-
-        affine = self.affine * Affine.translation(indexes[1].start, indexes[0].start)
-        return GeoBox(width=indexes[1].stop - indexes[1].start,
-                      height=indexes[0].stop - indexes[0].start,
+        return GeoBox(width=self.width + 2*bx,
+                      height=self.height + 2*by,
                       affine=affine,
                       crs=self.crs)
+
+    def __getitem__(self, roi):
+        if isinstance(roi, int):
+            roi = (slice(roi, roi+1), slice(None, None))
+
+        if isinstance(roi, slice):
+            roi = (roi, slice(None, None))
+
+        if len(roi) > 2:
+            raise ValueError('Expect 2d slice')
+
+        if not all(s.step is None or s.step == 1 for s in roi):
+            raise NotImplementedError('scaling not implemented, yet')
+
+        roi = roi_normalise(roi, self.shape)
+        ty, tx = [s.start for s in roi]
+        h, w = roi_shape(roi)
+
+        affine = self.affine * Affine.translation(tx, ty)
+
+        return GeoBox(width=w, height=h, affine=affine, crs=self.crs)
 
     @property
     def transform(self):

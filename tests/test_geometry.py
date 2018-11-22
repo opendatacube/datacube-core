@@ -327,8 +327,27 @@ def test_geobox():
     assert isinstance(str(gbox), str)
     assert 'EPSG:3577' in repr(gbox)
 
-    gbox = geometry.GeoBox(1, 1, mkA(0), epsg4326)
-    assert gbox.geographic_extent.crs == epsg4326
+    assert geometry.GeoBox(1, 1, mkA(0), epsg4326).geographic_extent.crs == epsg4326
+
+    g2 = gbox[:-10, :-20]
+    assert g2.shape == (gbox.height - 10, gbox.width - 20)
+
+    # step of 1 is ok
+    g2 = gbox[::1, ::1]
+    assert g2.shape == gbox.shape
+
+    assert gbox[0].shape == (1, gbox.width)
+    assert gbox[:3].shape == (3, gbox.width)
+
+    with pytest.raises(NotImplementedError):
+        gbox[::2, :]
+
+    # too many slices
+    with pytest.raises(ValueError):
+        gbox[:1, :1, :]
+
+    assert gbox.buffered(10, 0).shape == (gbox.height + 2*1, gbox.width)
+    assert gbox.buffered(30, 20).shape == (gbox.height + 2*3, gbox.width + 2*2)
 
 
 @pytest.mark.xfail(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
@@ -681,14 +700,14 @@ def test_compute_reproject_roi():
     assert 0 < scale < 1
 
     # check pure translation case
-    roi_ = np.s_[113:src.height-100, 33:src.width-10]
+    roi_ = np.s_[113:-100, 33:-10]
     roi, scale = compute_reproject_roi(src, src[roi_], padding=0)
 
-    assert roi == roi_
+    assert roi == roi_normalise(roi_, src.shape)
     assert scale == 1
 
     # check pure translation case
-    roi_ = np.s_[113:src.height-100, 33:src.width-10]
+    roi_ = np.s_[113:-100, 33:-10]
     roi, scale = compute_reproject_roi(src, src[roi_], align=256)
 
     assert roi == np.s_[0:src.height, 0:src.width]
