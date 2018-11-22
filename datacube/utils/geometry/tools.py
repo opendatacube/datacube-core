@@ -100,7 +100,7 @@ def roi_normalise(roi, shape):
     if not isinstance(shape, collections.Sequence):
         shape = (shape,)
 
-    if not isinstance(roi, tuple):
+    if isinstance(roi, slice):
         return norm_slice(roi, shape[0])
 
     return tuple([norm_slice(s, n) for s, n in zip(roi, shape)])
