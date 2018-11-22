@@ -8,6 +8,7 @@ from ._base import (
     CRS,
     Geometry,
     GeoBox,
+    scaled_down_geobox,
     point,
     multipoint,
     line,
@@ -23,7 +24,6 @@ from ._base import (
 from .tools import (
     roi_is_empty,
     roi_shape,
-    scaled_down_geobox,
     scaled_down_shape,
     scaled_down_roi,
     scaled_up_roi,
