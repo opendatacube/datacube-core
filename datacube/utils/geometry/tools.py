@@ -107,7 +107,8 @@ def roi_normalise(roi, shape):
 
 
 def decompose_rws(A):
-    """Compute decomposition Affine matrix sans translation into Rotation Shear and Scale.
+    """
+    Compute decomposition Affine matrix sans translation into Rotation, Shear and Scale.
 
     Note: that there are ambiguities for negative scales.
 
@@ -121,6 +122,7 @@ def decompose_rws(A):
     R [ca -sa]  W [1, w]  S [sx,  0]
       [sa  ca]    [0, 1]    [ 0, sy]
 
+    :return: Rotation, Sheer, Scale
     """
     # pylint: disable=invalid-name, too-many-locals
 
@@ -158,9 +160,12 @@ def decompose_rws(A):
 
 
 def affine_from_pts(X, Y):
-    """ Given points X,Y compute A, such that: Y = A*X.
+    """
+    Given points X,Y compute A, such that: Y = A*X.
 
-        Needs at least 3 points.
+    Needs at least 3 points.
+
+    :rtype: Affine
     """
     from numpy.linalg import lstsq
 
@@ -182,7 +187,8 @@ def affine_from_pts(X, Y):
 
 
 def get_scale_from_linear_transform(A):
-    """ Given a linear transform compute scale change.
+    """
+    Given a linear transform compute scale change.
 
     1. Y = A*X + t
     2. Extract scale components of A
@@ -190,11 +196,12 @@ def get_scale_from_linear_transform(A):
     Returns (sx, sy), where sx > 0, sy > 0
     """
     _, _, S = decompose_rws(A)
-    return (abs(S.a), abs(S.e))
+    return abs(S.a), abs(S.e)
 
 
 def get_scale_at_point(pt, tr, r=None):
-    """ Given an arbitrary locally linear transform estimate scale change around a point.
+    """
+    Given an arbitrary locally linear transform estimate scale change around a point.
 
     1. Approximate Y = tr(X) as Y = A*X+t in the neighbourhood of pt, for X,Y in R2
     2. Extract scale components of A
@@ -206,6 +213,7 @@ def get_scale_at_point(pt, tr, r=None):
     tr - List((x,y)) -> List((x,y))
          takes list of 2-d points on input and outputs same length list of 2d on output
 
+    Returns (sx, sy), where sx > 0, sy > 0
     """
     pts0 = [(0, 0), (-1, 0), (0, -1), (1, 0), (0, 1)]
     x0, y0 = pt
@@ -273,7 +281,20 @@ def native_pix_transform(src, dst):
 
 
 def compute_reproject_roi(src, dst, padding=1, align=None):
-    """ Compute ROI of src to read and read scale.
+    """
+    Given two GeoBoxes find the region within the source GeoBox that overlaps with the destination GeoBox, and
+    also compute the scale factor. The idea is that:
+
+    Compute ROI of src to read and read scale.
+
+    src[roi] -> scale -> reproject -> dst
+    OR
+    src(scale)[roi(scale)] -> reproject -> dst
+
+    Here roi is "minimal", padding is configurable though, so you only read what you need.
+    Also scale can be used to pick the right kind of overview level to read.
+
+    :returns: (Y slice, X slice), scale
     """
     pts_per_side = 5
 
