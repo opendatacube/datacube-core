@@ -658,6 +658,12 @@ def uri_to_local_path(local_uri):
 
     path = url2pathname(components.path)
 
+    if components.netloc:
+        if os.name == 'nt':
+            path = '//{}{}'.format(components.netloc, path)
+        else:
+            raise ValueError('Only know how to use `netloc` urls on Windows')
+
     return pathlib.Path(path)
 
 
