@@ -544,6 +544,7 @@ def test_roi_tools():
         roi_is_empty,
         roi_shape,
         roi_normalise,
+        roi_center,
         scaled_down_roi,
         scaled_up_roi,
         scaled_down_shape,
@@ -572,6 +573,8 @@ def test_roi_tools():
     assert roi_normalise(s_[:-1], (3,)) == s_[0:2]
     assert roi_normalise(s_[-2:-1, :], (10, 20)) == s_[8:9, 0:20]
     assert roi_normalise(s_[-2:-1, :, 3:4], (10, 20, 100)) == s_[8:9, 0:20, 3:4]
+    assert roi_center(s_[0:3]) == 1.5
+    assert roi_center(s_[0:2, 0:6]) == (1, 3)
 
 
 def get_diff(A, B):
@@ -676,6 +679,8 @@ def test_pix_transform():
     np.testing.assert_almost_equal(pts_src, pts_src_)
     np.testing.assert_almost_equal(pts_src, pts_dst)
     assert tr.linear is not None
+    assert tr.back.linear is not None
+    assert tr.back.back is tr
 
     # check scale only change
     tr = native_pix_transform(src, scaled_down_geobox(src, 2))
@@ -683,6 +688,9 @@ def test_pix_transform():
     pts_src_ = tr.back(pts_dst)
 
     assert tr.linear is not None
+    assert tr.back.linear is not None
+    assert tr.back.back is tr
+
     np.testing.assert_almost_equal(pts_dst,
                                    [(x/2, y/2) for (x, y) in pts_src])
 

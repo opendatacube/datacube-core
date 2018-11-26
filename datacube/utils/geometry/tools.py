@@ -238,7 +238,9 @@ def _same_crs_pix_transform(src, dst):
     def pt_tr(pts):
         return transorm(pts, _fwd)
     pt_tr.back = lambda pts: transorm(pts, _bwd)
+    pt_tr.back.back = pt_tr
     pt_tr.linear = _fwd
+    pt_tr.back.linear = _bwd
 
     return pt_tr
 
@@ -275,26 +277,84 @@ def native_pix_transform(src, dst):
     def tr(pts):
         return transform(pts, _fwd)
     tr.back = lambda pts: transform(pts, _bwd)
+    tr.back.back = tr
     tr.linear = None
+    tr.back.linear = None
 
     return tr
 
 
+def roi_center(roi):
+    """ Return center point of roi
+    """
+    def slice_center(s):
+        return (s.start + s.stop)*0.5
+
+    if isinstance(roi, slice):
+        return slice_center(roi)
+
+    return tuple(slice_center(s) for s in roi)
+
+
+def roi_from_points(xy, shape, padding=0, align=None):
+    """
+    Compute envelope around a bunch of points and return it as roi (tuple of
+    row/col slices)
+
+    Returned roi is clipped (0,0) --> shape, so it won't stick outside of the
+    valid region.
+    """
+    def to_roi(*args):
+        return tuple(slice(v[0], v[1]) for v in args)
+
+    assert len(shape) == 2
+    assert xy.ndim == 2 and xy.shape[1] == 2
+
+    ny, nx = shape
+
+    _in = np.floor(xy.min(axis=0)).astype('int32') - padding
+    _out = np.ceil(xy.max(axis=0)).astype('int32') + padding
+
+    if align is not None:
+        _in = align_down(_in, align)
+        _out = align_up(_out, align)
+
+    xx = np.asarray([_in[0], _out[0]])
+    yy = np.asarray([_in[1], _out[1]])
+
+    xx = np.clip(xx, 0, nx, out=xx)
+    yy = np.clip(yy, 0, ny, out=yy)
+
+    return to_roi(yy, xx)
+
+
 def compute_reproject_roi(src, dst, padding=1, align=None):
     """
-    Given two GeoBoxes find the region within the source GeoBox that overlaps with the destination GeoBox, and
-    also compute the scale factor. The idea is that:
+    Given two GeoBoxes find the region within the source GeoBox that overlaps
+    with the destination GeoBox, and also compute the scale factor (>1 means
+    shrink). Scale is chosen such that if you apply it to the source image
+    before reprojecting, then reproject will have roughly no scale component.
 
-    Compute ROI of src to read and read scale.
+    So we breaking up reprojection into two stages:
 
-    src[roi] -> scale -> reproject -> dst
-    OR
-    src(scale)[roi(scale)] -> reproject -> dst
+    1. Scale in the native pixel CRS
+    2. Reprojection (possibly non-linear with CRS change)
+
+    - src[roi] -> scale      -> reproject -> dst  (using native pixels)
+    - src(scale)[roi(scale)] -> reproject -> dst  (using overview image)
 
     Here roi is "minimal", padding is configurable though, so you only read what you need.
     Also scale can be used to pick the right kind of overview level to read.
 
-    :returns: (Y slice, X slice), scale
+    Applying reprojection in two steps allows us to use pre-computed overviews,
+    particularly useful when shrink factor is large. But even for data sources
+    without overviews there are advantages for shrinking source image before
+    applying reprojection: mainly quality of the output (reduces aliasing for
+    large shrink factors), improved efficiency of the computation is likely as
+    well.
+
+    :returns: roi_src, scale: float
+
     """
     pts_per_side = 5
 
@@ -304,26 +364,14 @@ def compute_reproject_roi(src, dst, padding=1, align=None):
         pts_per_side = 2
 
     XY = np.vstack(tr.back(gbox_boundary(dst, pts_per_side)))
-
-    _in = np.floor(XY.min(axis=0)).astype('int32') - padding
-    _out = np.ceil(XY.max(axis=0)).astype('int32') + padding
-
-    if align is not None:
-        _in = align_down(_in, align)
-        _out = align_up(_out, align)
-
-    xx = np.asarray([_in[0], _out[0]])
-    yy = np.asarray([_in[1], _out[1]])
-
-    xx = np.clip(xx, 0, src.width, out=xx)
-    yy = np.clip(yy, 0, src.height, out=yy)
+    roi_src = roi_from_points(XY, src.shape, padding, align=align)
 
     if tr.linear is not None:
         scale = get_scale_from_linear_transform(tr.linear)
     else:
-        center_pt = xx.mean(), yy.mean()
+        center_pt = roi_center(roi_src)
         scale = get_scale_at_point(center_pt, tr)
 
     scale = min(1/s for s in scale)
 
-    return (slice(yy[0], yy[1]), slice(xx[0], xx[1])), scale
+    return roi_src, scale
