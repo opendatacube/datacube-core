@@ -303,6 +303,31 @@ def native_pix_transform(src, dst):
     return tr
 
 
+def roi_intersect(a, b):
+    """
+    Compute intersection of two ROIs
+    """
+    def slice_intersect(a, b):
+        if a.stop < b.start:
+            return slice(a.stop, a.stop)
+        elif a.start > b.stop:
+            return slice(a.start, a.start)
+
+        _in = max(a.start, b.start)
+        _out = min(a.stop, b.stop)
+
+        return slice(_in, _out)
+
+    if isinstance(a, slice):
+        if not isinstance(b, slice):
+            b = b[0]
+        return slice_intersect(a, b)
+
+    b = (b,) if isinstance(b, slice) else b
+
+    return tuple(slice_intersect(sa, sb) for sa, sb in zip(a, b))
+
+
 def roi_center(roi):
     """ Return center point of roi
     """

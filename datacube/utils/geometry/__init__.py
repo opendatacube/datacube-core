@@ -24,6 +24,7 @@ from ._base import (
 from .tools import (
     roi_boundary,
     roi_is_empty,
+    roi_intersect,
     roi_shape,
     roi_normalise,
     roi_from_points,
@@ -57,6 +58,7 @@ __all__ = [
     "unary_intersection",
     "roi_boundary",
     "roi_is_empty",
+    "roi_intersect",
     "roi_shape",
     "roi_normalise",
     "roi_from_points",
