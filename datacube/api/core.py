@@ -422,6 +422,34 @@ class Datacube(object):
         return Datacube.load_data(*args, **kwargs)
 
     @staticmethod
+    def _dask_load(sources, geobox, measurements, dask_chunks,
+                   fuse_func=None,
+                   skip_broken_datasets=False):
+        def data_func(measurement):
+            return _make_dask_array(sources, geobox, measurement,
+                                    skip_broken_datasets=skip_broken_datasets,
+                                    fuse_func=fuse_func,
+                                    dask_chunks=dask_chunks)
+
+        return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
+                                       geobox, measurements, data_func)
+
+    @staticmethod
+    def _xr_load(sources, geobox, measurements,
+                 fuse_func=None,
+                 skip_broken_datasets=False):
+
+        def data_func(measurement):
+            data = numpy.full(sources.shape + geobox.shape, measurement.nodata, dtype=measurement.dtype)
+            for index, datasets in numpy.ndenumerate(sources.values):
+                _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
+                                  skip_broken_datasets=skip_broken_datasets)
+            return data
+
+        return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
+                                       geobox, measurements, data_func)
+
+    @staticmethod
     def load_data(sources, geobox, measurements, resampling=None,
                   fuse_func=None, dask_chunks=None, skip_broken_datasets=False):
         """
@@ -460,20 +488,6 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
-        if dask_chunks is None:
-            def data_func(measurement):
-                data = numpy.full(sources.shape + geobox.shape, measurement.nodata, dtype=measurement.dtype)
-                for index, datasets in numpy.ndenumerate(sources.values):
-                    _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                      skip_broken_datasets=skip_broken_datasets)
-                return data
-        else:
-            def data_func(measurement):
-                return _make_dask_array(sources, geobox, measurement,
-                                        skip_broken_datasets=skip_broken_datasets,
-                                        fuse_func=fuse_func,
-                                        dask_chunks=dask_chunks)
-
         def with_resampling(m, resampling, default=None):
             m = m.copy()
             m['resampling_method'] = resampling.get(m.name, default)
@@ -489,8 +503,14 @@ class Datacube(object):
             measurements = [with_resampling(m, resampling, default=resampling.get('*'))
                             for m in measurements]
 
-        return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                       geobox, measurements, data_func)
+        if dask_chunks is not None:
+            return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
+                                       fuse_func=fuse_func,
+                                       skip_broken_datasets=skip_broken_datasets)
+        else:
+            return Datacube._xr_load(sources, geobox, measurements,
+                                     fuse_func=fuse_func,
+                                     skip_broken_datasets=skip_broken_datasets)
 
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
