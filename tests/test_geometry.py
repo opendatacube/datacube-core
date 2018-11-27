@@ -12,6 +12,7 @@ from datacube.utils.geometry import (
     scaled_down_geobox,
     compute_reproject_roi,
     roi_normalise,
+    roi_shape,
 )
 from datacube.model import GridSpec
 
@@ -710,21 +711,28 @@ def test_compute_reproject_roi():
     dst = geometry.GeoBox.from_geopolygon(src.extent.to_crs(epsg3857).buffer(10),
                                           resolution=src.resolution)
 
-    roi, scale = compute_reproject_roi(src, dst)
+    roi, scale, roi_dst = compute_reproject_roi(src, dst)
 
     assert roi == np.s_[0:src.height, 0:src.width]
     assert 0 < scale < 1
 
     # check pure translation case
     roi_ = np.s_[113:-100, 33:-10]
-    roi, scale = compute_reproject_roi(src, src[roi_], padding=0)
+    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_], padding=0)
 
     assert roi == roi_normalise(roi_, src.shape)
     assert scale == 1
 
     # check pure translation case
     roi_ = np.s_[113:-100, 33:-10]
-    roi, scale = compute_reproject_roi(src, src[roi_], align=256)
+    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_], align=256)
 
     assert roi == np.s_[0:src.height, 0:src.width]
     assert scale == 1
+
+    roi_ = np.s_[113:-100, 33:-10]
+    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_], padding=0)
+
+    assert scale == 1
+    assert roi_shape(roi) == roi_shape(roi_dst)
+    assert roi_shape(roi_dst) == src[roi_].shape

@@ -368,7 +368,9 @@ def compute_reproject_roi(src, dst, padding=1, align=None):
     large shrink factors), improved efficiency of the computation is likely as
     well.
 
-    :returns: roi_src, scale: float
+    Also compute and return ROI of the dst geobox that is affected by src.
+
+    :returns: (roi_src: (slice, slice), scale: float, roi_dst: (slice, slice))
 
     """
     pts_per_side = 5
@@ -381,6 +383,10 @@ def compute_reproject_roi(src, dst, padding=1, align=None):
     XY = np.vstack(tr.back(gbox_boundary(dst, pts_per_side)))
     roi_src = roi_from_points(XY, src.shape, padding, align=align)
 
+    # project src roi back into dst and compute roi from that
+    xy = np.vstack(tr(roi_boundary(roi_src, pts_per_side)))
+    roi_dst = roi_from_points(xy, dst.shape, padding=0)  # no need to add padding twice
+
     if tr.linear is not None:
         scale = get_scale_from_linear_transform(tr.linear)
     else:
@@ -389,4 +395,4 @@ def compute_reproject_roi(src, dst, padding=1, align=None):
 
     scale = min(1/s for s in scale)
 
-    return roi_src, scale
+    return roi_src, scale, roi_dst
