@@ -439,16 +439,19 @@ class Datacube(object):
     def _xr_load(sources, geobox, measurements,
                  skip_broken_datasets=False):
 
-        def data_func(measurement):
-            fuse_func = measurement.get('fuser')
-            data = numpy.full(sources.shape + geobox.shape, measurement.nodata, dtype=measurement.dtype)
-            for index, datasets in numpy.ndenumerate(sources.values):
-                _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                  skip_broken_datasets=skip_broken_datasets)
-            return data
+        data = Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
+                                       geobox, measurements)
 
-        return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                       geobox, measurements, data_func)
+        for index, datasets in numpy.ndenumerate(sources.values):
+            for m in measurements:
+                t_slice = data[m.name].values[index]
+
+                fuse_func = m.get('fuser')
+                _fuse_measurement(t_slice, datasets, geobox, m,
+                                  fuse_func=fuse_func,
+                                  skip_broken_datasets=skip_broken_datasets)
+
+        return data
 
     @staticmethod
     def load_data(sources, geobox, measurements, resampling=None,
