@@ -544,6 +544,8 @@ def test_roi_tools():
         roi_is_empty,
         roi_shape,
         roi_normalise,
+        roi_boundary,
+        roi_from_points,
         roi_center,
         scaled_down_roi,
         scaled_up_roi,
@@ -575,6 +577,12 @@ def test_roi_tools():
     assert roi_normalise(s_[-2:-1, :, 3:4], (10, 20, 100)) == s_[8:9, 0:20, 3:4]
     assert roi_center(s_[0:3]) == 1.5
     assert roi_center(s_[0:2, 0:6]) == (1, 3)
+
+    roi = s_[0:2, 4:13]
+    xy = roi_boundary(roi)
+
+    assert xy.shape == (4, 2)
+    assert roi_from_points(xy, (2, 13)) == roi
 
 
 def get_diff(A, B):
