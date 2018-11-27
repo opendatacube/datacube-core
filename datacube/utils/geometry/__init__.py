@@ -22,6 +22,7 @@ from ._base import (
 )
 
 from .tools import (
+    roi_boundary,
     roi_is_empty,
     roi_shape,
     roi_normalise,
@@ -54,6 +55,7 @@ __all__ = [
     "polygon_from_transform",
     "unary_union",
     "unary_intersection",
+    "roi_boundary",
     "roi_is_empty",
     "roi_shape",
     "roi_normalise",
