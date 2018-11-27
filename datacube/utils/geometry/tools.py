@@ -419,7 +419,7 @@ def compute_reproject_roi(src, dst, padding=1, align=None):
     if tr.linear is not None:
         scale = get_scale_from_linear_transform(tr.linear)
     else:
-        center_pt = roi_center(roi_src)
+        center_pt = roi_center(roi_src)[::-1]
         scale = get_scale_at_point(center_pt, tr)
 
     scale = min(1/s for s in scale)
