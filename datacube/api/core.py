@@ -249,7 +249,8 @@ class Datacube(object):
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
             data is simply copied over the top of each other, in a relatively undefined manner. This function can
-            perform a specific combining step, eg. for combining GA PQ data.
+            perform a specific combining step, eg. for combining GA PQ data. This can be a dictionary if different
+            fusers are needed per band.
 
         :param datasets:
             Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects, these will be loaded
@@ -423,9 +424,9 @@ class Datacube(object):
 
     @staticmethod
     def _dask_load(sources, geobox, measurements, dask_chunks,
-                   fuse_func=None,
                    skip_broken_datasets=False):
         def data_func(measurement):
+            fuse_func = measurement.get('fuser')
             return _make_dask_array(sources, geobox, measurement,
                                     skip_broken_datasets=skip_broken_datasets,
                                     fuse_func=fuse_func,
@@ -436,10 +437,10 @@ class Datacube(object):
 
     @staticmethod
     def _xr_load(sources, geobox, measurements,
-                 fuse_func=None,
                  skip_broken_datasets=False):
 
         def data_func(measurement):
+            fuse_func = measurement.get('fuser')
             data = numpy.full(sources.shape + geobox.shape, measurement.nodata, dtype=measurement.dtype)
             for index, datasets in numpy.ndenumerate(sources.values):
                 _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
@@ -475,7 +476,7 @@ class Datacube(object):
             Default is to use ``nearest`` for all bands.
 
         :param fuse_func:
-            function to merge successive arrays as an output
+            function to merge successive arrays as an output. Can be a dictionary just like resampling.
 
         :param dict dask_chunks:
             If provided, the data will be loaded on demand using using :class:`dask.array.Array`.
@@ -493,8 +494,16 @@ class Datacube(object):
             m['resampling_method'] = resampling.get(m.name, default)
             return m
 
+        def with_fuser(m, fuser, default=None):
+            m = m.copy()
+            m['fuser'] = fuser.get(m.name, default)
+            return m
+
         if isinstance(resampling, str):
             resampling = {'*': resampling}
+
+        if not isinstance(fuse_func, dict):
+            fuse_func = {'*': fuse_func}
 
         if isinstance(measurements, dict):
             measurements = list(measurements.values())
@@ -503,13 +512,15 @@ class Datacube(object):
             measurements = [with_resampling(m, resampling, default=resampling.get('*'))
                             for m in measurements]
 
+        if fuse_func is not None:
+            measurements = [with_fuser(m, fuse_func, default=fuse_func.get('*'))
+                            for m in measurements]
+
         if dask_chunks is not None:
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
-                                       fuse_func=fuse_func,
                                        skip_broken_datasets=skip_broken_datasets)
         else:
             return Datacube._xr_load(sources, geobox, measurements,
-                                     fuse_func=fuse_func,
                                      skip_broken_datasets=skip_broken_datasets)
 
     @staticmethod
