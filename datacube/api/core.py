@@ -426,10 +426,8 @@ class Datacube(object):
     def _dask_load(sources, geobox, measurements, dask_chunks,
                    skip_broken_datasets=False):
         def data_func(measurement):
-            fuse_func = measurement.get('fuser')
             return _make_dask_array(sources, geobox, measurement,
                                     skip_broken_datasets=skip_broken_datasets,
-                                    fuse_func=fuse_func,
                                     dask_chunks=dask_chunks)
 
         return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
@@ -446,9 +444,7 @@ class Datacube(object):
             for m in measurements:
                 t_slice = data[m.name].values[index]
 
-                fuse_func = m.get('fuser')
                 _fuse_measurement(t_slice, datasets, geobox, m,
-                                  fuse_func=fuse_func,
                                   skip_broken_datasets=skip_broken_datasets)
 
         return data
@@ -628,25 +624,23 @@ def select_datasets_inside_polygon(datasets, polygon):
             yield dataset
 
 
-def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_func=None, prepend_dims=0):
+def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend_dims=0):
     prepend_shape = (1,) * prepend_dims
     data = numpy.full(geobox.shape, measurement.nodata, dtype=measurement.dtype)
     _fuse_measurement(data, datasets, geobox, measurement,
-                      skip_broken_datasets=skip_broken_datasets,
-                      fuse_func=fuse_func)
+                      skip_broken_datasets=skip_broken_datasets)
     return data.reshape(prepend_shape + geobox.shape)
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement,
-                      skip_broken_datasets=False,
-                      fuse_func=None):
+                      skip_broken_datasets=False):
     reproject_and_fuse([new_datasource(dataset, measurement.name) for dataset in datasets],
                        dest,
                        geobox.affine,
                        geobox.crs,
                        dest.dtype.type(measurement.nodata),
                        resampling=measurement.get('resampling_method', 'nearest'),
-                       fuse_func=fuse_func,
+                       fuse_func=measurement.get('fuser', None),
                        skip_broken_datasets=skip_broken_datasets)
 
 
@@ -710,7 +704,6 @@ def _tokenize_dataset(dataset):
 # pylint: disable=too-many-locals
 def _make_dask_array(sources, geobox, measurement,
                      skip_broken_datasets=False,
-                     fuse_func=None,
                      dask_chunks=None):
     dsk_name = 'datacube_load_{name}-{token}'.format(name=measurement['name'], token=uuid.uuid4().hex)
 
@@ -730,7 +723,7 @@ def _make_dask_array(sources, geobox, measurement,
                             select_datasets_inside_polygon(datasets, subset_geobox.extent)]
             dsk[(dsk_name,) + irr_index + grid_index] = (fuse_lazy,
                                                          dataset_keys, subset_geobox, measurement,
-                                                         skip_broken_datasets, fuse_func,
+                                                         skip_broken_datasets,
                                                          sources.ndim)
 
     data = da.Array(dsk, dsk_name,
