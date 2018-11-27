@@ -7,7 +7,6 @@ import numpy
 import pytest
 import rasterio
 
-from datacube.compat import string_types
 from integration_tests.utils import assert_click_command, prepare_test_ingestion_configuration
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -32,6 +31,10 @@ ALBERS_ELEMENT_SIZE = 25
 LBG_CELL_X = 15
 LBG_CELL_Y = -40
 LBG_CELL = (LBG_CELL_X, LBG_CELL_Y)
+
+
+def custom_dumb_fuser(dst, src):
+    dst[:] = src[:]
 
 
 @pytest.fixture()
@@ -146,7 +149,8 @@ def check_open_with_dc(index):
         assert 'variable' in lazy_data_array.dims
         assert lazy_data_array[1, :2, 950:1050, 950:1050].equals(data_array[1, :2, 950:1050, 950:1050])
 
-    dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'])
+    dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'],
+                      fuse_func=custom_dumb_fuser)
     assert dataset['blue'].size
 
     dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2))

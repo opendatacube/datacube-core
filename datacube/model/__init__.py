@@ -336,7 +336,7 @@ class Measurement(dict):
     """
     REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
     OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
-    ATTR_BLACKLIST = set(['name', 'dtype', 'aliases', 'resampling_method'])
+    ATTR_BLACKLIST = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser'])
 
     def __init__(self, **kwargs):
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
