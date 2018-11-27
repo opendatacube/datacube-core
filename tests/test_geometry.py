@@ -561,6 +561,9 @@ def test_roi_tools():
     assert roi_is_empty(s_[1:1, :10]) is True
     assert roi_is_empty(s_[7:3, :10]) is True
 
+    assert roi_is_empty(s_[:3]) is False
+    assert roi_is_empty(s_[4:4]) is True
+
     roi = s_[0:8, 0:4]
     roi_ = scaled_down_roi(roi, 2)
     assert roi_shape(roi_) == (4, 2)

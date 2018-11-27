@@ -83,6 +83,10 @@ def scaled_down_shape(shape, scale: int):
 def roi_shape(roi):
     def slice_dim(s):
         return s.stop if s.start is None else s.stop - s.start
+
+    if isinstance(roi, slice):
+        roi = (roi,)
+
     return tuple(slice_dim(s) for s in roi)
 
 
