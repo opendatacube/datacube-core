@@ -670,3 +670,31 @@ def test_testutils_gtif(tmpdir):
 
     bb_, _ = rio_slurp(fname)
     np.testing.assert_array_equal(bb[:32, :32], bb_)
+
+    with pytest.raises(ValueError):
+        write_gtiff(fname, np.zeros((3, 4, 5, 6)))
+
+
+def test_testutils_geobox():
+    from datacube.testutils import dc_crs_from_rio, rio_geobox
+    from rasterio.crs import CRS
+    from affine import Affine
+
+    assert rio_geobox({}) is None
+
+    A = Affine(10, 0, 4676,
+               0,  -10, 171878)
+
+    shape = (100, 640)
+    h, w = shape
+    crs = CRS.from_epsg(3578)
+
+    meta = dict(width=w, height=h, transform=A, crs=crs)
+    gbox = rio_geobox(meta)
+
+    assert gbox.shape == shape
+    assert gbox.crs.epsg == 3578
+    assert gbox.transform == A
+
+    crs_ = dc_crs_from_rio(CRS.from_wkt(crs.wkt))
+    assert crs_.epsg is None

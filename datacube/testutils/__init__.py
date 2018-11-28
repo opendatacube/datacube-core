@@ -315,15 +315,6 @@ def write_gtiff(fname,
     import rasterio
     from pathlib import Path
 
-    if not isinstance(fname, Path):
-        fname = Path(fname)
-
-    if fname.exists():
-        if overwrite:
-            fname.unlink()
-        else:
-            raise IOError("File exists")
-
     if pix.ndim == 2:
         h, w = pix.shape
         nbands = 1
@@ -333,6 +324,15 @@ def write_gtiff(fname,
         band = tuple(i for i in range(1, nbands+1))
     else:
         raise ValueError('Need 2d or 3d ndarray on input')
+
+    if not isinstance(fname, Path):
+        fname = Path(fname)
+
+    if fname.exists():
+        if overwrite:
+            fname.unlink()
+        else:
+            raise IOError("File exists")
 
     sx, sy = resolution
     tx, ty = offset
@@ -364,6 +364,29 @@ def write_gtiff(fname,
         meta = dst.meta
 
     return meta
+
+
+def dc_crs_from_rio(crs):
+    from datacube.utils.geometry import CRS
+
+    if crs.is_epsg_code:
+        return CRS('epsg:{}'.format(crs.to_epsg()))
+    return CRS(crs.wkt)
+
+
+def rio_geobox(meta):
+    """ Construct geobox from src.meta of opened rasterio dataset
+    """
+    from datacube.utils.geometry import GeoBox
+
+    if 'crs' not in meta or 'transform' not in meta:
+        return None
+
+    h, w = (meta['height'], meta['width'])
+    crs = dc_crs_from_rio(meta['crs'])
+    transform = meta['transform']
+
+    return GeoBox(w, h, transform, crs)
 
 
 def rio_slurp(fname):
