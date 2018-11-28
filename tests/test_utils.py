@@ -627,8 +627,8 @@ def test_testutils_gtif(tmpdir):
 
     aa5 = np.stack((aa,) * 5)
 
-    fname = tmpdir/"aa.tiff"
-    fname5 = tmpdir/"aa5.tiff"
+    fname = pathlib.Path(str(tmpdir/"aa.tiff"))
+    fname5 = pathlib.Path(str(tmpdir/"aa5.tiff"))
 
     aa_meta = write_gtiff(fname, aa, nodata=nodata,
                           blocksize=128,
