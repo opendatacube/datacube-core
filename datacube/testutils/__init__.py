@@ -139,18 +139,17 @@ def mk_sample_product(name,
     def mk_measurement(m):
         if isinstance(m, str):
             return dict(name=m, **common)
-        if isinstance(m, tuple):
+        elif isinstance(m, tuple):
             name, dtype, nodata = m
             m = common.copy()
             m.update(name=name, dtype=dtype, nodata=nodata)
             return m
-        if isinstance(m, dict):
+        elif isinstance(m, dict):
             m_merged = common.copy()
             m_merged.update(m)
             return m_merged
-
-        assert False and 'Only support str|dict|(name, dtype, nodata)'
-        return {}
+        else:
+            raise ValueError('Only support str|dict|(name, dtype, nodata)')
 
     measurements = [mk_measurement(m) for m in measurements]
 

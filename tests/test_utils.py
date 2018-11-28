@@ -211,7 +211,7 @@ def test_testutils_mk_sample():
     pp = mk_sample_product('tt', measurements=[dict(name=n) for n in ['aa', 'bb']])
     assert set(pp.measurements) == {'aa', 'bb'}
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         mk_sample_product('tt', measurements=[None])
 
 
@@ -233,6 +233,9 @@ def test_testutils_write_files():
 
     with pytest.raises(AssertionError):
         assert_file_structure(pp, {'aa.txt': 3})
+
+    with pytest.raises(ValueError):
+        write_files({'tt': 3})
 
 
 def test_without_lineage_sources():
