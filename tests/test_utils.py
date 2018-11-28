@@ -200,6 +200,41 @@ def test_write_geotiff_time_index_deprecated():
         write_geotiff("", None, time_index=1)
 
 
+def test_testutils_mk_sample():
+    pp = mk_sample_product('tt', measurements=[('aa', 'int16', -999),
+                                               ('bb', 'float32', np.nan)])
+    assert set(pp.measurements) == {'aa', 'bb'}
+
+    pp = mk_sample_product('tt', measurements=['aa', 'bb'])
+    assert set(pp.measurements) == {'aa', 'bb'}
+
+    pp = mk_sample_product('tt', measurements=[dict(name=n) for n in ['aa', 'bb']])
+    assert set(pp.measurements) == {'aa', 'bb'}
+
+    with pytest.raises(AssertionError):
+        mk_sample_product('tt', measurements=[None])
+
+
+def test_testutils_write_files():
+    from datacube.testutils import write_files, assert_file_structure
+
+    files = {'a.txt': 'string',
+             'aa.txt': ('line1\n', 'line2\n')}
+
+    pp = write_files(files)
+    assert pp.exists()
+    assert_file_structure(pp, files)
+
+    # test that we detect missing files
+    (pp/'a.txt').unlink()
+
+    with pytest.raises(AssertionError):
+        assert_file_structure(pp, files)
+
+    with pytest.raises(AssertionError):
+        assert_file_structure(pp, {'aa.txt': 3})
+
+
 def test_without_lineage_sources():
     def mk_sample(v):
         return dict(lineage={'source_datasets': v, 'a': 'a', 'b': 'b'},
@@ -643,6 +678,8 @@ def test_testutils_gtif(tmpdir):
 
     assert fname.exists()
     assert fname5.exists()
+
+    assert aa_meta['gbox'].shape == (h, w)
 
     aa_, aa_meta_ = rio_slurp(fname)
     aa5_, aa5_meta_ = rio_slurp(fname5)
