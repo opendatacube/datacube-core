@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import json
 import uuid
+import numpy as np
 from datetime import datetime
 
 import pathlib
@@ -172,7 +173,7 @@ def mk_sample_dataset(bands,
                       uri='file:///tmp',
                       product_name='sample',
                       format='GeoTiff',
-                      id='12345678123456781234567812345678'):
+                      id='3a1df9e0-8484-44fc-8102-79184eab85dd'):
     # pylint: disable=redefined-builtin
     image_bands_keys = 'path layer band'.split(' ')
     measurement_keys = 'dtype units nodata aliases name'.split(' ')
@@ -268,3 +269,111 @@ def load_dataset_definition(path):
     fname = get_metadata_path(path)
     for _, doc in read_documents(fname):
         return SimpleDocNav(doc)
+
+
+def mk_test_image(w, h,
+                  dtype='int16',
+                  nodata=-999,
+                  nodata_width=4):
+    """
+    Create 2d ndarray where each pixel value is formed by packing x coordinate in
+    to the upper half of the pixel value and y coordinate is in the lower part.
+
+    So for uint16: im[y, x] == (x<<8) | y IF abs(x-y) >= nodata_width
+                   im[y, x] == nodata     IF abs(x-y) < nodata_width
+
+    really it's actually: im[y, x] == ((x & 0xFF ) <<8) | (y & 0xFF)
+
+    Pixels along the diagonal are set to nodata values (to disable set nodata_width=0)
+    """
+
+    xx, yy = np.meshgrid(np.arange(w),
+                         np.arange(h))
+    nshift = (np.dtype(dtype).itemsize*8)//2
+    mask = (1 << nshift) - 1
+    aa = ((xx & mask) << nshift) | (yy & mask)
+    aa = aa.astype(dtype)
+    if nodata is not None:
+        aa[abs(xx-yy) < nodata_width] = nodata
+    return aa
+
+
+def write_gtiff(fname,
+                pix,
+                crs='epsg:3857',
+                resolution=(10, -10),
+                offset=(0.0, 0.0),
+                nodata=None,
+                overwrite=False,
+                blocksize=None,
+                **extra_rio_opts):
+    """ Write ndarray to GeoTiff file.
+    """
+    # pylint: disable=too-many-locals
+
+    from affine import Affine
+    import rasterio
+    from pathlib import Path
+
+    if not isinstance(fname, Path):
+        fname = Path(fname)
+
+    if fname.exists():
+        if overwrite:
+            fname.unlink()
+        else:
+            raise IOError("File exists")
+
+    if pix.ndim == 2:
+        h, w = pix.shape
+        nbands = 1
+        band = 1
+    elif pix.ndim == 3:
+        nbands, h, w = pix.shape
+        band = tuple(i for i in range(1, nbands+1))
+    else:
+        raise ValueError('Need 2d or 3d ndarray on input')
+
+    sx, sy = resolution
+    tx, ty = offset
+
+    A = Affine(sx, 0, tx,
+               0, sy, ty)
+
+    rio_opts = dict(width=w,
+                    height=h,
+                    count=nbands,
+                    dtype=pix.dtype.name,
+                    crs=crs,
+                    transform=A,
+                    predictor=2,
+                    compress='DEFLATE')
+
+    if blocksize is not None:
+        rio_opts.update(tiled=True,
+                        blockxsize=min(blocksize, w),
+                        blockysize=min(blocksize, h))
+
+    if nodata is not None:
+        rio_opts.update(nodata=nodata)
+
+    rio_opts.update(extra_rio_opts)
+
+    with rasterio.open(str(fname), 'w', driver='GTiff', **rio_opts) as dst:
+        dst.write(pix, band)
+        meta = dst.meta
+
+    return meta
+
+
+def rio_slurp(fname):
+    """
+    Read whole image file using rasterio.
+
+    :returns: ndarray (2d or 3d if multi-band), dict (rasterio meta)
+    """
+    import rasterio
+
+    with rasterio.open(str(fname), 'r') as src:
+        data = src.read(1) if src.count == 1 else src.read()
+        return data, src.meta

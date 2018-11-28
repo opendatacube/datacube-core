@@ -609,3 +609,64 @@ def test_normalise_path():
 
     with pytest.raises(ValueError):
         normalise_path(p, 'not/absolute/path')
+
+
+def test_testutils_gtif(tmpdir):
+    from datacube.testutils import mk_test_image, write_gtiff, rio_slurp
+
+    w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
+
+    aa = mk_test_image(w, h, dtype, nodata, nodata_width=ndw)
+    bb = mk_test_image(w, h, dtype, nodata=None)
+
+    assert aa.shape == (h, w)
+    assert aa.dtype.name == dtype
+    assert aa[10, 30] == (30 << 8) | 10
+    assert aa[10, 11] == nodata
+    assert bb[10, 11] == (11 << 8) | 10
+
+    aa5 = np.stack((aa,) * 5)
+
+    fname = tmpdir/"aa.tiff"
+    fname5 = tmpdir/"aa5.tiff"
+
+    aa_meta = write_gtiff(fname, aa, nodata=nodata,
+                          blocksize=128,
+                          resolution=(100, -100),
+                          offset=(12300, 11100),
+                          overwrite=True)
+
+    aa5_meta = write_gtiff(str(fname5), aa5, nodata=nodata,
+                           resolution=(100, -100),
+                           offset=(12300, 11100),
+                           overwrite=True)
+
+    assert fname.exists()
+    assert fname5.exists()
+
+    aa_, aa_meta_ = rio_slurp(fname)
+    aa5_, aa5_meta_ = rio_slurp(fname5)
+
+    (sx, _, tx,
+     _, sy, ty, *_) = aa5_meta_['transform']
+
+    assert (tx, ty) == (12300, 11100)
+    assert (sx, sy) == (100, -100)
+
+    np.testing.assert_array_equal(aa, aa_)
+    np.testing.assert_array_equal(aa5, aa5_)
+
+    assert aa_meta_['transform'] == aa_meta['transform']
+    assert aa5_meta_['transform'] == aa5_meta['transform']
+
+    # check that overwrite is off by default
+    with pytest.raises(IOError):
+        write_gtiff(fname, aa, nodata=nodata,
+                    blocksize=128)
+
+    # check that overwrite re-writes file
+    write_gtiff(fname, bb[:32, :32],
+                overwrite=True)
+
+    bb_, _ = rio_slurp(fname)
+    np.testing.assert_array_equal(bb[:32, :32], bb_)
