@@ -10,10 +10,9 @@ import json
 import uuid
 import numpy as np
 from datetime import datetime
-
+from collections import Sequence, Mapping
 import pathlib
 
-from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
@@ -44,13 +43,13 @@ def assert_file_structure(folder, expected_structure, root=''):
         id_ = '%s/%s' % (root, k) if root else k
 
         f = folder.joinpath(k)
-        if isinstance(v, dict):
+        if isinstance(v, Mapping):
             assert f.is_dir(), "%s is not a dir" % (id_,)
             assert_file_structure(f, v, id_)
-        elif isinstance(v, compat.string_types):
+        elif isinstance(v, (str, Sequence)):
             assert f.is_file(), "%s is not a file" % (id_,)
         else:
-            assert False, "Only strings and dicts expected when defining a folder structure."
+            assert False, "Only strings|[strings] and dicts expected when defining a folder structure."
 
 
 def write_files(file_dict):
@@ -87,17 +86,17 @@ def _write_files_to_dir(directory_path, file_dict):
     """
     for filename, contents in file_dict.items():
         path = os.path.join(directory_path, filename)
-        if isinstance(contents, dict):
+        if isinstance(contents, Mapping):
             os.mkdir(path)
             _write_files_to_dir(path, contents)
         else:
             with open(path, 'w') as f:
-                if isinstance(contents, list):
-                    f.writelines(contents)
-                elif isinstance(contents, compat.string_types):
+                if isinstance(contents, str):
                     f.write(contents)
+                elif isinstance(contents, Sequence):
+                    f.writelines(contents)
                 else:
-                    raise Exception('Unexpected file contents: %s' % type(contents))
+                    raise ValueError('Unexpected file contents: %s' % type(contents))
 
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
@@ -363,6 +362,7 @@ def write_gtiff(fname,
         dst.write(pix, band)
         meta = dst.meta
 
+    meta['gbox'] = rio_geobox(meta)
     return meta
 
 
@@ -399,4 +399,6 @@ def rio_slurp(fname):
 
     with rasterio.open(str(fname), 'r') as src:
         data = src.read(1) if src.count == 1 else src.read()
-        return data, src.meta
+        meta = src.meta
+        meta['gbox'] = rio_geobox(meta)
+        return data, meta
