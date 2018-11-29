@@ -17,6 +17,8 @@ from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
 
+from datacube.model.fields import parse_search_field
+
 _DEFAULT = object()
 
 
@@ -129,7 +131,13 @@ def mk_sample_product(name,
             sources=['lineage', 'source_datasets'],
             format=['format', 'name'],
         )
-    }, dataset_search_fields={})
+    }, dataset_search_fields={
+        'time': parse_search_field({
+            'type': 'datetime-range',
+            'min_offset': [['time']],
+            'max_offset': [['time']],
+        }),
+    })
 
     common = dict(dtype='int16',
                   nodata=-999,
@@ -171,6 +179,7 @@ def mk_sample_dataset(bands,
                       uri='file:///tmp',
                       product_name='sample',
                       format='GeoTiff',
+                      timestamp=None,
                       id='3a1df9e0-8484-44fc-8102-79184eab85dd'):
     # pylint: disable=redefined-builtin
     image_bands_keys = 'path layer band'.split(' ')
@@ -185,10 +194,14 @@ def mk_sample_dataset(bands,
     ds_type = mk_sample_product(product_name,
                                 measurements=measurements)
 
+    if timestamp is None:
+        timestamp = '2018-06-29'
+
     return Dataset(ds_type, {
         'id': id,
         'format': {'name': format},
-        'image': {'bands': image_bands}
+        'image': {'bands': image_bands},
+        'time': timestamp,
     }, uris=[uri])
 
 
