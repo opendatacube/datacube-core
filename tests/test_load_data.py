@@ -11,6 +11,8 @@ from datacube.testutils import (
 
 
 def test_load_data(tmpdir):
+    tmpdir = Path(str(tmpdir))
+
     nodata = -999
     aa = mk_test_image(96, 64, 'int16', -999)
     fname = 'aa.tiff'
