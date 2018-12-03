@@ -590,7 +590,7 @@ def make_sample_netcdf(tmpdir):
 
     nco.close()
 
-    return "NetCDF:%s:sample" % sample_nc, geobox, sample_data
+    return 'NetCDF:"%s":sample' % sample_nc, geobox, sample_data
 
 
 @pytest.fixture

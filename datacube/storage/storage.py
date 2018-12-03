@@ -517,7 +517,7 @@ def _url2rasterio(url_str, fmt, layer):
         if nasty_format in fmt.lower():
             if url.scheme != 'file':
                 raise RuntimeError("Can't access %s over %s" % (fmt, url.scheme))
-            filename = '%s:%s:%s' % (fmt, uri_to_local_path(url_str), layer)
+            filename = '%s:"%s":%s' % (fmt, uri_to_local_path(url_str), layer)
             return filename
 
     if url.scheme and url.scheme != 'file':
