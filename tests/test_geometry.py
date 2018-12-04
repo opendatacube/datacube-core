@@ -13,6 +13,7 @@ from datacube.utils.geometry import (
     compute_reproject_roi,
     roi_normalise,
     roi_shape,
+    w_,
 )
 from datacube.model import GridSpec
 
@@ -747,3 +748,15 @@ def test_compute_reproject_roi():
     assert scale == 1
     assert roi_shape(roi) == roi_shape(roi_dst)
     assert roi_shape(roi_dst) == src[roi_].shape
+
+
+def test_window_from_slice():
+    from numpy import s_
+
+    assert w_[s_[:3, 4:5]] == ((0, 3), (4, 5))
+    assert w_[s_[0:3, :5]] == ((0, 3), (0, 5))
+    assert w_[list(s_[0:3, :5])] == ((0, 3), (0, 5))
+
+    for roi in [s_[:3], s_[:3, :4, :5], 0]:
+        with pytest.raises(ValueError):
+            w_[roi]

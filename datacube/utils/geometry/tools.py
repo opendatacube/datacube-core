@@ -3,6 +3,21 @@ import collections
 from affine import Affine
 
 
+class WindowFromSlice(object):
+    """ Translate numpy slices (numpy.s_) to rasterio window tuples.
+    """
+    def __getitem__(self, roi):
+        if not isinstance(roi, collections.Sequence) or len(roi) != 2:
+            raise ValueError("Need 2d roi")
+
+        row, col = roi
+        return ((0 if row.start is None else row.start, row.stop),
+                (0 if col.start is None else col.start, col.stop))
+
+
+w_ = WindowFromSlice()  # pylint: disable=invalid-name
+
+
 def polygon_path(x, y=None):
     """A little bit like numpy.meshgrid, except returns only boundary values and
     limited to 2d case only.
