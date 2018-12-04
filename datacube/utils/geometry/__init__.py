@@ -38,6 +38,7 @@ from .tools import (
     get_scale_at_point,
     native_pix_transform,
     compute_reproject_roi,
+    w_,
 )
 
 __all__ = [
@@ -74,4 +75,5 @@ __all__ = [
     "get_scale_at_point",
     "native_pix_transform",
     "compute_reproject_roi",
+    "w_",
 ]
