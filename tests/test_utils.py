@@ -1,34 +1,38 @@
 """
-Test date sequence generation functions as used by statistics apps
+Test utility functions from :module:`datacube.utils`
 
 
 """
 import os
+import pathlib
 import string
-
+import sys
+from pathlib import Path
 from types import SimpleNamespace
+
+import numpy as np
 import pytest
 import rasterio
+import toolz
+import xarray as xr
 from dateutil.parser import parse
 from hypothesis import given
 from hypothesis.strategies import integers, text
 from pandas import to_datetime
-import pathlib
-import toolz
-import xarray as xr
-import numpy as np
 
 from datacube.helpers import write_geotiff
-from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp, SimpleDocNav
-from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents, sorted_items
-from datacube.utils import mk_part_uri, get_part_from_uri, InvalidDocException
-from datacube.utils import normalise_path, default_base_dir
+from datacube.model import MetadataType
+from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
+from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
+from datacube.utils import gen_password, write_user_secret_file, slurp, read_documents, InvalidDocException, \
+    SimpleDocNav
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
-from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
-from datacube.model import MetadataType
-
-from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
+from datacube.utils.generic import map_with_lookahead
+from datacube.utils.math import clamp
+from datacube.utils.py import sorted_items
+from datacube.utils.uris import uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url, \
+    without_lineage_sources, normalise_path, default_base_dir
 
 
 def test_stats_dates():
@@ -226,7 +230,7 @@ def test_testutils_write_files():
     assert_file_structure(pp, files)
 
     # test that we detect missing files
-    (pp/'a.txt').unlink()
+    (pp / 'a.txt').unlink()
 
     with pytest.raises(AssertionError):
         assert_file_structure(pp, files)
@@ -285,10 +289,10 @@ def test_without_lineage_sources():
 
 def test_map_with_lookahead():
     def if_one(x):
-        return 'one'+str(x)
+        return 'one' + str(x)
 
     def if_many(x):
-        return 'many'+str(x)
+        return 'many' + str(x)
 
     assert list(map_with_lookahead(iter([]), if_one, if_many)) == []
     assert list(map_with_lookahead(iter([1]), if_one, if_many)) == [if_one(1)]
@@ -316,23 +320,23 @@ def test_read_documents(sample_document_files):
 
         for path, doc in all_docs:
             assert isinstance(doc, dict)
-            assert isinstance(path, pathlib.Path)
 
-        assert set(str(f) for f, _ in all_docs) == set([filename])
+        assert set(str(f) for f, _ in all_docs) == {filename}
 
-    for filename, ndocs in sample_document_files:
-        all_docs = list(read_documents(filename, uri=True))
-        assert len(all_docs) == ndocs
+    # Test case for returning URIs pointing to documents
+    for filepath, num_docs in sample_document_files:
+        all_docs = list(read_documents(filepath, uri=True))
+        assert len(all_docs) == num_docs
 
         for uri, doc in all_docs:
             assert isinstance(doc, dict)
             assert isinstance(uri, str)
 
-        p = pathlib.Path(filename)
-        if ndocs > 1:
-            expect_uris = [p.as_uri() + '#part={}'.format(i) for i in range(ndocs)]
+        url = as_url(filepath)
+        if num_docs > 1:
+            expect_uris = [as_url(url) + '#part={}'.format(i) for i in range(num_docs)]
         else:
-            expect_uris = [p.as_uri()]
+            expect_uris = [as_url(url)]
 
         assert [f for f, _ in all_docs] == expect_uris
 
@@ -353,7 +357,7 @@ def test_xr_apply():
     dst = xr_apply(src, lambda idx, _, v: idx[0] + v, with_numeric_index=True)
     assert dst.dtype.name == 'uint8'
     assert dst.shape == src.shape
-    assert dst.values.tolist() == [0+1, 1+2, 2+3]
+    assert dst.values.tolist() == [0 + 1, 1 + 2, 2 + 3]
 
 
 def test_sorted_items():
@@ -588,8 +592,6 @@ def test_dedup():
 
 
 def test_default_base_dir():
-    Path = pathlib.Path
-
     def set_pwd(p):
         os.environ['PWD'] = str(p)
 
@@ -609,7 +611,7 @@ def test_default_base_dir():
     assert default_base_dir() == cwd
 
     # should be cwd when PWD points to some other dir
-    set_pwd(cwd/'deeper')
+    set_pwd(cwd / 'deeper')
     assert default_base_dir() == cwd
 
     set_pwd(cwd.parent)
@@ -630,8 +632,6 @@ def test_default_base_dir():
 
 
 def test_normalise_path():
-    Path = pathlib.Path
-
     cwd = Path('.').resolve()
     assert normalise_path('.').resolve() == cwd
 
@@ -641,9 +641,9 @@ def test_normalise_path():
 
     base = Path('/a/b/')
     p = Path('c/d.txt')
-    assert normalise_path(p, base) == (base/p)
-    assert normalise_path(str(p), str(base)) == (base/p)
-    assert normalise_path(p) == (cwd/p)
+    assert normalise_path(p, base) == (base / p)
+    assert normalise_path(str(p), str(base)) == (base / p)
+    assert normalise_path(p) == (cwd / p)
 
     with pytest.raises(ValueError):
         normalise_path(p, 'not/absolute/path')
@@ -665,8 +665,8 @@ def test_testutils_gtif(tmpdir):
 
     aa5 = np.stack((aa,) * 5)
 
-    fname = pathlib.Path(str(tmpdir/"aa.tiff"))
-    fname5 = pathlib.Path(str(tmpdir/"aa5.tiff"))
+    fname = pathlib.Path(str(tmpdir / "aa.tiff"))
+    fname5 = pathlib.Path(str(tmpdir / "aa5.tiff"))
 
     aa_meta = write_gtiff(fname, aa, nodata=nodata,
                           blocksize=128,
@@ -723,7 +723,7 @@ def test_testutils_geobox():
     assert rio_geobox({}) is None
 
     A = Affine(10, 0, 4676,
-               0,  -10, 171878)
+               0, -10, 171878)
 
     shape = (100, 640)
     h, w = shape

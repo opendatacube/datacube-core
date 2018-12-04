@@ -46,8 +46,10 @@ def sample_document_files(data_folder):
              ('single_doc.yaml', 1),
              ('sample.json', 1)]
 
-    return [(str(os.path.join(data_folder, f)), n)
-            for f, n in files]
+    files = [(str(os.path.join(data_folder, f)), num_docs)
+             for f, num_docs in files]
+
+    return files
 
 
 @pytest.fixture

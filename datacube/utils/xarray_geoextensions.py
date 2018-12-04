@@ -10,8 +10,9 @@ This extension is reliant on an `xarray` object having a `.crs` property of type
 
 """
 from __future__ import absolute_import
-from affine import Affine
+
 import xarray
+from affine import Affine
 
 from datacube.utils import data_resolution_and_offset, geometry
 

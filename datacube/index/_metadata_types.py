@@ -35,7 +35,7 @@ class MetadataTypeResource(object):
         """
         We define getstate/setstate to avoid pickling the caches
         """
-        return self._db,
+        return (self._db,)
 
     def __setstate__(self, state):
         """

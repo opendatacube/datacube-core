@@ -923,3 +923,7 @@ def _round_to_res(value, res, acc=0.1):
     """
     res = abs(res)
     return int(math.ceil((value - 0.1 * res) / res))
+
+
+def intersects(a, b):
+    return a.intersects(b) and not a.touches(b)

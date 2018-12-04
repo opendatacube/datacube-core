@@ -31,7 +31,14 @@ disable=no-self-use,
     range-builtin-not-iterating, # py2.7
     zip-builtin-not-iterating, # py2.7
     nonzero-method, # py2.7
-    eq-without-hash # py2.7
+    eq-without-hash, # py2.7
+    useless-object-inheritance,
+    no-absolute-import,
+    useless-return,
+    old-division,
+    too-many-function-args,
+    consider-using-in,
+
 
 
 [BASIC]

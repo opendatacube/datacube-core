@@ -5,23 +5,22 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
+from typing import Iterable
 
 import click
 import yaml
 import yaml.resolver
 from click import echo
 
-from datacube.index.index import Index
 from datacube.index.exceptions import MissingRecordError
-from datacube.model import Dataset
 from datacube.index.hl import Doc2Dataset, check_dataset_consistent
+from datacube.index.index import Index
+from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import ui_path_doc_stream
 from datacube.utils import changes
 from datacube.utils.serialise import SafeDatacubeDumper
-
-from typing import Iterable
 
 _LOG = logging.getLogger('datacube-dataset')
 
@@ -33,6 +32,7 @@ def report_old_options(mapping):
             return mapping[s]
         else:
             return s
+
     return maybe_remap
 
 
@@ -65,6 +65,7 @@ def load_datasets_for_update(doc_stream, index):
 
     Generates tuples in the form (new_dataset, existing_dataset)
     """
+
     def mk_dataset(ds, uri):
         uuid = ds.id
 
@@ -83,8 +84,7 @@ def load_datasets_for_update(doc_stream, index):
         dataset, existing, error_msg = mk_dataset(doc, uri)
 
         if dataset is None:
-            _LOG.error("Failure while processing: %s\n" +
-                       " > Reason: %s", uri, error_msg)
+            _LOG.error("Failure while processing: %s\n > Reason: %s", uri, error_msg)
         else:
             is_consistent, reason = check_dataset_consistent(dataset)
             if is_consistent:
@@ -137,7 +137,6 @@ def index_cmd(index, product_names,
               ignore_lineage,
               confirm_ignore_lineage,
               dataset_paths):
-
     if confirm_ignore_lineage is False and ignore_lineage is True:
         if sys.stdin.isatty():
             confirmed = click.confirm("Requested to skip lineage information, Are you sure?", default=False)
@@ -214,7 +213,6 @@ def parse_update_rules(keys_that_can_change):
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
-
     def loc_action(action, new_ds, existing_ds, action_name):
         if len(existing_ds.uris) == 0:
             return None

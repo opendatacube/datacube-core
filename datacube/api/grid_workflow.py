@@ -8,7 +8,7 @@ from collections import OrderedDict
 import warnings
 import pandas as pd
 
-from ..utils import intersects
+from datacube.utils.geometry import intersects
 from .query import Query, query_group_by
 from .core import Datacube, apply_aliases
 

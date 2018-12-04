@@ -17,7 +17,8 @@ from datacube.index.index import Index
 from datacube.model import DatasetType, Range, GeoPolygon, Measurement
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
-from datacube.utils import read_documents, normalise_path
+from datacube.utils import read_documents
+from datacube.utils.uris import normalise_path
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
 from datacube.drivers import storage_writer_by_name
 
