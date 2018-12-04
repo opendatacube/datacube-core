@@ -41,6 +41,10 @@ from .tools import (
     w_,
 )
 
+from ._warp import (
+    warp_affine
+)
+
 __all__ = [
     "Coordinate",
     "BoundingBox",
@@ -75,5 +79,6 @@ __all__ = [
     "get_scale_at_point",
     "native_pix_transform",
     "compute_reproject_roi",
+    "warp_affine",
     "w_",
 ]
