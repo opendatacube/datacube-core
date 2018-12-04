@@ -1,5 +1,6 @@
 import rasterio.warp
 import rasterio.crs
+import numpy as np
 from affine import Affine
 
 _WRP_CRS = rasterio.crs.CRS.from_epsg(3857)
@@ -15,7 +16,10 @@ def resampling_s2rio(name):
         raise ValueError('Bad resampling parameter: {}'.format(name))
 
 
-def warp_affine_rio(src, dst, A, resampling, **kwargs):
+def warp_affine_rio(src, dst, A, resampling,
+                    src_nodata=None,
+                    dst_nodata=None,
+                    **kwargs):
     """
     Perform Affine warp using rasterio as backend library.
 
@@ -23,6 +27,8 @@ def warp_affine_rio(src, dst, A, resampling, **kwargs):
     :param        dst: image as ndarray
     :param          A: Affine transformm, maps from dst_coords to src_coords
     :param resampling: str|rasterio.warp.Resampling resampling strategy
+    :param src_nodata: Value representing "no data" in the source image
+    :param dst_nodata: Value to represent "no data" in the destination image
 
     **kwargs -- any other args to pass to ``rasterio.warp.reproject``
 
@@ -43,8 +49,12 @@ def warp_affine_rio(src, dst, A, resampling, **kwargs):
     # clamping.
     if dst.dtype.name == 'int8':
         dst = dst.view('uint8')
+        if dst_nodata is not None:
+            dst_nodata = int(np.uint8(dst_nodata))
     if src.dtype.name == 'int8':
         src = src.view('uint8')
+        if src_nodata is not None:
+            src_nodata = int(np.uint8(src_nodata))
 
     rasterio.warp.reproject(src,
                             dst,
@@ -53,12 +63,17 @@ def warp_affine_rio(src, dst, A, resampling, **kwargs):
                             src_crs=crs,
                             dst_crs=crs,
                             resampling=resampling,
+                            src_nodata=src_nodata,
+                            dst_nodata=dst_nodata,
                             **kwargs)
 
     return dst0
 
 
-def warp_affine(src, dst, A, resampling, **kwargs):
+def warp_affine(src, dst, A, resampling,
+                src_nodata=None,
+                dst_nodata=None,
+                **kwargs):
     """
     Perform Affine warp using best available backend (GDAL via rasterio is the only one so far).
 
@@ -66,9 +81,14 @@ def warp_affine(src, dst, A, resampling, **kwargs):
     :param        dst: image as ndarray
     :param          A: Affine transformm, maps from dst_coords to src_coords
     :param resampling: str resampling strategy
+    :param src_nodata: Value representing "no data" in the source image
+    :param dst_nodata: Value to represent "no data" in the destination image
 
     **kwargs -- any other args to pass to implementation
 
     :returns: dst
     """
-    return warp_affine_rio(src, dst, A, resampling, **kwargs)
+    return warp_affine_rio(src, dst, A, resampling,
+                           src_nodata=src_nodata,
+                           dst_nodata=dst_nodata,
+                           **kwargs)

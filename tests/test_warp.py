@@ -39,3 +39,16 @@ def test_warp():
     assert (dst[:10, :20] == 33).all()
     assert (dst[10:, :] == 0).all()
     assert (dst[:, 20:] == 0).all()
+
+    # check GDAL int8 limitation work-around, with no-data
+    src = src.astype('int8')
+    dst = np.zeros_like(src)
+    dst_ = warp_affine(src, dst,
+                       Affine.translation(+30, +10),
+                       resampling='nearest',
+                       src_nodata=0,
+                       dst_nodata=-3)
+    assert dst_ is dst
+    assert (dst[:10, :20] == 33).all()
+    assert (dst[10:, :] == -3).all()
+    assert (dst[:, 20:] == -3).all()
