@@ -1,12 +1,19 @@
 """
-Date sequence generation functions to be used by statistics apps
+Date and time utility functions
 
+Includes sequence generation functions to be used by statistics apps
 
 """
 from __future__ import absolute_import
 
-from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
+from datetime import datetime
+
+import dateutil
 from dateutil.relativedelta import relativedelta
+from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
+from dateutil.tz import tzutc
+
+from datacube import compat
 
 FREQS = {'y': YEARLY, 'm': MONTHLY, 'd': DAILY}
 DURATIONS = {'y': 'years', 'm': 'months', 'd': 'days'}
@@ -53,3 +60,33 @@ def parse_duration(duration):
 
 def split_duration(duration):
     return int(duration[:-1]), duration[-1:]
+
+
+def datetime_to_seconds_since_1970(dt):
+    epoch = datetime(1970, 1, 1, 0, 0, 0, tzinfo=tzutc() if dt.tzinfo else None)
+    return (dt - epoch).total_seconds()
+
+
+def _parse_time_generic(time):
+    if isinstance(time, compat.string_types):
+        return dateutil.parser.parse(time)
+    return time
+
+
+try:
+    import ciso8601  # pylint: disable=wrong-import-position
+
+
+    def parse_time(time):
+        try:
+            result = ciso8601.parse_datetime(time)
+        except TypeError:
+            return time
+
+        if result is not None:
+            return result
+
+        return _parse_time_generic(time)
+except ImportError:
+    def parse_time(time):
+        return _parse_time_generic(time)

@@ -15,7 +15,8 @@ from dask import array as da
 from datacube.config import LocalConfig
 from datacube.compat import string_types
 from datacube.storage.storage import reproject_and_fuse
-from datacube.utils import geometry, intersects
+from datacube.utils import geometry
+from datacube.utils.geometry import intersects
 from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
@@ -64,6 +65,7 @@ class Datacube(object):
         :return: Datacube object
 
         """
+
         def normalise_config(config):
             if config is None:
                 return LocalConfig.find(env=env)
@@ -86,7 +88,7 @@ class Datacube(object):
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
         :rtype: pandas.DataFrame or list(dict)
         """
-        rows = [dataset_type_to_row(dataset_type) for dataset_type in self.index.products.get_all()]
+        rows = [product.to_dict() for product in self.index.products.get_all()]
         if not with_pandas:
             return rows
 
@@ -650,6 +652,20 @@ def get_bounds(datasets, crs):
     top = max([d.extent.to_crs(crs).boundingbox.top for d in datasets])
     bottom = min([d.extent.to_crs(crs).boundingbox.bottom for d in datasets])
     return geometry.box(left, bottom, right, top, crs=crs)
+
+
+def set_resampling_method(measurements, resampling=None):
+    if resampling is None:
+        return measurements
+
+    def make_resampled_measurement(measurement):
+        measurement = measurement.copy()
+        measurement['resampling_method'] = resampling
+        return measurement
+
+    measurements = OrderedDict((name, make_resampled_measurement(measurement))
+                               for name, measurement in measurements.items())
+    return measurements
 
 
 def dataset_type_to_row(dt):

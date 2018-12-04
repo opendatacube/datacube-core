@@ -54,6 +54,13 @@ _STANDARD_COORDINATES = {
 
 
 def create_netcdf(netcdf_path, **kwargs):
+    """
+    Create and return an empty NetCDF file
+
+    :param netcdf_path: File path to write to
+    :param kwargs: See :class:`Dataset` for more information
+    :return: open NetCDF Dataset
+    """
     nco = Dataset(netcdf_path, 'w', **kwargs)
     nco.date_created = datetime.today().isoformat()
     nco.setncattr('Conventions', 'CF-1.6, ACDD-1.3')
@@ -64,6 +71,12 @@ def create_netcdf(netcdf_path, **kwargs):
 
 
 def append_netcdf(netcdf_path):
+    """
+    Open a NetCDF file in append mode
+
+    :param netcdf_path:
+    :return: open NetCDF Dataset
+    """
     return Dataset(netcdf_path, 'a')
 
 
