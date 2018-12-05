@@ -38,6 +38,7 @@ from .tools import (
     get_scale_at_point,
     native_pix_transform,
     compute_reproject_roi,
+    split_translation,
     w_,
 )
 
@@ -79,6 +80,7 @@ __all__ = [
     "get_scale_at_point",
     "native_pix_transform",
     "compute_reproject_roi",
+    "split_translation",
     "warp_affine",
     "w_",
 ]

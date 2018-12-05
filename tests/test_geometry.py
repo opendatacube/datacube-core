@@ -13,6 +13,7 @@ from datacube.utils.geometry import (
     compute_reproject_roi,
     roi_normalise,
     roi_shape,
+    split_translation,
     w_,
 )
 from datacube.model import GridSpec
@@ -596,6 +597,25 @@ def test_roi_tools():
     assert roi_intersect((s_[0:3],), s_[1:7]) == (s_[1:3],)
 
     assert roi_intersect(s_[4:7, 5:6], s_[0:1, 7:8]) == s_[4:4, 6:6]
+
+
+def test_split_translation():
+
+    def verify(a, b):
+        a = np.asarray(a)
+        b = np.asarray(b)
+        np.testing.assert_array_almost_equal(a, b)
+
+    def tt(tx, ty, *expect):
+        verify(split_translation((tx, ty)), expect)
+
+    assert split_translation((1, 2)) == ((1, 2), (0, 0))
+    assert split_translation((-1, -2)) == ((-1, -2), (0, 0))
+    tt(1.3, 2.5, (1, 2), (0.3, 0.5))
+    tt(1.1, 2.6, (1, 3), (0.1, -0.4))
+    tt(-1.1, 2.8, (-1, 3), (-0.1, -0.2))
+    tt(-1.9, 2.05, (-2, 2), (+0.1, 0.05))
+    tt(-1.5, 2.45, (-1, 2), (-0.5, 0.45))
 
 
 def get_diff(A, B):
