@@ -14,6 +14,7 @@ from datacube.utils.geometry import (
     roi_normalise,
     roi_shape,
     split_translation,
+    is_affine_st,
     w_,
 )
 from datacube.model import GridSpec
@@ -621,6 +622,13 @@ def test_split_translation():
 def get_diff(A, B):
     from math import sqrt
     return sqrt(sum((a-b)**2 for a, b in zip(A, B)))
+
+
+def test_affine_checks():
+    assert is_affine_st(mkA(scale=(1, 2), translation=(3, -10))) is True
+    assert is_affine_st(mkA(scale=(1, -2), translation=(-3, -10))) is True
+    assert is_affine_st(mkA(rot=0.1)) is False
+    assert is_affine_st(mkA(shear=0.4)) is False
 
 
 def test_affine_rsw():

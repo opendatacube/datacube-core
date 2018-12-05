@@ -23,6 +23,7 @@ from ._base import (
 )
 
 from .tools import (
+    is_affine_st,
     roi_boundary,
     roi_is_empty,
     roi_intersect,
@@ -64,6 +65,7 @@ __all__ = [
     "polygon_from_transform",
     "unary_union",
     "unary_intersection",
+    "is_affine_st",
     "roi_boundary",
     "roi_is_empty",
     "roi_intersect",
