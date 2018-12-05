@@ -38,7 +38,6 @@ def data_folder():
     return os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 
 
-
 @pytest.fixture
 def example_netcdf_path(request):
     """Return a string path to `sample_tile.nc` in the test data dir"""
