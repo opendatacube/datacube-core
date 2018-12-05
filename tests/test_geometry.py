@@ -15,6 +15,7 @@ from datacube.utils.geometry import (
     roi_shape,
     split_translation,
     is_affine_st,
+    compute_axis_overlap,
     w_,
 )
 from datacube.model import GridSpec
@@ -788,3 +789,50 @@ def test_window_from_slice():
     for roi in [s_[:3], s_[:3, :4, :5], 0]:
         with pytest.raises(ValueError):
             w_[roi]
+
+
+def test_axis_overlap():
+    s_ = np.s_
+
+    # Source overlaps destination fully
+    #
+    # S: |<--------------->|
+    # D:      |<----->|
+    assert compute_axis_overlap(100, 20, 1, 10) == s_[10:30, 0:20]
+    assert compute_axis_overlap(100, 20, 2, 10) == s_[10:50, 0:20]
+    assert compute_axis_overlap(100, 20, 0.25, 10) == s_[10:15, 0:20]
+    assert compute_axis_overlap(100, 20, -1, 80) == s_[60:80, 0:20]
+    assert compute_axis_overlap(100, 20, -0.5, 50) == s_[40:50, 0:20]
+    assert compute_axis_overlap(100, 20, -2, 90) == s_[50:90, 0:20]
+
+    # Destination overlaps source fully
+    #
+    # S:      |<-------->|
+    # D: |<----------------->|
+    assert compute_axis_overlap(10, 100, 1, -10) == s_[0:10, 10:20]
+    assert compute_axis_overlap(10, 100, 2, -10) == s_[0:10, 5:10]
+    assert compute_axis_overlap(10, 100, 0.5, -10) == s_[0:10, 20:40]
+    assert compute_axis_overlap(10, 100, -1, 11) == s_[0:10, 1:11]
+
+    # Partial overlaps
+    #
+    # S: |<----------->|
+    # D:     |<----------->|
+    assert compute_axis_overlap(10, 10, 1, 3) == s_[3:10, 0:7]
+    assert compute_axis_overlap(10, 15, 1, 3) == s_[3:10, 0:7]
+
+    # S:     |<----------->|
+    # D: |<----------->|
+    assert compute_axis_overlap(10, 10, 1, -5) == s_[0:5, 5:10]
+    assert compute_axis_overlap(50, 10, 1, -5) == s_[0:5, 5:10]
+
+    # No overlaps
+    # S: |<--->|
+    # D:         |<--->|
+    assert compute_axis_overlap(10, 10, 1, 11) == s_[10:10, 0:0]
+    assert compute_axis_overlap(10, 40, 1, 11) == s_[10:10, 0:0]
+
+    # S:         |<--->|
+    # D: |<--->|
+    assert compute_axis_overlap(10, 10, 1, -11) == s_[0:0, 10:10]
+    assert compute_axis_overlap(40, 10, 1, -11) == s_[0:0, 10:10]

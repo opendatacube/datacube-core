@@ -40,6 +40,7 @@ from .tools import (
     native_pix_transform,
     compute_reproject_roi,
     split_translation,
+    compute_axis_overlap,
     w_,
 )
 
@@ -66,6 +67,7 @@ __all__ = [
     "unary_union",
     "unary_intersection",
     "is_affine_st",
+    "compute_axis_overlap",
     "roi_boundary",
     "roi_is_empty",
     "roi_intersect",
