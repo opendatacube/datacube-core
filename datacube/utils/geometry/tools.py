@@ -171,6 +171,17 @@ def split_translation(t):
     return tuple(t[0] for t in _tt), tuple(t[1] for t in _tt)
 
 
+def is_affine_st(A, tol=1e-10):
+    """
+    True if Affine transform has scale and translation components only.
+    """
+    (_, wx, _,
+     wy, _, _,
+     *_) = A
+
+    return abs(wx) < tol and abs(wy) < tol
+
+
 def decompose_rws(A):
     """
     Compute decomposition Affine matrix sans translation into Rotation, Shear and Scale.
