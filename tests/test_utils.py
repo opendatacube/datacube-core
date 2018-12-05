@@ -313,16 +313,43 @@ def test_part_uri():
     assert get_part_from_uri('file:///f.txt#part=111') == 111
 
 
-def test_read_documents(sample_document_files):
-    for filename, ndocs in sample_document_files:
-        all_docs = list(read_documents(filename))
-        assert len(all_docs) == ndocs
+def test_read_docs_from_local_path(sample_document_files):
+    _test_read_docs_impl(sample_document_files)
 
-        for path, doc in all_docs:
-            assert isinstance(doc, dict)
 
-        assert set(str(f) for f, _ in all_docs) == {filename}
+def test_read_docs_from_file_uris(sample_document_files):
+    uris = [('file://' + doc, ndocs) for doc, ndocs in sample_document_files]
+    _test_read_docs_impl(uris)
 
+
+def test_read_docs_from_s3(sample_document_files):
+    """
+    Use a mocked S3 bucket to test reading documents from S3
+    """
+    boto3 = pytest.importorskip('boto3')
+    moto = pytest.importorskip('moto')
+
+    os.environ['AWS_ACCESS_KEY_ID'] = 'fake'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'fake'
+
+    with moto.mock_s3():
+        s3 = boto3.resource('s3', region_name='us-east-1')
+        bucket = s3.create_bucket(Bucket='mybucket')
+
+        mocked_s3_objs = []
+        for abs_fname, ndocs in sample_document_files:
+            if abs_fname.endswith('gz') or abs_fname.endswith('nc'):
+                continue
+
+            fname = Path(abs_fname).name
+            bucket.upload_file(abs_fname, fname)
+
+            mocked_s3_objs.append(('s3://mybucket/' + fname, ndocs))
+
+        _test_read_docs_impl(mocked_s3_objs)
+
+
+def _test_read_docs_impl(sample_document_files):
     # Test case for returning URIs pointing to documents
     for filepath, num_docs in sample_document_files:
         all_docs = list(read_documents(filepath, uri=True))
@@ -738,3 +765,33 @@ def test_testutils_geobox():
 
     crs_ = dc_crs_from_rio(CRS.from_wkt(crs.wkt))
     assert crs_.epsg is None
+
+
+@pytest.mark.parametrize("test_input,expected", [
+    ("/foo/bar/file.txt", False),
+    ("file:///foo/bar/file.txt", True),
+    ("test.bar", False),
+    ("s3://mybucket/objname.tiff", True),
+    ("ftp://host.name/filename.txt", True),
+    ("https://host.name.com/path/file.txt", True),
+    ("http://host.name.com/path/file.txt", True),
+    ("sftp://user:pass@host.name.com/path/file.txt", True),
+    ("file+gzip://host.name.com/path/file.txt", True),
+    ("bongo:host.name.com/path/file.txt", False),
+])
+def test_is_url(test_input, expected):
+    assert is_url(test_input) == expected
+
+
+@pytest.fixture
+def sample_document_files(data_folder):
+    files = [('multi_doc.yml', 3),
+             ('multi_doc.yml.gz', 3),
+             ('multi_doc.nc', 3),
+             ('single_doc.yaml', 1),
+             ('sample.json', 1)]
+
+    files = [(str(os.path.join(data_folder, f)), num_docs)
+             for f, num_docs in files]
+
+    return files

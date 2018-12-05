@@ -1,18 +1,16 @@
 from __future__ import absolute_import
 
+import csv
 import json
 import logging
+import sys
 from pathlib import Path
 
 import click
-import sys
-from click import echo
-
+import pandas as pd
 import yaml
 import yaml.resolver
-import csv
-from datacube.api.core import dataset_type_to_row
-import pandas as pd
+from click import echo, style
 
 from datacube.index.index import Index
 from datacube.ui import click as ui
@@ -35,7 +33,7 @@ def product_cli():
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index()
-def add_dataset_types(index, allow_exclusive_lock, files):
+def add_products(index, allow_exclusive_lock, files):
     # type: (Index, bool, list) -> None
     """
     Add or update products in the generic index.
@@ -112,15 +110,8 @@ def update_products(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
     sys.exit(failures)
 
 
-def build_product_list(index):
-    lstdct = []
-    for product in index.products.search():
-        info = dataset_type_to_row(product)
-        lstdct.append(info)
-    return lstdct
-
-
-def _write_csv(index):
+def _write_csv(products):
+    product_dicts = [prod.to_dict() for prod in products]
     writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description',
                                          'ancillary_quality', 'latgqa_cep90', 'product_type',
                                          'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path',
@@ -129,15 +120,16 @@ def _write_csv(index):
                                          'spatial_dimensions'], extrasaction='ignore')
     writer.writeheader()
 
-    def add_first_name(row):
-        names_ = row['name']
-        row['name'] = names_ if names_ else None
-        return row
+    # def add_first_name(row):
+    #     names_ = row['name']
+    #     row['name'] = names_ if names_ else None
+    #     return row
 
-    writer.writerows(add_first_name(row) for row in index)
+    # writer.writerows(add_first_name(row) for row in product_dicts)
+    writer.writerows(product_dicts)
 
 
-def _write_yaml(index):
+def _write_yaml(products):
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -145,30 +137,34 @@ def _write_yaml(index):
 
     (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
     """
+    product_dicts = [prod.to_dict() for prod in products]
 
-    try:
-        return yaml.dump_all(index, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
-    except TypeError:
-        return yaml.dump(index.definition, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
+    return yaml.dump_all(product_dicts, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
 
 
 def _write_tab(products):
-    products = pd.DataFrame(products)
+    df = pd.DataFrame(prod.to_dict() for prod in products)
 
-    if products.empty:
+    if df.empty:
         echo('No products discovered :(')
         return
 
-    echo(products.to_string(columns=('id', 'name', 'description', 'ancillary_quality',
-                                     'product_type', 'gqa_abs_iterative_mean_xy',
-                                     'gqa_ref_source', 'sat_path',
-                                     'gqa_iterative_stddev_xy', 'time', 'sat_row',
-                                     'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
-                                     'resolution', 'tile_size', 'spatial_dimensions'),
-                            justify='left'))
+    echo(df.to_string(columns=('id', 'name', 'description', 'ancillary_quality',
+                               'product_type', 'gqa_abs_iterative_mean_xy',
+                               'gqa_ref_source', 'sat_path',
+                               'gqa_iterative_stddev_xy', 'time', 'sat_row',
+                               'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
+                               'resolution', 'tile_size', 'spatial_dimensions'),
+                      justify='left'))
+
+
+def _default_lister(products):
+    for prod in products:
+        echo(style(prod.name, fg='green') + '\t' + prod.definition.get('description', ''))
 
 
 LIST_OUTPUT_WRITERS = {
+    'default': _default_lister,
     'csv': _write_csv,
     'yaml': _write_yaml,
     'tab': _write_tab,
@@ -176,38 +172,32 @@ LIST_OUTPUT_WRITERS = {
 
 
 @product_cli.command('list')
-@click.option('-f', help='Output format',
-              type=click.Choice(list(LIST_OUTPUT_WRITERS)), default='yaml', show_default=True)
+@click.option('-f', 'output_format', help='Output format',
+              type=click.Choice(list(LIST_OUTPUT_WRITERS)), default='default', show_default=True)
 @ui.pass_datacube()
-def list_products(dc, f):
+def list_products(dc, output_format):
     """
     List products that are defined in the generic index.
     """
-    LIST_OUTPUT_WRITERS[f](build_product_list(dc.index))
+    products = dc.index.products.search()
 
+    writer = LIST_OUTPUT_WRITERS[output_format]
 
-def build_product_show(index, product_name):
-    product_def = index.products.get_by_name(product_name)
-    return product_def
-
-
-def _write_json(product_def):
-    click.echo_via_pager(json.dumps(product_def.definition, indent=4))
-
-
-SHOW_OUTPUT_WRITERS = {
-    'yaml': _write_yaml,
-    'json': _write_json,
-}
+    writer(products)
 
 
 @product_cli.command('show')
-@click.option('-f', help='Output format',
-              type=click.Choice(list(SHOW_OUTPUT_WRITERS)), default='yaml', show_default=True)
+@click.option('-f', 'output_format', help='Output format',
+              type=click.Choice(['yaml', 'json']), default='yaml', show_default=True)
 @click.argument('product_name', nargs=1)
 @ui.pass_datacube()
-def show_product(dc, product_name, f):
+def show_product(dc, product_name, output_format):
     """
     Show details about a product in the generic index.
     """
-    SHOW_OUTPUT_WRITERS[f](build_product_show(dc.index, product_name))
+    product = dc.index.products.get_by_name(product_name)
+
+    if output_format == 'yaml':
+        yaml.dump(product.definition, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
+    elif output_format == 'json':
+        click.echo_via_pager(json.dumps(product.definition, indent=4))
