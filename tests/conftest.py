@@ -38,19 +38,6 @@ def data_folder():
     return os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 
 
-@pytest.fixture
-def sample_document_files(data_folder):
-    files = [('multi_doc.yml', 3),
-             ('multi_doc.yml.gz', 3),
-             ('multi_doc.nc', 3),
-             ('single_doc.yaml', 1),
-             ('sample.json', 1)]
-
-    files = [(str(os.path.join(data_folder, f)), num_docs)
-             for f, num_docs in files]
-
-    return files
-
 
 @pytest.fixture
 def example_netcdf_path(request):

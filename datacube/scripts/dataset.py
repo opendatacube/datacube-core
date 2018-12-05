@@ -126,7 +126,7 @@ def load_datasets_for_update(doc_stream, index):
               help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
               is_flag=True, default=False)
 @click.argument('dataset-paths',
-                type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
+                nargs=-1)
 @ui.pass_index()
 def index_cmd(index, product_names,
               exclude_product_names,
