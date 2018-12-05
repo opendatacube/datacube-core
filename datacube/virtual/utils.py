@@ -5,11 +5,6 @@ import warnings
 from datacube.model import Range
 
 
-def product_definitions_from_index(index):
-    return {product.name: product.definition
-            for product in index.products.get_all()}
-
-
 def select_unique(things):
     """ Checks that all the members of `things` are equal, and then returns it. """
     first, *rest = things

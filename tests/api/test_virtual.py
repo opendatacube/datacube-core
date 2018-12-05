@@ -10,7 +10,6 @@ from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
 from datacube.utils import geometry
 from datacube.virtual import construct_from_yaml, VirtualProductException
 from datacube.virtual.impl import Datacube
-from datacube.virtual.utils import product_definitions_from_index
 
 
 PRODUCT_LIST = ['ls7_pq_albers', 'ls8_pq_albers', 'ls7_nbar_albers', 'ls8_nbar_albers']
@@ -32,7 +31,7 @@ def example_product(name):
         return None
 
     blue = dict(name='blue', dtype='int16', nodata=-999, units='1')
-    green = dict(name='green', dtype='int16', nodata=-999, units='1')
+    green = dict(name='green', dtype='int16', nodata=-999, units='1', aliases=['verde'])
     flags = {"cloud_acca": {"bits": 10, "values": {"0": "cloud", "1": "no_cloud"}},
              "contiguous": {"bits": 8, "values": {"0": False, "1": True}},
              "cloud_fmask": {"bits": 11, "values": {"0": "cloud", "1": "no_cloud"}},
@@ -192,7 +191,8 @@ def test_str(cloud_free_nbar):
 
 
 def test_output_measurements(cloud_free_nbar, dc):
-    measurements = cloud_free_nbar.output_measurements(product_definitions_from_index(dc.index))
+    measurements = cloud_free_nbar.output_measurements({product.name: product
+                                                        for product in dc.index.products.get_all()})
     assert 'blue' in measurements
     assert 'green' in measurements
     assert 'source_index' in measurements
@@ -284,3 +284,23 @@ def test_to_float(dc, query):
 
     assert numpy.all(numpy.isnan(data.blue.values))
     assert data.blue.dtype == 'float32'
+
+
+def test_aliases(dc, query):
+    verde = construct_from_yaml("""
+        product: ls8_nbar_albers
+        measurements: [verde]
+    """)
+
+    measurements = verde.output_measurements({product.name: product
+                                              for product in dc.index.products.get_all()})
+    assert 'verde' in measurements
+    assert 'green' not in measurements
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = verde.load(dc, **query)
+
+    assert 'verde' in data
+    assert 'green' not in data
