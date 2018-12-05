@@ -1,9 +1,8 @@
-# TODO: alias support (output_measurement changes too)
 # TODO: needs an aggregation phase (use xarray.DataArray.groupby?)
 # TODO: measurement dependency tracking
 # TODO: a mechanism to set settings for the leaf notes
 # TODO: lineage tracking per observation
-# TODO: integrate GridWorkflow functionality
+# TODO: integrate GridWorkflow functionality (spatial binning)
 
 """
 Implementation of virtual products. Provides an interface for the products in the datacube
@@ -20,7 +19,7 @@ import xarray
 import yaml
 
 from datacube import Datacube
-from datacube.api.core import select_datasets_inside_polygon, output_geobox
+from datacube.api.core import select_datasets_inside_polygon, output_geobox, apply_aliases
 from datacube.api.grid_workflow import _fast_slice
 from datacube.api.query import Query, query_group_by, query_geopolygon
 from datacube.model import Measurement
@@ -216,7 +215,7 @@ class VirtualProduct(Mapping):
         # type: (Dict[str, Dict]) -> Dict[str, Measurement]
         """
         A dictionary mapping names to measurement metadata.
-        :param product_definitions: a dictionary mapping product names to definitions
+        :param product_definitions: a dictionary mapping product names to products (`DatasetType` objects)
         """
         get = self.get
 
@@ -224,15 +223,16 @@ class VirtualProduct(Mapping):
             self._assert(self._product in product_definitions,
                          "product {} not found in definitions".format(self._product))
 
-            measurement_docs = product_definitions[self._product]['measurements']
+            product = product_definitions[self._product]
             measurements = {measurement['name']: Measurement(**measurement)
-                            for measurement in measurement_docs}
+                            for measurement in product.definition['measurements']}
 
             if get('measurements') is None:
                 return measurements
 
             try:
-                return {name: measurements[name] for name in get('measurements')}
+                return {name: measurements[product.canonical_measurement(name)]
+                        for name in get('measurements')}
             except KeyError as ke:
                 raise VirtualProductException("could not find measurement: {}".format(ke.args))
 
@@ -294,8 +294,9 @@ class VirtualProduct(Mapping):
                          "query for {} returned another product {}".format(self._product, query.product))
 
             # find the datasets
-            datasets = select_datasets_inside_polygon(dc.index.datasets.search(**query.search_terms),
-                                                      query.geopolygon)
+            datasets = dc.index.datasets.search(**query.search_terms)
+            if query.geopolygon is not None:
+                datasets = select_datasets_inside_polygon(datasets, query.geopolygon)
 
             # should we put it in the Transformation class?
             if get('dataset_predicate') is not None:
@@ -304,7 +305,7 @@ class VirtualProduct(Mapping):
                             if get('dataset_predicate')(dataset)]
 
             return QueryResult(list(datasets), product.grid_spec, query.geopolygon,
-                               {product.name: product.definition})
+                               {product.name: product})
 
         elif 'transform' in self:
             return self._input.query(dc, **search_terms)
@@ -417,12 +418,14 @@ class VirtualProduct(Mapping):
                                         select_keys(load_settings, self._LOAD_KEYS))
 
             # load_settings should not contain `measurements` for now
-            measurements = list(self.output_measurements(product_definitions).values())
+            measurements = self.output_measurements(product_definitions)
 
-            return Datacube.load_data(grouped.pile,
-                                      grouped.geobox, measurements,
-                                      fuse_func=merged.get('fuse_func'),
-                                      dask_chunks=merged.get('dask_chunks'))
+            result = Datacube.load_data(grouped.pile,
+                                        grouped.geobox, list(measurements.values()),
+                                        fuse_func=merged.get('fuse_func'),
+                                        dask_chunks=merged.get('dask_chunks'))
+
+            return apply_aliases(result, product_definitions[self._product], list(measurements))
 
         elif 'transform' in self:
             return self._transformation.compute(self._input.fetch(grouped, **load_settings))
