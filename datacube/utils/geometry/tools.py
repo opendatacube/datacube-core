@@ -2,6 +2,10 @@ import numpy as np
 import collections
 from affine import Affine
 
+# This is numeric code, short names make sense in this context, so disabling
+# "invalid name" checks for the whole file
+
+# pylint: disable=invalid-name
 
 class WindowFromSlice(object):
     """ Translate numpy slices (numpy.s_) to rasterio window tuples.
@@ -15,7 +19,7 @@ class WindowFromSlice(object):
                 (0 if col.start is None else col.start, col.stop))
 
 
-w_ = WindowFromSlice()  # pylint: disable=invalid-name
+w_ = WindowFromSlice()
 
 
 def polygon_path(x, y=None):
@@ -200,7 +204,7 @@ def decompose_rws(A):
 
     :return: Rotation, Sheer, Scale
     """
-    # pylint: disable=invalid-name, too-many-locals
+    # pylint: disable=too-many-locals
 
     from numpy.linalg import cholesky, det, inv
 
@@ -321,6 +325,61 @@ def _same_crs_pix_transform(src, dst):
     return pt_tr
 
 
+def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> slice:
+    """
+    s, t define linear transform from destination coordinate space to source
+    >>  x_s = s * x_d + t
+
+    Ns -- number of pixels along some dimension of source image: (0, Ns)
+    Nd -- same as Ns but for destination image
+
+    :returns: (slice in the source image,
+               slice in the destination image)
+    """
+    from math import floor, ceil
+
+    needs_flip = s < 0
+
+    if needs_flip:
+        # change s, t to map into flipped src, i.e. src[::-1]
+        s, t = -s, Ns - t
+
+    assert s > 0
+
+    # x_d = (x_s - t)/s => 1/s * x_s + t*(-1/s)
+    #
+    # x_d = s_ * x_s + t_
+    s_ = 1.0/s
+    t_ = -t*s_
+
+    if t < 0:
+        #  |<------- ... D
+        #      |<--- ... S
+        _in = (0, min(floor(t_), Nd))
+    else:
+        #        |<--... D
+        # |<---------... S
+        _in = (min(floor(t), Ns), 0)
+
+    a = ceil(Nd*s + t)
+    if a <= Ns:
+        # ...----->|    D
+        # ...-------->| S
+        _out = (max(a, 0), Nd)
+    else:
+        # ...-------->|  D
+        # ...----->|     S
+        _out = (Ns, max(0, ceil(Ns*s_ + t_)))
+
+    src, dst = (slice(_in[i], _out[i]) for i in range(2))
+
+    if needs_flip:
+        # remap src from flipped space to normal
+        src = slice(Ns - src.stop, Ns - src.start)
+
+    return (src, dst)
+
+
 def native_pix_transform(src, dst):
     """
 
@@ -328,8 +387,6 @@ def native_pix_transform(src, dst):
     .back: goes the other way
     .linear: None|Affine linear transform src->dst if transform is linear (i.e. same CRS)
     """
-    # pylint: disable=invalid-name
-
     from types import SimpleNamespace
     from ._base import mk_osr_point_transform
 
