@@ -140,6 +140,37 @@ def roi_normalise(roi, shape):
     return tuple([norm_slice(s, n) for s, n in zip(roi, shape)])
 
 
+def split_translation(t):
+    """
+    Split translation into pixel aligned and sub-pixel components.
+
+    Subpixel translation is guaranteed to be in [-0.5, +0.5] range.
+
+    >  x + t = x + t_whole + t_subpix
+
+    :param t: (float, float)
+
+    :returns: (t_whole: (float, float), t_subpix: (float, float))
+    """
+    from math import fmod
+
+    def _split1(x):
+        x_part = fmod(x, 1.0)
+        x_whole = x - x_part
+        if x_part > 0.5:
+            x_part -= 1
+            x_whole += 1
+        elif x_part < -0.5:
+            x_part += 1
+            x_whole -= 1
+
+        return (x_whole, x_part)
+
+    _tt = [_split1(x) for x in t]
+
+    return tuple(t[0] for t in _tt), tuple(t[1] for t in _tt)
+
+
 def decompose_rws(A):
     """
     Compute decomposition Affine matrix sans translation into Rotation, Shear and Scale.
