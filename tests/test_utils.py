@@ -6,7 +6,6 @@ Test utility functions from :module:`datacube.utils`
 import os
 import pathlib
 import string
-import sys
 from pathlib import Path
 from types import SimpleNamespace
 
