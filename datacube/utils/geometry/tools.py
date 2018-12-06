@@ -4,8 +4,8 @@ from affine import Affine
 
 # This is numeric code, short names make sense in this context, so disabling
 # "invalid name" checks for the whole file
-
 # pylint: disable=invalid-name
+
 
 class WindowFromSlice(object):
     """ Translate numpy slices (numpy.s_) to rasterio window tuples.
@@ -380,6 +380,25 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> slice:
     return (src, dst)
 
 
+def box_overlap(src_shape, dst_shape, ST):
+    """
+    Given two image planes whose coordinate systems are related via scale and
+    translation only, find overlapping regions within both.
+
+    :param src_shape: Shape of source image plane
+    :param dst_shape: Shape of destination image plane
+    :param        ST: Affine transform with only scale/translation,
+                      direction is: Xsrc = ST*Xdst
+    """
+    (sx, _, tx,
+     _, sy, ty,
+     *_) = ST
+
+    s0, d0 = compute_axis_overlap(src_shape[0], dst_shape[0], sy, ty)
+    s1, d1 = compute_axis_overlap(src_shape[1], dst_shape[1], sx, tx)
+    return (s0, s1), (d0, d1)
+
+
 def native_pix_transform(src, dst):
     """
 
@@ -486,9 +505,8 @@ def roi_from_points(xy, shape, padding=0, align=None):
     return to_roi(yy, xx)
 
 
-def compute_reproject_roi(src, dst, padding=1, align=None):
-    """
-    Given two GeoBoxes find the region within the source GeoBox that overlaps
+def compute_reproject_roi(src, dst, padding=None, align=None):
+    """Given two GeoBoxes find the region within the source GeoBox that overlaps
     with the destination GeoBox, and also compute the scale factor (>1 means
     shrink). Scale is chosen such that if you apply it to the source image
     before reprojecting, then reproject will have roughly no scale component.
@@ -513,26 +531,42 @@ def compute_reproject_roi(src, dst, padding=1, align=None):
 
     Also compute and return ROI of the dst geobox that is affected by src.
 
+    If padding is None "appropriate" padding will be used depending on the
+    transform between src<>dst:
+
+    - No padding beyond sub-pixel alignment if Scale+Translation
+    - 1 pixel source padding in all other cases
+
     :returns: (roi_src: (slice, slice), scale: float, roi_dst: (slice, slice))
 
     """
     pts_per_side = 5
 
+    def compute_roi(src, dst, tr, pts_per_side, padding, align):
+        XY = np.vstack(tr.back(gbox_boundary(dst, pts_per_side)))
+        roi_src = roi_from_points(XY, src.shape, padding, align=align)
+
+        # project src roi back into dst and compute roi from that
+        xy = np.vstack(tr(roi_boundary(roi_src, pts_per_side)))
+        roi_dst = roi_from_points(xy, dst.shape, padding=0)  # no need to add padding twice
+        return (roi_src, roi_dst)
+
     tr = native_pix_transform(src, dst)
 
     if tr.linear is not None:
-        pts_per_side = 2
+        tight_ok = align in (None, 0) and padding in (0, None)
 
-    XY = np.vstack(tr.back(gbox_boundary(dst, pts_per_side)))
-    roi_src = roi_from_points(XY, src.shape, padding, align=align)
+        if tight_ok and is_affine_st(tr.linear):
+            roi_src, roi_dst = box_overlap(src.shape, dst.shape, tr.back.linear)
+        else:
+            padding = 1 if padding is None else padding
+            roi_src, roi_dst = compute_roi(src, dst, tr, 2, padding, align)
 
-    # project src roi back into dst and compute roi from that
-    xy = np.vstack(tr(roi_boundary(roi_src, pts_per_side)))
-    roi_dst = roi_from_points(xy, dst.shape, padding=0)  # no need to add padding twice
-
-    if tr.linear is not None:
         scale = get_scale_from_linear_transform(tr.linear)
     else:
+        padding = 1 if padding is None else padding
+
+        roi_src, roi_dst = compute_roi(src, dst, tr, pts_per_side, padding, align)
         center_pt = roi_center(roi_src)[::-1]
         scale = get_scale_at_point(center_pt, tr)
 

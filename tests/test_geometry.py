@@ -759,8 +759,10 @@ def test_compute_reproject_roi():
 
     # check pure translation case
     roi_ = np.s_[113:-100, 33:-10]
-    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_], padding=0)
-
+    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_])
+    assert roi == roi_normalise(roi_, src.shape)
+    assert scale == 1
+    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_], padding=0, align=0)
     assert roi == roi_normalise(roi_, src.shape)
     assert scale == 1
 
@@ -772,7 +774,7 @@ def test_compute_reproject_roi():
     assert scale == 1
 
     roi_ = np.s_[113:-100, 33:-10]
-    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_], padding=0)
+    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_])
 
     assert scale == 1
     assert roi_shape(roi) == roi_shape(roi_dst)
