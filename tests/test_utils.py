@@ -709,9 +709,12 @@ def test_testutils_gtif(tmpdir):
     assert fname5.exists()
 
     assert aa_meta['gbox'].shape == (h, w)
+    assert aa_meta['path'] is fname
 
     aa_, aa_meta_ = rio_slurp(fname)
     aa5_, aa5_meta_ = rio_slurp(fname5)
+
+    assert aa_meta_['path'] is fname
 
     (sx, _, tx,
      _, sy, ty, *_) = aa5_meta_['transform']
