@@ -1,5 +1,6 @@
 import numpy as np
 import collections
+from types import SimpleNamespace
 from affine import Affine
 
 # This is numeric code, short names make sense in this context, so disabling
@@ -406,7 +407,6 @@ def native_pix_transform(src, dst):
     .back: goes the other way
     .linear: None|Affine linear transform src->dst if transform is linear (i.e. same CRS)
     """
-    from types import SimpleNamespace
     from ._base import mk_osr_point_transform
 
     # Special case CRS_in == CRS_out
@@ -537,7 +537,13 @@ def compute_reproject_roi(src, dst, padding=None, align=None):
     - No padding beyond sub-pixel alignment if Scale+Translation
     - 1 pixel source padding in all other cases
 
-    :returns: (roi_src: (slice, slice), scale: float, roi_dst: (slice, slice))
+    :returns: SimpleNamespace with following fields:
+     .roi_src    : (slice, slice)
+     .roi_dst    : (slice, slice)
+     .scale      : float
+     .scale2     : (float, float)
+     .is_st      : True|False
+     .transform
 
     """
     pts_per_side = 5
@@ -555,21 +561,30 @@ def compute_reproject_roi(src, dst, padding=None, align=None):
 
     if tr.linear is not None:
         tight_ok = align in (None, 0) and padding in (0, None)
+        is_st = is_affine_st(tr.linear)
 
-        if tight_ok and is_affine_st(tr.linear):
+        if tight_ok and is_st:
             roi_src, roi_dst = box_overlap(src.shape, dst.shape, tr.back.linear)
         else:
             padding = 1 if padding is None else padding
             roi_src, roi_dst = compute_roi(src, dst, tr, 2, padding, align)
 
-        scale = get_scale_from_linear_transform(tr.linear)
+        scale2 = get_scale_from_linear_transform(tr.linear)
     else:
+        is_st = False
         padding = 1 if padding is None else padding
 
         roi_src, roi_dst = compute_roi(src, dst, tr, pts_per_side, padding, align)
         center_pt = roi_center(roi_src)[::-1]
-        scale = get_scale_at_point(center_pt, tr)
+        scale2 = get_scale_at_point(center_pt, tr)
 
-    scale = min(1/s for s in scale)
+    # change scale direction to be a shrink by factor
+    scale2 = tuple(1/s for s in scale2)
+    scale = min(scale2)
 
-    return roi_src, scale, roi_dst
+    return SimpleNamespace(roi_src=roi_src,
+                           roi_dst=roi_dst,
+                           scale=scale,
+                           scale2=scale2,
+                           is_st=is_st,
+                           transform=tr)

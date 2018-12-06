@@ -752,33 +752,39 @@ def test_compute_reproject_roi():
     dst = geometry.GeoBox.from_geopolygon(src.extent.to_crs(epsg3857).buffer(10),
                                           resolution=src.resolution)
 
-    roi, scale, roi_dst = compute_reproject_roi(src, dst)
+    rr = compute_reproject_roi(src, dst)
 
-    assert roi == np.s_[0:src.height, 0:src.width]
-    assert 0 < scale < 1
-
-    # check pure translation case
-    roi_ = np.s_[113:-100, 33:-10]
-    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_])
-    assert roi == roi_normalise(roi_, src.shape)
-    assert scale == 1
-    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_], padding=0, align=0)
-    assert roi == roi_normalise(roi_, src.shape)
-    assert scale == 1
+    assert rr.roi_src == np.s_[0:src.height, 0:src.width]
+    assert 0 < rr.scale < 1
+    assert rr.is_st is False
+    assert rr.transform.linear is None
+    assert rr.scale in rr.scale2
 
     # check pure translation case
     roi_ = np.s_[113:-100, 33:-10]
-    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_], align=256)
+    rr = compute_reproject_roi(src, src[roi_])
+    assert rr.roi_src == roi_normalise(roi_, src.shape)
+    assert rr.scale == 1
+    assert rr.is_st is True
 
-    assert roi == np.s_[0:src.height, 0:src.width]
-    assert scale == 1
+    rr = compute_reproject_roi(src, src[roi_], padding=0, align=0)
+    assert rr.roi_src == roi_normalise(roi_, src.shape)
+    assert rr.scale == 1
+    assert rr.scale2 == (1, 1)
+
+    # check pure translation case
+    roi_ = np.s_[113:-100, 33:-10]
+    rr = compute_reproject_roi(src, src[roi_], align=256)
+
+    assert rr.roi_src == np.s_[0:src.height, 0:src.width]
+    assert rr.scale == 1
 
     roi_ = np.s_[113:-100, 33:-10]
-    roi, scale, roi_dst = compute_reproject_roi(src, src[roi_])
+    rr = compute_reproject_roi(src, src[roi_])
 
-    assert scale == 1
-    assert roi_shape(roi) == roi_shape(roi_dst)
-    assert roi_shape(roi_dst) == src[roi_].shape
+    assert rr.scale == 1
+    assert roi_shape(rr.roi_src) == roi_shape(rr.roi_dst)
+    assert roi_shape(rr.roi_dst) == src[roi_].shape
 
 
 def test_window_from_slice():
