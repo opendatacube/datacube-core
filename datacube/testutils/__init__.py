@@ -375,6 +375,7 @@ def write_gtiff(fname,
         meta = dst.meta
 
     meta['gbox'] = rio_geobox(meta)
+    meta['path'] = fname
     return meta
 
 
@@ -413,4 +414,5 @@ def rio_slurp(fname):
         data = src.read(1) if src.count == 1 else src.read()
         meta = src.meta
         meta['gbox'] = rio_geobox(meta)
+        meta['path'] = fname
         return data, meta
