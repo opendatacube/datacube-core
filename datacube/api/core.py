@@ -291,11 +291,6 @@ class Datacube(object):
 
         return apply_aliases(result, datacube_product, measurements)
 
-    def product_observations(self, **kwargs):
-        warnings.warn("product_observations() has been renamed to find_datasets() and will eventually be removed",
-                      DeprecationWarning)
-        return self.find_datasets(**kwargs)
-
     def find_datasets(self, **search_terms):
         """
         Search the index and return all datasets for a product matching the search terms.
@@ -334,12 +329,6 @@ class Datacube(object):
             datasets = (dataset for dataset in datasets if dataset.uris)
 
         return datasets
-
-    @staticmethod
-    def product_sources(datasets, group_by):
-        warnings.warn("product_sources() has been renamed to group_datasets() and will eventually be removed",
-                      DeprecationWarning)
-        return Datacube.group_datasets(datasets, group_by)
 
     @staticmethod
     def group_datasets(datasets, group_by):
@@ -417,12 +406,6 @@ class Datacube(object):
             result[measurement.name] = (dims, data, attrs)
 
         return result
-
-    @staticmethod
-    def product_data(*args, **kwargs):
-        warnings.warn("product_data() has been renamed to load_data() and will eventually be removed",
-                      DeprecationWarning)
-        return Datacube.load_data(*args, **kwargs)
 
     @staticmethod
     def _dask_load(sources, geobox, measurements, dask_chunks,
