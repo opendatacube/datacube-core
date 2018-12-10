@@ -20,6 +20,7 @@ from hypothesis.strategies import integers, text
 from pandas import to_datetime
 
 from datacube.helpers import write_geotiff
+from datacube.utils.math import num2numpy
 from datacube.model import MetadataType
 from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
 from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
@@ -797,3 +798,25 @@ def sample_document_files(data_folder):
              for f, num_docs in files]
 
     return files
+
+
+def test_num2numpy():
+    assert num2numpy(None, 'int8') is None
+    assert num2numpy(-1, 'int8').dtype == np.dtype('int8')
+    assert num2numpy(-1, 'int8').dtype == np.int8(-1)
+
+    assert num2numpy(-1, 'uint8') is None
+    assert num2numpy(256, 'uint8') is None
+    assert num2numpy(-1, 'uint16') is None
+    assert num2numpy(-1, 'uint32') is None
+    assert num2numpy(-1, 'uint8', ignore_range=True) == np.uint8(255)
+
+    assert num2numpy(0, 'uint8') == 0
+    assert num2numpy(255, 'uint8') == 255
+    assert num2numpy(-128, 'int8') == -128
+    assert num2numpy(127, 'int8') == 127
+    assert num2numpy(128, 'int8') is None
+
+    assert num2numpy(3.3, np.dtype('float32')).dtype == np.dtype('float32')
+    assert num2numpy(3.3, np.float32).dtype == np.dtype('float32')
+    assert num2numpy(3.3, np.float64).dtype == np.dtype('float64')
