@@ -721,3 +721,44 @@ def test_netcdf_multi_part():
 
     # can't tell without opening file
     assert ds('file:///tmp.nc').get_bandnumber() is None
+
+
+def test_rasterio_nodata(tmpdir):
+    from datacube.testutils.io import dc_read
+    from datacube.testutils import write_gtiff
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    roi = np.s_[10:20, 20:30]
+    xx = np.zeros((64, 64), dtype='uint8')
+    xx[roi] = 255
+
+    pp = Path(tmpdir)
+
+    mm = write_gtiff(pp/'absent_nodata.tiff', xx, nodata=None)
+    mm = SimpleNamespace(**mm)
+
+    yy = dc_read(mm.path, gbox=mm.gbox, fallback_nodata=None)
+    np.testing.assert_array_equal(xx, yy)
+
+    # fallback nodata is outside source range so it shouldn't be used
+    yy = dc_read(mm.path, gbox=mm.gbox, fallback_nodata=-1, dst_nodata=-999, dtype='int16')
+    np.testing.assert_array_equal(xx.astype('int16'), yy)
+
+    # treat zeros as no-data + type conversion while reading
+    yy_expect = xx.copy().astype('int16')
+    yy_expect[xx == 0] = -999
+    assert set(yy_expect.ravel()) == {-999, 255}
+
+    yy = dc_read(mm.path, fallback_nodata=0, dst_nodata=-999, dtype='int16')
+    np.testing.assert_array_equal(yy_expect, yy)
+
+    # now check that file nodata is used instead of fallback
+    mm = write_gtiff(pp/'with_nodata.tiff', xx, nodata=33)
+    mm = SimpleNamespace(**mm)
+    yy = dc_read(mm.path, fallback_nodata=0, dst_nodata=-999, dtype='int16')
+
+    np.testing.assert_array_equal(xx, yy)
+
+    yy = dc_read(mm.path)
+    np.testing.assert_array_equal(xx, yy)
