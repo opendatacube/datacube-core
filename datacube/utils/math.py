@@ -46,6 +46,34 @@ def clamp(x, l, u):
     return l if x < l else u if x > u else x
 
 
+def num2numpy(x, dtype, ignore_range=None):
+    """
+    Cast python numeric value to numpy.
+
+    :param x int|float: Numerical value to convert to numpy.type
+    :param dtype str|numpy.dtype|numpy.type: Destination dtype
+    :param ignore_range: If set to True skip range check and cast anyway (for example: -1 -> 255)
+
+    :returns: None if x is None
+    :returns: None if x is outside the valid range of dtype and ignore_range is not set
+    :returns: dtype.type(x) if x is within range or ignore_range=True
+    """
+    if x is None:
+        return None
+
+    if isinstance(dtype, (str, type)):
+        dtype = numpy.dtype(dtype)
+
+    if ignore_range or dtype.kind == 'f':
+        return dtype.type(x)
+
+    info = numpy.iinfo(dtype)
+    if info.min <= x <= info.max:
+        return dtype.type(x)
+
+    return None
+
+
 def data_resolution_and_offset(data):
     """
     >>> data_resolution_and_offset(numpy.array([1.5, 2.5, 3.5]))
