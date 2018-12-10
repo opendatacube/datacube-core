@@ -24,6 +24,7 @@ from datacube.storage import netcdf_writer
 from datacube.utils import datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
 from datacube.utils.math import clamp
 from datacube.utils import geometry
+from datacube.utils.math import num2numpy
 from datacube.utils import is_url, uri_to_local_path, get_part_from_uri
 
 import numpy
@@ -160,8 +161,11 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
                 _LOG.debug('Failed Read: %s', src, exc_info=1)
                 return
             dest = dest[offset[0]:offset[0] + tmp.shape[0], offset[1]:offset[1] + tmp.shape[1]]
-            where_valid_data = (tmp != src.nodata) if not numpy.isnan(src.nodata) else ~numpy.isnan(tmp)
-            numpy.copyto(dest, tmp, where=where_valid_data)
+            if src.nodata is None:
+                numpy.copyto(dest, tmp)
+            else:
+                where_valid_data = (tmp != src.nodata) if not numpy.isnan(src.nodata) else ~numpy.isnan(tmp)
+                numpy.copyto(dest, tmp, where=where_valid_data)
         else:
             if dest.dtype == numpy.dtype('int8'):
                 dest = dest.view(dtype='uint8')
@@ -227,9 +231,9 @@ class BandDataSource(object):
     def __init__(self, source, nodata=None):
         self.source = source
         if nodata is None:
-            assert self.source.ds.nodatavals[0] is not None
-            nodata = self.dtype.type(self.source.ds.nodatavals[0])
-        self.nodata = nodata
+            nodata = self.source.ds.nodatavals[self.source.bidx-1]
+
+        self.nodata = num2numpy(nodata, source.dtype)
 
     @property
     def crs(self):
@@ -274,7 +278,7 @@ class OverrideBandDataSource(object):
 
     def __init__(self, source, nodata, crs, transform):
         self.source = source
-        self.nodata = nodata
+        self.nodata = num2numpy(nodata, source.dtype)
         self.crs = crs
         self.transform = transform
 
@@ -352,8 +356,8 @@ class RasterioDataSource(DataSource):
                     override = True
 
                 band = rasterio.band(src, bandnumber)
-                nodata = numpy.dtype(band.dtype).type(src.nodatavals[0] if src.nodatavals[0] is not None
-                                                      else self.nodata)
+                nodata = src.nodatavals[band.bidx-1] if src.nodatavals[band.bidx-1] is not None else self.nodata
+                nodata = num2numpy(nodata, band.dtype)
 
                 if override:
                     yield OverrideBandDataSource(band, nodata=nodata, crs=crs, transform=transform)
