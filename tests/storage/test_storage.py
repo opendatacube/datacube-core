@@ -733,7 +733,7 @@ def test_rasterio_nodata(tmpdir):
     xx = np.zeros((64, 64), dtype='uint8')
     xx[roi] = 255
 
-    pp = Path(tmpdir)
+    pp = Path(str(tmpdir))
 
     mm = write_gtiff(pp/'absent_nodata.tiff', xx, nodata=None)
     mm = SimpleNamespace(**mm)
