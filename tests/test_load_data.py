@@ -8,8 +8,8 @@ from pathlib import Path
 from datacube.testutils import (
     mk_sample_dataset,
     mk_test_image,
-    write_gtiff,
 )
+from datacube.testutils.io import write_gtiff
 
 
 def gen_tiff_dataset(bands,

@@ -37,59 +37,6 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
         assert var.getncattr('abc') == 'xyz'
 
 
-# def test_netcdf_source(tmpnetcdf_filename):
-#     affine = Affine.scale(0.1, 0.1) * Affine.translation(20, 30)
-#     geobox = geometry.GeoBox(110, 100, affine, geometry.CRS(GEO_PROJ))
-#     dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
-#     for name, coord in geobox.coordinates.items():
-#         dataset[name] = (name, coord.values, {'units': coord.units, 'crs': geobox.crs})
-#
-#     dataset['B10'] = (geobox.dimensions,
-#                       np.arange(11000, dtype='int16').reshape(geobox.shape),
-#                       {'nodata': 0, 'units': '1', 'crs': geobox.crs})
-#
-#     write_dataset_to_netcdf(dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
-#                             variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
-#
-#     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-#         nco.set_auto_mask(False)
-#         source = NetCDFDataSource(nco, 'B10')
-#         assert source.crs == geobox.crs
-#         assert source.transform.almost_equals(affine)
-#         assert (source.read() == dataset['B10']).all()
-#
-#         dest = np.empty((60, 50))
-#         source.reproject(dest, affine, geobox.crs, 0, Resampling.nearest)
-#         assert (dest == dataset['B10'][:60, :50]).all()
-#
-#         source.reproject(dest, affine * Affine.translation(10, 10), geobox.crs, 0, Resampling.nearest)
-#         assert (dest == dataset['B10'][10:70, 10:60]).all()
-#
-#         source.reproject(dest, affine * Affine.translation(-10, -10), geobox.crs, 0, Resampling.nearest)
-#         assert (dest[10:, 10:] == dataset['B10'][:50, :40]).all()
-#
-#         dest = np.empty((200, 200))
-#         source.reproject(dest, affine, geobox.crs, 0, Resampling.nearest)
-#         assert (dest[:100, :110] == dataset['B10']).all()
-#
-#         source.reproject(dest, affine * Affine.translation(10, 10), geobox.crs, 0, Resampling.nearest)
-#         assert (dest[:90, :100] == dataset['B10'][10:, 10:]).all()
-#
-#         source.reproject(dest, affine * Affine.translation(-10, -10), geobox.crs, 0, Resampling.nearest)
-#         assert (dest[10:110, 10:120] == dataset['B10']).all()
-#
-#         source.reproject(dest, affine * Affine.scale(2, 2), geobox.crs, 0, Resampling.nearest)
-#         assert (dest[:50, :55] == dataset['B10'][1::2, 1::2]).all()
-#
-#         source.reproject(dest, affine * Affine.scale(2, 2) * Affine.translation(10, 10),
-#                          geobox.crs, 0, Resampling.nearest)
-#         assert (dest[:40, :45] == dataset['B10'][21::2, 21::2]).all()
-#
-#         source.reproject(dest, affine * Affine.scale(2, 2) * Affine.translation(-10, -10),
-#                          geobox.crs, 0, Resampling.nearest)
-#         assert (dest[10:60, 10:65] == dataset['B10'][1::2, 1::2]).all()
-
-
 def test_first_source_is_priority_in_reproject_and_fuse():
     crs = geometry.CRS('EPSG:4326')
     shape = (2, 2)
@@ -724,8 +671,7 @@ def test_netcdf_multi_part():
 
 
 def test_rasterio_nodata(tmpdir):
-    from datacube.testutils.io import dc_read
-    from datacube.testutils import write_gtiff
+    from datacube.testutils.io import dc_read, write_gtiff
     from pathlib import Path
     from types import SimpleNamespace
 
