@@ -59,6 +59,7 @@ class S3Source(object):
         self.ds = self.S3DS(self)
         self.bidx = 1  # Called but unused in s3
         self.shape = dataset.s3_metadata[band_name]['s3_dataset'].macro_shape[-2:]
+        self.dtype = dtype(dataset.s3_metadata[band_name]['s3_dataset'].numpy_type)
 
     def read(self, indexes, window, write_shape):
         """Read a dataset slice from the storage.
