@@ -677,7 +677,8 @@ def test_normalise_path():
 
 
 def test_testutils_gtif(tmpdir):
-    from datacube.testutils import mk_test_image, write_gtiff, rio_slurp
+    from datacube.testutils import mk_test_image
+    from datacube.testutils.io import write_gtiff, rio_slurp
 
     w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
 
@@ -746,7 +747,7 @@ def test_testutils_gtif(tmpdir):
 
 
 def test_testutils_geobox():
-    from datacube.testutils import dc_crs_from_rio, rio_geobox
+    from datacube.testutils.io import dc_crs_from_rio, rio_geobox
     from rasterio.crs import CRS
     from affine import Affine
 
