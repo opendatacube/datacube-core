@@ -1,14 +1,8 @@
 import numpy as np
 
 from ..storage.storage import RasterFileDataSource, read_from_source
+from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
-
-
-def rdr_geobox(rdr):
-    """ Construct GeoBox from opened dataset reader.
-    """
-    h, w = rdr.shape
-    return GeoBox(w, h, rdr.transform, rdr.crs)
 
 
 def dc_read(path,
