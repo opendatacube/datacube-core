@@ -1,7 +1,14 @@
 from affine import Affine
 import numpy as np
 
-from datacube.storage._read import can_paste, is_almost_int, read_time_slice, rdr_geobox
+from datacube.storage._read import (
+    can_paste,
+    is_almost_int,
+    read_time_slice,
+    valid_mask,
+    pick_read_scale,
+    rdr_geobox)
+
 from datacube.storage.storage import RasterFileDataSource
 from datacube.utils.geometry import compute_reproject_roi, GeoBox
 from datacube.utils.geometry import gbox as gbx
@@ -18,6 +25,42 @@ def test_is_almost_int():
     assert is_almost_int(1.001, .1)
     assert is_almost_int(2 - 0.001, .1)
     assert is_almost_int(-1.001, .1)
+
+
+def test_valid_mask():
+    xx = np.zeros((4, 8), dtype='float32')
+    mm = valid_mask(xx, 0)
+    assert mm.dtype == 'bool'
+    assert mm.shape == xx.shape
+    assert not mm.all()
+    assert not mm.any()
+
+    mm = valid_mask(xx, 13)
+    assert mm.dtype == 'bool'
+    assert mm.shape == xx.shape
+    assert mm.all()
+
+    mm = valid_mask(xx, None)
+    assert mm.dtype == 'bool'
+    assert mm.shape == xx.shape
+    assert mm.all()
+
+    mm = valid_mask(xx, np.nan)
+    assert mm.dtype == 'bool'
+    assert mm.shape == xx.shape
+    assert mm.all()
+
+    xx[0, 0] = np.nan
+    mm = valid_mask(xx, np.nan)
+    assert not mm[0, 0]
+    assert mm.sum() == (4*8-1)
+
+
+def test_pick_read_scale():
+    assert pick_read_scale(0.7) == 1
+    assert pick_read_scale(1.3) == 1
+    assert pick_read_scale(2.3) == 2
+    assert pick_read_scale(1.99999) == 2
 
 
 def test_can_paste():
@@ -72,22 +115,30 @@ def test_read_paste(tmpdir):
     xx = mk_test_image(128, 64, nodata=None)
     assert (xx != -999).all()
 
-    mm = write_gtiff(pp/'tst-read-paste-1024x512-int16.tif', xx, nodata=-999)
+    mm = write_gtiff(pp/'tst-read-paste-1024x512-int16.tif', xx, nodata=None)
     mm = SimpleNamespace(**mm)
 
-    def _read(gbox, resampling='nearest', dst_nodata=-999, check_paste=False):
-        with RasterFileDataSource(mm.path, 1).open() as rdr:
+    def _read(gbox, resampling='nearest',
+              fallback_nodata=-999,
+              dst_nodata=-999,
+              check_paste=False):
+        with RasterFileDataSource(mm.path, 1, nodata=fallback_nodata).open() as rdr:
             if check_paste:
                 # check that we are using paste
                 paste_ok, reason = can_paste(compute_reproject_roi(rdr_geobox(rdr), gbox))
                 assert paste_ok is True, reason
 
-            yy = np.full(gbox.shape, rdr.nodata, dtype=rdr.dtype)
+            yy = np.full(gbox.shape, dst_nodata, dtype=rdr.dtype)
             roi = read_time_slice(rdr, yy, gbox, resampling, dst_nodata)
             return yy, roi
 
     # read native whole
     yy, roi = _read(mm.gbox)
+    np.testing.assert_array_equal(xx, yy)
+    assert roi == np.s_[0:64, 0:128]
+
+    # read native whole, no nodata case
+    yy, roi = _read(mm.gbox, fallback_nodata=None)
     np.testing.assert_array_equal(xx, yy)
     assert roi == np.s_[0:64, 0:128]
 
