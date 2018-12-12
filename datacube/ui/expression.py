@@ -29,7 +29,7 @@ Comparisons
 API
 ---
 
-This module exposes and single function :func:`parse_expression` which takes
+This module exposes a single function :func:`parse_expression` which takes
 a list of string expressions, and returns a dictionary of expressions to
 pass to the index search API.
 
