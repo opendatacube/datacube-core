@@ -637,20 +637,6 @@ def get_bounds(datasets, crs):
     return geometry.box(left, bottom, right, top, crs=crs)
 
 
-def set_resampling_method(measurements, resampling=None):
-    if resampling is None:
-        return measurements
-
-    def make_resampled_measurement(measurement):
-        measurement = measurement.copy()
-        measurement['resampling_method'] = resampling
-        return measurement
-
-    measurements = OrderedDict((name, make_resampled_measurement(measurement))
-                               for name, measurement in measurements.items())
-    return measurements
-
-
 def dataset_type_to_row(dt):
     row = {
         'id': dt.id,
