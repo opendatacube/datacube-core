@@ -1,8 +1,12 @@
 import numpy as np
 from affine import Affine
 import rasterio
-from datacube.utils.geometry import warp_affine
+from datacube.utils.geometry import warp_affine, rio_reproject, gbox as gbx
 from datacube.utils.geometry._warp import resampling_s2rio
+
+from datacube.testutils.geom import (
+    AlbersGS,
+)
 
 
 def test_rio_resampling_conversion():
@@ -48,6 +52,53 @@ def test_warp():
                        resampling='nearest',
                        src_nodata=0,
                        dst_nodata=-3)
+    assert dst_ is dst
+    assert (dst[:10, :20] == 33).all()
+    assert (dst[10:, :] == -3).all()
+    assert (dst[:, 20:] == -3).all()
+
+
+def test_rio_reproject():
+    src = np.zeros((128, 256),
+                   dtype='int16')
+
+    src[10:20, 30:50] = 33
+
+    s_gbox = AlbersGS.tile_geobox((15, -40))[:src.shape[0], :src.shape[1]]
+
+    dst = np.zeros_like(src)
+    dst_ = rio_reproject(src, dst,
+                         s_gbox,
+                         gbx.translate_pix(s_gbox, 30, 10),
+                         resampling='nearest')
+    assert dst_ is dst
+    assert (dst[:10, :20] == 33).all()
+    assert (dst[10:, :] == 0).all()
+    assert (dst[:, 20:] == 0).all()
+
+    # check GDAL int8 limitation work-around
+    src = src.astype('int8')
+    dst = np.zeros_like(src)
+
+    dst_ = rio_reproject(src, dst,
+                         s_gbox,
+                         gbx.translate_pix(s_gbox, 30, 10),
+                         resampling='nearest')
+
+    assert dst_ is dst
+    assert (dst[:10, :20] == 33).all()
+    assert (dst[10:, :] == 0).all()
+    assert (dst[:, 20:] == 0).all()
+
+    # check GDAL int8 limitation work-around, with no-data
+    src = src.astype('int8')
+    dst = np.zeros_like(src)
+    dst_ = rio_reproject(src, dst,
+                         s_gbox,
+                         gbx.translate_pix(s_gbox, 30, 10),
+                         src_nodata=0,
+                         dst_nodata=-3,
+                         resampling='nearest')
     assert dst_ is dst
     assert (dst[:10, :20] == 33).all()
     assert (dst[10:, :] == -3).all()

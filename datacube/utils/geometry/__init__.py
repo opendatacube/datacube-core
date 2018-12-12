@@ -45,7 +45,8 @@ from .tools import (
 )
 
 from ._warp import (
-    warp_affine
+    warp_affine,
+    rio_reproject,
 )
 
 __all__ = [
@@ -86,5 +87,6 @@ __all__ = [
     "compute_reproject_roi",
     "split_translation",
     "warp_affine",
+    "rio_reproject",
     "w_",
 ]
