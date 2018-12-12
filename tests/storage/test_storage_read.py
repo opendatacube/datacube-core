@@ -1,18 +1,13 @@
 from affine import Affine
 
 from datacube.storage._read import can_paste, is_almost_int
-from datacube.utils.geometry import compute_reproject_roi, GeoBox, CRS
+from datacube.utils.geometry import compute_reproject_roi, GeoBox
 from datacube.utils.geometry import gbox as gbx
-from datacube.model import GridSpec
 
-epsg4326 = CRS('EPSG:4326')
-epsg3577 = CRS('EPSG:3577')
-epsg3857 = CRS('EPSG:3857')
-
-AlbersGS = GridSpec(crs=epsg3577,
-                    tile_size=(100000.0, 100000.0),
-                    resolution=(-25, 25),
-                    origin=(0.0, 0.0))
+from datacube.testutils.geom import (
+    epsg3857,
+    AlbersGS,
+)
 
 
 def test_is_almost_int():
