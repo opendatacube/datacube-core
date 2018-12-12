@@ -64,3 +64,21 @@ def zoom_out(gbox: GeoBox, factor: float) -> GeoBox:
     H, W = (max(1, ceil(s/factor)) for s in gbox.shape)
     A = gbox.affine*Affine.scale(factor, factor)
     return GeoBox(W, H, A, gbox.crs)
+
+
+def affine_transform_pix(gbox: GeoBox, transform: Affine) -> GeoBox:
+    """
+    Apply affine transform on pixel side.
+
+    :param transform: Affine matrix mapping from new pixel coordinate space to
+    pixel coordinate space of input gbox
+
+    :returns: GeoBox of the same pixel shape but covering different region,
+    pixels in the output gbox relate to input geobox via `transform`
+
+    X_old_pix = transform * X_new_pix
+
+    """
+    H, W = gbox.shape
+    A = gbox.affine*transform
+    return GeoBox(W, H, A, gbox.crs)

@@ -74,3 +74,15 @@ def test_gbox_ops():
     assert d.resolution == s.resolution
     assert d.extent != s.extent
     assert s.extent.contains(d[1:, :].extent)
+
+    d = gbx.affine_transform_pix(s, Affine(1, 0, 0,
+                                           0, 1, 0))
+    assert d.crs is s.crs
+    assert d.shape == s.shape
+    assert d.resolution == s.resolution
+    assert d.extent == s.extent
+
+    d = gbx.affine_transform_pix(s, Affine.rotation(10))
+    assert d.crs is s.crs
+    assert d.shape == s.shape
+    assert d.extent != s.extent
