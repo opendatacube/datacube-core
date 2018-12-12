@@ -220,7 +220,7 @@ class Doc2Dataset(object):
     datasets are missing from the DB
 
     :param verify_lineage: If True check that lineage datasets in the
-    supplied document are identical to dB versions
+    supplied document are identical to DB versions
 
     :param skip_lineage: If True ignore lineage sub-tree in the supplied
     document and construct dataset without lineage datasets
@@ -237,7 +237,7 @@ class Doc2Dataset(object):
                                     datasets are missing from the DB
 
     :param verify_lineage: If True check that lineage datasets in the
-                           supplied document are identical to dB versions
+                           supplied document are identical to DB versions
 
     :param skip_lineage: If True ignore lineage sub-tree in the supplied
                          document and construct dataset without lineage datasets
