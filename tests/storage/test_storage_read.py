@@ -1,8 +1,11 @@
 from affine import Affine
+import numpy as np
 
-from datacube.storage._read import can_paste, is_almost_int
+from datacube.storage._read import can_paste, is_almost_int, read_time_slice, rdr_geobox
+from datacube.storage.storage import RasterFileDataSource
 from datacube.utils.geometry import compute_reproject_roi, GeoBox
 from datacube.utils.geometry import gbox as gbx
+from datacube.testutils.io import rio_slurp
 
 from datacube.testutils.geom import (
     epsg3857,
@@ -56,3 +59,67 @@ def test_can_paste():
 
     check_false(dst, stol=0.7)  # src_roi/scale != dst_roi
     check_false(gbx.translate_pix(src, 0.3, 0.4))  # sub-pixel translation
+
+
+def test_read_paste(tmpdir):
+    from datacube.testutils import mk_test_image
+    from datacube.testutils.io import write_gtiff
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    pp = Path(str(tmpdir))
+
+    xx = mk_test_image(128, 64, nodata=None)
+    assert (xx != -999).all()
+
+    mm = write_gtiff(pp/'tst-read-paste-1024x512-int16.tif', xx, nodata=-999)
+    mm = SimpleNamespace(**mm)
+
+    def _read(gbox, resampling='nearest', dst_nodata=-999, check_paste=False):
+        with RasterFileDataSource(mm.path, 1).open() as rdr:
+            if check_paste:
+                # check that we are using paste
+                paste_ok, reason = can_paste(compute_reproject_roi(rdr_geobox(rdr), gbox))
+                assert paste_ok is True, reason
+
+            yy = np.full(gbox.shape, rdr.nodata, dtype=rdr.dtype)
+            roi = read_time_slice(rdr, yy, gbox, resampling, dst_nodata)
+            return yy, roi
+
+    # read native whole
+    yy, roi = _read(mm.gbox)
+    np.testing.assert_array_equal(xx, yy)
+    assert roi == np.s_[0:64, 0:128]
+
+    # read with Y flipped
+    yy, roi = _read(gbx.flipy(mm.gbox))
+    np.testing.assert_array_equal(xx[::-1, :], yy)
+    assert roi == np.s_[0:64, 0:128]
+
+    # read with X flipped
+    yy, roi = _read(gbx.flipx(mm.gbox))
+    np.testing.assert_array_equal(xx[:, ::-1], yy)
+    assert roi == np.s_[0:64, 0:128]
+
+    # read with X and Y flipped
+    yy, roi = _read(gbx.flipy(gbx.flipx(mm.gbox)))
+    assert roi == np.s_[0:64, 0:128]
+    np.testing.assert_array_equal(xx[::-1, ::-1], yy[roi])
+
+    # dst is fully inside src
+    sroi = np.s_[10:19, 31:47]
+    yy, roi = _read(mm.gbox[sroi])
+    np.testing.assert_array_equal(xx[sroi], yy[roi])
+
+    # partial overlap
+    yy, roi = _read(gbx.translate_pix(mm.gbox, -3, -10))
+    assert roi == np.s_[10:64, 3:128]
+    np.testing.assert_array_equal(xx[:-10, :-3], yy[roi])
+    assert (yy[:10, :] == -999).all()
+    assert (yy[:, :3] == -999).all()
+
+    # scaling paste
+    yy, roi = _read(gbx.zoom_out(mm.gbox, 2), check_paste=True)
+    assert roi == np.s_[0:32, 0:64]
+    yy_, _ = rio_slurp(mm.path, (32, 64))
+    np.testing.assert_array_equal(yy_, yy)

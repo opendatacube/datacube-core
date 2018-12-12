@@ -6,7 +6,12 @@ import numpy as np
 from datacube.utils.geometry import (
     roi_shape,
     GeoBox,
+    w_,
+    warp_affine,
+    rio_reproject,
     compute_reproject_roi)
+
+from datacube.utils.geometry import gbox as gbx
 
 
 def rdr_geobox(rdr):
@@ -70,3 +75,79 @@ def can_paste(rr, stol=1e-3, ttol=1e-2):
         return False, "sub-pixel translation"
 
     return True, None
+
+
+def valid_mask(xx, nodata):
+    if np.isnan(nodata):
+        return ~np.isnan(xx)
+    if nodata is None:
+        return np.ones(xx.shape, dtype='bool')
+    return xx != nodata
+
+
+def pick_read_scale(scale: float, rdr=None, tol=1e-3):
+    assert scale > 0
+    # First find nearest integer scale
+    #    Scale down to nearest integer, unless we can scale up by less than tol
+    #
+    # 2.999999 -> 3
+    # 2.8 -> 2
+    # 0.3 -> 1
+
+    if scale < 1:
+        return 1
+
+    if is_almost_int(scale, tol):
+        scale = np.round(scale)
+
+    scale = int(scale)
+
+    if rdr is not None:
+        # TODO: check available overviews in rdr
+        pass
+
+    return scale
+
+
+def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata):
+    assert dst.shape == dst_gbox.shape
+    src_gbox = rdr_geobox(rdr)
+
+    rr = compute_reproject_roi(src_gbox, dst_gbox)
+    scale = pick_read_scale(rr.scale, rdr)
+
+    dst = dst[rr.roi_dst]
+    paste_ok, _ = can_paste(rr)
+
+    if paste_ok:
+        A = rr.transform.linear
+        sx, sy = A.a, A.e
+
+        pix = rdr.read(w_[rr.roi_src], out_shape=dst.shape)
+
+        if sx < 0:
+            pix = pix[:, ::-1]
+        if sy < 0:
+            pix = pix[::-1, :]
+
+        if rdr.nodata is None:
+            np.copyto(dst, pix)
+        else:
+            np.copyto(dst, pix, where=valid_mask(pix, rdr.nodata))
+    else:
+        dst_gbox = dst_gbox[rr.roi_dst]
+        src_gbox = src_gbox[rr.roi_src]
+        if scale > 1:
+            src_gbox = gbx.zoom_out(src_gbox, scale)
+
+        pix = rdr.read(w_[rr.roi_src], out_shape=src_gbox.shape)
+
+        if rr.transform.linear is not None:
+            A = (~src_gbox.transform)*dst_gbox.transform
+            warp_affine(pix, dst, A, resampling,
+                        src_nodata=rdr.nodata, dst_nodata=dst_nodata)
+        else:
+            rio_reproject(pix, dst, src_gbox, dst_gbox, resampling,
+                          src_nodata=rdr.nodata, dst_nodata=dst_nodata)
+
+    return rr.roi_dst
