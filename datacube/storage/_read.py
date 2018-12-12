@@ -78,10 +78,10 @@ def can_paste(rr, stol=1e-3, ttol=1e-2):
 
 
 def valid_mask(xx, nodata):
-    if np.isnan(nodata):
-        return ~np.isnan(xx)
     if nodata is None:
         return np.ones(xx.shape, dtype='bool')
+    if np.isnan(nodata):
+        return ~np.isnan(xx)
     return xx != nodata
 
 
