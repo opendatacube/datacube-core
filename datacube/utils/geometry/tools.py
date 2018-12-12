@@ -541,9 +541,11 @@ def compute_reproject_roi(src, dst, padding=None, align=None):
      .roi_src    : (slice, slice)
      .roi_dst    : (slice, slice)
      .scale      : float
-     .scale2     : (float, float)
+     .scale2     : (sx: float, sy: float)
      .is_st      : True|False
-     .transform
+     .transform  : src coord -> dst coord
+
+    For scale direction is: "scale > 1 --> shrink src to fit dst"
 
     """
     pts_per_side = 5
