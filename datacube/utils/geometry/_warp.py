@@ -11,7 +11,7 @@ def resampling_s2rio(name):
     Convert from string to rasterio.warp.Resampling enum, raises ValueError on bad input.
     """
     try:
-        return getattr(rasterio.warp.Resampling, name)
+        return getattr(rasterio.warp.Resampling, name.lower())
     except AttributeError:
         raise ValueError('Bad resampling parameter: {}'.format(name))
 

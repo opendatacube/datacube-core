@@ -3,6 +3,7 @@ import numpy as np
 from ..storage.storage import RasterFileDataSource, read_from_source
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
+from datacube.utils.geometry._warp import resampling_s2rio
 
 
 def dc_read(path,
@@ -27,6 +28,8 @@ def dc_read(path,
     # was None and file had none set, then use 0 as default output fill value
     if dst_nodata is None:
         dst_nodata = 0
+
+    resampling = resampling_s2rio(resampling)
 
     im = np.full(gbox.shape, dst_nodata, dtype=dtype)
     read_from_source(source, im, gbox.affine, dst_nodata, gbox.crs, resampling=resampling)
