@@ -119,13 +119,6 @@ def _write_csv(products):
                                          'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_size',
                                          'spatial_dimensions'], extrasaction='ignore')
     writer.writeheader()
-
-    # def add_first_name(row):
-    #     names_ = row['name']
-    #     row['name'] = names_ if names_ else None
-    #     return row
-
-    # writer.writerows(add_first_name(row) for row in product_dicts)
     writer.writerows(product_dicts)
 
 
