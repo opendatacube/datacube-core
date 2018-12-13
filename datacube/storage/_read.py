@@ -8,6 +8,7 @@ from ..utils.math import is_almost_int, valid_mask
 from ..utils.geometry import (
     roi_shape,
     roi_is_empty,
+    roi_is_full,
     GeoBox,
     w_,
     warp_affine,
@@ -121,11 +122,20 @@ def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata) -> (slice, slice
     dst = dst[rr.roi_dst]
     paste_ok, _ = can_paste(rr, ttol=0.9 if is_nn else 0.01)
 
+    def norm_read_args(roi, shape):
+        if roi_is_full(roi, rdr.shape):
+            roi = None
+
+        if roi is None and shape == rdr.shape:
+            shape = None
+
+        return w_[roi], shape
+
     if paste_ok:
         A = rr.transform.linear
         sx, sy = A.a, A.e
 
-        pix = rdr.read(w_[rr.roi_src], out_shape=dst.shape)
+        pix = rdr.read(*norm_read_args(rr.roi_src, dst.shape))
 
         if sx < 0:
             pix = pix[:, ::-1]
@@ -142,7 +152,7 @@ def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata) -> (slice, slice
         if scale > 1:
             src_gbox = gbx.zoom_out(src_gbox, scale)
 
-        pix = rdr.read(w_[rr.roi_src], out_shape=src_gbox.shape)
+        pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape))
 
         if rr.transform.linear is not None:
             A = (~src_gbox.transform)*dst_gbox.transform
