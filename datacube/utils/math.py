@@ -1,5 +1,5 @@
 import itertools
-from math import ceil
+from math import ceil, fmod
 
 import numpy
 import xarray
@@ -44,6 +44,27 @@ def clamp(x, l, u):
     """
     assert l <= u
     return l if x < l else u if x > u else x
+
+
+def is_almost_int(x: float, tol: float):
+    """
+    Check if number is close enough to an integer
+    """
+    x = abs(fmod(x, 1))
+    if x > 0.5:
+        x = 1 - x
+    return x < tol
+
+
+def valid_mask(xx, nodata):
+    """
+    Compute mask such that xx[mask] contains valid pixels.
+    """
+    if nodata is None:
+        return numpy.ones(xx.shape, dtype='bool')
+    if numpy.isnan(nodata):
+        return ~numpy.isnan(xx)
+    return xx != nodata
 
 
 def num2numpy(x, dtype, ignore_range=None):

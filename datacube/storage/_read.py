@@ -3,7 +3,9 @@
 from affine import Affine
 import numpy as np
 
-from datacube.utils.geometry import (
+from ..utils.math import is_almost_int, valid_mask
+
+from ..utils.geometry import (
     roi_shape,
     GeoBox,
     w_,
@@ -11,7 +13,7 @@ from datacube.utils.geometry import (
     rio_reproject,
     compute_reproject_roi)
 
-from datacube.utils.geometry import gbox as gbx
+from ..utils.geometry import gbox as gbx
 
 
 def rdr_geobox(rdr):
@@ -19,15 +21,6 @@ def rdr_geobox(rdr):
     """
     h, w = rdr.shape
     return GeoBox(w, h, rdr.transform, rdr.crs)
-
-
-def is_almost_int(x, tol):
-    from math import fmod
-
-    x = abs(fmod(x, 1))
-    if x > 0.5:
-        x = 1 - x
-    return x < tol
 
 
 def can_paste(rr, stol=1e-3, ttol=1e-2):
@@ -75,14 +68,6 @@ def can_paste(rr, stol=1e-3, ttol=1e-2):
         return False, "sub-pixel translation"
 
     return True, None
-
-
-def valid_mask(xx, nodata):
-    if nodata is None:
-        return np.ones(xx.shape, dtype='bool')
-    if np.isnan(nodata):
-        return ~np.isnan(xx)
-    return xx != nodata
 
 
 def pick_read_scale(scale: float, rdr=None, tol=1e-3):

@@ -3,9 +3,7 @@ import numpy as np
 
 from datacube.storage._read import (
     can_paste,
-    is_almost_int,
     read_time_slice,
-    valid_mask,
     pick_read_scale,
     rdr_geobox)
 
@@ -22,42 +20,6 @@ from datacube.testutils.geom import (
     epsg3857,
     AlbersGS,
 )
-
-
-def test_is_almost_int():
-    assert is_almost_int(1, 1e-10)
-    assert is_almost_int(1.001, .1)
-    assert is_almost_int(2 - 0.001, .1)
-    assert is_almost_int(-1.001, .1)
-
-
-def test_valid_mask():
-    xx = np.zeros((4, 8), dtype='float32')
-    mm = valid_mask(xx, 0)
-    assert mm.dtype == 'bool'
-    assert mm.shape == xx.shape
-    assert not mm.all()
-    assert not mm.any()
-
-    mm = valid_mask(xx, 13)
-    assert mm.dtype == 'bool'
-    assert mm.shape == xx.shape
-    assert mm.all()
-
-    mm = valid_mask(xx, None)
-    assert mm.dtype == 'bool'
-    assert mm.shape == xx.shape
-    assert mm.all()
-
-    mm = valid_mask(xx, np.nan)
-    assert mm.dtype == 'bool'
-    assert mm.shape == xx.shape
-    assert mm.all()
-
-    xx[0, 0] = np.nan
-    mm = valid_mask(xx, np.nan)
-    assert not mm[0, 0]
-    assert mm.sum() == (4*8-1)
 
 
 def test_pick_read_scale():
