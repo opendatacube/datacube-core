@@ -14,6 +14,7 @@ from ..utils.geometry import (
     rio_reproject,
     compute_reproject_roi)
 
+from ..utils.geometry._warp import is_resampling_nn
 from ..utils.geometry import gbox as gbx
 
 
@@ -59,6 +60,12 @@ def can_paste(rr, stol=1e-3, ttol=1e-2):
     if not all(is_almost_int(n, stol) for n in (nx, ny)):
         return False, "src_roi doesn't align for scale"
 
+    # TODO: probably need to deal with sub-pixel translation here, if we want
+    # to ignore sub-pixel translation and dst roi is 1 pixel bigger than src it
+    # should still be ok to paste after cropping dst roi by one pixel on the
+    # appropriate side. As it stands sub-pixel translation will be ignored only
+    # in some cases.
+
     # scaled down shape doesn't match dst shape
     s_shape = (int(ny), int(nx))
     if s_shape != roi_shape(rr.roi_dst):
@@ -100,8 +107,6 @@ def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata) -> (slice, slice
 
     :returns: affected destination region
     """
-    # TODO: if resampling is nearest then ignore sub-pixel translation for
-    # pasting operations
     assert dst.shape == dst_gbox.shape
     src_gbox = rdr_geobox(rdr)
 
@@ -110,10 +115,11 @@ def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata) -> (slice, slice
     if roi_is_empty(rr.roi_dst):
         return rr.roi_dst
 
+    is_nn = is_resampling_nn(resampling)
     scale = pick_read_scale(rr.scale, rdr)
 
     dst = dst[rr.roi_dst]
-    paste_ok, _ = can_paste(rr)
+    paste_ok, _ = can_paste(rr, ttol=0.9 if is_nn else 0.01)
 
     if paste_ok:
         A = rr.transform.linear

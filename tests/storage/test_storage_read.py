@@ -109,6 +109,11 @@ def test_read_paste(tmpdir):
     np.testing.assert_array_equal(xx, yy)
     assert roi == np.s_[0:64, 0:128]
 
+    # read native whole, ignoring small sub-pixel translation
+    yy, roi = _read(gbx.translate_pix(mm.gbox, 0.3, -0.4))
+    np.testing.assert_array_equal(xx, yy)
+    assert roi == np.s_[0:64, 0:128]
+
     # no overlap between src and dst
     yy, roi = _read(gbx.translate_pix(mm.gbox, 10000, -10000))
     assert roi_is_empty(roi)
