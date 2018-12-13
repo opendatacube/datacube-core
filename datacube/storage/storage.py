@@ -31,10 +31,7 @@ from affine import Affine
 from datacube.compat import integer_types
 import rasterio
 
-try:
-    from rasterio.warp import Resampling
-except ImportError:
-    from rasterio.warp import RESAMPLING as Resampling
+from rasterio.warp import Resampling
 
 _LOG = logging.getLogger(__name__)
 
@@ -47,37 +44,22 @@ RESAMPLING_METHODS = {
     'average': Resampling.average,
 }
 
-assert str(rasterio.__version__) >= '0.34.0', "rasterio version 0.34.0 or higher is required"
 GDAL_NETCDF_DIM = ('NETCDF_DIM_'
                    if str(rasterio.__gdal_version__) >= '1.10.0' else
                    'NETCDF_DIMENSION_')
-
-# rasterio 1.0aX series had warp bug until 1.0a9 So we use workaround code for
-# these versions only, because of silly numbering scheme we can't use simple
-# comparison operators, since '1.0a10' is less than '1.0a9'
-RASTERIO_WARP_BUG = (str(rasterio.__version__) in set('1.0a%d' % i for i in range(9)))
-
 
 def _rasterio_resampling_method(resampling):
     return RESAMPLING_METHODS[resampling.lower()]
 
 
-if str(rasterio.__version__) >= '0.36.0':
-    def _rasterio_crs_wkt(src):
-        if src.crs:
-            return str(src.crs.wkt)
-        else:
-            return ''
-else:
-    def _rasterio_crs_wkt(src):
-        return str(src.crs_wkt)
+def _rasterio_crs_wkt(src):
+    if src.crs:
+        return str(src.crs.wkt)
+    else:
+        return ''
 
-if str(rasterio.__version__) >= '1.0':
-    def _rasterio_transform(src):
-        return src.transform
-else:
-    def _rasterio_transform(src):
-        return src.affine
+def _rasterio_transform(src):
+    return src.transform
 
 
 def _calc_offsets_impl(off, scale, src_size, dst_size):
@@ -351,9 +333,6 @@ class RasterioDataSource(DataSource):
                 # We override it here to force the reading and reprojection into separate steps
                 # TODO: Remove when we no longer care about those versions of rasterio
                 bandnumber = self.get_bandnumber(src)
-                if bandnumber > 1 and RASTERIO_WARP_BUG:
-                    override = True
-
                 band = rasterio.band(src, bandnumber)
                 nodata = src.nodatavals[band.bidx-1] if src.nodatavals[band.bidx-1] is not None else self.nodata
                 nodata = num2numpy(nodata, band.dtype)
