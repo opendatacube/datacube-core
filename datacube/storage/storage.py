@@ -8,12 +8,11 @@ Important functions are:
 * :func:`read_from_source`
 
 """
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Dict
 
 import urllib.parse
 from urllib.parse import urlparse, urljoin
@@ -532,9 +531,7 @@ def _url2rasterio(url_str, fmt, layer):
     return str(uri_to_local_path(url_str))
 
 
-def _choose_location(dataset):
-    # type: (Dataset) -> str
-
+def _choose_location(dataset: Dataset) -> str:
     # If there's a local (filesystem) URI, prefer it.
     local_uri = dataset.local_uri
     if local_uri:
@@ -550,7 +547,7 @@ def _choose_location(dataset):
     return uris[0]
 
 
-def measurement_paths(dataset):
+def measurement_paths(dataset: Dataset) -> Dict[str, str]:
     """
     Returns a dictionary mapping from band name to url pointing to band storage
     resource.
