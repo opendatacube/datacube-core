@@ -12,7 +12,6 @@ from datacube.storage._read import (
 from datacube.storage.storage import RasterFileDataSource
 from datacube.utils.geometry import compute_reproject_roi, GeoBox
 from datacube.utils.geometry import gbox as gbx
-from datacube.testutils.io import rio_slurp
 
 from datacube.testutils.geom import (
     epsg3857,
@@ -172,5 +171,4 @@ def test_read_paste(tmpdir):
     # scaling paste
     yy, roi = _read(gbx.zoom_out(mm.gbox, 2), check_paste=True)
     assert roi == np.s_[0:32, 0:64]
-    yy_, _ = rio_slurp(mm.path, (32, 64))
-    np.testing.assert_array_equal(yy_, yy)
+    np.testing.assert_array_equal(xx[1::2, 1::2], yy)
