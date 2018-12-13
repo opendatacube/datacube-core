@@ -12,6 +12,9 @@ class WindowFromSlice(object):
     """ Translate numpy slices (numpy.s_) to rasterio window tuples.
     """
     def __getitem__(self, roi):
+        if roi is None:
+            return None
+
         if not isinstance(roi, collections.Sequence) or len(roi) != 2:
             raise ValueError("Need 2d roi")
 
@@ -112,6 +115,20 @@ def roi_shape(roi):
 
 def roi_is_empty(roi):
     return any(d <= 0 for d in roi_shape(roi))
+
+
+def roi_is_full(roi, shape):
+    """
+    :returns: True if roi covers region from (0,..) -> shape
+    """
+    def slice_full(s, n):
+        return s.start in (0, None) and s.stop in (n, None)
+
+    if isinstance(roi, slice):
+        roi = (roi,)
+        shape = (shape,)
+
+    return all(slice_full(s, n) for s, n in zip(roi, shape))
 
 
 def roi_normalise(roi, shape):
