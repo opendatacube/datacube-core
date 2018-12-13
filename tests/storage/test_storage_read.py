@@ -10,7 +10,12 @@ from datacube.storage._read import (
     rdr_geobox)
 
 from datacube.storage.storage import RasterFileDataSource
-from datacube.utils.geometry import compute_reproject_roi, GeoBox
+from datacube.utils.geometry import (
+    compute_reproject_roi,
+    GeoBox,
+    roi_shape,
+)
+
 from datacube.utils.geometry import gbox as gbx
 
 from datacube.testutils.geom import (
@@ -114,7 +119,7 @@ def test_read_paste(tmpdir):
     xx = mk_test_image(128, 64, nodata=None)
     assert (xx != -999).all()
 
-    mm = write_gtiff(pp/'tst-read-paste-1024x512-int16.tif', xx, nodata=None)
+    mm = write_gtiff(pp/'tst-read-paste-128x64-int16.tif', xx, nodata=None)
     mm = SimpleNamespace(**mm)
 
     def _read(gbox, resampling='nearest',
@@ -172,3 +177,61 @@ def test_read_paste(tmpdir):
     yy, roi = _read(gbx.zoom_out(mm.gbox, 2), check_paste=True)
     assert roi == np.s_[0:32, 0:64]
     np.testing.assert_array_equal(xx[1::2, 1::2], yy)
+
+
+def test_read_with_reproject(tmpdir):
+    from datacube.testutils import mk_test_image
+    from datacube.testutils.io import write_gtiff
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    pp = Path(str(tmpdir))
+
+    xx = mk_test_image(128, 64, nodata=None)
+    assert (xx != -999).all()
+    tile = AlbersGS.tile_geobox((17, -40))[:64, :128]
+
+    mm = write_gtiff(pp/'tst-read-with-reproject-128x64-int16.tif', xx,
+                     crs=str(tile.crs),
+                     resolution=tile.resolution[::-1],
+                     offset=tile.transform*(0, 0),
+                     nodata=-999)
+    mm = SimpleNamespace(**mm)
+    assert mm.gbox == tile
+
+    def _read(gbox,
+              resampling='nearest',
+              fallback_nodata=None,
+              dst_nodata=-999):
+        with RasterFileDataSource(mm.path, 1, nodata=fallback_nodata).open() as rdr:
+            yy = np.full(gbox.shape, dst_nodata, dtype=rdr.dtype)
+            roi = read_time_slice(rdr, yy, gbox, resampling, dst_nodata)
+            return yy, roi
+
+    gbox = gbx.pad(mm.gbox, 10)
+    gbox = gbx.zoom_out(gbox, 0.873)
+    yy, roi = _read(gbox)
+
+    assert roi[0].start > 0 and roi[1].start > 0
+    assert (yy[0] == -999).all()
+
+    gbox = gbx.zoom_out(mm.gbox[3:-3, 10:-10], 2.1)
+    yy, roi = _read(gbox)
+
+    assert roi_shape(roi) == gbox.shape
+    assert not (yy == -999).any()
+
+    gbox = GeoBox.from_geopolygon(mm.gbox.extent.to_crs(epsg3857).buffer(50),
+                                  resolution=mm.gbox.resolution)
+
+    assert gbox.extent.contains(mm.gbox.extent.to_crs(epsg3857))
+    assert gbox.crs != mm.gbox.crs
+    yy, roi = _read(gbox)
+    assert roi[0].start > 0 and roi[1].start > 0
+    assert (yy[0] == -999).all()
+
+    gbox = gbx.zoom_out(gbox, 4)
+    yy, roi = _read(gbox, resampling='average')
+    nvalid = (yy != -999).sum()
+    nempty = (yy == -999).sum()
+    assert nvalid > nempty
