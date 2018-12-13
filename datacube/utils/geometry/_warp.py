@@ -1,3 +1,4 @@
+from typing import Union
 import rasterio.warp
 import rasterio.crs
 import numpy as np
@@ -6,7 +7,7 @@ from affine import Affine
 _WRP_CRS = rasterio.crs.CRS.from_epsg(3857)
 
 
-def resampling_s2rio(name):
+def resampling_s2rio(name: str) -> rasterio.warp.Resampling:
     """
     Convert from string to rasterio.warp.Resampling enum, raises ValueError on bad input.
     """
@@ -14,6 +15,16 @@ def resampling_s2rio(name):
         return getattr(rasterio.warp.Resampling, name.lower())
     except AttributeError:
         raise ValueError('Bad resampling parameter: {}'.format(name))
+
+
+def is_resampling_nn(resampling: Union[str, int, rasterio.warp.Resampling]) -> bool:
+    """
+    :returns: True if resampling mode is nearest neighbour
+    :returns: False otherwise
+    """
+    if isinstance(resampling, str):
+        return resampling.lower() == 'nearest'
+    return resampling == rasterio.warp.Resampling.nearest
 
 
 def warp_affine_rio(src, dst, A, resampling,

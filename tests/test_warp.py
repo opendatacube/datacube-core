@@ -2,7 +2,7 @@ import numpy as np
 from affine import Affine
 import rasterio
 from datacube.utils.geometry import warp_affine, rio_reproject, gbox as gbx
-from datacube.utils.geometry._warp import resampling_s2rio
+from datacube.utils.geometry._warp import resampling_s2rio, is_resampling_nn
 
 from datacube.testutils.geom import (
     AlbersGS,
@@ -15,11 +15,22 @@ def test_rio_resampling_conversion():
     R = rasterio.warp.Resampling
     assert resampling_s2rio('nearest') == R.nearest
     assert resampling_s2rio('bilinear') == R.bilinear
+    assert resampling_s2rio('Bilinear') == R.bilinear
     assert resampling_s2rio('mode') == R.mode
     assert resampling_s2rio('average') == R.average
 
     with pytest.raises(ValueError):
         resampling_s2rio('no_such_mode')
+
+    # check is_resampling_nn
+    assert is_resampling_nn('nearest') is True
+    assert is_resampling_nn('Nearest') is True
+    assert is_resampling_nn('average') is False
+    assert is_resampling_nn('no_such_mode') is False
+
+    assert is_resampling_nn(R.nearest) is True
+    assert is_resampling_nn(0) is True
+    assert is_resampling_nn(R.mode) is False
 
 
 def test_warp():
