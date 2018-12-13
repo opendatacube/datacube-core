@@ -11,12 +11,18 @@ import datacube
 from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.model import Variable
-from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSource, create_netcdf_storage_unit
+from datacube.storage.storage import RasterFileDataSource, create_netcdf_storage_unit
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, Resampling, \
     RasterDatasetDataSource
 from datacube.storage._read import read_time_slice
-from datacube.utils import geometry
-from datacube.utils.geometry import GeoBox, CRS
+from datacube.utils.geometry import GeoBox
+
+from datacube.testutils.geom import epsg4326, epsg3577
+
+
+def mk_gbox(shape=(2, 2), transform=identity, crs=epsg4326):
+    H, W = shape
+    return GeoBox(W, H, transform, crs)
 
 
 def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
@@ -37,7 +43,7 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
 
 
 def test_first_source_is_priority_in_reproject_and_fuse():
-    crs = geometry.CRS('EPSG:4326')
+    crs = epsg4326
     shape = (2, 2)
     no_data = -1
 
@@ -46,13 +52,13 @@ def test_first_source_is_priority_in_reproject_and_fuse():
     sources = [source1, source2]
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
-    reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
+    reproject_and_fuse(sources, output_data, mk_gbox(shape, crs=crs), dst_nodata=no_data)
 
     assert (output_data == 1).all()
 
 
 def test_second_source_used_when_first_is_empty():
-    crs = geometry.CRS('EPSG:4326')
+    crs = epsg4326
     shape = (2, 2)
     no_data = -1
 
@@ -61,13 +67,13 @@ def test_second_source_used_when_first_is_empty():
     sources = [source1, source2]
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
-    reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
+    reproject_and_fuse(sources, output_data, mk_gbox(shape, crs=crs), dst_nodata=no_data)
 
     assert (output_data == 2).all()
 
 
 def test_mixed_result_when_first_source_partially_empty():
-    crs = geometry.CRS('EPSG:4326')
+    crs = epsg4326
     shape = (2, 2)
     no_data = -1
 
@@ -76,13 +82,13 @@ def test_mixed_result_when_first_source_partially_empty():
     sources = [source1, source2]
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
-    reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
+    reproject_and_fuse(sources, output_data, mk_gbox(shape, crs=crs), dst_nodata=no_data)
 
     assert (output_data == [[1, 1], [2, 2]]).all()
 
 
 def test_mixed_result_when_first_source_partially_empty_with_nan_nodata():
-    crs = geometry.CRS('EPSG:4326')
+    crs = epsg4326
     shape = (2, 2)
     no_data = np.nan
 
@@ -91,7 +97,7 @@ def test_mixed_result_when_first_source_partially_empty_with_nan_nodata():
     sources = [source1, source2]
 
     output_data = np.full(shape, fill_value=no_data, dtype='float64')
-    reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
+    reproject_and_fuse(sources, output_data, mk_gbox(shape, crs=crs), dst_nodata=no_data)
 
     assert (output_data == [[1, 1], [2, 2]]).all()
 
@@ -99,7 +105,7 @@ def test_mixed_result_when_first_source_partially_empty_with_nan_nodata():
 class FakeBandDataSource(object):
     def __init__(self, value, nodata, shape=(2, 2), *args, **kwargs):
         self.value = value
-        self.crs = geometry.CRS('EPSG:4326')
+        self.crs = epsg4326
         self.transform = Affine.identity()
         self.dtype = np.int16 if not np.isnan(nodata) else np.float64
         self.shape = shape
@@ -148,7 +154,7 @@ class BrokenBandDataSource(FakeBandDataSource):
 
 
 def test_read_from_broken_source():
-    crs = geometry.CRS('EPSG:4326')
+    crs = epsg4326
     shape = (2, 2)
     no_data = -1
 
@@ -158,21 +164,22 @@ def test_read_from_broken_source():
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
 
+    gbox = mk_gbox(shape, crs=crs)
+
     # Check exception is raised
     with pytest.raises(OSError):
-        reproject_and_fuse(sources, output_data, dst_transform=identity,
-                           dst_projection=crs, dst_nodata=no_data)
+        reproject_and_fuse(sources, output_data, gbox, dst_nodata=no_data)
 
     # Check can ignore errors
-    reproject_and_fuse(sources, output_data, dst_transform=identity,
-                       dst_projection=crs, dst_nodata=no_data, skip_broken_datasets=True)
+    reproject_and_fuse(sources, output_data, gbox, dst_nodata=no_data,
+                       skip_broken_datasets=True)
 
     assert (output_data == [[2, 2], [2, 2]]).all()
 
 
 class FakeDataSource(object):
     def __init__(self):
-        self.crs = geometry.CRS('EPSG:4326')
+        self.crs = epsg4326
         self.transform = Affine(0.25, 0, 100, 0, -0.25, -30)
         self.nodata = -999
         self.shape = (613, 597)
@@ -401,7 +408,7 @@ class TestRasterDataReading(object):
 
         dest = np.zeros((20, 100))
         dst_nodata = -999
-        dst_projection = geometry.CRS('EPSG:3577')
+        dst_projection = epsg3577
         dst_resampling = Resampling.nearest
 
         # Read exactly the hunk of data that we wrote
@@ -421,7 +428,7 @@ class TestRasterDataReading(object):
 
         dest = np.zeros_like(written_data)
         dst_transform = geobox.transform
-        dst_projection = geometry.CRS('EPSG:3577')
+        dst_projection = epsg3577
         dst_resampling = Resampling.nearest
 
         # Read exactly the hunk of data that we wrote
@@ -459,7 +466,7 @@ class TestRasterDataReading(object):
 
         dest = np.zeros((200, 1000))
         dst_nodata = -999
-        dst_projection = geometry.CRS('EPSG:3577')
+        dst_projection = epsg3577
         dst_resampling = Resampling.nearest
 
         # Read exactly the hunk of data that we wrote
@@ -473,7 +480,7 @@ class TestRasterDataReading(object):
 
         The :class:`RasterFileDataSource` is able to override the nodata, CRS and transform attributes if necessary.
         """
-        crs = geometry.CRS('EPSG:4326')
+        crs = epsg4326
         nodata = -999
         transform = Affine(0.01, 0.0, 111.975,
                            0.0, 0.01, -9.975)
@@ -488,7 +495,7 @@ def make_sample_netcdf(tmpdir):
     """Make a test Geospatial NetCDF file, 4000x4000 int16 random data, in a variable named `sample`.
     Return the GDAL access string."""
     sample_nc = str(tmpdir.mkdir('netcdfs').join('sample.nc'))
-    geobox = GeoBox(4000, 4000, affine=Affine(25.0, 0.0, 1200000, 0.0, -25.0, -4200000), crs=CRS('EPSG:3577'))
+    geobox = GeoBox(4000, 4000, affine=Affine(25.0, 0.0, 1200000, 0.0, -25.0, -4200000), crs=epsg3577)
 
     sample_data = np.random.randint(10000, size=(4000, 4000), dtype=np.int16)
 
@@ -508,7 +515,7 @@ def make_sample_geotiff(tmpdir):
     def internal_make_sample_geotiff(nodata=-999):
         sample_geotiff = str(tmpdir.mkdir('tiffs').join('sample.tif'))
 
-        geobox = GeoBox(100, 200, affine=Affine(25.0, 0.0, 0, 0.0, -25.0, 0), crs=CRS('EPSG:3577'))
+        geobox = GeoBox(100, 200, affine=Affine(25.0, 0.0, 0, 0.0, -25.0, 0), crs=epsg3577)
         if np.isnan(nodata):
             out_dtype = 'float64'
             sample_data = 10000 * np.random.random_sample(size=geobox.shape)

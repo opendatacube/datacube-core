@@ -5,7 +5,6 @@ Create/store dataset data into storage units based on the provided storage mappi
 Important functions are:
 
 * :func:`reproject_and_fuse`
-* :func:`read_from_source`
 
 """
 import logging
@@ -58,13 +57,14 @@ def _rasterio_transform(src):
     return src.transform
 
 
-def reproject_and_fuse(datasources, destination, dst_transform, dst_projection, dst_nodata,
+def reproject_and_fuse(datasources, destination, dst_gbox, dst_nodata,
                        resampling='nearest', fuse_func=None, skip_broken_datasets=False):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
     :param List[DataSource] datasources: Data sources to open and read from
     :param numpy.ndarray destination: ndarray of appropriate size to read data into
+    :param GeoBox dst_gbox: GeoBox defining destination region
     :type resampling: str
     :type fuse_func: callable or None
     :param bool skip_broken_datasets: Carry on in the face of adversity and failing reads.
@@ -82,8 +82,6 @@ def reproject_and_fuse(datasources, destination, dst_transform, dst_projection, 
         numpy.copyto(dest, src, where=where_nodata)
 
     fuse_func = fuse_func or copyto_fuser
-    H, W = destination.shape
-    dst_gbox = GeoBox(W, H, dst_transform, dst_projection)
 
     destination.fill(dst_nodata)
     if len(datasources) == 0:
