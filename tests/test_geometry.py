@@ -539,6 +539,7 @@ def test_geobox_scale_down():
 def test_roi_tools():
     from datacube.utils.geometry import (
         roi_is_empty,
+        roi_is_full,
         roi_shape,
         roi_normalise,
         roi_boundary,
@@ -560,6 +561,13 @@ def test_roi_tools():
 
     assert roi_is_empty(s_[:3]) is False
     assert roi_is_empty(s_[4:4]) is True
+
+    assert roi_is_full(s_[:3], 3) is True
+    assert roi_is_full(s_[:3, 0:4], (3, 4)) is True
+    assert roi_is_full(s_[:, 0:4], (33, 4)) is True
+    assert roi_is_full(s_[1:3, 0:4], (3, 4)) is False
+    assert roi_is_full(s_[1:3, 0:4], (2, 4)) is False
+    assert roi_is_full(s_[0:4, 0:4], (3, 4)) is False
 
     roi = s_[0:8, 0:4]
     roi_ = scaled_down_roi(roi, 2)
@@ -782,6 +790,7 @@ def test_compute_reproject_roi():
 def test_window_from_slice():
     from numpy import s_
 
+    assert w_[None] is None
     assert w_[s_[:3, 4:5]] == ((0, 3), (4, 5))
     assert w_[s_[0:3, :5]] == ((0, 3), (0, 5))
     assert w_[list(s_[0:3, :5])] == ((0, 3), (0, 5))
