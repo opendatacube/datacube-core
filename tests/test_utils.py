@@ -739,7 +739,7 @@ def test_testutils_gtif(tmpdir):
     write_gtiff(fname, bb[:32, :32],
                 overwrite=True)
 
-    bb_, _ = rio_slurp(fname)
+    bb_, _ = rio_slurp(fname, (32, 32))
     np.testing.assert_array_equal(bb[:32, :32], bb_)
 
     with pytest.raises(ValueError):

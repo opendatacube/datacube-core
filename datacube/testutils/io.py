@@ -127,7 +127,7 @@ def rio_geobox(meta):
     return GeoBox(w, h, transform, crs)
 
 
-def rio_slurp(fname, out_shape=None):
+def rio_slurp(fname, out_shape=None, **kw):
     """
     Read whole image file using rasterio.
 
@@ -135,8 +135,11 @@ def rio_slurp(fname, out_shape=None):
     """
     import rasterio
 
+    if out_shape is not None:
+        kw.update(out_shape=out_shape)
+
     with rasterio.open(str(fname), 'r') as src:
-        data = src.read(1, out_shape=out_shape) if src.count == 1 else src.read(out_shape=out_shape)
+        data = src.read(1, **kw) if src.count == 1 else src.read(**kw)
         meta = src.meta
         meta['gbox'] = rio_geobox(meta)
         meta['path'] = fname
