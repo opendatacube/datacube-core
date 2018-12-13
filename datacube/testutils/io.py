@@ -32,7 +32,7 @@ def dc_read(path,
         dst_nodata = 0
 
     im = np.full(gbox.shape, dst_nodata, dtype=dtype)
-    reproject_and_fuse([source], im, gbox.affine, gbox.crs, dst_nodata, resampling=resampling)
+    reproject_and_fuse([source], im, gbox, dst_nodata, resampling=resampling)
     return im
 
 
