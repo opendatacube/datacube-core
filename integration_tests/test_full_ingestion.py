@@ -297,7 +297,7 @@ def check_data_with_api(index, time_slices):
     group_by = query_group_by('time')
     sources = dc.group_datasets(observations, group_by)
     data = dc.load_data(sources, geobox, input_type.measurements.values())
-    assert hashlib.md5(data.green.data).hexdigest() == '7f5ace486e88d33edf3512e8de6b6996'
-    assert hashlib.md5(data.blue.data).hexdigest() == 'b58204f1e10dd678b292df188c242c7e'
+    assert hashlib.md5(data.green.data).hexdigest() == '147180327d0d9a3b0a52099fa0276eb2'
+    assert hashlib.md5(data.blue.data).hexdigest() == '179c4f1be3ebfa45f1573727c335de7c'
     for time_slice in range(time_slices):
         assert data.blue.values[time_slice][-1, -1] == -999

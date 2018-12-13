@@ -2,7 +2,6 @@
 """
 from contextlib import contextmanager
 import pickle
-import rasterio.warp
 
 from datacube.storage.storage import measurement_paths
 
@@ -50,19 +49,6 @@ class PickleDataSource(object):
                 return data
 
             raise NotImplementedError('Native reading not supported for this data source')
-
-        def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
-            source = self.read()
-            return rasterio.warp.reproject(source,
-                                           dest,
-                                           src_transform=self.transform,
-                                           src_crs=str(self.crs),
-                                           src_nodata=self.nodata,
-                                           dst_transform=dst_transform,
-                                           dst_crs=str(dst_crs),
-                                           dst_nodata=dst_nodata,
-                                           resampling=resampling,
-                                           **kwargs)
 
     def __init__(self, dataset, band_name):
         self._band_name = band_name
