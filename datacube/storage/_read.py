@@ -7,6 +7,7 @@ from ..utils.math import is_almost_int, valid_mask
 
 from ..utils.geometry import (
     roi_shape,
+    roi_is_empty,
     GeoBox,
     w_,
     warp_affine,
@@ -94,11 +95,21 @@ def pick_read_scale(scale: float, rdr=None, tol=1e-3):
     return scale
 
 
-def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata):
+def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata) -> (slice, slice):
+    """ From opened reader object read into `dst`
+
+    :returns: affected destination region
+    """
+    # TODO: if resampling is nearest then ignore sub-pixel translation for
+    # pasting operations
     assert dst.shape == dst_gbox.shape
     src_gbox = rdr_geobox(rdr)
 
     rr = compute_reproject_roi(src_gbox, dst_gbox)
+
+    if roi_is_empty(rr.roi_dst):
+        return rr.roi_dst
+
     scale = pick_read_scale(rr.scale, rdr)
 
     dst = dst[rr.roi_dst]

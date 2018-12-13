@@ -12,6 +12,7 @@ from datacube.utils.geometry import (
     compute_reproject_roi,
     GeoBox,
     roi_shape,
+    roi_is_empty,
 )
 
 from datacube.utils.geometry import gbox as gbx
@@ -107,6 +108,10 @@ def test_read_paste(tmpdir):
     yy, roi = _read(mm.gbox, fallback_nodata=None)
     np.testing.assert_array_equal(xx, yy)
     assert roi == np.s_[0:64, 0:128]
+
+    # no overlap between src and dst
+    yy, roi = _read(gbx.translate_pix(mm.gbox, 10000, -10000))
+    assert roi_is_empty(roi)
 
     # read with Y flipped
     yy, roi = _read(gbx.flipy(mm.gbox))
