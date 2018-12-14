@@ -9,7 +9,7 @@ from datacube.testutils import (
     mk_sample_dataset,
     mk_test_image,
 )
-from datacube.testutils.io import write_gtiff
+from datacube.testutils.io import write_gtiff, rio_slurp
 
 
 def gen_tiff_dataset(bands,
@@ -97,3 +97,36 @@ def test_load_data(tmpdir):
     assert ds_data.aa.nodata == nodata
     assert custom_fuser_call_count > 0
     np.testing.assert_array_equal(nodata + aa + aa, ds_data.aa.values[0])
+
+
+def test_rio_slurp(tmpdir):
+    w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
+
+    pp = Path(str(tmpdir))
+
+    aa = mk_test_image(w, h, dtype, nodata, nodata_width=ndw)
+
+    assert aa.shape == (h, w)
+    assert aa.dtype.name == dtype
+    assert aa[10, 30] == (30 << 8) | 10
+    assert aa[10, 11] == nodata
+
+    aa0 = aa.copy()
+    mm = write_gtiff(pp/"rio-slurp-aa.tif", aa, nodata=-999, overwrite=True)
+    mm = SimpleNamespace(**mm)
+
+    aa, _ = rio_slurp(mm.path)
+    np.testing.assert_array_equal(aa, aa0)
+
+    aa, _ = rio_slurp(mm.path, aa0.shape)
+    np.testing.assert_array_equal(aa, aa0)
+
+    aa, _ = rio_slurp(mm.path, mm.gbox)
+    np.testing.assert_array_equal(aa, aa0)
+
+    aa, _ = rio_slurp(mm.path, gbox=mm.gbox, dtype='float32')
+    assert aa.dtype == 'float32'
+    np.testing.assert_array_equal(aa, aa0.astype('float32'))
+
+    aa, _ = rio_slurp(mm.path, mm.gbox, dst_nodata=-33)
+    np.testing.assert_array_equal(aa == -33, aa0 == -999)

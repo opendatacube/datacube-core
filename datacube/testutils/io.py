@@ -127,7 +127,40 @@ def rio_geobox(meta):
     return GeoBox(w, h, transform, crs)
 
 
-def rio_slurp(fname, out_shape=None, **kw):
+def rio_slurp_reproject(fname, gbox, dtype=None, dst_nodata=None, **kw):
+    """
+    Read image with reprojection
+    """
+    import rasterio
+    from rasterio.warp import reproject
+
+    with rasterio.open(str(fname), 'r') as src:
+        src_band = rasterio.band(src, 1)
+
+        if dtype is None:
+            dtype = src.dtypes[0]
+        if dst_nodata is None:
+            dst_nodata = src.nodata
+        if dst_nodata is None:
+            dst_nodata = 0
+
+        pix = np.full(gbox.shape, dst_nodata, dtype=dtype)
+
+        reproject(src_band, pix,
+                  dst_nodata=dst_nodata,
+                  dst_transform=gbox.transform,
+                  dst_crs=str(gbox.crs),
+                  **kw)
+
+        meta = src.meta
+        meta['src_gbox'] = rio_geobox(meta)
+        meta['path'] = fname
+        meta['gbox'] = gbox
+
+        return pix, meta
+
+
+def rio_slurp_read(fname, out_shape=None, **kw):
     """
     Read whole image file using rasterio.
 
@@ -144,3 +177,23 @@ def rio_slurp(fname, out_shape=None, **kw):
         meta['gbox'] = rio_geobox(meta)
         meta['path'] = fname
         return data, meta
+
+
+def rio_slurp(fname, *args, **kw):
+    """
+    Dispatches to either:
+
+    rio_slurp_read(fname, out_shape, ..)
+    rio_slurp_reproject(fname, gbox, ...)
+
+    """
+    if len(args) == 0:
+        if 'gbox' in kw:
+            return rio_slurp_reproject(fname, **kw)
+        else:
+            return rio_slurp_read(fname, **kw)
+
+    if isinstance(args[0], GeoBox):
+        return rio_slurp_reproject(fname, *args, **kw)
+    else:
+        return rio_slurp_read(fname, *args, **kw)

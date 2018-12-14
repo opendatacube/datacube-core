@@ -17,6 +17,10 @@ from datacube.utils.geometry import (
 
 from datacube.utils.geometry import gbox as gbx
 
+from datacube.testutils.io import (
+    rio_slurp
+)
+
 from datacube.testutils.geom import (
     epsg3857,
     AlbersGS,
@@ -186,6 +190,9 @@ def test_read_with_reproject(tmpdir):
 
     assert roi[0].start > 0 and roi[1].start > 0
     assert (yy[0] == -999).all()
+
+    yy_expect, _ = rio_slurp(mm.path, gbox)
+    np.testing.assert_array_equal(yy, yy_expect)
 
     gbox = gbx.zoom_out(mm.gbox[3:-3, 10:-10], 2.1)
     yy, roi = _read(gbox)
