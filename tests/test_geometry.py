@@ -545,6 +545,7 @@ def test_roi_tools():
         roi_boundary,
         roi_from_points,
         roi_center,
+        roi_pad,
         roi_intersect,
         scaled_down_roi,
         scaled_up_roi,
@@ -599,6 +600,10 @@ def test_roi_tools():
     assert roi_intersect((s_[0:3],), s_[1:7]) == (s_[1:3],)
 
     assert roi_intersect(s_[4:7, 5:6], s_[0:1, 7:8]) == s_[4:4, 6:6]
+
+    assert roi_pad(s_[0:4], 1, 4) == s_[0:4]
+    assert roi_pad(s_[0:4, 1:5], 1, (4, 6)) == s_[0:4, 0:6]
+    assert roi_pad(s_[2:3, 1:5], 10, (7, 9)) == s_[0:7, 0:9]
 
 
 def test_split_translation():
