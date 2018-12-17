@@ -357,10 +357,10 @@ def test_read_from_fake_source():
         source,
         dst_shape=(35, 67),
         dst_dtype='float32',
-        dst_transform=data_source.transform * Affine.translation(-35, -27) * Affine.scale(1.8, 1.16),
+        dst_transform=data_source.transform * Affine.translation(-13, -27) * Affine.scale(1.8, 1.16),
         dst_nodata=float('nan'),
         dst_projection=data_source.crs,
-        resampling=Resampling.nearest)
+        resampling=Resampling.average)
 
     # scale + flip
     assert_same_read_results(

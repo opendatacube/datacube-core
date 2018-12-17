@@ -9,6 +9,7 @@ from ..utils.geometry import (
     roi_shape,
     roi_is_empty,
     roi_is_full,
+    roi_pad,
     GeoBox,
     w_,
     warp_affine,
@@ -119,7 +120,6 @@ def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata) -> (slice, slice
     is_nn = is_resampling_nn(resampling)
     scale = pick_read_scale(rr.scale, rdr)
 
-    dst = dst[rr.roi_dst]
     paste_ok, _ = can_paste(rr, ttol=0.9 if is_nn else 0.01)
 
     def norm_read_args(roi, shape):
@@ -135,6 +135,7 @@ def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata) -> (slice, slice
         A = rr.transform.linear
         sx, sy = A.a, A.e
 
+        dst = dst[rr.roi_dst]
         pix = rdr.read(*norm_read_args(rr.roi_src, dst.shape))
 
         if sx < 0:
@@ -147,6 +148,13 @@ def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata) -> (slice, slice
         else:
             np.copyto(dst, pix, where=valid_mask(pix, rdr.nodata))
     else:
+        if rr.is_st:
+            # add padding on src/dst ROIs, it was set to tight bounds
+            # TODO: this should probably happen inside compute_reproject_roi
+            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_gbox.shape)
+            rr.roi_src = roi_pad(rr.roi_src, 1, src_gbox.shape)
+
+        dst = dst[rr.roi_dst]
         dst_gbox = dst_gbox[rr.roi_dst]
         src_gbox = src_gbox[rr.roi_src]
         if scale > 1:
