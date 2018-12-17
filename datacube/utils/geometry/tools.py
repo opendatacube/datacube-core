@@ -162,6 +162,19 @@ def roi_normalise(roi, shape):
     return tuple([norm_slice(s, n) for s, n in zip(roi, shape)])
 
 
+def roi_pad(roi, pad, shape):
+    """
+    Pad ROI on each side, with clamping (0,..) -> shape
+    """
+    def pad_slice(s, n):
+        return slice(max(0, s.start - pad), min(n, s.stop + pad))
+
+    if isinstance(roi, slice):
+        return pad_slice(roi, shape)
+
+    return tuple(pad_slice(s, n) for s, n in zip(roi, shape))
+
+
 def split_translation(t):
     """
     Split translation into pixel aligned and sub-pixel components.
