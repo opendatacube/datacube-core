@@ -295,15 +295,39 @@ def mk_test_image(w, h,
 
     really it's actually: im[y, x] == ((x & 0xFF ) <<8) | (y & 0xFF)
 
+    If dtype is of floating point type:
+       im[y, x] = (x + ((y%1024)/1024))
+
     Pixels along the diagonal are set to nodata values (to disable set nodata_width=0)
     """
 
+    dtype = np.dtype(dtype)
+
     xx, yy = np.meshgrid(np.arange(w),
                          np.arange(h))
-    nshift = (np.dtype(dtype).itemsize*8)//2
-    mask = (1 << nshift) - 1
-    aa = ((xx & mask) << nshift) | (yy & mask)
-    aa = aa.astype(dtype)
+    if dtype.kind == 'f':
+        aa = xx.astype(dtype) + (yy.astype(dtype) % 1024.0) / 1024.0
+    else:
+        nshift = dtype.itemsize*8//2
+        mask = (1 << nshift) - 1
+        aa = ((xx & mask) << nshift) | (yy & mask)
+        aa = aa.astype(dtype)
+
     if nodata is not None:
         aa[abs(xx-yy) < nodata_width] = nodata
     return aa
+
+
+def split_test_image(aa):
+    """
+    Separate image created by mk_test_image into x,y components
+    """
+    if aa.dtype.kind == 'f':
+        y = np.round((aa % 1)*1024)
+        x = np.floor(aa)
+    else:
+        nshift = (aa.dtype.itemsize*8)//2
+        mask = (1 << nshift) - 1
+        y = aa & mask
+        x = aa >> nshift
+    return x, y

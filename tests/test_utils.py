@@ -676,6 +676,21 @@ def test_normalise_path():
         normalise_path(p, 'not/absolute/path')
 
 
+def test_testutils_testimage():
+    from datacube.testutils import mk_test_image, split_test_image
+
+    for dtype in ('uint16', 'uint32', 'int32', 'float32'):
+        aa = mk_test_image(128, 64, dtype=dtype, nodata=None)
+        assert aa.shape == (64, 128)
+        assert aa.dtype == dtype
+
+        xx, yy = split_test_image(aa)
+        assert (xx[:, 33] == 33).all()
+        assert (xx[:, 127] == 127).all()
+        assert (yy[23, :] == 23).all()
+        assert (yy[63, :] == 63).all()
+
+
 def test_testutils_gtif(tmpdir):
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff, rio_slurp
