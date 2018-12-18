@@ -24,6 +24,7 @@ from ._base import (
 
 from .tools import (
     is_affine_st,
+    apply_affine,
     roi_boundary,
     roi_is_empty,
     roi_is_full,
@@ -70,6 +71,7 @@ __all__ = [
     "unary_union",
     "unary_intersection",
     "is_affine_st",
+    "apply_affine",
     "compute_axis_overlap",
     "roi_boundary",
     "roi_is_empty",

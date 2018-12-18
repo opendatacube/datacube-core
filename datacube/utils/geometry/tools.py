@@ -175,6 +175,22 @@ def roi_pad(roi, pad, shape):
     return tuple(pad_slice(s, n) for s, n in zip(roi, shape))
 
 
+def apply_affine(A: Affine, x: np.ndarray, y: np.ndarray) -> (np.ndarray, np.ndarray):
+    """
+    broadcast A*(x_i, y_i) across all elements of x/y arrays in any shape (usually 2d image)
+    """
+
+    shape = x.shape
+
+    A = np.asarray(A).reshape(3, 3)
+    t = A[:2, -1].reshape((2, 1))
+    A = A[:2, :2]
+
+    x, y = A @ np.vstack([x.ravel(), y.ravel()]) + t
+
+    return tuple(a.reshape(shape) for a in (x, y))
+
+
 def split_translation(t):
     """
     Split translation into pixel aligned and sub-pixel components.
