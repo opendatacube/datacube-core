@@ -15,6 +15,7 @@ from datacube.utils.geometry import (
     roi_shape,
     split_translation,
     is_affine_st,
+    apply_affine,
     compute_axis_overlap,
     w_,
 )
@@ -604,6 +605,21 @@ def test_roi_tools():
     assert roi_pad(s_[0:4], 1, 4) == s_[0:4]
     assert roi_pad(s_[0:4, 1:5], 1, (4, 6)) == s_[0:4, 0:6]
     assert roi_pad(s_[2:3, 1:5], 10, (7, 9)) == s_[0:7, 0:9]
+
+
+def test_apply_affine():
+    A = mkA(rot=10, scale=(3, 1.3), translation=(-100, +2.3))
+    xx, yy = np.meshgrid(np.arange(13), np.arange(11))
+
+    xx_, yy_ = apply_affine(A, xx, yy)
+
+    assert xx_.shape == xx.shape
+    assert yy_.shape == xx.shape
+
+    xy_expect = [A*(x, y) for x, y in zip(xx.ravel(), yy.ravel())]
+    xy_got = [(x, y) for x, y in zip(xx_.ravel(), yy_.ravel())]
+
+    np.testing.assert_array_almost_equal(xy_expect, xy_got)
 
 
 def test_split_translation():
