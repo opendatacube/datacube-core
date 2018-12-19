@@ -66,6 +66,24 @@ def zoom_out(gbox: GeoBox, factor: float) -> GeoBox:
     return GeoBox(W, H, A, gbox.crs)
 
 
+def rotate(gbox: GeoBox, deg: float) -> GeoBox:
+    """
+    Rotate GeoBox around the center.
+
+    It's as if you stick a needle through the center of the GeoBox footprint
+    and rotate it counter clock wise by supplied number of degrees.
+
+    Note that from pixel point of view image rotates the other way. If you have
+    source image with an arrow pointing right, and you rotate GeoBox 90 degree,
+    in that view arrow should point down.
+
+    """
+    h, w = gbox.shape
+    c0 = gbox.transform*(w*0.5, h*0.5)
+    A = Affine.rotation(deg, c0)*gbox.transform
+    return GeoBox(w, h, A, gbox.crs)
+
+
 def affine_transform_pix(gbox: GeoBox, transform: Affine) -> GeoBox:
     """
     Apply affine transform on pixel side.

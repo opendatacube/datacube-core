@@ -1,10 +1,12 @@
 import numpy as np
+from affine import Affine
 import osgeo
 import pytest
 import pickle
 
 from datacube.utils import geometry
 from datacube.utils.geometry import (
+    GeoBox,
     decompose_rws,
     affine_from_pts,
     get_scale_at_point,
@@ -25,6 +27,7 @@ from datacube.testutils.geom import (
     epsg3857,
     AlbersGS,
     mkA,
+    xy_from_gbox,
 )
 
 
@@ -290,6 +293,18 @@ def test_no_epsg():
 
     assert c.epsg is None
     assert b.epsg is None
+
+
+def test_xy_from_geobox():
+    gbox = GeoBox(3, 7, Affine.translation(10, 1000), epsg3857)
+    xx, yy = xy_from_gbox(gbox)
+
+    assert xx.shape == gbox.shape
+    assert yy.shape == gbox.shape
+    assert (xx[:, 0] == 10.5).all()
+    assert (xx[:, 1] == 11.5).all()
+    assert (yy[0, :] == 1000.5).all()
+    assert (yy[6, :] == 1006.5).all()
 
 
 def test_geobox():

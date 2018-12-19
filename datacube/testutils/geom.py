@@ -1,5 +1,9 @@
+import numpy as np
+from affine import Affine
+
 from datacube.utils.geometry import (
     CRS,
+    GeoBox,
 )
 from datacube.model import GridSpec
 
@@ -16,5 +20,17 @@ AlbersGS = GridSpec(crs=epsg3577,
 
 
 def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
-    from affine import Affine
     return Affine.translation(*translation)*Affine.rotation(rot)*Affine.shear(shear)*Affine.scale(*scale)
+
+
+def xy_from_gbox(gbox: GeoBox) -> (np.ndarray, np.ndarray):
+    """
+    :returns: Two images with X and Y coordinates for centers of pixels
+    """
+    from ..utils.geometry import apply_affine
+    h, w = gbox.shape
+
+    xx, yy = np.meshgrid(np.arange(w, dtype='float64') + 0.5,
+                         np.arange(h, dtype='float64') + 0.5)
+
+    return apply_affine(gbox.transform, xx, yy)

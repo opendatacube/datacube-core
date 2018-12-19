@@ -1,4 +1,5 @@
 from affine import Affine
+import numpy as np
 from datacube.utils.geometry import gbox as gbx
 from datacube.utils import geometry
 from datacube.utils.geometry import GeoBox
@@ -86,3 +87,11 @@ def test_gbox_ops():
     assert d.crs is s.crs
     assert d.shape == s.shape
     assert d.extent != s.extent
+
+    for deg in (33, -33, 20, 90, 180):
+        d = gbx.rotate(s, 33)
+        assert d.crs is s.crs
+        assert d.shape == s.shape
+        assert d.extent != s.extent
+        np.testing.assert_almost_equal(d.extent.area, s.extent.area, 1e-5)
+        assert s[49:52, 499:502].extent.contains(d[50:51, 500:501].extent), "Check that center pixel hasn't moved"
