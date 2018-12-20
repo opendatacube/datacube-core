@@ -28,6 +28,7 @@ from datacube.testutils.geom import (
     AlbersGS,
     mkA,
     xy_from_gbox,
+    xy_norm,
 )
 
 
@@ -305,6 +306,18 @@ def test_xy_from_geobox():
     assert (xx[:, 1] == 11.5).all()
     assert (yy[0, :] == 1000.5).all()
     assert (yy[6, :] == 1006.5).all()
+
+    xx_, yy_, A = xy_norm(xx, yy)
+    assert xx_.shape == xx.shape
+    assert yy_.shape == yy.shape
+    assert (xx_.min(), xx_.max()) == (0, 1)
+    assert (yy_.min(), yy_.max()) == (0, 1)
+    assert (xx_[0] - xx_[1]).sum() != 0
+    assert (xx_[:, 0] - xx_[:, 1]).sum() != 0
+
+    XX, YY = apply_affine(A, xx_, yy_)
+    np.testing.assert_array_almost_equal(xx, XX)
+    np.testing.assert_array_almost_equal(yy, YY)
 
 
 def test_geobox():

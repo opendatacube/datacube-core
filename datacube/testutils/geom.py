@@ -4,6 +4,7 @@ from affine import Affine
 from datacube.utils.geometry import (
     CRS,
     GeoBox,
+    apply_affine,
 )
 from datacube.model import GridSpec
 
@@ -27,10 +28,49 @@ def xy_from_gbox(gbox: GeoBox) -> (np.ndarray, np.ndarray):
     """
     :returns: Two images with X and Y coordinates for centers of pixels
     """
-    from ..utils.geometry import apply_affine
     h, w = gbox.shape
 
     xx, yy = np.meshgrid(np.arange(w, dtype='float64') + 0.5,
                          np.arange(h, dtype='float64') + 0.5)
 
     return apply_affine(gbox.transform, xx, yy)
+
+
+def xy_norm(x: np.ndarray, y: np.ndarray,
+            deg: float = 45.0) -> (np.ndarray, np.ndarray, Affine):
+    """
+    Transform output of xy_from_geobox with a reversible linear transform. On
+    output x,y are in [0,1] range. Reversible Affine transform includes
+    rotation by default, this is to ensure that test images don't have
+    symmetries that are aligned to X/Y axis.
+
+    1. Rotate x,y by ``deg``
+    2. Offset and scale such that values are in [0, 1] range
+
+
+    :returns: (x', y', A)
+
+    - (x, y) == A*(x', y')
+    - [x|y]'.min() == 0
+    - [x|y]'.max() == 1
+
+    """
+
+    def norm_v(v):
+        vmin = v.min()
+        v -= vmin
+        s = 1.0/v.max()
+        v *= s
+
+        return (s, -vmin*s)
+
+    A_rot = Affine.rotation(deg)
+    x, y = apply_affine(A_rot, x, y)
+
+    sx, tx = norm_v(x)
+    sy, ty = norm_v(y)
+
+    A = Affine(sx, 0, tx,
+               0, sy, ty)*A_rot
+
+    return x, y, ~A
