@@ -725,16 +725,16 @@ def test_testutils_gtif(tmpdir):
     assert fname.exists()
     assert fname5.exists()
 
-    assert aa_meta['gbox'].shape == (h, w)
-    assert aa_meta['path'] is fname
+    assert aa_meta.gbox.shape == (h, w)
+    assert aa_meta.path is fname
 
     aa_, aa_meta_ = rio_slurp(fname)
     aa5_, aa5_meta_ = rio_slurp(fname5)
 
-    assert aa_meta_['path'] is fname
+    assert aa_meta_.path is fname
 
     (sx, _, tx,
-     _, sy, ty, *_) = aa5_meta_['transform']
+     _, sy, ty, *_) = aa5_meta_.transform
 
     assert (tx, ty) == (12300, 11100)
     assert (sx, sy) == (100, -100)
@@ -742,8 +742,8 @@ def test_testutils_gtif(tmpdir):
     np.testing.assert_array_equal(aa, aa_)
     np.testing.assert_array_equal(aa5, aa5_)
 
-    assert aa_meta_['transform'] == aa_meta['transform']
-    assert aa5_meta_['transform'] == aa5_meta['transform']
+    assert aa_meta_.transform == aa_meta.transform
+    assert aa5_meta_.transform == aa5_meta.transform
 
     # check that overwrite is off by default
     with pytest.raises(IOError):
