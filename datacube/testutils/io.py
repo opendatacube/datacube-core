@@ -4,6 +4,7 @@ from ..storage.storage import (
     RasterFileDataSource,
     reproject_and_fuse,
 )
+from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
 
@@ -127,12 +128,20 @@ def rio_geobox(meta):
     return GeoBox(w, h, transform, crs)
 
 
+def _fix_resampling(kw):
+    r = kw.get('resampling', None)
+    if isinstance(r, str):
+        kw['resampling'] = resampling_s2rio(r)
+
+
 def rio_slurp_reproject(fname, gbox, dtype=None, dst_nodata=None, **kw):
     """
     Read image with reprojection
     """
     import rasterio
     from rasterio.warp import reproject
+
+    _fix_resampling(kw)
 
     with rasterio.open(str(fname), 'r') as src:
         src_band = rasterio.band(src, 1)
@@ -167,6 +176,8 @@ def rio_slurp_read(fname, out_shape=None, **kw):
     :returns: ndarray (2d or 3d if multi-band), dict (rasterio meta)
     """
     import rasterio
+
+    _fix_resampling(kw)
 
     if out_shape is not None:
         kw.update(out_shape=out_shape)

@@ -121,7 +121,7 @@ def test_rio_slurp(tmpdir):
     aa, _ = rio_slurp(mm.path, aa0.shape)
     np.testing.assert_array_equal(aa, aa0)
 
-    aa, _ = rio_slurp(mm.path, mm.gbox)
+    aa, _ = rio_slurp(mm.path, mm.gbox, resampling='nearest')
     np.testing.assert_array_equal(aa, aa0)
 
     aa, _ = rio_slurp(mm.path, gbox=mm.gbox, dtype='float32')
