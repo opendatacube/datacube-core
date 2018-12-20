@@ -75,8 +75,8 @@ def rotate(gbox: GeoBox, deg: float) -> GeoBox:
 
     Note that from pixel point of view image rotates the other way. If you have
     source image with an arrow pointing right, and you rotate GeoBox 90 degree,
-    in that view arrow should point down.
-
+    in that view arrow should point down (this is assuming usual case of inverted
+    y-axis)
     """
     h, w = gbox.shape
     c0 = gbox.transform*(w*0.5, h*0.5)
