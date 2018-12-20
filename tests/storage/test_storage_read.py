@@ -79,7 +79,6 @@ def test_read_paste(tmpdir):
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from pathlib import Path
-    from types import SimpleNamespace
 
     pp = Path(str(tmpdir))
 
@@ -87,7 +86,6 @@ def test_read_paste(tmpdir):
     assert (xx != -999).all()
 
     mm = write_gtiff(pp/'tst-read-paste-128x64-int16.tif', xx, nodata=None)
-    mm = SimpleNamespace(**mm)
 
     def _read(gbox, resampling='nearest',
               fallback_nodata=-999,
@@ -159,7 +157,6 @@ def test_read_with_reproject(tmpdir):
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from pathlib import Path
-    from types import SimpleNamespace
 
     pp = Path(str(tmpdir))
 
@@ -172,7 +169,6 @@ def test_read_with_reproject(tmpdir):
                      resolution=tile.resolution[::-1],
                      offset=tile.transform*(0, 0),
                      nodata=-999)
-    mm = SimpleNamespace(**mm)
     assert mm.gbox == tile
 
     def _read(gbox,

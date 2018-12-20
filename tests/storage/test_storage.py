@@ -642,7 +642,6 @@ def test_netcdf_multi_part():
 def test_rasterio_nodata(tmpdir):
     from datacube.testutils.io import dc_read, write_gtiff
     from pathlib import Path
-    from types import SimpleNamespace
 
     roi = np.s_[10:20, 20:30]
     xx = np.zeros((64, 64), dtype='uint8')
@@ -651,7 +650,6 @@ def test_rasterio_nodata(tmpdir):
     pp = Path(str(tmpdir))
 
     mm = write_gtiff(pp/'absent_nodata.tiff', xx, nodata=None)
-    mm = SimpleNamespace(**mm)
 
     yy = dc_read(mm.path, gbox=mm.gbox, fallback_nodata=None)
     np.testing.assert_array_equal(xx, yy)
@@ -670,7 +668,6 @@ def test_rasterio_nodata(tmpdir):
 
     # now check that file nodata is used instead of fallback
     mm = write_gtiff(pp/'with_nodata.tiff', xx, nodata=33)
-    mm = SimpleNamespace(**mm)
     yy = dc_read(mm.path, fallback_nodata=0, dst_nodata=-999, dtype='int16')
 
     np.testing.assert_array_equal(xx, yy)

@@ -7,6 +7,7 @@ from ..storage.storage import (
 from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
+from types import SimpleNamespace
 
 
 def dc_read(path,
@@ -104,7 +105,7 @@ def write_gtiff(fname,
 
     meta['gbox'] = rio_geobox(meta)
     meta['path'] = fname
-    return meta
+    return SimpleNamespace(**meta)
 
 
 def dc_crs_from_rio(crs):
@@ -166,7 +167,7 @@ def rio_slurp_reproject(fname, gbox, dtype=None, dst_nodata=None, **kw):
         meta['path'] = fname
         meta['gbox'] = gbox
 
-        return pix, meta
+        return pix, SimpleNamespace(**meta)
 
 
 def rio_slurp_read(fname, out_shape=None, **kw):
@@ -187,7 +188,7 @@ def rio_slurp_read(fname, out_shape=None, **kw):
         meta = src.meta
         meta['gbox'] = rio_geobox(meta)
         meta['path'] = fname
-        return data, meta
+        return data, SimpleNamespace(**meta)
 
 
 def rio_slurp(fname, *args, **kw):

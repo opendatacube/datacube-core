@@ -39,12 +39,12 @@ def gen_tiff_dataset(bands,
                            overwrite=True,
                            **kwargs)
 
-        gbox = meta['gbox']
+        gbox = meta.gbox
 
         mm.append(dict(name=name,
                        path=fname,
                        layer=1,
-                       dtype=meta['dtype']))
+                       dtype=meta.dtype))
 
     uri = Path(base_folder/'metadata.yaml').absolute().as_uri()
     ds = mk_sample_dataset(mm, uri=uri, timestamp=timestamp)
@@ -113,7 +113,6 @@ def test_rio_slurp(tmpdir):
 
     aa0 = aa.copy()
     mm = write_gtiff(pp/"rio-slurp-aa.tif", aa, nodata=-999, overwrite=True)
-    mm = SimpleNamespace(**mm)
 
     aa, _ = rio_slurp(mm.path)
     np.testing.assert_array_equal(aa, aa0)
