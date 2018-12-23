@@ -7,6 +7,7 @@ from ..storage.storage import (
 from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
+from ..utils.geometry import gbox as gbx
 from types import SimpleNamespace
 
 
@@ -186,7 +187,13 @@ def rio_slurp_read(fname, out_shape=None, **kw):
     with rasterio.open(str(fname), 'r') as src:
         data = src.read(1, **kw) if src.count == 1 else src.read(**kw)
         meta = src.meta
-        meta['gbox'] = rio_geobox(meta)
+        src_gbox = rio_geobox(meta)
+
+        same_gbox = out_shape is None or out_shape == src_gbox.shape
+        gbox = src_gbox if same_gbox else gbx.zoom_to(src_gbox, out_shape)
+
+        meta['src_gbox'] = src_gbox
+        meta['gbox'] = gbox
         meta['path'] = fname
         return data, SimpleNamespace(**meta)
 

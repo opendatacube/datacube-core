@@ -112,20 +112,35 @@ def test_rio_slurp(tmpdir):
     assert aa[10, 11] == nodata
 
     aa0 = aa.copy()
-    mm = write_gtiff(pp/"rio-slurp-aa.tif", aa, nodata=-999, overwrite=True)
+    mm0 = write_gtiff(pp/"rio-slurp-aa.tif", aa, nodata=-999, overwrite=True)
 
-    aa, _ = rio_slurp(mm.path)
+    aa, mm = rio_slurp(mm0.path)
+    np.testing.assert_array_equal(aa, aa0)
+    assert mm.gbox == mm0.gbox
+    assert aa.shape == mm.gbox.shape
+
+    aa, mm = rio_slurp(mm0.path, aa0.shape)
+    np.testing.assert_array_equal(aa, aa0)
+    assert aa.shape == mm.gbox.shape
+    assert mm.gbox is mm.src_gbox
+
+    aa, mm = rio_slurp(mm0.path, (3, 7))
+    assert aa.shape == (3, 7)
+    assert aa.shape == mm.gbox.shape
+    assert mm.gbox != mm.src_gbox
+    assert mm.src_gbox == mm0.gbox
+    assert mm.gbox.extent == mm0.gbox.extent
+
+    aa, mm = rio_slurp(mm0.path, aa0.shape)
+    np.testing.assert_array_equal(aa, aa0)
+    assert aa.shape == mm.gbox.shape
+
+    aa, mm = rio_slurp(mm0.path, mm0.gbox, resampling='nearest')
     np.testing.assert_array_equal(aa, aa0)
 
-    aa, _ = rio_slurp(mm.path, aa0.shape)
-    np.testing.assert_array_equal(aa, aa0)
-
-    aa, _ = rio_slurp(mm.path, mm.gbox, resampling='nearest')
-    np.testing.assert_array_equal(aa, aa0)
-
-    aa, _ = rio_slurp(mm.path, gbox=mm.gbox, dtype='float32')
+    aa, mm = rio_slurp(mm0.path, gbox=mm0.gbox, dtype='float32')
     assert aa.dtype == 'float32'
     np.testing.assert_array_equal(aa, aa0.astype('float32'))
 
-    aa, _ = rio_slurp(mm.path, mm.gbox, dst_nodata=-33)
+    aa, mm = rio_slurp(mm0.path, mm0.gbox, dst_nodata=-33)
     np.testing.assert_array_equal(aa == -33, aa0 == -999)
