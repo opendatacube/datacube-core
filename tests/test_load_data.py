@@ -113,6 +113,7 @@ def test_rio_slurp(tmpdir):
 
     aa0 = aa.copy()
     mm0 = write_gtiff(pp/"rio-slurp-aa.tif", aa, nodata=-999, overwrite=True)
+    mm00 = write_gtiff(pp/"rio-slurp-aa-missing-nodata.tif", aa, nodata=None, overwrite=True)
 
     aa, mm = rio_slurp(mm0.path)
     np.testing.assert_array_equal(aa, aa0)
@@ -144,3 +145,6 @@ def test_rio_slurp(tmpdir):
 
     aa, mm = rio_slurp(mm0.path, mm0.gbox, dst_nodata=-33)
     np.testing.assert_array_equal(aa == -33, aa0 == -999)
+
+    aa, mm = rio_slurp(mm00.path, mm00.gbox, dst_nodata=None)
+    np.testing.assert_array_equal(aa, aa0)
