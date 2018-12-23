@@ -42,6 +42,17 @@ def test_gbox_ops():
     assert d.extent.contains(s.extent)
     assert all(ds < ss for ds, ss in zip(d.shape, s.shape))
 
+    d = gbx.zoom_to(s, s.shape)
+    assert d == s
+
+    d = gbx.zoom_to(s, (1, 3))
+    assert d.shape == (1, 3)
+    assert d.extent == s.extent
+
+    d = gbx.zoom_to(s, (10000, 10000))
+    assert d.shape == (10000, 10000)
+    assert d.extent == s.extent
+
     d = gbx.pad(s, 1)
     assert d.crs is s.crs
     assert d.resolution == s.resolution

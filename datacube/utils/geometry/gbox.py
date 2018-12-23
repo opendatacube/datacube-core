@@ -1,7 +1,7 @@
 """ Geometric operations on GeoBox class
 """
 
-from typing import Optional
+from typing import Optional, Tuple
 from affine import Affine
 
 from ._base import GeoBox
@@ -64,6 +64,19 @@ def zoom_out(gbox: GeoBox, factor: float) -> GeoBox:
     H, W = (max(1, ceil(s/factor)) for s in gbox.shape)
     A = gbox.affine*Affine.scale(factor, factor)
     return GeoBox(W, H, A, gbox.crs)
+
+
+def zoom_to(gbox: GeoBox, shape: Tuple[int, int]) -> GeoBox:
+    """
+    :returns: GeoBox covering the same region but with different number of pixels
+              and therefore resolution.
+    """
+    H, W = gbox.shape
+    h, w = shape
+
+    sx, sy = W/float(w), H/float(h)
+    A = gbox.affine*Affine.scale(sx, sy)
+    return GeoBox(w, h, A, gbox.crs)
 
 
 def rotate(gbox: GeoBox, deg: float) -> GeoBox:
