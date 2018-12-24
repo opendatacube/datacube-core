@@ -1,6 +1,7 @@
 import numpy as np
 import collections
 from types import SimpleNamespace
+from typing import Tuple
 from affine import Affine
 
 # This is numeric code, short names make sense in this context, so disabling
@@ -175,7 +176,7 @@ def roi_pad(roi, pad, shape):
     return tuple(pad_slice(s, n) for s, n in zip(roi, shape))
 
 
-def apply_affine(A: Affine, x: np.ndarray, y: np.ndarray) -> (np.ndarray, np.ndarray):
+def apply_affine(A: Affine, x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     broadcast A*(x_i, y_i) across all elements of x/y arrays in any shape (usually 2d image)
     """
@@ -187,8 +188,8 @@ def apply_affine(A: Affine, x: np.ndarray, y: np.ndarray) -> (np.ndarray, np.nda
     A = A[:2, :2]
 
     x, y = A @ np.vstack([x.ravel(), y.ravel()]) + t
-
-    return tuple(a.reshape(shape) for a in (x, y))
+    x, y = (a.reshape(shape) for a in (x, y))
+    return (x, y)
 
 
 def split_translation(t):
@@ -372,7 +373,7 @@ def _same_crs_pix_transform(src, dst):
     return pt_tr
 
 
-def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> slice:
+def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> Tuple[slice, slice]:
     """
     s, t define linear transform from destination coordinate space to source
     >>  x_s = s * x_d + t

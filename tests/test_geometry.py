@@ -334,6 +334,18 @@ def test_fixed_point():
     dd = np.abs(aa - aa_)
     assert (dd < 1/255.0).all()
 
+    uu = to_fixed_point(aa, 'uint16')
+    assert uu.dtype == 'uint16'
+    assert tuple(uu.ravel()) == (0, 0x7FFF, 0xFFFF)
+
+    uu = to_fixed_point(aa, 'int16')
+    assert uu.dtype == 'int16'
+    assert tuple(uu.ravel()) == (0, 0x3FFF, 0x7FFF)
+
+    aa_ = from_fixed_point(uu)
+    dd = np.abs(aa - aa_)
+    assert (dd < 1.0/0x7FFF).all()
+
 
 def test_geobox():
     points_list = [
