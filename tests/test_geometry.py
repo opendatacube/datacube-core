@@ -31,6 +31,7 @@ from datacube.testutils.geom import (
     xy_norm,
     to_fixed_point,
     from_fixed_point,
+    gen_test_image_xy,
 )
 
 
@@ -320,6 +321,34 @@ def test_xy_from_geobox():
     XX, YY = apply_affine(A, xx_, yy_)
     np.testing.assert_array_almost_equal(xx, XX)
     np.testing.assert_array_almost_equal(yy, YY)
+
+
+def test_gen_test_image_xy():
+    gbox = GeoBox(3, 7, Affine.translation(10, 1000), epsg3857)
+
+    xy, denorm = gen_test_image_xy(gbox, 'float64')
+    assert xy.dtype == 'float64'
+    assert xy.shape == (2,) + gbox.shape
+
+    x, y = denorm(xy)
+    x_, y_ = xy_from_gbox(gbox)
+
+    np.testing.assert_almost_equal(x, x_)
+    np.testing.assert_almost_equal(y, y_)
+
+    xy, denorm = gen_test_image_xy(gbox, 'uint16')
+    assert xy.dtype == 'uint16'
+    assert xy.shape == (2,) + gbox.shape
+
+    x, y = denorm(xy[0], xy[1])
+    assert x.shape == xy.shape[1:]
+    assert y.shape == xy.shape[1:]
+    assert x.dtype == 'float64'
+
+    x_, y_ = xy_from_gbox(gbox)
+
+    np.testing.assert_almost_equal(x, x_, 4)
+    np.testing.assert_almost_equal(y, y_, 4)
 
 
 def test_fixed_point():
