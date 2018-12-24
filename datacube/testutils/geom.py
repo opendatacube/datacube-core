@@ -1,5 +1,6 @@
 import numpy as np
 from affine import Affine
+from typing import Callable, Union, Tuple
 
 from datacube.utils.geometry import (
     CRS,
@@ -24,7 +25,7 @@ def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
     return Affine.translation(*translation)*Affine.rotation(rot)*Affine.shear(shear)*Affine.scale(*scale)
 
 
-def xy_from_gbox(gbox: GeoBox) -> (np.ndarray, np.ndarray):
+def xy_from_gbox(gbox: GeoBox) -> Tuple[np.ndarray, np.ndarray]:
     """
     :returns: Two images with X and Y coordinates for centers of pixels
     """
@@ -37,7 +38,7 @@ def xy_from_gbox(gbox: GeoBox) -> (np.ndarray, np.ndarray):
 
 
 def xy_norm(x: np.ndarray, y: np.ndarray,
-            deg: float = 45.0) -> (np.ndarray, np.ndarray, Affine):
+            deg: float = 33.0) -> Tuple[np.ndarray, np.ndarray, Affine]:
     """
     Transform output of xy_from_geobox with a reversible linear transform. On
     output x,y are in [0,1] range. Reversible Affine transform includes
