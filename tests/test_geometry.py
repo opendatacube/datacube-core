@@ -313,8 +313,8 @@ def test_xy_from_geobox():
     xx_, yy_, A = xy_norm(xx, yy)
     assert xx_.shape == xx.shape
     assert yy_.shape == yy.shape
-    assert (xx_.min(), xx_.max()) == (0, 1)
-    assert (yy_.min(), yy_.max()) == (0, 1)
+    np.testing.assert_almost_equal((xx_.min(), xx_.max()), (0, 1))
+    np.testing.assert_almost_equal((yy_.min(), yy_.max()), (0, 1))
     assert (xx_[0] - xx_[1]).sum() != 0
     assert (xx_[:, 0] - xx_[:, 1]).sum() != 0
 
