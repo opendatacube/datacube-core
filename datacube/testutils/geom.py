@@ -97,3 +97,50 @@ def from_fixed_point(a):
     """
     ii = np.iinfo(a.dtype)
     return a.astype('float64')*(1.0/ii.max)
+
+
+def gen_test_image_xy(gbox: GeoBox,
+                      dtype: Union[str, np.dtype, type] = 'float32',
+                      deg: float = 33.0) -> Tuple[np.ndarray, Callable]:
+    """
+    Generate test image that captures pixel coordinates in pixel values.
+    Useful for testing reprojections/reads.
+
+    :param gbox: GeoBox defining pixel plane
+
+    :dtype: data type of the image, defaults to `float32`, but it can be an
+            integer type in which case normalised coordinates will be
+            quantised increasing error.
+
+    :returns: 2xWxH ndarray encoding X,Y coordinates of pixel centers in some
+              normalised space, and a callable that can convert from normalised
+              space back to coordinate space.
+
+    """
+    dtype = np.dtype(dtype)
+
+    x, y = xy_from_gbox(gbox)
+    x, y, A = xy_norm(x, y, deg)
+
+    xy = np.stack([x, y])
+
+    if dtype.kind == 'f':
+        xy = xy.astype(dtype)
+    else:
+        xy = to_fixed_point(xy)
+
+    def denorm(xy, y=None):
+        stacked = y is None
+        x, y = xy if stacked else (xy, y)
+
+        if x.dtype.kind != 'f':
+            x = from_fixed_point(x)
+            y = from_fixed_point(y)
+
+        x, y = apply_affine(A, x, y)
+        if stacked:
+            return np.stack([x, y])
+        else:
+            return x, y
+
+    return xy, denorm
