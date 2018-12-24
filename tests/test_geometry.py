@@ -29,6 +29,8 @@ from datacube.testutils.geom import (
     mkA,
     xy_from_gbox,
     xy_norm,
+    to_fixed_point,
+    from_fixed_point,
 )
 
 
@@ -318,6 +320,19 @@ def test_xy_from_geobox():
     XX, YY = apply_affine(A, xx_, yy_)
     np.testing.assert_array_almost_equal(xx, XX)
     np.testing.assert_array_almost_equal(yy, YY)
+
+
+def test_fixed_point():
+    aa = np.asarray([0, 0.5, 1])
+    uu = to_fixed_point(aa, 'uint8')
+    assert uu.dtype == 'uint8'
+    assert aa.shape == uu.shape
+    assert tuple(uu.ravel()) == (0, 127, 255)
+
+    aa_ = from_fixed_point(uu)
+    assert aa_.dtype == 'float64'
+    dd = np.abs(aa - aa_)
+    assert (dd < 1/255.0).all()
 
 
 def test_geobox():

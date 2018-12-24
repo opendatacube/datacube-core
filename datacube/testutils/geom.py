@@ -74,3 +74,25 @@ def xy_norm(x: np.ndarray, y: np.ndarray,
                0, sy, ty)*A_rot
 
     return x, y, ~A
+
+
+def to_fixed_point(a, dtype='uint16'):
+    """
+    Convert normalised ([0,1]) floating point image to integer fixed point fractional.
+
+    Note for signed types: there is no offset, 0 -> 0, 1 -> (2**(nbits - 1) - 1).
+
+    Reverse is provided by: ``from_fixed_point``
+    """
+    ii = np.iinfo(dtype)
+    return (a*ii.max).astype(ii.dtype)
+
+
+def from_fixed_point(a):
+    """
+    Convert fixed point image to floating point
+
+    This is reverse of ``to_fixed_point``
+    """
+    ii = np.iinfo(a.dtype)
+    return a.astype('float64')*(1.0/ii.max)
