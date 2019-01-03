@@ -158,7 +158,12 @@ def rio_slurp_reproject(fname, gbox, dtype=None, dst_nodata=None, **kw):
     _fix_resampling(kw)
 
     with rasterio.open(str(fname), 'r') as src:
-        src_band = rasterio.band(src, 1)
+        if src.count == 1:
+            shape = gbox.shape
+            src_band = rasterio.band(src, 1)
+        else:
+            shape = (src.count, *gbox.shape)
+            src_band = rasterio.band(src, tuple(range(1, src.count+1)))
 
         if dtype is None:
             dtype = src.dtypes[0]
@@ -167,7 +172,7 @@ def rio_slurp_reproject(fname, gbox, dtype=None, dst_nodata=None, **kw):
         if dst_nodata is None:
             dst_nodata = 0
 
-        pix = np.full(gbox.shape, dst_nodata, dtype=dtype)
+        pix = np.full(shape, dst_nodata, dtype=dtype)
 
         reproject(src_band, pix,
                   dst_nodata=dst_nodata,
