@@ -350,6 +350,10 @@ def test_gen_test_image_xy():
     np.testing.assert_almost_equal(x, x_, 4)
     np.testing.assert_almost_equal(y, y_, 4)
 
+    # call without arguments should return linear mapping
+    A = denorm()
+    assert isinstance(A, Affine)
+
 
 def test_fixed_point():
     aa = np.asarray([0, 0.5, 1])
