@@ -356,7 +356,7 @@ def test_fixed_point():
     uu = to_fixed_point(aa, 'uint8')
     assert uu.dtype == 'uint8'
     assert aa.shape == uu.shape
-    assert tuple(uu.ravel()) == (0, 127, 255)
+    assert tuple(uu.ravel()) == (0, 128, 255)
 
     aa_ = from_fixed_point(uu)
     assert aa_.dtype == 'float64'
@@ -365,11 +365,11 @@ def test_fixed_point():
 
     uu = to_fixed_point(aa, 'uint16')
     assert uu.dtype == 'uint16'
-    assert tuple(uu.ravel()) == (0, 0x7FFF, 0xFFFF)
+    assert tuple(uu.ravel()) == (0, 0x8000, 0xFFFF)
 
     uu = to_fixed_point(aa, 'int16')
     assert uu.dtype == 'int16'
-    assert tuple(uu.ravel()) == (0, 0x3FFF, 0x7FFF)
+    assert tuple(uu.ravel()) == (0, 0x4000, 0x7FFF)
 
     aa_ = from_fixed_point(uu)
     dd = np.abs(aa - aa_)
