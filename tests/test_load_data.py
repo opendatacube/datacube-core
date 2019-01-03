@@ -148,3 +148,24 @@ def test_rio_slurp(tmpdir):
 
     aa, mm = rio_slurp(mm00.path, mm00.gbox, dst_nodata=None)
     np.testing.assert_array_equal(aa, aa0)
+
+
+def test_rio_slurp_with_gbox(tmpdir):
+    w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
+
+    pp = Path(str(tmpdir))
+    aa = mk_test_image(w, h, dtype, nodata, nodata_width=ndw)
+    assert aa.dtype.name == dtype
+    assert aa[10, 30] == (30 << 8) | 10
+    assert aa[10, 11] == nodata
+
+    aa = np.stack([aa, aa[::-1, ::-1]])
+    assert aa.shape == (2, h, w)
+    aa0 = aa.copy()
+
+    mm = write_gtiff(pp/"rio-slurp-aa.tif", aa, nodata=-999, overwrite=True)
+    assert mm.count == 2
+
+    aa, mm = rio_slurp(mm.path, mm.gbox)
+    assert aa.shape == aa0.shape
+    np.testing.assert_array_equal(aa, aa0)
