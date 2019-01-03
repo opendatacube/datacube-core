@@ -350,6 +350,10 @@ def test_gen_test_image_xy():
     np.testing.assert_almost_equal(x, x_, 4)
     np.testing.assert_almost_equal(y, y_, 4)
 
+    for dt in ('int8', np.int16, np.dtype(np.uint64)):
+        xy, _ = gen_test_image_xy(gbox, dt)
+        assert xy.dtype == dt
+
     # call without arguments should return linear mapping
     A = denorm()
     assert isinstance(A, Affine)

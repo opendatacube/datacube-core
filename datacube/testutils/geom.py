@@ -129,7 +129,7 @@ def gen_test_image_xy(gbox: GeoBox,
     if dtype.kind == 'f':
         xy = xy.astype(dtype)
     else:
-        xy = to_fixed_point(xy)
+        xy = to_fixed_point(xy, dtype)
 
     def denorm(xy=None, y=None):
         if xy is None:
