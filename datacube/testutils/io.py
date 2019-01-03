@@ -47,8 +47,14 @@ def write_gtiff(fname,
                 nodata=None,
                 overwrite=False,
                 blocksize=None,
+                gbox=None,
                 **extra_rio_opts):
     """ Write ndarray to GeoTiff file.
+
+    Geospatial info can be supplied either via
+    - resolution, offset, crs
+    or
+    - gbox (takes precedence if supplied)
     """
     # pylint: disable=too-many-locals
 
@@ -75,11 +81,17 @@ def write_gtiff(fname,
         else:
             raise IOError("File exists")
 
-    sx, sy = resolution
-    tx, ty = offset
+    if gbox is not None:
+        assert gbox.shape == (h, w)
 
-    A = Affine(sx, 0, tx,
-               0, sy, ty)
+        A = gbox.transform
+        crs = str(gbox.crs)
+    else:
+        sx, sy = resolution
+        tx, ty = offset
+
+        A = Affine(sx, 0, tx,
+                   0, sy, ty)
 
     rio_opts = dict(width=w,
                     height=h,
@@ -104,7 +116,7 @@ def write_gtiff(fname,
         dst.write(pix, band)
         meta = dst.meta
 
-    meta['gbox'] = rio_geobox(meta)
+    meta['gbox'] = gbox if gbox is not None else rio_geobox(meta)
     meta['path'] = fname
     return SimpleNamespace(**meta)
 
