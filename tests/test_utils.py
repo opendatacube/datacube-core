@@ -752,10 +752,13 @@ def test_testutils_gtif(tmpdir):
 
     # check that overwrite re-writes file
     write_gtiff(fname, bb[:32, :32],
+                gbox=aa_meta.gbox[:32, :32],
                 overwrite=True)
 
-    bb_, _ = rio_slurp(fname, (32, 32))
+    bb_, mm = rio_slurp(fname, (32, 32))
     np.testing.assert_array_equal(bb[:32, :32], bb_)
+
+    assert mm.gbox == aa_meta.gbox[:32, :32]
 
     with pytest.raises(ValueError):
         write_gtiff(fname, np.zeros((3, 4, 5, 6)))
