@@ -131,7 +131,10 @@ def gen_test_image_xy(gbox: GeoBox,
     else:
         xy = to_fixed_point(xy)
 
-    def denorm(xy, y=None):
+    def denorm(xy=None, y=None):
+        if xy is None:
+            return A
+
         stacked = y is None
         x, y = xy if stacked else (xy, y)
 
