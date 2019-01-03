@@ -86,7 +86,9 @@ def to_fixed_point(a, dtype='uint16'):
     Reverse is provided by: ``from_fixed_point``
     """
     ii = np.iinfo(dtype)
-    return (a*ii.max).astype(ii.dtype)
+    a = a*ii.max + 0.5
+    a = np.clip(a, 0, ii.max, out=a)
+    return a.astype(ii.dtype)
 
 
 def from_fixed_point(a):
