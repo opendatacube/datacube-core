@@ -76,7 +76,6 @@ def _parse_time_generic(time):
 try:
     import ciso8601  # pylint: disable=wrong-import-position
 
-
     def parse_time(time):
         try:
             result = ciso8601.parse_datetime(time)
