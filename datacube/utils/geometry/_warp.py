@@ -3,7 +3,9 @@ import rasterio.warp
 import rasterio.crs
 import numpy as np
 from affine import Affine
+from . import GeoBox
 
+Resampling = Union[str, int, rasterio.warp.Resampling]  # pylint: disable=invalid-name
 _WRP_CRS = rasterio.crs.CRS.from_epsg(3857)
 
 
@@ -17,7 +19,7 @@ def resampling_s2rio(name: str) -> rasterio.warp.Resampling:
         raise ValueError('Bad resampling parameter: {}'.format(name))
 
 
-def is_resampling_nn(resampling: Union[str, int, rasterio.warp.Resampling]) -> bool:
+def is_resampling_nn(resampling: Resampling) -> bool:
     """
     :returns: True if resampling mode is nearest neighbour
     :returns: False otherwise
@@ -27,7 +29,10 @@ def is_resampling_nn(resampling: Union[str, int, rasterio.warp.Resampling]) -> b
     return resampling == rasterio.warp.Resampling.nearest
 
 
-def warp_affine_rio(src, dst, A, resampling,
+def warp_affine_rio(src: np.ndarray,
+                    dst: np.ndarray,
+                    A: Affine,
+                    resampling: Resampling,
                     src_nodata=None,
                     dst_nodata=None,
                     **kwargs):
@@ -81,7 +86,10 @@ def warp_affine_rio(src, dst, A, resampling,
     return dst0
 
 
-def warp_affine(src, dst, A, resampling,
+def warp_affine(src: np.ndarray,
+                dst: np.ndarray,
+                A: Affine,
+                resampling: Resampling,
                 src_nodata=None,
                 dst_nodata=None,
                 **kwargs):
@@ -105,10 +113,11 @@ def warp_affine(src, dst, A, resampling,
                            **kwargs)
 
 
-def rio_reproject(src, dst,
-                  s_gbox,
-                  d_gbox,
-                  resampling,
+def rio_reproject(src: np.ndarray,
+                  dst: np.ndarray,
+                  s_gbox: GeoBox,
+                  d_gbox: GeoBox,
+                  resampling: Resampling,
                   src_nodata=None,
                   dst_nodata=None,
                   **kwargs):

@@ -793,8 +793,7 @@ def metadata_from_doc(doc):
     return MetadataType(doc, get_dataset_fields(doc))
 
 
-def _range_representer(dumper, data):
-    # type: (yaml.Dumper, Range) -> Node
+def _range_representer(dumper: yaml.Dumper, data: Range) -> yaml.Node:
     begin, end = data
 
     # pyyaml doesn't output timestamps in flow style as timestamps(?)

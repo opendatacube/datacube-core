@@ -24,11 +24,8 @@ def _dict_representer(dumper, data):
     return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
 
 
-def _reduced_accuracy_decimal_representer(dumper, data):
-    # type: (yaml.Dumper, Decimal) -> Node
-    return dumper.represent_float(
-        float(data)
-    )
+def _reduced_accuracy_decimal_representer(dumper: yaml.Dumper, data: Decimal) -> yaml.Node:
+    return dumper.represent_float(float(data))
 
 
 SafeDatacubeDumper.add_representer(OrderedDict, _dict_representer)
