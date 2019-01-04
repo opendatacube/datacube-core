@@ -10,6 +10,7 @@ from datacube.utils.geometry import (
     decompose_rws,
     affine_from_pts,
     get_scale_at_point,
+    mk_point_transformer,
     native_pix_transform,
     scaled_down_geobox,
     compute_reproject_roi,
@@ -733,6 +734,36 @@ def test_apply_affine():
     xy_got = [(x, y) for x, y in zip(xx_.ravel(), yy_.ravel())]
 
     np.testing.assert_array_almost_equal(xy_expect, xy_got)
+
+
+def test_point_transformer():
+    from datacube.utils.geometry import point
+
+    tr = mk_point_transformer(epsg3857, epsg4326)
+    tr_back = mk_point_transformer(epsg4326, epsg3857)
+
+    pts = [(0, 0), (0, 1),
+           (1, 2), (10, 11)]
+    x, y = np.vstack(pts).astype('float64').T
+
+    pts_expect = [point(*pt, epsg3857).to_crs(epsg4326).points[0]
+                  for pt in pts]
+
+    x_expect = [pt[0] for pt in pts_expect]
+    y_expect = [pt[1] for pt in pts_expect]
+
+    x_, y_ = tr(x, y)
+    assert x_.shape == x.shape
+    np.testing.assert_array_almost_equal(x_, x_expect)
+    np.testing.assert_array_almost_equal(y_, y_expect)
+
+    x, y = (a.reshape(2, 2) for a in (x, y))
+    x_, y_ = tr(x, y)
+    assert x_.shape == x.shape
+
+    xb, yb = tr_back(x_, y_)
+    np.testing.assert_array_almost_equal(x, xb)
+    np.testing.assert_array_almost_equal(y, yb)
 
 
 def test_split_translation():
