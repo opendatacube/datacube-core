@@ -131,18 +131,30 @@ def gen_test_image_xy(gbox: GeoBox,
     else:
         xy = to_fixed_point(xy, dtype)
 
-    def denorm(xy=None, y=None):
+    def denorm(xy=None, y=None, nodata=None):
         if xy is None:
             return A
 
         stacked = y is None
         x, y = xy if stacked else (xy, y)
+        missing_mask = None
+
+        if nodata is not None:
+            if np.isnan(nodata):
+                missing_mask = np.isnan(x) + np.isnan(y)
+            else:
+                missing_mask = (x == nodata) + (y == nodata)
 
         if x.dtype.kind != 'f':
             x = from_fixed_point(x)
             y = from_fixed_point(y)
 
         x, y = apply_affine(A, x, y)
+
+        if missing_mask is not None:
+            x[missing_mask] = np.nan
+            y[missing_mask] = np.nan
+
         if stacked:
             return np.stack([x, y])
         else:
