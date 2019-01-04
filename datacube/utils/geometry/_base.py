@@ -230,6 +230,11 @@ def mk_point_transformer(src_crs: CRS, dst_crs: CRS) -> Callable[
         x_ = xy[0].reshape(x.shape)
         y_ = xy[1].reshape(y.shape)
 
+        # ogr doesn't seem to deal with NaNs properly
+        missing = numpy.isnan(x) + numpy.isnan(y)
+        x_[missing] = numpy.nan
+        y_[missing] = numpy.nan
+
         return (x_, y_)
 
     return transform

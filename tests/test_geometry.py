@@ -765,6 +765,13 @@ def test_point_transformer():
     np.testing.assert_array_almost_equal(x, xb)
     np.testing.assert_array_almost_equal(y, yb)
 
+    # check nans
+    x_, y_ = tr(np.asarray([np.nan, 0, np.nan]),
+                np.asarray([0, np.nan, np.nan]))
+
+    assert np.isnan(x_).all()
+    assert np.isnan(y_).all()
+
 
 def test_split_translation():
 
