@@ -354,6 +354,27 @@ def test_gen_test_image_xy():
         xy, _ = gen_test_image_xy(gbox, dt)
         assert xy.dtype == dt
 
+    # check no-data
+    xy, denorm = gen_test_image_xy(gbox, 'float32')
+    assert xy.dtype == 'float32'
+    assert xy.shape == (2,) + gbox.shape
+    xy[0, 0, :] = np.nan
+    xy[1, 1, :] = np.nan
+    xy_ = denorm(xy, nodata=np.nan)
+    assert np.isnan(xy_[:, :2]).all()
+    np.testing.assert_almost_equal(xy_[0][2:], x_[2:], 6)
+    np.testing.assert_almost_equal(xy_[1][2:], y_[2:], 6)
+
+    xy, denorm = gen_test_image_xy(gbox, 'int16')
+    assert xy.dtype == 'int16'
+    assert xy.shape == (2,) + gbox.shape
+    xy[0, 0, :] = -999
+    xy[1, 1, :] = -999
+    xy_ = denorm(xy, nodata=-999)
+    assert np.isnan(xy_[:, :2]).all()
+    np.testing.assert_almost_equal(xy_[0][2:], x_[2:], 4)
+    np.testing.assert_almost_equal(xy_[1][2:], y_[2:], 4)
+
     # call without arguments should return linear mapping
     A = denorm()
     assert isinstance(A, Affine)
