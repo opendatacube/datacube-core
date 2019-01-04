@@ -2,6 +2,7 @@
 """
 from affine import Affine
 import numpy as np
+from typing import Tuple
 
 from ..utils.math import is_almost_int, valid_mask
 
@@ -104,7 +105,7 @@ def pick_read_scale(scale: float, rdr=None, tol=1e-3):
     return scale
 
 
-def read_time_slice(rdr, dst, dst_gbox, resampling, dst_nodata) -> (slice, slice):
+def read_time_slice(rdr, dst, dst_gbox: GeoBox, resampling, dst_nodata) -> Tuple[slice, slice]:
     """ From opened reader object read into `dst`
 
     :returns: affected destination region
