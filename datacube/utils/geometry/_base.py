@@ -1,8 +1,7 @@
-from __future__ import absolute_import, division
-
 import functools
 import math
 from collections import namedtuple, OrderedDict
+from typing import Tuple, Callable
 
 import cachetools
 import numpy
@@ -208,6 +207,32 @@ class CRS(object):
 
 def mk_osr_point_transform(src_crs, dst_crs):
     return osr.CoordinateTransformation(src_crs._crs, dst_crs._crs)  # pylint: disable=protected-access
+
+
+def mk_point_transformer(src_crs: CRS, dst_crs: CRS) -> Callable[
+        [numpy.ndarray, numpy.ndarray],
+        Tuple[numpy.ndarray, numpy.ndarray]]:
+    """
+
+    :returns: Function that maps X,Y -> X',Y' where X,Y are coordinates in
+              src_crs stored in ndarray of any shape and X',Y' are same shape
+              but in dst CRS.
+    """
+
+    tr = mk_osr_point_transform(src_crs, dst_crs)
+
+    def transform(x: numpy.ndarray, y: numpy.ndarray) -> Tuple[numpy.ndarray, numpy.ndarray]:
+        assert x.shape == y.shape
+
+        xy = numpy.vstack([x.ravel(), y.ravel()])
+        xy = numpy.vstack(tr.TransformPoints(xy.T)).T[:2]
+
+        x_ = xy[0].reshape(x.shape)
+        y_ = xy[1].reshape(y.shape)
+
+        return (x_, y_)
+
+    return transform
 
 ###################################################
 # Helper methods to build ogr.Geometry from geojson
