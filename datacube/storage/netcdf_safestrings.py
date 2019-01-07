@@ -20,7 +20,7 @@ class _VariableProxy(object):
         self._wrapped = wrapped
         self.__initialized = True
 
-    @property
+    @property  # type: ignore
     def __class__(self):
         return self._wrapped.__class__
 

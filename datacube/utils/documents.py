@@ -17,7 +17,11 @@ import netCDF4
 import numpy
 import toolz
 import yaml
-from yaml import CSafeLoader as SafeLoader
+
+try:
+    from yaml import CSafeLoader as SafeLoader  # type: ignore
+except ImportError:
+    from yaml import SafeLoader
 
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.uris import mk_part_uri, as_url, uri_to_local_path

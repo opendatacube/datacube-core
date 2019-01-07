@@ -582,7 +582,7 @@ def _polygon_from_boundingbox(boundingbox, crs=None):
     return geometry.polygon(points, crs=crs)
 
 
-GeoPolygon.from_boundingbox = _polygon_from_boundingbox
+GeoPolygon.from_boundingbox = _polygon_from_boundingbox  # type: ignore
 
 
 def _polygon_from_sources_extents(sources, geobox):
@@ -592,7 +592,7 @@ def _polygon_from_sources_extents(sources, geobox):
     return valid_data.simplify(tolerance=resolution * 0.01)
 
 
-GeoPolygon.from_sources_extents = _polygon_from_sources_extents
+GeoPolygon.from_sources_extents = _polygon_from_sources_extents  # type: ignore
 
 
 class GridSpec(object):

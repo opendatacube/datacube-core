@@ -14,6 +14,7 @@ import logging
 import os
 import re
 from contextlib import contextmanager
+from typing import Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine.url import URL as EngineUrl
@@ -31,7 +32,7 @@ _LOG = logging.getLogger(__name__)
 try:
     import pwd
 
-    DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name
+    DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name  # type: Optional[str]
 except (ImportError, KeyError):
     # No default on Windows and some other systems
     DEFAULT_DB_USER = None
@@ -118,8 +119,7 @@ class PostgresDb(object):
         )
 
     @property
-    def url(self):
-        # type: () -> URL
+    def url(self) -> str:
         return self._engine.url
 
     @staticmethod

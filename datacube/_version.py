@@ -17,6 +17,7 @@ import os
 import re
 import subprocess
 import sys
+from typing import Mapping, Any
 
 
 def get_keywords():
@@ -53,8 +54,8 @@ class NotThisMethod(Exception):
     """Exception raised if a method is not valid for the current scenario."""
 
 
-LONG_VERSION_PY = {}
-HANDLERS = {}
+LONG_VERSION_PY = {}  # type: Mapping[str, str]
+HANDLERS = {}  # type: Mapping[str, Mapping[str, Any]]
 
 
 def register_vcs_handler(vcs, method):  # decorator
