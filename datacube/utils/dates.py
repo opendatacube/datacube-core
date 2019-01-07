@@ -4,8 +4,6 @@ Date and time utility functions
 Includes sequence generation functions to be used by statistics apps
 
 """
-from __future__ import absolute_import
-
 from datetime import datetime
 
 import dateutil
@@ -13,7 +11,6 @@ from dateutil.relativedelta import relativedelta
 from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
 from dateutil.tz import tzutc
 
-from datacube import compat
 
 FREQS = {'y': YEARLY, 'm': MONTHLY, 'd': DAILY}
 DURATIONS = {'y': 'years', 'm': 'months', 'd': 'days'}
@@ -68,7 +65,7 @@ def datetime_to_seconds_since_1970(dt):
 
 
 def _parse_time_generic(time):
-    if isinstance(time, compat.string_types):
+    if isinstance(time, str):
         return dateutil.parser.parse(time)
     return time
 

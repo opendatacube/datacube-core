@@ -8,13 +8,12 @@ Multi-threaded. set new_session = True
 
 """
 
-from __future__ import print_function, absolute_import, division
-
 import SharedArray as sa
 import io
 import os
 import uuid
 from itertools import repeat
+from functools import reduce
 from operator import mul
 from os.path import expanduser
 
@@ -24,7 +23,6 @@ import botocore
 import numpy as np
 import sys
 from pathos.multiprocessing import ProcessingPool
-from six.moves import reduce, zip
 
 
 # pylint: disable=too-many-locals, too-many-public-methods

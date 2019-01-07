@@ -2,9 +2,7 @@
 """
 Validation of document/dictionary changes.
 """
-from __future__ import absolute_import, division, print_function
-
-from datacube import compat
+from itertools import zip_longest
 
 
 def contains(v1, v2, case_sensitive=False):
@@ -55,8 +53,8 @@ def contains(v1, v2, case_sensitive=False):
     True
     """
     if not case_sensitive:
-        if isinstance(v1, compat.string_types):
-            return isinstance(v2, compat.string_types) and v1.lower() == v2.lower()
+        if isinstance(v1, str):
+            return isinstance(v2, str) and v1.lower() == v2.lower()
 
     if isinstance(v1, dict):
         return v2 is None or (isinstance(v2, dict) and
@@ -72,6 +70,8 @@ class MissingSentinel(object):
 
     def __repr__(self):
         return "missing"
+
+
 MISSING = MissingSentinel()
 
 
@@ -103,7 +103,7 @@ def get_doc_changes(original, new, base_prefix=()):
                                                   new.get(key, MISSING),
                                                   base_prefix + (key,)))
     elif isinstance(original, list) and isinstance(new, list):
-        for idx, (orig_item, new_item) in enumerate(compat.zip_longest(original, new)):
+        for idx, (orig_item, new_item) in enumerate(zip_longest(original, new)):
             changed_fields.extend(get_doc_changes(orig_item, new_item, base_prefix + (idx, )))
     else:
         changed_fields.append((base_prefix, original, new))

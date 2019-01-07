@@ -2,8 +2,6 @@
 """
 Core classes used across modules.
 """
-from __future__ import absolute_import, division
-
 import logging
 import math
 import warnings
@@ -15,7 +13,7 @@ from uuid import UUID
 import yaml
 from affine import Affine
 
-from datacube.compat import urlparse
+from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
 from datacube.utils.geometry import (CRS as _CRS,

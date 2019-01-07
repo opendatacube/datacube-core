@@ -76,7 +76,6 @@ requests==2.20.1
 s3transfer==0.1.13
 SharedArray==2.0.4
 singledispatch==3.4.0.3
-six==1.11.0
 snuggs==1.4.1
 SQLAlchemy==1.2.6
 toolz==0.9.0

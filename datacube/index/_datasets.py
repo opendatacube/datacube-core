@@ -2,21 +2,17 @@
 """
 API for dataset indexing, access and search.
 """
-from __future__ import absolute_import
-
 import logging
 import warnings
 from collections import namedtuple
 from uuid import UUID
 from typing import Any, Iterable, Mapping, Set, Tuple, Union
 
-from datacube import compat
 from datacube.model import Dataset, DatasetType
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, changes
-from datacube.utils.changes import get_doc_changes, check_doc_unchanged
+from datacube.utils.changes import get_doc_changes
 from . import fields
-from .exceptions import DuplicateRecordError
 
 _LOG = logging.getLogger(__name__)
 
@@ -46,7 +42,7 @@ class DatasetResource(object):
         :param bool include_sources: get the full provenance graph?
         :rtype: Dataset
         """
-        if isinstance(id_, compat.string_types):
+        if isinstance(id_, str):
             id_ = UUID(id_)
 
         with self._db.connect() as connection:
@@ -195,7 +191,7 @@ class DatasetResource(object):
 
         def load_field(f):
             # type: (Union[str, fields.Field]) -> fields.Field
-            if isinstance(f, compat.string_types):
+            if isinstance(f, str):
                 return product.metadata_type.dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
