@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import imp
 import shutil
 from pathlib import Path
@@ -11,26 +9,14 @@ from integration_tests.utils import assert_click_command, prepare_test_ingestion
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
+INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
 LS5_DATASET_TYPES = CONFIG_SAMPLES / 'dataset_types/ls5_scenes.yaml'
 TEST_DATA = PROJECT_ROOT / 'tests' / 'data' / 'lbg'
-
-INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
-
-LS5_NBAR_ALBERS = 'ls5_nbar_albers.yaml'
-LS5_PQ_ALBERS = 'ls5_pq_albers.yaml'
-
-GA_LS_PREPARE_SCRIPT = PROJECT_ROOT / 'utils/galsprepare.py'
-
-galsprepare = imp.load_source('module.name', str(GA_LS_PREPARE_SCRIPT))
-
 LBG_NBAR = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323'
 LBG_PQ = 'LS5_TM_PQ_P55_GAPQ01-002_090_084_19920323'
+LBG_CELL = (15, -40)  # x,y
 
-ALBERS_ELEMENT_SIZE = 25
-
-LBG_CELL_X = 15
-LBG_CELL_Y = -40
-LBG_CELL = (LBG_CELL_X, LBG_CELL_Y)
+galsprepare = imp.load_source('module.name', str(PROJECT_ROOT / 'utils/galsprepare.py'))
 
 
 def custom_dumb_fuser(dst, src):

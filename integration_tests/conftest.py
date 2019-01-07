@@ -2,8 +2,6 @@
 """
 Common methods for index integration tests.
 """
-from __future__ import absolute_import
-
 import itertools
 import os
 from copy import copy, deepcopy
@@ -25,13 +23,7 @@ from datacube.index._metadata_types import default_metadata_type_docs
 from integration_tests.utils import _make_geotiffs, _make_ls5_scene_datasets, load_yaml_file, \
     GEOTIFF, load_test_products
 
-try:
-    from yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from yaml import SafeLoader
-
 from datacube.config import LocalConfig
-from datacube.index.index import Index
 from datacube.drivers.postgres import PostgresDb
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
@@ -47,10 +39,6 @@ NUM_TIME_SLICES = 3
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
-
-LS5_SAMPLES = CONFIG_SAMPLES / 'storage_types' / 'ga_landsat_5'
-LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
-LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
 
 CONFIG_FILE_PATHS = [str(INTEGRATION_TESTS_DIR / 'agdcintegration.conf'),
                      os.path.expanduser('~/.datacube_integration.conf')]
@@ -341,7 +329,6 @@ def ga_metadata_type_doc():
 @pytest.fixture
 def default_metadata_types(index):
     """Inserts the default metadata types into the Index"""
-    # type: (Index, list) -> list
     for d in default_metadata_type_docs():
         index.metadata_types.add(index.metadata_types.from_doc(d))
     return index.metadata_types.get_all()

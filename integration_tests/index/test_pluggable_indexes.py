@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from configparser import ConfigParser
 
 from datacube.drivers.s3aio_index import S3AIOIndex
