@@ -25,7 +25,7 @@ from datacube.utils import is_url, uri_to_local_path, get_part_from_uri
 
 import numpy
 from affine import Affine
-from datacube.compat import integer_types
+
 import rasterio
 
 from rasterio.warp import Resampling
@@ -274,14 +274,14 @@ class RasterDatasetDataSource(RasterioDataSource):
         # If `band` property is set to an integer it overrides any other logic
         band = self._measurement.get('band')
         if band is not None:
-            if isinstance(band, integer_types):
+            if isinstance(band, int):
                 return band
             else:
                 _LOG.warning('Expected "band" property to be of integer type')
 
         if not self._netcdf:
             layer_id = self._measurement.get('layer', 1)
-            return layer_id if isinstance(layer_id, integer_types) else 1
+            return layer_id if isinstance(layer_id, int) else 1
 
         # Netcdf only below
         if self._part is not None:

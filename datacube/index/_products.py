@@ -5,7 +5,6 @@ import logging
 
 from cachetools.func import lru_cache
 
-from datacube import compat
 from datacube.index import fields
 from datacube.model import DatasetType
 from datacube.utils import InvalidDocException, jsonify_document, changes, _readable_offset
@@ -57,7 +56,7 @@ class ProductResource(object):
 
         # They either specified the name of a metadata type, or specified a metadata type.
         # Is it a name?
-        if isinstance(metadata_type, compat.string_types):
+        if isinstance(metadata_type, str):
             metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
         else:
             # Otherwise they embedded a document, add it if needed:

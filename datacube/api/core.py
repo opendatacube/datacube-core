@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
 import uuid
-import warnings
 from collections import namedtuple, OrderedDict
 from itertools import groupby
 from math import ceil
@@ -13,7 +10,6 @@ import xarray
 from dask import array as da
 
 from datacube.config import LocalConfig
-from datacube.compat import string_types
 from datacube.storage.storage import reproject_and_fuse
 from datacube.utils import geometry
 from datacube.utils.geometry import intersects
@@ -69,7 +65,7 @@ class Datacube(object):
         def normalise_config(config):
             if config is None:
                 return LocalConfig.find(env=env)
-            if isinstance(config, string_types):
+            if isinstance(config, str):
                 return LocalConfig.find([config], env=env)
             return config
 

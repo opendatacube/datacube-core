@@ -8,7 +8,6 @@ import numpy
 from affine import Affine
 from osgeo import ogr, osr
 
-from datacube import compat
 from .tools import roi_normalise, roi_shape
 
 Coordinate = namedtuple('Coordinate', ('values', 'units'))
@@ -186,7 +185,7 @@ class CRS(object):
         return "CRS('%s')" % self.crs_str
 
     def __eq__(self, other):
-        if isinstance(other, compat.string_types):
+        if isinstance(other, str):
             other = CRS(other)
         gdal_thinks_issame = self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
         if gdal_thinks_issame:
@@ -199,7 +198,7 @@ class CRS(object):
         return proj4_repr_is_same
 
     def __ne__(self, other):
-        if isinstance(other, compat.string_types):
+        if isinstance(other, str):
             other = CRS(other)
         assert isinstance(other, self.__class__)
         return self._crs.IsSame(other._crs) != 1  # pylint: disable=protected-access

@@ -9,8 +9,6 @@
 """
 Postgres connection and setup
 """
-from __future__ import absolute_import
-
 import json
 import logging
 import os
@@ -21,7 +19,6 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine.url import URL as EngineUrl
 
 import datacube
-from datacube.compat import string_types
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
 from . import _api
@@ -165,7 +162,7 @@ class PostgresDb(object):
         """
         full_name = _LIB_ID
         if application_name:
-            if not isinstance(application_name, string_types):
+            if not isinstance(application_name, str):
                 raise TypeError('Application name must be a string')
 
             full_name = re.sub('[^0-9a-zA-Z]+', '-', application_name) + ' ' + full_name
