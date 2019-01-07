@@ -295,8 +295,11 @@ def update_dry_run(index, updates_allowed, dataset):
     return can_update
 
 
-def build_dataset_info(index, dataset, show_sources=False, show_derived=False, depth=1, max_depth=99):
-    # type: (Index, Dataset, bool) -> dict
+def build_dataset_info(index: Index, dataset: Dataset,
+                       show_sources: bool = False,
+                       show_derived: bool = False,
+                       depth: int = 1,
+                       max_depth: int = 99) -> dict:
 
     info = OrderedDict((
         ('id', str(dataset.id)),
@@ -369,9 +372,10 @@ _OUTPUT_WRITERS = {
               default=99)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
-    # type: (Index, bool, bool, Iterable[str]) -> None
-
+def info_cmd(index: Index, show_sources: bool, show_derived: bool,
+             f: str,
+             max_depth: int,
+             ids: Iterable[str]) -> None:
     # Using an array wrapper to get around the lack of "nonlocal" in py2
     missing_datasets = [0]
 
@@ -459,14 +463,11 @@ def restore_cmd(index, restore_derived, derived_tolerance_seconds, dry_run, ids)
         _restore_one(dry_run, id_, index, restore_derived, tolerance)
 
 
-def _restore_one(dry_run, id_, index, restore_derived, tolerance):
-    """
-    :type index: datacube.index.index.Index
-    :type restore_derived: bool
-    :type tolerance: datetime.timedelta
-    :type dry_run:  bool
-    :type id_: str
-    """
+def _restore_one(dry_run: bool,
+                 id_: str,
+                 index: Index,
+                 restore_derived: bool,
+                 tolerance: datetime.timedelta) -> None:
     target_dataset = index.datasets.get(id_)
     to_process = _get_derived_set(index, id_) if restore_derived else {target_dataset}
     _LOG.debug("%s selected", len(to_process))
