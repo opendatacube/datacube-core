@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import time
 import logging
 import click
@@ -10,6 +8,7 @@ from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
 from datetime import datetime
+from typing import Tuple
 
 import datacube
 from datacube.api.core import Datacube
@@ -128,8 +127,10 @@ def get_resampling(config):
     return {spec['src_varname']: spec.get('resampling_method') for spec in config['measurements']}
 
 
-def ensure_output_type(index, config, storage_format, allow_product_changes=False):
-    # type: (Index, dict, bool) -> (DatasetType, DatasetType)
+def ensure_output_type(index: Index,
+                       config: dict,
+                       storage_format: str,
+                       allow_product_changes: bool = False) -> Tuple[DatasetType, DatasetType]:
     """
     Create the output product for the given ingest config if it doesn't already exist.
 

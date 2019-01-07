@@ -374,7 +374,7 @@ def _load_product_query(
     search_by_product() returns two levels of laziness. load them all into memory
     for easy comparison/counts
     """
-    products: Dict[str, List[Dataset]] = {}
+    products = {}  # type: Dict[str, List[Dataset]]
     for product, datasets in lazy_results:
         assert product.name not in products, "search_by_product() returned a product twice"
         products[product.name] = list(datasets)
