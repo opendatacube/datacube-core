@@ -17,7 +17,7 @@ from datacube.utils import geometry, data_resolution_and_offset
 try:
     from datacube.storage.netcdf_safestrings import SafeStringsDataset as Dataset
 except TypeError:  # The above fails when netCDF4.Dataset is mocked, eg in RTD
-    from netCDF4 import Dataset
+    from netCDF4 import Dataset  # type: ignore
 
 from datacube import __version__
 

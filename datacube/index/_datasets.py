@@ -6,7 +6,7 @@ import logging
 import warnings
 from collections import namedtuple
 from uuid import UUID
-from typing import Any, Iterable, Mapping, Set, Tuple, Union
+from typing import Any, Iterable, Mapping, Set, Tuple, Union, List
 
 from datacube.model import Dataset, DatasetType
 from datacube.model.utils import flatten_datasets
@@ -179,8 +179,7 @@ class DatasetResource(object):
 
         return dataset
 
-    def search_product_duplicates(self, product, *group_fields):
-        # type: (DatasetType, Iterable[Union[str, fields.Field]]) -> Iterable[tuple, Set[UUID]]
+    def search_product_duplicates(self, product: DatasetType, *args) -> Iterable[Tuple[Any, Set[UUID]]]:
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -189,15 +188,14 @@ class DatasetResource(object):
         Returns each set of those field values and the datasets that have them.
         """
 
-        def load_field(f):
-            # type: (Union[str, fields.Field]) -> fields.Field
+        def load_field(f: Union[str, fields.Field]) -> fields.Field:
             if isinstance(f, str):
                 return product.metadata_type.dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
 
-        group_fields = [load_field(f) for f in group_fields]
-        result_type = namedtuple('search_result', (f.name for f in group_fields))
+        group_fields = [load_field(f) for f in args]  # type: List[fields.Field]
+        result_type = namedtuple('search_result', list(f.name for f in group_fields))  # type: ignore
 
         expressions = [product.metadata_type.dataset_fields.get('product') == product.name]
 
@@ -205,7 +203,7 @@ class DatasetResource(object):
             for record in connection.get_duplicates(group_fields, expressions):
                 dataset_ids = set(record[0])
                 grouped_fields = tuple(record[1:])
-                yield result_type(*grouped_fields), dataset_ids
+                yield result_type(*grouped_fields), dataset_ids  # type: ignore
 
     def can_update(self, dataset, updates_allowed=None):
         """

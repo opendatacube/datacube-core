@@ -423,7 +423,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> Tuple[slice, s
 
     if needs_flip:
         # remap src from flipped space to normal
-        src = slice(Ns - src.stop, Ns - src.start)
+        src = slice(Ns - src.stop, Ns - src.start)  # type: ignore
 
     return (src, dst)
 
