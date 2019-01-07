@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 import netCDF4
 
@@ -10,9 +8,7 @@ from integration_tests.test_full_ingestion import (check_open_with_api, check_da
                                                    check_dataset_metadata_in_storage_unit,
                                                    check_open_with_xarray)
 
-PROJECT_ROOT = Path(__file__).parents[1]
-
-INGESTER_CONFIGS = PROJECT_ROOT / 'docs/config_samples/' / 'ingester'
+from integration_tests.test_end_to_end import INGESTER_CONFIGS
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)

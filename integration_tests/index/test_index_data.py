@@ -4,8 +4,6 @@ Test database methods.
 
 Integration tests: these depend on a local Postgres instance.
 """
-from __future__ import absolute_import
-
 import copy
 import datetime
 import sys
@@ -16,10 +14,9 @@ import pytest
 from dateutil import tz
 
 from datacube.index.index import Index
-from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
+from datacube.index.exceptions import MissingRecordError
 from datacube.drivers.postgres import PostgresDb
-from datacube.utils.changes import DocumentMismatchError
-from datacube.model import Dataset
+from datacube.model import Dataset, MetadataType
 
 _telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
 _telemetry_dataset = {
@@ -108,8 +105,7 @@ def test_archive_datasets(index, initialised_postgres_db, local_config, default_
 
 
 @pytest.fixture
-def telemetry_dataset(index, initialised_postgres_db, default_metadata_type):
-    # type: (Index, PostgresDb) -> Dataset
+def telemetry_dataset(index: Index, initialised_postgres_db: PostgresDb, default_metadata_type) -> Dataset:
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
@@ -124,11 +120,9 @@ def telemetry_dataset(index, initialised_postgres_db, default_metadata_type):
     return index.datasets.get(_telemetry_uuid)
 
 
-def test_index_duplicate_dataset(index, initialised_postgres_db, local_config, default_metadata_type):
-    """
-    :type index: datacube.index.index.Index
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
-    """
+def test_index_duplicate_dataset(index: Index, initialised_postgres_db: PostgresDb,
+                                 local_config,
+                                 default_metadata_type)->None:
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
@@ -154,9 +148,7 @@ def test_index_duplicate_dataset(index, initialised_postgres_db, local_config, d
     assert index.datasets.has(_telemetry_uuid)
 
 
-def test_has_dataset(index, telemetry_dataset):
-    # type: (Index, Dataset) -> None
-
+def test_has_dataset(index: Index, telemetry_dataset: Dataset) -> None:
     assert index.datasets.has(_telemetry_uuid)
     assert index.datasets.has(str(_telemetry_uuid))
 
@@ -167,15 +159,13 @@ def test_has_dataset(index, telemetry_dataset):
     assert index.datasets.bulk_has([str(_telemetry_uuid), 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
 
 
-def test_get_dataset(index, telemetry_dataset):
-    # type: (Index, Dataset) -> None
-
+def test_get_dataset(index: Index, telemetry_dataset: Dataset) -> None:
     assert index.datasets.has(_telemetry_uuid)
     assert index.datasets.has(str(_telemetry_uuid))
 
     assert index.datasets.bulk_has([_telemetry_uuid, 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
 
-    for tr in (lambda x: x, str):
+    for tr in (lambda x: x, lambda x: str(x)):
         ds = index.datasets.get(tr(_telemetry_uuid))
         assert ds.id == _telemetry_uuid
 
@@ -186,11 +176,10 @@ def test_get_dataset(index, telemetry_dataset):
                                     'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
 
 
-def test_transactions(index, initialised_postgres_db, local_config, default_metadata_type):
-    """
-    :type index: datacube.index.index.Index
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
-    """
+def test_transactions(index: Index,
+                      initialised_postgres_db: PostgresDb,
+                      local_config,
+                      default_metadata_type) -> None:
     assert not index.datasets.has(_telemetry_uuid)
 
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
@@ -211,11 +200,9 @@ def test_transactions(index, initialised_postgres_db, local_config, default_meta
     assert not index.datasets.has(_telemetry_uuid)
 
 
-def test_get_missing_things(index):
+def test_get_missing_things(index: Index) -> None:
     """
     The get(id) methods should return None if the object doesn't exist.
-
-    :type index: datacube.index.index.Index
     """
     uuid_ = UUID('18474b58-c8a6-11e6-a4b3-185e0f80a5c0')
     missing_thing = index.datasets.get(uuid_, include_sources=False)
@@ -265,11 +252,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
 
 # Make sure that both normal and s3aio index can handle normal data locations correctly
 @pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env',), indirect=True)
-def test_index_dataset_with_location(index, default_metadata_type):
-    """
-    :type index: datacube.index.index.Index
-    :type default_metadata_type: datacube.model.MetadataType
-    """
+def test_index_dataset_with_location(index: Index, default_metadata_type: MetadataType):
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()
 
@@ -365,7 +348,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert locations == [second_file.as_uri(), first_file.as_uri()]
 
     # Indexing again without location should have no effect.
-    dataset.uri = None
+    dataset.uris = []
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset.id)

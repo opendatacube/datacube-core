@@ -1,8 +1,5 @@
-from __future__ import absolute_import
-
 import hashlib
 import warnings
-from pathlib import Path
 from uuid import UUID
 
 import netCDF4
@@ -14,26 +11,9 @@ from affine import Affine
 from datacube.api.query import query_group_by
 from datacube.utils import geometry, read_documents, netcdf_extract_string
 from integration_tests.utils import prepare_test_ingestion_configuration, GEOTIFF
-
-PROJECT_ROOT = Path(__file__).parents[1]
-CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
-LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
-LS5_MATCH_RULES = CONFIG_SAMPLES / 'match_rules' / 'ls5_scenes.yaml'
-LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
-LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
-
-INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
-
-TEST_STORAGE_SHRINK_FACTOR = 100
-TEST_STORAGE_NUM_MEASUREMENTS = 2
-GEOGRAPHIC_VARS = ('latitude', 'longitude')
-PROJECTED_VARS = ('x', 'y')
+from integration_tests.test_end_to_end import INGESTER_CONFIGS
 
 EXPECTED_STORAGE_UNIT_DATA_SHAPE = (1, 40, 40)
-EXPECTED_NUMBER_OF_STORAGE_UNITS = 12
-
-JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
-
 COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
