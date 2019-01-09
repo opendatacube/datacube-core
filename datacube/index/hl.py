@@ -98,9 +98,8 @@ def check_dataset_consistent(dataset):
     # It the type expects measurements, ensure our dataset contains them all.
     if not product_measurements.issubset(dataset.measurements.keys()):
         not_measured = str(product_measurements - set(dataset.measurements.keys()))
-        msg = "Measurement fields don't match type specification.\n"
-        msg += "These are in the type specification but not the measurement "
-        msg += "fields;\n" + not_measured
+        msg = "The dataset is not specifying all of the measurements in this product.\n"
+        msg += "Missing fields are;\n" + not_measured
         return False, msg
 
     return True, None
