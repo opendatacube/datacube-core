@@ -1,5 +1,4 @@
 """S3 storage driver module."""
-from __future__ import absolute_import
 
 import logging
 from pathlib import Path

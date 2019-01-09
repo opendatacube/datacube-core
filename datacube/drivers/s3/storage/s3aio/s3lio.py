@@ -4,7 +4,6 @@ S3LIO Class
 Labeled Array access, backed by multiple S3 objects.
 
 """
-from __future__ import absolute_import, division
 
 import SharedArray as sa
 import hashlib

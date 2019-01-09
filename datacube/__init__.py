@@ -16,7 +16,6 @@ To initialise this class, you will need a config pointing to a database, such as
     db_username: cube_user
 
 """
-from __future__ import absolute_import
 from .version import __version__
 from .api import Datacube
 from .config import set_options

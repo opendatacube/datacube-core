@@ -2,7 +2,6 @@
 """
 Common datatypes for DB drivers.
 """
-from __future__ import absolute_import
 
 from datetime import date, datetime, time
 

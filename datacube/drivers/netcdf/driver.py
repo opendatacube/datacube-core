@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from datacube.storage.storage import write_dataset_to_netcdf, RasterDatasetDataSource
 
 PROTOCOL = 'file'

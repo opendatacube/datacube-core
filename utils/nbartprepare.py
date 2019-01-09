@@ -2,7 +2,6 @@
 """
 Ingest data from the command-line.
 """
-from __future__ import absolute_import, division
 
 import logging
 from pathlib import Path

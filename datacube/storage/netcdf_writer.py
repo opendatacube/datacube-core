@@ -2,7 +2,6 @@
 """
 Create netCDF4 Storage Units and write data to them
 """
-from __future__ import absolute_import
 
 import logging
 import numbers
