@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 from .driver_cache import load_drivers
 

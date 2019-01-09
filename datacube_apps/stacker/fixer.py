@@ -4,7 +4,6 @@ Finds single timeslice files that have not been stacked (based on filename), and
 This tool is used to update NetCDF metadata for files that are not picked up by the stacker
 
 """
-from __future__ import absolute_import, print_function, division
 
 import copy
 import datetime

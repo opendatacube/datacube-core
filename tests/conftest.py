@@ -4,7 +4,6 @@ py.test configuration fixtures
 This module defines any fixtures or other extensions to py.test to be used throughout the
 tests in this and sub packages.
 """
-from __future__ import print_function, absolute_import
 
 import os
 

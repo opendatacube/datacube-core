@@ -1,7 +1,6 @@
 """
 Ingest data from the command-line.
 """
-from __future__ import absolute_import
 
 import uuid
 import logging

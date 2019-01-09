@@ -4,7 +4,6 @@ Ingest data from the command-line.
 
 python utils/bom_rainfall_prepare.py --output rainfall.yaml /g/data/rr5/agcd/0_05/rainfall/daily/*/*
 """
-from __future__ import absolute_import
 
 import uuid
 from dateutil.parser import parse

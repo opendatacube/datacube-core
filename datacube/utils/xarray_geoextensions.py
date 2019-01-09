@@ -9,7 +9,6 @@ This extension is reliant on an `xarray` object having a `.crs` property of type
 `.geobox`, `.affine` and `.extent` respectively.
 
 """
-from __future__ import absolute_import
 
 import xarray
 from affine import Affine

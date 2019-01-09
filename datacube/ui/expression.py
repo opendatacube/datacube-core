@@ -34,7 +34,6 @@ a list of string expressions, and returns a dictionary of expressions to
 pass to the index search API.
 
 """
-from __future__ import absolute_import, print_function, division
 
 import calendar
 import re

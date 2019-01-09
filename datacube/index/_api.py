@@ -2,7 +2,6 @@
 """
 Access methods for indexing datasets & products.
 """
-from __future__ import absolute_import
 
 import logging
 

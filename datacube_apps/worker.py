@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from datacube.execution import worker
 
 import warnings

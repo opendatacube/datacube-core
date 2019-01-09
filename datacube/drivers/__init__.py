@@ -1,7 +1,6 @@
 """
 This module implements a simple plugin manager for storage and index drivers.
 """
-from __future__ import absolute_import
 
 from .indexes import index_driver_by_name, index_drivers
 from .readers import new_datasource, reader_drivers

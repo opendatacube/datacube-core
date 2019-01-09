@@ -15,7 +15,6 @@
 Storage Query and Access API module
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import datetime

@@ -4,7 +4,6 @@ Ingest data from the command-line.
 
 python utils/radiometrics_prepare.py --output radiometrics.yaml /g/data1/rr2/radiometrics/National/*/*nc
 """
-from __future__ import absolute_import
 
 import uuid
 from dateutil.parser import parse

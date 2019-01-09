@@ -4,7 +4,6 @@ This app creates time series movies
 
 """
 
-from __future__ import absolute_import, print_function, division
 
 import click
 
