@@ -219,7 +219,8 @@ class Datacube(object):
         :param str|dict resampling:
             The resampling method to use if re-projection is required.
 
-            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
+            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average',
+            'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'``
             .. seealso:: :meth:`load_data`
 
         :param (float,float) align:
@@ -451,7 +452,8 @@ class Datacube(object):
             indicate "apply to all other bands", for example ``{'*': 'cubic', 'fmask': 'nearest'}`` would
             use `cubic` for all bands except ``fmask`` for which `nearest` will be used.
 
-            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
+            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average',
+            'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'``
 
             Default is to use ``nearest`` for all bands.
 

@@ -32,14 +32,7 @@ from rasterio.warp import Resampling
 
 _LOG = logging.getLogger(__name__)
 
-RESAMPLING_METHODS = {
-    'nearest': Resampling.nearest,
-    'cubic': Resampling.cubic,
-    'bilinear': Resampling.bilinear,
-    'cubic_spline': Resampling.cubic_spline,
-    'lanczos': Resampling.lanczos,
-    'average': Resampling.average,
-}
+RESAMPLING_METHODS = {r.name: r for r in Resampling}
 
 GDAL_NETCDF_DIM = ('NETCDF_DIM_'
                    if str(rasterio.__gdal_version__) >= '1.10.0' else
