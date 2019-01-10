@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 import rasterio.warp
 import rasterio.crs
 import numpy as np
@@ -6,6 +6,7 @@ from affine import Affine
 from . import GeoBox
 
 Resampling = Union[str, int, rasterio.warp.Resampling]  # pylint: disable=invalid-name
+Nodata = Optional[Union[int, float]]  # pylint: disable=invalid-name
 _WRP_CRS = rasterio.crs.CRS.from_epsg(3857)
 
 
@@ -33,9 +34,9 @@ def warp_affine_rio(src: np.ndarray,
                     dst: np.ndarray,
                     A: Affine,
                     resampling: Resampling,
-                    src_nodata=None,
-                    dst_nodata=None,
-                    **kwargs):
+                    src_nodata: Nodata = None,
+                    dst_nodata: Nodata = None,
+                    **kwargs) -> np.ndarray:
     """
     Perform Affine warp using rasterio as backend library.
 
@@ -90,9 +91,9 @@ def warp_affine(src: np.ndarray,
                 dst: np.ndarray,
                 A: Affine,
                 resampling: Resampling,
-                src_nodata=None,
-                dst_nodata=None,
-                **kwargs):
+                src_nodata: Nodata = None,
+                dst_nodata: Nodata = None,
+                **kwargs) -> np.ndarray:
     """
     Perform Affine warp using best available backend (GDAL via rasterio is the only one so far).
 
@@ -118,9 +119,9 @@ def rio_reproject(src: np.ndarray,
                   s_gbox: GeoBox,
                   d_gbox: GeoBox,
                   resampling: Resampling,
-                  src_nodata=None,
-                  dst_nodata=None,
-                  **kwargs):
+                  src_nodata: Nodata = None,
+                  dst_nodata: Nodata = None,
+                  **kwargs) -> np.ndarray:
     """
     Perform reproject from ndarray->ndarray using rasterio as backend library.
 
