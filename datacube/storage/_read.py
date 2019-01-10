@@ -17,11 +17,11 @@ from ..utils.geometry import (
     rio_reproject,
     compute_reproject_roi)
 
-from ..utils.geometry._warp import is_resampling_nn
+from ..utils.geometry._warp import is_resampling_nn, Resampling, Nodata
 from ..utils.geometry import gbox as gbx
 
 
-def rdr_geobox(rdr):
+def rdr_geobox(rdr) -> GeoBox:
     """ Construct GeoBox from opened dataset reader.
     """
     h, w = rdr.shape
@@ -105,7 +105,11 @@ def pick_read_scale(scale: float, rdr=None, tol=1e-3):
     return scale
 
 
-def read_time_slice(rdr, dst, dst_gbox: GeoBox, resampling, dst_nodata) -> Tuple[slice, slice]:
+def read_time_slice(rdr,
+                    dst: np.ndarray,
+                    dst_gbox: GeoBox,
+                    resampling: Resampling,
+                    dst_nodata: Nodata) -> Tuple[slice, slice]:
     """ From opened reader object read into `dst`
 
     :returns: affected destination region
