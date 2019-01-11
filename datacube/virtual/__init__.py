@@ -1,4 +1,4 @@
-import yaml
+from typing import Mapping, Any
 
 from .impl import VirtualProduct, Transformation, VirtualProductException
 from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select
@@ -6,6 +6,7 @@ from .utils import reject_keys
 
 from datacube.model import Measurement
 from datacube.utils import import_function
+from datacube.utils.documents import parse_yaml
 
 __all__ = ['construct', 'Transformation', 'Measurement']
 
@@ -94,16 +95,15 @@ DEFAULT_RESOLVER = NameResolver(make_mask=MakeMask,
                                 select=Select)
 
 
-def construct(**recipe):
-    # type: (Dict[str, Any]) -> VirtualProduct
+def construct(**recipe: Mapping[str, Any]) -> VirtualProduct:
     """
     Create a virtual product from a specification dictionary.
     """
     return DEFAULT_RESOLVER.construct(**recipe)
 
 
-def construct_from_yaml(recipe):
+def construct_from_yaml(recipe: str) -> VirtualProduct:
     """
     Create a virtual product from a yaml recipe.
     """
-    return construct(**yaml.load(recipe, Loader=yaml.CLoader))
+    return construct(**parse_yaml(recipe))
