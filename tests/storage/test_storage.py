@@ -11,7 +11,8 @@ import datacube
 from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.model import Variable
-from datacube.storage.storage import RasterFileDataSource, create_netcdf_storage_unit
+from datacube.testutils.io import RasterFileDataSource
+from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, Resampling, \
     RasterDatasetDataSource
 from datacube.storage._read import read_time_slice

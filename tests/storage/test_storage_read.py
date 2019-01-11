@@ -7,7 +7,7 @@ from datacube.storage._read import (
     pick_read_scale,
     rdr_geobox)
 
-from datacube.storage.storage import RasterFileDataSource
+from datacube.testutils.io import RasterFileDataSource
 from datacube.utils.geometry import (
     compute_reproject_roi,
     GeoBox,
