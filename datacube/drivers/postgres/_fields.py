@@ -16,7 +16,7 @@ from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.sql import ColumnElement
 
 from datacube import utils
-from datacube.index.fields import Expression, Field
+from datacube.model.fields import Expression, Field
 from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
 from .sql import FLOAT8RANGE
