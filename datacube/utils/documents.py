@@ -11,6 +11,8 @@ from itertools import chain
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
+import typing
+from typing import Any
 
 import jsonschema
 import netCDF4
@@ -62,6 +64,12 @@ _PROTOCOL_OPENERS = {
 
 def load_from_yaml(handle):
     yield from yaml.load_all(handle, Loader=NoDatesSafeLoader)
+
+
+def parse_yaml(doc: str) -> typing.Mapping[str, Any]:
+    """ Convert a single document yaml string into a parsed document
+    """
+    return yaml.load(doc, Loader=SafeLoader)
 
 
 def load_from_json(handle):
