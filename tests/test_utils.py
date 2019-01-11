@@ -24,15 +24,16 @@ from datacube.utils.math import num2numpy, is_almost_int, valid_mask
 from datacube.model import MetadataType
 from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
 from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
-from datacube.utils import gen_password, write_user_secret_file, slurp, read_documents, InvalidDocException, \
-    SimpleDocNav
+from datacube.utils import (gen_password, write_user_secret_file, slurp, read_documents, InvalidDocException,
+                            SimpleDocNav)
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.math import clamp
 from datacube.utils.py import sorted_items
-from datacube.utils.uris import uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url, \
-    without_lineage_sources, normalise_path, default_base_dir
+from datacube.utils.documents import parse_yaml
+from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
+                                 without_lineage_sources, normalise_path, default_base_dir)
 
 
 def test_stats_dates():
@@ -299,6 +300,10 @@ def test_map_with_lookahead():
     assert list(map_with_lookahead(range(5), if_one, if_many)) == list(map(if_many, range(5)))
     assert list(map_with_lookahead(range(10), if_one=if_one)) == list(range(10))
     assert list(map_with_lookahead(iter([1]), if_many=if_many)) == [1]
+
+
+def test_parse_yaml():
+    assert parse_yaml('a: 10') == {'a': 10}
 
 
 def test_part_uri():
