@@ -5,7 +5,7 @@ Core classes used across modules.
 import logging
 import math
 import warnings
-from collections import namedtuple, OrderedDict, Sequence
+from collections import OrderedDict, Sequence
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -22,12 +22,10 @@ from datacube.utils.geometry import (CRS as _CRS,
                                      Coordinate as _Coordinate,
                                      BoundingBox as _BoundingBox, intersects)
 from datacube.utils.serialise import SafeDatacubeDumper
+from .fields import Field
+from ._base import Range, Variable
 
 _LOG = logging.getLogger(__name__)
-
-Range = namedtuple('Range', ('begin', 'end'))
-Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
-CellIndex = namedtuple('CellIndex', ('x', 'y'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
@@ -372,7 +370,7 @@ class MetadataType(object):
 
     def __init__(self,
                  definition: Mapping[str, Any],
-                 dataset_search_fields, #: Mapping[str, datacube.index.fields.Field],
+                 dataset_search_fields: Mapping[str, Any],
                  id_: Optional[int] = None):
         self.definition = definition
         self.dataset_fields = dataset_search_fields
@@ -386,7 +384,7 @@ class MetadataType(object):
     def description(self) -> str:
         return self.definition['description']
 
-    def dataset_reader(self, dataset_doc: Mapping[str, Any]) -> DocReader:
+    def dataset_reader(self, dataset_doc: Mapping[str, Field]) -> DocReader:
         return DocReader(self.definition['dataset'], self.dataset_fields, dataset_doc)
 
     def __str__(self) -> str:
