@@ -4,7 +4,7 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
-from typing import Iterable
+from typing import Iterable, Mapping, MutableMapping, Any
 
 import click
 import yaml
@@ -298,13 +298,13 @@ def build_dataset_info(index: Index, dataset: Dataset,
                        show_sources: bool = False,
                        show_derived: bool = False,
                        depth: int = 1,
-                       max_depth: int = 99) -> dict:
+                       max_depth: int = 99) -> Mapping[str, Any]:
 
     info = OrderedDict((
         ('id', str(dataset.id)),
         ('product', dataset.type.name),
         ('status', 'archived' if dataset.is_archived else 'active')
-    ))
+    ))  # type: MutableMapping[str, Any]
 
     # Optional when loading a dataset.
     if dataset.indexed_time is not None:
@@ -314,7 +314,7 @@ def build_dataset_info(index: Index, dataset: Dataset,
     info['fields'] = dataset.metadata.search_fields
 
     if depth < max_depth:
-        if show_sources:
+        if show_sources and dataset.sources is not None:
             info['sources'] = {key: build_dataset_info(index, source,
                                                        show_sources=True, show_derived=False,
                                                        depth=depth + 1, max_depth=max_depth)

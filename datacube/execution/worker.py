@@ -40,7 +40,7 @@ def launch_distributed_worker(host, port, nprocs, nthreads=1):
 
 
 @click.command(name='worker')
-@click.option('--executor', type=(click.Choice(KNOWN_WORKER_TYPES), str),
+@click.option('--executor', type=(click.Choice(KNOWN_WORKER_TYPES), str),  # type: ignore
               help="(distributed|dask(alias for distributed)|celery) host:port",
               default=(None, None),
               callback=parse_executor_opt)

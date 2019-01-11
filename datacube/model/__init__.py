@@ -12,6 +12,7 @@ from uuid import UUID
 
 import yaml
 from affine import Affine
+from typing import Optional, List, Mapping, Any
 
 from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
@@ -78,16 +79,21 @@ class Dataset(object):
     :param list[str] uris: All active uris for the dataset
     """
 
-    def __init__(self, type_, metadata_doc, local_uri=None, uris=None, sources=None,
-                 indexed_by=None, indexed_time=None, archived_time=None):
+    def __init__(self,
+                 type_: 'DatasetType',
+                 metadata_doc: dict,
+                 local_uri: Optional[str] = None,
+                 uris: Optional[List[str]] = None,
+                 sources: Optional[Mapping[str, 'Dataset']] = None,
+                 indexed_by: Optional[str] = None,
+                 indexed_time: Optional[datetime] = None,
+                 archived_time: Optional[datetime] = None):
         assert isinstance(type_, DatasetType)
 
-        #: :rtype: DatasetType
         self.type = type_
 
         #: The document describing the dataset as a dictionary. It is often serialised as YAML on disk
         #: or inside a NetCDF file, and as JSON-B inside the database index.
-        #: :type: dict
         self.metadata_doc = metadata_doc
 
         if local_uri:
@@ -104,21 +110,15 @@ class Dataset(object):
         self.uris = uris
 
         #: The datasets that this dataset is derived from (if requested on load).
-        #: :type: dict[str, Dataset]
         self.sources = sources
 
-        if sources is not None:
+        if self.sources is not None:
             assert set(self.metadata.sources.keys()) == set(self.sources.keys())
 
         #: The User who indexed this dataset
-        #: :type: str
         self.indexed_by = indexed_by
-
-        #: :type: datetime.datetime
         self.indexed_time = indexed_time
-
         # When the dataset was archived. Null it not archived.
-        #: :type: datetime.datetime
         self.archived_time = archived_time
 
     @property
@@ -371,33 +371,28 @@ class MetadataType(object):
     """Metadata Type definition"""
 
     def __init__(self,
-                 definition,
-                 dataset_search_fields,
-                 id_=None):
-        #: :type: dict
+                 definition: Mapping[str, Any],
+                 dataset_search_fields, #: Mapping[str, datacube.index.fields.Field],
+                 id_: Optional[int] = None):
         self.definition = definition
-
-        #: :type: dict[str,datacube.index.fields.Field]
         self.dataset_fields = dataset_search_fields
-
-        #: :type: int
         self.id = id_
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.definition['name']
 
     @property
-    def description(self):
+    def description(self) -> str:
         return self.definition['description']
 
-    def dataset_reader(self, dataset_doc):
+    def dataset_reader(self, dataset_doc: Mapping[str, Any]) -> DocReader:
         return DocReader(self.definition['dataset'], self.dataset_fields, dataset_doc)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
@@ -411,33 +406,25 @@ class DatasetType(object):
     """
 
     def __init__(self,
-                 metadata_type,
-                 definition,
-                 id_=None):
+                 metadata_type: MetadataType,
+                 definition: Mapping[str, Any],
+                 id_: Optional[int] = None):
         assert isinstance(metadata_type, MetadataType)
-
-        #: :type: int
         self.id = id_
-
-        #: :rtype: MetadataType
         self.metadata_type = metadata_type
-
         #: product definition document
         self.definition = definition
 
     @property
-    def name(self):
-        """
-        :type: str
-        """
+    def name(self) -> str:
         return self.definition['name']
 
     @property
-    def managed(self):
+    def managed(self) -> bool:
         return self.definition.get('managed', False)
 
     @property
-    def metadata_doc(self):
+    def metadata_doc(self) -> Mapping[str, Any]:
         return self.definition['metadata']
 
     @property
@@ -449,11 +436,9 @@ class DatasetType(object):
         return self.metadata_type.dataset_reader(self.metadata_doc).fields
 
     @property
-    def measurements(self):
+    def measurements(self) -> Mapping[str, Measurement]:
         """
         Dictionary of measurements in this product
-
-        :type: dict[str, dict]
         """
         return OrderedDict((m['name'], Measurement(**m)) for m in self.definition.get('measurements', []))
 
@@ -473,11 +458,9 @@ class DatasetType(object):
         return ('time',) + spatial_dims
 
     @cached_property
-    def grid_spec(self):
+    def grid_spec(self) -> Optional['GridSpec']:
         """
         Grid specification for this product
-
-        :rtype: GridSpec
         """
         storage = self.definition.get('storage')
         if storage is None:
@@ -498,7 +481,7 @@ class DatasetType(object):
 
         return GridSpec(crs=crs, **gs_params)
 
-    def canonical_measurement(self, measurement):
+    def canonical_measurement(self, measurement: str):
         for m in self.measurements:
             if measurement == m:
                 return measurement
@@ -522,11 +505,9 @@ class DatasetType(object):
     def dataset_reader(self, dataset_doc):
         return self.metadata_type.dataset_reader(dataset_doc)
 
-    def to_dict(self):
+    def to_dict(self) -> Mapping[str, Any]:
         """
         Convert to a dictionary representation of the available fields
-
-        :rtype: dict
         """
         row = {
             'id': self.id,
@@ -543,15 +524,15 @@ class DatasetType(object):
             })
         return row
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "DatasetType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
     # Types are uniquely identifiable by name:
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if self is other:
             return True
 
@@ -781,13 +762,13 @@ class GridSpec(object):
         return self.__str__()
 
 
-def metadata_from_doc(doc):
+def metadata_from_doc(doc: Mapping[str, Any]) -> MetadataType:
     """Construct MetadataType that is not tied to any particular db index. This is
     useful when there is a need to interpret dataset metadata documents
     according to metadata spec.
     """
     from .fields import get_dataset_fields
-    MetadataType.validate(doc)
+    MetadataType.validate(doc)  # type: ignore
     return MetadataType(doc, get_dataset_fields(doc))
 
 
