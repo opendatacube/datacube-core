@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..storage.storage import (
-    RasterFileDataSource,
+    RasterioDataSource,
     reproject_and_fuse,
 )
 from ..utils.geometry._warp import resampling_s2rio
@@ -9,6 +9,29 @@ from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
 from ..utils.geometry import gbox as gbx
 from types import SimpleNamespace
+
+
+class RasterFileDataSource(RasterioDataSource):
+    """ This is only used in test code
+    """
+    def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None):
+        super(RasterFileDataSource, self).__init__(filename, nodata)
+        self.bandnumber = bandnumber
+        self.crs = crs
+        self.transform = transform
+
+    def get_bandnumber(self, src):
+        return self.bandnumber
+
+    def get_transform(self, shape):
+        if self.transform is None:
+            raise RuntimeError('No transform in the data and no fallback')
+        return self.transform
+
+    def get_crs(self):
+        if self.crs is None:
+            raise RuntimeError('No CRS in the data and no fallback')
+        return self.crs
 
 
 def dc_read(path,

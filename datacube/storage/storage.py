@@ -223,27 +223,6 @@ class RasterioDataSource(DataSource):
             raise e
 
 
-class RasterFileDataSource(RasterioDataSource):
-    def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None):
-        super(RasterFileDataSource, self).__init__(filename, nodata)
-        self.bandnumber = bandnumber
-        self.crs = crs
-        self.transform = transform
-
-    def get_bandnumber(self, src):
-        return self.bandnumber
-
-    def get_transform(self, shape):
-        if self.transform is None:
-            raise RuntimeError('No transform in the data and no fallback')
-        return self.transform
-
-    def get_crs(self):
-        if self.crs is None:
-            raise RuntimeError('No CRS in the data and no fallback')
-        return self.crs
-
-
 class RasterDatasetDataSource(RasterioDataSource):
     """Data source for reading from a Data Cube Dataset"""
 
