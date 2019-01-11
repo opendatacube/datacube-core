@@ -10,11 +10,14 @@ Important functions are:
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Dict, Union, Optional, Callable, List, Any
-
+import numpy as np
+from affine import Affine
+import rasterio
+from rasterio.warp import Resampling
 import urllib.parse
 from urllib.parse import urlparse, urljoin
-from datacube.drivers.datasource import DataSource
+from typing import Dict, Union, Optional, Callable, List, Any, Iterator
+
 from datacube.model import Dataset
 from datacube.storage import netcdf_writer
 from datacube.utils import datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
@@ -22,13 +25,7 @@ from datacube.utils import geometry
 from datacube.utils.geometry import GeoBox, roi_is_empty
 from datacube.utils.math import num2numpy
 from datacube.utils import is_url, uri_to_local_path, get_part_from_uri
-
-import numpy
-from affine import Affine
-
-import rasterio
-
-from rasterio.warp import Resampling
+from . import DataSource, GeoRasterReader, RasterShape, RasterWindow
 
 _LOG = logging.getLogger(__name__)
 
@@ -38,7 +35,7 @@ GDAL_NETCDF_DIM = ('NETCDF_DIM_'
                    if str(rasterio.__gdal_version__) >= '1.10.0' else
                    'NETCDF_DIMENSION_')
 
-FuserFunction = Callable[[numpy.ndarray, numpy.ndarray], Any]  # pylint: disable=invalid-name
+FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
 
 
 def _rasterio_crs_wkt(src):
@@ -48,12 +45,8 @@ def _rasterio_crs_wkt(src):
         return ''
 
 
-def _rasterio_transform(src):
-    return src.transform
-
-
 def reproject_and_fuse(datasources: List[DataSource],
-                       destination: numpy.ndarray,
+                       destination: np.ndarray,
                        dst_gbox: GeoBox,
                        dst_nodata: Optional[Union[int, float]],
                        resampling: str = 'nearest',
@@ -71,9 +64,9 @@ def reproject_and_fuse(datasources: List[DataSource],
     from ._read import read_time_slice
     assert len(destination.shape) == 2
 
-    def copyto_fuser(dest: numpy.ndarray, src: numpy.ndarray) -> None:
-        where_nodata = (dest == dst_nodata) if not numpy.isnan(dst_nodata) else numpy.isnan(dest)
-        numpy.copyto(dest, src, where=where_nodata)
+    def copyto_fuser(dest: np.ndarray, src: np.ndarray) -> None:
+        where_nodata = (dest == dst_nodata) if not np.isnan(dst_nodata) else np.isnan(dest)
+        np.copyto(dest, src, where=where_nodata)
 
     fuse_func = fuse_func or copyto_fuser
 
@@ -88,7 +81,7 @@ def reproject_and_fuse(datasources: List[DataSource],
         return destination
     else:
         # Multiple sources, we need to fuse them together into a single array
-        buffer_ = numpy.full(destination.shape, dst_nodata, dtype=destination.dtype)
+        buffer_ = np.full(destination.shape, dst_nodata, dtype=destination.dtype)
         for source in datasources:
             with ignore_exceptions_if(skip_broken_datasets):
                 with source.open() as rdr:
@@ -101,7 +94,7 @@ def reproject_and_fuse(datasources: List[DataSource],
         return destination
 
 
-class BandDataSource(object):
+class BandDataSource(GeoRasterReader):
     """
     Wrapper for a :class:`rasterio.Band` object
 
@@ -113,31 +106,36 @@ class BandDataSource(object):
         if nodata is None:
             nodata = self.source.ds.nodatavals[self.source.bidx-1]
 
-        self.nodata = num2numpy(nodata, source.dtype)
+        self._nodata = num2numpy(nodata, source.dtype)
 
     @property
-    def crs(self):
+    def nodata(self):
+        return self._nodata
+
+    @property
+    def crs(self) -> geometry.CRS:
         return geometry.CRS(_rasterio_crs_wkt(self.source.ds))
 
     @property
-    def transform(self):
-        return _rasterio_transform(self.source.ds)
+    def transform(self) -> Affine:
+        return self.source.ds.transform
 
     @property
-    def dtype(self):
-        return numpy.dtype(self.source.dtype)
+    def dtype(self) -> np.dtype:
+        return np.dtype(self.source.dtype)
 
     @property
-    def shape(self):
+    def shape(self) -> RasterShape:
         return self.source.shape
 
-    def read(self, window=None, out_shape=None):
+    def read(self, window: Optional[RasterWindow] = None,
+             out_shape: Optional[RasterShape] = None) -> Optional[np.ndarray]:
         """Read data in the native format, returning a numpy array
         """
         return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
 
-class OverrideBandDataSource(object):
+class OverrideBandDataSource(GeoRasterReader):
     """Wrapper for a rasterio.Band object that overrides nodata, CRS and transform
 
     This is useful for files with malformed or missing properties.
@@ -146,21 +144,38 @@ class OverrideBandDataSource(object):
     :type source: rasterio.Band
     """
 
-    def __init__(self, source, nodata, crs, transform):
+    def __init__(self,
+                 source: rasterio.Band,
+                 nodata,
+                 crs: geometry.CRS,
+                 transform: Affine):
         self.source = source
-        self.nodata = num2numpy(nodata, source.dtype)
-        self.crs = crs
-        self.transform = transform
+        self._nodata = num2numpy(nodata, source.dtype)
+        self._crs = crs
+        self._transform = transform
 
     @property
-    def dtype(self):
-        return numpy.dtype(self.source.dtype)
+    def crs(self) -> geometry.CRS:
+        return self._crs
 
     @property
-    def shape(self):
+    def transform(self) -> Affine:
+        return self._transform
+
+    @property
+    def nodata(self):
+        return self._nodata
+
+    @property
+    def dtype(self) -> np.dtype:
+        return np.dtype(self.source.dtype)
+
+    @property
+    def shape(self) -> RasterShape:
         return self.source.shape
 
-    def read(self, window=None, out_shape=None):
+    def read(self, window: Optional[RasterWindow] = None,
+             out_shape: Optional[RasterShape] = None) -> Optional[np.ndarray]:
         """Read data in the native format, returning a native array
         """
         return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
@@ -186,14 +201,14 @@ class RasterioDataSource(DataSource):
         raise NotImplementedError()
 
     @contextmanager
-    def open(self):
+    def open(self) -> Iterator[GeoRasterReader]:
         """Context manager which returns a :class:`BandDataSource`"""
         try:
             _LOG.debug("opening %s", self.filename)
             with rasterio.open(self.filename) as src:
                 override = False
 
-                transform = _rasterio_transform(src)
+                transform = src.transform
                 if transform.is_identity:
                     override = True
                     transform = self.get_transform(src.shape)
@@ -290,7 +305,7 @@ class RasterDatasetDataSource(RasterioDataSource):
                 dist = abs(sec_since_1970 - v)
         return idx
 
-    def get_transform(self, shape):
+    def get_transform(self, shape: RasterShape) -> Affine:
         return self._dataset.transform * Affine.scale(1 / shape[1], 1 / shape[0])
 
     def get_crs(self):
