@@ -76,6 +76,8 @@ def test_netcdf_driver_import():
     except ImportError:
         assert False and 'Failed to load netcdf writer driver'
 
+    assert datacube.drivers.netcdf.driver.reader_driver_init is not None
+
 
 def test_metadata_type_from_doc():
     metadata_doc = yaml.safe_load('''
@@ -99,3 +101,13 @@ dataset:
         assert metadata.id is None
         assert metadata.name == 'minimal'
         assert 'some_custom_field' in metadata.dataset_fields
+
+
+def test_reader_cache_throws_on_missing_fallback():
+    from datacube.drivers.readers import rdr_cache
+
+    rdrs = rdr_cache()
+    assert rdrs is not None
+
+    with pytest.raises(KeyError):
+        rdrs('file', 'aint-such-format')

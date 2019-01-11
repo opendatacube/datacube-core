@@ -10,7 +10,7 @@ Important functions are:
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union, Optional, Callable, List, Any
 
 import urllib.parse
 from urllib.parse import urlparse, urljoin
@@ -38,6 +38,8 @@ GDAL_NETCDF_DIM = ('NETCDF_DIM_'
                    if str(rasterio.__gdal_version__) >= '1.10.0' else
                    'NETCDF_DIMENSION_')
 
+FuserFunction = Callable[[numpy.ndarray, numpy.ndarray], Any]  # pylint: disable=invalid-name
+
 
 def _rasterio_crs_wkt(src):
     if src.crs:
@@ -50,27 +52,26 @@ def _rasterio_transform(src):
     return src.transform
 
 
-def reproject_and_fuse(datasources, destination, dst_gbox, dst_nodata,
-                       resampling='nearest', fuse_func=None, skip_broken_datasets=False):
+def reproject_and_fuse(datasources: List[DataSource],
+                       destination: numpy.ndarray,
+                       dst_gbox: GeoBox,
+                       dst_nodata: Optional[Union[int, float]],
+                       resampling: str = 'nearest',
+                       fuse_func: Optional[FuserFunction] = None,
+                       skip_broken_datasets: bool = False):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
-    :param List[DataSource] datasources: Data sources to open and read from
-    :param numpy.ndarray destination: ndarray of appropriate size to read data into
-    :param GeoBox dst_gbox: GeoBox defining destination region
-    :type resampling: str
-    :type fuse_func: callable or None
-    :param bool skip_broken_datasets: Carry on in the face of adversity and failing reads.
+    :param datasources: Data sources to open and read from
+    :param destination: ndarray of appropriate size to read data into
+    :param dst_gbox: GeoBox defining destination region
+    :param skip_broken_datasets: Carry on in the face of adversity and failing reads.
     """
     # pylint: disable=too-many-locals
     from ._read import read_time_slice
     assert len(destination.shape) == 2
 
-    def copyto_fuser(dest, src):
-        """
-        :type dest: numpy.ndarray
-        :type src: numpy.ndarray
-        """
+    def copyto_fuser(dest: numpy.ndarray, src: numpy.ndarray) -> None:
         where_nodata = (dest == dst_nodata) if not numpy.isnan(dst_nodata) else numpy.isnan(dest)
         numpy.copyto(dest, src, where=where_nodata)
 
@@ -246,7 +247,7 @@ class RasterFileDataSource(RasterioDataSource):
 class RasterDatasetDataSource(RasterioDataSource):
     """Data source for reading from a Data Cube Dataset"""
 
-    def __init__(self, dataset, measurement_id):
+    def __init__(self, dataset: Dataset, measurement_id: str):
         """
         Initialise for reading from a Data Cube Dataset.
 
@@ -262,7 +263,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         nodata = dataset.type.measurements[measurement_id].get('nodata')
         super(RasterDatasetDataSource, self).__init__(filename, nodata=nodata)
 
-    def get_bandnumber(self, src=None):
+    def get_bandnumber(self, src=None) -> Optional[int]:
 
         # If `band` property is set to an integer it overrides any other logic
         band = self._measurement.get('band')
