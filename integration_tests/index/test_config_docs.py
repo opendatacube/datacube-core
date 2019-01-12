@@ -4,8 +4,6 @@ Module
 """
 
 import copy
-import json
-
 import pytest
 import yaml
 
@@ -15,7 +13,6 @@ from datacube.index._metadata_types import default_metadata_type_docs
 from datacube.model import MetadataType, DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes
-import datacube.scripts.cli_app
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',
@@ -307,13 +304,12 @@ def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_t
     assert updated_type.definition['metadata']['ga_label'] == 'something'
 
 
-def test_product_update_cli(index,
+def test_product_update_cli(index: Index,
                             clirunner,
-                            ls5_telem_type,
-                            ls5_telem_doc,
-                            ga_metadata_type,
-                            tmpdir):
-    # type: (Index, callable, DatasetType, dict, MetadataType) -> None
+                            ls5_telem_type: DatasetType,
+                            ls5_telem_doc: dict,
+                            ga_metadata_type: MetadataType,
+                            tmpdir) -> None:
     """
     Test updating products via cli
     """
