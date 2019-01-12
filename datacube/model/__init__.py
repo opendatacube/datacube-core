@@ -370,7 +370,7 @@ class MetadataType(object):
 
     def __init__(self,
                  definition: Mapping[str, Any],
-                 dataset_search_fields: Mapping[str, Any],
+                 dataset_search_fields: Mapping[str, Field],
                  id_: Optional[int] = None):
         self.definition = definition
         self.dataset_fields = dataset_search_fields
