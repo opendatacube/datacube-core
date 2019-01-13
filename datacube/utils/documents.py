@@ -62,8 +62,9 @@ _PROTOCOL_OPENERS = {
 }
 
 
-def load_from_yaml(handle):
-    yield from yaml.load_all(handle, Loader=NoDatesSafeLoader)
+def load_from_yaml(handle, parse_dates=False):
+    loader = SafeLoader if parse_dates else NoDatesSafeLoader
+    yield from yaml.load_all(handle, Loader=loader)
 
 
 def parse_yaml(doc: str) -> typing.Mapping[str, Any]:

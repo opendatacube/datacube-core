@@ -209,7 +209,7 @@ def _make_ls5_scene_datasets(geotiffs, tmpdir):
 
 def load_yaml_file(filename):
     with open(str(filename)) as f:
-        return list(load_from_yaml(f))
+        return list(load_from_yaml(f, parse_dates=True))
 
 
 def is_geogaphic(storage_type):
