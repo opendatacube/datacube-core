@@ -48,6 +48,7 @@ def test_band_info():
     assert binfo.uri == 'file:///tmp/b.tiff'
     assert binfo.format == ds.format
     assert binfo.driver_data is None
+    assert binfo.uri_scheme == 'file'
 
     with pytest.raises(ValueError):
         BandInfo(ds, 'no_such_band')
