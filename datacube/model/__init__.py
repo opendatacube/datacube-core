@@ -23,7 +23,8 @@ from datacube.utils.geometry import (CRS as _CRS,
                                      BoundingBox as _BoundingBox, intersects)
 from datacube.utils.serialise import SafeDatacubeDumper
 from .fields import Field
-from ._base import Range, Variable
+from ._base import Range
+from ._base import Variable  # TODO: maybe remove, only used by netcdf_writer it seems
 
 _LOG = logging.getLogger(__name__)
 
@@ -200,8 +201,15 @@ class Dataset(object):
                                     bottom=min(bounds['ur']['y'], bounds['ll']['y']))
 
     @property
-    def transform(self):
-        bounds = self.metadata.grid_spatial['geo_ref_points']
+    def transform(self) -> Optional[Affine]:
+        geo = self.metadata.grid_spatial
+        if geo is None:
+            return None
+
+        bounds = geo.get('geo_ref_points')
+        if bounds is None:
+            return None
+
         return Affine(bounds['lr']['x'] - bounds['ul']['x'], 0, bounds['ul']['x'],
                       0, bounds['lr']['y'] - bounds['ul']['y'], bounds['ul']['y'])
 
@@ -230,9 +238,8 @@ class Dataset(object):
         return not self.is_archived
 
     @property
-    def crs(self):
-        """
-        :rtype: geometry.CRS
+    def crs(self) -> Optional[geometry.CRS]:
+        """ Return CRS if available
         """
         projection = self.metadata.grid_spatial
         if not projection:
