@@ -25,7 +25,7 @@ from datacube.utils import geometry
 from datacube.utils.geometry import GeoBox, roi_is_empty
 from datacube.utils.math import num2numpy
 from datacube.utils import is_url, uri_to_local_path, get_part_from_uri
-from . import DataSource, GeoRasterReader, RasterShape, RasterWindow
+from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
 
 _LOG = logging.getLogger(__name__)
 
@@ -245,31 +245,25 @@ class RasterDatasetDataSource(RasterioDataSource):
         """
         Initialise for reading from a Data Cube Dataset.
 
-        :param Dataset dataset: dataset to read from
-        :param str measurement_id: measurement to read. a single 'band' or 'slice'
+        :param dataset: dataset to read from
+        :param measurement_id: measurement to read. a single 'band' or 'slice'
         """
-        self._dataset = dataset
-        self._measurement = dataset.measurements[measurement_id]
-        self._netcdf = ('netcdf' in dataset.format.lower())
-        url = _resolve_url(_choose_location(dataset), self._measurement['path'])
-        self._part = get_part_from_uri(url)
-        filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
-        nodata = dataset.type.measurements[measurement_id].get('nodata')
-        super(RasterDatasetDataSource, self).__init__(filename, nodata=nodata)
+        bi = BandInfo(dataset, measurement_id)
+        self._band_info = bi
+        self._netcdf = ('netcdf' in bi.format.lower())
+        self._part = get_part_from_uri(bi.uri)
+        filename = _url2rasterio(bi.uri, bi.format, bi.layer)
+        super(RasterDatasetDataSource, self).__init__(filename, nodata=bi.nodata)
 
     def get_bandnumber(self, src=None) -> Optional[int]:
 
         # If `band` property is set to an integer it overrides any other logic
-        band = self._measurement.get('band')
-        if band is not None:
-            if isinstance(band, int):
-                return band
-            else:
-                _LOG.warning('Expected "band" property to be of integer type')
+        bi = self._band_info
+        if bi.band is not None:
+            return bi.band
 
         if not self._netcdf:
-            layer_id = self._measurement.get('layer', 1)
-            return layer_id if isinstance(layer_id, int) else 1
+            return 1
 
         # Netcdf only below
         if self._part is not None:
@@ -293,7 +287,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         if tag_name not in src.tags(1):  # TODO: support time-less datasets properly
             return 1
 
-        time = self._dataset.center_time
+        time = bi.center_time
         sec_since_1970 = datetime_to_seconds_since_1970(time)
 
         idx = 0
@@ -306,10 +300,10 @@ class RasterDatasetDataSource(RasterioDataSource):
         return idx
 
     def get_transform(self, shape: RasterShape) -> Affine:
-        return self._dataset.transform * Affine.scale(1 / shape[1], 1 / shape[0])
+        return self._band_info.transform * Affine.scale(1 / shape[1], 1 / shape[0])
 
     def get_crs(self):
-        return self._dataset.crs
+        return self._band_info.crs
 
 
 def register_scheme(*schemes):
@@ -378,22 +372,6 @@ def _url2rasterio(url_str, fmt, layer):
 
     # if local path strip scheme and other gunk
     return str(uri_to_local_path(url_str))
-
-
-def _choose_location(dataset: Dataset) -> str:
-    # If there's a local (filesystem) URI, prefer it.
-    local_uri = dataset.local_uri
-    if local_uri:
-        return local_uri
-
-    uris = dataset.uris
-    if not uris:
-        # Location-less datasets should have been filtered already.
-        raise RuntimeError("No recorded location for dataset {}".format(dataset))
-
-    # Newest location first, use it.
-    # We may want more nuanced selection in the future.
-    return uris[0]
 
 
 def create_netcdf_storage_unit(filename,
