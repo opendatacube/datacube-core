@@ -54,6 +54,7 @@ def test_dataset_measurement_paths():
                            uri='file:///tmp/datataset.yml',
                            format=format)
 
+    assert ds.local_uri == ds.uris[0]
     assert ds.uri_scheme == 'file'
     assert ds.format == format
     paths = measurement_paths(ds)
@@ -62,6 +63,7 @@ def test_dataset_measurement_paths():
         assert v == 'file:///tmp/' + k + '.tiff'
 
     ds.uris = None
+    assert ds.local_uri is None
     with pytest.raises(ValueError):
         measurement_paths(ds)
 
