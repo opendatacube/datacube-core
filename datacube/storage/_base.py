@@ -1,4 +1,6 @@
 from typing import Optional, Dict, Any, Tuple
+from urllib.parse import urlparse
+
 from datacube.model import Dataset
 from datacube.utils.uris import uri_resolve, pick_uri
 
@@ -104,3 +106,7 @@ class BandInfo:
         self.center_time = ds.center_time
         self.format = ds.format
         self.driver_data = _extract_driver_data(ds)
+
+    @property
+    def uri_scheme(self) -> str:
+        return urlparse(self.uri).scheme
