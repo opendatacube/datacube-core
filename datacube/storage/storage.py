@@ -15,16 +15,15 @@ from affine import Affine
 import rasterio
 from rasterio.warp import Resampling
 import urllib.parse
-from urllib.parse import urlparse, urljoin
-from typing import Dict, Union, Optional, Callable, List, Any, Iterator
+from urllib.parse import urlparse
+from typing import Union, Optional, Callable, List, Any, Iterator
 
-from datacube.model import Dataset
 from datacube.storage import netcdf_writer
 from datacube.utils import datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
 from datacube.utils import geometry
 from datacube.utils.geometry import GeoBox, roi_is_empty
 from datacube.utils.math import num2numpy
-from datacube.utils import is_url, uri_to_local_path, get_part_from_uri
+from datacube.utils import uri_to_local_path, get_part_from_uri
 from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
 
 _LOG = logging.getLogger(__name__)
@@ -317,38 +316,6 @@ def register_scheme(*schemes):
 
 # Not recognised by python by default. Doctests below will fail without it.
 register_scheme('s3')
-
-
-def _resolve_url(base_url, path):
-    """
-    If path is a URL or an absolute path return URL
-    If path is a relative path return base_url joined with path
-
-    >>> _resolve_url('file:///foo/abc', 'bar')
-    'file:///foo/bar'
-    >>> _resolve_url('file:///foo/abc', 'file:///bar')
-    'file:///bar'
-    >>> _resolve_url('file:///foo/abc', None)
-    'file:///foo/abc'
-    >>> _resolve_url('file:///foo/abc', '/bar')
-    'file:///bar'
-    >>> _resolve_url('http://foo.com/abc/odc-metadata.yaml', 'band-5.tif')
-    'http://foo.com/abc/band-5.tif'
-    >>> _resolve_url('s3://foo.com/abc/odc-metadata.yaml', 'band-5.tif')
-    's3://foo.com/abc/band-5.tif'
-    >>> _resolve_url('s3://foo.com/abc/odc-metadata.yaml?something', 'band-5.tif')
-    's3://foo.com/abc/band-5.tif'
-    """
-    if path:
-        if is_url(path):
-            url_str = path
-        elif Path(path).is_absolute():
-            url_str = Path(path).as_uri()
-        else:
-            url_str = urljoin(base_url, path)
-    else:
-        url_str = base_url
-    return url_str
 
 
 def _url2rasterio(url_str, fmt, layer):
