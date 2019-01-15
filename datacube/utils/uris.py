@@ -2,7 +2,7 @@ import os
 
 import pathlib
 import re
-from typing import Optional, List
+from typing import Optional, List, Union
 from urllib.parse import urlparse, parse_qsl, urljoin
 from urllib.request import url2pathname
 from pathlib import Path
@@ -10,7 +10,7 @@ from pathlib import Path
 URL_RE = re.compile(r'\A\s*[\w\d\+]+://')
 
 
-def is_url(url_str):
+def is_url(url_str: str) -> bool:
     """
     Check if url_str tastes like a url (starts with blah://)
 
@@ -31,12 +31,9 @@ def is_url(url_str):
         return False
 
 
-def uri_to_local_path(local_uri):
+def uri_to_local_path(local_uri: Optional[str]) -> Optional[pathlib.Path]:
     """
     Transform a URI to a platform dependent Path.
-
-    :type local_uri: str
-    :rtype: pathlib.Path
 
     For example on Unix:
     'file:///tmp/something.txt' -> '/tmp/something.txt'
@@ -65,13 +62,13 @@ def uri_to_local_path(local_uri):
     return pathlib.Path(path)
 
 
-def mk_part_uri(uri, idx):
+def mk_part_uri(uri: str, idx: int) -> str:
     """ Appends fragment part to the uri recording index of the part
     """
     return '{}#part={:d}'.format(uri, idx)
 
 
-def get_part_from_uri(uri):
+def get_part_from_uri(uri: str) -> Optional[int]:
     """
     Reverse of mk_part_uri
 
@@ -90,14 +87,14 @@ def get_part_from_uri(uri):
     return maybe_int(opts.get('part', None))
 
 
-def as_url(maybe_uri):
+def as_url(maybe_uri: str) -> str:
     if is_url(maybe_uri):
         return maybe_uri
     else:
         return pathlib.Path(maybe_uri).absolute().as_uri()
 
 
-def default_base_dir():
+def default_base_dir() -> pathlib.Path:
     """Return absolute path to current directory. If PWD environment variable is
        set correctly return that, note that PWD might be set to "symlinked"
        path instead of "real" path.
@@ -110,11 +107,11 @@ def default_base_dir():
     """
     cwd = pathlib.Path('.').resolve()
 
-    pwd = os.environ.get('PWD')
-    if pwd is None:
+    _pwd = os.environ.get('PWD')
+    if _pwd is None:
         return cwd
 
-    pwd = pathlib.Path(pwd)
+    pwd = pathlib.Path(_pwd)
     if not pwd.is_absolute():
         return cwd
 

@@ -121,15 +121,17 @@ class Dataset(object):
         self.archived_time = archived_time
 
     @property
-    def metadata_type(self):
+    def metadata_type(self) -> Optional['MetadataType']:
         return self.type.metadata_type if self.type else None
 
     @property
-    def local_uri(self):
+    def local_uri(self) -> Optional[str]:
         """
         The latest local file uri, if any.
-        :rtype: str
         """
+        if self.uris is None:
+            return None
+
         local_uris = [uri for uri in self.uris if uri.startswith('file:')]
         if local_uris:
             return local_uris[0]
@@ -137,28 +139,25 @@ class Dataset(object):
         return None
 
     @property
-    def local_path(self):
+    def local_path(self) -> Optional[Path]:
         """
         A path to this dataset on the local filesystem (if available).
-
-        :rtype: pathlib.Path
         """
         return uri_to_local_path(self.local_uri)
 
     @property
-    def id(self):
-        """
-        :rtype: UUID
+    def id(self) -> UUID:
+        """ UUID of a dataset
         """
         # This is a string in a raw document.
         return UUID(self.metadata.id)
 
     @property
-    def managed(self):
+    def managed(self) -> bool:
         return self.type.managed
 
     @property
-    def format(self):
+    def format(self) -> str:
         return self.metadata.format
 
     @property
