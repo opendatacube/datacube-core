@@ -3,7 +3,7 @@
 from contextlib import contextmanager
 import pickle
 
-from datacube.storage.storage import measurement_paths
+from datacube.storage import measurement_paths
 
 PROTOCOL = 'file'
 FORMAT = 'pickle'
