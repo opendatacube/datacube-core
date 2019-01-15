@@ -46,6 +46,7 @@ def test_band_info():
     assert binfo.nodata == 33
     assert binfo.center_time == ds.center_time
     assert binfo.uri == 'file:///tmp/b.tiff'
+    assert binfo.format == ds.format
     assert binfo.driver_data is None
 
     with pytest.raises(ValueError):

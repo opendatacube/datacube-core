@@ -57,6 +57,7 @@ class BandInfo:
                  'crs',
                  'transform',
                  'center_time',
+                 'format',
                  'driver_data')
 
     def __init__(self,
@@ -86,4 +87,5 @@ class BandInfo:
         self.crs = ds.crs
         self.transform = ds.transform
         self.center_time = ds.center_time
+        self.format = ds.format
         self.driver_data = _extract_driver_data(ds)
