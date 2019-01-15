@@ -401,7 +401,7 @@ def measurement_paths(dataset: Dataset) -> Dict[str, str]:
     Returns a dictionary mapping from band name to url pointing to band storage
     resource.
 
-    :return: {str: str} Band Name => URL
+    :return: Band Name => URL
     """
     base = _choose_location(dataset)
     return dict((k, _resolve_url(base, m.get('path', '')))

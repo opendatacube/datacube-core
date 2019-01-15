@@ -33,6 +33,7 @@ from datacube.utils.math import clamp
 from datacube.utils.py import sorted_items
 from datacube.utils.documents import parse_yaml
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
+                                 pick_uri, uri_resolve,
                                  without_lineage_sources, normalise_path, default_base_dir)
 
 
@@ -97,6 +98,38 @@ def test_uri_to_local_path():
 
     with pytest.raises(ValueError):
         uri_to_local_path('ftp://example.com/tmp/something.txt')
+
+
+def test_uri_resolve():
+    abs_path = '/abs/path/to/something'
+    some_uri = 'http://example.com/file.txt'
+    base = 's3://foo'
+    assert uri_resolve(base, abs_path) == "file://" + abs_path
+    assert uri_resolve(base, some_uri) is some_uri
+    assert uri_resolve(base, None) is base
+    assert uri_resolve(base, '') is base
+    assert uri_resolve(base, 'relative/path') == base + '/relative/path'
+
+
+def test_pick_uri():
+    f, s, h = ('file://a', 's3://b', 'http://c')
+
+    assert pick_uri([f, s, h]) is f
+    assert pick_uri([s, h, f]) is f
+    assert pick_uri([s, h]) is s
+    assert pick_uri([h, s]) is h
+    assert pick_uri([f, s, h], 'http:') is h
+    assert pick_uri([f, s, h], 's3:') is s
+    assert pick_uri([f, s, h], 'file:') is f
+
+    with pytest.raises(ValueError):
+        pick_uri([])
+
+    with pytest.raises(ValueError):
+        pick_uri([f, s, h], 'ftp:')
+
+    with pytest.raises(ValueError):
+        pick_uri([s, h], 'file:')
 
 
 @given(integers(), integers(), integers())

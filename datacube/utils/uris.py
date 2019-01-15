@@ -2,9 +2,11 @@ import os
 
 import pathlib
 import re
+from typing import Optional, List
 from copy import deepcopy
-from urllib.parse import urlparse, parse_qsl
+from urllib.parse import urlparse, parse_qsl, urljoin
 from urllib.request import url2pathname
+from pathlib import Path
 
 URL_RE = re.compile(r'\A\s*[\w\d\+]+://')
 
@@ -176,3 +178,49 @@ def normalise_path(p, base=None):
         raise ValueError("Expect base to be an absolute path")
 
     return norm(base / p)
+
+
+def uri_resolve(base: str, path: Optional[str]) -> str:
+    """
+    path                  -- if path is a uri
+    Path(path).as_uri()   -- if path is absolute filename
+    base/path             -- in all other cases
+    """
+    if not path:
+        return base
+
+    if is_url(path):
+        return path
+
+    p = Path(path)
+    if p.is_absolute():
+        return p.as_uri()
+
+    return urljoin(base, path)
+
+
+def pick_uri(uris: List[str], scheme: Optional[str] = None) -> str:
+    """ If scheme is supplied:
+          Return first uri matching the scheme or raises Exception
+        If scheme is not supplied:
+          Return first `file:` uri, or failing that the very first uri
+    """
+
+    def pick(uris: List[str], scheme: str) -> Optional[str]:
+        for uri in uris:
+            if uri.startswith(scheme):
+                return uri
+        return None
+
+    if len(uris) < 1:
+        raise ValueError('No uris on a dataset')
+
+    base_uri = pick(uris, scheme or 'file:')
+
+    if base_uri is not None:
+        return base_uri
+
+    if scheme is not None:
+        raise ValueError('No uri with required scheme was found')
+
+    return uris[0]
