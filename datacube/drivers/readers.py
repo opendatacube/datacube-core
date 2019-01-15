@@ -1,9 +1,9 @@
 from typing import List, Optional, Callable
 from .driver_cache import load_drivers
 from .datasource import DataSource
-from datacube.model import Dataset
+from datacube.storage._base import BandInfo
 
-DatasourceFactory = Callable[[Dataset, str], DataSource]  # pylint: disable=invalid-name
+DatasourceFactory = Callable[[BandInfo], DataSource]  # pylint: disable=invalid-name
 
 
 class ReaderDriverCache(object):
@@ -62,7 +62,7 @@ def reader_drivers() -> List[str]:
     return rdr_cache().drivers()
 
 
-def choose_datasource(dataset: Dataset) -> DatasourceFactory:
+def choose_datasource(band: 'BandInfo') -> DatasourceFactory:
     """Returns appropriate `DataSource` class (or a constructor method) for loading
     given `dataset`.
 
@@ -77,10 +77,10 @@ def choose_datasource(dataset: Dataset) -> DatasourceFactory:
 
     """
     from datacube.storage.storage import RasterDatasetDataSource
-    return rdr_cache()(dataset.uri_scheme, dataset.format, fallback=RasterDatasetDataSource)
+    return rdr_cache()(band.uri_scheme, band.format, fallback=RasterDatasetDataSource)
 
 
-def new_datasource(dataset: Dataset, band_name: str) -> Optional[DataSource]:
+def new_datasource(band: BandInfo) -> Optional[DataSource]:
     """Returns a newly constructed data source to read dataset band data.
 
     An appropriate `DataSource` implementation is chosen based on:
@@ -98,9 +98,9 @@ def new_datasource(dataset: Dataset, band_name: str) -> Optional[DataSource]:
 
     """
 
-    source_type = choose_datasource(dataset)
+    source_type = choose_datasource(band)
 
     if source_type is None:
         return None
 
-    return source_type(dataset, band_name)
+    return source_type(band)

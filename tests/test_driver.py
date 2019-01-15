@@ -6,6 +6,7 @@ from collections import namedtuple
 from datacube.drivers import new_datasource, reader_drivers, writer_drivers
 from datacube.drivers import index_drivers, index_driver_by_name
 from datacube.drivers.indexes import IndexDriverCache
+from datacube.storage import BandInfo
 from datacube.storage.storage import RasterDatasetDataSource
 from datacube.testutils import mk_sample_dataset
 from datacube.model import MetadataType
@@ -28,7 +29,7 @@ def test_new_datasource_s3():
     assert dataset.format == s3_driver.FORMAT
     assert dataset.uri_scheme == s3_driver.PROTOCOL
 
-    rdr = new_datasource(dataset, 'green')
+    rdr = new_datasource(BandInfo(dataset, 'green'))
     assert rdr is not None
     assert isinstance(rdr, S3DataSource)
 
@@ -40,7 +41,7 @@ def test_new_datasource_fallback():
 
     assert dataset.uri_scheme == 'file'
 
-    rdr = new_datasource(dataset, 'green')
+    rdr = new_datasource(BandInfo(dataset, 'green'))
     assert rdr is not None
     assert isinstance(rdr, RasterDatasetDataSource)
 

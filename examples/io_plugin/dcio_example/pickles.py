@@ -3,7 +3,6 @@
 from contextlib import contextmanager
 import pickle
 
-from datacube.storage import measurement_paths
 
 PROTOCOL = 'file'
 FORMAT = 'pickle'
@@ -50,9 +49,9 @@ class PickleDataSource(object):
 
             raise NotImplementedError('Native reading not supported for this data source')
 
-    def __init__(self, dataset, band_name):
-        self._band_name = band_name
-        uri = measurement_paths(dataset)[band_name]
+    def __init__(self, band):
+        self._band = band
+        uri = band.uri
         self._filename, protocol = uri_split(uri)
 
         if protocol not in [PROTOCOL, 'pickle']:
@@ -63,7 +62,7 @@ class PickleDataSource(object):
         with open(self._filename, 'rb') as f:
             ds = pickle.load(f)
 
-        yield PickleDataSource.BandDataSource(ds[self._band_name].isel(time=0))
+        yield PickleDataSource.BandDataSource(ds[self._band.name].isel(time=0))
 
 
 class PickleReaderDriver(object):
@@ -76,8 +75,8 @@ class PickleReaderDriver(object):
         return (protocol in self.protocols and
                 fmt in self.formats)
 
-    def new_datasource(self, dataset, band_name):
-        return PickleDataSource(dataset, band_name)
+    def new_datasource(self, band):
+        return PickleDataSource(band)
 
 
 def rdr_driver_init():

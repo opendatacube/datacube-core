@@ -12,6 +12,7 @@ from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.model import Variable
 from datacube.testutils.io import RasterFileDataSource
+from datacube.storage import BandInfo
 from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, Resampling, \
     RasterDatasetDataSource
@@ -591,7 +592,7 @@ def test_multiband_support_in_datasetsource(example_gdal_path):
     # Without new band attribute, default to band number 1
     d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=['file:///tmp'])
 
-    ds = RasterDatasetDataSource(d, measurement_id='green')
+    ds = RasterDatasetDataSource(BandInfo(d, 'green'))
 
     bandnum = ds.get_bandnumber(None)
 
@@ -607,7 +608,7 @@ def test_multiband_support_in_datasetsource(example_gdal_path):
     defn['image']['bands']['green']['band'] = band_num
     d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=['file:///tmp'])
 
-    ds = RasterDatasetDataSource(d, measurement_id='green')
+    ds = RasterDatasetDataSource(BandInfo(d, 'green'))
 
     assert ds.get_bandnumber(None) == band_num
 
@@ -631,7 +632,7 @@ def test_netcdf_multi_part():
 
     def ds(uri):
         d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=[uri])
-        return RasterDatasetDataSource(d, measurement_id='green')
+        return RasterDatasetDataSource(BandInfo(d, 'green'))
 
     for i in range(3):
         assert ds('file:///tmp.nc#part=%d' % i).get_bandnumber() == (i+1)

@@ -11,6 +11,7 @@ from dask import array as da
 
 from datacube.config import LocalConfig
 from datacube.storage.storage import reproject_and_fuse
+from datacube.storage import BandInfo
 from datacube.utils import geometry
 from datacube.utils.geometry import intersects
 from .query import Query, query_group_by, query_geopolygon
@@ -617,7 +618,7 @@ def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend
 
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False):
-    reproject_and_fuse([new_datasource(dataset, measurement.name) for dataset in datasets],
+    reproject_and_fuse([new_datasource(BandInfo(dataset, measurement.name)) for dataset in datasets],
                        dest,
                        geobox,
                        dest.dtype.type(measurement.nodata),
