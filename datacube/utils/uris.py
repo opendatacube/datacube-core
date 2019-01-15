@@ -3,7 +3,6 @@ import os
 import pathlib
 import re
 from typing import Optional, List
-from copy import deepcopy
 from urllib.parse import urlparse, parse_qsl, urljoin
 from urllib.request import url2pathname
 from pathlib import Path
@@ -130,26 +129,8 @@ def default_base_dir():
     return pwd
 
 
-def without_lineage_sources(doc, spec, inplace=False):
-    """ Replace lineage.source_datasets with {}
-
-    :param dict doc: parsed yaml/json document describing dataset
-    :param spec: Product or MetadataType according to which `doc` to be interpreted
-    :param bool inplace: If True modify `doc` in place
-    """
-
-    if not inplace:
-        doc = deepcopy(doc)
-
-    doc_view = spec.dataset_reader(doc)
-
-    if 'sources' in doc_view.fields:
-        doc_view.sources = {}
-
-    return doc
-
-
-def normalise_path(p, base=None):
+def normalise_path(p: Union[str, pathlib.Path],
+                   base: Optional[Union[str, pathlib.Path]] = None) -> pathlib.Path:
     """Turn path into absolute path resolving any `../` and `.`
 
        If path is relative pre-pend `base` path to it, `base` if set should be

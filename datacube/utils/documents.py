@@ -12,7 +12,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
 import typing
-from typing import Any
+from typing import MutableMapping, Any
+from copy import deepcopy
 
 import jsonschema
 import netCDF4
@@ -511,3 +512,24 @@ class DocReader(object):
 
     def __dir__(self):
         return list(self.fields)
+
+
+def without_lineage_sources(doc: MutableMapping[str, Any],
+                            spec,
+                            inplace: bool = False):
+    """ Replace lineage.source_datasets with {}
+
+    :param dict doc: parsed yaml/json document describing dataset
+    :param spec: Product or MetadataType according to which `doc` to be interpreted
+    :param bool inplace: If True modify `doc` in place
+    """
+
+    if not inplace:
+        doc = deepcopy(doc)
+
+    doc_view = spec.dataset_reader(doc)
+
+    if 'sources' in doc_view.fields:
+        doc_view.sources = {}
+
+    return doc
