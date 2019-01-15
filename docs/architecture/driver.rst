@@ -61,8 +61,8 @@ Example code to implement a reader driver
     class AbstractReaderDriver(object):
         def supports(self, protocol: str, fmt: str) -> bool:
             pass
-        def new_datasource(self, dataset, band_name) -> DataSource:
-            return AbstractDataSource(dataset, band_name)
+        def new_datasource(self, band: BandInfo) -> DataSource:
+            return AbstractDataSource(band)
 
     class AbstractDataSource(object):  # Same interface as before
         ...

@@ -241,19 +241,18 @@ class RasterioDataSource(DataSource):
 class RasterDatasetDataSource(RasterioDataSource):
     """Data source for reading from a Data Cube Dataset"""
 
-    def __init__(self, dataset: Dataset, measurement_id: str):
+    def __init__(self, band: BandInfo):
         """
         Initialise for reading from a Data Cube Dataset.
 
         :param dataset: dataset to read from
         :param measurement_id: measurement to read. a single 'band' or 'slice'
         """
-        bi = BandInfo(dataset, measurement_id)
-        self._band_info = bi
-        self._netcdf = ('netcdf' in bi.format.lower())
-        self._part = get_part_from_uri(bi.uri)
-        filename = _url2rasterio(bi.uri, bi.format, bi.layer)
-        super(RasterDatasetDataSource, self).__init__(filename, nodata=bi.nodata)
+        self._band_info = band
+        self._netcdf = ('netcdf' in band.format.lower())
+        self._part = get_part_from_uri(band.uri)
+        filename = _url2rasterio(band.uri, band.format, band.layer)
+        super(RasterDatasetDataSource, self).__init__(filename, nodata=band.nodata)
 
     def get_bandnumber(self, src=None) -> Optional[int]:
 

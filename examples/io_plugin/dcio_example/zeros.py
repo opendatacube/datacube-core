@@ -13,7 +13,7 @@ class ZerosReaderDriver(object):
     def supports(self, protocol, fmt):
         return protocol == 'zero'
 
-    def new_datasource(self, dataset, band_name):
+    def new_datasource(self, band):
         return None  # TODO
 
 

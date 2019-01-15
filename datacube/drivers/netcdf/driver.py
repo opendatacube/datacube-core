@@ -14,8 +14,8 @@ class NetcdfReaderDriver(object):
         return (protocol in self.protocols and
                 fmt in self.formats)
 
-    def new_datasource(self, dataset, band_name):
-        return RasterDatasetDataSource(dataset, band_name)
+    def new_datasource(self, band):
+        return RasterDatasetDataSource(band)
 
 
 def reader_driver_init():
