@@ -130,6 +130,7 @@ def mk_sample_product(name,
             measurements=['image', 'bands'],
             sources=['lineage', 'source_datasets'],
             format=['format', 'name'],
+            grid_spatial=['grid_spatial', 'projection'],
         )
     }, dataset_search_fields={
         'time': parse_search_field({
