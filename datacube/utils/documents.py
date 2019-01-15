@@ -12,7 +12,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
 import typing
-from typing import MutableMapping, Any
+from typing import Dict, Any
 from copy import deepcopy
 
 import jsonschema
@@ -514,9 +514,9 @@ class DocReader(object):
         return list(self.fields)
 
 
-def without_lineage_sources(doc: MutableMapping[str, Any],
+def without_lineage_sources(doc: Dict[str, Any],
                             spec,
-                            inplace: bool = False):
+                            inplace: bool = False) -> Dict[str, Any]:
     """ Replace lineage.source_datasets with {}
 
     :param dict doc: parsed yaml/json document describing dataset

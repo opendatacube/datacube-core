@@ -12,7 +12,7 @@ from uuid import UUID
 
 import yaml
 from affine import Affine
-from typing import Optional, List, Mapping, Any
+from typing import Optional, List, Mapping, Any, Dict
 
 from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
@@ -176,24 +176,32 @@ class Dataset(object):
         return self.metadata.measurements
 
     @cached_property
-    def center_time(self):
-        """
-        :rtype: datetime.datetime
+    def center_time(self) -> Optional[datetime]:
+        """ mid-point of time range
         """
         time = self.time
+        if time is None:
+            return None
         return time.begin + (time.end - time.begin) // 2
 
     @property
-    def time(self):
-        time = self.metadata.time
-        return Range(parse_time(time.begin), parse_time(time.end))
+    def time(self) -> Optional[Range]:
+        try:
+            time = self.metadata.time
+            return Range(parse_time(time.begin), parse_time(time.end))
+        except AttributeError:
+            return None
 
     @property
-    def bounds(self):
+    def bounds(self) -> Optional[geometry.BoundingBox]:
         """
         :rtype: geometry.BoundingBox
         """
-        bounds = self.metadata.grid_spatial['geo_ref_points']
+        gs = self._gs
+        if gs is None:
+            return None
+
+        bounds = gs['geo_ref_points']
         return geometry.BoundingBox(left=min(bounds['ur']['x'], bounds['ll']['x']),
                                     right=max(bounds['ur']['x'], bounds['ll']['x']),
                                     top=max(bounds['ur']['y'], bounds['ll']['y']),
@@ -201,7 +209,7 @@ class Dataset(object):
 
     @property
     def transform(self) -> Optional[Affine]:
-        geo = self.metadata.grid_spatial
+        geo = self._gs
         if geo is None:
             return None
 
@@ -237,10 +245,18 @@ class Dataset(object):
         return not self.is_archived
 
     @property
+    def _gs(self) -> Optional[Dict[str, Any]]:
+        try:
+            return self.metadata.grid_spatial
+        except AttributeError:
+            return None
+
+    @property
     def crs(self) -> Optional[geometry.CRS]:
         """ Return CRS if available
         """
-        projection = self.metadata.grid_spatial
+        projection = self._gs
+
         if not projection:
             return None
 
@@ -279,7 +295,7 @@ class Dataset(object):
             return obj['x'], obj['y']
 
         # If no projection or crs, they have no extent.
-        projection = self.metadata.grid_spatial
+        projection = self._gs
         if not projection:
             return None
         crs = self.crs
@@ -313,10 +329,12 @@ class Dataset(object):
         return self.__str__()
 
     @property
-    def metadata(self):
+    def metadata(self) -> DocReader:
+        if self.metadata_type is None:
+            raise ValueError('Can not interpret dataset without metadata type set')
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
-    def metadata_doc_without_lineage(self):
+    def metadata_doc_without_lineage(self) -> Dict[str, Any]:
         """ Return metadata document without nested lineage datasets
         """
         return without_lineage_sources(self.metadata_doc, self.metadata_type)
