@@ -11,10 +11,13 @@ from ..drivers.datasource import (
     RasterShape,
     RasterWindow)
 
-from ._base import BandInfo
+from ._base import BandInfo, measurement_paths
 
-__all__ = ['BandInfo',
-           'DataSource',
-           'GeoRasterReader',
-           'RasterShape',
-           'RasterWindow']
+__all__ = (
+    'BandInfo',
+    'DataSource',
+    'GeoRasterReader',
+    'RasterShape',
+    'RasterWindow',
+    'measurement_paths',
+)

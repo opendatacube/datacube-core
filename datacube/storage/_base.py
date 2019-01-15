@@ -46,6 +46,21 @@ def _extract_driver_data(ds: Dataset) -> Optional[Any]:
     return dd
 
 
+def measurement_paths(ds: Dataset) -> Dict[str, str]:
+    """
+    Returns a dictionary mapping from band name to url pointing to band storage
+    resource.
+
+    :return: Band Name => URL
+    """
+    if ds.uris is None:
+        raise ValueError('No locations on this dataset')
+
+    base = pick_uri(ds.uris)
+    return dict((k, uri_resolve(base, m.get('path')))
+                for k, m in ds.measurements.items())
+
+
 class BandInfo:
     __slots__ = ('name',
                  'uri',

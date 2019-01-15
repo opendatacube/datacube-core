@@ -4,7 +4,7 @@ import numpy
 from datacube.testutils import mk_sample_dataset, mk_sample_product
 from datacube.model import GridSpec, Measurement
 from datacube.utils import geometry
-from datacube.storage.storage import measurement_paths
+from datacube.storage import measurement_paths
 
 
 def test_gridspec():
@@ -60,6 +60,10 @@ def test_dataset_measurement_paths():
 
     for k, v in paths.items():
         assert v == 'file:///tmp/' + k + '.tiff'
+
+    ds.uris = None
+    with pytest.raises(ValueError):
+        measurement_paths(ds)
 
 
 def test_product_dimensions():
