@@ -31,10 +31,10 @@ from datacube.utils.dates import date_sequence
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.math import clamp
 from datacube.utils.py import sorted_items
-from datacube.utils.documents import parse_yaml
+from datacube.utils.documents import parse_yaml, without_lineage_sources
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
                                  pick_uri, uri_resolve,
-                                 without_lineage_sources, normalise_path, default_base_dir)
+                                 normalise_path, default_base_dir)
 
 
 def test_stats_dates():

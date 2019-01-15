@@ -10,11 +10,11 @@ from datacube.utils.dates import parse_time
 from .dates import datetime_to_seconds_since_1970
 from .documents import InvalidDocException, SimpleDocNav, DocReader, is_supported_document_type, \
     read_strings_from_netcdf, read_documents, validate_document, NoDatesSafeLoader, get_doc_offset, \
-    get_doc_offset_safe, netcdf_extract_string
+    get_doc_offset_safe, netcdf_extract_string, without_lineage_sources
 from .math import unsqueeze_data_array, iter_slices, unsqueeze_dataset, data_resolution_and_offset
 from .py import cached_property, ignore_exceptions_if, import_function
 from .serialise import jsonify_document
-from .uris import is_url, uri_to_local_path, get_part_from_uri, mk_part_uri, without_lineage_sources
+from .uris import is_url, uri_to_local_path, get_part_from_uri, mk_part_uri
 
 _LOG = logging.getLogger(__name__)
 
