@@ -1,6 +1,7 @@
 from typing import List, Optional, Callable
 from .driver_cache import load_drivers
 from .datasource import DataSource
+from ._tools import singleton_setup
 from datacube.storage._base import BandInfo
 
 DatasourceFactory = Callable[[BandInfo], DataSource]  # pylint: disable=invalid-name
@@ -50,10 +51,9 @@ class ReaderDriverCache(object):
 def rdr_cache() -> ReaderDriverCache:
     """ Singleton for ReaderDriverCache
     """
-    # pylint: disable=protected-access
-    if not hasattr(rdr_cache, '_instance'):
-        rdr_cache._instance = ReaderDriverCache('datacube.plugins.io.read')  # type: ignore
-    return rdr_cache._instance  # type: ignore
+    return singleton_setup(rdr_cache, '_instance',
+                           ReaderDriverCache,
+                           'datacube.plugins.io.read')
 
 
 def reader_drivers() -> List[str]:
