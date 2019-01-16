@@ -1,12 +1,12 @@
 import logging
-from typing import Mapping, Any, Tuple, Iterable
+from typing import Dict, Any, Tuple, Iterable
 
 from pkg_resources import iter_entry_points, DistributionNotFound
 
 _LOG = logging.getLogger(__name__)
 
 
-def load_drivers(group: str) -> Mapping[str, Any]:
+def load_drivers(group: str) -> Dict[str, Any]:
     """
     Load available drivers for a given group name.
 
