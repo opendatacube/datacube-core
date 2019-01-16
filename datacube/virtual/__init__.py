@@ -17,7 +17,7 @@ class NameResolver:
     def __init__(self, **lookup_table):
         self.lookup_table = lookup_table
 
-    def construct(self, **recipe):
+    def construct(self, **recipe) -> VirtualProduct:
         """ Validate recipe and construct virtual product. """
 
         get = recipe.get

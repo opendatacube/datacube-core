@@ -13,6 +13,7 @@ products implementing the same interface.
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from functools import reduce
+from typing import Any, Dict, List, cast
 
 import numpy
 import xarray
@@ -22,7 +23,7 @@ from datacube import Datacube
 from datacube.api.core import select_datasets_inside_polygon, output_geobox, apply_aliases
 from datacube.api.grid_workflow import _fast_slice
 from datacube.api.query import Query, query_group_by, query_geopolygon
-from datacube.model import Measurement
+from datacube.model import Measurement, DatasetType
 from datacube.model.utils import xr_apply
 
 from .utils import qualified_name, merge_dicts
@@ -107,7 +108,7 @@ class Transformation(ABC):
     """
 
     @abstractmethod
-    def measurements(self, input_measurements):
+    def measurements(self, input_measurements) -> Dict[str, Measurement]:
         """
         Returns the dictionary describing the output measurements from this transformation.
         Assumes the `data` provided to `compute` will have measurements
@@ -143,8 +144,7 @@ class VirtualProduct(Mapping):
     _NON_SPATIAL_KEYS = _GEOBOX_KEYS + _GROUPING_KEYS
     _NON_QUERY_KEYS = _NON_SPATIAL_KEYS + _LOAD_KEYS + _ADDITIONAL_KEYS
 
-    def __init__(self, settings):
-        # type: (Dict[str, Any]) -> None
+    def __init__(self, settings: Dict[str, Any]) -> None:
         """
         :param settings: validated and reference-resolved recipe
         """
@@ -167,7 +167,7 @@ class VirtualProduct(Mapping):
             raise VirtualProductException(msg)
 
     @property
-    def _transformation(self):
+    def _transformation(self) -> Transformation:
         """ The `Transformation` object associated with a transform product. """
         cls = self['transform']
 
@@ -178,15 +178,15 @@ class VirtualProduct(Mapping):
 
         self._assert(isinstance(obj, Transformation), "not a transformation object: {}".format(obj))
 
-        return obj
+        return cast(Transformation, obj)
 
     @property
-    def _input(self):
+    def _input(self) -> 'VirtualProduct':
         """ The input product of a transform product. """
         return VirtualProduct(self['input'])
 
     @property
-    def _children(self):
+    def _children(self) -> List['VirtualProduct']:
         """ The children of a collate or a juxtapose product. """
         if 'collate' in self:
             return [VirtualProduct(child) for child in self['collate']]
@@ -211,8 +211,7 @@ class VirtualProduct(Mapping):
 
     # public interface
 
-    def output_measurements(self, product_definitions):
-        # type: (Dict[str, Dict]) -> Dict[str, Measurement]
+    def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
         """
         A dictionary mapping names to measurement metadata.
         :param product_definitions: a dictionary mapping product names to products (`DatasetType` objects)
@@ -232,7 +231,7 @@ class VirtualProduct(Mapping):
 
             try:
                 return {name: measurements[product.canonical_measurement(name)]
-                        for name in get('measurements')}
+                        for name in self['measurements']}
             except KeyError as ke:
                 raise VirtualProductException("could not find measurement: {}".format(ke.args))
 
@@ -242,10 +241,10 @@ class VirtualProduct(Mapping):
             return self._transformation.measurements(input_measurements)
 
         elif 'collate' in self:
-            input_measurements = [child.output_measurements(product_definitions)
-                                  for child in self._children]
+            input_measurement_list = [child.output_measurements(product_definitions)
+                                      for child in self._children]
 
-            first, *rest = input_measurements
+            first, *rest = input_measurement_list
 
             for child in rest:
                 self._assert(set(child) == set(first),
@@ -261,11 +260,11 @@ class VirtualProduct(Mapping):
             return first
 
         elif 'juxtapose' in self:
-            input_measurements = [child.output_measurements(product_definitions)
-                                  for child in self._children]
+            input_measurement_list = [child.output_measurements(product_definitions)
+                                      for child in self._children]
 
-            result = {}
-            for measurements in input_measurements:
+            result = cast(Dict[str, Measurement], {})
+            for measurements in input_measurement_list:
                 common = set(result) & set(measurements)
                 self._assert(not common, "common measurements {} between children".format(common))
 
@@ -276,8 +275,7 @@ class VirtualProduct(Mapping):
         else:
             raise VirtualProductException("virtual product was not validated")
 
-    def query(self, dc, **search_terms):
-        # type: (Datacube, Dict[str, Any]) -> QueryResult
+    def query(self, dc: Datacube, **search_terms: Dict[str, Any]) -> QueryResult:
         """ Collection of datasets that match the query. """
         get = self.get
 
@@ -302,7 +300,7 @@ class VirtualProduct(Mapping):
             if get('dataset_predicate') is not None:
                 datasets = [dataset
                             for dataset in datasets
-                            if get('dataset_predicate')(dataset)]
+                            if self['dataset_predicate'](dataset)]
 
             return QueryResult(list(datasets), product.grid_spec, query.geopolygon,
                                {product.name: product})
@@ -404,8 +402,7 @@ class VirtualProduct(Mapping):
         else:
             raise VirtualProductException("virtual product was not validated")
 
-    def fetch(self, grouped, **load_settings):
-        # type: (DatasetPile, Dict[str, Dict], Dict[str, Any]) -> xarray.Dataset
+    def fetch(self, grouped: DatasetPile, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         """ Convert grouped datasets to `xarray.Dataset`. """
         # TODO: provide `load_lazy` and `load_strict` instead
 
