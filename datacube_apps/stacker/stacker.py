@@ -10,6 +10,7 @@ import logging
 import os
 import socket
 from functools import partial
+from typing import List
 
 import click
 import dask.array as da
@@ -35,13 +36,12 @@ def get_filename(config, cell_index, year):
     return file_path_template.format(tile_index=cell_index, start_time=year, version=config['taskfile_utctime'])
 
 
-def get_temp_file(final_output_path):
+def get_temp_file(final_output_path) -> Path:
     """
     Get a temp file path
     Changes "/path/file.nc" to "/path/.tmp/file.nc.host.pid.tmp"
     :param Path final_output_path:
     :return: Path to temporarily write output
-    :rtype: Path
     """
 
     tmp_folder = final_output_path.parent / '.tmp'
@@ -203,8 +203,7 @@ def check_identical(data1, data2, output_filename):
 
 
 def make_updated_tile(old_datasets, new_uri, geobox):
-    def update_dataset_location(idx, labels, dataset):
-        # type: ((int,), object, Dataset) -> list
+    def update_dataset_location(idx, labels, dataset: Dataset) -> List[Dataset]:
         idx, = idx
         new_dataset = copy.copy(dataset)
         new_dataset.uris = [mk_part_uri(new_uri, idx)]
