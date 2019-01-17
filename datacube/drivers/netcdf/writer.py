@@ -6,7 +6,7 @@ Create netCDF4 Storage Units and write data to them
 import logging
 import numbers
 from datetime import datetime
-
+from collections import namedtuple
 import numpy
 
 from datacube.storage.masking import describe_flags_def
@@ -20,6 +20,7 @@ except TypeError:  # The above fails when netCDF4.Dataset is mocked, eg in RTD
 
 from datacube import __version__
 
+Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
 _LOG = logging.getLogger(__name__)
 
 _STANDARD_COORDINATES = {
