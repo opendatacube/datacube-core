@@ -1,7 +1,4 @@
-# coding=utf-8
 """
-Create/store dataset data into storage units based on the provided storage mappings.
-
 Important functions are:
 
 * :func:`reproject_and_fuse`
@@ -9,7 +6,6 @@ Important functions are:
 """
 import logging
 import numpy as np
-from rasterio.warp import Resampling
 from typing import Union, Optional, Callable, List, Any
 
 from datacube.utils import ignore_exceptions_if
@@ -17,8 +13,6 @@ from datacube.utils.geometry import GeoBox, roi_is_empty
 from . import DataSource
 
 _LOG = logging.getLogger(__name__)
-
-RESAMPLING_METHODS = {r.name: r for r in Resampling}
 
 FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
 
