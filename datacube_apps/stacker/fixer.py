@@ -14,6 +14,7 @@ import re
 import socket
 from functools import partial
 from collections import Counter
+from typing import List
 
 import click
 import dask.array as da
@@ -29,7 +30,6 @@ from datacube.model.utils import xr_apply, datasets_to_doc
 from datacube.storage import netcdf_writer
 from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.ui import task_app
-from datacube.ui.click import to_pathlib
 
 _LOG = logging.getLogger(__name__)
 
@@ -225,8 +225,7 @@ def check_identical(data1, data2, output_filename):
 
 
 def make_updated_tile(old_datasets, new_uri, geobox):
-    def update_dataset_location(labels, dataset):
-        # type: (object, Dataset) -> list
+    def update_dataset_location(labels, dataset: Dataset) -> List[Dataset]:
         new_dataset = copy.copy(dataset)
         new_dataset.uris = [new_uri]
         return [new_dataset]
