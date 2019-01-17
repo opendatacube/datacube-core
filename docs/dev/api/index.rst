@@ -101,7 +101,6 @@ Internal Data Model
    GridSpec
 
    Range
-   Variable
    CellIndex
 
 

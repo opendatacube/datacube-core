@@ -24,7 +24,6 @@ from datacube.utils.geometry import (CRS as _CRS,
 from datacube.utils.serialise import SafeDatacubeDumper
 from .fields import Field
 from ._base import Range
-from ._base import Variable  # TODO: maybe remove, only used by netcdf_writer it seems
 
 _LOG = logging.getLogger(__name__)
 

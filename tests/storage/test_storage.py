@@ -11,10 +11,9 @@ from rasterio.warp import Resampling
 import datacube
 from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.model import Variable
 from datacube.testutils.io import RasterFileDataSource
 from datacube.storage import BandInfo
-from datacube.drivers.netcdf import create_netcdf_storage_unit, write_dataset_to_netcdf
+from datacube.drivers.netcdf import create_netcdf_storage_unit, write_dataset_to_netcdf, Variable
 from datacube.storage import reproject_and_fuse
 from datacube.storage._rio import RasterDatasetDataSource
 from datacube.storage._read import read_time_slice
