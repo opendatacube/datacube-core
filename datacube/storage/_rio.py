@@ -1,40 +1,27 @@
 # coding=utf-8
 """
-Create/store dataset data into storage units based on the provided storage mappings.
-
-Important functions are:
-
-* :func:`reproject_and_fuse`
-
+Driver implementation for Rasterio based reader.
 """
 import logging
 from contextlib import contextmanager
-from pathlib import Path
 import numpy as np
 from affine import Affine
 import rasterio
-from rasterio.warp import Resampling
 import urllib.parse
 from urllib.parse import urlparse
-from typing import Union, Optional, Callable, List, Any, Iterator
+from typing import Optional, Iterator
 
-from datacube.storage import netcdf_writer
-from datacube.utils import datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
+from datacube.utils import datetime_to_seconds_since_1970
 from datacube.utils import geometry
-from datacube.utils.geometry import GeoBox, roi_is_empty
 from datacube.utils.math import num2numpy
 from datacube.utils import uri_to_local_path, get_part_from_uri
 from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
 
 _LOG = logging.getLogger(__name__)
 
-RESAMPLING_METHODS = {r.name: r for r in Resampling}
-
 GDAL_NETCDF_DIM = ('NETCDF_DIM_'
                    if str(rasterio.__gdal_version__) >= '1.10.0' else
                    'NETCDF_DIMENSION_')
-
-FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
 
 
 def _rasterio_crs_wkt(src):
@@ -42,55 +29,6 @@ def _rasterio_crs_wkt(src):
         return str(src.crs.wkt)
     else:
         return ''
-
-
-def reproject_and_fuse(datasources: List[DataSource],
-                       destination: np.ndarray,
-                       dst_gbox: GeoBox,
-                       dst_nodata: Optional[Union[int, float]],
-                       resampling: str = 'nearest',
-                       fuse_func: Optional[FuserFunction] = None,
-                       skip_broken_datasets: bool = False):
-    """
-    Reproject and fuse `sources` into a 2D numpy array `destination`.
-
-    :param datasources: Data sources to open and read from
-    :param destination: ndarray of appropriate size to read data into
-    :param dst_gbox: GeoBox defining destination region
-    :param skip_broken_datasets: Carry on in the face of adversity and failing reads.
-    """
-    # pylint: disable=too-many-locals
-    from ._read import read_time_slice
-    assert len(destination.shape) == 2
-
-    def copyto_fuser(dest: np.ndarray, src: np.ndarray) -> None:
-        where_nodata = (dest == dst_nodata) if not np.isnan(dst_nodata) else np.isnan(dest)
-        np.copyto(dest, src, where=where_nodata)
-
-    fuse_func = fuse_func or copyto_fuser
-
-    destination.fill(dst_nodata)
-    if len(datasources) == 0:
-        return destination
-    elif len(datasources) == 1:
-        with ignore_exceptions_if(skip_broken_datasets):
-            with datasources[0].open() as rdr:
-                read_time_slice(rdr, destination, dst_gbox, resampling, dst_nodata)
-
-        return destination
-    else:
-        # Multiple sources, we need to fuse them together into a single array
-        buffer_ = np.full(destination.shape, dst_nodata, dtype=destination.dtype)
-        for source in datasources:
-            with ignore_exceptions_if(skip_broken_datasets):
-                with source.open() as rdr:
-                    roi = read_time_slice(rdr, buffer_, dst_gbox, resampling, dst_nodata)
-
-                if not roi_is_empty(roi):
-                    fuse_func(destination[roi], buffer_[roi])
-                    buffer_[roi] = dst_nodata  # clean up for next read
-
-        return destination
 
 
 class BandDataSource(GeoRasterReader):
@@ -338,91 +276,3 @@ def _url2rasterio(url_str, fmt, layer):
 
     # if local path strip scheme and other gunk
     return str(uri_to_local_path(url_str))
-
-
-def create_netcdf_storage_unit(filename,
-                               crs, coordinates, variables, variable_params, global_attributes=None,
-                               netcdfparams=None):
-    """
-    Create a NetCDF file on disk.
-
-    :param pathlib.Path filename: filename to write to
-    :param datacube.utils.geometry.CRS crs: Datacube CRS object defining the spatial projection
-    :param dict coordinates: Dict of named `datacube.model.Coordinate`s to create
-    :param dict variables: Dict of named `datacube.model.Variable`s to create
-    :param dict variable_params:
-        Dict of dicts, with keys matching variable names, of extra parameters for variables
-    :param dict global_attributes: named global attributes to add to output file
-    :param dict netcdfparams: Extra parameters to use when creating netcdf file
-    :return: open netCDF4.Dataset object, ready for writing to
-    """
-    filename = Path(filename)
-    if filename.exists():
-        raise RuntimeError('Storage Unit already exists: %s' % filename)
-
-    try:
-        filename.parent.mkdir(parents=True)
-    except OSError:
-        pass
-
-    _LOG.info('Creating storage unit: %s', filename)
-
-    nco = netcdf_writer.create_netcdf(str(filename), **(netcdfparams or {}))
-
-    for name, coord in coordinates.items():
-        netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
-
-    netcdf_writer.create_grid_mapping_variable(nco, crs)
-
-    for name, variable in variables.items():
-        set_crs = all(dim in variable.dims for dim in crs.dimensions)
-        var_params = variable_params.get(name, {})
-        data_var = netcdf_writer.create_variable(nco, name, variable, set_crs=set_crs, **var_params)
-
-        for key, value in var_params.get('attrs', {}).items():
-            setattr(data_var, key, value)
-
-    for key, value in (global_attributes or {}).items():
-        setattr(nco, key, value)
-
-    return nco
-
-
-def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_params=None,
-                            netcdfparams=None):
-    """
-    Write a Data Cube style xarray Dataset to a NetCDF file
-
-    Requires a spatial Dataset, with attached coordinates and global crs attribute.
-
-    :param `xarray.Dataset` dataset:
-    :param filename: Output filename
-    :param global_attributes: Global file attributes. dict of attr_name: attr_value
-    :param variable_params: dict of variable_name: {param_name: param_value, [...]}
-                            Allows setting storage and compression options per variable.
-                            See the `netCDF4.Dataset.createVariable` for available
-                            parameters.
-    :param netcdfparams: Optional params affecting netCDF file creation
-    """
-    global_attributes = global_attributes or {}
-    variable_params = variable_params or {}
-    filename = Path(filename)
-
-    if not dataset.data_vars.keys():
-        raise DatacubeException('Cannot save empty dataset to disk.')
-
-    if not hasattr(dataset, 'crs'):
-        raise DatacubeException('Dataset does not contain CRS, cannot write to NetCDF file.')
-
-    nco = create_netcdf_storage_unit(filename,
-                                     dataset.crs,
-                                     dataset.coords,
-                                     dataset.data_vars,
-                                     variable_params,
-                                     global_attributes,
-                                     netcdfparams)
-
-    for name, variable in dataset.data_vars.items():
-        nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
-
-    nco.close()

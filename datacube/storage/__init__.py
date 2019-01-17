@@ -12,6 +12,7 @@ from ..drivers.datasource import (
     RasterWindow)
 
 from ._base import BandInfo, measurement_paths
+from ._reproject import reproject_and_fuse
 
 __all__ = (
     'BandInfo',
@@ -20,4 +21,5 @@ __all__ = (
     'RasterShape',
     'RasterWindow',
     'measurement_paths',
+    'reproject_and_fuse',
 )

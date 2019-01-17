@@ -9,7 +9,7 @@ from affine import Affine
 from numpy import dtype
 
 from datacube.drivers.datasource import DataSource
-from datacube.storage.storage import OverrideBandDataSource
+from datacube.storage._rio import OverrideBandDataSource
 from datacube.storage import BandInfo
 from datacube.utils import datetime_to_seconds_since_1970
 from .utils import DriverUtils

@@ -1,4 +1,5 @@
-from datacube.storage.storage import write_dataset_to_netcdf, RasterDatasetDataSource
+from datacube.storage._rio import RasterDatasetDataSource
+from ._write import write_dataset_to_netcdf
 
 PROTOCOL = 'file'
 FORMAT = 'NetCDF'
