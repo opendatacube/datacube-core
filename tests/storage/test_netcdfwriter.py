@@ -8,9 +8,9 @@ from hypothesis.strategies import text
 import string
 
 from datacube.model import Variable
-from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
+from datacube.drivers.netcdf.writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
     create_grid_mapping_variable, flag_mask_meanings
-from datacube.storage.storage import write_dataset_to_netcdf
+from datacube.drivers.netcdf import write_dataset_to_netcdf
 from datacube.utils import geometry, DatacubeException, read_strings_from_netcdf
 
 GEO_PROJ = geometry.CRS("""GEOGCS["WGS 84",

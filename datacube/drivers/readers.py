@@ -76,7 +76,7 @@ def choose_datasource(band: 'BandInfo') -> DatasourceFactory:
     NOTE: we assume that all bands can be loaded with the same implementation.
 
     """
-    from datacube.storage.storage import RasterDatasetDataSource
+    from datacube.storage._rio import RasterDatasetDataSource
     return rdr_cache()(band.uri_scheme, band.format, fallback=RasterDatasetDataSource)
 
 

@@ -10,8 +10,7 @@ import xarray
 from dask import array as da
 
 from datacube.config import LocalConfig
-from datacube.storage.storage import reproject_and_fuse
-from datacube.storage import BandInfo
+from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import geometry
 from datacube.utils.geometry import intersects
 from .query import Query, query_group_by, query_geopolygon
