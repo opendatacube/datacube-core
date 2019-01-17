@@ -1,9 +1,7 @@
 import numpy as np
 
-from ..storage.storage import (
-    RasterioDataSource,
-    reproject_and_fuse,
-)
+from ..storage import reproject_and_fuse
+from ..storage._rio import RasterioDataSource
 from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox

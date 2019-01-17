@@ -27,8 +27,7 @@ import xarray as xr
 import datacube
 from datacube.model import Dataset
 from datacube.model.utils import xr_apply, datasets_to_doc
-from datacube.storage import netcdf_writer
-from datacube.storage.storage import create_netcdf_storage_unit
+from datacube.drivers.netcdf import create_netcdf_storage_unit, netcdf_writer
 from datacube.ui import task_app
 
 _LOG = logging.getLogger(__name__)

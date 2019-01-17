@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import rasterio.warp
 from affine import Affine, identity
+from rasterio.warp import Resampling
 
 import datacube
 from datacube.drivers.datasource import DataSource
@@ -13,9 +14,9 @@ from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.model import Variable
 from datacube.testutils.io import RasterFileDataSource
 from datacube.storage import BandInfo
-from datacube.storage.storage import create_netcdf_storage_unit
-from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, Resampling, \
-    RasterDatasetDataSource
+from datacube.drivers.netcdf import create_netcdf_storage_unit, write_dataset_to_netcdf
+from datacube.storage import reproject_and_fuse
+from datacube.storage._rio import RasterDatasetDataSource
 from datacube.storage._read import read_time_slice
 from datacube.utils.geometry import GeoBox
 
