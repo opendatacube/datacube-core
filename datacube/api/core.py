@@ -498,6 +498,12 @@ class Datacube(object):
             measurements = [with_fuser(m, fuse_func, default=fuse_func.get('*'))
                             for m in measurements]
 
+        if _needs_legacy_fallback(sources):
+            from . import _legacy
+            return _legacy.load_data(sources, geobox, measurements,
+                                     dask_chunks=dask_chunks,
+                                     skip_broken_datasets=skip_broken_datasets)
+
         if dask_chunks is not None:
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
                                        skip_broken_datasets=skip_broken_datasets)
@@ -716,3 +722,12 @@ def _make_dask_array(sources, geobox, measurement,
     if irr_chunks != sliced_irr_chunks:
         data = data.rechunk(chunks=(irr_chunks + grid_chunks))
     return data
+
+
+def _needs_legacy_fallback(sources):
+    if sources.shape[0] == 0:
+        return False
+
+    ds = sources.values[0][0]
+    is_s3aio_ds = ds.format == 'aio'
+    return True if is_s3aio_ds else False

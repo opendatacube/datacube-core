@@ -29,7 +29,7 @@ def test_new_datasource_s3():
     assert dataset.format == s3_driver.FORMAT
     assert dataset.uri_scheme == s3_driver.PROTOCOL
 
-    rdr = new_datasource(BandInfo(dataset, 'green'))
+    rdr = s3_driver.reader_driver_init().new_datasource(BandInfo(dataset, 'green'))
     assert rdr is not None
     assert isinstance(rdr, S3DataSource)
 
@@ -51,7 +51,7 @@ def test_reader_drivers():
     assert isinstance(available_drivers, list)
 
     pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
-    assert 's3aio' in available_drivers
+    assert 's3aio' not in available_drivers  # TODO: remove once s3aio moved out of legacy
 
 
 def test_writer_drivers():
