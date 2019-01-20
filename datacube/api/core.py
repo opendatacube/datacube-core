@@ -266,6 +266,12 @@ class Datacube(object):
             raise DeprecationWarning("the `stack` keyword argument is not supported anymore, "
                                      "please apply `xarray.Dataset.to_array()` to the result instead")
 
+        # TODO: get rid of this block when removing legacy load support
+        legacy_args = {}
+        use_threads = query.pop('use_threads', None)
+        if use_threads is not None:
+            legacy_args['use_threads'] = use_threads
+
         observations = datasets or self.find_datasets(product=product, like=like, ensure_location=True, **query)
         if not observations:
             return xarray.Dataset()
@@ -284,7 +290,8 @@ class Datacube(object):
                                 measurement_dicts,
                                 resampling=resampling,
                                 fuse_func=fuse_func,
-                                dask_chunks=dask_chunks)
+                                dask_chunks=dask_chunks,
+                                **legacy_args)
 
         return apply_aliases(result, datacube_product, measurements)
 
@@ -433,7 +440,8 @@ class Datacube(object):
 
     @staticmethod
     def load_data(sources, geobox, measurements, resampling=None,
-                  fuse_func=None, dask_chunks=None, skip_broken_datasets=False):
+                  fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
+                  **extra):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
 
@@ -502,7 +510,8 @@ class Datacube(object):
             from . import _legacy
             return _legacy.load_data(sources, geobox, measurements,
                                      dask_chunks=dask_chunks,
-                                     skip_broken_datasets=skip_broken_datasets)
+                                     skip_broken_datasets=skip_broken_datasets,
+                                     **extra)
 
         if dask_chunks is not None:
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
