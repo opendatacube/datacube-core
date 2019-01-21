@@ -5,6 +5,8 @@ import numpy
 import pytest
 import rasterio
 
+from datacube.api.query import query_group_by
+
 from integration_tests.utils import assert_click_command, prepare_test_ingestion_configuration
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -41,8 +43,8 @@ ignore_me = pytest.mark.xfail(True, reason="get_data/get_description still to be
 
 
 @pytest.mark.usefixtures('default_metadata_type')
-@pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env', ), indirect=True)
-def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
+@pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env'))
+def test_end_to_end(clirunner, index, testdata_dir, ingest_configs, datacube_env_name):
     """
     Loads two dataset configurations, then ingests a sample Landsat 5 scene
 
@@ -103,6 +105,9 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
 
     check_open_with_dc(index)
     check_open_with_grid_workflow(index)
+
+    if datacube_env_name == "s3aio_env":
+        check_legacy_open(index)
 
 
 def check_open_with_dc(index):
@@ -234,3 +239,29 @@ def check_open_with_grid_workflow(index):
 
     dataset_cell = gw.load(tile)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
+
+
+def check_legacy_open(index):
+    from datacube.api.core import Datacube
+    dc = Datacube(index=index)
+
+    data_array = dc.load(product='ls5_nbar_albers',
+                         measurements=['blue'],
+                         time='1992-03-23T23:14:25.500000',
+                         use_threads=True)
+    assert data_array['blue'].shape[0] == 1
+    assert (data_array.blue != -999).any()
+
+    # force fusing load by duplicating dataset
+    dss = dc.find_datasets(product='ls5_nbar_albers',
+                           time='1992-03-23T23:14:25.500000')
+
+    assert len(dss) == 1
+
+    dss = dss*2
+    sources = dc.group_datasets(dss, query_group_by('time'))
+
+    gbox = data_array.geobox
+    mm = [dss[0].type.measurements['blue']]
+    xx = dc.load_data(sources, gbox, mm)
+    assert (xx == data_array).all()
