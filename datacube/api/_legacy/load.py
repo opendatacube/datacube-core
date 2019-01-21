@@ -27,7 +27,7 @@ def _init_s3_aio_driver():
         from datacube.drivers.s3.driver import reader_driver_init, reader_test_driver_init
         return reader_driver_init(), reader_test_driver_init()
     except Exception:  # pylint: disable=broad-except
-        return None
+        return None, None
 
 
 S3AIO_DRIVER, S3AIO_FILE_DRIVER = _init_s3_aio_driver()
