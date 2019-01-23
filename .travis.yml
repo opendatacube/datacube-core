@@ -47,6 +47,7 @@ before_install:
 # Set paths for building python-gdal
   - export CPLUS_INCLUDE_PATH=/usr/include/gdal
   - export C_INCLUDE_PATH=/usr/include/gdal
+  - pip install --upgrade pip
   - pip install --progress=off coveralls codecov
   - pip install --progress=off --requirement requirements-test.txt
 
