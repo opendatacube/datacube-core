@@ -14,16 +14,17 @@ these description documents. Before loading them will need to generate them,
 using a tool which understands the format the dataset is in. Several of these
 tools are provided in  :file:`utils/` in the source repository.
 
-The two examples below shows USGS landsat data for ingestion into the Data cube.
+The two examples below shows USGS landsat data for ingestion into the Data cube:
 
-#. A specific example for USGS collection 1 MTL format is :download:`USGS Landsat Prepare Script
+
+A specific example for USGS collection 1 MTL format is :download:`USGS Landsat Prepare Script
 <../../utils/ls_usgs_prepare.py>`
 
 
-Preparing USGS Landsat Collection 1 - LEVEL1
-============================================
+1. Preparing USGS Landsat Collection 1 - LEVEL1
+===============================================
 
-Download the USGS Collection 1 landsat scenes from any of the link below:
+Download the USGS Collection 1 landsat scenes from any of the links below:
 
 * `Earth-Explorer <https://earthexplorer.usgs.gov>`_
 * `GloVis <https://glovis.usgs.gov>`_
@@ -65,12 +66,11 @@ For Landsat collection 1 level 1 product:
     Added "ls8_l1_pc_usgs"
 
 
-
-#. An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
+An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
 <../../utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py>`
 
-Preparing USGS Landsat Surface Reflectance - LEDAPS
-===================================================
+2. Preparing USGS Landsat Surface Reflectance - LEDAPS
+======================================================
 
 To prepare downloaded USGS LEDAPS Landsat scenes for use with the Data Cube,
 use the script provided in :file:`utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py`.
@@ -114,6 +114,122 @@ For Landsat Surface reflectance LEDAPS add:
     ...
 
 Then :ref:`index the data <indexing>`.
+
+3. Prepare script and indexing Landsat data on AWS
+==================================================
+
+Landsat 8 data is available to use on Amazon S3 without needing to worry about the download of all scenes from
+the start of imagery capture.
+
+Landsat on AWS makes each band of each Landsat scene available as a stand-alone GeoTIFF and
+the scenes metadata is hosted as a text file.
+
+About the data::
+
+     Source              -                                         USGS and NASA
+     Category            -                            GIS, Sensor Data, Satellite Imagery, Natural Resource
+     Format              -                                         GeoTIFF, txt, jpg
+     Storage Service     -                                            Amazon S3
+     Location            -                                s3://landsat-pds in US West (Oregon) Region
+     Update Frequency    -                       New Landsat 8 scenes are added regularly as soon as they are available
+
+Each scene's directory includes:
+
+* a .TIF GeoTIFF for each of the scenes up to 12 bands (note that the GeoTIFFs include 512x512 internal tiling)
+* .TIF.ovr overview file for each .TIF (useful in GDAL based applications)
+* a _MTL.txt metadata file
+* a small rgb preview jpeg, 3 percent of the original size
+* a larger rgb preview jpeg, 15 percent of the original size
+* an index.html file that can be viewed in a browser to see the RGB preview and links to the GeoTIFFs and metadata files
+
+Accessing data on AWS
+---------------------
+
+The data are organized using a directory structure based on each scene's path and row.
+For instance, the files for Landsat scene LC08_L1TP_139045_20170304_20170316_01_T1 are available in the following location:
+
+..
+
+s3://landsat-pds/c1/L8/139/045/LC08_L1TP_139045_20170304_20170316_01_T1/
+
+> The `c1` refers to Collection 1, the `L8` refers to Landsat 8, `139` refers to the scene's path,
+`045` refers to the scene's row, and the final directory matches the product's identifier,
+which uses the following naming convention: LXSS_LLLL_PPPRRR_YYYYMMDD_yyymmdd_CC_TX, in which:
+
+| L = Landsat
+| X = Sensor
+| SS = Satellite
+| PPP = WRS path
+| RRR = WRS row
+| YYYYMMDD = Acquisition date
+| yyyymmdd = Processing date
+| CC = Collection number
+| TX = Collection category
+| In this case, the scene corresponds to WRS path 139, WRS row 045, and was taken on March 4th, 2017.The full scene list is available here_.
+
+.. _here: https://landsat-pds.s3.amazonaws.com/c1/L8/scene_list.gz
+
+
+The prepare script to index Landsat AWS data :download:`ls_public_bucket.py <../../utils/ls_public_bucket.py>`
+
+Instead of downloading all the scenes, the following prepare script helps to directly
+index the metadata available on S3 using the script :file:`utils/ls_public_bucket.py`
+
+Usage of the script:
+::
+
+     $python ls_public_bucket.py --help
+     Usage: ls_public_bucket.py [OPTIONS] BUCKET_NAME
+
+        Enter Bucket name. Optional to enter configuration file to access a
+        different database
+
+     Options:
+        -c, --config PATH  Pass the configuration file to access the database
+        -p TEXT            Pass the prefix of the object to the bucket
+        --help             Show this message and exit.
+
+
+An example to use the script:
+..
+
+    `$python ls_public_bucket.py landsat-pds -p c1/139/045/`
+
+where `landsat-pds` is the amazon public bucket name, `c1` refers to collection 1 and the numbers after represents the
+WRS path and row.
+
+Index any path and row by changing the prefix in the above command
+
+Before indexing:
+----------------
+
+..
+
+      1. You will need an AWS account and configure AWS credentials to access the data on S3 bucket
+
+            For more detailed information refer amazon-docs_.
+
+.. _amazon-docs: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html
+
+::
+
+        [default]
+        aws_access_key_id = <Access key ID>
+        aws_secret_access_key = <Secret access key>
+
+..
+
+      2. Add the product definition to datacube
+
+             Sample product definition for LANDSAT_8 Colletcion 1 Level1 data is
+             available at :file:`docs/config_samples/dataset_types/ls_sample_product.yaml`
+
+::
+
+        $ datacube product add ls_sample_product.yaml
+
+          Added "ls8_level1_scene"
+
 
 Custom Prepare Scripts
 ======================

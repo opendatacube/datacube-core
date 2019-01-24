@@ -2,7 +2,6 @@
 """
 Ingest data from the command-line.
 """
-from __future__ import absolute_import, division
 
 import logging
 import uuid
@@ -226,19 +225,9 @@ def dataset_folder(fields):
 
 
 def prepare_datasets(nbar_path):
-    fields = re.match(
-        (
-            r"(?P<code>LC08|LE07|LT05|LT04)"
-            r"(?P<path>[0-9]{3})"
-            r"(?P<row>[0-9]{3})"
-            r"(?P<productyear>[0-9]{4})"
-            r"(?P<julianday>[0-9]{3})"
-
-        ), nbar_path.stem).groupdict()
-
-    timedelta(days=int(fields["julianday"]))
+    fields = ({})
     fields.update({'level': 'ARD', 'type': 'LS_USGS_ARD', 'creation_dt': (
-            (crazy_parse(fields["productyear"] + '0101T00:00:00')) + timedelta(days=int(fields["julianday"])))})
+            (crazy_parse("2014" + '0101T00:00:00')))})
     nbar = prep_dataset(fields, nbar_path)
     return (nbar, nbar_path)
 

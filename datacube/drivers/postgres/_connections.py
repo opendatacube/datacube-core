@@ -9,19 +9,17 @@
 """
 Postgres connection and setup
 """
-from __future__ import absolute_import
-
 import json
 import logging
 import os
 import re
 from contextlib import contextmanager
+from typing import Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine.url import URL as EngineUrl
 
 import datacube
-from datacube.compat import string_types
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
 from . import _api
@@ -34,7 +32,7 @@ _LOG = logging.getLogger(__name__)
 try:
     import pwd
 
-    DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name
+    DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name  # type: Optional[str]
 except (ImportError, KeyError):
     # No default on Windows and some other systems
     DEFAULT_DB_USER = None
@@ -121,8 +119,7 @@ class PostgresDb(object):
         )
 
     @property
-    def url(self):
-        # type: () -> URL
+    def url(self) -> str:
         return self._engine.url
 
     @staticmethod
@@ -165,7 +162,7 @@ class PostgresDb(object):
         """
         full_name = _LIB_ID
         if application_name:
-            if not isinstance(application_name, string_types):
+            if not isinstance(application_name, str):
                 raise TypeError('Application name must be a string')
 
             full_name = re.sub('[^0-9a-zA-Z]+', '-', application_name) + ' ' + full_name

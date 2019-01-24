@@ -1,5 +1,4 @@
 """S3 indexing module."""
-from __future__ import absolute_import
 
 import logging
 from uuid import uuid4
@@ -225,13 +224,13 @@ class DatasetResource(BaseDatasetResource):
                 # Add mappings
                 self._add_s3_dataset_mappings(transaction, s3_dataset_id, band, dataset_refs)
 
-    def _make(self, dataset_res, full_info=False):
+    def _make(self, dataset_res, full_info=False, product=None):
         """
         :rtype Dataset
 
         :param bool full_info: Include all available fields
         """
-        dataset = super(DatasetResource, self)._make(dataset_res, full_info)
+        dataset = super(DatasetResource, self)._make(dataset_res, full_info=full_info, product=product)
         self._extend_dataset_with_s3_metadata(dataset)
         return dataset
 

@@ -10,17 +10,16 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-
-
-from __future__ import absolute_import, division, print_function
-
 import datetime
 import pandas
+import numpy as np
+from types import SimpleNamespace
 
 import pytest
 
-from datacube.api.query import Query, _datetime_to_timestamp, query_group_by
+from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day
 from datacube.model import Range
+from datacube.utils import parse_time
 
 
 def test_datetime_to_timestamp():
@@ -146,3 +145,20 @@ def test_time_handling(time_param, expected):
     query = Query(time=time_param)
     assert 'time' in query.search_terms
     assert query.search_terms['time'] == expected
+
+
+def test_solar_day():
+    _s = SimpleNamespace
+    ds = _s(center_time=parse_time('1987-05-22 23:07:44.2270250Z'),
+            metadata=_s(lon=Range(begin=150.415,
+                                  end=152.975)))
+
+    assert solar_day(ds) == np.datetime64('1987-05-23', 'D')
+    assert solar_day(ds, longitude=0) == np.datetime64('1987-05-22', 'D')
+
+    ds.metadata = _s()
+
+    with pytest.raises(ValueError) as e:
+        solar_day(ds)
+
+    assert 'Cannot compute solar_day: dataset is missing spatial info' in str(e.value)

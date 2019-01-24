@@ -1,33 +1,40 @@
 """
-Test date sequence generation functions as used by statistics apps
+Test utility functions from :module:`datacube.utils`
 
 
 """
 import os
+import pathlib
 import string
-
+from pathlib import Path
 from types import SimpleNamespace
+
+import numpy as np
 import pytest
 import rasterio
+import toolz
+import xarray as xr
 from dateutil.parser import parse
 from hypothesis import given
 from hypothesis.strategies import integers, text
 from pandas import to_datetime
-import pathlib
-import toolz
-import xarray as xr
-import numpy as np
 
 from datacube.helpers import write_geotiff
-from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp, SimpleDocNav
-from datacube.utils import without_lineage_sources, map_with_lookahead, read_documents, sorted_items
-from datacube.utils import mk_part_uri, get_part_from_uri, InvalidDocException
+from datacube.utils.math import num2numpy, is_almost_int, valid_mask
+from datacube.model import MetadataType
+from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
+from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
+from datacube.utils import (gen_password, write_user_secret_file, slurp, read_documents, InvalidDocException,
+                            SimpleDocNav)
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
-from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
-from datacube.model import MetadataType
-
-from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
+from datacube.utils.generic import map_with_lookahead
+from datacube.utils.math import clamp
+from datacube.utils.py import sorted_items
+from datacube.utils.documents import parse_yaml, without_lineage_sources
+from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
+                                 pick_uri, uri_resolve,
+                                 normalise_path, default_base_dir)
 
 
 def test_stats_dates():
@@ -79,14 +86,50 @@ def test_stats_dates():
 def test_uri_to_local_path():
     if os.name == 'nt':
         assert 'C:\\tmp\\test.tmp' == str(uri_to_local_path('file:///C:/tmp/test.tmp'))
+        assert '\\\\remote\\path\\file.txt' == str(uri_to_local_path('file://remote/path/file.txt'))
 
     else:
         assert '/tmp/something.txt' == str(uri_to_local_path('file:///tmp/something.txt'))
+
+        with pytest.raises(ValueError):
+            uri_to_local_path('file://remote/path/file.txt')
 
     assert uri_to_local_path(None) is None
 
     with pytest.raises(ValueError):
         uri_to_local_path('ftp://example.com/tmp/something.txt')
+
+
+def test_uri_resolve():
+    abs_path = '/abs/path/to/something'
+    some_uri = 'http://example.com/file.txt'
+    base = 's3://foo'
+    assert uri_resolve(base, abs_path) == "file://" + abs_path
+    assert uri_resolve(base, some_uri) is some_uri
+    assert uri_resolve(base, None) is base
+    assert uri_resolve(base, '') is base
+    assert uri_resolve(base, 'relative/path') == base + '/relative/path'
+
+
+def test_pick_uri():
+    f, s, h = ('file://a', 's3://b', 'http://c')
+
+    assert pick_uri([f, s, h]) is f
+    assert pick_uri([s, h, f]) is f
+    assert pick_uri([s, h]) is s
+    assert pick_uri([h, s]) is h
+    assert pick_uri([f, s, h], 'http:') is h
+    assert pick_uri([f, s, h], 's3:') is s
+    assert pick_uri([f, s, h], 'file:') is f
+
+    with pytest.raises(ValueError):
+        pick_uri([])
+
+    with pytest.raises(ValueError):
+        pick_uri([f, s, h], 'ftp:')
+
+    with pytest.raises(ValueError):
+        pick_uri([s, h], 'file:')
 
 
 @given(integers(), integers(), integers())
@@ -195,6 +238,44 @@ def test_write_geotiff_time_index_deprecated():
         write_geotiff("", None, time_index=1)
 
 
+def test_testutils_mk_sample():
+    pp = mk_sample_product('tt', measurements=[('aa', 'int16', -999),
+                                               ('bb', 'float32', np.nan)])
+    assert set(pp.measurements) == {'aa', 'bb'}
+
+    pp = mk_sample_product('tt', measurements=['aa', 'bb'])
+    assert set(pp.measurements) == {'aa', 'bb'}
+
+    pp = mk_sample_product('tt', measurements=[dict(name=n) for n in ['aa', 'bb']])
+    assert set(pp.measurements) == {'aa', 'bb'}
+
+    with pytest.raises(ValueError):
+        mk_sample_product('tt', measurements=[None])
+
+
+def test_testutils_write_files():
+    from datacube.testutils import write_files, assert_file_structure
+
+    files = {'a.txt': 'string',
+             'aa.txt': ('line1\n', 'line2\n')}
+
+    pp = write_files(files)
+    assert pp.exists()
+    assert_file_structure(pp, files)
+
+    # test that we detect missing files
+    (pp / 'a.txt').unlink()
+
+    with pytest.raises(AssertionError):
+        assert_file_structure(pp, files)
+
+    with pytest.raises(AssertionError):
+        assert_file_structure(pp, {'aa.txt': 3})
+
+    with pytest.raises(ValueError):
+        write_files({'tt': 3})
+
+
 def test_without_lineage_sources():
     def mk_sample(v):
         return dict(lineage={'source_datasets': v, 'a': 'a', 'b': 'b'},
@@ -242,16 +323,20 @@ def test_without_lineage_sources():
 
 def test_map_with_lookahead():
     def if_one(x):
-        return 'one'+str(x)
+        return 'one' + str(x)
 
     def if_many(x):
-        return 'many'+str(x)
+        return 'many' + str(x)
 
     assert list(map_with_lookahead(iter([]), if_one, if_many)) == []
     assert list(map_with_lookahead(iter([1]), if_one, if_many)) == [if_one(1)]
     assert list(map_with_lookahead(range(5), if_one, if_many)) == list(map(if_many, range(5)))
     assert list(map_with_lookahead(range(10), if_one=if_one)) == list(range(10))
     assert list(map_with_lookahead(iter([1]), if_many=if_many)) == [1]
+
+
+def test_parse_yaml():
+    assert parse_yaml('a: 10') == {'a': 10}
 
 
 def test_part_uri():
@@ -266,30 +351,57 @@ def test_part_uri():
     assert get_part_from_uri('file:///f.txt#part=111') == 111
 
 
-def test_read_documents(sample_document_files):
-    for filename, ndocs in sample_document_files:
-        all_docs = list(read_documents(filename))
-        assert len(all_docs) == ndocs
+def test_read_docs_from_local_path(sample_document_files):
+    _test_read_docs_impl(sample_document_files)
 
-        for path, doc in all_docs:
-            assert isinstance(doc, dict)
-            assert isinstance(path, pathlib.Path)
 
-        assert set(str(f) for f, _ in all_docs) == set([filename])
+def test_read_docs_from_file_uris(sample_document_files):
+    uris = [('file://' + doc, ndocs) for doc, ndocs in sample_document_files]
+    _test_read_docs_impl(uris)
 
-    for filename, ndocs in sample_document_files:
-        all_docs = list(read_documents(filename, uri=True))
-        assert len(all_docs) == ndocs
+
+def test_read_docs_from_s3(sample_document_files):
+    """
+    Use a mocked S3 bucket to test reading documents from S3
+    """
+    boto3 = pytest.importorskip('boto3')
+    moto = pytest.importorskip('moto')
+
+    os.environ['AWS_ACCESS_KEY_ID'] = 'fake'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'fake'
+
+    with moto.mock_s3():
+        s3 = boto3.resource('s3', region_name='us-east-1')
+        bucket = s3.create_bucket(Bucket='mybucket')
+
+        mocked_s3_objs = []
+        for abs_fname, ndocs in sample_document_files:
+            if abs_fname.endswith('gz') or abs_fname.endswith('nc'):
+                continue
+
+            fname = Path(abs_fname).name
+            bucket.upload_file(abs_fname, fname)
+
+            mocked_s3_objs.append(('s3://mybucket/' + fname, ndocs))
+
+        _test_read_docs_impl(mocked_s3_objs)
+
+
+def _test_read_docs_impl(sample_document_files):
+    # Test case for returning URIs pointing to documents
+    for filepath, num_docs in sample_document_files:
+        all_docs = list(read_documents(filepath, uri=True))
+        assert len(all_docs) == num_docs
 
         for uri, doc in all_docs:
             assert isinstance(doc, dict)
             assert isinstance(uri, str)
 
-        p = pathlib.Path(filename)
-        if ndocs > 1:
-            expect_uris = [p.as_uri() + '#part={}'.format(i) for i in range(ndocs)]
+        url = as_url(filepath)
+        if num_docs > 1:
+            expect_uris = [as_url(url) + '#part={}'.format(i) for i in range(num_docs)]
         else:
-            expect_uris = [p.as_uri()]
+            expect_uris = [as_url(url)]
 
         assert [f for f, _ in all_docs] == expect_uris
 
@@ -310,7 +422,7 @@ def test_xr_apply():
     dst = xr_apply(src, lambda idx, _, v: idx[0] + v, with_numeric_index=True)
     assert dst.dtype.name == 'uint8'
     assert dst.shape == src.shape
-    assert dst.values.tolist() == [0+1, 1+2, 2+3]
+    assert dst.values.tolist() == [0 + 1, 1 + 2, 2 + 3]
 
 
 def test_sorted_items():
@@ -542,3 +654,262 @@ def test_dedup():
 
     with pytest.raises(InvalidDocException, match=r'Inconsistent lineage .*'):
         dedup_lineage(ds0)
+
+
+def test_default_base_dir():
+    def set_pwd(p):
+        os.environ['PWD'] = str(p)
+
+    pwd_backup = os.environ.get('PWD', None)
+    cwd = Path('.').resolve()
+
+    # Default base dir (once resolved) will never be different from cwd
+    assert default_base_dir().resolve() == cwd
+
+    # should work when PWD is not set
+    os.environ.pop('PWD', None)
+    assert 'PWD' not in os.environ
+    assert default_base_dir() == cwd
+
+    # should work when PWD is not absolute path
+    set_pwd('this/is/not/a/valid/path')
+    assert default_base_dir() == cwd
+
+    # should be cwd when PWD points to some other dir
+    set_pwd(cwd / 'deeper')
+    assert default_base_dir() == cwd
+
+    set_pwd(cwd.parent)
+    assert default_base_dir() == cwd
+
+    # PWD == cwd
+    set_pwd(cwd)
+    assert default_base_dir() == cwd
+
+    # TODO:
+    # - create symlink to current directory in temp
+    # - set PWD to that link
+    # - make sure that returned path is the same as symlink and different from cwd
+
+    # restore environment (should probably do it even test fails, eh)
+    if pwd_backup:
+        set_pwd(pwd_backup)
+
+
+def test_normalise_path():
+    cwd = Path('.').resolve()
+    assert normalise_path('.').resolve() == cwd
+
+    p = Path('/a/b/c/d.txt')
+    assert normalise_path(p) == Path(p)
+    assert normalise_path(str(p)) == Path(p)
+
+    base = Path('/a/b/')
+    p = Path('c/d.txt')
+    assert normalise_path(p, base) == (base / p)
+    assert normalise_path(str(p), str(base)) == (base / p)
+    assert normalise_path(p) == (cwd / p)
+
+    with pytest.raises(ValueError):
+        normalise_path(p, 'not/absolute/path')
+
+
+def test_testutils_testimage():
+    from datacube.testutils import mk_test_image, split_test_image
+
+    for dtype in ('uint16', 'uint32', 'int32', 'float32'):
+        aa = mk_test_image(128, 64, dtype=dtype, nodata=None)
+        assert aa.shape == (64, 128)
+        assert aa.dtype == dtype
+
+        xx, yy = split_test_image(aa)
+        assert (xx[:, 33] == 33).all()
+        assert (xx[:, 127] == 127).all()
+        assert (yy[23, :] == 23).all()
+        assert (yy[63, :] == 63).all()
+
+
+def test_testutils_gtif(tmpdir):
+    from datacube.testutils import mk_test_image
+    from datacube.testutils.io import write_gtiff, rio_slurp
+
+    w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
+
+    aa = mk_test_image(w, h, dtype, nodata, nodata_width=ndw)
+    bb = mk_test_image(w, h, dtype, nodata=None)
+
+    assert aa.shape == (h, w)
+    assert aa.dtype.name == dtype
+    assert aa[10, 30] == (30 << 8) | 10
+    assert aa[10, 11] == nodata
+    assert bb[10, 11] == (11 << 8) | 10
+
+    aa5 = np.stack((aa,) * 5)
+
+    fname = pathlib.Path(str(tmpdir / "aa.tiff"))
+    fname5 = pathlib.Path(str(tmpdir / "aa5.tiff"))
+
+    aa_meta = write_gtiff(fname, aa, nodata=nodata,
+                          blocksize=128,
+                          resolution=(100, -100),
+                          offset=(12300, 11100),
+                          overwrite=True)
+
+    aa5_meta = write_gtiff(str(fname5), aa5, nodata=nodata,
+                           resolution=(100, -100),
+                           offset=(12300, 11100),
+                           overwrite=True)
+
+    assert fname.exists()
+    assert fname5.exists()
+
+    assert aa_meta.gbox.shape == (h, w)
+    assert aa_meta.path is fname
+
+    aa_, aa_meta_ = rio_slurp(fname)
+    aa5_, aa5_meta_ = rio_slurp(fname5)
+
+    assert aa_meta_.path is fname
+
+    (sx, _, tx,
+     _, sy, ty, *_) = aa5_meta_.transform
+
+    assert (tx, ty) == (12300, 11100)
+    assert (sx, sy) == (100, -100)
+
+    np.testing.assert_array_equal(aa, aa_)
+    np.testing.assert_array_equal(aa5, aa5_)
+
+    assert aa_meta_.transform == aa_meta.transform
+    assert aa5_meta_.transform == aa5_meta.transform
+
+    # check that overwrite is off by default
+    with pytest.raises(IOError):
+        write_gtiff(fname, aa, nodata=nodata,
+                    blocksize=128)
+
+    # check that overwrite re-writes file
+    write_gtiff(fname, bb[:32, :32],
+                gbox=aa_meta.gbox[:32, :32],
+                overwrite=True)
+
+    bb_, mm = rio_slurp(fname, (32, 32))
+    np.testing.assert_array_equal(bb[:32, :32], bb_)
+
+    assert mm.gbox == aa_meta.gbox[:32, :32]
+
+    with pytest.raises(ValueError):
+        write_gtiff(fname, np.zeros((3, 4, 5, 6)))
+
+
+def test_testutils_geobox():
+    from datacube.testutils.io import dc_crs_from_rio, rio_geobox
+    from rasterio.crs import CRS
+    from affine import Affine
+
+    assert rio_geobox({}) is None
+
+    A = Affine(10, 0, 4676,
+               0, -10, 171878)
+
+    shape = (100, 640)
+    h, w = shape
+    crs = CRS.from_epsg(3578)
+
+    meta = dict(width=w, height=h, transform=A, crs=crs)
+    gbox = rio_geobox(meta)
+
+    assert gbox.shape == shape
+    assert gbox.crs.epsg == 3578
+    assert gbox.transform == A
+
+    crs_ = dc_crs_from_rio(CRS.from_wkt(crs.wkt))
+    assert crs_.epsg is None
+
+
+@pytest.mark.parametrize("test_input,expected", [
+    ("/foo/bar/file.txt", False),
+    ("file:///foo/bar/file.txt", True),
+    ("test.bar", False),
+    ("s3://mybucket/objname.tiff", True),
+    ("ftp://host.name/filename.txt", True),
+    ("https://host.name.com/path/file.txt", True),
+    ("http://host.name.com/path/file.txt", True),
+    ("sftp://user:pass@host.name.com/path/file.txt", True),
+    ("file+gzip://host.name.com/path/file.txt", True),
+    ("bongo:host.name.com/path/file.txt", False),
+])
+def test_is_url(test_input, expected):
+    assert is_url(test_input) == expected
+
+
+@pytest.fixture
+def sample_document_files(data_folder):
+    files = [('multi_doc.yml', 3),
+             ('multi_doc.yml.gz', 3),
+             ('multi_doc.nc', 3),
+             ('single_doc.yaml', 1),
+             ('sample.json', 1)]
+
+    files = [(str(os.path.join(data_folder, f)), num_docs)
+             for f, num_docs in files]
+
+    return files
+
+
+def test_is_almost_int():
+    assert is_almost_int(1, 1e-10)
+    assert is_almost_int(1.001, .1)
+    assert is_almost_int(2 - 0.001, .1)
+    assert is_almost_int(-1.001, .1)
+
+
+def test_valid_mask():
+    xx = np.zeros((4, 8), dtype='float32')
+    mm = valid_mask(xx, 0)
+    assert mm.dtype == 'bool'
+    assert mm.shape == xx.shape
+    assert not mm.all()
+    assert not mm.any()
+
+    mm = valid_mask(xx, 13)
+    assert mm.dtype == 'bool'
+    assert mm.shape == xx.shape
+    assert mm.all()
+
+    mm = valid_mask(xx, None)
+    assert mm.dtype == 'bool'
+    assert mm.shape == xx.shape
+    assert mm.all()
+
+    mm = valid_mask(xx, np.nan)
+    assert mm.dtype == 'bool'
+    assert mm.shape == xx.shape
+    assert mm.all()
+
+    xx[0, 0] = np.nan
+    mm = valid_mask(xx, np.nan)
+    assert not mm[0, 0]
+    assert mm.sum() == (4*8-1)
+
+
+def test_num2numpy():
+    assert num2numpy(None, 'int8') is None
+    assert num2numpy(-1, 'int8').dtype == np.dtype('int8')
+    assert num2numpy(-1, 'int8').dtype == np.int8(-1)
+
+    assert num2numpy(-1, 'uint8') is None
+    assert num2numpy(256, 'uint8') is None
+    assert num2numpy(-1, 'uint16') is None
+    assert num2numpy(-1, 'uint32') is None
+    assert num2numpy(-1, 'uint8', ignore_range=True) == np.uint8(255)
+
+    assert num2numpy(0, 'uint8') == 0
+    assert num2numpy(255, 'uint8') == 255
+    assert num2numpy(-128, 'int8') == -128
+    assert num2numpy(127, 'int8') == 127
+    assert num2numpy(128, 'int8') is None
+
+    assert num2numpy(3.3, np.dtype('float32')).dtype == np.dtype('float32')
+    assert num2numpy(3.3, np.float32).dtype == np.dtype('float32')
+    assert num2numpy(3.3, np.float64).dtype == np.dtype('float64')

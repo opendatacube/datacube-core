@@ -4,7 +4,6 @@
 Datacube command-line interface
 """
 
-from __future__ import absolute_import
 
 from datacube.ui.click import cli
 import datacube.scripts.dataset

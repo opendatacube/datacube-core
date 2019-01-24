@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 from sqlalchemy import Table, Column, String, Integer, Float, ForeignKey, UniqueConstraint, Boolean, MetaData
 from sqlalchemy.dialects import postgresql as postgres

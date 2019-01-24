@@ -38,7 +38,6 @@ are specified the same as when using the API to search for datasets.
       time: [2008-01-01, 2010-01-01]
 
 """
-from __future__ import absolute_import
 
 import logging
 import os.path

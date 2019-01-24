@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import imp
 import shutil
 from pathlib import Path
@@ -7,31 +5,24 @@ import numpy
 import pytest
 import rasterio
 
-from datacube.compat import string_types
+from datacube.api.query import query_group_by
+
 from integration_tests.utils import assert_click_command, prepare_test_ingestion_configuration
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
+INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
 LS5_DATASET_TYPES = CONFIG_SAMPLES / 'dataset_types/ls5_scenes.yaml'
 TEST_DATA = PROJECT_ROOT / 'tests' / 'data' / 'lbg'
-
-INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
-
-LS5_NBAR_ALBERS = 'ls5_nbar_albers.yaml'
-LS5_PQ_ALBERS = 'ls5_pq_albers.yaml'
-
-GA_LS_PREPARE_SCRIPT = PROJECT_ROOT / 'utils/galsprepare.py'
-
-galsprepare = imp.load_source('module.name', str(GA_LS_PREPARE_SCRIPT))
-
 LBG_NBAR = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323'
 LBG_PQ = 'LS5_TM_PQ_P55_GAPQ01-002_090_084_19920323'
+LBG_CELL = (15, -40)  # x,y
 
-ALBERS_ELEMENT_SIZE = 25
+galsprepare = imp.load_source('module.name', str(PROJECT_ROOT / 'utils/galsprepare.py'))
 
-LBG_CELL_X = 15
-LBG_CELL_Y = -40
-LBG_CELL = (LBG_CELL_X, LBG_CELL_Y)
+
+def custom_dumb_fuser(dst, src):
+    dst[:] = src[:]
 
 
 @pytest.fixture()
@@ -52,8 +43,8 @@ ignore_me = pytest.mark.xfail(True, reason="get_data/get_description still to be
 
 
 @pytest.mark.usefixtures('default_metadata_type')
-@pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env', ), indirect=True)
-def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
+@pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env'))
+def test_end_to_end(clirunner, index, testdata_dir, ingest_configs, datacube_env_name):
     """
     Loads two dataset configurations, then ingests a sample Landsat 5 scene
 
@@ -115,6 +106,9 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
     check_open_with_dc(index)
     check_open_with_grid_workflow(index)
 
+    if datacube_env_name == "s3aio_env":
+        check_legacy_open(index)
+
 
 def check_open_with_dc(index):
     from datacube.api.core import Datacube
@@ -146,7 +140,8 @@ def check_open_with_dc(index):
         assert 'variable' in lazy_data_array.dims
         assert lazy_data_array[1, :2, 950:1050, 950:1050].equals(data_array[1, :2, 950:1050, 950:1050])
 
-    dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'])
+    dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'],
+                      fuse_func=custom_dumb_fuser)
     assert dataset['blue'].size
 
     dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2))
@@ -244,3 +239,34 @@ def check_open_with_grid_workflow(index):
 
     dataset_cell = gw.load(tile)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
+
+
+def check_legacy_open(index):
+    from datacube.api.core import Datacube
+    dc = Datacube(index=index)
+
+    data_array = dc.load(product='ls5_nbar_albers',
+                         measurements=['blue'],
+                         time='1992-03-23T23:14:25.500000',
+                         use_threads=True)
+    assert data_array['blue'].shape[0] == 1
+    assert (data_array.blue != -999).any()
+
+    # force fusing load by duplicating dataset
+    dss = dc.find_datasets(product='ls5_nbar_albers',
+                           time='1992-03-23T23:14:25.500000')
+
+    assert len(dss) == 1
+
+    dss = dss*2
+    sources = dc.group_datasets(dss, query_group_by('time'))
+
+    gbox = data_array.geobox
+    mm = [dss[0].type.measurements['blue']]
+    xx = dc.load_data(sources, gbox, mm)
+    assert (xx == data_array).all()
+
+    with rasterio.Env():
+        xx_lazy = dc.load_data(sources, gbox, mm, dask_chunks={'time': 1})
+        assert xx_lazy['blue'].data.dask
+        assert xx_lazy.blue[0, :, :].equals(xx.blue[0, :, :])

@@ -2,7 +2,6 @@
 """
 Module
 """
-from __future__ import absolute_import
 
 from datacube.ui.task_app import task_app, run_tasks
 import datacube.executor

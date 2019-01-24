@@ -4,7 +4,6 @@ py.test configuration fixtures
 This module defines any fixtures or other extensions to py.test to be used throughout the
 tests in this and sub packages.
 """
-from __future__ import print_function, absolute_import
 
 import os
 
@@ -36,18 +35,6 @@ def no_crs_gdal_path(data_folder):
 def data_folder():
     """Return a string path to the location `test/data`"""
     return os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
-
-
-@pytest.fixture
-def sample_document_files(data_folder):
-    files = [('multi_doc.yml', 3),
-             ('multi_doc.yml.gz', 3),
-             ('multi_doc.nc', 3),
-             ('single_doc.yaml', 1),
-             ('sample.json', 1)]
-
-    return [(str(os.path.join(data_folder, f)), n)
-            for f, n in files]
 
 
 @pytest.fixture

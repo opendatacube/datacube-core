@@ -1,7 +1,7 @@
 [MASTER]
 # ndexpr is crashing pylint. Hopefully remove this ignore when https://github.com/PyCQA/pylint/issues/1563 is fixed
 ignore=ndexpr
-extension-pkg-whitelist=SharedArray,zstd
+extension-pkg-whitelist=SharedArray,zstd,ciso8601
 
 [MESSAGES CONTROL]
 enable=python3
@@ -31,7 +31,14 @@ disable=no-self-use,
     range-builtin-not-iterating, # py2.7
     zip-builtin-not-iterating, # py2.7
     nonzero-method, # py2.7
-    eq-without-hash # py2.7
+    eq-without-hash, # py2.7
+    useless-object-inheritance,
+    no-absolute-import,
+    useless-return,
+    old-division,
+    too-many-function-args,
+    consider-using-in,
+
 
 
 [BASIC]
@@ -72,7 +79,7 @@ class-attribute-rgx=([A-Za-z_][A-Za-z0-9_]{2,50}|(__.*__))$
 inlinevar-rgx=[A-Za-z_][A-Za-z0-9_]*$
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,j,k,ex,Run,_
+good-names=i,j,k,ex,Run,W,H,A,R,S,X,Y,XX,YY,XY,_
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata

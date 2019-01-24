@@ -5,7 +5,6 @@ Ingest data from the command-line.
 python srtm_prepare.py --output Elevation_1secSRTM_DEMs_v1.0_DEM_Mosaic_dem1sv1_0.yaml \
  /g/data/rr1/Elevation/NetCDF/1secSRTM_DEMs_v1.0/DEM/Elevation_1secSRTM_DEMs_v1.0_DEM_Mosaic_dem1sv1_0.nc
 """
-from __future__ import absolute_import
 
 import uuid
 from dateutil.parser import parse

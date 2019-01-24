@@ -6,10 +6,7 @@ written as UTF-8 encoded bytes.
 
 For more information see https://github.com/Unidata/netcdf4-python/issues/448
 """
-from __future__ import absolute_import
 import netCDF4
-
-from datacube.compat import string_types
 
 
 class _VariableProxy(object):
@@ -23,7 +20,7 @@ class _VariableProxy(object):
         self._wrapped = wrapped
         self.__initialized = True
 
-    @property
+    @property  # type: ignore
     def __class__(self):
         return self._wrapped.__class__
 
@@ -32,7 +29,7 @@ class _VariableProxy(object):
 
     def __setattr__(self, name, value):
         if self.__initialized:
-            if isinstance(value, string_types):
+            if isinstance(value, str):
                 value = value.encode('ascii')
             setattr(self._wrapped, name, value)
         else:
@@ -60,12 +57,12 @@ class _NC4DatasetProxy(object):
     """
 
     def __setattr__(self, name, value):
-        if isinstance(value, string_types):
+        if isinstance(value, str):
             value = value.encode('ascii')
         super(_NC4DatasetProxy, self).__setattr__(name, value)
 
     def setncattr(self, name, value):
-        if isinstance(value, string_types):
+        if isinstance(value, str):
             value = value.encode('ascii')
         super(_NC4DatasetProxy, self).setncattr(name, value)
 

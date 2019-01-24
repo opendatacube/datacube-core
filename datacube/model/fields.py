@@ -5,7 +5,70 @@ This allows extraction of fields of interest from dataset metadata document.
 import toolz
 import decimal
 from datacube.utils import parse_time
-from datacube.model import Range
+from ._base import Range
+
+# Allowed values for field 'type' (specified in a metadata type docuemnt)
+_AVAILABLE_TYPE_NAMES = (
+    'numeric-range',
+    'double-range',
+    'integer-range',
+    'datetime-range',
+
+    'string',
+    'numeric',
+    'double',
+    'integer',
+    'datetime',
+
+    # For backwards compatibility (alias for numeric-range)
+    'float-range',
+)
+
+
+class Expression(object):
+    # No properties at the moment. These are built and returned by the
+    # DB driver (from Field methods), so they're mostly an opaque token.
+
+    # A simple equals implementation for comparison in test code.
+    def __eq__(self, other) -> bool:
+        if self.__class__ != other.__class__:
+            return False
+        return self.__dict__ == other.__dict__
+
+
+class Field(object):
+    """
+    A searchable field within a dataset/storage metadata document.
+    """
+    # type of field.
+    # If type is not specified, the field is a string
+    # This should always be one of _AVAILABLE_TYPE_NAMES
+    type_name = 'string'
+
+    def __init__(self, name: str, description: str):
+        self.name = name
+
+        self.description = description
+
+        # Does selecting this affect the output rows?
+        # (eg. Does this join other tables that aren't 1:1 with datasets.)
+        self.affects_row_selection = False
+
+        assert self.type_name in _AVAILABLE_TYPE_NAMES, "Invalid type name %r" % (self.type_name,)
+
+    def __eq__(self, value) -> Expression:  # type: ignore
+        """
+        Is this field equal to a value?
+
+        this returns an Expression object (hence type ignore above)
+        """
+        raise NotImplementedError('equals expression')
+
+    def between(self, low, high) -> Expression:
+        """
+        Is this field in a range?
+        """
+        raise NotImplementedError('between expression')
 
 
 class SimpleField(object):

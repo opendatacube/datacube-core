@@ -1,4 +1,5 @@
-""" High level indexing operations/utilities
+"""
+High level indexing operations/utilities
 """
 import json
 import toolz
@@ -96,7 +97,10 @@ def check_dataset_consistent(dataset):
 
     # It the type expects measurements, ensure our dataset contains them all.
     if not product_measurements.issubset(dataset.measurements.keys()):
-        return False, "measurement fields don't match type specification"
+        not_measured = str(product_measurements - set(dataset.measurements.keys()))
+        msg = "The dataset is not specifying all of the measurements in this product.\n"
+        msg += "Missing fields are;\n" + not_measured
+        return False, msg
 
     return True, None
 
@@ -192,10 +196,54 @@ def dataset_resolver(index,
 
 
 class Doc2Dataset(object):
-    """Helper class for constructing `Dataset` objects from metadata document.
+    """Used for constructing `Dataset` objects from plain metadata documents.
 
-    User needs to supply index, which products to consider for matching and what
-    to do with lineage.
+    This requires a database connection to perform the automatic matching against
+    available products.
+
+    There are options for including and excluding the products to match against,
+    as well as how to deal with source lineage.
+
+    Once constructed, call with a dictionary object and location URI, eg::
+
+        resolver = Doc2Dataset(index)
+        dataset = resolver(dataset_dictionary, 'file:///tmp/test-dataset.json')
+        index.dataset.add(dataset)
+
+
+    :param index: an open Database connection
+
+    :param list products: List of product names against which to match datasets
+    (including lineage datasets). if not supplied we will consider all
+    products.
+
+    :param list exclude_products: List of products to exclude from matching
+
+    :param fail_on_missing_lineage: If True fail resolve if any lineage
+    datasets are missing from the DB
+
+    :param verify_lineage: If True check that lineage datasets in the
+    supplied document are identical to DB versions
+
+    :param skip_lineage: If True ignore lineage sub-tree in the supplied
+    document and construct dataset without lineage datasets
+
+    :param index: Database
+
+    :param products: List of product names against which to match datasets
+                     (including lineage datasets), if not supplied will consider all
+                     products.
+
+    :param exclude_products: List of products to exclude from matching
+
+    :param fail_on_missing_lineage: If True fail resolve if any lineage
+                                    datasets are missing from the DB
+
+    :param verify_lineage: If True check that lineage datasets in the
+                           supplied document are identical to DB versions
+
+    :param skip_lineage: If True ignore lineage sub-tree in the supplied
+                         document and construct dataset without lineage datasets
 
     """
     def __init__(self,
@@ -205,25 +253,6 @@ class Doc2Dataset(object):
                  fail_on_missing_lineage=False,
                  verify_lineage=True,
                  skip_lineage=False):
-        """
-        :param index: Database
-
-        :param products: List of product names against which to match datasets
-        (including lineage datasets), if not supplied will consider all
-        products.
-
-        :param exclude_products: List of products to exclude from matching
-
-        :param fail_on_missing_lineage: If True fail resolve if any lineage
-        datasets are missing from the DB
-
-        :param verify_lineage: If True check that lineage datasets in the
-        supplied document are identical to dB versions
-
-        :param skip_lineage: If True ignore lineage sub-tree in the supplied
-        document and construct dataset without lineage datasets
-
-        """
         rules, err_msg = load_rules_from_types(index,
                                                product_names=products,
                                                excluding=exclude_products)

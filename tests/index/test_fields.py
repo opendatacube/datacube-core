@@ -2,7 +2,6 @@
 """
 Module
 """
-from __future__ import absolute_import
 
 from datacube.drivers.postgres._fields import SimpleDocField, NumericRangeDocField, parse_fields, RangeDocField, \
     IntDocField

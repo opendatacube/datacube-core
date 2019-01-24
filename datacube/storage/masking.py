@@ -3,13 +3,10 @@ Tools for masking data based on a bit-mask variable with attached definition.
 
 The main functions are `make_mask(variable)` `describe_flags(variable)`
 """
-from __future__ import absolute_import
 
 import collections
 import warnings
 import pandas
-
-from datacube.utils import generate_table
 
 from xarray import DataArray, Dataset
 
@@ -273,3 +270,36 @@ def set_value_at_index(bitmask, index, value):
     else:
         bitmask &= (~bit_val)
     return bitmask
+
+
+def generate_table(rows):
+    """
+    Yield strings to print a table using the data in `rows`.
+
+    TODO: Maybe replace with Pandas
+
+    :param rows: A sequence of sequences with the 0th element being the table
+                 header
+    """
+
+    # - figure out column widths
+    widths = [len(max(columns, key=len)) for columns in zip(*rows)]
+
+    # - print the header
+    header, data = rows[0], rows[1:]
+    yield (
+        ' | '.join(format(title, "%ds" % width) for width, title in zip(widths, header))
+    )
+
+    # Print the separator
+    first_col = ''
+    # - print the data
+    for row in data:
+        if first_col == '' and row[0] != '':
+            # - print the separator
+            yield '-+-'.join('-' * width for width in widths)
+        first_col = row[0]
+
+        yield (
+            " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
+        )
