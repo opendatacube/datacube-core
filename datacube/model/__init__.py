@@ -12,7 +12,7 @@ from uuid import UUID
 
 import yaml
 from affine import Affine
-from typing import Optional, List, Mapping, Any, Dict
+from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator
 
 from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
@@ -34,9 +34,8 @@ class Dataset(object):
 
     Most important parts are the metadata_doc and uri.
 
-    :type type_: DatasetType
-    :param dict metadata_doc: the document (typically a parsed json/yaml)
-    :param list[str] uris: All active uris for the dataset
+    :param metadata_doc: the document (typically a parsed json/yaml)
+    :param uris: All active uris for the dataset
     """
 
     def __init__(self,
@@ -122,14 +121,17 @@ class Dataset(object):
         return self.metadata.format
 
     @property
-    def uri_scheme(self):
+    def uri_scheme(self) -> str:
+        if self.uris is None or len(self.uris) == 0:
+            return ''
+
         url = urlparse(self.uris[0])
         if url.scheme == '':
             return 'file'
         return url.scheme
 
     @property
-    def measurements(self):
+    def measurements(self) -> Dict[str, Any]:
         # It's an optional field in documents.
         # Dictionary of key -> measurement descriptor
         if not hasattr(self.metadata, 'measurements'):
@@ -155,8 +157,7 @@ class Dataset(object):
 
     @property
     def bounds(self) -> Optional[geometry.BoundingBox]:
-        """
-        :rtype: geometry.BoundingBox
+        """ :returns: bounding box of the dataset in the native crs
         """
         gs = self._gs
         if gs is None:
@@ -182,7 +183,7 @@ class Dataset(object):
                       0, bounds['lr']['y'] - bounds['ul']['y'], bounds['ul']['y'])
 
     @property
-    def is_archived(self):
+    def is_archived(self) -> bool:
         """
         Is this dataset archived?
 
@@ -190,18 +191,16 @@ class Dataset(object):
         replaced by another dataset. It will not show up in search results, but still exists in the
         system via provenance chains or through id lookup.)
 
-        :rtype: bool
         """
         return self.archived_time is not None
 
     @property
-    def is_active(self):
+    def is_active(self) -> bool:
         """
         Is this dataset active?
 
         (ie. dataset hasn't been archived)
 
-        :rtype: bool
         """
         return not self.is_archived
 
@@ -247,9 +246,8 @@ class Dataset(object):
         return None
 
     @cached_property
-    def extent(self):
-        """
-        :rtype: geometry.Geometry
+    def extent(self) -> Optional[geometry.Geometry]:
+        """ :returns: valid extent of the dataset or None
         """
 
         def xytuple(obj):
@@ -274,7 +272,7 @@ class Dataset(object):
 
         return None
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.id == other.id
 
     def __hash__(self):
@@ -286,7 +284,7 @@ class Dataset(object):
                                                                      type=self.type.name,
                                                                      loc=str_loc)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
     @property
@@ -329,22 +327,22 @@ class Measurement(dict):
 
         super().__init__(**kwargs)
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> Any:
         """ Allow access to items as attributes. """
         v = self.get(key, self)
         if v is self:
             raise AttributeError("'Measurement' object has no attribute '{}'".format(key))
         return v
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Measurement({})".format(super(Measurement, self).__repr__())
 
-    def copy(self):
+    def copy(self) -> 'Measurement':
         """Required as the super class `dict` method returns a `dict`
            and does not preserve Measurement class"""
         return Measurement(**self)
 
-    def dataarray_attrs(self):
+    def dataarray_attrs(self) -> Dict[str, Any]:
         """This returns attributes filtered for display in a dataarray."""
         return {key: value for key, value in self.items() if key not in self.ATTR_BLACKLIST}
 
@@ -411,7 +409,7 @@ class DatasetType(object):
         return self.definition['metadata']
 
     @property
-    def metadata(self):
+    def metadata(self) -> DocReader:
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
     @property
@@ -426,11 +424,9 @@ class DatasetType(object):
         return OrderedDict((m['name'], Measurement(**m)) for m in self.definition.get('measurements', []))
 
     @property
-    def dimensions(self):
+    def dimensions(self) -> Tuple[str, str]:
         """
-        List of dimensions for data in this product
-
-        :type: tuple[str]
+        List of dimension labels for data in this product
         """
         assert self.metadata_type.name == 'eo'
         if self.grid_spec is not None:
@@ -464,7 +460,9 @@ class DatasetType(object):
 
         return GridSpec(crs=crs, **gs_params)
 
-    def canonical_measurement(self, measurement: str):
+    def canonical_measurement(self, measurement: str) -> str:
+        """ resolve measurement alias into canonical name
+        """
         for m in self.measurements:
             if measurement == m:
                 return measurement
@@ -472,12 +470,11 @@ class DatasetType(object):
                 return m
         raise KeyError(measurement)
 
-    def lookup_measurements(self, measurements=None):
+    def lookup_measurements(self, measurements: Optional[List[str]] = None) -> Mapping[str, Measurement]:
         """
         Find measurements by name
 
-        :param list[str] measurements: list of measurement names
-        :rtype: OrderedDict[str,dict]
+        :param measurements: list of measurement names
         """
         my_measurements = self.measurements
         if measurements is None:
@@ -549,14 +546,14 @@ class GridSpec(object):
     :param [float,float] origin: (Y, X) coordinates of a corner of the (0,0) tile in CRS units. default is (0.0, 0.0)
     """
 
-    def __init__(self, crs, tile_size, resolution, origin=None):
-        #: :rtype: geometry.CRS
+    def __init__(self,
+                 crs: geometry.CRS,
+                 tile_size: Tuple[float, float],
+                 resolution: Tuple[float, float],
+                 origin: Optional[Tuple[float, float]] = None):
         self.crs = crs
-        #: :type: (float,float)
         self.tile_size = tile_size
-        #: :type: (float,float)
         self.resolution = resolution
-        #: :type: (float, float)
         self.origin = origin or (0.0, 0.0)
 
     def __eq__(self, other):
@@ -569,52 +566,51 @@ class GridSpec(object):
                 and self.origin == other.origin)
 
     @property
-    def dimensions(self):
+    def dimensions(self) -> Tuple[str, str]:
         """
         List of dimension names of the grid spec
 
-        :type: (str,str)
         """
         return self.crs.dimensions
 
     @property
-    def alignment(self):
+    def alignment(self) -> Tuple[float, float]:
         """
         Pixel boundary alignment
-
-        :type: (float,float)
         """
-        return tuple(orig % abs(res) for orig, res in zip(self.origin, self.resolution))
+        y, x = (orig % abs(res) for orig, res in zip(self.origin, self.resolution))
+        return (y, x)
 
     @property
-    def tile_resolution(self):
+    def tile_resolution(self) -> Tuple[float, float]:
         """
         Tile size in pixels in CRS dimension order (Usually y,x or lat,lon)
-
-        :type: (float, float)
         """
-        return tuple(int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
+        y, x = (int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
+        return (y, x)
 
-    def tile_coords(self, tile_index):
+    def tile_coords(self, tile_index: Tuple[int, int]) -> Tuple[float, float]:
         """
         Tile coordinates in (Y,X) order
 
-        :param (int,int) tile_index: in X,Y order
-        :rtype: (float,float)
+        :param tile_index: in X,Y order
         """
 
-        def coord(index, resolution, size, origin):
+        def coord(index: int,
+                  resolution: float,
+                  size: float,
+                  origin: float) -> float:
             return (index + (1 if resolution < 0 < size else 0)) * size + origin
 
-        return tuple(coord(index, res, size, origin) for index, res, size, origin in
-                     zip(tile_index[::-1], self.resolution, self.tile_size, self.origin))
+        y, x = (coord(index, res, size, origin)
+                for index, res, size, origin in zip(tile_index[::-1], self.resolution, self.tile_size, self.origin))
+        return (y, x)
 
-    def tile_geobox(self, tile_index):
+    def tile_geobox(self, tile_index: Tuple[int, int]) -> geometry.GeoBox:
         """
         Tile geobox.
 
         :param (int,int) tile_index:
-        :rtype: datacube.utils.geometry.GeoBox
         """
         res_y, res_x = self.resolution
         y, x = self.tile_coords(tile_index)
@@ -622,7 +618,9 @@ class GridSpec(object):
         geobox = geometry.GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
         return geobox
 
-    def tiles(self, bounds, geobox_cache=None):
+    def tiles(self, bounds: geometry.BoundingBox,
+              geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
+                                                                     geometry.GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `bounds` rectangle.
@@ -653,7 +651,10 @@ class GridSpec(object):
                 tile_index = (x, y)
                 yield tile_index, geobox(tile_index)
 
-    def tiles_from_geopolygon(self, geopolygon, tile_buffer=None, geobox_cache=None):
+    def tiles_from_geopolygon(self, geopolygon: geometry.Geometry,
+                              tile_buffer: Optional[Tuple[float, float]] = None,
+                              geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
+                                                                                     geometry.GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `geopolygon`.
@@ -680,7 +681,7 @@ class GridSpec(object):
                 yield (tile_index, tile_geobox)
 
     @staticmethod
-    def grid_range(lower, upper, step):
+    def grid_range(lower: float, upper: float, step: float) -> range:
         """
         Returns the indices along a 1D scale.
 
@@ -706,11 +707,11 @@ class GridSpec(object):
         assert step > 0.0
         return range(int(math.floor(lower / step)), int(math.ceil(upper / step)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "GridSpec(crs=%s, tile_size=%s, resolution=%s)" % (
             self.crs, self.tile_size, self.resolution)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
