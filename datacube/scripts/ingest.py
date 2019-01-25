@@ -13,7 +13,8 @@ from typing import Tuple
 import datacube
 from datacube.api.core import Datacube
 from datacube.index.index import Index
-from datacube.model import DatasetType, Range, GeoPolygon, Measurement
+from datacube.model import DatasetType, Range, Measurement
+from datacube.utils import geometry
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
 from datacube.utils import read_documents
@@ -26,6 +27,13 @@ from datacube.ui.click import cli
 _LOG = logging.getLogger('datacube-ingest')
 
 FUSER_KEY = 'fuse_data'
+
+
+def polygon_from_sources_extents(sources, geobox):
+    sources_union = geometry.unary_union(source.extent.to_crs(geobox.crs) for source in sources)
+    valid_data = geobox.extent.intersection(sources_union)
+    resolution = min([abs(x) for x in geobox.resolution])
+    return valid_data.simplify(tolerance=resolution * 0.01)
 
 
 def find_diff(input_type, output_type, index, **query):
@@ -254,7 +262,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
                             center_time=labels['time'],
                             uri=mk_uri(file_path),
                             app_info=get_app_metadata(config['filename']),
-                            valid_data=GeoPolygon.from_sources_extents(sources, tile.geobox))
+                            valid_data=polygon_from_sources_extents(sources, tile.geobox))
 
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)

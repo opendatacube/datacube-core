@@ -5,7 +5,7 @@ Core classes used across modules.
 import logging
 import math
 import warnings
-from collections import OrderedDict, Sequence
+from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -17,53 +17,15 @@ from typing import Optional, List, Mapping, Any, Dict
 from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
-from datacube.utils.geometry import (CRS as _CRS,
-                                     GeoBox as _GeoBox,
-                                     Coordinate as _Coordinate,
-                                     BoundingBox as _BoundingBox, intersects)
 from datacube.utils.serialise import SafeDatacubeDumper
 from .fields import Field
 from ._base import Range
 
 _LOG = logging.getLogger(__name__)
 
-NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
-VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
 DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
-
-
-class CRS(_CRS):
-    def __init__(self, *args, **kwargs):
-        warnings.warn("The 'CRS' class has been renamed to 'datacube.utils.geometry.CRS' and will be "
-                      "removed from 'datacube.model'. Please update your code.",
-                      DeprecationWarning)
-        super(CRS, self).__init__(*args, **kwargs)
-
-
-class GeoBox(_GeoBox):
-    def __init__(self, *args, **kwargs):
-        warnings.warn("The 'GeoBox' class has been renamed to 'datacube.utils.geometry.GeoBox' and will be "
-                      "removed from 'datacube.model'. Please update your code.",
-                      DeprecationWarning)
-        super(GeoBox, self).__init__(*args, **kwargs)
-
-
-class Coordinate(_Coordinate):
-    def __init__(self, *args, **kwargs):
-        warnings.warn("The 'Coordinate' class has been renamed to 'datacube.utils.geometry.Coordinate' and will be "
-                      "removed from 'datacube.model'. Please update your code.",
-                      DeprecationWarning)
-        super(Coordinate, self).__init__(*args, **kwargs)
-
-
-class BoundingBox(_BoundingBox):  # pylint: disable=duplicate-bases
-    def __init__(self, *args, **kwargs):
-        warnings.warn("The 'BoundingBox' class has been renamed to 'datacube.utils.geometry.BoundingBox' and will be "
-                      "removed from 'datacube.model'. Please update your code.",
-                      DeprecationWarning)
-        super(BoundingBox, self).__init__(*args, **kwargs)
 
 
 class Dataset(object):
@@ -566,37 +528,6 @@ class DatasetType(object):
         return hash(self.name)
 
 
-def GeoPolygon(coordinates, crs):  # pylint: disable=invalid-name
-    warnings.warn("GeoPolygon is depricated. Use 'datacube.utils.geometry.polygon'", DeprecationWarning)
-    if not isinstance(coordinates, Sequence):
-        raise ValueError("points ({}) must be a sequence of (x, y) coordinates".format(coordinates))
-    return geometry.polygon(coordinates + [coordinates[0]], crs=crs)
-
-
-def _polygon_from_boundingbox(boundingbox, crs=None):
-    points = [
-        (boundingbox.left, boundingbox.top),
-        (boundingbox.right, boundingbox.top),
-        (boundingbox.right, boundingbox.bottom),
-        (boundingbox.left, boundingbox.bottom),
-        (boundingbox.left, boundingbox.top),
-    ]
-    return geometry.polygon(points, crs=crs)
-
-
-GeoPolygon.from_boundingbox = _polygon_from_boundingbox  # type: ignore
-
-
-def _polygon_from_sources_extents(sources, geobox):
-    sources_union = geometry.unary_union(source.extent.to_crs(geobox.crs) for source in sources)
-    valid_data = geobox.extent.intersection(sources_union)
-    resolution = min([abs(x) for x in geobox.resolution])
-    return valid_data.simplify(tolerance=resolution * 0.01)
-
-
-GeoPolygon.from_sources_extents = _polygon_from_sources_extents  # type: ignore
-
-
 class GridSpec(object):
     """
     Definition for a regular spatial grid
@@ -745,7 +676,7 @@ class GridSpec(object):
         for tile_index, tile_geobox in self.tiles(bbox, geobox_cache):
             tile_geobox = tile_geobox.buffered(*tile_buffer) if tile_buffer else tile_geobox
 
-            if intersects(tile_geobox.extent, geopolygon):
+            if geometry.intersects(tile_geobox.extent, geopolygon):
                 yield (tile_index, tile_geobox)
 
     @staticmethod
