@@ -4,9 +4,7 @@ from itertools import groupby
 from math import ceil
 
 import numpy
-import pandas
 import xarray
-
 from dask import array as da
 
 from datacube.config import LocalConfig
@@ -88,6 +86,7 @@ class Datacube(object):
         if not with_pandas:
             return rows
 
+        import pandas
         keys = set(k for r in rows for k in r)
         main_cols = ['id', 'name', 'description']
         grid_cols = ['crs', 'resolution', 'tile_size', 'spatial_dimensions']
@@ -106,6 +105,8 @@ class Datacube(object):
         measurements = self._list_measurements()
         if not with_pandas:
             return measurements
+
+        import pandas
         return pandas.DataFrame.from_dict(measurements).set_index(['product', 'measurement'])
 
     def _list_measurements(self):
