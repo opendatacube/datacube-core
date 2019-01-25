@@ -10,14 +10,12 @@ from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
-import yaml
 from affine import Affine
 from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator
 
 from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
-from datacube.utils.serialise import SafeDatacubeDumper
 from .fields import Field
 from ._base import Range
 
@@ -723,22 +721,3 @@ def metadata_from_doc(doc: Mapping[str, Any]) -> MetadataType:
     from .fields import get_dataset_fields
     MetadataType.validate(doc)  # type: ignore
     return MetadataType(doc, get_dataset_fields(doc))
-
-
-def _range_representer(dumper: yaml.Dumper, data: Range) -> yaml.Node:
-    begin, end = data
-
-    # pyyaml doesn't output timestamps in flow style as timestamps(?)
-    if isinstance(begin, datetime):
-        begin = begin.isoformat()
-    if isinstance(end, datetime):
-        end = end.isoformat()
-
-    return dumper.represent_mapping(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        (('begin', begin), ('end', end)),
-        flow_style=True
-    )
-
-
-SafeDatacubeDumper.add_representer(Range, _range_representer)
