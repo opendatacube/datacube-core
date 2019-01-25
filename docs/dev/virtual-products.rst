@@ -217,7 +217,7 @@ the pipeline:
 
 .. image:: ../diagrams/virtual_product_load.svg
 
-For advanced use cases, the intermediate objects ``QueryResult`` and ``DatasetPile`` may be directly manipulated.
+For advanced use cases, the intermediate objects ``VirtualDatasetBag`` and ``VirtualDatasetBox`` may be directly manipulated.
 
 .. _user-defined-virtual-product-transforms:
 
