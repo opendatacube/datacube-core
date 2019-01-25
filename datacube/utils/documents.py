@@ -15,8 +15,6 @@ import typing
 from typing import Dict, Any
 from copy import deepcopy
 
-import jsonschema
-import netCDF4
 import numpy
 import toolz
 import yaml
@@ -180,6 +178,8 @@ def netcdf_extract_string(chars):
     """
     Convert netcdf S|U chars to Unicode string.
     """
+    import netCDF4
+
     if isinstance(chars, str):
         return chars
 
@@ -198,12 +198,16 @@ def read_strings_from_netcdf(path, variable):
 
     Useful for loading dataset metadata information.
     """
+    import netCDF4
+
     with netCDF4.Dataset(str(path)) as ds:
         for chars in ds[variable]:
             yield netcdf_extract_string(chars)
 
 
 def validate_document(document, schema, schema_folder=None):
+    import jsonschema
+
     try:
         # Allow schemas to reference other schemas in the given folder.
         def doc_reference(path):
