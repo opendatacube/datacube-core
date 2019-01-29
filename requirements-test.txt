@@ -56,7 +56,6 @@ psycopg2==2.7.4
 py==1.5.3
 pycodestyle==2.4.0
 pycparser==2.18
-pygdal==2.3.2.4
 pygeoif==0.7
 pylint==1.8.4
 pyparsing==2.2.0
