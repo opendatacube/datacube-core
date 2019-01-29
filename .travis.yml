@@ -54,7 +54,7 @@ before_install:
   - pip install --upgrade pip
   - pip install --progress-bar off coveralls codecov
 # Install pygdal bindings compatible with dpkg based gdal libs
-  - pip install pygdal=="$(gdal-config --version)"
+  - pip install pygdal>="$(gdal-config --version)"
   - pip install --progress-bar off --requirement requirements-test.txt
 
 
