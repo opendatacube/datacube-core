@@ -7,7 +7,6 @@ from contextlib import contextmanager
 import numpy as np
 from affine import Affine
 import rasterio
-import urllib.parse
 from urllib.parse import urlparse
 from typing import Optional, Iterator
 
@@ -240,20 +239,6 @@ class RasterDatasetDataSource(RasterioDataSource):
 
     def get_crs(self):
         return self._band_info.crs
-
-
-def register_scheme(*schemes):
-    """
-    Register additional uri schemes as supporting relative offsets (etc), so that band/measurement paths can be
-    calculated relative to the base uri.
-    """
-    urllib.parse.uses_netloc.extend(schemes)
-    urllib.parse.uses_relative.extend(schemes)
-    urllib.parse.uses_params.extend(schemes)
-
-
-# Not recognised by python by default. Doctests below will fail without it.
-register_scheme('s3')
 
 
 def _url2rasterio(url_str, fmt, layer):
