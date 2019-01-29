@@ -3,6 +3,7 @@ import os
 import pathlib
 import re
 from typing import Optional, List, Union
+import urllib.parse
 from urllib.parse import urlparse, parse_qsl, urljoin
 from urllib.request import url2pathname
 from pathlib import Path
@@ -202,3 +203,18 @@ def pick_uri(uris: List[str], scheme: Optional[str] = None) -> str:
         raise ValueError('No uri with required scheme was found')
 
     return uris[0]
+
+
+def register_scheme(*schemes):
+    """
+    Register additional uri schemes as supporting relative offsets (etc), so that band/measurement paths can be
+    calculated relative to the base uri.
+    """
+    urllib.parse.uses_netloc.extend(schemes)
+    urllib.parse.uses_relative.extend(schemes)
+    urllib.parse.uses_params.extend(schemes)
+
+
+# s3:// not recognised by python by default
+#  without this `urljoin` might be broken for s3 urls
+register_scheme('s3')
