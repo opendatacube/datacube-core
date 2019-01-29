@@ -304,3 +304,29 @@ def test_aliases(dc, query):
 
     assert 'verde' in data
     assert 'green' not in data
+
+
+def test_aggregate(dc, query):
+    aggr = construct_from_yaml("""
+        aggregate: mean
+        group_by: month
+        input:
+            transform: to_float
+            input:
+                collate:
+                  - product: ls7_nbar_albers
+                    measurements: [blue]
+                  - product: ls8_nbar_albers
+                    measurements: [blue]
+    """)
+
+    measurements = aggr.output_measurements({product.name: product
+                                             for product in dc.index.products.get_all()})
+    assert 'blue' in measurements
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = aggr.load(dc, **query)
+
+    assert data.time.shape == (2,)
