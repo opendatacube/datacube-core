@@ -151,8 +151,9 @@ def test_rio_driver_fail_to_open():
 def test_rio_driver_open(data_folder):
     base = "file://" + str(data_folder) + "/metadata.yml"
 
+    pool = ThreadPoolExecutor(max_workers=1)
     rde = RDEntry()
-    rdr = rde.new_instance({})
+    rdr = rde.new_instance({'pool': pool})
 
     assert rdr is not None
 
@@ -170,3 +171,5 @@ def test_rio_driver_open(data_folder):
     assert rdr.shape == (2000, 4000)
     assert rdr.nodata == -999
     assert rdr.dtype == np.dtype(np.int16)
+
+    pool.shutdown()
