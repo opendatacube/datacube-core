@@ -12,6 +12,7 @@ from datacube.drivers.rio._reader import (
     _dc_crs,
     _rio_uri,
     _rio_band_idx,
+    _roi_to_window,
 )
 from datacube.storage import BandInfo
 from datacube.utils import datetime_to_seconds_since_1970
@@ -69,6 +70,15 @@ def test_rd_internals_crs():
     assert _dc_crs(RioCRS.from_wkt(SAMPLE_WKT_WITHOUT_AUTHORITY)).epsg is None
 
 
+def test_rd_internals_roi():
+    s_ = np.s_
+
+    assert _roi_to_window(None, (1, 1)) is None
+    assert _roi_to_window(s_[:, :], (1, 10)) == ((0, 1), (0, 10))
+    assert _roi_to_window(s_[1:, -1:], (5, 10)) == ((1, 5), (9, 10))
+    assert _roi_to_window(s_[:3, 3:-1], (5, 10)) == ((0, 3), (3, 9))
+
+
 def test_rd_internals_bidx(data_folder):
     base = "file://" + str(data_folder) + "/metadata.yml"
     bi = mk_band('a',
@@ -96,10 +106,7 @@ def test_rd_internals_bidx(data_folder):
         bi.band = 33
         assert _rio_band_idx(bi, src) == 33
 
-    bi = mk_band('a',
-                 base,
-                 path="test.tif",
-                 format=GeoTIFF)
+    bi = mk_band('a', base, path="test.tif", format=GeoTIFF)
 
     with rasterio.open(_rio_uri(bi), 'r') as src:
         # should default to 1
@@ -112,6 +119,10 @@ def test_rd_internals_bidx(data_folder):
         # band is the keyword
         bi = mk_band('a', base, path="test.tif", format=GeoTIFF, band=3)
         assert _rio_band_idx(bi, src) == 3
+
+        # Pretend it's netcdf to test missing time dimension
+        bi = mk_band('a', base, path="test.tif", format=NetCDF)
+        assert _rio_band_idx(bi, src) == 1
 
 
 def test_rd_internals_uri():
@@ -171,5 +182,9 @@ def test_rio_driver_open(data_folder):
     assert rdr.shape == (2000, 4000)
     assert rdr.nodata == -999
     assert rdr.dtype == np.dtype(np.int16)
+
+    xx = rdr.read().result()
+    assert xx.shape == rdr.shape
+    assert xx.dtype == rdr.dtype
 
     pool.shutdown()

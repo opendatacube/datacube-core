@@ -30,9 +30,31 @@ from datacube.drivers._types import (
     RasterWindow,
 )
 
+RioWindow = Tuple[Tuple[int, int], Tuple[int, int]]  # pylint: disable=invalid-name
+
 
 def _is_netcdf(fmt: str) -> bool:
     return fmt == 'NetCDF'
+
+
+def _roi_to_window(roi: Optional[RasterWindow], shape: RasterShape) -> Optional[RioWindow]:
+    if roi is None:
+        return None
+
+    def s2t(s: slice, n: int) -> Tuple[int, int]:
+        _in = 0 if s.start is None else s.start
+        _out = n if s.stop is None else s.stop
+
+        if _in < 0:
+            _in += n
+        if _out < 0:
+            _out += n
+
+        return (_in, _out)
+
+    s1, s2 = (s2t(s, n)
+              for s, n in zip(roi, shape))
+    return (s1, s2)
 
 
 def _dc_crs(crs: Optional[RioCRS]) -> Optional[CRS]:
@@ -46,9 +68,12 @@ def _dc_crs(crs: Optional[RioCRS]) -> Optional[CRS]:
 
 
 def _read(src: DatasetReader,
+          bidx: int,
           window: Optional[RasterWindow],
           out_shape: Optional[RasterShape]) -> np.ndarray:
-    raise NotImplementedError("TODO: read")
+    return src.read(bidx,
+                    window=_roi_to_window(window, src.shape),
+                    out_shape=out_shape)
 
 
 def _rio_uri(band: BandInfo) -> str:
@@ -144,7 +169,7 @@ class RIOReader(GeoRasterReader):
     def read(self,
              window: Optional[RasterWindow] = None,
              out_shape: Optional[RasterShape] = None) -> FutureNdarray:
-        return self._pool.submit(_read, self._src, window, out_shape)
+        return self._pool.submit(_read, self._src, self._band_idx, window, out_shape)
 
 
 def _rdr_open(band: BandInfo, ctx: Any, pool: ThreadPoolExecutor) -> RIOReader:
