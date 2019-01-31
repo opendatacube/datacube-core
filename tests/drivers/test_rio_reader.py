@@ -17,6 +17,7 @@ from datacube.drivers.rio._reader import (
 from datacube.storage import BandInfo
 from datacube.utils import datetime_to_seconds_since_1970
 from datacube.testutils.geom import SAMPLE_WKT_WITHOUT_AUTHORITY
+from datacube.testutils.threads import FakeThreadPoolExecutor
 
 NetCDF = 'NetCDF'    # pylint: disable=invalid-name
 GeoTIFF = 'GeoTIFF'  # pylint: disable=invalid-name
@@ -162,9 +163,10 @@ def test_rio_driver_fail_to_open():
 def test_rio_driver_open(data_folder):
     base = "file://" + str(data_folder) + "/metadata.yml"
 
-    pool = ThreadPoolExecutor(max_workers=1)
+    pool = FakeThreadPoolExecutor()
     rde = RDEntry()
-    rdr = rde.new_instance({'pool': pool})
+    rdr = rde.new_instance({'pool': pool,
+                            'allow_custom_pool': True})
 
     assert rdr is not None
 
