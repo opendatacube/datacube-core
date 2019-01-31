@@ -20,6 +20,22 @@ AlbersGS = GridSpec(crs=epsg3577,
                     resolution=(-25, 25),
                     origin=(0.0, 0.0))
 
+SAMPLE_WKT_WITHOUT_AUTHORITY = '''PROJCS["unnamed",
+       GEOGCS["unnamed ellipse",
+              DATUM["unknown",
+                    SPHEROID["unnamed",6378137,0],
+                    EXTENSION["PROJ4_GRIDS","@null"]],
+              PRIMEM["Greenwich",0],
+              UNIT["degree",0.0174532925199433]],
+       PROJECTION["Mercator_2SP"],
+       PARAMETER["standard_parallel_1",0],
+       PARAMETER["central_meridian",0],
+       PARAMETER["false_easting",0],
+       PARAMETER["false_northing",0],
+       UNIT["Meter",1]
+]
+'''
+
 
 def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
     return Affine.translation(*translation)*Affine.rotation(rot)*Affine.shear(shear)*Affine.scale(*scale)
