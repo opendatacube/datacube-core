@@ -2,7 +2,7 @@
 """
 from typing import (
     List, Optional, Union, Any,
-    Iterator, Tuple,
+    Iterator, Tuple, NamedTuple, TypeVar
 )
 import numpy as np
 from affine import Affine
@@ -10,7 +10,6 @@ from concurrent.futures import ThreadPoolExecutor
 import rasterio
 from rasterio.io import DatasetReader
 from rasterio.crs import CRS as RioCRS
-from types import SimpleNamespace
 from datetime import datetime
 
 from datacube.storage import BandInfo
@@ -30,7 +29,18 @@ from datacube.drivers._types import (
     RasterWindow,
 )
 
+Overrides = NamedTuple('Overrides', [('crs', Optional[CRS]),
+                                     ('transform', Optional[Affine]),
+                                     ('nodata', Optional[Union[float, int]])])
+
 RioWindow = Tuple[Tuple[int, int], Tuple[int, int]]  # pylint: disable=invalid-name
+T = TypeVar('T')
+
+
+def pick(a: Optional[T], b: Optional[T]) -> Optional[T]:
+    """ Return first non-None value or None if all are None
+    """
+    return b if a is None else a
 
 
 def _is_netcdf(fmt: str) -> bool:
@@ -62,6 +72,10 @@ def _dc_crs(crs: Optional[RioCRS]) -> Optional[CRS]:
     """
     if crs is None:
         return None
+
+    if not crs.is_valid:
+        return None
+
     if crs.is_epsg_code:
         return CRS('epsg:{}'.format(crs.to_epsg()))
     return CRS(crs.wkt)
@@ -136,15 +150,23 @@ def _rio_band_idx(band: BandInfo, src: DatasetReader) -> int:
 
 
 class RIOReader(GeoRasterReader):
-    def __init__(self, src: DatasetReader,
+    def __init__(self,
+                 src: DatasetReader,
                  band_idx: int,
-                 pool: ThreadPoolExecutor):
-        # TODO: add overrides for CRS/Transform/nodata
+                 pool: ThreadPoolExecutor,
+                 overrides: Overrides = Overrides(None, None, None)):
+
+        transform = pick(overrides.transform, src.transform)
+        if transform is not None and transform.is_identity:
+            transform = None
+
         self._src = src
-        self._crs = _dc_crs(src.crs)
+        self._crs = overrides.crs or _dc_crs(src.crs)
+        self._transform = transform
+        self._nodata = pick(overrides.nodata, src.nodatavals[band_idx-1])
         self._band_idx = band_idx
+        self._dtype = src.dtypes[band_idx-1]
         self._pool = pool
-        self._meta = SimpleNamespace(**src.meta)
 
     @property
     def crs(self) -> Optional[CRS]:
@@ -152,11 +174,11 @@ class RIOReader(GeoRasterReader):
 
     @property
     def transform(self) -> Optional[Affine]:
-        return self._meta.transform
+        return self._transform
 
     @property
     def dtype(self) -> np.dtype:
-        return np.dtype(self._meta.dtype)
+        return np.dtype(self._dtype)
 
     @property
     def shape(self) -> RasterShape:
@@ -164,12 +186,29 @@ class RIOReader(GeoRasterReader):
 
     @property
     def nodata(self) -> Optional[Union[int, float]]:
-        return self._meta.nodata
+        return self._nodata
 
     def read(self,
              window: Optional[RasterWindow] = None,
              out_shape: Optional[RasterShape] = None) -> FutureNdarray:
         return self._pool.submit(_read, self._src, self._band_idx, window, out_shape)
+
+
+def _compute_overrides(src: DatasetReader, bi: BandInfo) -> Overrides:
+    """ If dataset is missing nodata, crs or transform.
+    """
+    crs, transform, nodata = None, None, None
+
+    if not src.crs.is_valid:
+        crs = bi.crs
+
+    if src.transform.is_identity:
+        transform = bi.transform
+
+    if src.nodata is None:
+        nodata = bi.nodata
+
+    return Overrides(crs=crs, transform=transform, nodata=nodata)
 
 
 def _rdr_open(band: BandInfo, ctx: Any, pool: ThreadPoolExecutor) -> RIOReader:
@@ -183,7 +222,7 @@ def _rdr_open(band: BandInfo, ctx: Any, pool: ThreadPoolExecutor) -> RIOReader:
     src = rasterio.open(normalised_uri, 'r')
     bidx = _rio_band_idx(band, src)
 
-    return RIOReader(src, bidx, pool)
+    return RIOReader(src, bidx, pool, _compute_overrides(src, band))
 
 
 class RIORdrDriver(ReaderDriver):
