@@ -134,6 +134,12 @@ def test_rd_internals_bidx(data_folder):
         bi = mk_band('a', base, path="test.tif", format=NetCDF)
         assert _rio_band_idx(bi, src) == 1
 
+    # TODO: make single time-slice netcdf, for now pretend that this tiff is netcdf
+    with rasterio.open(str(data_folder)+"/sample_tile_151_-29.tif", 'r') as src:
+        bi = mk_band('a', base, path='sample_tile_151_-29.tif', format=NetCDF)
+        assert src.count == 1
+        assert _rio_band_idx(bi, src) == 1
+
 
 def test_rd_internals_uri():
     base = "file:///some/path/"
