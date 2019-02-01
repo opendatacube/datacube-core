@@ -1,10 +1,11 @@
 """ Tests for new RIO reader driver
 """
-import pytest
-import numpy as np
-import rasterio
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, Future
+import numpy as np
+import rasterio
+from affine import Affine
+import pytest
 
 from datacube.testutils import mk_sample_dataset
 from datacube.drivers.rio._reader import (
@@ -16,11 +17,18 @@ from datacube.drivers.rio._reader import (
 )
 from datacube.storage import BandInfo
 from datacube.utils import datetime_to_seconds_since_1970
-from datacube.testutils.geom import SAMPLE_WKT_WITHOUT_AUTHORITY
+from datacube.testutils.geom import SAMPLE_WKT_WITHOUT_AUTHORITY, epsg3857
 from datacube.testutils.threads import FakeThreadPoolExecutor
 
 NetCDF = 'NetCDF'    # pylint: disable=invalid-name
 GeoTIFF = 'GeoTIFF'  # pylint: disable=invalid-name
+
+
+def mk_reader():
+    pool = FakeThreadPoolExecutor()
+    rde = RDEntry()
+    return rde.new_instance({'pool': pool,
+                             'allow_custom_pool': True})
 
 
 def mk_band(name: str,
@@ -29,7 +37,7 @@ def mk_band(name: str,
             format: str = GeoTIFF,
             **extras) -> BandInfo:
     band_opts = {k: extras.pop(k)
-                 for k in 'path layer band'.split() if k in extras}
+                 for k in 'path layer band nodata dtype units aliases'.split() if k in extras}
 
     band = dict(name=name, path=path, **band_opts)
     ds = mk_sample_dataset([band], base_uri, format=format, **extras)
@@ -67,6 +75,7 @@ def test_rd_internals_crs():
     from rasterio.crs import CRS as RioCRS
 
     assert _dc_crs(None) is None
+    assert _dc_crs(RioCRS()) is None
     assert _dc_crs(RioCRS.from_epsg(3857)).epsg == 3857
     assert _dc_crs(RioCRS.from_wkt(SAMPLE_WKT_WITHOUT_AUTHORITY)).epsg is None
 
@@ -163,11 +172,7 @@ def test_rio_driver_fail_to_open():
 def test_rio_driver_open(data_folder):
     base = "file://" + str(data_folder) + "/metadata.yml"
 
-    pool = FakeThreadPoolExecutor()
-    rde = RDEntry()
-    rdr = rde.new_instance({'pool': pool,
-                            'allow_custom_pool': True})
-
+    rdr = mk_reader()
     assert rdr is not None
 
     load_ctx = rdr.new_load_context(None)
@@ -177,16 +182,43 @@ def test_rio_driver_open(data_folder):
     fut = rdr.open(bi, load_ctx)
     assert isinstance(fut, Future)
 
-    rdr = fut.result()
-    assert rdr.crs is not None
-    assert rdr.transform is not None
-    assert rdr.crs.epsg == 4326
-    assert rdr.shape == (2000, 4000)
-    assert rdr.nodata == -999
-    assert rdr.dtype == np.dtype(np.int16)
+    src = fut.result()
+    assert src.crs is not None
+    assert src.transform is not None
+    assert src.crs.epsg == 4326
+    assert src.shape == (2000, 4000)
+    assert src.nodata == -999
+    assert src.dtype == np.dtype(np.int16)
 
-    xx = rdr.read().result()
-    assert xx.shape == rdr.shape
-    assert xx.dtype == rdr.dtype
+    xx = src.read().result()
+    assert xx.shape == src.shape
+    assert xx.dtype == src.dtype
 
-    pool.shutdown()
+    # check overrides
+    bi = mk_band('b1', base, path="zeros_no_geo_int16_7x3.tif", format=GeoTIFF, nodata=None)
+
+    # First verify that missing overrides in the band doesn't cause issues
+    assert bi.crs is None
+    assert bi.transform is None
+    assert bi.nodata is None
+
+    # TODO: suppress NotGeoreferencedWarning and
+    #       from rasterio
+
+    load_ctx = rdr.new_load_context(load_ctx)
+    src = rdr.open(bi, load_ctx).result()
+
+    assert src.crs is None
+    assert src.transform is None
+    assert src.nodata is None
+
+    # Now test that overrides work
+    bi.crs = epsg3857
+    bi.transform = Affine.translation(10, 100)
+    bi.nodata = -33
+
+    load_ctx = rdr.new_load_context(load_ctx)
+    src = rdr.open(bi, load_ctx).result()
+    assert src.crs == bi.crs
+    assert src.transform == bi.transform
+    assert src.nodata == bi.nodata
