@@ -1,6 +1,5 @@
 # TODO: measurement dependency tracking
 # TODO: a mechanism to set settings for the leaf notes
-# TODO: lineage tracking per observation
 # TODO: integrate GridWorkflow functionality (spatial binning)
 
 """
@@ -10,7 +9,7 @@ products implementing the same interface.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from functools import reduce
 from typing import Any, Dict, List, cast
 
@@ -23,7 +22,7 @@ from datacube.api.core import select_datasets_inside_polygon, output_geobox, app
 from datacube.api.grid_workflow import _fast_slice
 from datacube.api.query import Query, query_group_by, query_geopolygon
 from datacube.model import Measurement, DatasetType
-from datacube.model.utils import xr_apply
+from datacube.model.utils import xr_apply, xr_iter
 
 from .utils import qualified_name, merge_dicts
 from .utils import select_unique, select_keys, reject_keys, merge_search_terms
@@ -92,6 +91,30 @@ class VirtualDatasetBox:
         [length] = pile[dim].shape
         for i in range(length):
             yield VirtualDatasetBox(pile.isel(**{dim: slice(i, i + 1)}), self.geobox, self.product_definitions)
+
+    def input_datasets(self):
+        def traverse(entry):
+            if isinstance(entry, Mapping):
+                if 'collate' in entry:
+                    _, child = entry['collate']
+                    yield from traverse(child)
+                elif 'juxtapose' in entry:
+                    for child in entry['juxtapose']:
+                        yield from traverse(child)
+                else:
+                    raise VirtualProductException("malformed box")
+
+            elif isinstance(entry, Sequence):
+                yield from entry
+
+            elif isinstance(entry, VirtualDatasetBox):
+                yield from entry.input_datasets()
+
+            else:
+                raise VirtualProductException("malformed box")
+
+        for _, _, entry in xr_iter(self.pile):
+            yield from traverse(entry)
 
 
 class Transformation(ABC):
