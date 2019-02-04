@@ -6,6 +6,7 @@ import numpy as np
 import rasterio
 from affine import Affine
 import pytest
+import warnings
 
 from datacube.testutils import mk_sample_dataset
 from datacube.drivers.rio._reader import (
@@ -207,11 +208,10 @@ def test_rio_driver_open(data_folder):
     assert bi.transform is None
     assert bi.nodata is None
 
-    # TODO: suppress NotGeoreferencedWarning and
-    #       from rasterio
-
     load_ctx = rdr.new_load_context(iter([bi]), load_ctx)
-    src = rdr.open(bi, load_ctx).result()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', rasterio.errors.NotGeoreferencedWarning)
+        src = rdr.open(bi, load_ctx).result()
 
     assert src.crs is None
     assert src.transform is None
@@ -223,7 +223,10 @@ def test_rio_driver_open(data_folder):
     bi.nodata = -33
 
     load_ctx = rdr.new_load_context(iter([bi]), load_ctx)
-    src = rdr.open(bi, load_ctx).result()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', rasterio.errors.NotGeoreferencedWarning)
+        src = rdr.open(bi, load_ctx).result()
+
     assert src.crs == bi.crs
     assert src.transform == bi.transform
     assert src.nodata == bi.nodata
