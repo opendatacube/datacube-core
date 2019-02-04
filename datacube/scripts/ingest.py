@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import time
 import logging
 import click
@@ -10,14 +8,17 @@ from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
 from datetime import datetime
+from typing import Tuple
 
 import datacube
 from datacube.api.core import Datacube
 from datacube.index.index import Index
-from datacube.model import DatasetType, Range, GeoPolygon, Measurement
+from datacube.model import DatasetType, Range, Measurement
+from datacube.utils import geometry
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
 from datacube.utils import read_documents
+from datacube.utils.uris import normalise_path
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
 from datacube.drivers import storage_writer_by_name
 
@@ -26,6 +27,13 @@ from datacube.ui.click import cli
 _LOG = logging.getLogger('datacube-ingest')
 
 FUSER_KEY = 'fuse_data'
+
+
+def polygon_from_sources_extents(sources, geobox):
+    sources_union = geometry.unary_union(source.extent.to_crs(geobox.crs) for source in sources)
+    valid_data = geobox.extent.intersection(sources_union)
+    resolution = min([abs(x) for x in geobox.resolution])
+    return valid_data.simplify(tolerance=resolution * 0.01)
 
 
 def find_diff(input_type, output_type, index, **query):
@@ -83,13 +91,14 @@ def get_variable_params(config):
     return variable_params
 
 
-def get_app_metadata(config, config_file):
+def get_app_metadata(config_file):
     doc = {
         'lineage': {
             'algorithm': {
                 'name': 'datacube-ingest',
                 'repo_url': 'https://github.com/opendatacube/datacube-core.git',
-                'parameters': {'configuration_file': config_file}
+                'parameters': {'configuration_file': config_file},
+                'version': datacube.__version__,
             },
         }
     }
@@ -103,7 +112,7 @@ def get_filename(config, tile_index, sources, **kwargs):
         tile_index=tile_index,
         start_time=to_datetime(sources.time.values[0]).strftime(time_format),
         end_time=to_datetime(sources.time.values[-1]).strftime(time_format),
-        version=config['taskfile_version'],
+        version=config['taskfile_utctime'],
         **kwargs))
 
 
@@ -126,8 +135,10 @@ def get_resampling(config):
     return {spec['src_varname']: spec.get('resampling_method') for spec in config['measurements']}
 
 
-def ensure_output_type(index, config, storage_format, allow_product_changes=False):
-    # type: (Index, dict, bool) -> (DatasetType, DatasetType)
+def ensure_output_type(index: Index,
+                       config: dict,
+                       storage_format: str,
+                       allow_product_changes: bool = False) -> Tuple[DatasetType, DatasetType]:
     """
     Create the output product for the given ingest config if it doesn't already exist.
 
@@ -166,13 +177,13 @@ def get_full_lineage(index, id_):
 def load_config_from_file(path):
     config_file = Path(path)
     _, config = next(read_documents(config_file))
-    config['filename'] = str(config_file.absolute())
+    config['filename'] = str(normalise_path(config_file))
 
     return config
 
 
 def create_task_list(index, output_type, year, source_type, config):
-    config['taskfile_version'] = int(time.time())
+    config['taskfile_utctime'] = int(time.time())
 
     query = {}
     if year:
@@ -226,6 +237,12 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
     with datacube.set_options(reproject_threads=1):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
+
+        datasets = tile.sources.sum().item()
+        for dataset in datasets:
+            if not dataset.uris:
+                _LOG.error('Locationless dataset found in the database: %r', dataset)
+
         data = Datacube.load_data(tile.sources, tile.geobox, measurements,
                                   resampling=resampling,
                                   fuse_func=fuse_func)
@@ -235,7 +252,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
     def mk_uri(file_path):
         if driver.uri_scheme == "file":
-            return file_path.absolute().as_uri()
+            return normalise_path(file_path).as_uri()
         return '{}://{}'.format(driver.uri_scheme, file_path)
 
     def _make_dataset(labels, sources):
@@ -244,8 +261,8 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
                             extent=tile.geobox.extent,
                             center_time=labels['time'],
                             uri=mk_uri(file_path),
-                            app_info=get_app_metadata(config, config['filename']),
-                            valid_data=GeoPolygon.from_sources_extents(sources, tile.geobox))
+                            app_info=get_app_metadata(config['filename']),
+                            valid_data=polygon_from_sources_extents(sources, tile.geobox))
 
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
@@ -295,30 +312,34 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
 
     pending = []
 
+    # Count of storage unit/s creation successful/failed
+    nc_successful = nc_failed = 0
+
     # Count of storage unit/s indexed successfully or failed to index
     index_successful = index_failed = 0
 
-    # Count of storage unit/s failed during file creation
-    f_failed = 0
-
     tasks = iter(tasks)
-    pending += [submit_task(task) for task in itertools.islice(tasks, max(0, queue_size - len(pending)))]
-    total = pending
-    while pending:
-        completed, failed, pending = executor.get_ready(pending)
+
+    while True:
+        pending += [submit_task(task) for task in itertools.islice(tasks, queue_size)]
+        if len(pending) == 0:
+            break
+
+        nc_completed, failed, pending = executor.get_ready(pending)
+        nc_successful += len(nc_completed)
 
         for future in failed:
             try:
                 executor.result(future)
             except Exception as err:  # pylint: disable=broad-except
-                _LOG.exception('Failed to create storage unit file (Exception: %s) ', str(err))
-                f_failed += 1
+                _LOG.exception('Failed to create storage unit file (Exception: %s) ', str(err), exc_info=True)
+                nc_failed += 1
 
-        _LOG.info('Storage unit file creation status (completed: %s, failed: %s, pending: %s)',
-                  (len(total) - len(pending) - f_failed),
-                  f_failed,
-                  len(pending))
-        if not completed:
+        _LOG.info('Storage unit file creation status (Created_Count: %s, Failed_Count: %s)',
+                  nc_successful,
+                  nc_failed)
+
+        if not nc_completed:
             time.sleep(1)
             continue
 
@@ -326,13 +347,13 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
             # TODO: ideally we wouldn't block here indefinitely
             # maybe limit gather to 50-100 results and put the rest into a index backlog
             # this will also keep the queue full
-            results = executor.results(completed)
+            results = executor.results(nc_completed)
             index_successful += _index_datasets(index, results)
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception('Failed to index storage unit file (Exception: %s)', str(err))
+            _LOG.exception('Failed to index storage unit file (Exception: %s)', str(err), exc_info=True)
             index_failed += 1
 
-        _LOG.info('Storage unit files indexed (successful: %s, failed: %s)', index_successful, index_failed)
+        _LOG.info('Storage unit files indexed (Successful: %s, Failed: %s)', index_successful, index_failed)
 
     return index_successful, index_failed
 
@@ -381,8 +402,8 @@ def ingest_cmd(index,
                save_tasks,
                load_tasks,
                dry_run,
-               executor,
-               allow_product_changes):
+               allow_product_changes,
+               executor):
     # pylint: disable=too-many-locals
 
     if config_file:

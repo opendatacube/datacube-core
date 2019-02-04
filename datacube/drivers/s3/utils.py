@@ -1,6 +1,5 @@
 """Utilities shared by all drivers."""
 
-from __future__ import absolute_import
 
 
 class DriverUtils(object):

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """ Sample task app
 """
-from __future__ import absolute_import, print_function
 
 
 import random

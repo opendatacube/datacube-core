@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import logging
 import os
@@ -9,13 +8,8 @@ import functools
 import itertools
 import re
 from pathlib import Path
-
 import pandas as pd
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import pickle
 
 from datacube.ui import click as dc_ui
 from datacube.utils import read_documents
@@ -73,7 +67,7 @@ def save_tasks(config, tasks, taskfile):
         os.remove(taskfile)
         return 0
     else:
-        _LOG.info('Saved config and %d tasks to %s', i, taskfile)
+        _LOG.info('Saved config and %d tasks to %s', i - 1, taskfile)
     return i - 1
 
 

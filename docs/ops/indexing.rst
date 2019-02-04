@@ -19,8 +19,7 @@ Prerequisites for Indexing Data
 ===============================
 
  * A working Data Cube setup
- * Some data to load
-(Links to some freely available :ref:`sample-eo-data`.)
+ * Some data to load (Links to some freely available :ref:`sample-eo-data`.)
 
 
 
@@ -30,9 +29,11 @@ Steps to Adding Data
  * Create a new product
      Before the data itself can be added, a product describing the data must be created.
      Requires creation of a :ref:`product-definitions` document (yaml)
+
  * Index the data
      After this step the data is accessible through the datacube.
      Requires datacube friendly :ref:`dataset-documents` for data which is to be indexed
+
  * :ref:`Ingest <ingestion>` the data(optional)
      After indexing the data you can choose to ingest. This provides the ability to tile the original data into a faster storage format or a new projection system.
      Requires creation of an ingestion configuration file (yaml).
@@ -163,7 +164,7 @@ For more information see :ref:`dataset-metadata-doc`.
 
 
 Adding Data - Indexing
-================
+======================
 
 Everything is now ready, and we can use the **datacube** tool to add one or more
 datasets into our Cube by running::
@@ -191,21 +192,22 @@ looking.
     * `MCD43A4 - Nadir BRDF-Adjusted Reflectance 16-Day L3 Global 500m`__
 
 __ http://landsat.usgs.gov/CDR_LSR.php
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a4
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1_v006
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2_v006
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3_v006
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a4_v006
 
 Once you have downloaded some data, it will need :ref:`metadata preparation
 <prepare-scripts>` before use in the Data Cube.
 
 
 Indexing Data on Amazon(AWS S3)
-================
+===============================
+
 Cloud storage is a sought after feature for most storage platforms. Options currently exist that allow for a users to store, index, and retrieve data from Amazon S3 buckets using the open data cube. The following sections outline this process.  
 
 Configuring AWS CLI Credentials
------------------------------
+-------------------------------
 
 Install the AWS CLI package and configure it with your Amazon AWS credentials. For a more detailed tutorial on AWS CLI configurations, visit the official AWS docs  The
 only two fields required to be configured are the ``Access Key``, and
@@ -213,7 +215,7 @@ only two fields required to be configured are the ``Access Key``, and
 security page. Try not to lose your ``Secret Access Key`` as you will
 not be able to view it again and you will have to request a new one.
 
-::
+.. code-block:: bash
 
     pip install boto3 ruamel.yaml 
     sudo apt-get install awscli -y
@@ -223,7 +225,7 @@ Add the ca-certificates requisite for S3 indexing and export them to the
 environment variable the data cube will look for. If you forget this
 step you will see an error upon attempting to load the indexed dataset.
 
-::
+.. code-block:: bash
 
     sudo apt-get install ca-certificates
     export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
@@ -234,7 +236,7 @@ You may want to add the line
 
 
 Download Indexing Scripts
------------------------------
+-------------------------
 
 
 In order to utilize the convenience of S3 indexing, we must retrieve
@@ -242,7 +244,7 @@ scripts necessary for S3 indexing. The direct links are provided below
 since, at the time of this document, they are not all included in the
 latest release (1.6.1).
 
-::
+.. code-block:: bash
 
     cd ~/Datacube
     mkdir -p S3_scripts
@@ -258,7 +260,7 @@ only two fields required to be configured are the ``Access Key``, and
 security page. Try not to lose your ``Secret Access Key`` as you will
 not be able to view it again and you will have to request a new one.
 
-::
+.. code-block:: bash
 
     pip install boto3 ruamel.yaml 
     sudo apt-get install awscli -y
@@ -268,7 +270,7 @@ Add the ca-certificates requisite for S3 indexing and export them to the
 environment variable the data cube will look for. If you forget this
 step you will see an error upon attempting to load the indexed dataset.
 
-::
+.. code-block:: bash
 
     sudo apt-get install ca-certificates
     export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
@@ -291,7 +293,7 @@ bucket. If using a different dataset, you may have to use or create a
 ``yaml`` product definition file if an exact match is not readily
 available.
 
-::
+.. code-block:: bash
 
     datacube product add ~/Datacube/S3_scripts/ls_usgs.yaml
 
@@ -302,7 +304,7 @@ main directory. ``--suffix`` refers to the suffix of the metadata file
 to process, it will not always be an ``MTL.txt`` but for landsat-pds, it
 will be.
 
-::
+.. code-block:: bash
 
     cd ~/Datacube/S3_scripts
     python3 index_from_s3_bucket.py landsat-pds -p c1/L8/139/045/ --suffix="MTL.txt"
@@ -314,7 +316,7 @@ required for this command to work. These commands will need to be
 entered into a notebook or in a Python console, accessed with the
 command ``python``
 
-::
+.. code-block:: python
 
     import datacube
 

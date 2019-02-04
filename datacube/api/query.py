@@ -15,7 +15,6 @@
 Storage Query and Access API module
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import datetime
@@ -27,7 +26,7 @@ from dateutil import tz
 from pandas import to_datetime as pandas_to_datetime
 import numpy as np
 
-from ..compat import string_types, integer_types
+
 from ..model import Range
 from ..utils import geometry, datetime_to_seconds_since_1970
 
@@ -221,7 +220,7 @@ def _range_to_geopolygon(**kwargs):
 
 
 def _value_to_range(value):
-    if isinstance(value, string_types + integer_types + (float,)):
+    if isinstance(value, (str, float, int)):
         value = float(value)
         return value, value
     else:
@@ -248,12 +247,12 @@ def _datetime_to_timestamp(dt):
 
 
 def _to_datetime(t):
-    if isinstance(t, integer_types + (float,)):
+    if isinstance(t, (float, int)):
         t = datetime.datetime.fromtimestamp(t, tz=tz.tzutc())
 
     if isinstance(t, tuple):
         t = datetime.datetime(*t, tzinfo=tz.tzutc())
-    elif isinstance(t, string_types):
+    elif isinstance(t, str):
         try:
             t = datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%S.%fZ")
         except ValueError:

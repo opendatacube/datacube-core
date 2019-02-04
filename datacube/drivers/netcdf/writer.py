@@ -2,12 +2,11 @@
 """
 Create netCDF4 Storage Units and write data to them
 """
-from __future__ import absolute_import
 
 import logging
 import numbers
 from datetime import datetime
-
+from collections import namedtuple
 import numpy
 
 from datacube.storage.masking import describe_flags_def
@@ -15,12 +14,13 @@ from datacube.utils import geometry, data_resolution_and_offset
 
 # pylint: disable=ungrouped-imports
 try:
-    from datacube.storage.netcdf_safestrings import SafeStringsDataset as Dataset
+    from ._safestrings import SafeStringsDataset as Dataset
 except TypeError:  # The above fails when netCDF4.Dataset is mocked, eg in RTD
-    from netCDF4 import Dataset
+    from netCDF4 import Dataset  # type: ignore
 
 from datacube import __version__
 
+Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
 _LOG = logging.getLogger(__name__)
 
 _STANDARD_COORDINATES = {
@@ -54,6 +54,13 @@ _STANDARD_COORDINATES = {
 
 
 def create_netcdf(netcdf_path, **kwargs):
+    """
+    Create and return an empty NetCDF file
+
+    :param netcdf_path: File path to write to
+    :param kwargs: See :class:`Dataset` for more information
+    :return: open NetCDF Dataset
+    """
     nco = Dataset(netcdf_path, 'w', **kwargs)
     nco.date_created = datetime.today().isoformat()
     nco.setncattr('Conventions', 'CF-1.6, ACDD-1.3')
@@ -64,6 +71,12 @@ def create_netcdf(netcdf_path, **kwargs):
 
 
 def append_netcdf(netcdf_path):
+    """
+    Open a NetCDF file in append mode
+
+    :param netcdf_path:
+    :return: open NetCDF Dataset
+    """
     return Dataset(netcdf_path, 'a')
 
 

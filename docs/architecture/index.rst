@@ -11,5 +11,3 @@ Architecture Guide
    metadata_index.rst
    data_loading.rst
    driver.rst
-   applications.rst
-   data_management.rst

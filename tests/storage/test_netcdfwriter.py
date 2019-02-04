@@ -1,4 +1,3 @@
-from __future__ import print_function, absolute_import
 
 import netCDF4
 import numpy
@@ -6,13 +5,11 @@ import xarray as xr
 import pytest
 from hypothesis import given
 from hypothesis.strategies import text
-from tests.conftest import tmpnetcdf_filename as get_tmpnetcdf_filename
 import string
 
-from datacube.model import Variable
-from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
-    create_grid_mapping_variable, flag_mask_meanings
-from datacube.storage.storage import write_dataset_to_netcdf
+from datacube.drivers.netcdf.writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
+    create_grid_mapping_variable, flag_mask_meanings, Variable
+from datacube.drivers.netcdf import write_dataset_to_netcdf
 from datacube.utils import geometry, DatacubeException, read_strings_from_netcdf
 
 GEO_PROJ = geometry.CRS("""GEOGCS["WGS 84",
@@ -183,8 +180,7 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
 @given(s1=text(alphabet=string.printable, max_size=100),
        s2=text(alphabet=string.printable, max_size=100),
        s3=text(alphabet=string.printable, max_size=100))
-def test_create_string_variable(tmpdir, s1, s2, s3):
-    tmpnetcdf_filename = get_tmpnetcdf_filename(tmpdir)
+def test_create_string_variable(tmpnetcdf_filename, s1, s2, s3):
     str_var = 'str_var'
     nco = create_netcdf(tmpnetcdf_filename)
     coord = create_coordinate(nco, 'greg', numpy.array([1.0, 3.0, 9.0]), 'cubic gregs')

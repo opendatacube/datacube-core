@@ -1,5 +1,4 @@
 """S3 storage driver module."""
-from __future__ import absolute_import
 
 import logging
 from pathlib import Path
@@ -8,6 +7,7 @@ import numpy as np
 
 from datacube.drivers.s3.datasource import S3DataSource
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
+from datacube.storage import BandInfo
 from .utils import DriverUtils
 from datacube.utils import DatacubeException
 
@@ -215,8 +215,8 @@ class S3ReaderDriver(object):
         return (protocol in self.protocols and
                 fmt in self.formats)
 
-    def new_datasource(self, dataset, band_name):
-        return S3DataSource(dataset, band_name, self._storage)
+    def new_datasource(self, band: BandInfo):
+        return S3DataSource(band, self._storage)
 
 
 def reader_driver_init():

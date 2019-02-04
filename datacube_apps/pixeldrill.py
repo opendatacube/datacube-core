@@ -6,8 +6,6 @@ Interactive Pixel Drill for AGDCv2.
 # pylint: disable=import-error, wrong-import-position
 # Unavoidable with TK class hierarchy.
 # pylint: disable=too-many-ancestors, redefined-builtin
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import argparse
 import os
 import sys
@@ -16,25 +14,15 @@ import warnings
 import matplotlib
 import numpy as np
 import pandas as pd
+import tkinter as tk
+
+import datacube
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg, ToolTip
 
-import six
-from six.moves import tkinter_tkfiledialog, tkinter_messagebox
-
-import datacube
-
-try:
-    import tkinter as tk
-    import tkinter.ttk as ttk
-    import tkinter.font as font
-except ImportError:  # Python 2
-    import Tkinter as tk
-    import ttk
-    import tkFont as font
 
 # pylint: disable=invalid-name, too-many-locals, global-variable-undefined, too-many-statements, redefined-outer-name
 # pylint: disable=broad-except
@@ -123,7 +111,7 @@ class Toolbar(NavigationToolbar2TkAgg):
         default_filetype_name = filetypes[default_filetype]
         del filetypes[default_filetype]
 
-        sorted_filetypes = list(six.iteritems(filetypes))
+        sorted_filetypes = list(filetypes.items())
         sorted_filetypes.sort()
         sorted_filetypes.insert(0, (default_filetype, default_filetype_name))
 
@@ -131,7 +119,7 @@ class Toolbar(NavigationToolbar2TkAgg):
         initialdir = plt.rcParams.get('savefig.directory', '')
         initialdir = os.path.expanduser(initialdir)
         initialfile = 'movie.mp4'
-        fname = tkinter_tkfiledialog.asksaveasfilename(
+        fname = tk.filedialog.asksaveasfilename(
             master=self.window,
             title='Save the stack',
             filetypes=[('MPEG 4', '*.mp4')],
@@ -146,7 +134,7 @@ class Toolbar(NavigationToolbar2TkAgg):
             if initialdir == '':
                 plt.rcParams['savefig.directory'] = initialdir
             else:
-                plt.rcParams['savefig.directory'] = os.path.dirname(six.text_type(fname))
+                plt.rcParams['savefig.directory'] = os.path.dirname(str(fname))
             try:
                 writer = anim.writers['ffmpeg']
                 mwriter = writer(fps=1,
@@ -160,7 +148,7 @@ class Toolbar(NavigationToolbar2TkAgg):
                         changeimg(i)
                         mwriter.grab_frame()
             except Exception as e:
-                tkinter_messagebox.showerror("Error saving file", str(e))
+                tk.messagebox.showerror("Error saving file", str(e))
 
 
 class DrillToolbar(NavigationToolbar2TkAgg):
@@ -203,7 +191,7 @@ class DrillToolbar(NavigationToolbar2TkAgg):
     def save_csv(self, *args):
         initialdir = plt.rcParams.get('savefig.directory', '')
         initialdir = os.path.expanduser(initialdir)
-        fname = tkinter_tkfiledialog.asksaveasfilename(
+        fname = tk.filedialog.asksaveasfilename(
             master=self.window,
             title='Save the pixel drill',
             filetypes=[('CSV', '*.csv')],
@@ -218,7 +206,7 @@ class DrillToolbar(NavigationToolbar2TkAgg):
             if initialdir == '':
                 plt.rcParams['savefig.directory'] = initialdir
             else:
-                plt.rcParams['savefig.directory'] = os.path.dirname(six.text_type(fname))
+                plt.rcParams['savefig.directory'] = os.path.dirname(str(fname))
             try:
                 ds = pd.DataFrame(data=ts,
                                   index=times,
@@ -226,7 +214,7 @@ class DrillToolbar(NavigationToolbar2TkAgg):
                 ds.to_csv(fname)
 
             except Exception as e:
-                tkinter_messagebox.showerror("Error saving file", str(e))
+                tk.messagebox.showerror("Error saving file", str(e))
 
     def save_figure(self, *args):
         filetypes = self.canvas.get_supported_filetypes().copy()
@@ -235,14 +223,14 @@ class DrillToolbar(NavigationToolbar2TkAgg):
         default_filetype_name = filetypes[default_filetype]
         del filetypes[default_filetype]
 
-        sorted_filetypes = list(six.iteritems(filetypes))
+        sorted_filetypes = list(filetypes.items())
         sorted_filetypes.sort()
         sorted_filetypes.insert(0, (default_filetype, default_filetype_name))
 
         initialdir = plt.rcParams.get('savefig.directory', '')
         initialdir = os.path.expanduser(initialdir)
         initialfile = 'pixeldrill.pdf'
-        fname = tkinter_tkfiledialog.asksaveasfilename(
+        fname = tk.filedialog.asksaveasfilename(
             master=self.window,
             title='Save the pixel drill',
             filetypes=[('PNG', '*.png'), ('PDF', '*.pdf')],
@@ -257,7 +245,7 @@ class DrillToolbar(NavigationToolbar2TkAgg):
             if initialdir == '':
                 plt.rcParams['savefig.directory'] = initialdir
             else:
-                plt.rcParams['savefig.directory'] = os.path.dirname(six.text_type(fname))
+                plt.rcParams['savefig.directory'] = os.path.dirname(str(fname))
             try:
                 fig = plt.figure(figsize=(6, 4.5))
 
@@ -300,7 +288,7 @@ class DrillToolbar(NavigationToolbar2TkAgg):
                 # plt.close(fig)
 
             except Exception as e:
-                tkinter_messagebox.showerror("Error saving file", str(e))
+                tk.messagebox.showerror("Error saving file", str(e))
 
 
 class Formatter(object):

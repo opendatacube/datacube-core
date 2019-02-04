@@ -2,7 +2,6 @@
 """
 Core SQL schema settings.
 """
-from __future__ import absolute_import
 
 import logging
 

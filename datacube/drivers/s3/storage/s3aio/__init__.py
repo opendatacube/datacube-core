@@ -2,7 +2,6 @@
 """
 Modules for the S3 Array IO API
 """
-from __future__ import absolute_import
 
 from .s3lio import S3LIO
 from .s3aio import S3AIO

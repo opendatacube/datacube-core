@@ -22,7 +22,7 @@ A specific example for USGS collection 1 MTL format is :download:`USGS Landsat P
 
 
 1. Preparing USGS Landsat Collection 1 - LEVEL1
-============================================
+===============================================
 
 Download the USGS Collection 1 landsat scenes from any of the links below:
 
@@ -70,7 +70,7 @@ An another example for USGS landsat surface reflectance :download:`USGS Landsat 
 <../../utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py>`
 
 2. Preparing USGS Landsat Surface Reflectance - LEDAPS
-===================================================
+======================================================
 
 To prepare downloaded USGS LEDAPS Landsat scenes for use with the Data Cube,
 use the script provided in :file:`utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py`.
@@ -116,7 +116,7 @@ For Landsat Surface reflectance LEDAPS add:
 Then :ref:`index the data <indexing>`.
 
 3. Prepare script and indexing Landsat data on AWS
-============================================
+==================================================
 
 Landsat 8 data is available to use on Amazon S3 without needing to worry about the download of all scenes from
 the start of imagery capture.
@@ -201,7 +201,7 @@ WRS path and row.
 Index any path and row by changing the prefix in the above command
 
 Before indexing:
----------------
+----------------
 
 ..
 

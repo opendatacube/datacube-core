@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 import datetime
 import os
@@ -14,10 +13,11 @@ from pandas import to_datetime
 
 import datacube
 from datacube.model import Dataset
-from datacube.utils import geometry, SimpleDocNav, sorted_items, InvalidDocException
+from datacube.utils import geometry, SimpleDocNav, InvalidDocException
+from datacube.utils.py import sorted_items
 
 try:
-    from yaml import CSafeDumper as SafeDumper
+    from yaml import CSafeDumper as SafeDumper  # type: ignore
 except ImportError:
     from yaml import SafeDumper
 

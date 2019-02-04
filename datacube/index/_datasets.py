@@ -2,21 +2,17 @@
 """
 API for dataset indexing, access and search.
 """
-from __future__ import absolute_import
-
 import logging
 import warnings
 from collections import namedtuple
 from uuid import UUID
-from typing import Any, Iterable, Mapping, Set, Tuple, Union
+from typing import Any, Iterable, Mapping, Set, Tuple, Union, List
 
-from datacube import compat
 from datacube.model import Dataset, DatasetType
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, changes
-from datacube.utils.changes import get_doc_changes, check_doc_unchanged
+from datacube.utils.changes import get_doc_changes
 from . import fields
-from .exceptions import DuplicateRecordError
 
 _LOG = logging.getLogger(__name__)
 
@@ -46,7 +42,7 @@ class DatasetResource(object):
         :param bool include_sources: get the full provenance graph?
         :rtype: Dataset
         """
-        if isinstance(id_, compat.string_types):
+        if isinstance(id_, str):
             id_ = UUID(id_)
 
         with self._db.connect() as connection:
@@ -183,8 +179,7 @@ class DatasetResource(object):
 
         return dataset
 
-    def search_product_duplicates(self, product, *group_fields):
-        # type: (DatasetType, Iterable[Union[str, fields.Field]]) -> Iterable[tuple, Set[UUID]]
+    def search_product_duplicates(self, product: DatasetType, *args) -> Iterable[Tuple[Any, Set[UUID]]]:
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -193,15 +188,14 @@ class DatasetResource(object):
         Returns each set of those field values and the datasets that have them.
         """
 
-        def load_field(f):
-            # type: (Union[str, fields.Field]) -> fields.Field
-            if isinstance(f, compat.string_types):
+        def load_field(f: Union[str, fields.Field]) -> fields.Field:
+            if isinstance(f, str):
                 return product.metadata_type.dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
 
-        group_fields = [load_field(f) for f in group_fields]
-        result_type = namedtuple('search_result', (f.name for f in group_fields))
+        group_fields = [load_field(f) for f in args]  # type: List[fields.Field]
+        result_type = namedtuple('search_result', list(f.name for f in group_fields))  # type: ignore
 
         expressions = [product.metadata_type.dataset_fields.get('product') == product.name]
 
@@ -209,7 +203,7 @@ class DatasetResource(object):
             for record in connection.get_duplicates(group_fields, expressions):
                 dataset_ids = set(record[0])
                 grouped_fields = tuple(record[1:])
-                yield result_type(*grouped_fields), dataset_ids
+                yield result_type(*grouped_fields), dataset_ids  # type: ignore
 
     def can_update(self, dataset, updates_allowed=None):
         """
@@ -313,15 +307,17 @@ class DatasetResource(object):
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
-    def get_field_names(self, type_name=None):
+    def get_field_names(self, product_name=None):
         """
-        :param str type_name:
+        Get the list of possible search fields for a Product
+
+        :param str product_name:
         :rtype: set[str]
         """
-        if type_name is None:
+        if product_name is None:
             types = self.types.get_all()
         else:
-            types = [self.types.get_by_name(type_name)]
+            types = [self.types.get_by_name(product_name)]
 
         out = set()
         for type_ in types:
@@ -330,6 +326,8 @@ class DatasetResource(object):
 
     def get_locations(self, id_):
         """
+        Get the list of storage locations for the given dataset id
+
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
@@ -342,6 +340,8 @@ class DatasetResource(object):
 
     def get_archived_locations(self, id_):
         """
+        Find locations which have been archived for a dataset
+
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
@@ -386,6 +386,13 @@ class DatasetResource(object):
             return connection.insert_dataset_location(id_, uri)
 
     def get_datasets_for_location(self, uri, mode=None):
+        """
+        Find datasets that exist at the given URI
+
+        :param uri: search uri
+        :param str mode: 'exact' or 'prefix'
+        :return:
+        """
         with self._db.connect() as connection:
             return (self._make(row) for row in connection.get_datasets_for_location(uri, mode=mode))
 

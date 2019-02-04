@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-numpy python3-netcdf4 python3-gdal \
     # Need pip to install more python packages later.
     # The libdpkg-perl is needed to build pyproj
-    python3-pip python3-wheel libdpkg-perl \
+    python3-pip python3-wheel cython3 libdpkg-perl \
     # Git to work out the ODC version number
     git \
     # G++ because GDAL decided it needed compiling

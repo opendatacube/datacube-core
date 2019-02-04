@@ -1,4 +1,10 @@
 
+
+..
+   .. image:: _static/odc-logo-horizontal.svg
+      :align: center
+      :alt: Open Data Cube Logo
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
    Open Data Cube Manual
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,21 +27,25 @@ and  related data from multiple satellite and other acquisition systems.
 
 
 .. toctree::
-   :caption: User Guide
 
    user/intro.rst
-   user/guide.rst
-   user/config.rst
+   user/deployments.rst
+   user/notebooks.rst
+   user/code_recipes.rst
 
+..
+   user/ecosystem.rst
 
 
 .. toctree::
    :maxdepth: 2
-   :caption: Operations Guide
+   :caption: Installation and Data Loading
 
    ops/overview.rst
+   ops/datasets.rst
    ops/install.rst
    ops/db_setup.rst
+   ops/config.rst
    ops/indexing.rst
    ops/ingest.rst
    ops/product.rst
@@ -50,6 +60,7 @@ and  related data from multiple satellite and other acquisition systems.
 
    dev/api/index.rst
    dev/setup/index.rst
+   dev/virtual-products.rst
    architecture/index.rst
    about/release_process.rst
 

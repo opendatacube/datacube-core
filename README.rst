@@ -1,5 +1,5 @@
 Open Data Cube Core
-==================================
+===================
 
 |Build Status| |Coverage Status| |Documentation Status|
 
@@ -27,7 +27,7 @@ System
 ~~~~~~
 
 -  PostgreSQL 9.5+
--  Python Python 3.5+
+-  Python 3.5+
 
 Developer setup
 ===============

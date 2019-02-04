@@ -10,6 +10,12 @@ v1.7dev
 
 - Allow specifying different resampling methods for different data variables of
   the same Product. (:pull:`551`)
+- Allow all reampling methods supported by `rasterio`. (:pull:`622`)
+- Bugfixes and improved performance of `dask`-backed arrays (:pull:`547`)
+- Improve :ref:`api-reference` documentation.
+- Bug fix (Index out of bounds causing ingestion failures)
+- Add "virtual products" (:pull:`522`, :pull:`597`) for multi-product loading
+- Support indexing data directly from HTTP/HTTPS/S3 URLs (:pull:`607`)
 
 
 v1.6.1 (27 August 2018)

@@ -4,19 +4,19 @@ import shutil
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-
 import numpy as np
 import rasterio
 import yaml
 from click.testing import CliRunner
-from yaml import CSafeLoader as SafeLoader
+
+from datacube.utils.documents import load_from_yaml
 
 # On Windows, symlinks are not supported in Python 2 and require
 # specific privileges otherwise, so we copy instead of linking
 if os.name == 'nt' or not hasattr(os, 'symlink'):
     symlink = shutil.copy
 else:
-    symlink = os.symlink
+    symlink = os.symlink  # type: ignore
 
 #: Number of bands to place in generated GeoTIFFs
 NUM_BANDS = 3
@@ -84,7 +84,7 @@ def prepare_test_ingestion_configuration(tmpdir,
 
     filename = Path(filename)
     if output_dir is None:
-        output_dir = tmpdir.mkdir(filename.stem)
+        output_dir = tmpdir.ensure(filename.stem, dir=True)
     config = load_yaml_file(filename)[0]
 
     if mode is not None:
@@ -209,7 +209,7 @@ def _make_ls5_scene_datasets(geotiffs, tmpdir):
 
 def load_yaml_file(filename):
     with open(str(filename)) as f:
-        return list(yaml.load_all(f, Loader=SafeLoader))
+        return list(load_from_yaml(f, parse_dates=True))
 
 
 def is_geogaphic(storage_type):

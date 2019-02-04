@@ -1,8 +1,8 @@
-from datacube.model import Dataset
+from datacube.model import Dataset, DatasetType
+from typing import List
 
 
-def test_crs_parse(indexed_ls5_scene_products):
-    # type: (MetadataType) -> None
+def test_crs_parse(indexed_ls5_scene_products: List[DatasetType]) -> None:
     product = indexed_ls5_scene_products[2]
 
     # Explicit CRS, should load fine.

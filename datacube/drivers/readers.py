@@ -1,10 +1,14 @@
-from __future__ import absolute_import
-
+from typing import List, Optional, Callable
 from .driver_cache import load_drivers
+from .datasource import DataSource
+from ._tools import singleton_setup
+from datacube.storage._base import BandInfo
+
+DatasourceFactory = Callable[[BandInfo], DataSource]  # pylint: disable=invalid-name
 
 
 class ReaderDriverCache(object):
-    def __init__(self, group):
+    def __init__(self, group: str):
         self._drivers = load_drivers(group)
 
         lookup = {}
@@ -17,43 +21,48 @@ class ReaderDriverCache(object):
 
         self._lookup = lookup
 
-    def _find_driver(self, uri_scheme, fmt):
+    def _find_driver(self, uri_scheme: str, fmt: str):
         key = (uri_scheme.lower(), fmt.lower())
         return self._lookup.get(key)
 
-    def __call__(self, uri_scheme, fmt, fallback=None):
+    def __call__(self, uri_scheme: str, fmt: str,
+                 fallback: Optional[DatasourceFactory] = None) -> DatasourceFactory:
         """Lookup `new_datasource` constructor method from the driver. Returns
         `fallback` method if no driver is found.
 
-        :param str uri_scheme: Protocol part of the Dataset uri
-        :param str fmt: Dataset format
+        :param uri_scheme: Protocol part of the Dataset uri
+        :param fmt: Dataset format
         :return: Returns function `(DataSet, band_name:str) => DataSource`
         """
         driver = self._find_driver(uri_scheme, fmt)
-        return fallback if driver is None else driver.new_datasource
+        if driver is not None:
+            return driver.new_datasource
+        if fallback is not None:
+            return fallback
+        else:
+            raise KeyError("No driver found and no fallback provided")
 
-    def drivers(self):
+    def drivers(self) -> List[str]:
         """ Returns list of driver names
         """
         return list(self._drivers.keys())
 
 
-def rdr_cache():
+def rdr_cache() -> ReaderDriverCache:
     """ Singleton for ReaderDriverCache
     """
-    # pylint: disable=protected-access
-    if not hasattr(rdr_cache, '_instance'):
-        rdr_cache._instance = ReaderDriverCache('datacube.plugins.io.read')
-    return rdr_cache._instance
+    return singleton_setup(rdr_cache, '_instance',
+                           ReaderDriverCache,
+                           'datacube.plugins.io.read')
 
 
-def reader_drivers():
+def reader_drivers() -> List[str]:
     """ Returns list driver names
     """
     return rdr_cache().drivers()
 
 
-def choose_datasource(dataset):
+def choose_datasource(band: 'BandInfo') -> DatasourceFactory:
     """Returns appropriate `DataSource` class (or a constructor method) for loading
     given `dataset`.
 
@@ -67,11 +76,11 @@ def choose_datasource(dataset):
     NOTE: we assume that all bands can be loaded with the same implementation.
 
     """
-    from ..storage.storage import RasterDatasetDataSource
-    return rdr_cache()(dataset.uri_scheme, dataset.format, fallback=RasterDatasetDataSource)
+    from datacube.storage._rio import RasterDatasetDataSource
+    return rdr_cache()(band.uri_scheme, band.format, fallback=RasterDatasetDataSource)
 
 
-def new_datasource(dataset, band_name=None):
+def new_datasource(band: BandInfo) -> Optional[DataSource]:
     """Returns a newly constructed data source to read dataset band data.
 
     An appropriate `DataSource` implementation is chosen based on:
@@ -89,9 +98,9 @@ def new_datasource(dataset, band_name=None):
 
     """
 
-    source_type = choose_datasource(dataset)
+    source_type = choose_datasource(band)
 
     if source_type is None:
         return None
 
-    return source_type(dataset, band_name)
+    return source_type(band)

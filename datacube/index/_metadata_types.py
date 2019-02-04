@@ -1,5 +1,4 @@
 # coding=utf-8
-from __future__ import absolute_import
 
 import logging
 import warnings
@@ -35,7 +34,7 @@ class MetadataTypeResource(object):
         """
         We define getstate/setstate to avoid pickling the caches
         """
-        return self._db,
+        return (self._db,)
 
     def __setstate__(self, state):
         """
@@ -187,7 +186,7 @@ class MetadataTypeResource(object):
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
-    def get_unsafe(self, id_):
+    def get_unsafe(self, id_):  # type: ignore
         with self._db.connect() as connection:
             record = connection.get_metadata_type(id_)
         if record is None:
@@ -196,7 +195,7 @@ class MetadataTypeResource(object):
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
-    def get_by_name_unsafe(self, name):
+    def get_by_name_unsafe(self, name):  # type: ignore
         with self._db.connect() as connection:
             record = connection.get_metadata_type_by_name(name)
         if not record:

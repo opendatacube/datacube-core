@@ -2,7 +2,6 @@
 """
 Custom types for postgres & sqlalchemy
 """
-from __future__ import absolute_import
 
 from sqlalchemy import TIMESTAMP
 from sqlalchemy.dialects.postgresql.ranges import RangeOperators

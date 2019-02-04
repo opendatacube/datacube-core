@@ -1,17 +1,16 @@
 """A module offering an S3 datasource that mimicks the existing NetCDF
 datasource behaviour.
 """
-
-from __future__ import absolute_import, division
-
 import logging
 from contextlib import contextmanager
+from typing import Dict, Any
 
 from affine import Affine
 from numpy import dtype
 
 from datacube.drivers.datasource import DataSource
-from datacube.storage.storage import OverrideBandDataSource
+from datacube.storage._rio import OverrideBandDataSource
+from datacube.storage import BandInfo
 from datacube.utils import datetime_to_seconds_since_1970
 from .utils import DriverUtils
 
@@ -43,22 +42,24 @@ class S3Source(object):
             """
             return self.parent.read(indexes, window, out_shape)
 
-    def __init__(self, dataset, band_name, storage):
+    def __init__(self, band: BandInfo, storage):
         """Initialise the data reader.
 
-        :param datacube.model.Dataset dataset: The dataset to be read.
-        :param str band_name: The name of the band to read in the
-          dataset, e.g. 'blue'.
+        :param band: The band from dataset to be read.
         :param datacube.drivers.s3.storage.s3aio.s3lio storage: The s3
           storage used by the s3 driver.
         """
+        if band.driver_data is None:
+            raise ValueError("Missing driver data")
+
         self.logger = logging.getLogger(self.__class__.__name__)
         self.storage = storage
-        self.dataset = dataset
-        self.band_name = band_name
+        self.band = band
+        self.s3_metadata = band.driver_data  # type: Dict[str, Any]
         self.ds = self.S3DS(self)
         self.bidx = 1  # Called but unused in s3
-        self.shape = dataset.s3_metadata[band_name]['s3_dataset'].macro_shape[-2:]
+        self.shape = self.s3_metadata[band.name]['s3_dataset'].macro_shape[-2:]
+        self.dtype = dtype(self.s3_metadata[band.name]['s3_dataset'].numpy_type)
 
     def read(self, indexes, window, write_shape):
         """Read a dataset slice from the storage.
@@ -73,7 +74,7 @@ class S3Source(object):
           :class:`datacube.storage.storage.OverrideBandDataSource`
           calls.
         """
-        s3_dataset = self.dataset.s3_metadata[self.band_name]['s3_dataset']
+        s3_dataset = self.s3_metadata[self.band.name]['s3_dataset']
         if isinstance(window, S3Source) or window is None:
             slices = tuple([slice(0, a) for a in s3_dataset.macro_shape[-2:]])
         else:
@@ -95,20 +96,22 @@ class S3Source(object):
 class S3DataSource(DataSource):
     """Data source for reading from a Datacube Dataset."""
 
-    def __init__(self, dataset, band_name, storage):
+    def __init__(self, band: BandInfo, storage):
         """Prepare to read from the data source.
 
-        :param datacube.model.Dataset dataset: The dataset to be read.
-        :param str band_name: The name of the band to read in the
-          dataset, e.g. 'blue'.
+        :param band: The band of a dataset to be read.
         :param datacube.drivers.s3.storage.s3aio.s3lio storage: The s3
           storage used by the s3 driver.
         """
+        if band.driver_data is None:
+            raise ValueError("Missing driver data")
+
         self.logger = logging.getLogger(self.__class__.__name__)
-        self._dataset = dataset
-        self.source = S3Source(dataset, band_name, storage)
-        self.nodata = dataset.type.measurements[band_name].get('nodata')
-        self.macro_shape = dataset.s3_metadata[band_name]['s3_dataset'].macro_shape[1:]  # Do NOT use time here
+        self._s3_metadata = band.driver_data  # type: Dict[str, Any]
+        self._band = band
+        self.source = S3Source(band, storage)
+        self.nodata = band.nodata
+        self.macro_shape = self._s3_metadata[band.name]['s3_dataset'].macro_shape[1:]  # Do NOT use time here
 
     @contextmanager
     def open(self):
@@ -126,9 +129,9 @@ class S3DataSource(DataSource):
                                      transform=self.get_transform(self.macro_shape))
 
     def get_bandnumber(self):
-        time = self._dataset.center_time
+        time = self._band.center_time
         sec_since_1970 = datetime_to_seconds_since_1970(time)
-        s3_dataset = self._dataset.s3_metadata[self.source.band_name]['s3_dataset']
+        s3_dataset = self._s3_metadata[self._band.name]['s3_dataset']
 
         if s3_dataset.regular_dims[0]:  # If time is regular
             return int((sec_since_1970 - s3_dataset.regular_index[0]) / s3_dataset.regular_index[2])
@@ -145,11 +148,11 @@ class S3DataSource(DataSource):
         :param shape: The factor to rescale the transform by.
         :return: The scaled dataset.
         """
-        return self._dataset.transform * Affine.scale(1.0 / shape[1], 1.0 / shape[0])
+        return self._band.transform * Affine.scale(1.0 / shape[1], 1.0 / shape[0])
 
     def get_crs(self):
         """The dataset CRS.
 
         :return: The CRS of the dataset.
         """
-        return self._dataset.crs
+        return self._band.crs

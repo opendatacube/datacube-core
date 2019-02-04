@@ -4,8 +4,9 @@ Common methods for UI code.
 """
 from pathlib import Path
 
-from datacube.utils import read_documents, InvalidDocException, SimpleDocNav
-from datacube.utils import is_supported_document_type
+from toolz.functoolz import identity
+
+from datacube.utils import read_documents, InvalidDocException, SimpleDocNav, is_supported_document_type
 
 
 def get_metadata_path(dataset_path):
@@ -56,7 +57,7 @@ def find_any_metadata_suffix(path):
     return existing_paths[0]
 
 
-def resolve_doc_files(paths, on_error):
+def _resolve_doc_files(paths, on_error):
     for p in paths:
         try:
             yield get_metadata_path(Path(p))
@@ -64,9 +65,9 @@ def resolve_doc_files(paths, on_error):
             on_error(p, e)
 
 
-def path_doc_stream(files, on_error, uri=True, raw=False):
-    maybe_wrap = {True: lambda x: x,
-                  False: SimpleDocNav}[raw]
+def _path_doc_stream(files, on_error, uri=True, raw=False):
+    """See :func:`ui_path_doc_stream` for documentation"""
+    maybe_wrap = identity if raw else SimpleDocNav
 
     for fname in files:
         try:
@@ -93,10 +94,11 @@ def ui_path_doc_stream(paths, logger=None, uri=True, raw=False):
 
     :param uri: If True return path in uri format, else return it as filesystem path
 
-    :param raw: By default docs are wrapped in SimpleDocNav class, but you can
+    :param raw: By default docs are wrapped in :class:`SimpleDocNav`, but you can
     instead request them to be raw dictionaries
 
     """
+
     def on_error1(p, e):
         if logger is not None:
             logger.error('No supported metadata docs found for dataset %s', str(p))
@@ -105,5 +107,5 @@ def ui_path_doc_stream(paths, logger=None, uri=True, raw=False):
         if logger is not None:
             logger.error('Failed reading documents from %s', str(p))
 
-    yield from path_doc_stream(resolve_doc_files(paths, on_error=on_error1),
-                               on_error=on_error2, uri=uri, raw=raw)
+    yield from _path_doc_stream(_resolve_doc_files(paths, on_error=on_error1),
+                                on_error=on_error2, uri=uri, raw=raw)

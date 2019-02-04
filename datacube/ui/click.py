@@ -2,8 +2,6 @@
 """
 Common functions for click-based cli scripts.
 """
-from __future__ import absolute_import
-
 import functools
 import logging
 import os
@@ -77,8 +75,6 @@ class ClickHandler(logging.Handler):
         try:
             msg = self.format(record)
             click.echo(msg, err=True)
-        except (KeyboardInterrupt, SystemExit):
-            raise
         except:  # pylint: disable=bare-except
             self.handleError(record)
 
@@ -207,7 +203,7 @@ def pass_index(app_name=None, expect_initialised=True):
 
     def decorate(f):
         @pass_config
-        def with_index(local_config,  # type: LocalConfig
+        def with_index(local_config: config.LocalConfig,
                        *args,
                        **kwargs):
             ctx = click.get_current_context()
@@ -270,7 +266,7 @@ def _setup_executor(ctx, param, value):
         ctx.fail("Failed to create '%s' executor with '%s'" % value)
 
 
-executor_cli_options = click.option('--executor',
+executor_cli_options = click.option('--executor',  # type: ignore
                                     type=(click.Choice(list(EXECUTOR_TYPES)), str),
                                     default=('serial', None),
                                     help="Run parallelized, either locally or distributed. eg:\n"

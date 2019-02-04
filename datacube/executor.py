@@ -10,11 +10,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-
-from __future__ import absolute_import, division
-
 import sys
-import six
 
 _REMOTE_LOG_FORMAT_STRING = '%(asctime)s {} %(process)d %(name)s %(levelname)s %(message)s'
 
@@ -33,12 +29,15 @@ class SerialExecutor(object):
 
     @staticmethod
     def get_ready(futures):
+        def reraise(t, e, traceback):
+            raise t.with_traceback(e, traceback)
+
         try:
             result = SerialExecutor.result(futures[0])
             return [(lambda x: x, [result], {})], [], futures[1:]
         except Exception:  # pylint: disable=broad-except
             exc_info = sys.exc_info()
-            return [], [(six.reraise, exc_info, {})], futures[1:]
+            return [], [(reraise, exc_info, {})], futures[1:]
 
     @staticmethod
     def as_completed(futures):

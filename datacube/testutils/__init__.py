@@ -8,14 +8,16 @@ import shutil
 import tempfile
 import json
 import uuid
+import numpy as np
 from datetime import datetime
-
+from collections import Sequence, Mapping
 import pathlib
 
-from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
+
+from datacube.model.fields import parse_search_field
 
 _DEFAULT = object()
 
@@ -43,13 +45,13 @@ def assert_file_structure(folder, expected_structure, root=''):
         id_ = '%s/%s' % (root, k) if root else k
 
         f = folder.joinpath(k)
-        if isinstance(v, dict):
+        if isinstance(v, Mapping):
             assert f.is_dir(), "%s is not a dir" % (id_,)
             assert_file_structure(f, v, id_)
-        elif isinstance(v, compat.string_types):
+        elif isinstance(v, (str, Sequence)):
             assert f.is_file(), "%s is not a file" % (id_,)
         else:
-            assert False, "Only strings and dicts expected when defining a folder structure."
+            assert False, "Only strings|[strings] and dicts expected when defining a folder structure."
 
 
 def write_files(file_dict):
@@ -86,17 +88,17 @@ def _write_files_to_dir(directory_path, file_dict):
     """
     for filename, contents in file_dict.items():
         path = os.path.join(directory_path, filename)
-        if isinstance(contents, dict):
+        if isinstance(contents, Mapping):
             os.mkdir(path)
             _write_files_to_dir(path, contents)
         else:
             with open(path, 'w') as f:
-                if isinstance(contents, list):
-                    f.writelines(contents)
-                elif isinstance(contents, compat.string_types):
+                if isinstance(contents, str):
                     f.write(contents)
+                elif isinstance(contents, Sequence):
+                    f.writelines(contents)
                 else:
-                    raise Exception('Unexpected file contents: %s' % type(contents))
+                    raise ValueError('Unexpected file contents: %s' % type(contents))
 
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
@@ -128,8 +130,15 @@ def mk_sample_product(name,
             measurements=['image', 'bands'],
             sources=['lineage', 'source_datasets'],
             format=['format', 'name'],
+            grid_spatial=['grid_spatial', 'projection'],
         )
-    }, dataset_search_fields={})
+    }, dataset_search_fields={
+        'time': parse_search_field({
+            'type': 'datetime-range',
+            'min_offset': [['time']],
+            'max_offset': [['time']],
+        }),
+    })
 
     common = dict(dtype='int16',
                   nodata=-999,
@@ -139,18 +148,17 @@ def mk_sample_product(name,
     def mk_measurement(m):
         if isinstance(m, str):
             return dict(name=m, **common)
-        if isinstance(m, tuple):
+        elif isinstance(m, tuple):
             name, dtype, nodata = m
             m = common.copy()
             m.update(name=name, dtype=dtype, nodata=nodata)
             return m
-        if isinstance(m, dict):
+        elif isinstance(m, dict):
             m_merged = common.copy()
             m_merged.update(m)
             return m_merged
-
-        assert False and 'Only support str|dict|(name, dtype, nodata)'
-        return {}
+        else:
+            raise ValueError('Only support str|dict|(name, dtype, nodata)')
 
     measurements = [mk_measurement(m) for m in measurements]
 
@@ -172,7 +180,8 @@ def mk_sample_dataset(bands,
                       uri='file:///tmp',
                       product_name='sample',
                       format='GeoTiff',
-                      id='12345678123456781234567812345678'):
+                      timestamp=None,
+                      id='3a1df9e0-8484-44fc-8102-79184eab85dd'):
     # pylint: disable=redefined-builtin
     image_bands_keys = 'path layer band'.split(' ')
     measurement_keys = 'dtype units nodata aliases name'.split(' ')
@@ -186,10 +195,14 @@ def mk_sample_dataset(bands,
     ds_type = mk_sample_product(product_name,
                                 measurements=measurements)
 
+    if timestamp is None:
+        timestamp = '2018-06-29'
+
     return Dataset(ds_type, {
         'id': id,
         'format': {'name': format},
-        'image': {'bands': image_bands}
+        'image': {'bands': image_bands},
+        'time': timestamp,
     }, uris=[uri])
 
 
@@ -268,3 +281,54 @@ def load_dataset_definition(path):
     fname = get_metadata_path(path)
     for _, doc in read_documents(fname):
         return SimpleDocNav(doc)
+
+
+def mk_test_image(w, h,
+                  dtype='int16',
+                  nodata=-999,
+                  nodata_width=4):
+    """
+    Create 2d ndarray where each pixel value is formed by packing x coordinate in
+    to the upper half of the pixel value and y coordinate is in the lower part.
+
+    So for uint16: im[y, x] == (x<<8) | y IF abs(x-y) >= nodata_width
+                   im[y, x] == nodata     IF abs(x-y) < nodata_width
+
+    really it's actually: im[y, x] == ((x & 0xFF ) <<8) | (y & 0xFF)
+
+    If dtype is of floating point type:
+       im[y, x] = (x + ((y%1024)/1024))
+
+    Pixels along the diagonal are set to nodata values (to disable set nodata_width=0)
+    """
+
+    dtype = np.dtype(dtype)
+
+    xx, yy = np.meshgrid(np.arange(w),
+                         np.arange(h))
+    if dtype.kind == 'f':
+        aa = xx.astype(dtype) + (yy.astype(dtype) % 1024.0) / 1024.0
+    else:
+        nshift = dtype.itemsize*8//2
+        mask = (1 << nshift) - 1
+        aa = ((xx & mask) << nshift) | (yy & mask)
+        aa = aa.astype(dtype)
+
+    if nodata is not None:
+        aa[abs(xx-yy) < nodata_width] = nodata
+    return aa
+
+
+def split_test_image(aa):
+    """
+    Separate image created by mk_test_image into x,y components
+    """
+    if aa.dtype.kind == 'f':
+        y = np.round((aa % 1)*1024)
+        x = np.floor(aa)
+    else:
+        nshift = (aa.dtype.itemsize*8)//2
+        mask = (1 << nshift) - 1
+        y = aa & mask
+        x = aa >> nshift
+    return x, y

@@ -4,7 +4,7 @@ Microsoft Windows
 
 Miniconda
 ~~~~~~~~~
-1. Download and install Miniconda using the following instructions https://conda.io/docs/user-guide/install/windows.html
+1. Download and install Miniconda using the following instructions https://conda.io/projects/conda/en/latest/user-guide/install/windows.html
 
 2. Open the Anaconda Prompt from the Start Menu to execute the following commands.
 

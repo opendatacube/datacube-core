@@ -7,7 +7,6 @@ The CRS is stored as the 'spatial_ref' attribute of the 'crs' data variable
 Spatial dimensions are either 'latitude' / 'longitude' or 'x' / 'y',
 although this should probably instead check the 'standard_name' as defined by CF
 """
-from __future__ import division, absolute_import, print_function
 
 import copy
 

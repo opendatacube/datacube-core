@@ -1,27 +1,25 @@
-from __future__ import absolute_import
 
 import csv
 import datetime
 import logging
 import sys
 from collections import OrderedDict
+from typing import Iterable, Mapping, MutableMapping, Any
 
 import click
 import yaml
 import yaml.resolver
 from click import echo
 
-from datacube.index.index import Index
 from datacube.index.exceptions import MissingRecordError
-from datacube.model import Dataset
 from datacube.index.hl import Doc2Dataset, check_dataset_consistent
+from datacube.index.index import Index
+from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import ui_path_doc_stream
 from datacube.utils import changes
 from datacube.utils.serialise import SafeDatacubeDumper
-
-from typing import Iterable
 
 _LOG = logging.getLogger('datacube-dataset')
 
@@ -33,6 +31,7 @@ def report_old_options(mapping):
             return mapping[s]
         else:
             return s
+
     return maybe_remap
 
 
@@ -65,6 +64,7 @@ def load_datasets_for_update(doc_stream, index):
 
     Generates tuples in the form (new_dataset, existing_dataset)
     """
+
     def mk_dataset(ds, uri):
         uuid = ds.id
 
@@ -83,8 +83,7 @@ def load_datasets_for_update(doc_stream, index):
         dataset, existing, error_msg = mk_dataset(doc, uri)
 
         if dataset is None:
-            _LOG.error("Failure while processing: %s\n" +
-                       " > Reason: %s", uri, error_msg)
+            _LOG.error("Failure while processing: %s\n > Reason: %s", uri, error_msg)
         else:
             is_consistent, reason = check_dataset_consistent(dataset)
             if is_consistent:
@@ -126,7 +125,7 @@ def load_datasets_for_update(doc_stream, index):
               help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
               is_flag=True, default=False)
 @click.argument('dataset-paths',
-                type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
+                nargs=-1)
 @ui.pass_index()
 def index_cmd(index, product_names,
               exclude_product_names,
@@ -137,7 +136,6 @@ def index_cmd(index, product_names,
               ignore_lineage,
               confirm_ignore_lineage,
               dataset_paths):
-
     if confirm_ignore_lineage is False and ignore_lineage is True:
         if sys.stdin.isatty():
             confirmed = click.confirm("Requested to skip lineage information, Are you sure?", default=False)
@@ -214,7 +212,6 @@ def parse_update_rules(keys_that_can_change):
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
-
     def loc_action(action, new_ds, existing_ds, action_name):
         if len(existing_ds.uris) == 0:
             return None
@@ -297,14 +294,17 @@ def update_dry_run(index, updates_allowed, dataset):
     return can_update
 
 
-def build_dataset_info(index, dataset, show_sources=False, show_derived=False, depth=1, max_depth=99):
-    # type: (Index, Dataset, bool) -> dict
+def build_dataset_info(index: Index, dataset: Dataset,
+                       show_sources: bool = False,
+                       show_derived: bool = False,
+                       depth: int = 1,
+                       max_depth: int = 99) -> Mapping[str, Any]:
 
     info = OrderedDict((
         ('id', str(dataset.id)),
         ('product', dataset.type.name),
         ('status', 'archived' if dataset.is_archived else 'active')
-    ))
+    ))  # type: MutableMapping[str, Any]
 
     # Optional when loading a dataset.
     if dataset.indexed_time is not None:
@@ -314,7 +314,7 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False, d
     info['fields'] = dataset.metadata.search_fields
 
     if depth < max_depth:
-        if show_sources:
+        if show_sources and dataset.sources is not None:
             info['sources'] = {key: build_dataset_info(index, source,
                                                        show_sources=True, show_derived=False,
                                                        depth=depth + 1, max_depth=max_depth)
@@ -371,9 +371,10 @@ _OUTPUT_WRITERS = {
               default=99)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
-    # type: (Index, bool, bool, Iterable[str]) -> None
-
+def info_cmd(index: Index, show_sources: bool, show_derived: bool,
+             f: str,
+             max_depth: int,
+             ids: Iterable[str]) -> None:
     # Using an array wrapper to get around the lack of "nonlocal" in py2
     missing_datasets = [0]
 
@@ -461,14 +462,11 @@ def restore_cmd(index, restore_derived, derived_tolerance_seconds, dry_run, ids)
         _restore_one(dry_run, id_, index, restore_derived, tolerance)
 
 
-def _restore_one(dry_run, id_, index, restore_derived, tolerance):
-    """
-    :type index: datacube.index.index.Index
-    :type restore_derived: bool
-    :type tolerance: datetime.timedelta
-    :type dry_run:  bool
-    :type id_: str
-    """
+def _restore_one(dry_run: bool,
+                 id_: str,
+                 index: Index,
+                 restore_derived: bool,
+                 tolerance: datetime.timedelta) -> None:
     target_dataset = index.datasets.get(id_)
     to_process = _get_derived_set(index, id_) if restore_derived else {target_dataset}
     _LOG.debug("%s selected", len(to_process))

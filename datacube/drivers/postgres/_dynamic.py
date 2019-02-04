@@ -2,7 +2,6 @@
 """
 Methods for managing dynamic dataset field indexes and views.
 """
-from __future__ import absolute_import
 
 import logging
 
