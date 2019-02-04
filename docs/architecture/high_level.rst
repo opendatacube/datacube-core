@@ -37,7 +37,7 @@ Observation (EO) community, and increased value for the public from EO informati
 satellite data providers being managed by an ODC system.
 
 
-.. image:: http://via.placeholder.com/512 
+.. image:: ../diagrams/f1.png
 
 *Figure 1: High-Level Open Data Cube Overview*
 
@@ -74,7 +74,7 @@ new users.
 * Open Geospatial Consortium (OGC) Web Services: Adapters that can connect non-ODC applications to the ODC.
 
 
-.. image:: http://via.placeholder.com/512)
+.. image:: ../diagrams/f2.png
 
 *Figure 2: High-Level ODC Ecosystem*
 
@@ -102,7 +102,7 @@ preparation step. Scripts are available to extract information or metadata from 
 third step, called indexing, metadata (documents) are indexed into the ODC’s database. Most importantly, the process stores 
 the location of the data within a local system.
 
-.. image:: http://via.placeholder.com/512)
+.. image:: ../diagrams/f3.png  
 
 *Figure 3: Download Data Locally and Index*
 
@@ -122,7 +122,7 @@ The indexed imagery is transformed and reformatted per ingestion configuration s
 re-projection, repackaging, re-compression, etc. The newly formatted/transformed data is re-indexed in the database under a 
 new product name that gets registered in the database.
 
-.. image:: http://via.placeholder.com/512)
+.. image:: ../diagrams/f4.png  
 
 
 *Figure 4: Download Data Locally and Ingest*  
@@ -137,7 +137,7 @@ resulting data is organized into an Xarray Dataset with appropriate temporal-spa
 for each band.
 
 
-.. image:: http://via.placeholder.com/512
+.. image:: ../diagrams/f5.png
   
 *Figure 5: Load Data*
 
