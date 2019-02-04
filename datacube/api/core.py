@@ -426,10 +426,8 @@ class Datacube(object):
         for name, coord in geobox.coordinates.items():
             result[name] = (name, coord.values, {'units': coord.units})
 
-        results = [data_func(a) for a in measurements]
-
         for measurement in measurements:
-            data = results.pop(0)
+            data = data_func(measurement)
             attrs = measurement.dataarray_attrs()
             attrs['crs'] = geobox.crs
             dims = tuple(coords.keys()) + tuple(geobox.dimensions)
