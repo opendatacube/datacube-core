@@ -6,7 +6,6 @@ This module will be removed once S3AIO driver migrates to new style.
 """
 import logging
 import numpy as np
-from collections import OrderedDict
 import uuid
 from math import ceil
 from typing import Union, Optional, Callable, List, Any
@@ -184,8 +183,7 @@ def dask_load(sources, geobox, measurements, dask_chunks,
                                skip_broken_datasets=skip_broken_datasets,
                                dask_chunks=dask_chunks)
 
-    return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                   geobox, measurements, data_func)
+    return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
 
 
 def xr_load(sources, geobox, measurements,
@@ -193,8 +191,7 @@ def xr_load(sources, geobox, measurements,
             use_threads=False):
     mk_new = get_loader(sources)
 
-    data = Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                   geobox, measurements)
+    data = Datacube.create_storage(sources.coords, geobox, measurements)
 
     # TODO: re-add use_threads
     for index, datasets in np.ndenumerate(sources.values):

@@ -1,5 +1,4 @@
 import uuid
-from collections import OrderedDict
 from itertools import groupby
 from typing import Union, Optional, Dict, Tuple
 
@@ -463,15 +462,13 @@ class Datacube(object):
                                     chunks=needed_irr_chunks+grid_chunks,
                                     skip_broken_datasets=skip_broken_datasets)
 
-        return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                       geobox, measurements, data_func)
+        return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
 
     @staticmethod
     def _xr_load(sources, geobox, measurements,
                  skip_broken_datasets=False):
 
-        data = Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                       geobox, measurements)
+        data = Datacube.create_storage(sources.coords, geobox, measurements)
 
         for index, datasets in numpy.ndenumerate(sources.values):
             for m in measurements:
