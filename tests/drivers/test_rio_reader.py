@@ -162,8 +162,8 @@ def test_rio_driver_fail_to_open():
 
     assert rdr is not None
 
-    load_ctx = rdr.new_load_context(None)
-    load_ctx = rdr.new_load_context(load_ctx)
+    load_ctx = rdr.new_load_context(iter([]), None)
+    load_ctx = rdr.new_load_context(iter([]), load_ctx)
 
     bi = mk_band('green', nosuch_uri)
     assert bi.uri == nosuch_uri
@@ -181,10 +181,9 @@ def test_rio_driver_open(data_folder):
     rdr = mk_reader()
     assert rdr is not None
 
-    load_ctx = rdr.new_load_context(None)
-    load_ctx = rdr.new_load_context(load_ctx)
-
+    load_ctx = rdr.new_load_context(iter([]), None)
     bi = mk_band('b1', base, path="test.tif", format=GeoTIFF)
+    load_ctx = rdr.new_load_context(iter([bi]), load_ctx)
     fut = rdr.open(bi, load_ctx)
     assert isinstance(fut, Future)
 
@@ -211,7 +210,7 @@ def test_rio_driver_open(data_folder):
     # TODO: suppress NotGeoreferencedWarning and
     #       from rasterio
 
-    load_ctx = rdr.new_load_context(load_ctx)
+    load_ctx = rdr.new_load_context(iter([bi]), load_ctx)
     src = rdr.open(bi, load_ctx).result()
 
     assert src.crs is None
@@ -223,7 +222,7 @@ def test_rio_driver_open(data_folder):
     bi.transform = Affine.translation(10, 100)
     bi.nodata = -33
 
-    load_ctx = rdr.new_load_context(load_ctx)
+    load_ctx = rdr.new_load_context(iter([bi]), load_ctx)
     src = rdr.open(bi, load_ctx).result()
     assert src.crs == bi.crs
     assert src.transform == bi.transform

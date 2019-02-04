@@ -1,7 +1,7 @@
 """ Defines abstract types for IO drivers.
 """
 from typing import (
-    List, Tuple, Optional, Union, Any,
+    List, Tuple, Optional, Union, Any, Iterable,
     TYPE_CHECKING
 )
 
@@ -67,7 +67,9 @@ class ReaderDriver(object, metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def new_load_context(self, old_ctx: Optional[Any]) -> Any:
+    def new_load_context(self,
+                         bands: Iterable[BandInfo],
+                         old_ctx: Optional[Any]) -> Any:
         """Recycle old context if available/possible and create new context.
            ``old_ctx`` won't be used after this call.
 

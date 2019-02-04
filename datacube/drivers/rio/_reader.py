@@ -1,7 +1,7 @@
 """ reader
 """
 from typing import (
-    List, Optional, Union, Any,
+    List, Optional, Union, Any, Iterable,
     Iterator, Tuple, NamedTuple, TypeVar
 )
 import numpy as np
@@ -230,7 +230,9 @@ class RIORdrDriver(ReaderDriver):
         self._pool = pool
         self._cfg = cfg
 
-    def new_load_context(self, old_ctx: Optional[Any]) -> Any:
+    def new_load_context(self,
+                         bands: Iterable[BandInfo],
+                         old_ctx: Optional[Any]) -> Any:
         return None  # TODO: implement file handle cache with this
 
     def open(self, band: BandInfo, ctx: Any) -> FutureGeoRasterReader:
