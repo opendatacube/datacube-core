@@ -1,6 +1,8 @@
-Summary
-******* 
+High Level Architecture
+***********************
 
+Summary 
+=======
 The Open Data Cube (ODC) is an open source solution for accessing, managing, and analyzing large quantities of Geographic 
 Information System (GIS) data - namely Earth observation (EO) data.  It presents a common analytical framework composed of a 
 series of data structures and tools which facilitate the organization and analysis of large gridded data collections. The Open 
