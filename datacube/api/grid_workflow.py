@@ -288,7 +288,7 @@ class GridWorkflow(object):
                                            fastpath=True)
                 coord = xarray.Variable((group_by.dimension,),
                                         numpy.array([key], dtype='datetime64[ns]'),
-                                        attrs={'units': group_by.units},
+                                        attrs=group_by.attrs,
                                         fastpath=True)
                 coords = OrderedDict([(group_by.dimension, coord)])
                 sources = xarray.DataArray(variable, coords=coords, fastpath=True)

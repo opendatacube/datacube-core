@@ -33,13 +33,21 @@ from ..utils import geometry, datetime_to_seconds_since_1970
 _LOG = logging.getLogger(__name__)
 
 
-GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units', 'sort_key'])
-
 FLOAT_TOLERANCE = 0.0000001  # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
 OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan', 'product', 'geopolygon', 'like',
               'source_filter')
+
+
+class GroupBy:
+    """ Information needed to group datasets. """
+
+    def __init__(self, dimension, group_by_func, attrs, sort_key):
+        self.dimension = dimension
+        self.group_by_func = group_by_func
+        self.attrs = attrs
+        self.sort_key = sort_key
 
 
 class Query(object):
@@ -158,14 +166,18 @@ def query_geopolygon(geopolygon=None, **kwargs):
 
 
 def query_group_by(group_by='time', **kwargs):
+    if isinstance(group_by, GroupBy):
+        # no lookup needed, custom GroupBy object
+        return group_by
+
     time_grouper = GroupBy(dimension='time',
                            group_by_func=lambda ds: ds.center_time,
-                           units='seconds since 1970-01-01 00:00:00',
+                           attrs=dict(units='seconds since 1970-01-01 00:00:00'),
                            sort_key=lambda ds: ds.center_time)
 
     solar_day_grouper = GroupBy(dimension='time',
                                 group_by_func=solar_day,
-                                units='seconds since 1970-01-01 00:00:00',
+                                attrs=dict(units='seconds since 1970-01-01 00:00:00'),
                                 sort_key=lambda ds: ds.center_time)
 
     group_by_map = {

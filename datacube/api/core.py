@@ -245,6 +245,7 @@ class Datacube(object):
 
         :param str group_by:
             When specified, perform basic combining/reducing of the data.
+            May either be a string specifying the method to group by, or a :class:`datacube.api.query.GroupBy` object.
 
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
@@ -344,22 +345,22 @@ class Datacube(object):
         :param GroupBy group_by: Contains:
             - a function that returns a label for a dataset
             - name of the new dimension
-            - unit for the new dimension
+            - dict of attributes for the new dimension
             - function to sort by before grouping
         :rtype: xarray.DataArray
 
         .. seealso:: :meth:`find_datasets`, :meth:`load_data`, :meth:`query_group_by`
         """
-        dimension, group_func, units, sort_key = group_by
-        datasets.sort(key=sort_key)
-        groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]
+        datasets.sort(key=group_by.sort_key)
+        groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_by.group_by_func)]
 
         data = numpy.empty(len(groups), dtype=object)
         for index, group in enumerate(groups):
             data[index] = group.datasets
-        coords = [sort_key(v.datasets[0]) for v in groups]
-        sources = xarray.DataArray(data, dims=[dimension], coords=[coords])
-        sources[dimension].attrs['units'] = units
+        coords = [group_by.sort_key(v.datasets[0]) for v in groups]
+        sources = xarray.DataArray(data, dims=[group_by.dimension], coords=[coords])
+        for key, value in group_by.attrs.items():
+            sources[group_by.dimension].attrs[key] = value
         return sources
 
     @staticmethod
