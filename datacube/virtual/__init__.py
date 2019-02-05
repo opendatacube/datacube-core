@@ -2,7 +2,7 @@ from typing import Mapping, Any
 
 from .impl import VirtualProduct, Transformation, VirtualProductException
 from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select
-from .statistics import Mean, year, month, week, day
+from .transformations import Mean, year, month, week, day
 from .utils import reject_keys
 
 from datacube.model import Measurement
@@ -15,7 +15,7 @@ __all__ = ['construct', 'Transformation', 'Measurement']
 class NameResolver:
     """ Apply a mapping from name to callable objects in a recipe. """
 
-    def __init__(self, **lookup_table):
+    def __init__(self, lookup_table):
         self.lookup_table = lookup_table
 
     def construct(self, **recipe) -> VirtualProduct:
@@ -88,23 +88,23 @@ class NameResolver:
                 raise VirtualProductException("no group_by for aggregate in {}".format(recipe))
 
             return VirtualProduct(dict(aggregate=lookup(cls_name, 'aggregate'),
-                                       group_by=lookup(group_by, 'aggregate_group_by', kind='group_by'),
+                                       group_by=lookup(group_by, 'aggregate/group_by', kind='group_by'),
                                        input=self.construct(**input_product),
                                        **reject_keys(recipe, ['aggregate', 'input', 'group_by'])))
 
         raise VirtualProductException("could not understand virtual product recipe: {}".format(recipe))
 
 
-DEFAULT_RESOLVER = NameResolver(transform=dict(make_mask=MakeMask,
-                                               apply_mask=ApplyMask,
-                                               to_float=ToFloat,
-                                               rename=Rename,
-                                               select=Select),
-                                aggregate=dict(mean=Mean),
-                                aggregate_group_by=dict(year=year,
-                                                        month=month,
-                                                        week=week,
-                                                        day=day))
+DEFAULT_RESOLVER = NameResolver({'transform': dict(make_mask=MakeMask,
+                                                   apply_mask=ApplyMask,
+                                                   to_float=ToFloat,
+                                                   rename=Rename,
+                                                   select=Select),
+                                 'aggregate': dict(mean=Mean),
+                                 'aggregate/group_by': dict(year=year,
+                                                            month=month,
+                                                            week=week,
+                                                            day=day)})
 
 
 def construct(**recipe: Mapping[str, Any]) -> VirtualProduct:
