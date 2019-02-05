@@ -108,13 +108,16 @@ class VirtualDatasetBox:
                 yield from entry
 
             elif isinstance(entry, VirtualDatasetBox):
-                yield from entry.input_datasets()
+                for _, _, child in xr_iter(entry.input_datasets()):
+                    yield from child
 
             else:
                 raise VirtualProductException("malformed box")
 
-        for _, _, entry in xr_iter(self.pile):
-            yield from traverse(entry)
+        def worker(index, entry):
+            return set(traverse(entry))
+
+        return self.map(worker).pile
 
 
 class Transformation(ABC):
