@@ -41,12 +41,23 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
 
 
 class GroupBy:
-    """ Information needed to group datasets. """
+    """
+    Information needed to group datasets.
 
-    def __init__(self, dimension, group_by_func, attrs, sort_key):
-        self.dimension = dimension
-        self.group_by_func = group_by_func
+    :param dim: name of the dimension added to the loaded data
+    :param group_key: a function that takes a dataset and returns the group label
+    :param attrs: attributes to assign to the corresponding coordinate variable
+    :param axis_value: a function that takes a list of datasets
+                          and return the coordinate value assigned to the group
+                          (if `None`, uses group_key to assign coordinates)
+    :param sort_key: sorting method to be applied to the grouped datasets
+    """
+
+    def __init__(self, dim, group_key, attrs, axis_value=None, sort_key=None):
+        self.dim = dim
+        self.group_key = group_key
         self.attrs = attrs
+        self.axis_value = axis_value
         self.sort_key = sort_key
 
 
@@ -166,22 +177,29 @@ def query_geopolygon(geopolygon=None, **kwargs):
 
 
 def query_group_by(group_by='time', **kwargs):
-    if isinstance(group_by, GroupBy):
-        # no lookup needed, custom GroupBy object
+    if group_by is None:
+        return collections.OrderedDict()
+
+    if isinstance(group_by, (collections.Mapping, GroupBy)):
         return group_by
 
-    time_grouper = GroupBy(dimension='time',
-                           group_by_func=lambda ds: ds.center_time,
-                           attrs=dict(units='seconds since 1970-01-01 00:00:00'),
-                           sort_key=lambda ds: ds.center_time)
+    time_grouper = GroupBy(dim='time',
+                           group_key=lambda ds: ds.center_time.replace(tzinfo=None),
+                           attrs=dict(units='seconds since 1970-01-01 00:00:00'))
 
-    solar_day_grouper = GroupBy(dimension='time',
-                                group_by_func=solar_day,
+    def solar_time(datasets):
+        return min(ds.center_time for ds in datasets)
+
+    solar_day_grouper = GroupBy(dim='time',
+                                group_key=solar_day,
                                 attrs=dict(units='seconds since 1970-01-01 00:00:00'),
+                                axis_value=solar_time,
                                 sort_key=lambda ds: ds.center_time)
 
+    if not isinstance(group_by, str):
+        raise ValueError('Invalid group_by object %r' % group_by)
+
     group_by_map = {
-        None: time_grouper,
         'time': time_grouper,
         'solar_day': solar_day_grouper
     }
@@ -190,6 +208,36 @@ def query_group_by(group_by='time', **kwargs):
         return group_by_map[group_by]
     except KeyError:
         raise LookupError('No group by function for', group_by)
+
+
+def normalize_group_by(group_by):
+    """
+    Normalize user-supplied grouping setting for :func:`Datacube.group_datasets` to use.
+
+    :return: normalized group_by of type `Dict[str, GroupBy]`
+    """
+    if isinstance(group_by, GroupBy):
+        group_by = {group_by.dim: group_by}
+
+    if not isinstance(group_by, collections.Mapping):
+        raise TypeError("Invalid group_by type")
+
+    sort_keys = [value.sort_key
+                 for value in group_by.values()
+                 if value.sort_key is not None]
+
+    if len(sort_keys) > 1:
+        raise ValueError("Cannot sort by multiple keys")
+
+    axis_values = [value.axis_value
+                   for value in group_by.values()
+                   if value.axis_value is not None]
+
+    if len(group_by) > 1 and len(axis_values) > 0:
+        raise ValueError("Cannot re-assign coordinates for multi-dimensional grouping")
+
+    return group_by
+
 
 
 def _range_to_geopolygon(**kwargs):

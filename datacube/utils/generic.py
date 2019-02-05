@@ -26,3 +26,18 @@ def map_with_lookahead(it, if_one=None, if_many=None):
 
     for v in itertools.chain(iter(p1), it):
         yield proc(v)
+
+
+def fresh_name(prefix, used_names):
+    """
+    Generate a fresh name not in the list of used names.
+    """
+    if prefix not in used_names:
+        return prefix
+
+    counter = 0
+    while True:
+        candidate = "{}_{}".format(prefix, counter)
+        if candidate not in used_names:
+            return candidate
+        counter = counter + 1

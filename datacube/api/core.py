@@ -6,16 +6,16 @@ from math import ceil
 import numpy
 import xarray
 from dask import array as da
+import pandas
 
 from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import geometry
+from datacube.utils.generic import fresh_name
 from datacube.utils.geometry import intersects
-from .query import Query, query_group_by, query_geopolygon
+from .query import Query, query_group_by, normalize_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
-
-Group = namedtuple('Group', ['key', 'datasets'])
 
 
 class Datacube(object):
@@ -86,7 +86,6 @@ class Datacube(object):
         if not with_pandas:
             return rows
 
-        import pandas
         keys = set(k for r in rows for k in r)
         main_cols = ['id', 'name', 'description']
         grid_cols = ['crs', 'resolution', 'tile_size', 'spatial_dimensions']
@@ -106,7 +105,6 @@ class Datacube(object):
         if not with_pandas:
             return measurements
 
-        import pandas
         return pandas.DataFrame.from_dict(measurements).set_index(['product', 'measurement'])
 
     def _list_measurements(self):
@@ -245,7 +243,9 @@ class Datacube(object):
 
         :param str group_by:
             When specified, perform basic combining/reducing of the data.
-            May either be a string specifying the method to group by, or a :class:`datacube.api.query.GroupBy` object.
+            May either be a string specifying the method to group by,
+            or a :class:`datacube.api.query.GroupBy` object,
+            or a dictionary mapping strings to :class:`datacube.api.query.GroupBy` objects
 
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
@@ -342,26 +342,55 @@ class Datacube(object):
         Group datasets along defined non-spatial dimensions (ie. time).
 
         :param datasets: a list of datasets, typically from :meth:`find_datasets`
-        :param GroupBy group_by: Contains:
-            - a function that returns a label for a dataset
-            - name of the new dimension
-            - dict of attributes for the new dimension
-            - function to sort by before grouping
+        :param group_by: either a :class:`datacube.api.query.GroupBy` object,
+                         or a dictionary mapping strings to `GroupBy` objects
         :rtype: xarray.DataArray
 
         .. seealso:: :meth:`find_datasets`, :meth:`load_data`, :meth:`query_group_by`
         """
-        datasets.sort(key=group_by.sort_key)
-        groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_by.group_by_func)]
+        group_by = normalize_group_by(group_by)
+        datasets = tuple(datasets)
 
-        data = numpy.empty(len(groups), dtype=object)
-        for index, group in enumerate(groups):
-            data[index] = group.datasets
-        coords = [group_by.sort_key(v.datasets[0]) for v in groups]
-        sources = xarray.DataArray(data, dims=[group_by.dimension], coords=[coords])
-        for key, value in group_by.attrs.items():
-            sources[group_by.dimension].attrs[key] = value
-        return sources
+        keys = list(group_by)
+        if not keys:
+            return xarray.DataArray(datasets)
+
+        sort_keys = [value.sort_key
+                     for value in group_by.values()
+                     if value.sort_key is not None]
+
+        if not sort_keys:
+            def agg(dss):
+                return numpy.sum(dss)
+        else:
+            def agg(dss):
+                return tuple(sorted(numpy.sum(dss), key=sort_keys[0]))
+
+        data_var = fresh_name(prefix="datasets", used_names=keys)
+
+        df = {key: [group_by[key].group_key(ds) for ds in datasets]
+              for key in keys}
+        df[data_var] = [(ds,) for ds in datasets]
+
+        result = pandas.DataFrame(df).groupby(keys).aggregate(agg)
+
+        result = result.to_xarray()[data_var]
+        for key in keys:
+            result[key].attrs = dict(group_by[key].attrs)
+
+        needs_axis_values = [key
+                             for key, value in group_by.items()
+                             if value.axis_value is not None]
+
+        for index in numpy.ndindex(result.shape):
+            if not isinstance(result.values[index], tuple):
+                result.values[index] = tuple()
+
+            if needs_axis_values:
+                key = needs_axis_values[0]
+                result[key].values[index] = group_by[key].axis_value(result.values[index])
+
+        return result
 
     @staticmethod
     def create_storage(coords, geobox, measurements, data_func=None):
@@ -736,9 +765,9 @@ def _make_dask_array(sources, geobox, measurement,
 
 
 def _needs_legacy_fallback(sources):
-    if sources.shape[0] == 0:
-        return False
+    for index in numpy.ndindex(sources.shape):
+        datasets = sources.values[index]
+        if len(datasets) > 0:
+            return datasets[0].format == 'aio'
 
-    ds = sources.values[0][0]
-    is_s3aio_ds = ds.format == 'aio'
-    return True if is_s3aio_ds else False
+    return False

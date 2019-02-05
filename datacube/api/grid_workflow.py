@@ -278,19 +278,19 @@ class GridWorkflow(object):
         """
         tiles = {}
         for cell_index, observation in observations.items():
-            observation['datasets'].sort(key=group_by.group_by_func)
-            groups = [(key, tuple(group)) for key, group in groupby(observation['datasets'], group_by.group_by_func)]
+            observation['datasets'].sort(key=group_by.group_key)
+            groups = [(key, tuple(group)) for key, group in groupby(observation['datasets'], group_by.group_key)]
 
             for key, datasets in groups:
                 data = numpy.empty(1, dtype=object)
                 data[0] = datasets
-                variable = xarray.Variable((group_by.dimension,), data,
+                variable = xarray.Variable((group_by.dim,), data,
                                            fastpath=True)
-                coord = xarray.Variable((group_by.dimension,),
+                coord = xarray.Variable((group_by.dim,),
                                         numpy.array([key], dtype='datetime64[ns]'),
                                         attrs=group_by.attrs,
                                         fastpath=True)
-                coords = OrderedDict([(group_by.dimension, coord)])
+                coords = OrderedDict([(group_by.dim, coord)])
                 sources = xarray.DataArray(variable, coords=coords, fastpath=True)
 
                 tile_index = cell_index + (coord.values[0],)

@@ -48,5 +48,5 @@ def _group_datasets_by_date(datasets):
     dimension = 'time'
     units = None
 
-    group_by = GroupBy(dimension, group_func, dict(units=units), sort_key)
+    group_by = GroupBy(dimension, group_func, dict(units=units), sort_key=sort_key)
     return Datacube.group_datasets(datasets, group_by)
