@@ -20,6 +20,7 @@ from datacube.utils.geometry import (
     is_affine_st,
     apply_affine,
     compute_axis_overlap,
+    roi_is_empty,
     w_,
 )
 from datacube.testutils.geom import (
@@ -957,6 +958,34 @@ def test_compute_reproject_roi():
     assert rr.scale == 1
     assert roi_shape(rr.roi_src) == roi_shape(rr.roi_dst)
     assert roi_shape(rr.roi_dst) == src[roi_].shape
+
+
+@pytest.mark.xfail
+def test_compute_reproject_roi_issue647():
+    """ In some scenarios non-overlapping geoboxes will result in non-empty
+    `roi_dst` even though `roi_src` is empty.
+
+    Test this case separately.
+    """
+    from datacube.utils.geometry import CRS
+
+    src = GeoBox(10980, 10980,
+                 Affine(10, 0, 300000,
+                        0, -10, 5900020),
+                 CRS('epsg:32756'))
+
+    dst = GeoBox(976, 976, Affine(10, 0, 1730240,
+                                  0, -10, -4170240),
+                 CRS('EPSG:3577'))
+
+    assert src.extent.overlaps(dst.extent.to_crs(src.crs)) is False
+
+    rr = compute_reproject_roi(src, dst)
+    print(rr.roi_src)
+    print(rr.roi_dst)
+
+    assert roi_is_empty(rr.roi_src)
+    assert roi_is_empty(rr.roi_dst)
 
 
 def test_window_from_slice():
