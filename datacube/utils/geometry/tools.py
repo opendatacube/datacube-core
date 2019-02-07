@@ -601,6 +601,9 @@ def compute_reproject_roi(src, dst, padding=None, align=None):
         XY = np.vstack(tr.back(gbox_boundary(dst, pts_per_side)))
         roi_src = roi_from_points(XY, src.shape, padding, align=align)
 
+        if roi_is_empty(roi_src):
+            return (roi_src, np.s_[0:0, 0:0])
+
         # project src roi back into dst and compute roi from that
         xy = np.vstack(tr(roi_boundary(roi_src, pts_per_side)))
         roi_dst = roi_from_points(xy, dst.shape, padding=0)  # no need to add padding twice
