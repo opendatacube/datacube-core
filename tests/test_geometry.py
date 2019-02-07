@@ -960,7 +960,6 @@ def test_compute_reproject_roi():
     assert roi_shape(rr.roi_dst) == src[roi_].shape
 
 
-@pytest.mark.xfail
 def test_compute_reproject_roi_issue647():
     """ In some scenarios non-overlapping geoboxes will result in non-empty
     `roi_dst` even though `roi_src` is empty.
@@ -981,8 +980,6 @@ def test_compute_reproject_roi_issue647():
     assert src.extent.overlaps(dst.extent.to_crs(src.crs)) is False
 
     rr = compute_reproject_roi(src, dst)
-    print(rr.roi_src)
-    print(rr.roi_dst)
 
     assert roi_is_empty(rr.roi_src)
     assert roi_is_empty(rr.roi_dst)
