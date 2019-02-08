@@ -122,7 +122,7 @@ def telemetry_dataset(index: Index, initialised_postgres_db: PostgresDb, default
 
 def test_index_duplicate_dataset(index: Index, initialised_postgres_db: PostgresDb,
                                  local_config,
-                                 default_metadata_type)->None:
+                                 default_metadata_type) -> None:
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
