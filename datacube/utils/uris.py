@@ -21,6 +21,8 @@ def is_url(url_str: str) -> bool:
     True
     >>> is_url('s3:///etc/blah')
     True
+    >>> is_url('gs://data/etc/blah.yaml')
+    True
     >>> is_url('/etc/blah')
     False
     >>> is_url('C:/etc/blah')
@@ -218,3 +220,7 @@ def register_scheme(*schemes):
 # s3:// not recognised by python by default
 #  without this `urljoin` might be broken for s3 urls
 register_scheme('s3')
+
+# gs:// not recognised by python by default
+#  without this `urljoin` might be broken for google storage urls
+register_scheme('gs')

@@ -103,12 +103,18 @@ def test_uri_to_local_path():
 def test_uri_resolve():
     abs_path = '/abs/path/to/something'
     some_uri = 'http://example.com/file.txt'
-    base = 's3://foo'
-    assert uri_resolve(base, abs_path) == "file://" + abs_path
-    assert uri_resolve(base, some_uri) is some_uri
-    assert uri_resolve(base, None) is base
-    assert uri_resolve(base, '') is base
-    assert uri_resolve(base, 'relative/path') == base + '/relative/path'
+    s3_base = 's3://foo'
+    gs_base = 'gs://foo'
+    assert uri_resolve(s3_base, abs_path) == "file://" + abs_path
+    assert uri_resolve(s3_base, some_uri) is some_uri
+    assert uri_resolve(s3_base, None) is s3_base
+    assert uri_resolve(s3_base, '') is s3_base
+    assert uri_resolve(s3_base, 'relative/path') == s3_base + '/relative/path'
+    assert uri_resolve(gs_base, abs_path) == "file://" + abs_path
+    assert uri_resolve(gs_base, some_uri) is some_uri
+    assert uri_resolve(gs_base, None) is gs_base
+    assert uri_resolve(gs_base, '') is gs_base
+    assert uri_resolve(gs_base, 'relative/path') == gs_base + '/relative/path'
 
 
 def test_pick_uri():
