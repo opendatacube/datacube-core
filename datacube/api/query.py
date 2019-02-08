@@ -40,7 +40,7 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
               'source_filter')
 
 
-class GroupBy:
+class GroupDatasetsPolicy:
     """
     Information needed to group datasets.
 
@@ -180,21 +180,21 @@ def query_group_by(group_by='time', **kwargs):
     if group_by is None:
         return collections.OrderedDict()
 
-    if isinstance(group_by, (collections.Mapping, GroupBy)):
+    if isinstance(group_by, (collections.Mapping, GroupDatasetsPolicy)):
         return group_by
 
-    time_grouper = GroupBy(dim='time',
-                           group_key=lambda ds: ds.center_time.replace(tzinfo=None),
-                           attrs=dict(units='seconds since 1970-01-01 00:00:00'))
+    time_grouper = GroupDatasetsPolicy(dim='time',
+                                       group_key=lambda ds: ds.center_time.replace(tzinfo=None),
+                                       attrs=dict(units='seconds since 1970-01-01 00:00:00'))
 
     def solar_time(datasets):
         return min(ds.center_time for ds in datasets)
 
-    solar_day_grouper = GroupBy(dim='time',
-                                group_key=solar_day,
-                                attrs=dict(units='seconds since 1970-01-01 00:00:00'),
-                                axis_value=solar_time,
-                                sort_key=lambda ds: ds.center_time)
+    solar_day_grouper = GroupDatasetsPolicy(dim='time',
+                                            group_key=solar_day,
+                                            attrs=dict(units='seconds since 1970-01-01 00:00:00'),
+                                            axis_value=solar_time,
+                                            sort_key=lambda ds: ds.center_time)
 
     if not isinstance(group_by, str):
         raise ValueError('Invalid group_by object %r' % group_by)
@@ -210,13 +210,13 @@ def query_group_by(group_by='time', **kwargs):
         raise LookupError('No group by function for', group_by)
 
 
-def normalize_group_by(group_by):
+def normalize_grouping_policy(group_by):
     """
     Normalize user-supplied grouping setting for :func:`Datacube.group_datasets` to use.
 
-    :return: normalized group_by of type `Dict[str, GroupBy]`
+    :return: normalized group_by of type `Dict[str, GroupDatasetsPolicy]`
     """
-    if isinstance(group_by, GroupBy):
+    if isinstance(group_by, GroupDatasetsPolicy):
         group_by = {group_by.dim: group_by}
 
     if not isinstance(group_by, collections.Mapping):

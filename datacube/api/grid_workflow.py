@@ -245,7 +245,7 @@ class GridWorkflow(object):
 
         :param observations: datasets grouped by cell index, like from :py:meth:`cell_observations`
         :param group_by: grouping method, as returned by :py:meth:`datacube.api.query.query_group_by`
-        :type group_by: :py:class:`datacube.api.query.GroupBy`
+        :type group_by: :py:class:`datacube.api.query.GroupDatasetsPolicy`
         :return: tiles grouped by cell index
         :rtype: dict[(int,int), :class:`.Tile`]
 
@@ -267,7 +267,7 @@ class GridWorkflow(object):
 
         :param observations: datasets grouped by cell index, like from :meth:`cell_observations`
         :param group_by: grouping method, as returned by :py:meth:`datacube.api.query.query_group_by`
-        :type group_by: :py:class:`datacube.api.query.GroupBy`
+        :type group_by: :py:class:`datacube.api.query.GroupDatasetsPolicy`
         :return: tiles grouped by cell index and time
         :rtype: dict[tuple(int, int, numpy.datetime64), :py:class:`.Tile`]
 

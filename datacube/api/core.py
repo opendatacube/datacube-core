@@ -13,7 +13,7 @@ from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import geometry
 from datacube.utils.generic import fresh_name
 from datacube.utils.geometry import intersects
-from .query import Query, query_group_by, normalize_group_by, query_geopolygon
+from .query import Query, query_group_by, normalize_grouping_policy, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
 
@@ -244,8 +244,8 @@ class Datacube(object):
         :param str group_by:
             When specified, perform basic combining/reducing of the data.
             May either be a string specifying the method to group by,
-            or a :class:`datacube.api.query.GroupBy` object,
-            or a dictionary mapping strings to :class:`datacube.api.query.GroupBy` objects
+            or a :class:`datacube.api.query.GroupDatasetsPolicy` object,
+            or a dictionary mapping strings to :class:`datacube.api.query.GroupDatasetsPolicy` objects
 
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
@@ -342,13 +342,14 @@ class Datacube(object):
         Group datasets along defined non-spatial dimensions (ie. time).
 
         :param datasets: a list of datasets, typically from :meth:`find_datasets`
-        :param group_by: either a :class:`datacube.api.query.GroupBy` object,
-                         or a dictionary mapping strings to `GroupBy` objects
+        :param group_by: either a :class:`datacube.api.query.GroupDatasetsPolicy` object,
+                         or a dictionary mapping strings to
+                         :class:`datacube.api.query.GroupDatasetsPolicy` objects
         :rtype: xarray.DataArray
 
         .. seealso:: :meth:`find_datasets`, :meth:`load_data`, :meth:`query_group_by`
         """
-        group_by = normalize_group_by(group_by)
+        group_by = normalize_grouping_policy(group_by)
         datasets = tuple(datasets)
 
         keys = list(group_by)

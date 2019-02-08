@@ -1,4 +1,4 @@
-from datacube.api.query import GroupBy
+from datacube.api.query import GroupDatasetsPolicy
 
 from datacube import Datacube
 import datetime
@@ -15,7 +15,7 @@ def test_grouping_datasets():
         {'time': datetime.datetime(2016, 2, 1), 'value': 'bar'}
     ]
 
-    group_by = GroupBy(dimension, group_func, dict(units=units), sort_key=group_func)
+    group_by = GroupDatasetsPolicy(dimension, group_func, dict(units=units), sort_key=group_func)
     grouped = Datacube.group_datasets(datasets, group_by)
 
     assert str(grouped.time.dtype) == 'datetime64[ns]'
@@ -48,5 +48,5 @@ def _group_datasets_by_date(datasets):
     dimension = 'time'
     units = None
 
-    group_by = GroupBy(dimension, group_func, dict(units=units), sort_key=sort_key)
+    group_by = GroupDatasetsPolicy(dimension, group_func, dict(units=units), sort_key=sort_key)
     return Datacube.group_datasets(datasets, group_by)
