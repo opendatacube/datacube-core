@@ -303,6 +303,8 @@ def _get_coordinates(geom):
 
 
 def _make_geom_from_ogr(geom, crs):
+    if geom is None:
+        return None
     result = Geometry.__new__(Geometry)
     result._geom = geom  # pylint: disable=protected-access
     result.crs = crs

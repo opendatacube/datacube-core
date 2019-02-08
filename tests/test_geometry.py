@@ -199,6 +199,8 @@ def test_unary_union():
     assert union4.type == 'Polygon'
     assert union4.area == 2.5 * box1.area
 
+    assert geometry.unary_union([]) is None
+
     with pytest.raises(ValueError):
         pt = geometry.point(6, 7, epsg4326)
         geometry.unary_union([pt, pt])
