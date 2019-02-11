@@ -112,7 +112,7 @@ intersphinx_mapping = {
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'xarray': ('https://xarray.pydata.org/en/stable/', None),
-    'dask': ('https://dask.pydata.org/en/stable/', None),
+#    'dask': ('https://dask.pydata.org/en/stable/', None),
 }
 
 graphviz_output_format = 'svg'
@@ -189,47 +189,43 @@ plantuml_latex_output_format = 'pdf'
 
 # Mock modules that need native libraries.
 # See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
-NATIVE_MODULES = [
-    'rasterio',
-    'netcdf4',
-    'pypeg2',
-    'osgeo',
-    'rasterio.warp',
-    'numexpr',
-    'rasterio.coords',
-    'netCDF4',
-    'netCDF4.Dataset',
-    'jsonschema',
-    'xarray',
-    'dask',
-    'dask.array',
-    'pandas',
-    'rasterio.crs',
-    'gdal', 'osgeo.gdal',
-    'osr',
-    'numpy', 'numpy.core.multiarray',
-    'matplotlib',
-    'matplotlib.pyplot',
-    'scipy', 'scipy.io',
+autodoc_mock_imports = [
     'SharedArray',
-    'paramiko',
-    'sshtunnel',
-    'tqdm',
+    'boto3',
+    'botocore',
     'cloudpickle',
+    'dask',
+    'jsonschema',
+    'matplotlib',
+    'netCDF4',
+    'numexpr',
+    'numpy',
+    'osgeo',
+    'osr',
+    'pandas',
+    'paramiko',
+    'pathos',
+    'psycopg2',
+    'rasterio',
+    'scipy',
+    'sshtunnel',
+    'toolz',
+    'tqdm',
+    'xarray',
     'zstd',
 ]
 
-from mock import Mock as MagicMock
+#from mock import Mock as MagicMock
+#
+#
+#class Mock(MagicMock):
+#    @classmethod
+#    def __getattr__(cls, name):
+#        return Mock()
 
 
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return Mock()
-
-
-sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
-sys.modules['rasterio.coords'].BoundingBox = Mock
+#sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
+#sys.modules['rasterio.coords'].BoundingBox = Mock
 
 
 def setup(app):
