@@ -194,7 +194,7 @@ autodoc_mock_imports = [
     'boto3',
     'botocore',
     'cloudpickle',
-    'dask',
+    'dask', 'dask.array',
     'jsonschema',
     'matplotlib',
     'netCDF4',
@@ -205,16 +205,26 @@ autodoc_mock_imports = [
     'pandas',
     'paramiko',
     'pathos',
-    'psycopg2',
-    'rasterio',
+    'psycopg2', 'psycopg2.extras', 'psycopg2._range',
+    'rasterio', 'rasterio.warp', 'rasterio.crs',
     'scipy',
     'sshtunnel',
-    'toolz',
+    'singledispatch',
+    'toolz', 'toolz.functoolz',
     'tqdm',
     'xarray',
     'zstd',
 ]
 
+import sys
+from unittest.mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+sys.modules.update((mod_name, Mock()) for mod_name in autodoc_mock_imports)
 #from mock import Mock as MagicMock
 #
 #

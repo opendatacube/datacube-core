@@ -214,19 +214,19 @@ class Doc2Dataset(object):
     :param index: an open Database connection
 
     :param list products: List of product names against which to match datasets
-    (including lineage datasets). if not supplied we will consider all
-    products.
+                          (including lineage datasets). if not supplied we will
+                          consider all products.
 
     :param list exclude_products: List of products to exclude from matching
 
     :param fail_on_missing_lineage: If True fail resolve if any lineage
-    datasets are missing from the DB
+                                    datasets are missing from the DB
 
     :param verify_lineage: If True check that lineage datasets in the
-    supplied document are identical to DB versions
+                           supplied document are identical to DB versions
 
     :param skip_lineage: If True ignore lineage sub-tree in the supplied
-    document and construct dataset without lineage datasets
+                         document and construct dataset without lineage datasets
 
     :param index: Database
 

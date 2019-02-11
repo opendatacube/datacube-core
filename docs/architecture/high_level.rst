@@ -63,15 +63,11 @@ Figure 2 illustrates popular tools used within the community that utilizes the O
 
 * Open Data Cube Explorer: A visual and interactive web application that lets users explore their inventory of available data.
 
-* Open Data Cube Stats: An optimized means of defining and executing advanced analysis on ODC system. This tool is oriented 
-towards scientists.
+* Open Data Cube Stats: An optimized means of defining and executing advanced analysis on ODC system. This tool is oriented towards scientists.
 
-* Web User Interface (UI): A web application that allows developers to interactively showcase and visualize the output of 
-algorithms.
+* Web User Interface (UI): A web application that allows developers to interactively showcase and visualize the output of algorithms.
 
-* Jupyter Notebooks: Research documents centered around techniques in EO sciences. A notebook contains executable code 
-detailing examples of how the data cube is used in a research setting, and therefore is an invaluable reference material for 
-new users.
+* Jupyter Notebooks: Research documents centered around techniques in EO sciences. A notebook contains executable code detailing examples of how the data cube is used in a research setting, and therefore is an invaluable reference material for new users.
  
 * Open Geospatial Consortium (OGC) Web Services: Adapters that can connect non-ODC applications to the ODC.
 
