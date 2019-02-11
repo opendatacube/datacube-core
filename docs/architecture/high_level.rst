@@ -39,22 +39,27 @@ High-Level ODC Overview
 
 The ODC core serves as a layer between satellite data and end user applications.  
   
-It provides a common analytical framework to allow multiple data sources to produce information for multiple uses. The ODC can
-handle data from any satellite data provider. The ODC eliminates the need for difficult and time-consuming pre-processing of
-the data from individual applications. This allows an increased capacity for development of information products by the Earth
-Observation (EO) community, and increased value for the public from EO information. Figure 1 illustrates data from many
-satellite data providers being managed by an ODC system.
+It provides a common analytical framework to allow multiple data sources to
+produce information for multiple uses. The ODC can handle data from any
+satellite data provider. The ODC eliminates the need for difficult and
+time-consuming pre-processing of the data from individual applications. This
+allows an increased capacity for development of information products by the
+Earth Observation (EO) community, and increased value for the public from EO
+information. :numref:`high-level-overview` illustrates data from many satellite data providers being
+managed by an ODC system.
 
 
-.. image:: ../diagrams/f1.png
+.. figure:: ../diagrams/f1.png
+   :name: high-level-overview
 
-*Figure 1: High-Level Open Data Cube Overview*
+   High-Level Open Data Cube Overview
 
-Several international space agencies provide data and make provisions to supply this data in an Analysis Ready Data (ARD)
-format for immediate application.
+Several international space agencies provide data and make provisions to supply
+this data in an Analysis Ready Data (ARD) format for immediate application.
 
-Figure 1 illustrates a diverse set of data being managed by an ODC core system. The ODC core system is then used as a
-simplified basis on which end users conduct analysis using ODC compatible analysis tools.
+:numref:`high-level-overview` illustrates a diverse set of data being managed by
+an ODC core system. The ODC core system is then used as a simplified basis on
+which end users conduct analysis using ODC compatible analysis tools.
 
 
 High-Level ODC Ecosystem
@@ -65,7 +70,8 @@ providers and applications. A set of open source tools exist to help scientists
 conduct research using data managed by the ODC.
   
 
-Figure 2 illustrates popular tools used within the community that utilizes the ODC Core as its basis:
+:numref:`odc-ecosystem` illustrates popular tools used within the community that
+utilizes the ODC Core as its basis:
 
 * Command Line Tools: A tool used by programmers/developers to interface with
   the ODC.
@@ -88,14 +94,15 @@ Figure 2 illustrates popular tools used within the community that utilizes the O
 
 
 
-.. image:: ../diagrams/f2.png
+.. figure:: ../diagrams/f2.png
+   :name: odc-ecosystem
 
-*Figure 2: High-Level ODC Ecosystem*
+   High-Level ODC Ecosystem
 
 Download Data Locally and Index
 ===============================
 
-In the previous section, Figure 2 showed that the ODC framework can make data
+In the previous section, :numref:`odc-ecosystem` showed that the ODC framework can make data
 accessible to a sizeable ecosystem of applications. The following section
 briefly covers a process called indexing. Described plainly, indexing is about
 making the ODC aware of the existence of imagery. In the process of indexing
@@ -107,7 +114,7 @@ downloaded locally.
 
 Here is a brief outline of the indexing process:
 
-1. As shown in Figure 3, the first step in this process is to describe the
+1. As shown in :numref:`download-and-index-data`, the first step in this process is to describe the
 source of the imagery. We include basic details about which sensor the data
 comes from, what format to expect the data in, as well as its measurements, e.g.
 bands. This is done by drafting a document called a product definition for each
@@ -123,9 +130,10 @@ spatial bounds, etc. as metadata. In the third step, called indexing, metadata
 (documents) are indexed into the ODC’s database. Most importantly, the process
 stores the location of the data within a local system.
 
-.. image:: ../diagrams/f3.png  
+.. figure:: ../diagrams/f3.png
+   :name: download-and-index-data
 
-*Figure 3: Download Data Locally and Index*
+   Download Data Locally and Index
 
 
 
@@ -142,16 +150,17 @@ large scene files into several smaller tiles to help organize large
 multidimensional data-sets for both fast and flexible data access. Geospatial
 transformations can also be defined in the ingestion process. The ingestion
 process can be configured using an ingestion configuration to reformat and apply
-geospatial transforms to the data. Figure 4 illustrates the ingestion process.
+geospatial transforms to the data. :numref:`download-and-ingest` illustrates the ingestion process.
 The indexed imagery is transformed and reformatted per ingestion configuration
 specifications. It may involve re-sampling, re-projection, repackaging,
 re-compression, etc. The newly formatted/transformed data is re-indexed in the
 database under a new product name that gets registered in the database.
 
-.. image:: ../diagrams/f4.png  
+.. figure:: ../diagrams/f4.png
+   :name: download-and-ingest
 
 
-*Figure 4: Download Data Locally and Ingest*  
+   Download Data Locally and Ingest
 
 
 Load Data
@@ -165,8 +174,7 @@ appropriate temporal-spatial dimensions and separate data variables for each
 band.
 
 
-.. image:: ../diagrams/f5.png
+.. figure:: ../diagrams/f5.png
+   :name: load-data
   
-*Figure 5: Load Data*
-
-
+   Load Data

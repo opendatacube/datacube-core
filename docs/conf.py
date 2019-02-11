@@ -187,6 +187,8 @@ latex_documents = [
 plantuml_output_format = 'svg'
 plantuml_latex_output_format = 'pdf'
 
+numfig = True
+
 # Mock modules that need native libraries.
 # See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
 autodoc_mock_imports = [
