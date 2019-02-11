@@ -6,6 +6,7 @@ Introduction
 
 Assumptions and Design Constraints
 ==================================
+
 On a :abbr:`HPC (High Performance Computing)` system, the resources to provided to host the database may limited.
 During execution of a task across many compute nodes, the database should not be relied upon to serve concurrent access
 from all of the compute nodes.
