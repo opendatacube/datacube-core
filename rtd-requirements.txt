@@ -1,0 +1,17 @@
+Sphinx
+affine
+cachetools
+click
+dask[array]
+pypeg2
+python-dateutil
+pyyaml
+jsonschema
+psycopg2
+rasterio
+recommonmark
+sphinx-click
+sphinx_rtd_themes
+sphinxcontrib-plantuml
+sqlalchemy
+xarray
