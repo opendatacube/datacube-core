@@ -17,7 +17,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day
+from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day, GroupBy
 from datacube.model import Range
 from datacube.utils import parse_time
 
@@ -83,6 +83,10 @@ def test_query_kwargs():
 
     with pytest.raises(LookupError):
         query_group_by(group_by='magic')
+
+    gb = query_group_by('time')
+    assert isinstance(gb, GroupBy)
+    assert query_group_by(group_by=gb) is gb
 
 
 def format_test(start_out, end_out):
