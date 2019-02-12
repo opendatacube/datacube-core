@@ -1,10 +1,13 @@
-rules:
-  default:
-    protection:
-      required_pull_request_reviews:
-        required_approving_review_count: 1
-      required_status_checks:
-        contexts:
-        - continuous-integration/travis-ci
-    merge_strategy:
+pull_request_rules:
+- name: rebase automatically into develop
+  conditions:
+  - label!=no-mergify
+  - label!=work-in-progress
+  - '#approved-reviews-by>=1'
+  - "#changes-requested-reviews-by=0"
+  - base=develop
+  - status-success=continuous-integration/travis-ci
+  actions:
+    merge:
       method: rebase
+      rebase_fallback: merge
