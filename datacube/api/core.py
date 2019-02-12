@@ -350,6 +350,9 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets`, :meth:`load_data`, :meth:`query_group_by`
         """
+        if isinstance(group_by, str):
+            group_by = query_group_by(group_by=group_by)
+
         dimension, group_func, units, sort_key = group_by
         datasets.sort(key=sort_key)
         groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]

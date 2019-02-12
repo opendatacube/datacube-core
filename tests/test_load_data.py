@@ -76,7 +76,7 @@ def test_load_data(tmpdir):
     assert ds.time is not None
     assert ds.time == ds2.time
 
-    sources = Datacube.group_datasets([ds], group_by)
+    sources = Datacube.group_datasets([ds], 'time')
     sources2 = Datacube.group_datasets([ds, ds2], group_by)
 
     mm = ['aa']
