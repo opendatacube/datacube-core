@@ -158,6 +158,9 @@ def query_geopolygon(geopolygon=None, **kwargs):
 
 
 def query_group_by(group_by='time', **kwargs):
+    if not isinstance(group_by, str):
+        return group_by
+
     time_grouper = GroupBy(dimension='time',
                            group_by_func=lambda ds: ds.center_time,
                            units='seconds since 1970-01-01 00:00:00',
