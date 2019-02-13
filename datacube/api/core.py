@@ -1,5 +1,5 @@
 import uuid
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
 from itertools import groupby
 from math import ceil
 
@@ -14,8 +14,6 @@ from datacube.utils.geometry import intersects
 from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
-
-Group = namedtuple('Group', ['key', 'datasets'])
 
 
 class Datacube(object):
@@ -354,13 +352,28 @@ class Datacube(object):
             group_by = query_group_by(group_by=group_by)
 
         dimension, group_func, units, sort_key = group_by
-        datasets.sort(key=sort_key)
-        groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]
 
-        data = numpy.empty(len(groups), dtype=object)
-        for index, group in enumerate(groups):
-            data[index] = group.datasets
-        coords = [sort_key(v.datasets[0]) for v in groups]
+        def ds_sorter(ds):
+            return sort_key(ds), getattr(ds, 'id', 0)
+
+        def mk_group(group):
+            dss = tuple(sorted(group, key=ds_sorter))
+            # TODO: decouple axis_value from group sorted order
+            axis_value = sort_key(dss[0])
+            return (axis_value, dss)
+
+        datasets = sorted(datasets, key=group_func)
+
+        groups = [mk_group(group)
+                  for _, group in groupby(datasets, group_func)]
+
+        groups.sort(key=lambda x: x[0])
+
+        coords = [coord for coord, _ in groups]
+        data = numpy.empty(len(coords), dtype=object)
+        for i, (_, dss) in enumerate(groups):
+            data[i] = dss
+
         sources = xarray.DataArray(data, dims=[dimension], coords=[coords])
         sources[dimension].attrs['units'] = units
         return sources
