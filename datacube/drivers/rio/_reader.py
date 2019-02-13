@@ -199,7 +199,7 @@ def _compute_overrides(src: DatasetReader, bi: BandInfo) -> Overrides:
     """
     crs, transform, nodata = None, None, None
 
-    if not src.crs.is_valid:
+    if src.crs is None or not src.crs.is_valid:
         crs = bi.crs
 
     if src.transform.is_identity:
