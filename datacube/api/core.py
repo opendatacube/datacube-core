@@ -659,11 +659,8 @@ def _fuse_measurement(dest, datasets, geobox, measurement,
 
 
 def get_bounds(datasets, crs):
-    left = min([d.extent.to_crs(crs).boundingbox.left for d in datasets])
-    right = max([d.extent.to_crs(crs).boundingbox.right for d in datasets])
-    top = max([d.extent.to_crs(crs).boundingbox.top for d in datasets])
-    bottom = min([d.extent.to_crs(crs).boundingbox.bottom for d in datasets])
-    return geometry.box(left, bottom, right, top, crs=crs)
+    bbox = geometry.bbox_union(ds.extent.to_crs(crs).boundingbox for ds in datasets)
+    return geometry.box(*bbox, crs=crs)
 
 
 def dataset_type_to_row(dt):
