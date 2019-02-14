@@ -7,6 +7,8 @@ import pickle
 from datacube.utils import geometry
 from datacube.utils.geometry import (
     GeoBox,
+    BoundingBox,
+    bbox_union,
     decompose_rws,
     affine_from_pts,
     get_scale_at_point,
@@ -172,6 +174,20 @@ def test_ops():
     assert pt.coords[0] == (0, 1)
 
     assert pt.interpolate(3) is None
+
+
+def test_bbox_union():
+    b1 = BoundingBox(0, 1, 10, 20)
+    b2 = BoundingBox(5, 6, 11, 22)
+
+    assert bbox_union([b1]) == b1
+    assert bbox_union([b2]) == b2
+
+    bb = bbox_union(iter([b1, b2]))
+    assert bb == BoundingBox(0, 1, 11, 22)
+
+    bb = bbox_union(iter([b2, b1]*10))
+    assert bb == BoundingBox(0, 1, 11, 22)
 
 
 def test_unary_union():
