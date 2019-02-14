@@ -1,7 +1,7 @@
 import functools
 import math
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Iterable
 
 import cachetools
 import numpy
@@ -958,3 +958,21 @@ def _round_to_res(value, res, acc=0.1):
 
 def intersects(a, b):
     return a.intersects(b) and not a.touches(b)
+
+
+def bbox_union(bbs: Iterable[BoundingBox]) -> BoundingBox:
+    """ Given a stream of bounding boxes compute enclosing BoundingBox
+    """
+    # pylint: disable=invalid-name
+
+    L = B = float('+inf')
+    R = T = float('-inf')
+
+    for bb in bbs:
+        l, b, r, t = bb
+        L = min(l, L)
+        B = min(b, B)
+        R = max(r, R)
+        T = max(t, T)
+
+    return BoundingBox(L, B, R, T)
