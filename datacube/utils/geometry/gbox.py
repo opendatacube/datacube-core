@@ -1,7 +1,8 @@
 """ Geometric operations on GeoBox class
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
+import math
 from affine import Affine
 
 from ._base import GeoBox
@@ -113,3 +114,39 @@ def affine_transform_pix(gbox: GeoBox, transform: Affine) -> GeoBox:
     H, W = gbox.shape
     A = gbox.affine*transform
     return GeoBox(W, H, A, gbox.crs)
+
+
+class GeoboxTiles():
+    """ Partition GeoBox into sub geoboxes
+    """
+
+    def __init__(self, box: GeoBox, tile_shape: Tuple[int, int]):
+        self._gbox = box
+        self._tile_shape = tile_shape
+        self._shape = tuple(math.ceil(float(N)/n)
+                            for N, n in zip(box.shape, tile_shape))
+        self._cache = {}  # type: Dict[Tuple[int, int], GeoBox]
+
+    @property
+    def shape(self):
+        return self._shape
+
+    def _idx_to_slice(self, idx: Tuple[int, int]) -> Tuple[slice, slice]:
+        def _slice(i, N, n) -> slice:
+            _in = i*n
+            if _in >= N:
+                raise IndexError()
+
+            return slice(_in, min(_in + n, N))
+
+        ir, ic = (_slice(i, N, n)
+                  for i, N, n in zip(idx, self._gbox.shape, self._tile_shape))
+        return (ir, ic)
+
+    def __getitem__(self, idx: Tuple[int, int]) -> GeoBox:
+        sub_gbox = self._cache.get(idx, None)
+        if sub_gbox is not None:
+            return sub_gbox
+
+        roi = self._idx_to_slice(idx)
+        return self._cache.setdefault(idx, self._gbox[roi])
