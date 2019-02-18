@@ -488,6 +488,8 @@ class Datacube(object):
         :param dict dask_chunks:
             If provided, the data will be loaded on demand using using :class:`dask.array.Array`.
             Should be a dictionary specifying the chunking size for each output dimension.
+            Unspecified dimensions will be auto-guessed, currently this means use chunk size of 1 for non-spatial
+            dimensions and use whole dimension (no chunking unless specified) for spatial dimensions.
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
@@ -696,8 +698,9 @@ def _calculate_chunk_sizes(sources, geobox, dask_chunks):
     if bad_keys:
         raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 
-    # If chunk size is not specified, the entire dimension length is used, as in xarray
-    chunks = {dim: size for dim, size in zip(sources.dims, sources.shape)}
+    # For non-spatial default to 1 since this is "native"
+    chunks = {dim: 1 for dim in sources.dims}
+    # For non-spatial default to entire dimension length as in xarray
     chunks.update({dim: size for dim, size in zip(geobox.dimensions, geobox.shape)})
 
     chunks.update(dask_chunks)
