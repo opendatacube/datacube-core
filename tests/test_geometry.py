@@ -96,6 +96,10 @@ def test_props():
     bbox = geometry.BoundingBox(1, 0, 10, 13)
     assert bbox.width == 9
     assert bbox.height == 13
+    assert bbox.points == [(1, 0), (1, 13), (10, 0), (10, 13)]
+
+    assert bbox.transform(Affine.identity()) == bbox
+    assert bbox.transform(Affine.translation(1, 2)) == geometry.BoundingBox(2, 2, 11, 15)
 
     pt = geometry.point(3, 4, crs)
     assert pt.json['coordinates'] == (3.0, 4.0)

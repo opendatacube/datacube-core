@@ -1,7 +1,8 @@
 import functools
+import itertools
 import math
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Callable, Iterable
+from typing import Tuple, Callable, Iterable, List
 
 import cachetools
 import numpy
@@ -36,6 +37,24 @@ class BoundingBox(_BoundingBox):
     @property
     def height(self):
         return self.top - self.bottom
+
+    @property
+    def points(self) -> List[Tuple[float, float]]:
+        """Extract four corners of the bounding box
+        """
+        x0, y0, x1, y1 = self
+        return list(itertools.product((x0, x1), (y0, y1)))
+
+    def transform(self, transform: Affine) -> 'BoundingBox':
+        """Transform bounding box through a linear transform
+
+           Apply linear transform on 4 points of the bounding box and compute
+           bounding box of these four points.
+        """
+        pts = [transform*pt for pt in self.points]
+        xx = [x for x, _ in pts]
+        yy = [y for _, y in pts]
+        return BoundingBox(min(xx), min(yy), max(xx), max(yy))
 
 
 class CRSProjProxy(object):
