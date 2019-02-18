@@ -132,3 +132,10 @@ def test_gbox_tiles():
 
     with pytest.raises(IndexError):
         tt[tt.shape]
+
+    cc = np.zeros(tt.shape, dtype='int32')
+    for idx in tt.tiles(gbox.extent):
+        cc[idx] += 1
+    np.testing.assert_array_equal(cc, np.ones(tt.shape))
+
+    assert list(tt.tiles(gbox[:h, :w].extent)) == [(0, 0)]

@@ -1,11 +1,13 @@
 """ Geometric operations on GeoBox class
 """
 
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Iterable
+import itertools
 import math
 from affine import Affine
 
-from ._base import GeoBox
+from . import Geometry, GeoBox, BoundingBox
+from datacube.utils.math import clamp
 
 # pylint: disable=invalid-name
 MaybeInt = Optional[int]
@@ -163,3 +165,31 @@ class GeoboxTiles():
 
         roi = self._idx_to_slice(idx)
         return self._cache.setdefault(idx, self._gbox[roi])
+
+    def range_from_bbox(self, bbox: BoundingBox) -> Tuple[range, range]:
+        """ Compute rows and columns overlapping with a given ``BoundingBox``
+        """
+        def clamped_range(v1: float, v2: float, N: int) -> range:
+            _in = clamp(math.floor(v1), 0, N)
+            _out = clamp(math.ceil(v2), 0, N)
+            return range(_in, _out)
+
+        sy, sx = self._tile_shape
+        A = Affine.scale(1.0/sx, 1.0/sy)*(~self._gbox.transform)
+        # A maps from X,Y in meters to chunk index
+        bbox = bbox.transform(A)
+
+        NY, NX = self.shape
+        xx = clamped_range(bbox.left, bbox.right, NX)
+        yy = clamped_range(bbox.bottom, bbox.top, NY)
+        return (yy, xx)
+
+    def tiles(self, polygon: Geometry) -> Iterable[Tuple[int, int]]:
+        """ Return tile indexes overlapping with a given geometry.
+        """
+        poly = polygon.to_crs(self._gbox.crs)
+        yy, xx = self.range_from_bbox(poly.envelope)
+        for idx in itertools.product(yy, xx):
+            gbox = self[idx]
+            if gbox.extent.intersects(poly):
+                yield idx
