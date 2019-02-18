@@ -1,5 +1,6 @@
 from affine import Affine
 import numpy as np
+import pytest
 from datacube.utils.geometry import gbox as gbx
 from datacube.utils import geometry
 from datacube.utils.geometry import GeoBox
@@ -106,3 +107,28 @@ def test_gbox_ops():
         assert d.extent != s.extent
         np.testing.assert_almost_equal(d.extent.area, s.extent.area, 1e-5)
         assert s[49:52, 499:502].extent.contains(d[50:51, 500:501].extent), "Check that center pixel hasn't moved"
+
+
+def test_gbox_tiles():
+    A = Affine.identity()
+    H, W = (300, 200)
+    h, w = (10, 20)
+    gbox = GeoBox(W, H, A, epsg3857)
+    tt = gbx.GeoboxTiles(gbox, (h, w))
+    assert tt.shape == (300/10, 200/20)
+
+    assert tt[0, 0] == gbox[0:h, 0:w]
+    assert tt[0, 1] == gbox[0:h, w:w+w]
+
+    assert tt[0, 0] is tt[0, 0]  # Should cache exact same object
+    assert tt[4, 1].shape == (h, w)
+
+    H, W = (11, 22)
+    h, w = (10, 9)
+    gbox = GeoBox(W, H, A, epsg3857)
+    tt = gbx.GeoboxTiles(gbox, (h, w))
+    assert tt.shape == (2, 3)
+    assert tt[1, 2] == gbox[10:11, 18:22]
+
+    with pytest.raises(IndexError):
+        tt[tt.shape]
