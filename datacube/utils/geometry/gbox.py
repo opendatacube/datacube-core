@@ -121,6 +121,11 @@ class GeoboxTiles():
     """
 
     def __init__(self, box: GeoBox, tile_shape: Tuple[int, int]):
+        """ Construct from a ``GeoBox``
+
+        :param box: source :class:`datacube.utils.geometry.GeoBox`
+        :param tile_shape: Shape of sub-tiles in pixels (rows, cols)
+        """
         self._gbox = box
         self._tile_shape = tile_shape
         self._shape = tuple(math.ceil(float(N)/n)
@@ -129,6 +134,8 @@ class GeoboxTiles():
 
     @property
     def shape(self):
+        """ Number of tiles along each dimension
+        """
         return self._shape
 
     def _idx_to_slice(self, idx: Tuple[int, int]) -> Tuple[slice, slice]:
@@ -144,6 +151,12 @@ class GeoboxTiles():
         return (ir, ic)
 
     def __getitem__(self, idx: Tuple[int, int]) -> GeoBox:
+        """ Lookup tile by index, index is in matrix access order: (row, col)
+
+            :param idx: (row, col) index
+
+            Will raise IndexError when index is outside of [(0,0) -> .shape)
+        """
         sub_gbox = self._cache.get(idx, None)
         if sub_gbox is not None:
             return sub_gbox
