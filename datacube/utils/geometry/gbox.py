@@ -147,10 +147,10 @@ class GeoboxTiles():
     def _idx_to_slice(self, idx: Tuple[int, int]) -> Tuple[slice, slice]:
         def _slice(i, N, n) -> slice:
             _in = i*n
-            if _in >= N:
-                raise IndexError()
-
-            return slice(_in, min(_in + n, N))
+            if 0 <= _in < N:
+                return slice(_in, min(_in + n, N))
+            else:
+                raise IndexError("Index ({},{})is out of range".format(*idx))
 
         ir, ic = (_slice(i, N, n)
                   for i, N, n in zip(idx, self._gbox.shape, self._tile_shape))
@@ -160,8 +160,8 @@ class GeoboxTiles():
         """ Lookup tile by index, index is in matrix access order: (row, col)
 
             :param idx: (row, col) index
-
-            Will raise IndexError when index is outside of [(0,0) -> .shape)
+            :returns: GeoBox of a tile
+            :raises: IndexError when index is outside of [(0,0) -> .shape)
         """
         sub_gbox = self._cache.get(idx, None)
         if sub_gbox is not None:
