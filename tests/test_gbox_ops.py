@@ -135,9 +135,20 @@ def test_gbox_tiles():
         with pytest.raises(IndexError):
             tt[idx]
 
+        with pytest.raises(IndexError):
+            tt.chunk_shape(idx)
+
     cc = np.zeros(tt.shape, dtype='int32')
     for idx in tt.tiles(gbox.extent):
         cc[idx] += 1
     np.testing.assert_array_equal(cc, np.ones(tt.shape))
 
     assert list(tt.tiles(gbox[:h, :w].extent)) == [(0, 0)]
+
+    (H, W) = (11, 22)
+    (h, w) = (10, 20)
+    tt = gbx.GeoboxTiles(GeoBox(W, H, A, epsg3857), (h, w))
+    assert tt.chunk_shape((0, 0)) == (h, w)
+    assert tt.chunk_shape((0, 1)) == (h, 2)
+    assert tt.chunk_shape((1, 1)) == (1, 2)
+    assert tt.chunk_shape((1, 0)) == (1, w)

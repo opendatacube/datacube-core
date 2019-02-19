@@ -156,6 +156,24 @@ class GeoboxTiles():
                   for i, N, n in zip(idx, self._gbox.shape, self._tile_shape))
         return (ir, ic)
 
+    def chunk_shape(self, idx: Tuple[int, int]) -> Tuple[int, int]:
+        """ Chunk shape for a given chunk index.
+
+            :param idx: (row, col) index
+            :returns: (nrow, ncols) shape of a tile (edge tiles might be smaller)
+            :raises: IndexError when index is outside of [(0,0) -> .shape)
+        """
+        def _sz(i: int, n: int, tile_sz: int, total_sz: int) -> int:
+            if 0 <= i < n - 1:  # not edge tile
+                return tile_sz
+            elif i == n - 1:    # edge tile
+                return total_sz - (i*tile_sz)
+            else:               # out of index case
+                raise IndexError("Index ({},{}) is out of range".format(*idx))
+
+        n1, n2 = map(_sz, idx, self._shape, self._tile_shape, self._gbox.shape)
+        return (n1, n2)
+
     def __getitem__(self, idx: Tuple[int, int]) -> GeoBox:
         """ Lookup tile by index, index is in matrix access order: (row, col)
 
