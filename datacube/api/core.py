@@ -2,6 +2,7 @@ import uuid
 from collections import OrderedDict
 from itertools import groupby
 from math import ceil
+from typing import Union, Optional, Dict
 
 import numpy
 import xarray
@@ -10,7 +11,7 @@ from dask import array as da
 from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import geometry
-from datacube.utils.geometry import intersects
+from datacube.utils.geometry import intersects, GeoBox
 from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
@@ -692,21 +693,34 @@ def _chunk_geobox(geobox, chunk_size):
     return geobox_subsets
 
 
-def _calculate_chunk_sizes(sources, geobox, dask_chunks):
+def _calculate_chunk_sizes(sources: xarray.DataArray,
+                           geobox: GeoBox,
+                           dask_chunks: Dict[str, Union[str, int]]):
     valid_keys = sources.dims + geobox.dimensions
     bad_keys = set(dask_chunks) - set(valid_keys)
     if bad_keys:
         raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 
-    # For non-spatial default to 1 since this is "native"
-    chunks = {dim: 1 for dim in sources.dims}
-    # For non-spatial default to entire dimension length as in xarray
-    chunks.update({dim: size for dim, size in zip(geobox.dimensions, geobox.shape)})
+    chunk_maxsz = {dim: sz
+                   for dim, sz in zip(sources.dims + geobox.dimensions,
+                                      sources.shape + geobox.shape)}  # type: Dict[str, int]
 
-    chunks.update(dask_chunks)
+    # defaults: 1 for non-spatial, whole dimension for Y/X
+    chunk_defaults = dict(**{dim: 1 for dim in sources.dims},
+                          **{dim: -1 for dim in geobox.dimensions})   # type: Dict[str, int]
 
-    irr_chunks = tuple(chunks[dim] for dim in sources.dims)
-    grid_chunks = tuple(chunks[dim] for dim in geobox.dimensions)
+    def _resolve(k, v: Optional[Union[str, int]]) -> int:
+        if v is None or v == "auto":
+            v = _resolve(k, chunk_defaults[k])
+
+        if isinstance(v, int):
+            if v < 0:
+                return chunk_maxsz[k]
+            return v
+        raise ValueError("Chunk should be one of int|'auto'")
+
+    irr_chunks = tuple(_resolve(dim, dask_chunks.get(dim)) for dim in sources.dims)
+    grid_chunks = tuple(_resolve(dim, dask_chunks.get(dim)) for dim in geobox.dimensions)
 
     return irr_chunks, grid_chunks
 
