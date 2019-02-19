@@ -131,8 +131,9 @@ def test_gbox_tiles():
     assert tt.shape == (2, 3)
     assert tt[1, 2] == gbox[10:11, 18:22]
 
-    with pytest.raises(IndexError):
-        tt[tt.shape]
+    for idx in [tt.shape, (-1, 0), (0, -1), (-33, 1)]:
+        with pytest.raises(IndexError):
+            tt[idx]
 
     cc = np.zeros(tt.shape, dtype='int32')
     for idx in tt.tiles(gbox.extent):
