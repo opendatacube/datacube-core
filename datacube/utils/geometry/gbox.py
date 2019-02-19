@@ -135,6 +135,10 @@ class GeoboxTiles():
         self._cache = {}  # type: Dict[Tuple[int, int], GeoBox]
 
     @property
+    def base(self) -> GeoBox:
+        return self._gbox
+
+    @property
     def shape(self):
         """ Number of tiles along each dimension
         """

@@ -116,6 +116,7 @@ def test_gbox_tiles():
     gbox = GeoBox(W, H, A, epsg3857)
     tt = gbx.GeoboxTiles(gbox, (h, w))
     assert tt.shape == (300/10, 200/20)
+    assert tt.base is gbox
 
     assert tt[0, 0] == gbox[0:h, 0:w]
     assert tt[0, 1] == gbox[0:h, w:w+w]
