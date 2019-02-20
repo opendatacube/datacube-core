@@ -8,6 +8,7 @@ import logging
 import numpy as np
 from collections import OrderedDict
 import uuid
+from math import ceil
 from typing import Union, Optional, Callable, List, Any
 
 from datacube.utils import ignore_exceptions_if
@@ -120,6 +121,16 @@ def get_loader(sources):
         return S3AIO_DRIVER.new_datasource
 
 
+def _chunk_geobox(geobox, chunk_size):
+    num_grid_chunks = [int(ceil(s / float(c))) for s, c in zip(geobox.shape, chunk_size)]
+    geobox_subsets = {}
+    for grid_index in np.ndindex(*num_grid_chunks):
+        slices = [slice(min(d * c, stop), min((d + 1) * c, stop))
+                  for d, c, stop in zip(grid_index, chunk_size, geobox.shape)]
+        geobox_subsets[grid_index] = geobox[slices]
+    return geobox_subsets
+
+
 # pylint: disable=too-many-locals
 def make_dask_array(sources,
                     geobox,
@@ -127,7 +138,6 @@ def make_dask_array(sources,
                     skip_broken_datasets=False,
                     dask_chunks=None):
     from ..core import (_tokenize_dataset,
-                        _chunk_geobox,
                         select_datasets_inside_polygon,
                         _calculate_chunk_sizes)
     from dask import array as da
