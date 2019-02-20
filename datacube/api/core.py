@@ -1,8 +1,7 @@
 import uuid
 from collections import OrderedDict
 from itertools import groupby
-from math import ceil
-from typing import Union, Optional, Dict
+from typing import Union, Optional, Dict, Tuple
 
 import numpy
 import xarray
@@ -12,6 +11,9 @@ from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import geometry
 from datacube.utils.geometry import intersects, GeoBox
+from datacube.utils.geometry.gbox import GeoboxTiles
+from datacube.model.utils import xr_apply
+
 from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
@@ -432,10 +434,27 @@ class Datacube(object):
     @staticmethod
     def _dask_load(sources, geobox, measurements, dask_chunks,
                    skip_broken_datasets=False):
+        needed_irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
+        gbt = GeoboxTiles(geobox, grid_chunks)
+        dsk = {}
+
+        def chunk_datasets(dss, gbt):
+            out = {}
+            for ds in dss:
+                dsk[_tokenize_dataset(ds)] = ds
+                for idx in gbt.tiles(ds.extent):
+                    out.setdefault(idx, []).append(ds)
+            return out
+
+        chunked_srcs = xr_apply(sources,
+                                lambda _, dss: chunk_datasets(dss, gbt),
+                                dtype=object)
+
         def data_func(measurement):
-            return _make_dask_array(sources, geobox, measurement,
-                                    skip_broken_datasets=skip_broken_datasets,
-                                    dask_chunks=dask_chunks)
+            return _make_dask_array(chunked_srcs, dsk, gbt,
+                                    measurement,
+                                    chunks=needed_irr_chunks+grid_chunks,
+                                    skip_broken_datasets=skip_broken_datasets)
 
         return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
                                        geobox, measurements, data_func)
@@ -683,16 +702,6 @@ def dataset_type_to_row(dt):
     return row
 
 
-def _chunk_geobox(geobox, chunk_size):
-    num_grid_chunks = [int(ceil(s / float(c))) for s, c in zip(geobox.shape, chunk_size)]
-    geobox_subsets = {}
-    for grid_index in numpy.ndindex(*num_grid_chunks):
-        slices = [slice(min(d * c, stop), min((d + 1) * c, stop))
-                  for d, c, stop in zip(grid_index, chunk_size, geobox.shape)]
-        geobox_subsets[grid_index] = geobox[slices]
-    return geobox_subsets
-
-
 def _calculate_chunk_sizes(sources: xarray.DataArray,
                            geobox: GeoBox,
                            dask_chunks: Dict[str, Union[str, int]]):
@@ -730,37 +739,68 @@ def _tokenize_dataset(dataset):
 
 
 # pylint: disable=too-many-locals
-def _make_dask_array(sources, geobox, measurement,
-                     skip_broken_datasets=False,
-                     dask_chunks=None):
-    dsk_name = 'datacube_load_{name}-{token}'.format(name=measurement['name'], token=uuid.uuid4().hex)
+def _make_dask_array(chunked_srcs,
+                     dsk,
+                     gbt,
+                     measurement,
+                     chunks,
+                     skip_broken_datasets=False):
+    dsk = dsk.copy()  # this contains mapping from dataset id to dataset object
 
-    irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
-    sliced_irr_chunks = (1,) * sources.ndim
+    token = uuid.uuid4().hex
+    dsk_name = 'dc_load_{name}-{token}'.format(name=measurement.name, token=token)
 
-    dsk = {}
-    geobox_subsets = _chunk_geobox(geobox, grid_chunks)
+    needed_irr_chunks, grid_chunks = chunks[:-2], chunks[-2:]
+    actual_irr_chunks = (1,) * len(needed_irr_chunks)
 
-    for irr_index, datasets in numpy.ndenumerate(sources.values):
-        for dataset in datasets:
-            ds_token = _tokenize_dataset(dataset)
-            dsk[ds_token] = dataset
+    # we can have up to 4 empty chunk shapes: whole, right edge, bottom edge and
+    # bottom right corner
+    #  W R
+    #  B BR
+    empties = {}  # type Dict[Tuple[int,int], str]
 
-        for grid_index, subset_geobox in geobox_subsets.items():
-            dataset_keys = [_tokenize_dataset(d) for d in
-                            select_datasets_inside_polygon(datasets, subset_geobox.extent)]
-            dsk[(dsk_name,) + irr_index + grid_index] = (fuse_lazy,
-                                                         dataset_keys, subset_geobox, measurement,
-                                                         skip_broken_datasets,
-                                                         sources.ndim)
+    def _mk_empty(shape: Tuple[int, int]) -> str:
+        name = empties.get(shape, None)
+        if name is not None:
+            return name
+
+        name = 'empty_{}x{}-{token}'.format(*shape, token=token)
+        dsk[name] = (numpy.full, actual_irr_chunks + shape, measurement.nodata, measurement.dtype)
+        empties[shape] = name
+
+        return name
+
+    for irr_index, tiled_dss in numpy.ndenumerate(chunked_srcs.values):
+        key_prefix = (dsk_name, *irr_index)
+
+        # all spatial chunks
+        for idx in numpy.ndindex(gbt.shape):
+            dss = tiled_dss.get(idx, None)
+
+            if dss is None:
+                val = _mk_empty(gbt.chunk_shape(idx))
+            else:
+                val = (fuse_lazy,
+                       [_tokenize_dataset(ds) for ds in dss],
+                       gbt[idx],
+                       measurement,
+                       skip_broken_datasets,
+                       chunked_srcs.ndim)
+
+            dsk[key_prefix + idx] = val
+
+    y_shapes = [grid_chunks[0]]*gbt.shape[0]
+    x_shapes = [grid_chunks[1]]*gbt.shape[1]
+
+    y_shapes[-1], x_shapes[-1] = gbt.chunk_shape(tuple(n-1 for n in gbt.shape))
 
     data = da.Array(dsk, dsk_name,
-                    chunks=(sliced_irr_chunks + grid_chunks),
-                    dtype=measurement['dtype'],
-                    shape=(sources.shape + geobox.shape))
+                    chunks=actual_irr_chunks + (tuple(y_shapes), tuple(x_shapes)),
+                    dtype=measurement.dtype,
+                    shape=(chunked_srcs.shape + gbt.base.shape))
 
-    if irr_chunks != sliced_irr_chunks:
-        data = data.rechunk(chunks=(irr_chunks + grid_chunks))
+    if needed_irr_chunks != actual_irr_chunks:
+        data = data.rechunk(chunks=chunks)
     return data
 
 
