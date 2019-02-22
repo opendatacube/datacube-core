@@ -10,6 +10,8 @@ from sqlalchemy.schema import CreateSchema
 
 from datacube.drivers.postgres.sql import TYPES_INIT_SQL, pg_exists, pg_column_exists, escape_pg_identifier
 
+__schema_version__ = '1.0.1'
+
 USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
 
 SQL_NAMING_CONVENTIONS = {
@@ -78,6 +80,12 @@ def ensure_db(engine, with_permissions=True):
             _LOG.info('Creating tables.')
             c.execute(TYPES_INIT_SQL)
             METADATA.create_all(c)
+            # Add the current schema version to schema_version table
+            c.execute(
+                METADATA.tables[schema_qualified('schema_version')].insert().values(
+                    schema_version=__schema_version__
+                )
+            )
             c.execute('commit')
         except:
             c.execute('rollback')
@@ -119,14 +127,16 @@ def database_exists(engine):
 
 def schema_is_latest(engine):
     """
-    Over the lifetime of ODC there have been a couple of schema updates. For now we don't
-    version the schema, but we do need to check we're running against the latest.
-
-    We may have a versioned schema in the future.
-    For now, we know updates have been applied if certain objects exist.
+    Over the lifetime of ODC there have been a couple of schema updates.
     """
-    # We may have versioned schema in the future.
-    # For now, we know updates have been applied if certain objects exist,
+
+    if pg_exists(engine, schema_qualified('schema_version')):
+        return is_schema_version_latest(engine)
+
+    # If it come this far existing system is not updated, we give a warning and try to
+    # infer schema. This inference code should be removed in a future release.
+
+    _LOG.warning('Please run datacube system update (by an admin) to effect stored schema_versions')
 
     location_first_index = 'ix_{schema}_dataset_location_dataset_ref'.format(schema=SCHEMA_NAME)
 
@@ -136,7 +146,7 @@ def schema_is_latest(engine):
     return has_dataset_source_update and has_uri_searches and has_dataset_location
 
 
-def update_schema(engine):
+def update_schema(engine, with_permissions=True):
     """
     Instead of versioning our schema, this function ensures we are running against the latest
     version of the database schema.
@@ -183,6 +193,39 @@ def update_schema(engine):
         commit;
         """.format(schema=SCHEMA_NAME))
         _LOG.info('Completed uri-search update')
+
+    # Update to the stored schema_version
+    if not pg_exists(engine, schema_qualified('schema_version')):
+        # Add the schema_version table and add an entry to it
+        c = engine.connect()
+        quoted_db_name, quoted_user = _get_quoted_connection_info(c)
+
+        try:
+            c.execute('begin')
+            if with_permissions:
+                # Switch to 'agdc_admin', so that all items are owned by them.
+                c.execute('set role agdc_admin')
+            _LOG.info('Creating schema_version table.')
+            METADATA.create_all(c, tables=[METADATA.tables[schema_qualified('schema_version')]])
+            c.execute('commit')
+        except:
+            c.execute('rollback')
+            raise
+        finally:
+            if with_permissions:
+                c.execute('set role "{}"'.format(quoted_user))
+        c.close()
+
+    # Add an entry to the schema_version table
+    if not is_schema_version_latest(engine):
+        c = engine.connect()
+        _LOG.info('Inserting new schema version: %s', __schema_version__)
+        c.execute(
+            METADATA.tables[schema_qualified('schema_version')].insert().values(
+                schema_version=__schema_version__
+            )
+        )
+        c.close()
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
@@ -262,3 +305,24 @@ def from_pg_role(pg_role):
         raise ValueError('Not a pg role: %r. Expected one of %r' % (pg_role, USER_ROLES))
 
     return pg_role.split('_')[1]
+
+
+def schema_version_latest_update(engine):
+    """
+    Returns most recent update to schema_version
+    """
+
+    last_version = engine.execute(
+        "select schema_version from {schema}.schema_version order by id desc limit 1".format(schema=SCHEMA_NAME)
+    )
+    if last_version:
+        last_version = last_version.first()
+    return last_version[0] if last_version else None
+
+
+def is_schema_version_latest(engine):
+    """
+    Return whether the schema version matches with the most recent update in the database
+    """
+
+    return __schema_version__ == schema_version_latest_update(engine)

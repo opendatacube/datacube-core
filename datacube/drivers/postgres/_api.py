@@ -31,7 +31,7 @@ from ._fields import (
 )
 from .sql import escape_pg_identifier
 from ._schema import (
-    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
+    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE, SCHEMA_VERSION
 )
 
 from typing import Iterable, Tuple
@@ -964,3 +964,24 @@ class PostgresDbAPI(object):
                 raise ValueError('Unknown user %r' % user)
 
         _core.grant_role(self._connection, pg_role, users)
+
+    def get_schema_version_info(self):
+        """
+        Return the latest row of SCHEMA_VERSION table as a dictionary with column
+        names as keys. If such a row does not exist, it returns None
+        """
+
+        result = self._connection.execute(
+            select(
+                [SCHEMA_VERSION]
+            ).select_from(
+                SCHEMA_VERSION
+            ).order_by(
+                SCHEMA_VERSION.c.id.desc()
+            ).limit(
+                1
+            )
+        ).first()
+        if result:
+            return {key: result[index] for index, key in enumerate(SCHEMA_VERSION.c.keys())}
+        return None

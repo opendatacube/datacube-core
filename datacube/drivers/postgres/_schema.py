@@ -12,8 +12,10 @@ from sqlalchemy.sql import func
 
 from . import sql
 from . import _core
+from datacube.version import __version__ as datacube_version
 
 _LOG = logging.getLogger(__name__)
+
 
 METADATA_TYPE = Table(
     'metadata_type', _core.METADATA,
@@ -110,4 +112,20 @@ DATASET_SOURCE = Table(
 
     PrimaryKeyConstraint('dataset_ref', 'classifier'),
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),
+)
+
+# Schema version
+SCHEMA_VERSION = Table(
+    'schema_version', _core.METADATA,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+
+    # The version of the schema applied
+    Column('schema_version', String, nullable=False),
+
+    # The datacube version that applied the last change
+    Column('datacube_version_applied', String, default=datacube_version, nullable=False),
+
+    # When it was added and by whom.
+    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', sql.PGNAME, server_default=func.current_user(), nullable=False),
 )
