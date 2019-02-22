@@ -3,6 +3,7 @@ from datacube.api.query import query_group_by
 import numpy as np
 from collections import Sequence
 from types import SimpleNamespace
+import pytest
 
 from pathlib import Path
 from datacube.testutils import (
@@ -10,6 +11,7 @@ from datacube.testutils import (
     mk_test_image,
 )
 from datacube.testutils.io import write_gtiff, rio_slurp
+from datacube.utils import ignore_exceptions_if
 
 
 def gen_tiff_dataset(bands,
@@ -169,3 +171,22 @@ def test_rio_slurp_with_gbox(tmpdir):
     aa, mm = rio_slurp(mm.path, mm.gbox)
     assert aa.shape == aa0.shape
     np.testing.assert_array_equal(aa, aa0)
+
+
+def test_missing_file_handling():
+    with pytest.raises(IOError):
+        rio_slurp('no-such-file.tiff')
+
+    # by default should catch any exception
+    with ignore_exceptions_if(True):
+        rio_slurp('no-such-file.tiff')
+
+    # this is equivalent to previous default behaviour, note that missing http
+    # resources are not OSError
+    with ignore_exceptions_if(True, (OSError,)):
+        rio_slurp('no-such-file.tiff')
+
+    # check that only requested exceptions are caught
+    with pytest.raises(IOError):
+        with ignore_exceptions_if(True, (ValueError, ArithmeticError)):
+            rio_slurp('no-such-file.tiff')

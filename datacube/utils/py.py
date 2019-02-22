@@ -25,12 +25,15 @@ def import_function(func_ref):
 
 
 @contextmanager
-def ignore_exceptions_if(ignore_errors):
+def ignore_exceptions_if(ignore_errors, errors=None):
     """Ignore Exceptions raised within this block if ignore_errors is True"""
+    if errors is None:
+        errors = (Exception,)
+
     if ignore_errors:
         try:
             yield
-        except OSError as e:
+        except errors as e:
             _LOG.warning('Ignoring Exception: %s', e)
     else:
         yield
