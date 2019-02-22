@@ -128,6 +128,7 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
+             skip_broken_datasets=False,
              dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, **query):
         """
         Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
@@ -293,6 +294,7 @@ class Datacube(object):
                                 resampling=resampling,
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
+                                skip_broken_datasets=skip_broken_datasets,
                                 **legacy_args)
 
         return apply_aliases(result, datacube_product, measurements)
