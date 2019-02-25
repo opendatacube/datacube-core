@@ -14,7 +14,6 @@ DEFAULT_PROFILE = {
     'driver': 'GTiff',
     'interleave': 'band',
     'nodata': 0.0,
-    'photometric': 'RGBA',
     'tiled': True}
 
 
