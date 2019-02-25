@@ -141,7 +141,7 @@ class RasterioDataSource(DataSource):
         """Context manager which returns a :class:`BandDataSource`"""
         try:
             _LOG.debug("opening %s", self.filename)
-            with rasterio.open(self.filename) as src:
+            with rasterio.open(self.filename, sharing=False) as src:
                 override = False
 
                 transform = src.transform
