@@ -8,7 +8,6 @@ from affine import Affine
 import pytest
 import warnings
 
-from datacube.testutils import mk_sample_dataset
 from datacube.drivers.rio._reader import (
     RDEntry,
     _dc_crs,
@@ -16,33 +15,11 @@ from datacube.drivers.rio._reader import (
     _rio_band_idx,
     _roi_to_window,
 )
-from datacube.storage import BandInfo
 from datacube.utils import datetime_to_seconds_since_1970
 from datacube.testutils.geom import SAMPLE_WKT_WITHOUT_AUTHORITY, epsg3857
-from datacube.testutils.threads import FakeThreadPoolExecutor
-
-NetCDF = 'NetCDF'    # pylint: disable=invalid-name
-GeoTIFF = 'GeoTIFF'  # pylint: disable=invalid-name
-
-
-def mk_reader():
-    pool = FakeThreadPoolExecutor()
-    rde = RDEntry()
-    return rde.new_instance({'pool': pool,
-                             'allow_custom_pool': True})
-
-
-def mk_band(name: str,
-            base_uri: str,
-            path: str = '',
-            format: str = GeoTIFF,
-            **extras) -> BandInfo:
-    band_opts = {k: extras.pop(k)
-                 for k in 'path layer band nodata dtype units aliases'.split() if k in extras}
-
-    band = dict(name=name, path=path, **band_opts)
-    ds = mk_sample_dataset([band], base_uri, format=format, **extras)
-    return BandInfo(ds, name)
+from datacube.testutils.iodriver import (
+    NetCDF, GeoTIFF, mk_band, mk_rio_driver, open_reader
+)
 
 
 def test_rio_rd_entry():
@@ -179,7 +156,7 @@ def test_rio_driver_fail_to_open():
 def test_rio_driver_open(data_folder):
     base = "file://" + str(data_folder) + "/metadata.yml"
 
-    rdr = mk_reader()
+    rdr = mk_rio_driver()
     assert rdr is not None
 
     load_ctx = rdr.new_load_context(iter([]), None)
@@ -230,3 +207,15 @@ def test_rio_driver_open(data_folder):
     assert src.crs == bi.crs
     assert src.transform == bi.transform
     assert src.nodata == bi.nodata
+
+
+def test_testutils_iodriver(data_folder):
+    fpath = str(data_folder) + '/test.tif'
+    src = open_reader(fpath)
+    assert src is not None
+    assert src.crs is not None
+    assert src.transform is not None
+    assert src.crs.epsg == 4326
+    assert src.shape == (2000, 4000)
+    assert src.nodata == -999
+    assert src.dtype == np.dtype(np.int16)
