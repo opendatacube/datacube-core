@@ -50,3 +50,16 @@ def open_reader(path: str,
     load_ctx = rdr.new_load_context(iter([bi]), None)
     fut = rdr.open(bi, load_ctx)
     return fut.result()
+
+
+def tee_new_load_context(rdr, new_impl):
+    """ When calling rdr.new_load_context(bands, old_ctx) tee data to new_impl
+    """
+    _real_impl = rdr.new_load_context
+
+    def patched(bands, old_ctx):
+        bands = list(bands)
+        new_impl(iter(bands), old_ctx)
+        return _real_impl(iter(bands), old_ctx)
+
+    rdr.new_load_context = patched
