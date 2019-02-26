@@ -176,3 +176,77 @@ def read_time_slice(rdr,
                           src_nodata=rdr.nodata, dst_nodata=dst_nodata)
 
     return rr.roi_dst
+
+
+def read_time_slice_v2(rdr,
+                       dst_gbox: GeoBox,
+                       resampling: Resampling,
+                       dst_nodata: Nodata) -> Tuple[np.ndarray,
+                                                    Tuple[slice, slice]]:
+    """ From opened reader object read into `dst`
+
+    :returns: pixels read and ROI of dst_gbox that was affected
+    """
+    # pylint: disable=too-many-locals
+    src_gbox = rdr_geobox(rdr)
+
+    rr = compute_reproject_roi(src_gbox, dst_gbox)
+
+    if roi_is_empty(rr.roi_dst):
+        return None, rr.roi_dst
+
+    is_nn = is_resampling_nn(resampling)
+    scale = pick_read_scale(rr.scale, rdr)
+
+    paste_ok, _ = can_paste(rr, ttol=0.9 if is_nn else 0.01)
+
+    def norm_read_args(roi, shape):
+        if roi_is_full(roi, rdr.shape):
+            roi = None
+
+        if roi is None and shape == rdr.shape:
+            shape = None
+
+        return roi, shape
+
+    if paste_ok:
+        read_shape = roi_shape(rr.roi_dst)
+        A = rr.transform.linear
+        sx, sy = A.a, A.e
+
+        pix = rdr.read(*norm_read_args(rr.roi_src, read_shape)).result()
+
+        if sx < 0:
+            pix = pix[:, ::-1]
+        if sy < 0:
+            pix = pix[::-1, :]
+
+        # normalise nodata to be equal to `dst_nodata`
+        if rdr.nodata is not None and rdr.nodata != dst_nodata:
+            pix[pix == rdr.nodata] = dst_nodata
+
+        dst = pix
+    else:
+        if rr.is_st:
+            # add padding on src/dst ROIs, it was set to tight bounds
+            # TODO: this should probably happen inside compute_reproject_roi
+            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_gbox.shape)
+            rr.roi_src = roi_pad(rr.roi_src, 1, src_gbox.shape)
+
+        dst_gbox = dst_gbox[rr.roi_dst]
+        src_gbox = src_gbox[rr.roi_src]
+        if scale > 1:
+            src_gbox = gbx.zoom_out(src_gbox, scale)
+
+        dst = np.full(dst_gbox.shape, dst_nodata, dtype=rdr.dtype)
+        pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape)).result()
+
+        if rr.transform.linear is not None:
+            A = (~src_gbox.transform)*dst_gbox.transform
+            warp_affine(pix, dst, A, resampling,
+                        src_nodata=rdr.nodata, dst_nodata=dst_nodata)
+        else:
+            rio_reproject(pix, dst, src_gbox, dst_gbox, resampling,
+                          src_nodata=rdr.nodata, dst_nodata=dst_nodata)
+
+    return dst, rr.roi_dst
