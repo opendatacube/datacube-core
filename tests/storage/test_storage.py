@@ -89,6 +89,14 @@ def test_mixed_result_when_first_source_partially_empty():
     assert (output_data == [[1, 1], [2, 2]]).all()
 
 
+def test_when_input_empty():
+    shape = (2, 2)
+    no_data = -1
+    out = np.full(shape, fill_value=no_data, dtype='int16')
+    reproject_and_fuse([], out, mk_gbox(shape, crs=epsg4326), dst_nodata=no_data)
+    assert (out == no_data).all()
+
+
 def test_mixed_result_when_first_source_partially_empty_with_nan_nodata():
     crs = epsg4326
     shape = (2, 2)
