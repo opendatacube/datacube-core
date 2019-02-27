@@ -94,13 +94,14 @@ def _allocate_storage(coords: Mapping[str, XrDataArray],
                       geobox: GeoBox,
                       measurements: Iterable[Measurement]) -> XrDataset:
     xx = _mk_empty_ds(coords, geobox)
-    shape = tuple(xx.sizes.values())
+    dims = list(xx.coords.keys())
+    shape = tuple(xx.sizes[k] for k in dims)
 
     for m in measurements:
         name, dtype, attrs = m.name, m.dtype, m.dataarray_attrs()
         attrs['crs'] = geobox.crs
         data = np.empty(shape, dtype=dtype)
-        xx[name] = XrDataArray(data, coords=xx.coords, name=name, attrs=attrs)
+        xx[name] = XrDataArray(data, coords=xx.coords, dims=dims, name=name, attrs=attrs)
 
     return xx
 
