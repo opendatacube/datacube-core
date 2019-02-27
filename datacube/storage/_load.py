@@ -25,6 +25,16 @@ _LOG = logging.getLogger(__name__)
 FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
 
 
+def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata: float) -> None:
+    """ Overwrite only those pixels in `dst` with `src` that are "not valid"
+
+        For every pixel in dst that equals to dst_nodata replace it with pixel
+        from src.
+    """
+    where_nodata = (dst == dst_nodata) if not np.isnan(dst_nodata) else np.isnan(dst)
+    np.copyto(dst, src, where=where_nodata)
+
+
 def reproject_and_fuse(datasources: List[DataSource],
                        destination: np.ndarray,
                        dst_gbox: GeoBox,
@@ -45,8 +55,7 @@ def reproject_and_fuse(datasources: List[DataSource],
     assert len(destination.shape) == 2
 
     def copyto_fuser(dest: np.ndarray, src: np.ndarray) -> None:
-        where_nodata = (dest == dst_nodata) if not np.isnan(dst_nodata) else np.isnan(dest)
-        np.copyto(dest, src, where=where_nodata)
+        _default_fuser(dest, src, dst_nodata)
 
     fuse_func = fuse_func or copyto_fuser
 
@@ -113,6 +122,7 @@ def xr_load(sources: XrDataArray,
             driver_ctx_prev: Optional[Any] = None,
             skip_broken_datasets: bool = False) -> Tuple[XrDataset, Any]:
     # pylint: disable=too-many-locals
+    from ._read import read_time_slice_v2
 
     out = _allocate_storage(sources.coords, geobox, measurements)
 
@@ -131,12 +141,20 @@ def xr_load(sources: XrDataArray,
 
     # TODO: run upto N concurrently
     for m, idx, bbi in groups:
-        dst = out[m.name][idx]
+        dst = out[m.name].values[idx]
         dst[:] = m.nodata
+        resampling = m.get('resampling_method', 'nearest')
+        fuse_func = m.get('fuser', None)
 
         for band in bbi:
             rdr = driver.open(band, ctx).result()
-            print(rdr.crs)
-            print(rdr.nodata)
+
+            pix, roi = read_time_slice_v2(rdr, geobox, resampling, m.nodata)
+
+            if pix is not None:
+                if fuse_func:
+                    fuse_func(dst[roi], pix)
+                else:
+                    _default_fuser(dst[roi], pix, m.nodata)
 
     return out, ctx
