@@ -1,6 +1,8 @@
 """ Test New IO driver loading
 """
 
+import numpy as np
+
 from datacube.storage._load import (
     xr_load,
 )
@@ -25,18 +27,26 @@ def test_new_xr_load(data_folder):
 
     tee_new_load_context(rdr, band_info_collector)
 
-    band = dict(name='a',
-                path='test.tif')
-    ds = mk_sample_dataset([band], base)
+    band_a = dict(name='a',
+                  path='test.tif')
+
+    band_b = dict(name='b',
+                  band=2,
+                  path='test.tif')
+
+    ds = mk_sample_dataset([band_a, band_b], base)
 
     sources = Datacube.group_datasets([ds], 'time')
 
     im, meta = rio_slurp(str(data_folder) + '/test.tif')
-    measurements = [ds.type.measurements['a']]
+    measurements = [ds.type.measurements[n] for n in ('a', 'b')]
 
     xx, _ = xr_load(sources, meta.gbox, measurements, rdr)
 
-    assert len(_bands) == 1
+    assert len(_bands) == 2
 
     assert im[0].shape == xx.a.isel(time=0).shape
-    # TODO: verify pixel values
+    assert im[1].shape == xx.b.isel(time=0).shape
+
+    np.testing.assert_array_equal(im[0], xx.a.values[0])
+    np.testing.assert_array_equal(im[1], xx.b.values[0])
