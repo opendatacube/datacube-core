@@ -1,6 +1,7 @@
 from typing import Mapping, Any
 
 from .impl import VirtualProduct, Transformation, VirtualProductException
+from .impl import from_validated_recipe
 from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select
 from .transformations import Mean, year, month, week, day
 from .utils import reject_keys
@@ -49,8 +50,8 @@ class NameResolver:
 
         if 'product' in recipe:
             func_keys = ['fuse_func', 'dataset_predicate']
-            return VirtualProduct({key: value if key not in func_keys else lookup(value, kind='function')
-                                   for key, value in recipe.items()})
+            return from_validated_recipe({key: value if key not in func_keys else lookup(value, kind='function')
+                                          for key, value in recipe.items()})
 
         if 'transform' in recipe:
             cls_name = recipe['transform']
@@ -59,23 +60,23 @@ class NameResolver:
             if input_product is None:
                 raise VirtualProductException("no input for transformation in {}".format(recipe))
 
-            return VirtualProduct(dict(transform=lookup(cls_name, 'transform'),
-                                       input=self.construct(**input_product),
-                                       **reject_keys(recipe, ['transform', 'input'])))
+            return from_validated_recipe(dict(transform=lookup(cls_name, 'transform'),
+                                              input=self.construct(**input_product),
+                                              **reject_keys(recipe, ['transform', 'input'])))
 
         if 'collate' in recipe:
             if len(recipe['collate']) < 1:
                 raise VirtualProductException("no children for collate in {}".format(recipe))
 
-            return VirtualProduct(dict(collate=[self.construct(**child) for child in recipe['collate']],
-                                       **reject_keys(recipe, ['collate'])))
+            return from_validated_recipe(dict(collate=[self.construct(**child) for child in recipe['collate']],
+                                              **reject_keys(recipe, ['collate'])))
 
         if 'juxtapose' in recipe:
             if len(recipe['juxtapose']) < 1:
                 raise VirtualProductException("no children for juxtapose in {}".format(recipe))
 
-            return VirtualProduct(dict(juxtapose=[self.construct(**child) for child in recipe['juxtapose']],
-                                       **reject_keys(recipe, ['juxtapose'])))
+            return from_validated_recipe(dict(juxtapose=[self.construct(**child) for child in recipe['juxtapose']],
+                                              **reject_keys(recipe, ['juxtapose'])))
 
         if 'aggregate' in recipe:
             cls_name = recipe['aggregate']
@@ -87,10 +88,10 @@ class NameResolver:
             if group_by is None:
                 raise VirtualProductException("no group_by for aggregate in {}".format(recipe))
 
-            return VirtualProduct(dict(aggregate=lookup(cls_name, 'aggregate'),
-                                       group_by=lookup(group_by, 'aggregate/group_by', kind='group_by'),
-                                       input=self.construct(**input_product),
-                                       **reject_keys(recipe, ['aggregate', 'input', 'group_by'])))
+            return from_validated_recipe(dict(aggregate=lookup(cls_name, 'aggregate'),
+                                              group_by=lookup(group_by, 'aggregate/group_by', kind='group_by'),
+                                              input=self.construct(**input_product),
+                                              **reject_keys(recipe, ['aggregate', 'input', 'group_by'])))
 
         raise VirtualProductException("could not understand virtual product recipe: {}".format(recipe))
 
