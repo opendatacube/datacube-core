@@ -618,11 +618,6 @@ def _kind(recipe):
     return candidates[0]
 
 
-def _kind_class(recipe):
-    """ One of Product, Transform, Collate, Juxtapose, or Aggregate. """
-    lookup = dict(product=Product, transform=Transform, collate=Collate, juxtapose=Juxtapose, aggregate=Aggregate)
-    return lookup[_kind(recipe)]
-
-
 def from_validated_recipe(recipe):
-    return (_kind_class(recipe))(recipe)
+    lookup = dict(product=Product, transform=Transform, collate=Collate, juxtapose=Juxtapose, aggregate=Aggregate)
+    return lookup[_kind(recipe)](recipe)
