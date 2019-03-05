@@ -36,6 +36,10 @@ WORKDIR $APPDIR
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 
+# Ensure pip is up to date
+RUN pip3 install --upgrade pip \
+    && rm -rf $HOME/.cache/pip
+
 # Install psycopg2 as a special case, to quiet the warning message 
 RUN pip3 install --no-cache --no-binary :all: psycopg2 \
     && rm -rf $HOME/.cache/pip
