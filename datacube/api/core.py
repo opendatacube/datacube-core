@@ -220,10 +220,15 @@ class Datacube(object):
             Typically when using most CRSs, the first number would be negative.
 
         :param str|dict resampling:
-            The resampling method to use if re-projection is required.
+            The resampling method to use if re-projection is required. This could be a string or
+            a dictionary mapping band name to resampling mode. When using a dict use ``'*'`` to
+            indicate "apply to all other bands", for example ``{'*': 'cubic', 'fmask': 'nearest'}`` would
+            use `cubic` for all bands except ``fmask`` for which `nearest` will be used.
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average',
             'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'``
+
+            Default is to use ``nearest`` for all bands.
             .. seealso:: :meth:`load_data`
 
         :param (float,float) align:
