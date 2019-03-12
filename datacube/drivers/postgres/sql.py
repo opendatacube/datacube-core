@@ -57,7 +57,11 @@ class CommonTimestamp(GenericFunction):
     package = 'agdc'
     identifier = 'common_timestamp'
 
-    name = '%s.common_timestamp' % SCHEMA_NAME
+    name = 'common_timestamp'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.packagenames = ['%s' % SCHEMA_NAME]
 
 
 # pylint: disable=too-many-ancestors
@@ -66,7 +70,11 @@ class Float8Range(GenericFunction):
     package = 'agdc'
     identifier = 'float8range'
 
-    name = '%s.float8range' % SCHEMA_NAME
+    name = 'float8range'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.packagenames = ['%s' % SCHEMA_NAME]
 
 
 class PGNAME(sqltypes.Text):
