@@ -40,12 +40,13 @@ ENV LC_ALL C.UTF-8
 RUN pip3 install --upgrade pip \
     && rm -rf $HOME/.cache/pip
 
-# Install psycopg2 as a special case, to quiet the warning message 
-RUN pip3 install --no-cache --no-binary :all: psycopg2 \
+# Install psycopg2 as a special case to quiet the warning message 
+# Make sure this version is the same as in the requirements-test.txt file
+RUN pip3 install --no-cache --no-binary :all: psycopg2==2.7.7 \
     && rm -rf $HOME/.cache/pip
 
-# Now use the setup.py file to identify dependencies
-RUN pip3 install '.[test,celery,s3]' --upgrade \
+# Use the setup.py file to identify dependencies
+RUN pip3 install -r requirements-test.txt \
     && rm -rf $HOME/.cache/pip
 
 # Install ODC
