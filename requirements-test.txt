@@ -82,5 +82,5 @@ tzlocal==1.5.1
 urllib3==1.23
 vine==1.1.4
 wrapt==1.10.11
-xarray==0.10.2
+xarray==0.10.9
 zstandard==0.9.0
