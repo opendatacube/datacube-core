@@ -40,7 +40,7 @@ mccabe==0.6.1
 mock==2.0.0
 more-itertools==4.1.0
 multiprocess==0.70.5
-netCDF4==1.3.1
+netCDF4==1.3.1  # rq.filter: >=1.3.1,<1.4
 nose==1.3.7
 numpy==1.14.2
 objgraph==3.4.0
@@ -68,7 +68,7 @@ python-dateutil==2.7.2
 pytz==2018.4
 pytzdata==2018.4
 PyYAML==3.12
-rasterio==1.0.21
+rasterio==1.0.21  # rq.filter: >=1.0.21,<1.1
 redis==2.10.6
 regex==2017.7.28
 requests==2.20.1
@@ -76,11 +76,11 @@ s3transfer==0.2.0
 SharedArray==2.0.4
 singledispatch==3.4.0.3
 snuggs==1.4.1
-SQLAlchemy==1.2.6
+SQLAlchemy==1.2.6  # rq.filter: >=1.2.6,<1.3
 toolz==0.9.0
 tzlocal==1.5.1
 urllib3==1.23
 vine==1.1.4
 wrapt==1.10.11
-xarray==0.10.9
+xarray==0.10.9 # rq.filter: >=1.10.0,<0.11
 zstandard==0.9.0
