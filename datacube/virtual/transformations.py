@@ -1,4 +1,6 @@
+import numpy
 import xarray
+import lark
 
 from datacube.storage.masking import make_mask as make_mask_prim
 from datacube.storage.masking import mask_invalid_data as mask_invalid_data_prim
@@ -156,6 +158,126 @@ class Select(Transformation):
         return data.drop([measurement
                           for measurement in data.data_vars
                           if measurement not in self.measurement_names])
+
+
+def formula_parser():
+    return lark.Lark("""
+                ?expr: num_expr | bool_expr
+
+                ?bool_expr: or_clause | comparison_clause
+
+                ?or_clause: or_clause "|" and_clause -> or_
+                          | or_clause "^" and_clause -> xor
+                          | and_clause
+                ?and_clause: and_clause "&" term -> and_
+                           | term
+                ?term: "not" term -> not_
+                     | "(" bool_expr ")"
+
+                ?comparison_clause: eq | ne | le | ge | lt | gt
+
+                eq: num_expr "==" num_expr
+                ne: num_expr "!=" num_expr
+                le: num_expr "<=" num_expr
+                ge: num_expr ">=" num_expr
+                lt: num_expr "<" num_expr
+                gt: num_expr ">" num_expr
+
+
+                ?num_expr: shift
+
+                ?shift: shift "<<" sum -> lshift
+                      | shift ">>" sum -> rshift
+                      | sum
+
+                ?sum: sum "+" product -> add
+                    | sum "-" product -> sub
+                    | product
+
+                ?product: product "*" atom -> mul
+                        | product "/" atom -> truediv
+                        | product "//" atom -> floordiv
+                        | product "%" atom -> mod
+                        | atom
+
+                ?atom: "-" subatom -> neg
+                     | "+" subatom -> pos
+                     | "~" subatom -> inv
+                     | subatom "**" atom -> pow
+                     | subatom
+
+                ?subatom: NAME -> var_name
+                        | FLOAT -> float_literal
+                        | INT -> int_literal
+                        | "(" num_expr ")"
+
+
+                %import common.FLOAT
+                %import common.INT
+                %import common.WS_INLINE
+                %import common.CNAME -> NAME
+
+                %ignore WS_INLINE
+                """, start='expr')
+
+
+@lark.v_args(inline=True)
+class EvaluateTree(lark.Transformer):
+    from operator import not_, or_, and_, xor
+    from operator import eq, ne, le, ge, lt, gt
+    from operator import add, sub, mul, truediv, floordiv, neg, pos, inv, mod, pow, lshift, rshift
+
+    float_literal = float
+    int_literal = int
+
+
+class Formula(Transformation):
+    def __init__(self, output):
+        self.output = output
+
+    def measurements(self, input_measurements):
+        parser = formula_parser()
+
+        @lark.v_args(inline=True)
+        class EvaluateType(EvaluateTree):
+            def var_name(self, key):
+                return numpy.array([0], dtype=input_measurements[key.value].dtype)
+
+        ev = EvaluateType()
+
+        def deduce_type(output_var, output_desc):
+            formula = output_desc['formula']
+            tree = parser.parse(formula)
+
+            result = ev.transform(tree)
+            return result.dtype
+
+        def measurement(output_var, output_desc):
+            return Measurement(name=output_var, dtype=deduce_type(output_var, output_desc),
+                               nodata=output_desc['nodata'], units=output_desc['units'])
+
+        return {output_var: measurement(output_var, output_desc)
+                for output_var, output_desc in self.output.items()}
+
+    def compute(self, data):
+        parser = formula_parser()
+
+        @lark.v_args(inline=True)
+        class EvaluateData(EvaluateTree):
+            def var_name(self, key):
+                return data[key.value]
+
+        ev = EvaluateData()
+
+        def result(output_var, output_desc):
+            formula = output_desc['formula']
+            tree = parser.parse(formula)
+
+            return ev.transform(tree)
+
+        return xarray.Dataset(data_vars={output_var: result(output_var, output_desc)
+                                         for output_var, output_desc in self.output.items()},
+                              coords=data.coords, attrs=data.attrs)
 
 
 def year(time):
