@@ -99,6 +99,7 @@ setup(
         'numpy',
         'psycopg2',
         'pypeg2',
+        'lark-parser>=0.6.7',
         'python-dateutil',
         'pyyaml',
         'rasterio>=1.0.2',  # Multi-band re-project fixed in that version

@@ -2,7 +2,7 @@ from typing import Mapping, Any
 
 from .impl import VirtualProduct, Transformation, VirtualProductException
 from .impl import from_validated_recipe
-from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select
+from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select, Formula
 from .transformations import Mean, year, month, week, day
 from .utils import reject_keys
 
@@ -45,7 +45,7 @@ class NameResolver:
         kind_keys = {key for key in recipe if key in ['product', 'transform', 'collate', 'juxtapose', 'aggregate']}
         if len(kind_keys) < 1:
             raise VirtualProductException("virtual product kind not specified in {}".format(recipe))
-        elif len(kind_keys) > 1:
+        if len(kind_keys) > 1:
             raise VirtualProductException("ambiguous kind in {}".format(recipe))
 
         if 'product' in recipe:
@@ -100,7 +100,8 @@ DEFAULT_RESOLVER = NameResolver({'transform': dict(make_mask=MakeMask,
                                                    apply_mask=ApplyMask,
                                                    to_float=ToFloat,
                                                    rename=Rename,
-                                                   select=Select),
+                                                   select=Select,
+                                                   formula=Formula),
                                  'aggregate': dict(mean=Mean),
                                  'aggregate/group_by': dict(year=year,
                                                             month=month,
