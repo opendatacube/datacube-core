@@ -181,15 +181,38 @@ def list_products(dc, output_format):
 @product_cli.command('show')
 @click.option('-f', 'output_format', help='Output format',
               type=click.Choice(['yaml', 'json']), default='yaml', show_default=True)
-@click.argument('product_name', nargs=1)
+@click.argument('product_name', nargs=-1)
 @ui.pass_datacube()
 def show_product(dc, product_name, output_format):
     """
     Show details about a product in the generic index.
     """
-    product = dc.index.products.get_by_name(product_name)
+
+    if len(product_name) == 0:
+        products = list(dc.index.products.get_all())
+    else:
+        products = []
+        for name in product_name:
+            p = dc.index.products.get_by_name(name)
+            if p is None:
+                echo('No such product: {}'.format(name))
+                sys.exit(1)
+            else:
+                products.append(p)
+
+    if len(products) == 0:
+        echo('No products')
+        sys.exit(1)
 
     if output_format == 'yaml':
-        yaml.dump(product.definition, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
+        yaml.dump_all((p.definition for p in products),
+                      sys.stdout,
+                      Dumper=SafeDatacubeDumper,
+                      default_flow_style=False,
+                      indent=4)
     elif output_format == 'json':
+        if len(products) > 1:
+            echo('Can not output more than 1 product in json format')
+            sys.exit(1)
+        product, *_ = products
         click.echo_via_pager(json.dumps(product.definition, indent=4))
