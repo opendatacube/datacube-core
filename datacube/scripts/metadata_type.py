@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 import click
-from click import echo
+from click import echo, style
 
 from datacube.index.index import Index
 from datacube.ui import click as ui
@@ -119,7 +119,10 @@ def list_metadata_types(index):
 
     if not metadata_types:
         echo('No metadata types found :(')
-        return
+        sys.exit(1)
 
+    max_w = max(len(m.name) for m in metadata_types)
     for m in metadata_types:
-        echo(m)
+        description_short = m.definition.get('description', '').split('\n')[0]
+        name = '{s:<{n}}'.format(s=m.name, n=max_w)
+        echo(style(name, fg='green') + '  ' + description_short)
