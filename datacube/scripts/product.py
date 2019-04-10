@@ -202,13 +202,13 @@ def show_product(dc, product_name, output_format):
         for name in product_name:
             p = dc.index.products.get_by_name(name)
             if p is None:
-                echo('No such product: {}'.format(name))
+                echo('No such product: {!r}'.format(name), err=True)
                 sys.exit(1)
             else:
                 products.append(p)
 
     if len(products) == 0:
-        echo('No products')
+        echo('No products', err=True)
         sys.exit(1)
 
     if output_format == 'yaml':
@@ -219,7 +219,7 @@ def show_product(dc, product_name, output_format):
                       indent=4)
     elif output_format == 'json':
         if len(products) > 1:
-            echo('Can not output more than 1 product in json format')
+            echo('Can not output more than 1 product in json format', err=True)
             sys.exit(1)
         product, *_ = products
         click.echo_via_pager(json.dumps(product.definition, indent=4))
