@@ -370,8 +370,9 @@ class Datacube(object):
             if isinstance(x, datetime.datetime):
                 # For datetime we convert to UTC, then strip timezone info
                 # to avoid numpy/pandas warning about timezones
-                x = x.astimezone(datetime.timezone.utc)
-                return numpy.datetime64(x.replace(tzinfo=None), 'ns')
+                if x.tzinfo is not None:
+                    x = x.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+                return numpy.datetime64(x, 'ns')
             return x
 
         def mk_group(group):
