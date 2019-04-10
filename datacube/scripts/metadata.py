@@ -17,12 +17,12 @@ from datacube.utils.serialise import SafeDatacubeDumper
 _LOG = logging.getLogger('datacube-md-type')
 
 
-@cli.group(name='metadata_type', help='Metadata type commands')
-def metadata_type():
+@cli.group(name='metadata', help='Metadata type commands')
+def this_group():
     pass
 
 
-@metadata_type.command('add')
+@this_group.command('add')
 @click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
               help='Allow index to be locked from other users while updating (default: false)')
 @click.argument('files',
@@ -44,7 +44,7 @@ def add_metadata_types(index, allow_exclusive_lock, files):
             continue
 
 
-@metadata_type.command('update')
+@this_group.command('update')
 @click.option(
     '--allow-unsafe/--forbid-unsafe', is_flag=True, default=False,
     help="Allow unsafe updates (default: false)"
@@ -96,7 +96,7 @@ def update_metadata_types(index, allow_unsafe, allow_exclusive_lock, dry_run, fi
                                                                                  len(safe_changes)))
 
 
-@metadata_type.command('show')
+@this_group.command('show')
 @click.option('-f', 'output_format', help='Output format',
               type=click.Choice(['yaml', 'json']), default='yaml', show_default=True)
 @click.argument('metadata_type_name', nargs=-1)
@@ -136,7 +136,7 @@ def show_metadata_type(index, metadata_type_name, output_format):
         echo(json.dumps(m.definition, indent=4))
 
 
-@metadata_type.command('list')
+@this_group.command('list')
 @ui.pass_index()
 def list_metadata_types(index):
     """

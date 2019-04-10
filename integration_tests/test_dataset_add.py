@@ -195,7 +195,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert r.exit_code != 0
     assert 'Found no products' in r.output
 
-    clirunner(['metadata_type', 'add', p.metadata])
+    clirunner(['metadata', 'add', p.metadata])
     clirunner(['product', 'add', p.products])
     clirunner(['dataset', 'add', p.datasets])
     clirunner(['dataset', 'add', p.datasets_bad1])
@@ -277,7 +277,7 @@ metadata:
         'dataset2.yml': yaml.safe_dump(dss[1].doc),
     })
 
-    clirunner(['metadata_type', 'add', p.metadata])
+    clirunner(['metadata', 'add', p.metadata])
     clirunner(['product', 'add', str(prefix/'products.yml')])
 
     pp = list(index.products.get_all())
@@ -310,7 +310,7 @@ def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
 
-    clirunner(['metadata_type', 'add', p.metadata])
+    clirunner(['metadata', 'add', p.metadata])
     clirunner(['product', 'add', p.products])
 
     mk = dataset_maker(0)
@@ -391,7 +391,7 @@ measurements:
         'dataset.yml': yaml.safe_dump_all(docs),
     })
 
-    clirunner(['metadata_type', 'add', p.metadata])
+    clirunner(['metadata', 'add', p.metadata])
     r = clirunner(['product', 'add', str(prefix/'products.yml')])
 
     pp = list(index.products.get_all())
@@ -412,7 +412,7 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
 
-    clirunner(['metadata_type', 'add', p.metadata])
+    clirunner(['metadata', 'add', p.metadata])
     clirunner(['product', 'add', p.products])
     clirunner(['dataset', 'add', p.datasets])
 
