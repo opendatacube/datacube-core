@@ -237,6 +237,26 @@ def test_write_geotiff(tmpdir, odc_style_xr_dataset):
         assert (written_data == odc_style_xr_dataset['B10']).all()
 
 
+def test_write_geotiff_str_crs(tmpdir, odc_style_xr_dataset):
+    """Ensure the geotiff helper writer works, and supports crs as a string."""
+    filename = tmpdir + '/test.tif'
+
+    original_crs = odc_style_xr_dataset.crs
+
+    odc_style_xr_dataset.attrs['crs'] = str(original_crs)
+    write_geotiff(filename, odc_style_xr_dataset)
+    assert filename.exists()
+
+    with rasterio.open(str(filename)) as src:
+        written_data = src.read(1)
+
+        assert (written_data == odc_style_xr_dataset['B10']).all()
+
+    del odc_style_xr_dataset.attrs['crs']
+    with pytest.raises(ValueError):
+        write_geotiff(filename, odc_style_xr_dataset)
+
+
 def test_write_geotiff_time_index_deprecated():
     """The `time_index` parameter to `write_geotiff()` was a poorly thought out addition and is now deprecated."""
 

@@ -26,7 +26,16 @@ def write_geotiff(filename, dataset, profile_override=None, time_index=None):
     :param profile_override: option dict, overrides rasterio file creation options.
     :param time_index: DEPRECATED
     """
+    from datacube.utils.geometry import CRS
     profile_override = profile_override or {}
+
+    crs = dataset.attrs.get('crs', None)
+
+    if crs is None:
+        raise ValueError('Can only write datasets with sepcified `crs` attribute')
+
+    if isinstance(crs, str):
+        crs = CRS(crs)
 
     if time_index is not None:
         raise ValueError('''The write_geotiff function no longer supports passing in `time_index`.
@@ -41,10 +50,10 @@ def write_geotiff(filename, dataset, profile_override=None, time_index=None):
 
     profile = DEFAULT_PROFILE.copy()
     profile.update({
-        'width': dataset.dims[dataset.crs.dimensions[1]],
-        'height': dataset.dims[dataset.crs.dimensions[0]],
+        'width': dataset.dims[crs.dimensions[1]],
+        'height': dataset.dims[crs.dimensions[0]],
         'transform': dataset.affine,
-        'crs': dataset.crs.crs_str,
+        'crs': crs.crs_str,
         'count': len(dataset.data_vars),
         'dtype': str(dtypes.pop())
     })
