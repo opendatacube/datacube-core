@@ -1,6 +1,8 @@
 
 import json
 import logging
+import sys
+import yaml
 from pathlib import Path
 
 import click
@@ -10,6 +12,7 @@ from datacube.index.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
+from datacube.utils.serialise import SafeDatacubeDumper
 
 _LOG = logging.getLogger('datacube-md-type')
 
@@ -94,19 +97,43 @@ def update_metadata_types(index, allow_unsafe, allow_exclusive_lock, dry_run, fi
 
 
 @metadata_type.command('show')
-@click.option('-v', '--verbose', is_flag=True)
-@click.argument('metadata_type_name', nargs=1)
+@click.option('-f', 'output_format', help='Output format',
+              type=click.Choice(['yaml', 'json']), default='yaml', show_default=True)
+@click.argument('metadata_type_name', nargs=-1)
 @ui.pass_index()
-def show_metadata_type(index, metadata_type_name, verbose):
+def show_metadata_type(index, metadata_type_name, output_format):
     """
     Show information about a metadata type.
     """
-    metadata_type_obj = index.metadata_types.get_by_name(metadata_type_name)
-    if verbose:
-        echo(json.dumps(metadata_type_obj.definition, indent=4))
+
+    if len(metadata_type_name) == 0:
+        mm = list(index.metadata_types.get_all())
     else:
-        print(metadata_type_obj.description)
-        print('Search fields: %s' % ', '.join(sorted(metadata_type_obj.dataset_fields.keys())))
+        mm = []
+        for name in metadata_type_name:
+            m = index.metadata_types.get_by_name(name)
+            if m is None:
+                echo('No such metadata: {}'.format(name))
+                sys.exit(1)
+            else:
+                mm.append(m)
+
+    if len(mm) == 0:
+        echo('No metadata')
+        sys.exit(1)
+
+    if output_format == 'yaml':
+        yaml.dump_all((m.definition for m in mm),
+                      sys.stdout,
+                      Dumper=SafeDatacubeDumper,
+                      default_flow_style=False,
+                      indent=4)
+    elif output_format == 'json':
+        if len(mm) > 1:
+            echo('Can not output more than 1 metadata document in json format')
+            sys.exit(1)
+        m = mm[0]
+        echo(json.dumps(m.definition, indent=4))
 
 
 @metadata_type.command('list')
