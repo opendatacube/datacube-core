@@ -45,6 +45,38 @@ def test_add_example_dataset_types(clirunner, initialised_postgres_db, default_m
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
         existing_mappings = mappings_count
 
+    result = clirunner(['-v', 'metadata', 'list'])
+    assert result.exit_code == 0
+
+    result = clirunner(['-v', 'metadata', 'show', '-f', 'json', 'eo'],
+                       expect_success=True)
+    assert result.exit_code == 0
+
+    result = clirunner(['-v', 'metadata', 'show'],
+                       expect_success=True)
+    assert result.exit_code == 0
+
+    result = clirunner(['-v', 'product', 'list'])
+    assert result.exit_code == 0
+
+    expect_result = 0 if existing_mappings > 0 else 1
+    result = clirunner(['-v', 'product', 'show'],
+                       expect_success=(expect_result == 0))
+    assert result.exit_code == expect_result
+
+    if existing_mappings > 1:
+        result = clirunner(['-v', 'product', 'show', '-f', 'json'],
+                           expect_success=False)
+        assert result.exit_code == 1
+
+        result = clirunner(['-v', 'product', 'show', '-f', 'json', 'ls8_level1_usgs'],
+                           expect_success=False)
+        assert result.exit_code == 0
+
+        result = clirunner(['-v', 'product', 'show', '-f', 'yaml', 'ls8_level1_usgs'],
+                           expect_success=False)
+        assert result.exit_code == 0
+
 
 def test_error_returned_on_invalid(clirunner, initialised_postgres_db):
     """

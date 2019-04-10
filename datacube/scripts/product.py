@@ -152,6 +152,9 @@ def _write_tab(products):
 
 def _default_lister(products):
     products = list(products)
+    if len(products) == 0:
+        return
+
     max_w = max(len(p.name) for p in products)
 
     for prod in products:
