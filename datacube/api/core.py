@@ -1,6 +1,7 @@
 import uuid
 from itertools import groupby
 from typing import Union, Optional, Dict, Tuple
+import datetime
 
 import numpy
 import xarray
@@ -365,11 +366,19 @@ class Datacube(object):
         def ds_sorter(ds):
             return sort_key(ds), getattr(ds, 'id', 0)
 
+        def norm_axis_value(x):
+            if isinstance(x, datetime.datetime):
+                # For datetime we convert to UTC, then strip timezone info
+                # to avoid numpy/pandas warning about timezones
+                x = x.astimezone(datetime.timezone.utc)
+                return numpy.datetime64(x.replace(tzinfo=None), 'ns')
+            return x
+
         def mk_group(group):
             dss = tuple(sorted(group, key=ds_sorter))
             # TODO: decouple axis_value from group sorted order
             axis_value = sort_key(dss[0])
-            return (axis_value, dss)
+            return (norm_axis_value(axis_value), dss)
 
         datasets = sorted(datasets, key=group_func)
 
