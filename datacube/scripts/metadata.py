@@ -113,7 +113,7 @@ def show_metadata_type(index, metadata_type_name, output_format):
         for name in metadata_type_name:
             m = index.metadata_types.get_by_name(name)
             if m is None:
-                echo('No such metadata: {}'.format(name))
+                echo('No such metadata: {!r}'.format(name), err=True)
                 sys.exit(1)
             else:
                 mm.append(m)
@@ -130,7 +130,7 @@ def show_metadata_type(index, metadata_type_name, output_format):
                       indent=4)
     elif output_format == 'json':
         if len(mm) > 1:
-            echo('Can not output more than 1 metadata document in json format')
+            echo('Can not output more than 1 metadata document in json format', err=True)
             sys.exit(1)
         m = mm[0]
         echo(json.dumps(m.definition, indent=4))
@@ -145,7 +145,7 @@ def list_metadata_types(index):
     metadata_types = list(index.metadata_types.get_all())
 
     if not metadata_types:
-        echo('No metadata types found :(')
+        echo('No metadata types found :(', err=True)
         sys.exit(1)
 
     max_w = max(len(m.name) for m in metadata_types)
