@@ -16,6 +16,8 @@ v1.7dev
 - Bug fix (Index out of bounds causing ingestion failures)
 - Add "virtual products" (:pull:`522`, :pull:`597`) for multi-product loading
 - Support indexing data directly from HTTP/HTTPS/S3 URLs (:pull:`607`)
+- Renamed `datacube metadata_type` to just `datacube metadata` (:pull:`692`)
+- More useful output from `datacube {product|metadata} {show|list}`
 
 
 v1.6.1 (27 August 2018)
