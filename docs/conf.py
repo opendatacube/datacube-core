@@ -189,56 +189,6 @@ plantuml_latex_output_format = 'pdf'
 
 numfig = True
 
-# Mock modules that need native libraries.
-# See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
-autodoc_mock_imports = [
-    'SharedArray',
-    'boto3',
-    'botocore',
-    'cloudpickle',
-    'dask', 'dask.array',
-    'jsonschema',
-    'matplotlib',
-    'netCDF4',
-    'numexpr',
-    'numpy',
-    'osgeo',
-    'osr',
-    'pandas',
-    'paramiko',
-    'pathos',
-    'psycopg2', 'psycopg2.extras', 'psycopg2._range',
-    'rasterio', 'rasterio.warp', 'rasterio.crs',
-    'scipy',
-    'sshtunnel',
-    'singledispatch',
-    'toolz', 'toolz.functoolz',
-    'tqdm',
-    'xarray',
-    'zstd',
-]
-
-import sys
-from unittest.mock import MagicMock
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return MagicMock()
-
-sys.modules.update((mod_name, Mock()) for mod_name in autodoc_mock_imports)
-#from mock import Mock as MagicMock
-#
-#
-#class Mock(MagicMock):
-#    @classmethod
-#    def __getattr__(cls, name):
-#        return Mock()
-
-
-#sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
-#sys.modules['rasterio.coords'].BoundingBox = Mock
-
 
 def setup(app):
     # Fix bug where code isn't being highlighted
