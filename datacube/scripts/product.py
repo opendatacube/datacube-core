@@ -151,8 +151,12 @@ def _write_tab(products):
 
 
 def _default_lister(products):
+    products = list(products)
+    max_w = max(len(p.name) for p in products)
+
     for prod in products:
-        echo(style(prod.name, fg='green') + '\t' + prod.definition.get('description', ''))
+        name = '{s:<{n}}'.format(s=prod.name, n=max_w)
+        echo(style(name, fg='green') + '  ' + prod.definition.get('description', ''))
 
 
 LIST_OUTPUT_WRITERS = {
