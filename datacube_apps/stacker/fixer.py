@@ -208,7 +208,7 @@ def do_fixer_task(config, task):
 def write_data_variables(data_vars, nco):
     for name, variable in data_vars.items():
         try:
-            with dask.set_options(get=dask.async.get_sync):
+            with dask.set_options(get=dask.local.get_sync):
                 da.store(variable.data, nco[name], lock=True)
         except ValueError:
             nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
@@ -216,7 +216,7 @@ def write_data_variables(data_vars, nco):
 
 
 def check_identical(data1, data2, output_filename):
-    with dask.set_options(get=dask.async.get_sync):
+    with dask.set_options(get=dask.local.get_sync):
         if not all((data1 == data2).all().values()):
             _LOG.error("Mismatch found for %s, not indexing", output_filename)
             raise ValueError("Mismatch found for %s, not indexing" % output_filename)
