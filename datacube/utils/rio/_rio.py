@@ -34,6 +34,16 @@ def get_rio_env(sanitize=True):
     return opts
 
 
+def deactivate_rio_env():
+    """ Exit previously configured environment, or do nothing if one wasn't configured.
+    """
+    env_old = getattr(_local, 'env', None)
+
+    if env_old is not None:
+        env_old.__exit__(None, None, None)
+        _local.env = None
+
+
 def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
     """ Inject activated rasterio.Env into current thread.
 
@@ -45,15 +55,13 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
     :param cloud_defaults: When True inject settings for reading COGs
     :param **kwargs: Passed on to rasterio.Env(..) constructor
     """
-    env_old = getattr(_local, 'env', None)
-
-    if env_old is not None:
-        env_old.__exit__(None, None, None)
-        _local.env = None
-
     session = None
 
     if aws is not None:
+        if not (aws == 'auto' or
+                isinstance(aws, dict)):
+            raise ValueError('Only support: None|"auto"|{..} for `aws` parameter')
+
         aws = {} if aws == 'auto' else dict(**aws)
         region_name = aws.get('region_name', 'auto')
 
@@ -73,6 +81,8 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
     ) if cloud_defaults else {}
 
     opts.update(**kwargs)
+
+    deactivate_rio_env()
 
     env = rasterio.Env(session=session, **opts)
     env.__enter__()
