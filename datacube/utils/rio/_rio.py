@@ -5,7 +5,7 @@ import rasterio
 from rasterio.session import AWSSession
 import rasterio.env
 
-_local = threading.local()
+_local = threading.local()  # pylint: disable=invalid-name
 
 SECRET_KEYS = ('AWS_ACCESS_KEY_ID',
                'AWS_SECRET_ACCESS_KEY',
@@ -24,7 +24,7 @@ def get_rio_env(sanitize=True):
     :param sanitize: If True replace sensitive Values with 'x'
     """
 
-    env = rasterio.env.local._env
+    env = rasterio.env.local._env  # pylint: disable=protected-access
     if env is None:
         return {}
     opts = env.get_config_options()
@@ -69,7 +69,7 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
             from datacube.utils.aws import auto_find_region
             try:
                 aws['region_name'] = auto_find_region()
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 # only treat it as error if it was requested by user
                 if 'region_name' in aws:
                     raise e
