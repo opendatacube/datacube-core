@@ -7,10 +7,14 @@ from ._rio import (
     activate_rio_env,
     deactivate_rio_env,
     get_rio_env,
+    set_default_rio_config,
+    activate_from_config,
 )
 
 __all__ = (
     'activate_rio_env',
     'deactivate_rio_env',
     'get_rio_env',
+    'set_default_rio_config',
+    'activate_from_config',
 )
