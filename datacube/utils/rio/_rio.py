@@ -40,8 +40,7 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
     This de-activates previously setup environment.
 
     :param aws: Dictionary of options for rasterio.session.AWSSession
-                OR False in which case session won't be setup
-                OR None -- session = rasterio.session.AWSSession()
+                OR 'auto' -- session = rasterio.session.AWSSession()
 
     :param cloud_defaults: When True inject settings for reading COGs
     :param **kwargs: Passed on to rasterio.Env(..) constructor
@@ -52,10 +51,10 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
         env_old.__exit__(None, None, None)
         _local.env = None
 
-    if aws is False:
-        session = None
-    else:
-        aws = {} if aws is None else dict(**aws)
+    session = None
+
+    if aws is not None:
+        aws = {} if aws == 'auto' else dict(**aws)
         region_name = aws.get('region_name', 'auto')
 
         if region_name == 'auto':
