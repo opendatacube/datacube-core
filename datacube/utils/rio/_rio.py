@@ -69,7 +69,7 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
             from datacube.utils.aws import auto_find_region
             try:
                 aws['region_name'] = auto_find_region()
-            except Exception as e:  # pylint: disable=broad-except
+            except ValueError as e:
                 # only treat it as error if it was requested by user
                 if 'region_name' in aws:
                     raise e
