@@ -1,4 +1,5 @@
 import pytest
+import os
 
 from datacube.utils.rio import (
     activate_rio_env,
@@ -63,6 +64,8 @@ def test_rio_env_aws():
     assert get_rio_env() == {}
 
 
+@pytest.mark.skipif(os.environ.get('TRAVIS', None) == 'true',
+                    reason='Not running auto_region tests on Travis')
 def test_rio_aws_auto_region():
     ee = activate_rio_env(aws={})
     assert 'AWS_REGION' in ee
