@@ -306,6 +306,29 @@ def test_aliases(dc, query):
     assert 'green' not in data
 
 
+def test_formula(dc, query):
+    bluegreen = construct_from_yaml("""
+        transform: formula
+        output:
+            bluegreen:
+                formula: blue + green
+        input:
+            product: ls8_nbar_albers
+            measurements: [blue, green]
+    """)
+
+    measurements = bluegreen.output_measurements({product.name: product
+                                                  for product in dc.index.products.get_all()})
+    assert 'bluegreen' in measurements
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = bluegreen.load(dc, **query)
+
+    assert 'bluegreen' in data
+
+
 def test_aggregate(dc, query):
     aggr = construct_from_yaml("""
         aggregate: mean

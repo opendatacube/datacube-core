@@ -254,7 +254,7 @@ class Formula(Transformation):
 
         def measurement(output_var, output_desc):
             return Measurement(name=output_var, dtype=deduce_type(output_var, output_desc),
-                               nodata=output_desc['nodata'], units=output_desc['units'])
+                               nodata=output_desc.get('nodata'), units=output_desc.get('units'))
 
         return {output_var: measurement(output_var, output_desc)
                 for output_var, output_desc in self.output.items()}
