@@ -11,6 +11,8 @@ from datacube.utils.rio import (
 
 
 def test_rio_env_no_aws():
+    deactivate_rio_env()
+
     # make sure we start without env configured
     assert get_rio_env() == {}
 
@@ -30,6 +32,8 @@ def test_rio_env_no_aws():
 
 
 def test_rio_env_aws():
+    deactivate_rio_env()
+
     # make sure we start without env configured
     assert get_rio_env() == {}
 
@@ -72,6 +76,9 @@ def test_rio_env_aws_auto_region():
     ee = activate_rio_env(aws={})
     assert 'AWS_REGION' in ee
 
+    deactivate_rio_env()
+    assert get_rio_env() == {}
+
 
 def test_rio_env_via_config():
     ee = activate_from_config()
@@ -86,3 +93,6 @@ def test_rio_env_via_config():
     ee = activate_from_config()
     assert ee is not None
     assert 'GDAL_DISABLE_READDIR_ON_OPEN' in ee
+
+    deactivate_rio_env()
+    assert get_rio_env() == {}
