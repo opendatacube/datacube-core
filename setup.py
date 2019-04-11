@@ -8,7 +8,6 @@ tests_require = [
     'compliance-checker',
     'hypothesis',
     'mock',
-    'objgraph',
     'pycodestyle',
     'pylint',
     'pytest',
