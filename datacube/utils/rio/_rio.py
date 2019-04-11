@@ -2,7 +2,7 @@
 """
 import threading
 import rasterio
-from rasterio.session import AWSSession
+from rasterio.session import AWSSession, DummySession
 import rasterio.env
 
 _local = threading.local()  # pylint: disable=invalid-name
@@ -55,7 +55,7 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
     :param cloud_defaults: When True inject settings for reading COGs
     :param **kwargs: Passed on to rasterio.Env(..) constructor
     """
-    session = None
+    session = DummySession()
 
     if aws is not None:
         if not (aws == 'auto' or
