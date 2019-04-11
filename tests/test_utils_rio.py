@@ -5,6 +5,8 @@ from datacube.utils.rio import (
     activate_rio_env,
     deactivate_rio_env,
     get_rio_env,
+    set_default_rio_config,
+    activate_from_config,
 )
 
 
@@ -66,6 +68,21 @@ def test_rio_env_aws():
 
 @pytest.mark.skipif(os.environ.get('TRAVIS', None) == 'true',
                     reason='Not running auto_region tests on Travis')
-def test_rio_aws_auto_region():
+def test_rio_env_aws_auto_region():
     ee = activate_rio_env(aws={})
     assert 'AWS_REGION' in ee
+
+
+def test_rio_env_via_config():
+    ee = activate_from_config()
+    assert ee is not None
+
+    # Second call should not change anything
+    assert activate_from_config() is None
+
+    set_default_rio_config(aws=None, cloud_defaults=True)
+
+    # config change should activate new env
+    ee = activate_from_config()
+    assert ee is not None
+    assert 'GDAL_DISABLE_READDIR_ON_OPEN' in ee

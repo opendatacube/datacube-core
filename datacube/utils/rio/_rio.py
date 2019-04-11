@@ -1,11 +1,21 @@
 """ rasterio environment management tools
 """
 import threading
+from types import SimpleNamespace
 import rasterio
 from rasterio.session import AWSSession, DummySession
 import rasterio.env
 
+# _local.env    None|rasterio.Env
+# _local.epoch  None|Int
 _local = threading.local()  # pylint: disable=invalid-name
+
+_CFG_LOCK = threading.Lock()
+_CFG = SimpleNamespace(aws=None,
+                       cloud_defaults=False,
+                       kwargs={},
+                       epoch=0)
+
 
 SECRET_KEYS = ('AWS_ACCESS_KEY_ID',
                'AWS_SECRET_ACCESS_KEY',
@@ -42,6 +52,7 @@ def deactivate_rio_env():
     if env_old is not None:
         env_old.__exit__(None, None, None)
         _local.env = None
+        _local.epoch = -1
 
 
 def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
@@ -88,3 +99,44 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
     env.__enter__()
     _local.env = env
     return get_rio_env()
+
+
+def activate_from_config():
+    """ Check if this threads needs to reconfigure, then does reconfigure.
+
+    - Does nothing if this thread is already configured and configuration hasn't changed.
+    - Configures current thread with default rio settings
+    """
+    cfg = _CFG
+
+    epoch = getattr(_local, 'epoch', -1)
+
+    if cfg.epoch != epoch:
+        ee = activate_rio_env(aws=cfg.aws,
+                              cloud_defaults=cfg.cloud_defaults,
+                              **cfg.kwargs)
+        _local.epoch = cfg.epoch
+        return ee
+
+    return None
+
+
+def set_default_rio_config(aws=None, cloud_defaults=False, **kwargs):
+    """ Setup default configuration for rasterio/GDAL.
+
+    Doesn't actually activate one, just stores configuration for future
+    use from IO threads.
+
+    :param aws: Dictionary of options for rasterio.session.AWSSession
+                OR 'auto' -- session = rasterio.session.AWSSession()
+
+    :param cloud_defaults: When True inject settings for reading COGs
+    :param **kwargs: Passed on to rasterio.Env(..) constructor
+    """
+    global _CFG  # pylint: disable=global-statement
+
+    with _CFG_LOCK:
+        _CFG = SimpleNamespace(aws=aws,
+                               cloud_defaults=cloud_defaults,
+                               kwargs=kwargs,
+                               epoch=_CFG.epoch + 1)
