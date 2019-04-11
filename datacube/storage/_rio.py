@@ -14,6 +14,7 @@ from datacube.utils import datetime_to_seconds_since_1970
 from datacube.utils import geometry
 from datacube.utils.math import num2numpy
 from datacube.utils import uri_to_local_path, get_part_from_uri
+from datacube.utils.rio import activate_from_config
 from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
 
 _LOG = logging.getLogger(__name__)
@@ -139,6 +140,9 @@ class RasterioDataSource(DataSource):
     @contextmanager
     def open(self) -> Iterator[GeoRasterReader]:
         """Context manager which returns a :class:`BandDataSource`"""
+
+        activate_from_config()  # check if settings changed and apply new
+
         try:
             _LOG.debug("opening %s", self.filename)
             with rasterio.open(self.filename, sharing=False) as src:
