@@ -1,5 +1,5 @@
 Deprecation Warning
-==================================
+===================
 
 The scripts in this directory are being reviewed and shifted to the new `Dataset Config <https://github.com/opendatacube/datacube-dataset-config>`__ repository.
 
