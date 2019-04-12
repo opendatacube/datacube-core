@@ -3,10 +3,10 @@ Helper methods for working with AWS
 """
 import botocore
 import botocore.session
+from urllib.request import urlopen
 
 
 def _fetch_text(url, timeout=0.1):
-    from urllib.request import urlopen
     try:
         with urlopen(url, timeout=timeout) as resp:
             if 200 <= resp.getcode() < 300:
