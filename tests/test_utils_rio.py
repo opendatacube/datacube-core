@@ -1,5 +1,5 @@
 import pytest
-import os
+import mock
 
 from datacube.utils.rio import (
     activate_rio_env,
@@ -70,11 +70,25 @@ def test_rio_env_aws():
     assert get_rio_env() == {}
 
 
-@pytest.mark.skipif(os.environ.get('TRAVIS', None) == 'true',
-                    reason='Not running auto_region tests on Travis')
-def test_rio_env_aws_auto_region():
-    ee = activate_rio_env(aws={})
-    assert 'AWS_REGION' in ee
+@mock.patch('datacube.utils.aws.botocore_default_region',
+            return_value=None)
+def test_rio_env_aws_auto_region(*mocks):
+    aws = dict(aws_secret_access_key='blabla',
+               aws_access_key_id='not a real one',
+               aws_session_token='faketoo')
+
+    with mock.patch('datacube.utils.aws.ec2_current_region',
+                    return_value='TT'):
+        ee = activate_rio_env(aws=aws)
+        assert ee.get('AWS_REGION') == 'TT'
+
+    with mock.patch('datacube.utils.aws.ec2_current_region',
+                    return_value=None):
+        ee = activate_rio_env(aws=aws)
+        assert 'AWS_REGION' not in ee
+
+        with pytest.raises(ValueError):
+            activate_rio_env(aws=dict(region_name='auto'))
 
     deactivate_rio_env()
     assert get_rio_env() == {}
