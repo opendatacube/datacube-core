@@ -8,7 +8,7 @@ import numpy
 
 from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
 from datacube.utils import geometry
-from datacube.virtual import construct_from_yaml, VirtualProductException
+from datacube.virtual import construct_from_yaml, catalog_from_yaml, VirtualProductException
 from datacube.virtual.impl import Datacube
 
 
@@ -82,43 +82,80 @@ def example_grid_spatial():
 
 
 @pytest.fixture
-def cloud_free_nbar():
-    return construct_from_yaml("""
-    collate:
-      - transform: apply_mask
-        mask_measurement_name: pixelquality
-        input:
-          &mask
-          transform: make_mask
-          flags:
-              blue_saturated: false
-              cloud_acca: no_cloud
-              cloud_fmask: no_cloud
-              cloud_shadow_acca: no_cloud_shadow
-              cloud_shadow_fmask: no_cloud_shadow
-              contiguous: true
-              green_saturated: false
-              nir_saturated: false
-              red_saturated: false
-              swir1_saturated: false
-              swir2_saturated: false
-          mask_measurement_name: pixelquality
-          input:
-            juxtapose:
-              - product: ls8_nbar_albers
-                measurements: ['blue', 'green']
-              - product: ls8_pq_albers
-      - transform: datacube.virtual.transformations.ApplyMask
-        mask_measurement_name: pixelquality
-        input:
-          <<: *mask
-          input:
-            juxtapose:
-              - product: ls7_nbar_albers
-                measurements: ['blue', 'green']
-              - product: ls7_pq_albers
-    index_measurement_name: source_index
+def catalog():
+    return catalog_from_yaml("""
+        about: this is a test catalog of virtual products
+        products:
+            cloud_free_ls8_nbar:
+                tags: [nbar, landsat-8]
+                recipe:
+                    &cloud_free_ls8_nbar_recipe
+                    transform: apply_mask
+                    mask_measurement_name: pixelquality
+                    input:
+                        &cloud_mask_recipe
+                        transform: make_mask
+                        flags:
+                            blue_saturated: false
+                            cloud_acca: no_cloud
+                            cloud_fmask: no_cloud
+                            cloud_shadow_acca: no_cloud_shadow
+                            cloud_shadow_fmask: no_cloud_shadow
+                            contiguous: true
+                            green_saturated: false
+                            nir_saturated: false
+                            red_saturated: false
+                            swir1_saturated: false
+                            swir2_saturated: false
+                        mask_measurement_name: pixelquality
+                        input:
+                            juxtapose:
+                              - product: ls8_nbar_albers
+                                measurements: ['blue', 'green']
+                              - product: ls8_pq_albers
+
+            cloud_free_ls7_nbar:
+                tags: [nbar, landsat-7]
+                recipe:
+                    &cloud_free_ls7_nbar_recipe
+                    transform: datacube.virtual.transformations.ApplyMask
+                    mask_measurement_name: pixelquality
+                    input:
+                      <<: *cloud_mask_recipe
+                      input:
+                        juxtapose:
+                          - product: ls7_nbar_albers
+                            measurements: ['blue', 'green']
+                          - product: ls7_pq_albers
+
+            cloud_free_nbar:
+                description: cloud free NBAR from Landsat-7 and Landsat-8
+                tags: [nbar, landsat-7, landsat-8]
+                recipe:
+                    collate:
+                        - *cloud_free_ls8_nbar_recipe
+                        - *cloud_free_ls7_nbar_recipe
+
+                    index_measurement_name: source_index
+
+            mean_blue:
+                recipe:
+                    aggregate: mean
+                    group_by: month
+                    input:
+                        transform: to_float
+                        input:
+                            collate:
+                              - product: ls7_nbar_albers
+                                measurements: [blue]
+                              - product: ls8_nbar_albers
+                                measurements: [blue]
     """)
+
+
+@pytest.fixture
+def cloud_free_nbar(catalog):
+    return catalog['cloud_free_nbar']
 
 
 def load_data(*args, **kwargs):
@@ -329,19 +366,8 @@ def test_formula(dc, query):
     assert 'bluegreen' in data
 
 
-def test_aggregate(dc, query):
-    aggr = construct_from_yaml("""
-        aggregate: mean
-        group_by: month
-        input:
-            transform: to_float
-            input:
-                collate:
-                  - product: ls7_nbar_albers
-                    measurements: [blue]
-                  - product: ls8_nbar_albers
-                    measurements: [blue]
-    """)
+def test_aggregate(dc, query, catalog):
+    aggr = catalog['mean_blue']
 
     measurements = aggr.output_measurements({product.name: product
                                              for product in dc.index.products.get_all()})
