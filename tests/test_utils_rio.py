@@ -80,6 +80,17 @@ def test_rio_env_aws_auto_region():
     assert get_rio_env() == {}
 
 
+def test_rio_env_aws_auto_region_dummy():
+    "Just call it we don't know if it will succeed"
+
+    # at least it should not raise error since we haven't asked for region_name='auto'
+    ee = activate_rio_env(aws={})
+    assert isinstance(ee, dict)
+
+    deactivate_rio_env()
+    assert get_rio_env() == {}
+
+
 def test_rio_env_via_config():
     ee = activate_from_config()
     assert ee is not None
