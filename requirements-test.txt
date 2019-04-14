@@ -29,7 +29,7 @@ hypothesis==3.55.3
 idna==2.6
 isodate==0.6.0
 isort==4.3.4
-Jinja2==2.10
+Jinja2==2.10.1
 jmespath==0.9.3
 jsonschema==2.6.0
 kombu==4.1.0
