@@ -12,8 +12,8 @@ from types import SimpleNamespace
 class RasterFileDataSource(RasterioDataSource):
     """ This is only used in test code
     """
-    def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None):
-        super(RasterFileDataSource, self).__init__(filename, nodata)
+    def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None, lock=None):
+        super(RasterFileDataSource, self).__init__(filename, nodata, lock=lock)
         self.bandnumber = bandnumber
         self.crs = crs
         self.transform = transform
