@@ -20,6 +20,7 @@ v1.7dev
 - More useful output from `datacube {product|metadata} {show|list}`
 - Add optional `progress_cbk` to `dc.load(_data)` (:pull:`702`), allows user to
   monitor data loading progress.
+- Thread-safe netcdf access within `dc.load` (:pull:`705`)
 
 
 v1.6.1 (27 August 2018)
