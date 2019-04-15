@@ -18,6 +18,8 @@ v1.7dev
 - Support indexing data directly from HTTP/HTTPS/S3 URLs (:pull:`607`)
 - Renamed `datacube metadata_type` to just `datacube metadata` (:pull:`692`)
 - More useful output from `datacube {product|metadata} {show|list}`
+- Add optional `progress_cbk` to `dc.load(_data)` (:pull:`702`), allows user to
+  monitor data loading progress.
 
 
 v1.6.1 (27 August 2018)
