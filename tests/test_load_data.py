@@ -95,10 +95,18 @@ def test_load_data(tmpdir):
         custom_fuser_call_count += 1
         dest[:] += delta
 
-    ds_data = Datacube.load_data(sources2, gbox, mm, fuse_func=custom_fuser)
+    progress_call_data = []
+
+    def progress_cbk(n, nt):
+        progress_call_data.append((n, nt))
+
+    ds_data = Datacube.load_data(sources2, gbox, mm, fuse_func=custom_fuser,
+                                 progress_cbk=progress_cbk)
     assert ds_data.aa.nodata == nodata
     assert custom_fuser_call_count > 0
     np.testing.assert_array_equal(nodata + aa + aa, ds_data.aa.values[0])
+
+    assert progress_call_data == [(1, 2), (2, 2)]
 
 
 def test_rio_slurp(tmpdir):
