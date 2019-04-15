@@ -11,6 +11,7 @@ from datacube.testutils import (
     mk_test_image,
 )
 from datacube.testutils.io import write_gtiff, rio_slurp
+from datacube.testutils.iodriver import NetCDF
 from datacube.utils import ignore_exceptions_if
 
 
@@ -107,6 +108,28 @@ def test_load_data(tmpdir):
     np.testing.assert_array_equal(nodata + aa + aa, ds_data.aa.values[0])
 
     assert progress_call_data == [(1, 2), (2, 2)]
+
+
+def test_hdf5_lock_release_on_failure():
+    from datacube.storage._rio import RasterDatasetDataSource, _HDF5_LOCK
+    from datacube.storage import BandInfo
+
+    band = dict(name='xx',
+                layer='xx',
+                dtype='uint8',
+                units='K',
+                nodata=33)
+
+    ds = mk_sample_dataset([band],
+                           uri='file:///tmp/this_probably_doesnot_exist_37237827513/xx.nc',
+                           format=NetCDF)
+    src = RasterDatasetDataSource(BandInfo(ds, 'xx'))
+
+    with pytest.raises(OSError):
+        with src.open():
+            assert False and "Did not expect to get here"
+
+    assert not _HDF5_LOCK._is_owned()
 
 
 def test_rio_slurp(tmpdir):
