@@ -129,7 +129,8 @@ class Datacube(object):
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
              skip_broken_datasets=False,
-             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, **query):
+             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, progress_cbk=None,
+             **query):
         """
         Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -267,6 +268,10 @@ class Datacube(object):
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
 
+        :param progress_cbk: Int, Int -> None
+            if supplied will be called for every file read with `files_processed_so_far, total_files`. This is
+            only applicable to non-lazy loads, ignored when using dask.
+
         :return: Requested data in a :class:`xarray.Dataset`
         :rtype: :class:`xarray.Dataset`
         """
@@ -300,6 +305,7 @@ class Datacube(object):
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
                                 skip_broken_datasets=skip_broken_datasets,
+                                progress_cbk=progress_cbk,
                                 **legacy_args)
 
         return apply_aliases(result, datacube_product, measurements)
@@ -474,7 +480,20 @@ class Datacube(object):
 
     @staticmethod
     def _xr_load(sources, geobox, measurements,
-                 skip_broken_datasets=False):
+                 skip_broken_datasets=False,
+                 progress_cbk=None):
+
+        def mk_cbk(cbk):
+            if cbk is None:
+                return None
+            n = 0
+            n_total = sum(len(x) for x in sources.values.ravel())*len(measurements)
+
+            def _cbk(*ignored):
+                nonlocal n
+                n += 1
+                return cbk(n, n_total)
+            return _cbk
 
         data = Datacube.create_storage(sources.coords, geobox, measurements)
 
@@ -483,13 +502,15 @@ class Datacube(object):
                 t_slice = data[m.name].values[index]
 
                 _fuse_measurement(t_slice, datasets, geobox, m,
-                                  skip_broken_datasets=skip_broken_datasets)
+                                  skip_broken_datasets=skip_broken_datasets,
+                                  progress_cbk=mk_cbk(progress_cbk))
 
         return data
 
     @staticmethod
     def load_data(sources, geobox, measurements, resampling=None,
                   fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
+                  progress_cbk=None,
                   **extra):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
@@ -525,6 +546,10 @@ class Datacube(object):
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
+
+        :param progress_cbk: Int, Int -> None
+            if supplied will be called for every file read with `files_processed_so_far, total_files`. This is
+            only applicable to non-lazy loads, ignored when using dask.
 
         :rtype: xarray.Dataset
 
@@ -569,7 +594,8 @@ class Datacube(object):
                                        skip_broken_datasets=skip_broken_datasets)
         else:
             return Datacube._xr_load(sources, geobox, measurements,
-                                     skip_broken_datasets=skip_broken_datasets)
+                                     skip_broken_datasets=skip_broken_datasets,
+                                     progress_cbk=progress_cbk)
 
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
@@ -682,14 +708,16 @@ def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement,
-                      skip_broken_datasets=False):
+                      skip_broken_datasets=False,
+                      progress_cbk=None):
     reproject_and_fuse([new_datasource(BandInfo(dataset, measurement.name)) for dataset in datasets],
                        dest,
                        geobox,
                        dest.dtype.type(measurement.nodata),
                        resampling=measurement.get('resampling_method', 'nearest'),
                        fuse_func=measurement.get('fuser', None),
-                       skip_broken_datasets=skip_broken_datasets)
+                       skip_broken_datasets=skip_broken_datasets,
+                       progress_cbk=progress_cbk)
 
 
 def get_bounds(datasets, crs):

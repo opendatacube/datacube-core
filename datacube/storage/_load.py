@@ -23,6 +23,7 @@ from . import DataSource, BandInfo
 _LOG = logging.getLogger(__name__)
 
 FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
+ProgressFunction = Callable[[int, int], Any]  # pylint: disable=invalid-name
 
 
 def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata: float) -> None:
@@ -41,7 +42,8 @@ def reproject_and_fuse(datasources: List[DataSource],
                        dst_nodata: Optional[Union[int, float]],
                        resampling: str = 'nearest',
                        fuse_func: Optional[FuserFunction] = None,
-                       skip_broken_datasets: bool = False):
+                       skip_broken_datasets: bool = False,
+                       progress_cbk: Optional[ProgressFunction] = None):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
@@ -49,6 +51,8 @@ def reproject_and_fuse(datasources: List[DataSource],
     :param destination: ndarray of appropriate size to read data into
     :param dst_gbox: GeoBox defining destination region
     :param skip_broken_datasets: Carry on in the face of adversity and failing reads.
+    :param progress_cbk: If supplied will be called with 2 integers `Items processed, Total Items`
+                         after reading each file.
     """
     # pylint: disable=too-many-locals
     from ._read import read_time_slice
@@ -67,11 +71,14 @@ def reproject_and_fuse(datasources: List[DataSource],
             with datasources[0].open() as rdr:
                 read_time_slice(rdr, destination, dst_gbox, resampling, dst_nodata)
 
+        if progress_cbk:
+            progress_cbk(1, 1)
+
         return destination
     else:
         # Multiple sources, we need to fuse them together into a single array
         buffer_ = np.full(destination.shape, dst_nodata, dtype=destination.dtype)
-        for source in datasources:
+        for n_so_far, source in enumerate(datasources, 1):
             with ignore_exceptions_if(skip_broken_datasets):
                 with source.open() as rdr:
                     roi = read_time_slice(rdr, buffer_, dst_gbox, resampling, dst_nodata)
@@ -79,6 +86,9 @@ def reproject_and_fuse(datasources: List[DataSource],
                 if not roi_is_empty(roi):
                     fuse_func(destination[roi], buffer_[roi])
                     buffer_[roi] = dst_nodata  # clean up for next read
+
+            if progress_cbk:
+                progress_cbk(n_so_far, len(datasources))
 
         return destination
 

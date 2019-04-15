@@ -74,6 +74,32 @@ def test_second_source_used_when_first_is_empty():
     assert (output_data == 2).all()
 
 
+def test_progress_cbk():
+    crs = epsg4326
+    shape = (2, 2)
+    no_data = -1
+    output_data = np.full(shape, fill_value=no_data, dtype='int16')
+
+    src = FakeDatasetSource([[2, 2], [2, 2]], crs=crs, shape=shape)
+
+    def _cbk(n_so_far, n_total, out):
+        out.append((n_so_far, n_total))
+
+    cbk_args = []
+    reproject_and_fuse([src], output_data,
+                       mk_gbox(shape, crs=crs),
+                       dst_nodata=no_data, progress_cbk=lambda *a: _cbk(*a, cbk_args))
+
+    assert cbk_args == [(1, 1)]
+
+    cbk_args = []
+    reproject_and_fuse([src, src], output_data,
+                       mk_gbox(shape, crs=crs),
+                       dst_nodata=no_data, progress_cbk=lambda *a: _cbk(*a, cbk_args))
+
+    assert cbk_args == [(1, 2), (2, 2)]
+
+
 def test_mixed_result_when_first_source_partially_empty():
     crs = epsg4326
     shape = (2, 2)
