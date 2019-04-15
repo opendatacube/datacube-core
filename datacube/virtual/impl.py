@@ -16,9 +16,9 @@ import yaml
 from datacube import Datacube
 from datacube.api.core import select_datasets_inside_polygon, output_geobox, apply_aliases
 from datacube.api.grid_workflow import _fast_slice
-from datacube.api.query import Query, query_group_by, query_geopolygon
+from datacube.api.query import Query, query_group_by
 from datacube.model import Measurement, DatasetType
-from datacube.model.utils import xr_apply, xr_iter
+from datacube.model.utils import xr_apply, xr_iter, SafeDumper
 
 from .utils import qualified_name, merge_dicts
 from .utils import select_unique, select_keys, reject_keys, merge_search_terms
@@ -213,7 +213,7 @@ class VirtualProduct(Mapping):
         raise NotImplementedError
 
     def __str__(self):
-        return yaml.dump(self._reconstruct(), Dumper=yaml.CDumper,
+        return yaml.dump(self._reconstruct(), Dumper=SafeDumper,
                          default_flow_style=False, indent=2)
 
     def load(self, dc: Datacube, **query: Dict[str, Any]) -> xarray.Dataset:
