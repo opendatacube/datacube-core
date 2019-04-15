@@ -3,7 +3,9 @@
 Driver implementation for Rasterio based reader.
 """
 import logging
+import contextlib
 from contextlib import contextmanager
+from threading import RLock
 import numpy as np
 from affine import Affine
 import rasterio
@@ -18,6 +20,7 @@ from datacube.utils.rio import activate_from_config
 from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
 
 _LOG = logging.getLogger(__name__)
+_HDF5_LOCK = RLock()
 
 GDAL_NETCDF_DIM = ('NETCDF_DIM_'
                    if str(rasterio.__gdal_version__) >= '1.10.0' else
@@ -31,6 +34,12 @@ def _rasterio_crs_wkt(src):
         return ''
 
 
+def maybe_lock(lock):
+    if lock is None:
+        return contextlib.suppress()
+    return lock
+
+
 class BandDataSource(GeoRasterReader):
     """
     Wrapper for a :class:`rasterio.Band` object
@@ -38,12 +47,14 @@ class BandDataSource(GeoRasterReader):
     :type source: rasterio.Band
     """
 
-    def __init__(self, source, nodata=None):
+    def __init__(self, source, nodata=None,
+                 lock: Optional[RLock] = None):
         self.source = source
         if nodata is None:
             nodata = self.source.ds.nodatavals[self.source.bidx-1]
 
         self._nodata = num2numpy(nodata, source.dtype)
+        self._lock = lock
 
     @property
     def nodata(self):
@@ -69,7 +80,8 @@ class BandDataSource(GeoRasterReader):
              out_shape: Optional[RasterShape] = None) -> Optional[np.ndarray]:
         """Read data in the native format, returning a numpy array
         """
-        return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
+        with maybe_lock(self._lock):
+            return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
 
 class OverrideBandDataSource(GeoRasterReader):
@@ -85,11 +97,13 @@ class OverrideBandDataSource(GeoRasterReader):
                  source: rasterio.Band,
                  nodata,
                  crs: geometry.CRS,
-                 transform: Affine):
+                 transform: Affine,
+                 lock: Optional[RLock] = None):
         self.source = source
         self._nodata = num2numpy(nodata, source.dtype)
         self._crs = crs
         self._transform = transform
+        self._lock = lock
 
     @property
     def crs(self) -> geometry.CRS:
@@ -115,7 +129,8 @@ class OverrideBandDataSource(GeoRasterReader):
              out_shape: Optional[RasterShape] = None) -> Optional[np.ndarray]:
         """Read data in the native format, returning a native array
         """
-        return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
+        with maybe_lock(self._lock):
+            return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
 
 class RasterioDataSource(DataSource):
@@ -124,9 +139,10 @@ class RasterioDataSource(DataSource):
 
     """
 
-    def __init__(self, filename, nodata):
+    def __init__(self, filename, nodata, lock=None):
         self.filename = filename
         self.nodata = nodata
+        self._lock = lock
 
     def get_bandnumber(self, src):
         raise NotImplementedError()
@@ -142,6 +158,9 @@ class RasterioDataSource(DataSource):
         """Context manager which returns a :class:`BandDataSource`"""
 
         activate_from_config()  # check if settings changed and apply new
+
+        lock = self._lock
+        locked = False if lock is None else lock.acquire(blocking=True)
 
         try:
             _LOG.debug("opening %s", self.filename)
@@ -168,14 +187,21 @@ class RasterioDataSource(DataSource):
                 nodata = src.nodatavals[band.bidx-1] if src.nodatavals[band.bidx-1] is not None else self.nodata
                 nodata = num2numpy(nodata, band.dtype)
 
+                if locked:
+                    locked = False
+                    lock.release()
+
                 if override:
-                    yield OverrideBandDataSource(band, nodata=nodata, crs=crs, transform=transform)
+                    yield OverrideBandDataSource(band, nodata=nodata, crs=crs, transform=transform, lock=lock)
                 else:
-                    yield BandDataSource(band, nodata=nodata)
+                    yield BandDataSource(band, nodata=nodata, lock=lock)
 
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", self.filename)
             raise e
+        finally:
+            if locked:
+                lock.release()
 
 
 class RasterDatasetDataSource(RasterioDataSource):
@@ -192,7 +218,8 @@ class RasterDatasetDataSource(RasterioDataSource):
         self._netcdf = ('netcdf' in band.format.lower())
         self._part = get_part_from_uri(band.uri)
         filename = _url2rasterio(band.uri, band.format, band.layer)
-        super(RasterDatasetDataSource, self).__init__(filename, nodata=band.nodata)
+        lock = _HDF5_LOCK if self._netcdf else None
+        super(RasterDatasetDataSource, self).__init__(filename, nodata=band.nodata, lock=lock)
 
     def get_bandnumber(self, src=None) -> Optional[int]:
 
