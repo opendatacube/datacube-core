@@ -496,6 +496,7 @@ class Datacube(object):
             return _cbk
 
         data = Datacube.create_storage(sources.coords, geobox, measurements)
+        _cbk = mk_cbk(progress_cbk)
 
         for index, datasets in numpy.ndenumerate(sources.values):
             for m in measurements:
@@ -503,7 +504,7 @@ class Datacube(object):
 
                 _fuse_measurement(t_slice, datasets, geobox, m,
                                   skip_broken_datasets=skip_broken_datasets,
-                                  progress_cbk=mk_cbk(progress_cbk))
+                                  progress_cbk=_cbk)
 
         return data
 
