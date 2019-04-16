@@ -104,7 +104,7 @@ def data_resolution_and_offset(data):
     """
     res = (data[data.size - 1] - data[0]) / (data.size - 1.0)
     off = data[0] - 0.5 * res
-    return numpy.asscalar(res), numpy.asscalar(off)
+    return res.item(), off.item()
 
 
 def iter_slices(shape, chunk_size):
