@@ -38,11 +38,13 @@ pass to the index search API.
 import calendar
 import re
 from datetime import datetime
+import warnings
 
 from dateutil import tz
 from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 
 from datacube.model import Range
+from datacube.api.query import _time_to_search_dims
 
 FIELD_NAME = attr('field_name', word)
 
@@ -236,7 +238,7 @@ class EqualsExpression(Expr):
         return {self.field_name: self.value.as_value()}
 
 
-class BetweenExpression(Expr):
+class OldBetweenExpression(Expr):
     def __init__(self, field_name=None, low_value=None, high_value=None):
         self.field_name = field_name
         self.low_value = low_value
@@ -265,11 +267,39 @@ class BetweenExpression(Expr):
         )
 
     def as_query(self):
+        warnings.warn("old-style between expressions are deprecated, use 'field in [start, end]' syntax instead",
+                      DeprecationWarning)
         return {self.field_name: Range(self.low_value.as_value(), self.high_value.as_value())}
 
 
+class BetweenExpression(Expr):
+    def __init__(self, field_name=None, low_value=None, high_value=None):
+        self.field_name = field_name
+        self.low_value = low_value
+        self.high_value = high_value
+
+    range_values = [DateValue, NumericValue]
+    grammar = [
+        # field in [low, high]
+        (FIELD_NAME, 'in',
+         '[',
+         attr('low_value', range_values), ',', attr('high_value', range_values),
+         ']'),
+    ]
+
+    def __str__(self):
+        return '{} in [{!r}, {!r}]'.format(self.field_name, self.low_value, self.high_value)
+
+    def query_repr(self, get_field):
+        search_range = self.as_query()[self.field_name]
+        return get_field(self.field_name).between(search_range.begin, search_range.end)
+
+    def as_query(self):
+        return {self.field_name: _time_to_search_dims([self.low_value.value, self.high_value.value])}
+
+
 class ExpressionList(List):
-    grammar = maybe_some([EqualsExpression, BetweenExpression, InExpression])
+    grammar = maybe_some([EqualsExpression, BetweenExpression, OldBetweenExpression, InExpression])
 
     def __str__(self):
         return ' and '.join(map(str, self))

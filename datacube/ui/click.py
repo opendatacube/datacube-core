@@ -338,9 +338,11 @@ def parsed_search_expressions(f):
     the shell will try to interpret them.
 
     \b
-    eg. '1996-01-01 < time < 1996-12-31'
-        '130<lon<140' '-30 > lat > -40'
+    eg. 'time in [1996-01-01, 1996-12-31]'
+        'lon in [130, 140]' 'lat in [-40, -30]'
         product=ls5_nbar_albers
+
+    or (deprecated) '1996-01-01 < time < 1996-12-31'
     """
 
     def my_parse(ctx, param, value):
