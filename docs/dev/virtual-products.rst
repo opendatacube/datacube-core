@@ -1,3 +1,6 @@
+.. _virtual-products:
+
+
 ================
 Virtual Products
 ================
