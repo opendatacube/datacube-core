@@ -5,22 +5,68 @@
 What's New
 **********
 
-v1.7dev
-=======
+v1.7.0rc1 (18 April 2018)
+=========================
+
+Virtual Products
+~~~~~~~~~~~~~~~~
+
+Add :ref:`virtual-products` for multi-product loading.
+
+(:pull:`522`, :pull:`597`, :pull:`601`, :pull:`612`, :pull:`644`, :pull:`677`, :pull:`699`, :pull:`700`)
+
+Changes to Data Loading
+~~~~~~~~~~~~~~~~~~~~~~~
+The internal machinery used when loading and reprojecting data, has been completely rewritten. The new code has been
+tested, but this is a complicated and fundamental part of code and there is potential for breakage.
+
+When loading reprojected data, the new code will produce slightly different results. We don't believe that it is any
+less accurate than the old code, but you cannot expect exactly the same numeric results.
+
+Non-reprojected loads should be identical.
+
+This change has been made for two reasons:
+
+1. The reprojection is now core Data Cube, and is not the responsibility of the IO driver.
+
+2. When loading lower resolution data, DataCube can now take advantage of available overviews.
+
+- New futures based IO driver interface (:pull:`686`)
+
+Other Changes
+~~~~~~~~~~~~~
 
 - Allow specifying different resampling methods for different data variables of
   the same Product. (:pull:`551`)
 - Allow all reampling methods supported by `rasterio`. (:pull:`622`)
-- Bugfixes and improved performance of `dask`-backed arrays (:pull:`547`)
-- Improve :ref:`api-reference` documentation.
 - Bug fix (Index out of bounds causing ingestion failures)
-- Add "virtual products" (:pull:`522`, :pull:`597`) for multi-product loading
 - Support indexing data directly from HTTP/HTTPS/S3 URLs (:pull:`607`)
-- Renamed `datacube metadata_type` to just `datacube metadata` (:pull:`692`)
-- More useful output from `datacube {product|metadata} {show|list}`
+- Renamed the command line tool `datacube metadata_type` to `datacube metadata` (:pull:`692`)
+- More useful output from the command line `datacube {product|metadata} {show|list}`
 - Add optional `progress_cbk` to `dc.load(_data)` (:pull:`702`), allows user to
   monitor data loading progress.
-- Thread-safe netcdf access within `dc.load` (:pull:`705`)
+- Thread-safe netCDF access within `dc.load` (:pull:`705`)
+
+Performance Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Use single pass over datasets when computing bounds (:pull:`660`)
+- Bugfixes and improved performance of `dask`-backed arrays (:pull:`547`, :pull:`664`)
+
+Documentation Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Improve :ref:`api-reference` documentation.
+
+Deprecations
+~~~~~~~~~~~~
+
+- From the command line, the old query syntax for searching within vague time ranges, eg: ``2018-03 < time < 2018-04``
+  has been removed. It is unclear exactly what that syntax should mean, whether to include or exclude the months
+  specified. It is replaced by ``time in [2018-01, 2018-02]`` which has the same semantics as ``dc.load`` time queries.
+  (:pull:`709`)
+
+
 
 
 v1.6.1 (27 August 2018)
