@@ -43,6 +43,7 @@ from dateutil import tz
 from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 
 from datacube.model import Range
+from datacube.api.query import _time_to_search_dims
 
 FIELD_NAME = attr('field_name', word)
 
@@ -134,18 +135,12 @@ class DateValue(Expr):
     def as_value(self):
         """
         >>> DateValue(value='2017-03-03').as_value()
-        datetime.datetime(2017, 3, 3, 0, 0, tzinfo=tzutc())
+        datetime.datetime(2017, 3, 3, 0, 0, tzinfo=<UTC>)
         >>> # A missing day implies the first.
         >>> DateValue(value='2017-03').as_value()
-        datetime.datetime(2017, 3, 1, 0, 0, tzinfo=tzutc())
+        datetime.datetime(2017, 3, 1, 0, 0, tzinfo=<UTC>)
         """
-        parts = self.value.split('-')
-        parts.reverse()
-
-        year = int(parts.pop())
-        month = int(parts.pop())
-        day = int(parts.pop()) if parts else 1
-        return datetime(year, month, day, tzinfo=tz.tzutc())
+        return _time_to_search_dims(self.value)[0]
 
 
 def last_day_of_month(year, month):
@@ -171,32 +166,16 @@ class VagueDateValue(Expr):
     def as_value(self):
         """
         >>> VagueDateValue(value='2017-03-03').as_value()
-        Range(begin=datetime.datetime(2017, 3, 3, 0, 0, tzinfo=tzutc()), \
-end=datetime.datetime(2017, 3, 3, 23, 59, 59, tzinfo=tzutc()))
+        Range(begin=datetime.datetime(2017, 3, 3, 0, 0, tzinfo=<UTC>), \
+end=datetime.datetime(2017, 3, 3, 23, 59, 59, 999999, tzinfo=tzutc()))
         >>> VagueDateValue(value='2017-03').as_value()
-        Range(begin=datetime.datetime(2017, 3, 1, 0, 0, tzinfo=tzutc()), \
-end=datetime.datetime(2017, 3, 31, 23, 59, 59, tzinfo=tzutc()))
+        Range(begin=datetime.datetime(2017, 3, 1, 0, 0, tzinfo=<UTC>), \
+end=datetime.datetime(2017, 3, 31, 23, 59, 59, 999999, tzinfo=tzutc()))
         >>> VagueDateValue(value='2017').as_value()
-        Range(begin=datetime.datetime(2017, 1, 1, 0, 0, tzinfo=tzutc()), \
-end=datetime.datetime(2017, 12, 31, 23, 59, 59, tzinfo=tzutc()))
+        Range(begin=datetime.datetime(2017, 1, 1, 0, 0, tzinfo=<UTC>), \
+end=datetime.datetime(2017, 12, 31, 23, 59, 59, 999999, tzinfo=tzutc()))
         """
-        parts = self.value.split('-')
-        parts.reverse()
-
-        year = int(parts.pop())
-        month = int(parts.pop()) if parts else None
-        day = int(parts.pop()) if parts else None
-
-        if parts:
-            raise RuntimeError("More than three components in date expression? %r" % self.value)
-
-        month_range = (month, month) if month else (1, 12)
-        day_range = (day, day) if day else (1, last_day_of_month(year, month_range[1]))
-
-        return Range(
-            datetime(year, month_range[0], day_range[0], 0, 0, tzinfo=tz.tzutc()),
-            datetime(year, month_range[1], day_range[1], 23, 59, 59, tzinfo=tz.tzutc())
-        )
+        return _time_to_search_dims(self.value)
 
 
 class InExpression(Expr):
@@ -259,12 +238,13 @@ class BetweenExpression(Expr):
         return '{!r} < {} < {!r}'.format(self.low_value, self.field_name, self.high_value)
 
     def query_repr(self, get_field):
-        return get_field(self.field_name).between(
-            self.low_value.query_repr(get_field),
-            self.high_value.query_repr(get_field)
-        )
+        search_range = self.as_query()[self.field_name]
+        return get_field(self.field_name).between(search_range[0], search_range[1])
 
     def as_query(self):
+        if isinstance(self.low_value, DateValue) and isinstance(self.high_value, DateValue):
+            return {self.field_name: _time_to_search_dims([self.low_value.value, self.high_value.value])}
+
         return {self.field_name: Range(self.low_value.as_value(), self.high_value.as_value())}
 
 

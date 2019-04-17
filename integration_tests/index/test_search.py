@@ -1137,14 +1137,15 @@ def test_csv_search_via_cli(clirunner: Any,
     matches_none('150<lat<160')
 
     # Match only a single dataset using multiple fields
-    matches_1('platform=LANDSAT_8', '2014-07-24<time<2014-07-27')
+    matches_1('platform=LANDSAT_8', '2014-07-24<time<2014-07-26')
 
     # One matching field, one non-matching
     no_such_product('2014-07-24<time<2014-07-27', 'platform=LANDSAT_5')
 
     # Test date shorthand
     matches_both('2014-7 < time < 2014-8')
-    matches_none('2014-6 < time < 2014-7')
+    matches_none('2014-5 < time < 2014-6')
+    matches_both('2014-7 < time < 2014-7')
 
     matches_both('time in 2014-07')
     matches_none('time in 2014-08')
@@ -1153,10 +1154,10 @@ def test_csv_search_via_cli(clirunner: Any,
 
     matches_both('2014 < time < 2015')
     matches_none('2015 < time < 2016')
-    matches_none('2014 < time < 2014')
+    matches_both('2014 < time < 2014')
 
     matches_both('time in range(2014-7, 2014-8)')
-    matches_none('time in range(2014-6, 2014-7)')
+    matches_both('time in range(2014-6, 2014-7)')
     matches_both('time in range(2005, 2015)')
 
 
