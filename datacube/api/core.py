@@ -19,6 +19,13 @@ from ..index import index_connect
 from ..drivers import new_datasource
 
 
+class TerminateCurrentLoad(Exception):
+    """ This exception is raised by user code from `progress_cbk`
+        to terminate currently running `.load`
+    """
+    pass
+
+
 class Datacube(object):
     """
     Interface to search, read and write a datacube.
@@ -502,9 +509,12 @@ class Datacube(object):
             for m in measurements:
                 t_slice = data[m.name].values[index]
 
-                _fuse_measurement(t_slice, datasets, geobox, m,
-                                  skip_broken_datasets=skip_broken_datasets,
-                                  progress_cbk=_cbk)
+                try:
+                    _fuse_measurement(t_slice, datasets, geobox, m,
+                                      skip_broken_datasets=skip_broken_datasets,
+                                      progress_cbk=_cbk)
+                except TerminateCurrentLoad:
+                    return data
 
         return data
 

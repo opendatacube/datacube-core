@@ -110,6 +110,62 @@ def test_load_data(tmpdir):
     assert progress_call_data == [(1, 2), (2, 2)]
 
 
+def test_load_data_cbk(tmpdir):
+    from datacube.api import TerminateCurrentLoad
+
+    tmpdir = Path(str(tmpdir))
+
+    spatial = dict(resolution=(15, -15),
+                   offset=(11230, 1381110),)
+
+    nodata = -999
+    aa = mk_test_image(96, 64, 'int16', nodata=nodata)
+
+    bands = [SimpleNamespace(name=name, values=aa, nodata=nodata)
+             for name in ['aa', 'bb']]
+
+    ds, gbox = gen_tiff_dataset(bands,
+                                tmpdir,
+                                prefix='ds1-',
+                                timestamp='2018-07-19',
+                                **spatial)
+    assert ds.time is not None
+
+    ds2, _ = gen_tiff_dataset(bands,
+                              tmpdir,
+                              prefix='ds2-',
+                              timestamp='2018-07-19',
+                              **spatial)
+    assert ds.time is not None
+    assert ds.time == ds2.time
+
+    sources = Datacube.group_datasets([ds, ds2], 'time')
+    progress_call_data = []
+
+    def progress_cbk(n, nt):
+        progress_call_data.append((n, nt))
+
+    ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
+                                 progress_cbk=progress_cbk)
+
+    assert progress_call_data == [(1, 4), (2, 4), (3, 4), (4, 4)]
+    np.testing.assert_array_equal(aa, ds_data.aa.values[0])
+    np.testing.assert_array_equal(aa, ds_data.bb.values[0])
+
+    progress_call_data = []
+
+    def progress_cbk_fail_early(n, nt):
+        progress_call_data.append((n, nt))
+        raise TerminateCurrentLoad()
+
+    ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
+                                 progress_cbk=progress_cbk_fail_early)
+
+    assert progress_call_data == [(1, 4)]
+    np.testing.assert_array_equal(aa, ds_data.aa.values[0])
+    np.testing.assert_array_equal(nodata, ds_data.bb.values[0])
+
+
 def test_hdf5_lock_release_on_failure():
     from datacube.storage._rio import RasterDatasetDataSource, _HDF5_LOCK
     from datacube.storage import BandInfo
