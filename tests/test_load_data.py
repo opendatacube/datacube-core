@@ -152,18 +152,30 @@ def test_load_data_cbk(tmpdir):
     np.testing.assert_array_equal(aa, ds_data.aa.values[0])
     np.testing.assert_array_equal(aa, ds_data.bb.values[0])
 
-    progress_call_data = []
-
     def progress_cbk_fail_early(n, nt):
         progress_call_data.append((n, nt))
         raise TerminateCurrentLoad()
 
+    def progress_cbk_fail_early2(n, nt):
+        progress_call_data.append((n, nt))
+        if n > 1:
+            raise KeyboardInterrupt()
+
+    progress_call_data = []
     ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
                                  progress_cbk=progress_cbk_fail_early)
 
     assert progress_call_data == [(1, 4)]
+    assert ds_data.dc_partial_load is True
     np.testing.assert_array_equal(aa, ds_data.aa.values[0])
     np.testing.assert_array_equal(nodata, ds_data.bb.values[0])
+
+    progress_call_data = []
+    ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
+                                 progress_cbk=progress_cbk_fail_early2)
+
+    assert ds_data.dc_partial_load is True
+    assert progress_call_data == [(1, 4), (2, 4)]
 
 
 def test_hdf5_lock_release_on_failure():

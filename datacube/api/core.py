@@ -513,7 +513,8 @@ class Datacube(object):
                     _fuse_measurement(t_slice, datasets, geobox, m,
                                       skip_broken_datasets=skip_broken_datasets,
                                       progress_cbk=_cbk)
-                except TerminateCurrentLoad:
+                except (TerminateCurrentLoad, KeyboardInterrupt):
+                    data.attrs['dc_partial_load'] = True
                     return data
 
         return data
