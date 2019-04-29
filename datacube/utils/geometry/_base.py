@@ -525,11 +525,8 @@ class Geometry(object):
         return not self.is_empty
 
     def __eq__(self, other):
-        return (hasattr(other, 'crs') and
-                self.crs == other.crs and
-                hasattr(other, '_geom') and
-                self._geom.Equal(other._geom)
-                )  # pylint: disable=protected-access
+        return (hasattr(other, 'crs') and self.crs == other.crs and
+                hasattr(other, '_geom') and self._geom.Equal(other._geom))  # pylint: disable=protected-access
 
     def __str__(self):
         return 'Geometry(%s, %r)' % (self.__geo_interface__, self.crs)
