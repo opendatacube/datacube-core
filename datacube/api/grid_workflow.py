@@ -191,13 +191,13 @@ class GridWorkflow(object):
             geobox = self.grid_spec.tile_geobox(cell_index)
             geobox = geobox.buffered(*tile_buffer) if tile_buffer else geobox
 
-            datasets, query = self._find_datasets(geobox.extent, indexers)
+            datasets, query = self._find_datasets(geobox.extent, **indexers)
             for dataset in datasets:
                 if intersects(geobox.extent, dataset.extent.to_crs(self.grid_spec.crs)):
                     add_dataset_to_cells(cell_index, geobox, dataset)
             return cells
         else:
-            datasets, query = self._find_datasets(geopolygon, indexers)
+            datasets, query = self._find_datasets(geopolygon, **indexers)
             geobox_cache = {}
 
             if query.geopolygon:
@@ -226,7 +226,7 @@ class GridWorkflow(object):
 
             return cells
 
-    def _find_datasets(self, geopolygon, indexers):
+    def _find_datasets(self, geopolygon=None, **indexers):
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
         if not query.product:
             raise RuntimeError('must specify a product')
@@ -409,6 +409,11 @@ class RegionWorkflow(GridWorkflow):
     RegionWorkflow works in a similar way to `GridWorkflow`, but uses a meatadata field instead of a grid
     to group data together for processing.
 
+    Use RegionWorkflow to specify your desired output grid.  The method :meth:`list_regions`
+    queries the index and return a dictionary of region codes, each mapping to a :class:`Tile` object.
+
+    The :class:`.Tile` object can then be used to load the data without needing the index,
+    and can be serialized for use with the `distributed` package.
     """
     def __init__(self, index, metadata_field='region_code'):
         """
@@ -420,14 +425,31 @@ class RegionWorkflow(GridWorkflow):
         self.metadata_field = metadata_field
 
     def region_observations(self, region=None, **indexers):
+        """
+        List datasets, grouped by cell.
+
+        :param datacube.utils.Geometry geopolygon:
+            Only return observations with data inside polygon.
+        :param str region:
+            The region code. E.g. '55HFB'
+        :param indexers:
+            Query to match the datasets, see :py:class:`datacube.api.query.Query`
+        :return: Datsets grouped by cell index
+        :rtype: dict[str, list[:py:class:`datacube.model.Dataset`]]
+
+        .. seealso::
+            :meth:`datacube.Datacube.find_datasets`
+
+            :class:`datacube.api.query.Query`
+        """
         if region:
             indexers[self.metadata_field] = region
-            datasets, query = self._find_datasets(indexers)
+            datasets, query = self._find_datasets(**indexers)
             geobox = self._get_geobox_for_dataset(datasets[0]) if datasets else None
             return {(region,): {'datasets': datasets, 'geobox': geobox}}
         else:
             regions = defaultdict(lambda: dict(datasets=[], geobox=None))
-            datasets, query = self._find_datasets(indexers)
+            datasets, query = self._find_datasets(**indexers)
             for dataset in datasets:
                 region = (dataset.metadata.fields[self.metadata_field],)
                 regions[region]['datasets'].append(dataset)
@@ -436,15 +458,23 @@ class RegionWorkflow(GridWorkflow):
             return dict(regions)
 
     def list_regions(self, region=None, **query):
+        """
+        List tiles of data, sorted by region code.
+        ::
+
+            regions = gw.list_regions(product='s2a_ard',
+                                      time=('2001-1', '2001-3'))
+
+        The values can be passed to :meth:`load`
+
+        :param str region: The value of the metadata field to group the data (optional).
+        :param query: see :py:class:`datacube.api.query.Query`
+        :rtype: dict[(str, numpy.datetime64), :class:`.Tile`]
+
+        .. seealso:: :meth:`load`
+        """
         observations = self.region_observations(region, **query)
         return self.tile_sources(observations, query_group_by(**query))
-
-    def _find_datasets(self, indexers):
-        query = Query(index=self.index, **indexers)
-        if not query.product:
-            raise RuntimeError('must specify a product')
-        datasets = self.index.datasets.search_eager(**query.search_terms)
-        return datasets, query
 
     @staticmethod
     def _get_geobox_for_dataset(dataset, measurements=None):
@@ -463,6 +493,3 @@ class RegionWorkflow(GridWorkflow):
 
     def __str__(self):
         return "RegionWorkflow<index={!r},\n\tmetadata_field={!r}>".format(self.index, self.metadata_field)
-
-    def __repr__(self):
-        return self.__str__()
