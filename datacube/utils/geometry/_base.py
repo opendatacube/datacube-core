@@ -14,6 +14,8 @@ from .tools import roi_normalise, roi_shape
 Coordinate = namedtuple('Coordinate', ('values', 'units'))
 _BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
 
+# pylint: disable=too-many-lines
+
 
 class BoundingBox(_BoundingBox):
     """Bounding box, defining extent in cartesian coordinates.
