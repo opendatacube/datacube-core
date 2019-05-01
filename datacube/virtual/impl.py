@@ -34,8 +34,23 @@ class VirtualDatasetBag:
         self.pile = pile
         self.geopolygon = geopolygon
         self.product_definitions = product_definitions
+        
+    def contained_datasets(self):
+        def worker(pile):
+            if isinstance(pile, Sequence):
+                for chid in self.pile:
+                    yield child
+                    
+            elif isinstance(pile, Mapping):
+                for child in pile.values():
+                    yield from worker(child)
+                    
+            else:
+                raise VirtualProductException("unexpected pile")
+            
+        return worker(self.pile)
 
-
+        
 class VirtualDatasetBox:
     """ Result of `VirtualProduct.group`. """
     # our replacement for grid_workflow.Tile basically
@@ -322,7 +337,46 @@ class Product(VirtualProduct):
 
         return apply_aliases(result, grouped.product_definitions[self._product], list(measurements))
 
+class Reproject(VirtualProduct):
+    """ Reproject into a common grid. """
 
+    @property
+    def _input(self) -> 'VirtualProduct':
+        """ The input product of a reproject product. """
+        return from_validated_recipe(self['input'])
+    
+    def query(self, dc: Datacube, **search_terms: Dict[str, Any]) -> VirtualDatasetBag:
+        return self._input.query(dc, **search_terms)
+    
+    def group(self, datasets: VirtualDatasetBag, **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
+        geopolygon = datasets.geopolygon
+        
+        merged = merge_search_terms(self, search_terms)
+        if geopolygon is None:
+            selected = list(datasets.contained_datasets())
+        else:
+            selected = None
+            
+        geobox = output_geobox(datasets=selected,
+                               output_crs=self['output_crs'],
+                               resolution=self['resolution'],
+                               align=self.get('align'),
+                               geopolygon=geopolygon)
+        
+        input_box = self._input.group(datasets, **reject_keys(merged, self._GEOBOX_KEYS))
+        
+        return VirtualDatasetBox(input_box.pile,
+                                 geobox,
+                                 datasets.product_definitions)
+
+    def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
+        # consider each child box in grouped.split() separately
+        # ask each of these what its preferred geobox is
+        # load it with that grid spec
+        # reproject result to crs
+        # concatenate all these
+        
+            
 class Transform(VirtualProduct):
     """ An on-the-fly transformation. """
 
