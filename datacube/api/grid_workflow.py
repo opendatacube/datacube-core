@@ -3,11 +3,12 @@ import logging
 import numpy
 import xarray
 from itertools import groupby
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import warnings
 import pandas as pd
+from affine import Affine
 
-from datacube.utils.geometry import intersects
+from datacube.utils.geometry import intersects, GeoBox
 from .query import Query, query_group_by
 from .core import Datacube, apply_aliases
 
@@ -398,6 +399,70 @@ class GridWorkflow(object):
 
     def __str__(self):
         return "GridWorkflow<index={!r},\n\tgridspec={!r}>".format(self.index, self.grid_spec)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class RegionWorkflow(GridWorkflow):
+    """
+    RegionWorkflow works in a similar way to `GridWorkflow`, but uses a meatadata field instead of a grid
+    to group data together for processing.
+
+    """
+    def __init__(self, index, metadata_field='region_code'):
+        """
+
+        :param datacube.index.Index index: The database index to use.
+        :param str metadata_field: The field to use to group datasets. (Default is 'region_code')
+        """
+        super().__init__(index)
+        self.metadata_field = metadata_field
+
+    def region_observations(self, region=None, **indexers):
+        if region:
+            indexers[self.metadata_field] = region
+            datasets, query = self._find_datasets(indexers)
+            geobox = self._get_geobox_for_dataset(datasets[0]) if datasets else None
+            return {(region,): {'datasets': datasets, 'geobox': geobox}}
+        else:
+            regions = defaultdict(lambda: dict(datasets=[], geobox=None))
+            datasets, query = self._find_datasets(indexers)
+            for dataset in datasets:
+                region = (dataset.metadata.fields[self.metadata_field],)
+                regions[region]['datasets'].append(dataset)
+                if regions[region]['geobox'] is None:
+                    regions[region]['geobox'] = self._get_geobox_for_dataset(dataset)
+            return dict(regions)
+
+    def list_regions(self, region=None, **query):
+        observations = self.region_observations(region, **query)
+        return self.tile_sources(observations, query_group_by(**query))
+
+    def _find_datasets(self, indexers):
+        query = Query(index=self.index, **indexers)
+        if not query.product:
+            raise RuntimeError('must specify a product')
+        datasets = self.index.datasets.search_eager(**query.search_terms)
+        return datasets, query
+
+    @staticmethod
+    def _get_geobox_for_dataset(dataset, measurements=None):
+        best_geobox = None
+        for name, m in dataset.measurements.items():
+            if measurements is not None and name not in measurements:
+                continue
+            width = m['info']['width']
+            height = m['info']['height']
+            geotransform = m['info']['geotransform']
+            affine = Affine.from_gdal(*geotransform)
+            geobox = GeoBox(width, height, affine, dataset.crs)
+            if best_geobox is None or min(map(abs, geobox.resolution)) < min(map(abs, best_geobox.resolution)):
+                best_geobox = geobox
+        return best_geobox
+
+    def __str__(self):
+        return "RegionWorkflow<index={!r},\n\tmetadata_field={!r}>".format(self.index, self.metadata_field)
 
     def __repr__(self):
         return self.__str__()
