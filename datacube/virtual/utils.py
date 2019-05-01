@@ -46,17 +46,8 @@ def merge_dicts(dicts):
 
 def merge_search_terms(original, override, keys=None):
     def pick(key, a, b):
-        if a == b:
-            return a
-
-        if a is None:
-            return b
         if b is None:
             return a
-
-        # if they are ranges, take the intersection
-        if isinstance(a, Range) and isinstance(b, Range):
-            return Range(max(a.begin, b.begin), min(a.end, b.end))
 
         # trust the override
         return b

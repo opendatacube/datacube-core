@@ -256,10 +256,10 @@ class Product(VirtualProduct):
         if product is None:
             raise VirtualProductException("could not find product {}".format(self._product))
 
-        originals = Query(dc.index, **reject_keys(self, self._NON_QUERY_KEYS))
-        overrides = Query(dc.index, **reject_keys(search_terms, self._NON_QUERY_KEYS))
+        originals = reject_keys(self, self._NON_QUERY_KEYS)
+        overrides = reject_keys(search_terms, self._NON_QUERY_KEYS)
 
-        query = Query(dc.index, **merge_search_terms(originals.search_terms, overrides.search_terms))
+        query = Query(dc.index, **merge_search_terms(originals, overrides))
         self._assert(query.product == self._product,
                      "query for {} returned another product {}".format(self._product, query.product))
 
