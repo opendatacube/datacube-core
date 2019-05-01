@@ -287,6 +287,15 @@ class TestCRSEqualityComparisons(object):
 
         assert a != epsg4326
 
+    def test_comparison_edge_cases(self):
+        a = epsg4326
+        none_crs = None
+        assert a == a
+        assert a == str(a)
+        assert (a == none_crs) is False
+        assert (a == []) is False
+        assert (a == TestCRSEqualityComparisons) is False
+
     def test_grs80_comparison(self):
         a = geometry.CRS("""GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",
                                 DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],

@@ -204,8 +204,12 @@ class CRS(object):
         return "CRS('%s')" % self.crs_str
 
     def __eq__(self, other):
+        if other is self:
+            return True
         if isinstance(other, str):
             other = CRS(other)
+        elif not isinstance(other, CRS):
+            return False
         gdal_thinks_issame = self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
         if gdal_thinks_issame:
             return True
