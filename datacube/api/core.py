@@ -706,8 +706,9 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 def select_datasets_inside_polygon(datasets, polygon):
     # Check against the bounding box of the original scene, can throw away some portions
     assert polygon is not None
+    query_crs = polygon.crs
     for dataset in datasets:
-        if intersects(polygon.to_crs(dataset.crs), dataset.extent):
+        if intersects(polygon, dataset.extent.to_crs(query_crs)):
             yield dataset
 
 
