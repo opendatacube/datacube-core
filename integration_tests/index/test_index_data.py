@@ -13,9 +13,9 @@ from uuid import UUID
 import pytest
 from dateutil import tz
 
-from datacube.index.index import Index
-from datacube.index.exceptions import MissingRecordError
 from datacube.drivers.postgres import PostgresDb
+from datacube.index.exceptions import MissingRecordError
+from datacube.index.index import Index
 from datacube.model import Dataset, MetadataType
 
 _telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
@@ -247,6 +247,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     # backwards compatibility code path checks, don't use this in normal code
     for p in ('skip', 'ensure', 'verify'):
         index.datasets.add(child, sources_policy=p)
+
 
 # Make sure that both normal and s3aio index can handle normal data locations correctly
 @pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env',), indirect=True)
