@@ -66,7 +66,6 @@ _pseudo_telemetry_dataset_type = {
     },
     'metadata_type': 'eo'
 }
-_EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
 
 def test_archive_datasets(index, initialised_postgres_db, local_config, default_metadata_type):
@@ -248,7 +247,6 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     # backwards compatibility code path checks, don't use this in normal code
     for p in ('skip', 'ensure', 'verify'):
         index.datasets.add(child, sources_policy=p)
-
 
 # Make sure that both normal and s3aio index can handle normal data locations correctly
 @pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env',), indirect=True)
