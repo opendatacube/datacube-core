@@ -461,16 +461,24 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
 
 def test_dataset_add_http(dataset_add_configs, index: Index, default_metadata_type: MetadataType, httpserver,
                           clirunner):
-    # pytest-localserver also looks good, it's been around for ages, and httpserver is the new cool
+    # pytest-localserver also looks good, it's been around for ages, but httpserver is the new cool
     p = dataset_add_configs
 
-    httpserver.expect_request("/metadata_types.yaml").respond_with_data(open(p.metadata).read())
-    httpserver.expect_request("/products.yaml").respond_with_data(open(p.products).read())
-    httpserver.expect_request("/datasets.yaml").respond_with_data(open(p.datasets).read())
+    httpserver.expect_request('/metadata_types.yaml').respond_with_data(open(p.metadata).read())
+    httpserver.expect_request('/products.yaml').respond_with_data(open(p.products).read())
+    httpserver.expect_request('/datasets.yaml').respond_with_data(open(p.datasets).read())
     # check that the request is served
     #    assert requests.get(httpserver.url_for("/dataset.yaml")).yaml() == {'foo': 'bar'}
 
-    clirunner(['metadata', 'add', httpserver.url_for("/metadata_types.yaml")])
-    clirunner(['product', 'add', httpserver.url_for("/products.yaml")])
+    clirunner(['metadata', 'add', httpserver.url_for('/metadata_types.yaml')])
+    clirunner(['product', 'add', httpserver.url_for('/products.yaml')])
     # clirunner(['dataset', 'add', p.datasets])
-    clirunner(['dataset', 'add', httpserver.url_for("/datasets.yaml")])
+    clirunner(['dataset', 'add', httpserver.url_for('/datasets.yaml')])
+
+    ds = load_dataset_definition(p.datasets)
+    assert index.datasets.has(ds.id)
+
+
+def xtest_dataset_add_fails(clirunner, index):
+    result = clirunner(['dataset', 'add', 'bad_path.yaml'], expect_success=False)
+    assert result.exit_code != 0, "Surely not being able to add a dataset when requested should return an error."
