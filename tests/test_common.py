@@ -9,7 +9,7 @@ from datacube.ui.common import get_metadata_path, find_any_metadata_suffix
 from datacube.testutils import write_files, assert_file_structure
 
 
-def test_find_metadata_path():
+def test_get_metadata_path():
     FILES = {
         'directory_dataset': {
             'file1.txt': '',

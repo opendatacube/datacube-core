@@ -3,18 +3,18 @@
 Common methods for UI code.
 """
 from pathlib import Path
+from typing import Union
 
 from toolz.functoolz import identity
 
 from datacube.utils import read_documents, InvalidDocException, SimpleDocNav, is_supported_document_type
 
 
-def get_metadata_path(dataset_path):
+def get_metadata_path(dataset_path: Union[str, Path]):
     """
     Find a metadata path for a given input/dataset path.
 
-    :type dataset_path: pathlib.Path
-    :rtype: Path
+    :rtype: str
     """
 
     # They may have given us a metadata file directly.
