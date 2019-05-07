@@ -8,6 +8,7 @@ import pathlib
 import string
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Tuple, Iterable
 
 import numpy as np
 import pytest
@@ -20,7 +21,6 @@ from hypothesis.strategies import integers, text
 from pandas import to_datetime
 
 from datacube.helpers import write_geotiff
-from datacube.utils.math import num2numpy, is_almost_int, valid_mask
 from datacube.model import MetadataType
 from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
 from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
@@ -28,10 +28,10 @@ from datacube.utils import (gen_password, write_user_secret_file, slurp, read_do
                             SimpleDocNav)
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
-from datacube.utils.generic import map_with_lookahead
-from datacube.utils.math import clamp
-from datacube.utils.py import sorted_items
 from datacube.utils.documents import parse_yaml, without_lineage_sources
+from datacube.utils.generic import map_with_lookahead
+from datacube.utils.math import num2numpy, is_almost_int, valid_mask, clamp
+from datacube.utils.py import sorted_items
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
                                  pick_uri, uri_resolve,
                                  normalise_path, default_base_dir)
@@ -413,17 +413,30 @@ def test_read_docs_from_s3(sample_document_files):
         _test_read_docs_impl(mocked_s3_objs)
 
 
-def _test_read_docs_impl(sample_document_files):
+def test_read_docs_from_http(sample_document_files, httpserver):
+    http_docs = []
+    for abs_fname, ndocs in sample_document_files:
+        if abs_fname.endswith('gz') or abs_fname.endswith('nc'):
+            continue
+        path = "/" + Path(abs_fname).name
+
+        httpserver.expect_request(path).respond_with_data(open(abs_fname).read())
+        http_docs.append((httpserver.url_for(path), ndocs))
+
+    _test_read_docs_impl(http_docs)
+
+
+def _test_read_docs_impl(sample_documents: Iterable[Tuple[str, int]]):
     # Test case for returning URIs pointing to documents
-    for filepath, num_docs in sample_document_files:
-        all_docs = list(read_documents(filepath, uri=True))
+    for doc_url, num_docs in sample_documents:
+        all_docs = list(read_documents(doc_url, uri=True))
         assert len(all_docs) == num_docs
 
         for uri, doc in all_docs:
             assert isinstance(doc, dict)
             assert isinstance(uri, str)
 
-        url = as_url(filepath)
+        url = as_url(doc_url)
         if num_docs > 1:
             expect_uris = [as_url(url) + '#part={}'.format(i) for i in range(num_docs)]
         else:
@@ -934,7 +947,7 @@ def test_valid_mask():
     xx[0, 0] = np.nan
     mm = valid_mask(xx, np.nan)
     assert not mm[0, 0]
-    assert mm.sum() == (4*8-1)
+    assert mm.sum() == (4 * 8 - 1)
 
 
 def test_num2numpy():
