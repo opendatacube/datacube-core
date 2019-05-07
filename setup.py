@@ -13,6 +13,7 @@ tests_require = [
     'pytest',
     'pytest-cov',
     'pytest-timeout',
+    'pytest-httpserver',
     'moto',
 ]
 

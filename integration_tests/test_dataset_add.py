@@ -1,10 +1,12 @@
 import math
-import yaml
-import toolz
 
+import toolz
+import yaml
+
+from datacube.index import Index
+from datacube.model import MetadataType
+from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files, dataset_maker
 from datacube.utils import SimpleDocNav
-from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files
-from datacube.testutils import dataset_maker
 
 
 def check_skip_lineage_test(clirunner, index):
@@ -70,13 +72,11 @@ def check_with_existing_lineage(clirunner, index):
 
     child_docs = [ds.sources[x].doc for x in ('ab', 'ac', 'ae')]
 
-    prefix = write_files({'lineage.yml':
-                          yaml.safe_dump_all(child_docs),
-                          'main.yml':
-                          yaml.safe_dump(ds.doc),
+    prefix = write_files({'lineage.yml': yaml.safe_dump_all(child_docs),
+                          'main.yml': yaml.safe_dump(ds.doc),
                           })
 
-    clirunner(['dataset', 'add', str(prefix/'lineage.yml')])
+    clirunner(['dataset', 'add', str(prefix / 'lineage.yml')])
     assert index.datasets.get(ds.sources['ae'].id) is not None
     assert index.datasets.get(ds.sources['ab'].id) is not None
     assert index.datasets.get(ds.sources['ac'].id) is not None
@@ -84,7 +84,7 @@ def check_with_existing_lineage(clirunner, index):
     clirunner(['dataset', 'add',
                '--no-auto-add-lineage',
                '--product', 'A',
-               str(prefix/'main.yml')])
+               str(prefix / 'main.yml')])
 
     assert index.datasets.get(ds.id) is not None
 
@@ -106,17 +106,15 @@ def check_inconsistent_lineage(clirunner, index):
     child_docs = [ds.sources[x].doc for x in ('ae',)]
     modified_doc = toolz.assoc_in(ds.doc, 'lineage.source_datasets.ae.label'.split('.'), 'modified')
 
-    prefix = write_files({'lineage.yml':
-                          yaml.safe_dump_all(child_docs),
-                          'main.yml':
-                          yaml.safe_dump(modified_doc),
+    prefix = write_files({'lineage.yml': yaml.safe_dump_all(child_docs),
+                          'main.yml': yaml.safe_dump(modified_doc),
                           })
 
-    clirunner(['dataset', 'add', str(prefix/'lineage.yml')])
+    clirunner(['dataset', 'add', str(prefix / 'lineage.yml')])
     assert index.datasets.get(ds.sources['ae'].id) is not None
 
     r = clirunner(['dataset', 'add',
-                   str(prefix/'main.yml')])
+                   str(prefix / 'main.yml')])
 
     assert 'ERROR Inconsistent lineage dataset' in r.output
 
@@ -127,7 +125,7 @@ def check_inconsistent_lineage(clirunner, index):
 
     # now again but skipping verification check
     r = clirunner(['dataset', 'add', '--no-verify-lineage',
-                   str(prefix/'main.yml')])
+                   str(prefix / 'main.yml')])
 
     assert index.datasets.has(ds.id)
     assert index.datasets.has(ds.sources['ab'].id)
@@ -155,24 +153,24 @@ def check_missing_lineage(clirunner, index):
 
     r = clirunner(['dataset', 'add',
                    '--no-auto-add-lineage',
-                   str(prefix/'main.yml')])
+                   str(prefix / 'main.yml')])
 
     assert 'ERROR Following lineage datasets are missing' in r.output
     assert index.datasets.has(ds.id) is False
 
     # now add lineage and try again
-    clirunner(['dataset', 'add', str(prefix/'lineage.yml')])
+    clirunner(['dataset', 'add', str(prefix / 'lineage.yml')])
     assert index.datasets.has(ds.sources['ae'].id)
     r = clirunner(['dataset', 'add',
                    '--no-auto-add-lineage',
-                   str(prefix/'main.yml')])
+                   str(prefix / 'main.yml')])
 
     assert index.datasets.has(ds.id)
 
 
 def check_missing_metadata_doc(clirunner):
     prefix = write_files({'im.tiff': ''})
-    r = clirunner(['dataset', 'add', str(prefix/'im.tiff')])
+    r = clirunner(['dataset', 'add', str(prefix / 'im.tiff')])
     assert "ERROR No supported metadata docs found for dataset" in r.output
 
 
@@ -184,7 +182,7 @@ def check_no_confirm(clirunner, path):
 
 def check_bad_yaml(clirunner, index):
     prefix = write_files({'broken.yml': '"'})
-    r = clirunner(['dataset', 'add', str(prefix/'broken.yml')])
+    r = clirunner(['dataset', 'add', str(prefix / 'broken.yml')])
     assert 'ERROR Failed reading documents from ' in r.output
 
 
@@ -278,13 +276,13 @@ metadata:
     })
 
     clirunner(['metadata', 'add', p.metadata])
-    clirunner(['product', 'add', str(prefix/'products.yml')])
+    clirunner(['product', 'add', str(prefix / 'products.yml')])
 
     pp = list(index.products.get_all())
     assert len(pp) == 2
 
     for ds, i in zip(dss, (1, 2)):
-        r = clirunner(['dataset', 'add', str(prefix/('dataset%d.yml' % i))])
+        r = clirunner(['dataset', 'add', str(prefix / ('dataset%d.yml' % i))])
         assert 'ERROR Auto match failed' in r.output
         assert 'matches several products' in r.output
         assert index.datasets.has(ds.id) is False
@@ -293,7 +291,7 @@ metadata:
     ds, fname = dss[0], 'dataset1.yml'
     r = clirunner(['dataset', 'add',
                    '--product', 'A',
-                   str(prefix/fname)])
+                   str(prefix / fname)])
 
     assert index.datasets.has(ds.id) is True
 
@@ -301,7 +299,7 @@ metadata:
     ds, fname = dss[1], 'dataset2.yml'
     r = clirunner(['dataset', 'add',
                    '--exclude-product', 'B',
-                   str(prefix/fname)])
+                   str(prefix / fname)])
 
     assert index.datasets.has(ds.id) is True
 
@@ -330,7 +328,7 @@ def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner):
     r = clirunner(['dataset', 'add',
                    '--auto-add-lineage',
                    '--verify-lineage',
-                   str(prefix/'dataset.yml')])
+                   str(prefix / 'dataset.yml')])
 
     assert "ERROR" not in r.output
 
@@ -351,7 +349,7 @@ def test_dataset_add_inconsistent_measurements(dataset_add_configs, index_empty,
     mk = dataset_maker(0)
 
     # not set, empty, subset, full set, super-set
-    ds1 = SimpleDocNav(mk('A', product_type='eo',))
+    ds1 = SimpleDocNav(mk('A', product_type='eo', ))
     ds2 = SimpleDocNav(mk('B', product_type='eo', measurements={}))
     ds3 = SimpleDocNav(mk('C', product_type='eo', measurements={
         'red': {}
@@ -392,12 +390,12 @@ measurements:
     })
 
     clirunner(['metadata', 'add', p.metadata])
-    r = clirunner(['product', 'add', str(prefix/'products.yml')])
+    r = clirunner(['product', 'add', str(prefix / 'products.yml')])
 
     pp = list(index.products.get_all())
     assert len(pp) == 1
 
-    r = clirunner(['dataset', 'add', str(prefix/'dataset.yml')])
+    r = clirunner(['dataset', 'add', str(prefix / 'dataset.yml')])
     print(r.output)
 
     r = clirunner(['dataset', 'search', '-f', 'csv'])
@@ -459,3 +457,20 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
     r = clirunner(['dataset', 'info', ds.id, ds.sources['ab'].id, ds.sources['ac'].id])
     assert 'status: active' in r.output
     assert 'status: archived' not in r.output
+
+
+def test_dataset_add_http(dataset_add_configs, index: Index, default_metadata_type: MetadataType, httpserver,
+                          clirunner):
+    # pytest-localserver also looks good, it's been around for ages, and httpserver is the new cool
+    p = dataset_add_configs
+
+    httpserver.expect_request("/metadata_types.yaml").respond_with_data(open(p.metadata).read())
+    httpserver.expect_request("/products.yaml").respond_with_data(open(p.products).read())
+    httpserver.expect_request("/datasets.yaml").respond_with_data(open(p.datasets).read())
+    # check that the request is served
+    #    assert requests.get(httpserver.url_for("/dataset.yaml")).yaml() == {'foo': 'bar'}
+
+    clirunner(['metadata', 'add', httpserver.url_for("/metadata_types.yaml")])
+    clirunner(['product', 'add', httpserver.url_for("/products.yaml")])
+    # clirunner(['dataset', 'add', p.datasets])
+    clirunner(['dataset', 'add', httpserver.url_for("/datasets.yaml")])

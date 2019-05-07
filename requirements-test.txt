@@ -64,6 +64,7 @@ pyPEG2==2.15.2
 pyproj==1.9.5.1
 pytest==3.5.0
 pytest-cov==2.5.1
+pytest-httpserver==0.3.0
 pytest-timeout==1.2.1
 python-dateutil==2.7.2
 pytz==2018.4
