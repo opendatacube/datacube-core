@@ -46,7 +46,7 @@ CONFIG_FILE_PATHS = [str(INTEGRATION_TESTS_DIR / 'agdcintegration.conf'),
 # Configure Hypothesis to allow slower tests, because we're testing datasets
 # and disk IO rather than scalar values in memory.  Ask @Zac-HD for details.
 settings.register_profile(
-    'opendatacube', timeout=-1, deadline=5000, max_examples=10,
+    'opendatacube', deadline=5000, max_examples=10,
     suppress_health_check=[HealthCheck.too_slow]
 )
 settings.load_profile('opendatacube')
