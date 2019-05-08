@@ -2,26 +2,22 @@ repos:
     - repo: https://github.com/adrienverge/yamllint.git
       sha: v1.15.0
       hooks:
-          - id: yamllint
+        - id: yamllint
     - repo: https://github.com/pre-commit/pre-commit-hooks
       rev: v2.1.0
       hooks:
-          - id: flake8
-          - id: end-of-file-fixer
-          - id: check-docstring-first
-          - id: check-json
-          - id: check-yaml
-          - id: debug-statements
-          - id: name-tests-test
-            args: ['--django']
-          - id: requirements-txt-fixer
-          - id: check-added-large-files
-          - id: check-merge-conflict
+        - id: flake8
+        - id: end-of-file-fixer
+        - id: check-docstring-first
+        - id: check-json
+        - id: check-yaml
+        - id: debug-statements
+        - id: name-tests-test
+          args: ['--django']
+        - id: requirements-txt-fixer
+        - id: check-added-large-files
+        - id: check-merge-conflict
     -   repo: https://github.com/pre-commit/mirrors-pylint
         rev: 'v2.3.1'  # Use the sha / tag you want to point at
         hooks:
         -   id: pylint
-
-#    - repo: https://github.com/pre-commit/mirrors-pylint
-#      hooks:
-#          - id: pylint

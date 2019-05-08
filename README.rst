@@ -36,28 +36,34 @@ Developer setup
 
    -  ``git clone https://github.com/opendatacube/datacube-core.git``
 
-2. Install the native libraries for `GDAL <http://www.gdal.org/>`__ &
-   NetCDF4.
+2. Create a Python environment to use ODC within, we recommend `conda <https://docs.conda.io/en/latest/miniconda.html>`__ as the
+   easiest way to handle Python dependencies.
 
-   -  This depends on your OS.
-   -  Eg. ``yum install gdal``
+::
 
-3. Install Python dependencies:
+   conda create -n odc -c conda-forge python=3.7 datacube pre_commit
+   conda activate odc
 
-   ``python setup.py develop``
+3. Install a develop version of datacube-core.
 
-   Note that the versions must match between GDAL's Python bindings and
-   the native GDAL library. If you receive a gdal error when installing
-   dependencies, you may need to install a specific version first:
+::
 
-   eg. ``pip install gdal==2.0.1``
+   cd datacube-core
+   pip install --upgrade -e .
+
+4. Install the `pre-commit <https://pre-commit.com>`__ hooks to help follow ODC coding
+  conventions when committing with git.
+
+::
+
+   pre-commit install
 
 4. Run unit tests + PyLint
 
    ``./check-code.sh``
 
    (this script approximates what is run by Travis. You can
-   alternatively run ``py.test`` yourself)
+   alternatively run ``pytest`` yourself)
 
 5. **(or)** Run all tests, including integration tests.
 
