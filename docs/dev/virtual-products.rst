@@ -253,3 +253,7 @@ For example, calculating the NDVI from a SR product (say, ``ls8_nbar_albers``) w
 
 for the required geo-spatial ``search_terms``. Note that the ``measurement`` method describes the output from
 the ``compute`` method.
+
+.. note::
+    We assume that the user-defined transformations are dask-friendly, otherwise loading data using dask may
+    be broken. Also, method names starting with ``_transform_`` are reserved for internal use.
