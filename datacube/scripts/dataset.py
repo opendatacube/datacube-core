@@ -1,4 +1,3 @@
-
 import csv
 import datetime
 import logging
@@ -124,8 +123,7 @@ def load_datasets_for_update(doc_stream, index):
 @click.option('--confirm-ignore-lineage',
               help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
               is_flag=True, default=False)
-@click.argument('dataset-paths',
-                nargs=-1)
+@click.argument('dataset-paths', type=str, nargs=-1)
 @ui.pass_index()
 def index_cmd(index, product_names,
               exclude_product_names,
@@ -208,8 +206,7 @@ def parse_update_rules(keys_that_can_change):
 'archive' - mark as archived
 'forget' - remove from the index
 ''')
-@click.argument('dataset-paths',
-                type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
+@click.argument('dataset-paths', nargs=-1)
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
     def loc_action(action, new_ds, existing_ds, action_name):
@@ -299,7 +296,6 @@ def build_dataset_info(index: Index, dataset: Dataset,
                        show_derived: bool = False,
                        depth: int = 1,
                        max_depth: int = 99) -> Mapping[str, Any]:
-
     info = OrderedDict((
         ('id', str(dataset.id)),
         ('product', dataset.type.name),

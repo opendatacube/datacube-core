@@ -4,6 +4,7 @@ import json
 import logging
 import sys
 from pathlib import Path
+from typing import List
 
 import click
 import pandas as pd
@@ -57,12 +58,9 @@ def add_products(index, allow_exclusive_lock, files):
               help='Allow index to be locked from other users while updating (default: false)')
 @click.option('--dry-run', '-d', is_flag=True, default=False,
               help='Check if everything is ok')
-@click.argument('files',
-                type=click.Path(exists=True, readable=True, writable=False),
-                nargs=-1)
+@click.argument('files', type=str, nargs=-1)
 @ui.pass_index()
-def update_products(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
-    # type: (Index, bool, bool, bool, list) -> None
+def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: List):
     """
     Update existing products.
 
