@@ -5,8 +5,8 @@ API for dataset indexing, access and search.
 import logging
 import warnings
 from collections import namedtuple
+from typing import Any, Iterable, Set, Tuple, Union, List
 from uuid import UUID
-from typing import Any, Iterable, Mapping, Set, Tuple, Union, List
 
 from datacube.model import Dataset, DatasetType
 from datacube.model.utils import flatten_datasets
@@ -15,6 +15,7 @@ from datacube.utils.changes import get_doc_changes
 from . import fields
 
 _LOG = logging.getLogger(__name__)
+
 
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
@@ -301,7 +302,7 @@ class DatasetResource(object):
         """
         Mark datasets as not archived
 
-        :param list[UUID] ids: list of dataset ids to restore
+        :param Iterable[UUID] ids: list of dataset ids to restore
         """
         with self._db.begin() as transaction:
             for id_ in ids:
