@@ -289,3 +289,56 @@ def test_missing_file_handling():
     with pytest.raises(IOError):
         with ignore_exceptions_if(True, (ValueError, ArithmeticError)):
             rio_slurp('no-such-file.tiff')
+
+
+def test_native_load(tmpdir):
+    from datacube.testutils.io import native_load
+
+    tmpdir = Path(str(tmpdir))
+    spatial = dict(resolution=(15, -15),
+                   offset=(11230, 1381110),)
+    nodata = -999
+    aa = mk_test_image(96, 64, 'int16', nodata=nodata)
+    cc = mk_test_image(32, 16, 'int16', nodata=nodata)
+
+    bands = [SimpleNamespace(name=name, values=aa, nodata=nodata)
+             for name in ['aa', 'bb']]
+    bands.append(SimpleNamespace(name='cc', values=cc, nodata=nodata))
+
+    ds, gbox = gen_tiff_dataset(bands[:2],
+                                tmpdir,
+                                prefix='ds1-',
+                                timestamp='2018-07-19',
+                                **spatial)
+
+    xx = native_load(ds)
+    assert xx.geobox == gbox
+    np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
+    np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
+
+    ds, gbox_cc = gen_tiff_dataset(bands,
+                                   tmpdir,
+                                   prefix='ds2-',
+                                   timestamp='2018-07-19',
+                                   **spatial)
+
+    # cc is different size from aa,bb
+    with pytest.raises(ValueError):
+        xx = native_load(ds)
+
+    # aa and bb are the same
+    xx = native_load(ds, ['aa', 'bb'])
+    assert xx.geobox == gbox
+    np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
+    np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
+
+    # cc will be reprojected
+    xx = native_load(ds, basis='aa')
+    assert xx.geobox == gbox
+    np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
+    np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
+
+    # cc is compatible with self
+    xx = native_load(ds, ['cc'])
+    assert xx.geobox == gbox_cc
+    np.testing.assert_array_equal(cc, xx.isel(time=0).cc.values)
