@@ -10,7 +10,7 @@ from uuid import UUID
 
 from datacube.model import Dataset, DatasetType
 from datacube.model.utils import flatten_datasets
-from datacube.utils import jsonify_document, changes
+from datacube.utils import jsonify_document, changes, cached_property
 from datacube.utils.changes import get_doc_changes
 from . import fields
 
@@ -704,68 +704,48 @@ class DatasetResource(object):
         """
         return list(self.search(**query))
 
-    def get_product_time_min(self, product: str):
+    def get_product_time_bounds(self, product: str):
         """
         Returns the minimum acquisition time of the product.
         """
 
-        # Get the offsets of min time in dataset doc
+        # Get the offsets from dataset doc
         product = self.types.get_by_name(product)
         dataset_section = product.metadata_type.definition['dataset']
         min_offset = dataset_section['search_fields']['time']['min_offset']
-
-        from datacube.drivers.postgres._fields import DateDocField
-        from datacube.drivers.postgres._schema import DATASET
-        from sqlalchemy import select, func
-
-        time_field = DateDocField('aquisition_time_min',
-                                  'Min of time when dataset was acquired',
-                                  DATASET.c.metadata,
-                                  False,  # is it indexed
-                                  offset=min_offset,
-                                  selection='least')
-
-        with self._db.connect() as connection:
-            result = connection.execute(
-                select([func.min(time_field.alchemy_expression)]).where(
-                    DATASET.c.dataset_type_ref == product.id
-                )
-            ).first()
-
-        return result[0]
-
-    def get_product_time_max(self, product: str):
-        """
-        Returns the maximum acquisition time of the product.
-        """
-
-        # Get the offsets of min time in dataset doc
-        product = self.types.get_by_name(product)
-        dataset_section = product.metadata_type.definition['dataset']
         max_offset = dataset_section['search_fields']['time']['max_offset']
 
         from datacube.drivers.postgres._fields import DateDocField
         from datacube.drivers.postgres._schema import DATASET
         from sqlalchemy import select, func
 
-        time_field = DateDocField('aquisition_time_max',
-                                  'Max of time when dataset was acquired',
-                                  DATASET.c.metadata,
-                                  False,  # is it indexed
-                                  offset=max_offset,
-                                  selection='greatest')
+        time_min = DateDocField('aquisition_time_min',
+                                'Min of time when dataset was acquired',
+                                DATASET.c.metadata,
+                                False,  # is it indexed
+                                offset=min_offset,
+                                selection='least')
+
+        time_max = DateDocField('aquisition_time_max',
+                                'Max of time when dataset was acquired',
+                                DATASET.c.metadata,
+                                False,  # is it indexed
+                                offset=max_offset,
+                                selection='greatest')
 
         with self._db.connect() as connection:
             result = connection.execute(
-                select([func.max(time_field.alchemy_expression)]).where(
+                select(
+                    [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
+                ).where(
                     DATASET.c.dataset_type_ref == product.id
                 )
             ).first()
 
-        return result[0]
+        return result
 
     # pylint: disable=redefined-outer-name
-    def search_returing_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
+    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
         """
         This is dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.
@@ -790,34 +770,41 @@ class DatasetResource(object):
 
         assert field_names
 
+        class DatasetSpatialMixin(object):
+            __slots__ = ()
+
+            @property
+            def _gs(self):
+                return self.grid_spatial
+
+            @property
+            def crs(self):
+                return Dataset.crs.__get__(self)
+
+            @cached_property
+            def extent(self):
+                return Dataset.extent.__get__(self, Dataset)
+
+            @property
+            def transform(self):
+                return Dataset.transform.__get__(self)
+
+            @property
+            def bounds(self):
+                return Dataset.bounds.__get__(self)
+
         for product, query_exprs in self.make_query_expr(query, custom_offsets):
 
-            select_fields, fields_to_process = self.make_select_fields(product, field_names, custom_offsets)
+            select_fields = self.make_select_fields(product, field_names, custom_offsets)
+            select_field_names = tuple(field.name for field in select_fields)
+            result_type = namedtuple('DatasetLight', select_field_names)
 
-            result_type = namedtuple('DatasetLight', tuple(field.name for field in select_fields))
-
-            class DatasetLight(result_type):
-
-                if fields_to_process.get('grid_spatial'):
-                    @property
-                    def _gs(self):
-                        return self.grid_spatial
-
-                    @property
-                    def crs(self):
-                        return Dataset.crs.__get__(self)
-
-                    @property
-                    def extent(self):
-                        return Dataset.extent.__get__(self, Dataset)
-
-                    @property
-                    def transform(self):
-                        return Dataset.transform.__get__(self)
-
-                    @property
-                    def bounds(self):
-                        return Dataset.bounds.__get__(self)
+            if 'grid_spatial' in select_field_names:
+                class DatasetLight(result_type, DatasetSpatialMixin):
+                    pass
+            else:
+                class DatasetLight(result_type):
+                    __slots__ = ()
 
             with self._db.connect() as connection:
                 results = connection.search_unique_datasets(
@@ -827,11 +814,17 @@ class DatasetResource(object):
                 )
 
             import json
+            from datacube.drivers.postgres._fields import SimpleDocField
 
             for result in results:
-                field_values = {field.name: result[i_] for i_, field in enumerate(select_fields)}
-                if 'grid_spatial' in fields_to_process:
-                    field_values['grid_spatial'] = json.loads(field_values['grid_spatial'])
+                field_values = dict()
+                for i_, field in enumerate(select_fields):
+                    # We need to load the simple doc fields
+                    if isinstance(field, SimpleDocField):
+                        field_values[field.name] = json.loads(result[i_])
+                    else:
+                        field_values[field.name] = result[i_]
+
                 yield DatasetLight(**field_values)
 
     def make_select_fields(self, product, field_names, custom_offsets):
@@ -849,13 +842,12 @@ class DatasetResource(object):
         from datacube.drivers.postgres._schema import DATASET
 
         select_fields = []
-        fields_to_process = dict()
         for field_name in field_names:
             if dataset_fields.get(field_name):
                 select_fields.append(dataset_fields[field_name])
             else:
                 # try to construct the field
-                if field_name in {'grid_spatial', 'extent', 'crs'}:
+                if field_name in {'transform', 'extent', 'crs', 'bounds'}:
                     grid_spatial = dataset_section.get('grid_spatial')
                     if grid_spatial:
                         select_fields.append(SimpleDocField(
@@ -863,18 +855,17 @@ class DatasetResource(object):
                             False,
                             offset=grid_spatial
                         ))
-                    if field_name in {'extent', 'crs'}:
-                        if not fields_to_process.get('grid_spatial'):
-                            fields_to_process['grid_spatial'] = set()
-                        fields_to_process['grid_spatial'].add(field_name)
                 elif field_name in custom_offsets:
                     select_fields.append(SimpleDocField(
                         field_name, field_name, DATASET.c.metadata,
                         False,
                         offset=custom_offsets[field_name]
                     ))
+                elif field_name == 'uris':
+                    from datacube.model.fields import Field
+                    select_fields.append(Field('uris', 'uris'))
 
-        return select_fields, fields_to_process
+        return select_fields
 
     def make_query_expr(self, query, custom_offsets):
         """
@@ -897,7 +888,6 @@ class DatasetResource(object):
                 raise ValueError('No products match search terms: %r' % query)
 
         for q, product in product_queries:
-            print(q, product)
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             custom_query_exprs = tuple(self.get_custom_query_expressions(custom_query, custom_offsets))

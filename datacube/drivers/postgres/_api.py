@@ -554,36 +554,35 @@ class PostgresDbAPI(object):
                        if expression.field.required_alchemy_table != DATASET_LOCATION]
 
         if select_fields:
-            select_field_names = {f.name for f in select_fields}
-
-            select_columns = tuple(
-                f.alchemy_expression.label(f.name)
-                for f in select_fields if f.name not in {'uri', 'uris'}
-            )
-
-            if {'uri', 'uris'}.issubset(select_field_names):
-
-                # All active URIs, from newest to oldest
-                uris_field = func.array(
-                    select([
-                        _dataset_uri_field(SELECTED_DATASET_LOCATION)
-                    ]).where(
-                        and_(
-                            SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-                            SELECTED_DATASET_LOCATION.c.archived == None
-                        )
-                    ).order_by(
-                        SELECTED_DATASET_LOCATION.c.added.desc(),
-                        SELECTED_DATASET_LOCATION.c.id.desc()
+            select_columns = []
+            for field in select_fields:
+                if field.name in {'uri', 'uris'}:
+                    # All active URIs, from newest to oldest
+                    uris_field = func.array(
+                        select([
+                            _dataset_uri_field(SELECTED_DATASET_LOCATION)
+                        ]).where(
+                            and_(
+                                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+                                SELECTED_DATASET_LOCATION.c.archived == None
+                            )
+                        ).order_by(
+                            SELECTED_DATASET_LOCATION.c.added.desc(),
+                            SELECTED_DATASET_LOCATION.c.id.desc()
+                        ).label('uris')
                     ).label('uris')
-                ).label('uris')
-
-                select_columns = select_columns + (uris_field,)
+                    select_columns.append(uris_field)
+                else:
+                    select_columns.append(field.alchemy_expression.label(field.name))
         else:
             select_columns = _DATASET_SELECT_FIELDS
 
         raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
-        from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields)
+
+        # We don't need 'DATASET_LOCATION table in the from expression
+        select_fields_ = [field for field in select_fields if field.name not in {'uri', 'uris'}]
+
+        from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields_)
         where_expr = and_(DATASET.c.archived == None, *raw_expressions)
 
         return(
