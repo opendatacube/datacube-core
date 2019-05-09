@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..storage import reproject_and_fuse
+from ..storage import reproject_and_fuse, measurement_paths
 from ..storage._rio import RasterioDataSource
 from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
@@ -30,6 +30,58 @@ class RasterFileDataSource(RasterioDataSource):
         if self.crs is None:
             raise RuntimeError('No CRS in the data and no fallback')
         return self.crs
+
+
+def _raster_metadata(path, band=1):
+    source = RasterFileDataSource(path, band)
+    with source.open() as rdr:
+        return SimpleNamespace(dtype=rdr.dtype.name,
+                               nodata=rdr.nodata,
+                               geobox=rdr_geobox(rdr))
+
+
+def get_raster_info(ds, measurements=None):
+    """
+    :param ds: Dataset
+    :param measurements: List of band names to load
+    """
+    paths = measurement_paths(ds)
+
+    if measurements is None:
+        measurements = list(paths)
+
+    return {n: _raster_metadata(paths[n])
+            for n in measurements}
+
+
+def native_load(ds, measurements=None, basis=None, **kw):
+    """Load single dataset in native resolution.
+
+    :param ds: Dataset
+    :param measurements: List of band names to load
+    :param basis: Name of the band to use for computing reference frame, other
+    bands might be reprojected if they use different pixel grid
+
+    :param **kw: Any other parameter load_data accepts
+
+    :return: Xarray dataset
+    """
+    from datacube import Datacube
+
+    ii = get_raster_info(ds, measurements)
+    if basis is not None:
+        geobox = ii[basis].geobox
+    else:
+        gboxes = [info.geobox for info in ii.values()]
+        geobox = gboxes[0]
+        consistent = all(geobox == gbox for gbox in gboxes)
+        if not consistent:
+            raise ValueError('Not all bands share the same pixel grid')
+
+    mm = [ds.type.measurements[n] for n in ii.keys()]
+    return Datacube.load_data(Datacube.group_datasets([ds], 'time'),
+                              geobox,
+                              measurements=mm, **kw)
 
 
 def dc_read(path,
