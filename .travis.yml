@@ -52,10 +52,11 @@ before_install:
   - export CPLUS_INCLUDE_PATH=/usr/include/gdal
   - export C_INCLUDE_PATH=/usr/include/gdal
   - export GDAL_DATA="$(gdal-config --datadir)"
+  - gdal-config --version
   - pip install --upgrade pip
   - pip install --progress-bar off coveralls codecov
 # Install pygdal bindings compatible with dpkg based gdal libs
-  - pip install pygdal>="$(gdal-config --version)"
+  - pip install GDAL=="$(gdal-config --version)"
   - pip install --progress-bar off --requirement requirements-test.txt
 
 
