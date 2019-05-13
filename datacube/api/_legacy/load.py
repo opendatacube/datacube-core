@@ -10,6 +10,16 @@ import uuid
 from math import ceil
 from typing import Union, Optional, Callable, List, Any
 
+try:
+    import os
+    import sys
+    import SharedArray as sa
+    from pathos.threading import ThreadPool
+    from pathos.helpers import cpu_count
+except ImportError:
+    pass
+from six.moves import zip
+
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.geometry import GeoBox, roi_is_empty
 from datacube.storage import BandInfo, DataSource
@@ -18,6 +28,7 @@ from datacube.api.core import Datacube
 from datacube.storage._read import read_time_slice
 
 _LOG = logging.getLogger(__name__)
+THREADING_REQS_AVAILABLE = ('pathos.threading' in sys.modules)
 
 FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
 
@@ -189,17 +200,33 @@ def dask_load(sources, geobox, measurements, dask_chunks,
 def xr_load(sources, geobox, measurements,
             skip_broken_datasets=False,
             use_threads=False):
+    use_threads = use_threads and THREADING_REQS_AVAILABLE
+
     mk_new = get_loader(sources)
 
     data = Datacube.create_storage(sources.coords, geobox, measurements)
 
-    # TODO: re-add use_threads
-    for index, datasets in np.ndenumerate(sources.values):
-        for m in measurements:
+    if use_threads:
+        def work_load_data(index, datasets, m):
             t_slice = data[m.name].values[index]
-
             fuse_measurement(t_slice, datasets, geobox, m,
                              mk_new=mk_new,
                              skip_broken_datasets=skip_broken_datasets)
+
+        work_list = []
+        for index, datasets in np.ndenumerate(sources.values):
+            for m in measurements:
+                work_list.append([index, datasets, m])
+
+        pool = ThreadPool(cpu_count()*2)
+        pool.map(work_load_data, *zip(*work_list))
+    else:
+        for index, datasets in np.ndenumerate(sources.values):
+            for m in measurements:
+                t_slice = data[m.name].values[index]
+
+                fuse_measurement(t_slice, datasets, geobox, m,
+                                 mk_new=mk_new,
+                                 skip_broken_datasets=skip_broken_datasets)
 
     return data

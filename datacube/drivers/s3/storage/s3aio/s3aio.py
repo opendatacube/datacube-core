@@ -263,6 +263,6 @@ class S3AIO(object):
                  zip(cell + tuple(sub_range), offset)]
             if data.dtype != dtype:
                 data = np.frombuffer(data, dtype=dtype, count=-1, offset=0)
-            result[t] = data.reshape([s.stop - s.start for s in sub_range])
+            result[tuple(t)] = data.reshape([s.stop - s.start for s in sub_range])
 
         return result
