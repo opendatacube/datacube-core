@@ -47,7 +47,7 @@ stable version.
     This should upload the project to https://pypi.python.org/pypi/datacube/.
 
 #. Update conda-forge recipe
-    Follow the instrucions under **Updating datacube-feedstock** in the `Datcube Feedstock`_ repository.
+    Follow the instrucions under **Updating datacube-feedstock** in the `Datacube Feedstock`_ repository.
     
     It should involve modifying the version number in the
     `recipe <https://github.com/conda-forge/datacube-feedstock/blob/master/recipe/meta.yaml>`_ and updating the SHA hash.    
@@ -62,5 +62,5 @@ stable version.
 .. _Travis: https://travis-ci.org/opendatacube/datacube-core
 .. _readthedocs: http://readthedocs.org/projects/datacube-core/builds/
 .. _Datacube releases: https://github.com/opendatacube/datacube-core/releases
-.. _Datcube Feedstock: https://github.com/conda-forge/datacube-feedstock
+.. _Datacube Feedstock: https://github.com/conda-forge/datacube-feedstock
 
