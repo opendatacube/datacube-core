@@ -6,13 +6,19 @@ What's New
 **********
 
 
-Documentation Improvements
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+v1.7.0 (16 May 2019)
+====================
 
+Not a lot of changes since rc1.
+
+- Early exit from ``dc.load`` on `KeyboardInterrupt`, allows partial loads inside notebook.
+- Some bug fixes in geometry related code
+- Some cleanups in tests
+- Pre-commit hooks configuration for easier testing
 - Re-enable multi-threaded reads for s3aio driver. Set use_threads to True in dc.load()
 
 
-v1.7.0rc1 (18 April 2018)
+v1.7.0rc1 (18 April 2019)
 =========================
 
 Virtual Products
