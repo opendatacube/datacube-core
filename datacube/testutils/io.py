@@ -1,7 +1,7 @@
 import numpy as np
 
-from ..storage import reproject_and_fuse, measurement_paths
-from ..storage._rio import RasterioDataSource
+from ..storage import reproject_and_fuse, BandInfo
+from ..storage._rio import RasterioDataSource, RasterDatasetDataSource
 from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
@@ -32,8 +32,8 @@ class RasterFileDataSource(RasterioDataSource):
         return self.crs
 
 
-def _raster_metadata(path, band=1):
-    source = RasterFileDataSource(path, band)
+def _raster_metadata(band):
+    source = RasterDatasetDataSource(band)
     with source.open() as rdr:
         return SimpleNamespace(dtype=rdr.dtype.name,
                                nodata=rdr.nodata,
@@ -45,12 +45,10 @@ def get_raster_info(ds, measurements=None):
     :param ds: Dataset
     :param measurements: List of band names to load
     """
-    paths = measurement_paths(ds)
-
     if measurements is None:
-        measurements = list(paths)
+        measurements = list(ds.type.measurements)
 
-    return {n: _raster_metadata(paths[n])
+    return {n: _raster_metadata(BandInfo(ds, n))
             for n in measurements}
 
 
