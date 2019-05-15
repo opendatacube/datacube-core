@@ -540,11 +540,12 @@ class PostgresDbAPI(object):
     def search_unique_datasets_query(expressions, select_fields, limit):
         """
         We are not dealing with dataset_source table here and we are not joining
-        dataset table with dataset_location table instead we are aggregating stuff
-        in dataset_location per dataset basis if required.
+        dataset table with dataset_location table. We are aggregating stuff
+        in dataset_location per dataset basis if required. It returns the construted
+        query.
         """
 
-        # expressions involving DATASET_SOURCE cannot not be done here
+        # expressions involving DATASET_SOURCE cannot not done for now
         for expression in expressions:
             assert expression.field.required_alchemy_table != DATASET_SOURCE,\
                 'Joins with dataset_source cannot be done for this query'
@@ -598,6 +599,9 @@ class PostgresDbAPI(object):
         )
 
     def search_unique_datasets(self, expressions, select_fields=None, limit=None):
+        """
+        Processes a search query without duplicating datasets.
+        """
 
         select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
 
