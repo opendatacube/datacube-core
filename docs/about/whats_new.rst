@@ -5,6 +5,13 @@
 What's New
 **********
 
+
+Documentation Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Re-enable multi-threaded reads for s3aio driver. Set use_threads to True in dc.load()
+
+
 v1.7.0rc1 (18 April 2018)
 =========================
 
