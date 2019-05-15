@@ -62,6 +62,15 @@ def native_geobox(ds, measurements=None, basis=None):
 
     :return: GeoBox describing native storage coordinates.
     """
+    gs = ds.type.grid_spec
+    if gs is not None:
+        # Dataset is from ingested product, figure out GeoBox of the tile this dataset covers
+        bb = [gbox for _, gbox in gs.tiles(ds.bounds)]
+        if len(bb) != 1:
+            # Ingested product but dataset overlaps several/none tiles -- no good
+            raise ValueError('Broken GridSpec detected')
+        return bb[0]
+
     if basis is not None:
         return get_raster_info(ds, [basis])[basis].geobox
 
