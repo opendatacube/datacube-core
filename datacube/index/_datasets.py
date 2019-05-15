@@ -706,7 +706,7 @@ class DatasetResource(object):
 
     def get_product_time_bounds(self, product: str):
         """
-        Returns the minimum acquisition time of the product.
+        Returns the minimum and maximum acquisition time of the product.
         """
 
         # Get the offsets from dataset doc
@@ -747,25 +747,29 @@ class DatasetResource(object):
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
         """
-        This is dataset search function that returns the results as objects of a dynamically
+        This is a dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.
 
-        Only the requested fields will be returned together with derived attributes as property functions
-        similer to the datacube.model.Dataset class.
+        Only the requested fields will be returned together with related derived attributes as property functions
+        similer to the datacube.model.Dataset class. For example, if 'extent'is requested all of
+        'crs', 'extent', 'transform', and 'bounds' are available as property functions.
 
-        The select fields can be custom fields (those not specified in metadata_type, fixed fields, or
-        native fields). This require custom offsets of the metadata doc be provided.
+        The field_names can be custom fields in addition to those specified in metadata_type, fixed fields, or
+        native fields. The field_names can also be derived fields like 'extent', 'crs', 'transform',
+        and 'bounds'. The custom fields require custom offsets of the metadata doc be provided.
 
-        The datasets can be selected based on values of custom fields as well as long as relevant custom
-        offsets are provided.
+        The datasets can be selected based on values of custom fields as long as relevant custom
+        offsets are provided. However custom field values are not transformed so must match what is
+        stored in the database.
 
         :param field_names: A tuple of field names that would be returned including derived fields
                             such as extent, crs
         :param custom_offsets: A dictionary of offsets in the metadata doc for custom fields
         :param limit: Number of datasets returned per product.
         :param query: key, value mappings of query that will be processed against metadata_types,
-                      product definitions on the client side as well as dataset table.
-        :return: A Dynamically generated DatasetLight (a subclass of tuple) objects.
+                      product definitions and/or dataset table.
+        :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
+        property functions).
         """
 
         assert field_names
@@ -829,8 +833,7 @@ class DatasetResource(object):
 
     def make_select_fields(self, product, field_names, custom_offsets):
         """
-        Parse and generate the list of select fields to be passed to the database API and
-        those fields that are to be further processed once the results are returned.
+        Parse and generate the list of select fields to be passed to the database API.
         """
 
         assert product and field_names
@@ -897,7 +900,8 @@ class DatasetResource(object):
     def get_custom_query_expressions(self, custom_query, custom_offsets):
         """
         Generate query expressions for custom fields. it is assumed that custom fields are to be found
-        in metadata doc and their offsets are provided
+        in metadata doc and their offsets are provided. custom_query is a dict of key fields involving
+        custom fields.
         """
         from datacube.drivers.postgres._fields import SimpleDocField
         from datacube.drivers.postgres._schema import DATASET
