@@ -787,7 +787,7 @@ class DatasetResource(object):
 
             @cached_property
             def extent(self):
-                return Dataset.extent.__get__(self, Dataset)
+                return Dataset.extent.func(self)
 
             @property
             def transform(self):
