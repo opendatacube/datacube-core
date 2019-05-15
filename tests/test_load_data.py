@@ -292,7 +292,7 @@ def test_missing_file_handling():
 
 
 def test_native_load(tmpdir):
-    from datacube.testutils.io import native_load
+    from datacube.testutils.io import native_load, native_geobox
 
     tmpdir = Path(str(tmpdir))
     spatial = dict(resolution=(15, -15),
@@ -326,13 +326,19 @@ def test_native_load(tmpdir):
     with pytest.raises(ValueError):
         xx = native_load(ds)
 
+    # cc is different size from aa,bb
+    with pytest.raises(ValueError):
+        xx = native_geobox(ds)
+
     # aa and bb are the same
+    assert native_geobox(ds, ['aa', 'bb']) == gbox
     xx = native_load(ds, ['aa', 'bb'])
     assert xx.geobox == gbox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
     # cc will be reprojected
+    assert native_geobox(ds, basis='aa') == gbox
     xx = native_load(ds, basis='aa')
     assert xx.geobox == gbox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
