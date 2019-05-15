@@ -109,6 +109,21 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
+def geobox_to_gridspatial(geobox):
+    if geobox is None:
+        return {}
+
+    l, b, r, t = geobox.extent.boundingbox
+    return {"grid_spatial": {
+        "projection": {
+            "geo_ref_points": {
+                "ll": {"x": l, "y": b},
+                "lr": {"x": r, "y": b},
+                "ul": {"x": l, "y": t},
+                "ur": {"x": r, "y": t}},
+            "spatial_reference": str(geobox.crs)}}}
+
+
 def mk_sample_product(name,
                       description='Sample',
                       measurements=('red', 'green', 'blue'),
@@ -181,7 +196,9 @@ def mk_sample_dataset(bands,
                       product_name='sample',
                       format='GeoTiff',
                       timestamp=None,
-                      id='3a1df9e0-8484-44fc-8102-79184eab85dd'):
+                      id='3a1df9e0-8484-44fc-8102-79184eab85dd',
+                      geobox=None,
+                      product_opts=None):
     # pylint: disable=redefined-builtin
     image_bands_keys = 'path layer band'.split(' ')
     measurement_keys = 'dtype units nodata aliases name'.split(' ')
@@ -192,8 +209,12 @@ def mk_sample_dataset(bands,
     measurements = [with_keys(m, measurement_keys) for m in bands]
     image_bands = dict((m['name'], with_keys(m, image_bands_keys)) for m in bands)
 
+    if product_opts is None:
+        product_opts = {}
+
     ds_type = mk_sample_product(product_name,
-                                measurements=measurements)
+                                measurements=measurements,
+                                **product_opts)
 
     if timestamp is None:
         timestamp = '2018-06-29'
@@ -203,6 +224,7 @@ def mk_sample_dataset(bands,
         'format': {'name': format},
         'image': {'bands': image_bands},
         'time': timestamp,
+        **geobox_to_gridspatial(geobox),
     }, uris=[uri])
 
 
