@@ -14,11 +14,40 @@ from datacube.utils import jsonify_document, changes, cached_property
 from datacube.utils.changes import get_doc_changes
 from . import fields
 
+import json
+from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
+from datacube.drivers.postgres._schema import DATASET
+from sqlalchemy import select, func
+from datacube.model.fields import Field
+
 _LOG = logging.getLogger(__name__)
 
 
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
+
+class DatasetSpatialMixin(object):
+    __slots__ = ()
+
+    @property
+    def _gs(self):
+        return self.grid_spatial
+
+    @property
+    def crs(self):
+        return Dataset.crs.__get__(self)
+
+    @cached_property
+    def extent(self):
+        return Dataset.extent.func(self)
+
+    @property
+    def transform(self):
+        return Dataset.transform.__get__(self)
+
+    @property
+    def bounds(self):
+        return Dataset.bounds.__get__(self)
 
 
 class DatasetResource(object):
@@ -715,10 +744,6 @@ class DatasetResource(object):
         min_offset = dataset_section['search_fields']['time']['min_offset']
         max_offset = dataset_section['search_fields']['time']['max_offset']
 
-        from datacube.drivers.postgres._fields import DateDocField
-        from datacube.drivers.postgres._schema import DATASET
-        from sqlalchemy import select, func
-
         time_min = DateDocField('aquisition_time_min',
                                 'Min of time when dataset was acquired',
                                 DATASET.c.metadata,
@@ -774,29 +799,6 @@ class DatasetResource(object):
 
         assert field_names
 
-        class DatasetSpatialMixin(object):
-            __slots__ = ()
-
-            @property
-            def _gs(self):
-                return self.grid_spatial
-
-            @property
-            def crs(self):
-                return Dataset.crs.__get__(self)
-
-            @cached_property
-            def extent(self):
-                return Dataset.extent.func(self)
-
-            @property
-            def transform(self):
-                return Dataset.transform.__get__(self)
-
-            @property
-            def bounds(self):
-                return Dataset.bounds.__get__(self)
-
         for product, query_exprs in self.make_query_expr(query, custom_offsets):
 
             select_fields = self.make_select_fields(product, field_names, custom_offsets)
@@ -816,9 +818,6 @@ class DatasetResource(object):
                     select_fields=select_fields,
                     limit=limit
                 )
-
-            import json
-            from datacube.drivers.postgres._fields import SimpleDocField
 
             for result in results:
                 field_values = dict()
@@ -841,9 +840,6 @@ class DatasetResource(object):
         dataset_fields = product.metadata_type.dataset_fields
         dataset_section = product.metadata_type.definition['dataset']
 
-        from datacube.drivers.postgres._fields import SimpleDocField
-        from datacube.drivers.postgres._schema import DATASET
-
         select_fields = []
         for field_name in field_names:
             if dataset_fields.get(field_name):
@@ -858,14 +854,13 @@ class DatasetResource(object):
                             False,
                             offset=grid_spatial
                         ))
-                elif field_name in custom_offsets:
+                elif custom_offsets and field_name in custom_offsets:
                     select_fields.append(SimpleDocField(
                         field_name, field_name, DATASET.c.metadata,
                         False,
                         offset=custom_offsets[field_name]
                     ))
                 elif field_name == 'uris':
-                    from datacube.model.fields import Field
                     select_fields.append(Field('uris', 'uris'))
 
         return select_fields
@@ -903,8 +898,6 @@ class DatasetResource(object):
         in metadata doc and their offsets are provided. custom_query is a dict of key fields involving
         custom fields.
         """
-        from datacube.drivers.postgres._fields import SimpleDocField
-        from datacube.drivers.postgres._schema import DATASET
 
         custom_exprs = []
         for key in custom_query:
