@@ -52,7 +52,7 @@ Developer setup
    pip install --upgrade -e .
 
 4. Install the `pre-commit <https://pre-commit.com>`__ hooks to help follow ODC coding
-  conventions when committing with git.
+   conventions when committing with git.
 
 ::
 
