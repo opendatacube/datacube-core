@@ -80,7 +80,8 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
         assert len(result.uri) == 1
 
     # Add a new uri to a dataset
-    index.datasets.add_location(valid_uuids[0], PosixPath(tmpdir / 'temp_location' / 'agdc-metadata.yaml').as_uri())
+    new_loc = PosixPath(tmpdir.strpath) / 'temp_location' / 'agdc-metadata.yaml'
+    index.datasets.add_location(valid_uuids[0], new_loc.as_uri())
 
     results_with_uri = list(index.datasets.search_returning_datasets_light(field_names=('id', 'uris'),
                                                                            product='ls5_nbar_scene',
