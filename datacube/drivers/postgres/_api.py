@@ -539,6 +539,9 @@ class PostgresDbAPI(object):
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
         """
+        'unique' here refer to that the query results do not contain datasets
+        having the same 'id' more than once.
+
         We are not dealing with dataset_source table here and we are not joining
         dataset table with dataset_location table. We are aggregating stuff
         in dataset_location per dataset basis if required. It returns the construted
@@ -600,7 +603,11 @@ class PostgresDbAPI(object):
 
     def search_unique_datasets(self, expressions, select_fields=None, limit=None):
         """
-        Processes a search query without duplicating datasets.
+        Processes a search query without duplicating datasets. 'unique' here refer to
+        that the results do not contain datasets having the same 'id' more than once.
+        we achieve this by not allowing dataset table to join with dataset_location or
+        dataset_source tables. Joining with other tables would not result in multiple
+        records per dataset due to the direction of cardinality.
         """
 
         select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
