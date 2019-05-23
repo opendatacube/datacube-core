@@ -15,10 +15,7 @@ import numpy as np
 import rasterio
 import rasterio.warp
 
-try:
-    from rasterio.warp import Resampling
-except ImportError:
-    from rasterio.warp import RESAMPLING as Resampling
+from rasterio.warp import Resampling
 from rasterio import Affine
 
 import xarray as xr

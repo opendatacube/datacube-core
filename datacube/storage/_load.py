@@ -100,7 +100,7 @@ def _coord_to_xr(name: str, c: Coordinate) -> XrDataArray:
     return XrDataArray(c.values,
                        coords={name: c.values},
                        dims=(name,),
-                       attrs={'units': c.units})
+                       attrs={'units': c.units, 'resolution': c.resolution})
 
 
 def _mk_empty_ds(coords: Mapping[str, XrDataArray], geobox: GeoBox) -> XrDataset:
