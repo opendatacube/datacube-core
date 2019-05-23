@@ -19,9 +19,14 @@ from datacube.api.grid_workflow import _fast_slice
 from datacube.api.query import Query, query_group_by
 from datacube.model import Measurement, DatasetType
 from datacube.model.utils import xr_apply, xr_iter, SafeDumper
+from datacube.testutils.io import native_geobox
+from datacube.utils.geometry import GeoBox, rio_reproject
+from datacube.utils.geometry._warp import resampling_s2rio
+from datacube.api.core import per_band_load_data_settings
 
 from .utils import qualified_name, merge_dicts
 from .utils import select_unique, select_keys, reject_keys, merge_search_terms
+from .utils import subset_native_geobox
 
 
 class VirtualProductException(Exception):
@@ -34,6 +39,24 @@ class VirtualDatasetBag:
         self.pile = pile
         self.geopolygon = geopolygon
         self.product_definitions = product_definitions
+
+    def contained_datasets(self):
+        def worker(pile):
+            if isinstance(pile, Sequence):
+                for child in self.pile:
+                    yield child
+
+            elif isinstance(pile, Mapping):
+                for child in pile.values():
+                    yield from worker(child)
+
+            else:
+                raise VirtualProductException("unexpected pile")
+
+        return worker(self.pile)
+
+    def __repr__(self):
+        return "<VirtualDatasetBag of {} datacube datasets>".format(len(list(self.contained_datasets())))
 
 
 class VirtualDatasetBox:
@@ -61,13 +84,16 @@ class VirtualDatasetBox:
         """
         return self.pile.shape + self.geobox.shape
 
-    def __getitem__(self, chunk):
-        # TODO: test this functionality, I don't think this works at all
-        pile = self.pile
+    def __repr__(self):
+        return "<VirtualDatasetBox of shape {}>".format(dict(zip(self.dims, self.shape)))
 
-        return VirtualDatasetBox(_fast_slice(pile, chunk[:len(pile.shape)]),
-                                 self.geobox[chunk[len(pile.shape):]],
-                                 self.product_definitions)
+    # def __getitem__(self, chunk):
+    #     # TODO: test this functionality, I don't think this works at all
+    #     pile = self.pile
+    #
+    #     return VirtualDatasetBox(_fast_slice(pile, chunk[:len(pile.shape)]),
+    #                              self.geobox[chunk[len(pile.shape):]],
+    #                              self.product_definitions)
 
     def map(self, func, dtype='O'):
         return VirtualDatasetBox(xr_apply(self.pile, func, dtype=dtype), self.geobox, self.product_definitions)
@@ -153,15 +179,16 @@ class VirtualProduct(Mapping):
         - collate: stack observations from products with the same set of measurements
         - juxtapose: put measurements from different products side-by-side
         - aggregate: take (non-spatial) statistics of grouped data
+        - reproject: on-the-fly reprojection of raster data
     """
 
-    _GEOBOX_KEYS = ['output_crs', 'resolution', 'align']
-    _GROUPING_KEYS = ['group_by']
-    _LOAD_KEYS = ['measurements', 'fuse_func', 'resampling', 'dask_chunks']
-    _ADDITIONAL_KEYS = ['dataset_predicate']
+    _GEOBOX_KEYS = {'output_crs', 'resolution', 'align'}
+    _GROUPING_KEYS = {'group_by'}
+    _LOAD_KEYS = {'measurements', 'fuse_func', 'resampling', 'dask_chunks'}
+    _ADDITIONAL_KEYS = {'dataset_predicate'}
 
-    _NON_SPATIAL_KEYS = _GEOBOX_KEYS + _GROUPING_KEYS
-    _NON_QUERY_KEYS = _NON_SPATIAL_KEYS + _LOAD_KEYS + _ADDITIONAL_KEYS
+    _NON_SPATIAL_KEYS = _GEOBOX_KEYS | _GROUPING_KEYS
+    _NON_QUERY_KEYS = _NON_SPATIAL_KEYS | _LOAD_KEYS | _ADDITIONAL_KEYS
 
     # helper methods
 
@@ -200,11 +227,12 @@ class VirtualProduct(Mapping):
 
     # no index access below this line
 
-    def group(self, datasets: VirtualDatasetBag, **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
+    def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
+              **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
         """
         Datasets grouped by their timestamps.
         :param datasets: the `VirtualDatasetBag` to fetch data from
-        :param query: to specify a spatial sub-region
+        :param auto_geobox: when set, do not calculate geobox
         """
         raise NotImplementedError
 
@@ -212,7 +240,7 @@ class VirtualProduct(Mapping):
         """ Convert grouped datasets to `xarray.Dataset`. """
         raise NotImplementedError
 
-    def __str__(self):
+    def __repr__(self):
         return yaml.dump(self._reconstruct(), Dumper=SafeDumper,
                          default_flow_style=False, indent=2)
 
@@ -277,16 +305,20 @@ class Product(VirtualProduct):
         return VirtualDatasetBag(list(datasets), query.geopolygon,
                                  {product.name: product})
 
-    def group(self, datasets: VirtualDatasetBag, **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
+    def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
+              **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
         geopolygon = datasets.geopolygon
         selected = list(datasets.pile)
 
         # geobox
-        merged = merge_search_terms(self, search_terms)
+        merged = merge_search_terms(self, group_settings)
 
-        geobox = output_geobox(datasets=selected,
-                               grid_spec=datasets.product_definitions[self._product].grid_spec,
-                               geopolygon=geopolygon, **select_keys(merged, self._GEOBOX_KEYS))
+        if auto_geobox:
+            geobox = None
+        else:
+            geobox = output_geobox(datasets=selected,
+                                   grid_spec=datasets.product_definitions[self._product].grid_spec,
+                                   geopolygon=geopolygon, **select_keys(merged, self._GEOBOX_KEYS))
 
         # group by time
         group_query = query_group_by(**select_keys(merged, self._GROUPING_KEYS))
@@ -298,28 +330,44 @@ class Product(VirtualProduct):
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         """ Convert grouped datasets to `xarray.Dataset`. """
-        merged = merge_search_terms(select_keys(self, self._LOAD_KEYS),
-                                    select_keys(load_settings, self._LOAD_KEYS))
+
+        load_keys = self._LOAD_KEYS - {'measurements'}
+        merged = merge_search_terms(select_keys(self, load_keys),
+                                    select_keys(load_settings, load_keys))
+
+        measurement_dicts = self.output_measurements(grouped.product_definitions)
+        product = grouped.product_definitions[self._product]
 
         if 'measurements' not in self:
-            measurements = load_settings.get('measurements')
+            measurement_names = load_settings.get('measurements')
         elif 'measurements' not in load_settings:
-            measurements = self.get('measurements')
+            measurement_names = self.get('measurements')
         else:
             for measurement in load_settings['measurements']:
-                self._assert(measurement in self['measurements'],
+                self._assert(measurement in measurement_dicts,
                              '{} not found in {}'.format(measurement, self._product))
 
-            measurements = load_settings['measurement']
+            measurement_names = load_settings['measurement']
 
-        measurements = self.output_measurements(grouped.product_definitions)
+        if measurement_names is not None:
+            measurement_dicts = {name: measurement_dicts[name] for name in measurement_names}
+
+        geobox = grouped.geobox
+
+        if not isinstance(geobox, GeoBox):
+            # native load, the geobox is really the target extent
+            canonical_names = [measurement.name for measurement in measurement_dicts.values()]
+            dataset_geobox = select_unique([native_geobox(ds, measurements=canonical_names)
+                                            for ds in grouped.pile.item()])
+
+            geobox = subset_native_geobox(dataset_geobox, geobox)
 
         result = Datacube.load_data(grouped.pile,
-                                    grouped.geobox, list(measurements.values()),
+                                    geobox, list(measurement_dicts.values()),
                                     fuse_func=merged.get('fuse_func'),
                                     dask_chunks=merged.get('dask_chunks'))
 
-        return apply_aliases(result, grouped.product_definitions[self._product], list(measurements))
+        return apply_aliases(result, grouped.product_definitions[self._product], list(measurement_dicts))
 
 
 class Transform(VirtualProduct):
@@ -340,7 +388,7 @@ class Transform(VirtualProduct):
         return cast(Transformation, obj)
 
     @property
-    def _input(self) -> 'VirtualProduct':
+    def _input(self) -> VirtualProduct:
         """ The input product of a transform product. """
         return from_validated_recipe(self['input'])
 
@@ -357,8 +405,9 @@ class Transform(VirtualProduct):
     def query(self, dc: Datacube, **search_terms: Dict[str, Any]) -> VirtualDatasetBag:
         return self._input.query(dc, **search_terms)
 
-    def group(self, datasets: VirtualDatasetBag, **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
-        return self._input.group(datasets, **search_terms)
+    def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
+              **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
+        return self._input.group(datasets, auto_geobox=auto_geobox, **group_settings)
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         return self._transformation.compute(self._input.fetch(grouped, **load_settings))
@@ -383,7 +432,7 @@ class Aggregate(VirtualProduct):
         return cast(Transformation, obj)
 
     @property
-    def _input(self) -> 'VirtualProduct':
+    def _input(self) -> VirtualProduct:
         """ The input product of a transform product. """
         return from_validated_recipe(self['input'])
 
@@ -402,8 +451,9 @@ class Aggregate(VirtualProduct):
     def query(self, dc: Datacube, **search_terms: Dict[str, Any]) -> VirtualDatasetBag:
         return self._input.query(dc, **search_terms)
 
-    def group(self, datasets: VirtualDatasetBag, **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
-        grouped = self._input.group(datasets, **search_terms)
+    def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
+              **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
+        grouped = self._input.group(datasets, auto_geobox=auto_geobox, **group_settings)
         dim = self.get('dim', 'time')
 
         def to_box(value):
@@ -440,7 +490,7 @@ class Collate(VirtualProduct):
     """ Stack observations from products with the same set of measurements. """
 
     @property
-    def _children(self) -> List['VirtualProduct']:
+    def _children(self) -> List[VirtualProduct]:
         """ The children of a collate product. """
         return [from_validated_recipe(child) for child in self['collate']]
 
@@ -475,14 +525,16 @@ class Collate(VirtualProduct):
                                  select_unique([datasets.geopolygon for datasets in result]),
                                  merge_dicts([datasets.product_definitions for datasets in result]))
 
-    def group(self, datasets: VirtualDatasetBag, **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
+    def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
+              **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
         self._assert('collate' in datasets.pile and len(datasets.pile['collate']) == len(self._children),
                      "invalid dataset pile")
 
         def build(source_index, product, dataset_pile):
             grouped = product.group(VirtualDatasetBag(dataset_pile,
                                                       datasets.geopolygon, datasets.product_definitions),
-                                    **search_terms)
+                                    auto_geobox=auto_geobox,
+                                    **group_settings)
 
             def tag(_, value):
                 return {'collate': (source_index, value)}
@@ -545,7 +597,7 @@ class Juxtapose(VirtualProduct):
     """ Put measurements from different products side-by-side. """
 
     @property
-    def _children(self) -> List['VirtualProduct']:
+    def _children(self) -> List[VirtualProduct]:
         """ The children of a juxtapose product. """
         return [from_validated_recipe(child) for child in self['juxtapose']]
 
@@ -575,13 +627,15 @@ class Juxtapose(VirtualProduct):
                                  select_unique([datasets.geopolygon for datasets in result]),
                                  merge_dicts([datasets.product_definitions for datasets in result]))
 
-    def group(self, datasets: VirtualDatasetBag, **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
+    def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
+              **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
         self._assert('juxtapose' in datasets.pile and len(datasets.pile['juxtapose']) == len(self._children),
                      "invalid dataset pile")
 
         groups = [product.group(VirtualDatasetBag(dataset_pile,
                                                   datasets.geopolygon, datasets.product_definitions),
-                                **search_terms)
+                                auto_geobox=auto_geobox,
+                                **group_settings)
                   for product, dataset_pile in zip(self._children, datasets.pile['juxtapose'])]
 
         aligned_piles = xarray.align(*[grouped.pile for grouped in groups])
@@ -611,15 +665,131 @@ class Juxtapose(VirtualProduct):
         return xarray.merge(groups).assign_attrs(**select_unique([g.attrs for g in groups]))
 
 
-def _kind(recipe):
-    """ One of product, transform, collate, juxtapose, or aggregate. """
+class Reproject(VirtualProduct):
+    """
+    On-the-fly reprojection of raster data.
+    """
+
+    @property
+    def _input(self) -> "VirtualProduct":
+        """ The input product of a transform product. """
+        return from_validated_recipe(self["reproject"])
+
+    def _reconstruct(self):
+        # pylint: disable=protected-access
+        return dict(reproject=self._input._reconstruct(), **reject_keys(self, ["reproject"]))
+
+    def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
+        """
+        A dictionary mapping names to measurement metadata.
+        :param product_definitions: a dictionary mapping product names to products (`DatasetType` objects)
+        """
+        return self._input.output_measurements(product_definitions)
+
+    def query(self, dc: Datacube, **search_terms: Dict[str, Any]) -> VirtualDatasetBag:
+        """ Collection of datasets that match the query. """
+        return self._input.query(dc, **reject_keys(search_terms, self._GEOBOX_KEYS))
+
+    def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
+              **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
+        """
+        Datasets grouped by their timestamps.
+        :param datasets: the `VirtualDatasetBag` to fetch data from
+        """
+        geopolygon = datasets.geopolygon
+
+        merged = merge_search_terms(self, group_settings)
+        if geopolygon is None:
+            selected = list(datasets.contained_datasets())
+        else:
+            selected = None
+
+        if auto_geobox:
+            geobox = None
+        else:
+            geobox = output_geobox(datasets=selected,
+                                   output_crs=self['output_crs'],
+                                   resolution=self['resolution'],
+                                   align=self.get('align'),
+                                   geopolygon=geopolygon)
+
+        input_box = self._input.group(datasets, auto_geobox=True,
+                                      **reject_keys(merged, self._GEOBOX_KEYS))
+
+        return VirtualDatasetBox(input_box.pile,
+                                 geobox,
+                                 datasets.product_definitions)
+
+    def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
+        """ Convert grouped datasets to `xarray.Dataset`. """
+        # reproject result to crs
+        # concatenate all these
+        # attach crs metadata in the attributes
+        geobox = grouped.geobox
+
+        measurements = self.output_measurements(grouped.product_definitions)
+
+        band_settings = dict(zip(list(measurements),
+                                 per_band_load_data_settings(measurements, self.get('resampling'))))
+
+        boxes = [VirtualDatasetBox(box_slice.pile, geobox.extent, box_slice.product_definitions)
+                 for box_slice in grouped.split()]
+
+        rasters = [self._input.fetch(box, **load_settings)
+                   for box in boxes]
+
+        def reproject_slice(raster, measurement_name):
+            band = raster[measurement_name]
+
+            non_spatial_shape = band.shape[:-2]
+            assert all(x == 1 for x in non_spatial_shape)
+
+            data = numpy.full(geobox.shape, fill_value=band.nodata, dtype=band.dtype)
+            resampling = band_settings[measurement_name].get('resampling_method', 'nearest')
+            rio_reproject(src=band.data, dst=data,
+                          s_gbox=raster.geobox, d_gbox=geobox,
+                          resampling=resampling_s2rio(resampling),
+                          src_nodata=band.nodata,
+                          dst_nodata=band.nodata)
+
+            data = data[(numpy.newaxis,) * len(non_spatial_shape) + (slice(None),) * len(geobox.shape)]
+
+            result = xarray.DataArray(data=data, dims=grouped.dims, attrs=raster.attrs)
+            result.coords['time'] = raster.coords['time']
+            # sanity check result.shape == geobox.shape
+
+            for name, coord in grouped.geobox.coordinates.items():
+                result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
+
+            result.attrs['crs'] = geobox.crs
+            return result
+
+        result = xarray.Dataset()
+        result.coords['time'] = grouped.pile.time
+
+        for name, coord in grouped.geobox.coordinates.items():
+            result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
+
+        for measurement_name in measurements:
+            result[measurement_name] = xarray.concat([reproject_slice(raster, measurement_name)
+                                                      for raster in rasters], dim='time')
+
+        result.attrs['crs'] = geobox.crs
+        return result
+
+
+def virtual_product_kind(recipe):
+    """ One of product, transform, collate, juxtapose, aggregate, or reproject. """
     candidates = [key for key in list(recipe)
-                  if key in ['product', 'transform', 'collate', 'juxtapose', 'aggregate']]
-    if len(candidates) != 1:
+                  if key in ['product', 'transform', 'collate', 'juxtapose', 'aggregate', 'reproject']]
+    if len(candidates) > 1:
         raise VirtualProductException("ambiguous kind in recipe: {}".format(recipe))
+    if len(candidates) < 1:
+        raise VirtualProductException("virtual product kind not specified in recipe: {}".format(recipe))
     return candidates[0]
 
 
 def from_validated_recipe(recipe):
-    lookup = dict(product=Product, transform=Transform, collate=Collate, juxtapose=Juxtapose, aggregate=Aggregate)
-    return lookup[_kind(recipe)](recipe)
+    lookup = dict(product=Product, transform=Transform, collate=Collate,
+                  juxtapose=Juxtapose, aggregate=Aggregate, reproject=Reproject)
+    return lookup[virtual_product_kind(recipe)](recipe)

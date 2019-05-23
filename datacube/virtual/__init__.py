@@ -1,7 +1,7 @@
 from typing import Mapping, Any
 
 from .impl import VirtualProduct, Transformation, VirtualProductException
-from .impl import from_validated_recipe
+from .impl import from_validated_recipe, virtual_product_kind
 from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select, Expressions
 from .transformations import Mean, year, month, week, day
 from .catalog import Catalog
@@ -19,6 +19,11 @@ class NameResolver:
 
     def __init__(self, lookup_table):
         self.lookup_table = lookup_table
+
+    @staticmethod
+    def _assert(cond, msg):
+        if not cond:
+            raise VirtualProductException(msg)
 
     def construct(self, **recipe) -> VirtualProduct:
         """ Validate recipe and construct virtual product. """
@@ -38,61 +43,64 @@ class NameResolver:
                     msg = "could not resolve {} {} in {}".format(kind, name, recipe)
                     raise VirtualProductException(msg)
 
-            if not callable(result):
-                raise VirtualProductException("{} not callable in {}".format(kind, recipe))
+            self._assert(callable(result), "{} not callable in {}".format(kind, recipe))
 
             return result
 
-        kind_keys = {key for key in recipe if key in ['product', 'transform', 'collate', 'juxtapose', 'aggregate']}
-        if len(kind_keys) < 1:
-            raise VirtualProductException("virtual product kind not specified in {}".format(recipe))
-        if len(kind_keys) > 1:
-            raise VirtualProductException("ambiguous kind in {}".format(recipe))
+        kind = virtual_product_kind(recipe)
 
-        if 'product' in recipe:
+        if kind == 'product':
             func_keys = ['fuse_func', 'dataset_predicate']
             return from_validated_recipe({key: value if key not in func_keys else lookup(value, kind='function')
                                           for key, value in recipe.items()})
 
-        if 'transform' in recipe:
+        if kind == 'transform':
             cls_name = recipe['transform']
             input_product = get('input')
 
-            if input_product is None:
-                raise VirtualProductException("no input for transformation in {}".format(recipe))
+            self._assert(input_product is not None, "no input for transformation in {}".format(recipe))
 
             return from_validated_recipe(dict(transform=lookup(cls_name, 'transform'),
                                               input=self.construct(**input_product),
                                               **reject_keys(recipe, ['transform', 'input'])))
 
-        if 'collate' in recipe:
-            if len(recipe['collate']) < 1:
-                raise VirtualProductException("no children for collate in {}".format(recipe))
+        if kind == 'collate':
+            self._assert(len(recipe['collate']) > 0, "no children for collate in {}".format(recipe))
 
             return from_validated_recipe(dict(collate=[self.construct(**child) for child in recipe['collate']],
                                               **reject_keys(recipe, ['collate'])))
 
-        if 'juxtapose' in recipe:
-            if len(recipe['juxtapose']) < 1:
-                raise VirtualProductException("no children for juxtapose in {}".format(recipe))
+        if kind == 'juxtapose':
+            self._assert(len(recipe['juxtapose']) > 0, "no children for juxtapose in {}".format(recipe))
 
             return from_validated_recipe(dict(juxtapose=[self.construct(**child) for child in recipe['juxtapose']],
                                               **reject_keys(recipe, ['juxtapose'])))
 
-        if 'aggregate' in recipe:
+        if kind == 'aggregate':
             cls_name = recipe['aggregate']
             input_product = get('input')
             group_by = get('group_by')
 
-            if input_product is None:
-                raise VirtualProductException("no input for aggregate in {}".format(recipe))
-            if group_by is None:
-                raise VirtualProductException("no group_by for aggregate in {}".format(recipe))
+            self._assert(input_product is not None, "no input for aggregate in {}".format(recipe))
+            self._assert(group_by is not None, "no group_by for aggregate in {}".format(recipe))
 
             return from_validated_recipe(dict(aggregate=lookup(cls_name, 'aggregate'),
                                               group_by=lookup(group_by, 'aggregate/group_by', kind='group_by'),
                                               input=self.construct(**input_product),
                                               **reject_keys(recipe, ['aggregate', 'input', 'group_by'])))
+
+        if kind == 'reproject':
+            input_product = get('reproject')
+            output_crs = get('output_crs')
+            resolution = get('resolution')
+            align = get('align')
+
+            self._assert(input_product is not None, "no input for reproject in {}".format(recipe))
+            self._assert(output_crs is not None, "no output_crs for reproject in {}".format(recipe))
+            self._assert(resolution is not None, "no resolution for reproject in {}".format(recipe))
+
+            return from_validated_recipe(dict(reproject=self.construct(**input_product),
+                                              output_crs=output_crs, resolution=resolution, align=align))
 
         raise VirtualProductException("could not understand virtual product recipe: {}".format(recipe))
 
