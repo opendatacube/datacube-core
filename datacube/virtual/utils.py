@@ -1,8 +1,23 @@
 """ Utilities to facilitate virtual product implementation. """
 
 import warnings
+import math
 
-from datacube.model import Range
+
+def subset_native_geobox(dataset_geobox, extent):
+    """ Subsets the native geobox of a dataset to conform to output extent. """
+    subset_bb = (extent.to_crs(dataset_geobox.crs).boundingbox
+                 .transform(~dataset_geobox.affine).buffered(1, 1))
+
+    y_start, y_end = sorted([subset_bb.top, subset_bb.bottom])
+    x_start, x_end = sorted([subset_bb.left, subset_bb.right])
+
+    y_start = max(math.floor(y_start), 0)
+    y_end = min(math.ceil(y_end), dataset_geobox.shape[0])
+    x_start = max(math.floor(x_start), 0)
+    x_end = min(math.ceil(x_end), dataset_geobox.shape[1])
+
+    return dataset_geobox[y_start:y_end, x_start:x_end]
 
 
 def select_unique(things):
