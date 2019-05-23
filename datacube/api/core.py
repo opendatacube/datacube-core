@@ -447,7 +447,7 @@ class Datacube(object):
         for name, coord in coords.items():
             result[name] = coord
         for name, coord in geobox.coordinates.items():
-            result[name] = (name, coord.values, {'units': coord.units})
+            result[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
 
         for measurement in measurements:
             data = data_func(measurement)
@@ -567,32 +567,7 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
-        def with_resampling(m, resampling, default=None):
-            m = m.copy()
-            m['resampling_method'] = resampling.get(m.name, default)
-            return m
-
-        def with_fuser(m, fuser, default=None):
-            m = m.copy()
-            m['fuser'] = fuser.get(m.name, default)
-            return m
-
-        if isinstance(resampling, str):
-            resampling = {'*': resampling}
-
-        if not isinstance(fuse_func, dict):
-            fuse_func = {'*': fuse_func}
-
-        if isinstance(measurements, dict):
-            measurements = list(measurements.values())
-
-        if resampling is not None:
-            measurements = [with_resampling(m, resampling, default=resampling.get('*'))
-                            for m in measurements]
-
-        if fuse_func is not None:
-            measurements = [with_fuser(m, fuse_func, default=fuse_func.get('*'))
-                            for m in measurements]
+        measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
 
         if _needs_legacy_fallback(sources):
             from . import _legacy
@@ -654,6 +629,37 @@ class Datacube(object):
 
     def __exit__(self, type_, value, traceback):
         self.close()
+
+
+def per_band_load_data_settings(measurements, resampling=None, fuse_func=None):
+    def with_resampling(m, resampling, default=None):
+        m = m.copy()
+        m['resampling_method'] = resampling.get(m.name, default)
+        return m
+
+    def with_fuser(m, fuser, default=None):
+        m = m.copy()
+        m['fuser'] = fuser.get(m.name, default)
+        return m
+
+    if isinstance(resampling, str):
+        resampling = {'*': resampling}
+
+    if not isinstance(fuse_func, dict):
+        fuse_func = {'*': fuse_func}
+
+    if isinstance(measurements, dict):
+        measurements = list(measurements.values())
+
+    if resampling is not None:
+        measurements = [with_resampling(m, resampling, default=resampling.get('*'))
+                        for m in measurements]
+
+    if fuse_func is not None:
+        measurements = [with_fuser(m, fuse_func, default=fuse_func.get('*'))
+                        for m in measurements]
+
+    return measurements
 
 
 def apply_aliases(data, product, measurements):
