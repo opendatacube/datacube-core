@@ -105,7 +105,9 @@ class NameResolver:
             self._assert(resolution is not None, "no resolution for reproject in {}".format(recipe))
 
             return from_validated_recipe(dict(reproject=self.construct(**input_product),
-                                              output_crs=output_crs, resolution=resolution, align=align))
+                                              output_crs=output_crs, resolution=resolution, align=align,
+                                              **reject_keys(recipe,
+                                                            ['reproject', 'output_crs', 'resolution', 'align'])))
 
         raise VirtualProductException("could not understand virtual product recipe: {}".format(recipe))
 

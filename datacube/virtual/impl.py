@@ -364,8 +364,7 @@ class Product(VirtualProduct):
 
         result = Datacube.load_data(grouped.pile,
                                     geobox, list(measurement_dicts.values()),
-                                    fuse_func=merged.get('fuse_func'),
-                                    dask_chunks=merged.get('dask_chunks'))
+                                    **merged)
 
         return apply_aliases(result, grouped.product_definitions[self._product], list(measurement_dicts))
 
@@ -722,47 +721,27 @@ class Reproject(VirtualProduct):
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         """ Convert grouped datasets to `xarray.Dataset`. """
-        # reproject result to crs
-        # concatenate all these
-        # attach crs metadata in the attributes
         geobox = grouped.geobox
 
         measurements = self.output_measurements(grouped.product_definitions)
 
         band_settings = dict(zip(list(measurements),
-                                 per_band_load_data_settings(measurements, self.get('resampling'))))
+                                 per_band_load_data_settings(measurements,
+                                                             resampling=self.get('resampling', 'nearest'))))
 
         boxes = [VirtualDatasetBox(box_slice.pile, geobox.extent, box_slice.product_definitions)
                  for box_slice in grouped.split()]
 
-        rasters = [self._input.fetch(box, **load_settings)
-                   for box in boxes]
+        dask_chunks = load_settings.get('dask_chunks')
+        if dask_chunks is None:
+            rasters = [self._input.fetch(box, **load_settings)
+                       for box in boxes]
+        else:
+            self._assert('input_dask_chunks' in self, "no input_dask_chunks specified in reproject")
 
-        def reproject_slice(raster, measurement_name):
-            band = raster[measurement_name]
-
-            non_spatial_shape = band.shape[:-2]
-            assert all(x == 1 for x in non_spatial_shape)
-
-            data = numpy.full(geobox.shape, fill_value=band.nodata, dtype=band.dtype)
-            resampling = band_settings[measurement_name].get('resampling_method', 'nearest')
-            rio_reproject(src=band.data, dst=data,
-                          s_gbox=raster.geobox, d_gbox=geobox,
-                          resampling=resampling_s2rio(resampling),
-                          src_nodata=band.nodata,
-                          dst_nodata=band.nodata)
-
-            data = data[(numpy.newaxis,) * len(non_spatial_shape) + (slice(None),) * len(geobox.shape)]
-
-            result = xarray.DataArray(data=data, dims=grouped.dims, attrs=raster.attrs)
-            result.coords['time'] = raster.coords['time']
-            # sanity check result.shape == geobox.shape
-
-            for name, coord in grouped.geobox.coordinates.items():
-                result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
-
-            result.attrs['crs'] = geobox.crs
-            return result
+            rasters = [self._input.fetch(box, dask_chunks=self['input_dask_chunks'],
+                                         **reject_keys(load_settings, ['dask_chunks']))
+                       for box in boxes]
 
         result = xarray.Dataset()
         result.coords['time'] = grouped.pile.time
@@ -770,12 +749,39 @@ class Reproject(VirtualProduct):
         for name, coord in grouped.geobox.coordinates.items():
             result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
 
-        for measurement_name in measurements:
-            result[measurement_name] = xarray.concat([reproject_slice(raster, measurement_name)
-                                                      for raster in rasters], dim='time')
+        for measurement in measurements:
+            result[measurement] = xarray.concat([reproject_raster(raster[measurement],
+                                                                  geobox,
+                                                                  band_settings[measurement]['resampling_method'],
+                                                                  grouped.dims)
+                                                 for raster in rasters], dim='time')
 
         result.attrs['crs'] = geobox.crs
         return result
+
+
+def reproject_raster(band, geobox, resampling, dims):
+    """ Reproject a one time-slice one band raster. """
+    non_spatial_shape = band.shape[:-2]
+    assert all(x == 1 for x in non_spatial_shape)
+
+    data = numpy.full(geobox.shape, fill_value=band.nodata, dtype=band.dtype)
+    rio_reproject(src=band.data, dst=data,
+                  s_gbox=band.geobox, d_gbox=geobox,
+                  resampling=resampling_s2rio(resampling),
+                  src_nodata=band.nodata,
+                  dst_nodata=band.nodata)
+
+    data = data.reshape(non_spatial_shape + geobox.shape)
+
+    result = xarray.DataArray(data=data, dims=dims, attrs=band.attrs)
+    result.coords['time'] = band.coords['time']
+
+    for name, coord in geobox.coordinates.items():
+        result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
+
+    result.attrs['crs'] = geobox.crs
+    return result
 
 
 def virtual_product_kind(recipe):
