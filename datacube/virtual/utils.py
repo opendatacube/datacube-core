@@ -4,8 +4,8 @@ import warnings
 import math
 
 
-def subset_native_geobox(dataset_geobox, extent):
-    """ Subsets the native geobox of a dataset to conform to output extent. """
+def subset_geobox_slices(dataset_geobox, extent):
+    """ Returns the slices to subset a geobox that encompasses a given extent. """
     subset_bb = (extent.to_crs(dataset_geobox.crs).boundingbox
                  .transform(~dataset_geobox.affine).buffered(1, 1))
 
@@ -17,7 +17,7 @@ def subset_native_geobox(dataset_geobox, extent):
     x_start = max(math.floor(x_start), 0)
     x_end = min(math.ceil(x_end), dataset_geobox.shape[1])
 
-    return dataset_geobox[y_start:y_end, x_start:x_end]
+    return (slice(y_start, y_end), slice(x_start, x_end))
 
 
 def select_unique(things):
