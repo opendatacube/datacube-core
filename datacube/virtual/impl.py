@@ -748,29 +748,28 @@ class Reproject(VirtualProduct):
                        for box in boxes]
 
         result = xarray.Dataset()
-        result.coords['time'] = grouped.pile.time
+        result.coords['time'] = grouped.pile.coords['time']
 
         for name, coord in grouped.geobox.coordinates.items():
             result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
 
         for measurement in measurements:
-            result[measurement] = xarray.concat([_foo(raster[measurement],
-                                                      geobox,
-                                                      band_settings[measurement]['resampling_method'],
-                                                      grouped.dims,
-                                                      dask_chunks)
+            result[measurement] = xarray.concat([reproject_band(raster[measurement],
+                                                                geobox,
+                                                                band_settings[measurement]['resampling_method'],
+                                                                grouped.dims,
+                                                                dask_chunks)
                                                  for raster in rasters], dim='time')
 
         result.attrs['crs'] = geobox.crs
         return result
 
 
-def _foo(band, geobox, resampling, dims, dask_chunks=None):
+def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
+    """ Reproject a single measurement to the geobox. """
     if not hasattr(band.data, 'dask') or dask_chunks is None:
-        return reproject_raster(band, geobox, resampling, dims)
-
-    non_spatial_shape = band.shape[:-2]
-    assert all(x == 1 for x in non_spatial_shape)
+        data = reproject_array(band.data, band.nodata, band.geobox, geobox, resampling)
+        return wrap_in_dataarray(data, band, geobox, dims)
 
     token = uuid.uuid4().hex
     dsk_name = 'warp_{name}-{token}'.format(name=band.name, token=token)
@@ -784,59 +783,41 @@ def _foo(band, geobox, resampling, dims, dask_chunks=None):
         subset_band = band[(...,) + slices].chunk(-1)
         dsk.update(subset_band.data.dask)
         band_key = list(flatten(subset_band.data.__dask_keys__()))[0]
-        result = (warp, band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
-        dsk[(dsk_name,) + tile_index] = result
+        dsk[(dsk_name,) + tile_index] = (reproject_array,
+                                         band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
 
     data = dask.array.Array(dsk, dsk_name,
                             chunks=spatial_chunks,
                             dtype=band.dtype,
                             shape=gt.base.shape)
 
-    # Rest is the sampe as reproject_raster()
-    data = data.reshape(non_spatial_shape + geobox.shape)
-
-    result = xarray.DataArray(data=data, dims=dims, attrs=band.attrs)
-    result.coords['time'] = band.coords['time']
-
-    for name, coord in geobox.coordinates.items():
-        result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
-
-    result.attrs['crs'] = geobox.crs
-    return result
+    return wrap_in_dataarray(data, band, geobox, dims)
 
 
-def warp(band_data, nodata, s_geobox, d_geobox, resampling):
-    """ Just the numpy stuff """
-    data = numpy.full(d_geobox.shape, fill_value=nodata, dtype=band_data.dtype)
-    rio_reproject(src=band_data, dst=data,
+def reproject_array(src, nodata, s_geobox, d_geobox, resampling):
+    """ Reproject a numpy array. """
+    dst = numpy.full(d_geobox.shape, fill_value=nodata, dtype=src.dtype)
+    rio_reproject(src=src, dst=dst,
                   s_gbox=s_geobox, d_gbox=d_geobox,
                   resampling=resampling_s2rio(resampling),
                   src_nodata=nodata,
                   dst_nodata=nodata)
-    return data
+    return dst
 
 
-def reproject_raster(band, geobox, resampling, dims):
-    """ Reproject a one time-slice one band raster. """
-    non_spatial_shape = band.shape[:-2]
+def wrap_in_dataarray(reprojected_data, src_band, dst_geobox, dims):
+    """ Wrap the reproject numpy array in a `xarray.DataArray` with relevant metadata. """
+    non_spatial_shape = src_band.shape[:-2]
     assert all(x == 1 for x in non_spatial_shape)
 
-    data = numpy.full(geobox.shape, fill_value=band.nodata, dtype=band.dtype)
-    rio_reproject(src=band.data, dst=data,
-                  s_gbox=band.geobox, d_gbox=geobox,
-                  resampling=resampling_s2rio(resampling),
-                  src_nodata=band.nodata,
-                  dst_nodata=band.nodata)
+    result = xarray.DataArray(data=reprojected_data.reshape(non_spatial_shape + dst_geobox.shape),
+                              dims=dims, attrs=src_band.attrs)
+    result.coords['time'] = src_band.coords['time']
 
-    data = data.reshape(non_spatial_shape + geobox.shape)
-
-    result = xarray.DataArray(data=data, dims=dims, attrs=band.attrs)
-    result.coords['time'] = band.coords['time']
-
-    for name, coord in geobox.coordinates.items():
+    for name, coord in dst_geobox.coordinates.items():
         result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
 
-    result.attrs['crs'] = geobox.crs
+    result.attrs['crs'] = dst_geobox.crs
     return result
 
 
