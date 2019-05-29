@@ -17,6 +17,8 @@ def test_gbox_ops():
     assert d.crs is s.crs
     assert d.resolution == (-s.resolution[0], s.resolution[1])
     assert d.extent.contains(s.extent)
+    with pytest.raises(ValueError):
+        (s | d)
 
     d = gbx.flipx(s)
     assert d.shape == s.shape
@@ -42,6 +44,8 @@ def test_gbox_ops():
     assert d.crs is s.crs
     assert d.extent.contains(s.extent)
     assert all(ds < ss for ds, ss in zip(d.shape, s.shape))
+    with pytest.raises(ValueError):
+        (s | d)
 
     d = gbx.zoom_to(s, s.shape)
     assert d == s
@@ -61,6 +65,7 @@ def test_gbox_ops():
     assert s.extent.contains(d.extent) is False
     assert d[1:-1, 1:-1].affine == s.affine
     assert d[1:-1, 1:-1].shape == s.shape
+    assert d == (s | d)
 
     d = gbx.pad_wh(s, 10)
     assert d == s
