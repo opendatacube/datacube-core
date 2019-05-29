@@ -361,8 +361,9 @@ class Product(VirtualProduct):
         if not isinstance(geobox, GeoBox):
             # native load, the geobox is really the target extent
             canonical_names = [measurement.name for measurement in measurement_dicts.values()]
-            dataset_geobox = select_unique([native_geobox(ds, measurements=canonical_names)
-                                            for ds in grouped.pile.item()])
+            dataset_geobox, *rest = [native_geobox(ds, measurements=canonical_names) for ds in grouped.pile.item()]
+            for box in rest:
+                dataset_geobox = dataset_geobox | box
 
             geobox = dataset_geobox[subset_geobox_slices(dataset_geobox, geobox)]
 
