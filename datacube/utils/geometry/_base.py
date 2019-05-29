@@ -857,6 +857,38 @@ class GeoBox(object):
 
         return GeoBox(width=w, height=h, affine=affine, crs=self.crs)
 
+    def __or__(self, other):
+        """ A geobox that encompasses both self and other. """
+        if self.crs != other.crs:
+            raise ValueError("Cannot combine geoboxes in different CRSs")
+
+        def linear_part(geobox):
+            aff = geobox.affine
+            return numpy.array([[aff.a, aff.b], [aff.d, aff.e]])
+
+        if not numpy.allclose(linear_part(self), linear_part(other)):
+            raise ValueError("Cannot combine geoboxes with incompatible grids")
+
+        def shift_part(geobox):
+            aff = geobox.affine
+            return numpy.array([aff.c, aff.f])
+
+        linear = linear_part(self)
+        steps = numpy.linalg.solve(linear, shift_part(other) - shift_part(self))
+        if not numpy.allclose(steps, numpy.around(steps)):
+            raise ValueError("non-integer steps encountered in geobox union")
+        steps = numpy.around(steps).astype('int32')
+
+        shift = numpy.array(self.affine * numpy.where(steps > 0, 0, steps))
+        affine = Affine(linear[0, 0], linear[0, 1], shift[0], linear[1, 0], linear[1, 1], shift[1])
+
+        self_end = ~affine * (self.affine * (self.width, self.height))
+        other_end = ~affine * (other.affine * (other.width, other.height))
+        width = int(max(self_end[0], other_end[0]))
+        height = int(max(self_end[1], other_end[1]))
+
+        return GeoBox(width=width, height=height, affine=affine, crs=self.crs)
+
     @property
     def transform(self):
         return self.affine

@@ -499,6 +499,8 @@ def test_geobox():
     assert gbox.buffered(10, 0).shape == (gbox.height + 2*1, gbox.width)
     assert gbox.buffered(30, 20).shape == (gbox.height + 2*3, gbox.width + 2*2)
 
+    assert (gbox | gbox) == gbox
+
 
 @pytest.mark.xfail(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
                    reason='Fails under GDAL 2.1')
