@@ -2,6 +2,7 @@ from collections import OrderedDict
 from datetime import datetime
 from types import SimpleNamespace
 from copy import deepcopy
+import warnings
 
 import pytest
 import mock
@@ -411,7 +412,8 @@ def test_aggregate(dc, query, catalog):
                                              for product in dc.index.products.get_all()})
     assert 'blue' in measurements
 
-    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube, warnings.catch_warnings():
+        warnings.simplefilter("ignore")
         mock_datacube.load_data = load_data
         mock_datacube.group_datasets = group_datasets
         data = aggr.load(dc, **query)
