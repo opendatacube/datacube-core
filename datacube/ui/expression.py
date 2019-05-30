@@ -295,7 +295,10 @@ class BetweenExpression(Expr):
         return get_field(self.field_name).between(search_range.begin, search_range.end)
 
     def as_query(self):
-        return {self.field_name: _time_to_search_dims([self.low_value.value, self.high_value.value])}
+        if self.field_name == 'time':
+            return {self.field_name: _time_to_search_dims([self.low_value.value, self.high_value.value])}
+        else:
+            return {self.field_name: Range(self.low_value.as_value(), self.high_value.as_value())}
 
 
 class ExpressionList(List):
