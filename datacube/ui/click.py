@@ -129,6 +129,7 @@ def _set_config(ctx, param, value):
             ctx.obj = {}
         paths = value
         ctx.obj['config_files'] = paths
+    return value
 
 
 def _set_environment(ctx, param, value):
@@ -149,6 +150,8 @@ logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile
 #: pylint: disable=invalid-name
 config_option = click.option('--config', '--config_file', '-C', multiple=True, default='', callback=_set_config,
                              expose_value=False)
+config_option_exposed = click.option('--config', '--config_file', '-C', multiple=True, default='', callback=_set_config)
+
 environment_option = click.option('--env', '-E', callback=_set_environment,
                                   expose_value=False)
 #: pylint: disable=invalid-name
