@@ -151,7 +151,7 @@ config_option = click.option('--config', '--config_file', '-C', multiple=True, d
                              expose_value=False)
 #: pylint: disable=invalid-name
 config_option_exposed = click.option('--config', '--config_file', '-C', multiple=True, default='', callback=_set_config,
-                             expose_value=True)
+                                     expose_value=True)
 environment_option = click.option('--env', '-E', callback=_set_environment,
                                   expose_value=False)
 #: pylint: disable=invalid-name
