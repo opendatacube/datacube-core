@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from datetime import datetime
 from types import SimpleNamespace
+from copy import deepcopy
 
 import pytest
 import mock
@@ -9,6 +10,7 @@ import numpy
 from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
 from datacube.utils import geometry
 from datacube.virtual import construct_from_yaml, catalog_from_yaml, VirtualProductException
+from datacube.virtual import DEFAULT_RESOLVER, Transformation
 from datacube.virtual.impl import Datacube
 
 
@@ -379,3 +381,35 @@ def test_aggregate(dc, query, catalog):
         data = aggr.load(dc, **query)
 
     assert data.time.shape == (2,)
+
+
+def test_register(dc, query):
+    class BlueGreen(Transformation):
+        def compute(self, data):
+            return (data.blue + data.green).to_dataset(name='bluegreen').assign_attrs(data.blue.attrs)
+
+        def measurements(self, input_measurements):
+            bluegreen = deepcopy(input_measurements['blue'])
+            bluegreen.name = 'bluegreen'
+            return {'bluegreen': bluegreen}
+
+    resolver = deepcopy(DEFAULT_RESOLVER)
+    resolver.register('transform', 'bluegreen', BlueGreen)
+
+    bluegreen = construct_from_yaml("""
+        transform: bluegreen
+        input:
+            product: ls8_nbar_albers
+            measurements: [blue, green]
+    """, name_resolver=resolver)
+
+    measurements = bluegreen.output_measurements({product.name: product
+                                                  for product in dc.index.products.get_all()})
+    assert 'bluegreen' in measurements
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = bluegreen.load(dc, **query)
+
+    assert 'bluegreen' in data

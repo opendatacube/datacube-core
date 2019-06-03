@@ -96,6 +96,16 @@ class NameResolver:
 
         raise VirtualProductException("could not understand virtual product recipe: {}".format(recipe))
 
+    def register(self, namespace: str, name: str, callable_obj):
+        """ Register a callable to the name resolver. """
+        if namespace not in self.lookup_table:
+            self.lookup_table[namespace] = {}
+
+        if name in self.lookup_table[namespace]:
+            raise VirtualProductException("name {} under {} is already registered".format(name, namespace))
+
+        self.lookup_table[namespace][name] = callable_obj
+
 
 DEFAULT_RESOLVER = NameResolver({'transform': dict(make_mask=MakeMask,
                                                    apply_mask=ApplyMask,
@@ -117,7 +127,7 @@ def construct(name_resolver=None, **recipe: Mapping[str, Any]) -> VirtualProduct
     if name_resolver is None:
         name_resolver = DEFAULT_RESOLVER
 
-    return DEFAULT_RESOLVER.construct(**recipe)
+    return name_resolver.construct(**recipe)
 
 
 def construct_from_yaml(recipe: str, name_resolver=None) -> VirtualProduct:
@@ -127,7 +137,7 @@ def construct_from_yaml(recipe: str, name_resolver=None) -> VirtualProduct:
     if name_resolver is None:
         name_resolver = DEFAULT_RESOLVER
 
-    return construct(**parse_yaml(recipe))
+    return construct(name_resolver=name_resolver, **parse_yaml(recipe))
 
 
 def catalog_from_yaml(catalog_body: str, name_resolver=None) -> Catalog:
@@ -137,4 +147,4 @@ def catalog_from_yaml(catalog_body: str, name_resolver=None) -> Catalog:
     if name_resolver is None:
         name_resolver = DEFAULT_RESOLVER
 
-    return Catalog(DEFAULT_RESOLVER, parse_yaml(catalog_body))
+    return Catalog(name_resolver, parse_yaml(catalog_body))
