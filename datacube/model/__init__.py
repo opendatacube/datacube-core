@@ -285,7 +285,9 @@ class Dataset(object):
         return None
 
     def __eq__(self, other) -> bool:
-        return self.id == other.id
+        if isinstance(other, Dataset):
+            return self.id == other.id
+        return False
 
     def __hash__(self):
         return hash(self.id)

@@ -45,6 +45,14 @@ def test_gridspec_upperleft():
     assert cells[(30, 15)].extent.boundingbox == tile_bbox
 
 
+def test_dataset_basics():
+    ds = mk_sample_dataset([dict(name='a')])
+    assert ds == ds
+    assert ds != "33"
+    assert (ds == "33") is False
+    assert str(ds) == repr(ds)
+
+
 def test_dataset_measurement_paths():
     format = 'GeoTiff'
 
