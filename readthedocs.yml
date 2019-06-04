@@ -7,4 +7,4 @@ build:
 #    - requirements: docs/rtd-requirements.txt
 #  system_packages: true
 conda:
-  environment: docs/conda-requirements.txt
+  environment: docs/conda-requirements.yml
