@@ -1,4 +1,3 @@
-
 import csv
 import json
 import logging
@@ -46,7 +45,7 @@ def add_products(index, allow_exclusive_lock, files):
         except InvalidDocException as e:
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
-            continue
+            sys.exit(1)
 
 
 @product_cli.command('update')
