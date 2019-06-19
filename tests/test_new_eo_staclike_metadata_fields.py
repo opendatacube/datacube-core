@@ -34,8 +34,10 @@ dataset:
       type: datetime-range
       min_offset:
         - [properties, 'dtr:start_time']
+        - [properties, 'datetime']
       max_offset:
         - [properties, 'dtr:end_time']
+        - [properties, 'datetime']
 
     lat:
       description: Latitude range
@@ -81,7 +83,8 @@ grids:
     transform: [30.0, 0.0, 498585.0, 0.0, -30.0, -3723585.0, 0.0, 0.0, 1.0]
 
 properties:
-  datetime: 1993-07-07 23:18:52.566031Z
+  datetime: 2017-09-07 23:18:52.566031Z  # Center datetime between dtr:start_time and dtr:end_time (if
+                                         # available) else datetime is dataset processed/created datetime
   dea:dataset_maturity: final
   dea:processing_level: level-2
   eo:cloud_cover: 78.0
@@ -178,12 +181,13 @@ def test_new_eo_metadata_search_fields():
     platform = ds_field['platform'].extract(SAMPLE_ARD_YAML_DOC)
     assert platform == 'SENTINEL_2B'
 
-    for n, f in ds_field.items():
-        assert n == f.name
-        assert isinstance(f.description, str)
+    for key, value in ds_field.items():
+        assert key == value.name
+        assert isinstance(value.description, str)
 
-        res = f.extract(SAMPLE_ARD_YAML_DOC)
-        assert res == EXPECTED_VALUE[n]
+        res = value.extract(SAMPLE_ARD_YAML_DOC)
+        print(res)
+        assert res == EXPECTED_VALUE[key]
 
-        # missing data should return None
-        assert f.extract({}) is None
+        # Missing data should return None
+        assert value.extract({}) is None
