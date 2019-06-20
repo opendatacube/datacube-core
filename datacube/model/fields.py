@@ -178,3 +178,18 @@ def get_dataset_fields(metadata_definition):
     """
     fields = toolz.get_in(['dataset', 'search_fields'], metadata_definition, {})
     return {n: parse_search_field(doc, name=n) for n, doc in fields.items()}
+
+
+def parse_dataset_field(doc, name=''):
+    parsers = {
+        'string': str,
+        'double': float,
+        'integer': int,
+        'numeric': decimal.Decimal,
+        'datetime': parse_time,
+        'object': lambda x: x,
+    }
+    return SimpleField(doc,
+                       parsers['object'],
+                       'string',
+                       name=name)

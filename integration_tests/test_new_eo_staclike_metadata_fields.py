@@ -1,24 +1,40 @@
 import yaml
 from datetime import datetime
-from datacube.model.fields import get_dataset_fields
+from datacube.model.fields import get_dataset_fields, parse_dataset_field
 from datacube.model import Range
+import pytest
+import toolz
 
-EO_STACLIKE_METADATA_DOC = yaml.safe_load('''---
-name: stac-like
-description: test stack datasets
+from pathlib import Path
+from yaml import CSafeLoader as Loader, CSafeDumper as Dumper
+
+
+EO_STACLIKE_METADATA_DOC = yaml.load('''---
+name: eo_stac_like_product
+description: Stack datasets
+metadata_type: eo
+metadata:
+    platform:
+        code: LANDSAT_8
+    instrument:
+        name: OLI_TIRS
+    product_type: level1
+    collection: '1'
+    format:
+        name: GeoTIFF
 dataset:
   id: [id]
   creation_dt: ['properties', 'odc:processing_datetime']
-  label: ['title']
-  measurements: ['measurements']
+  label: [title]
+  measurements: [measurements]
   grid_spatial: []
   format: ['properties', 'odc:file_format']
   sources: ['lineage']
 
   search_fields:
     region_code:
-      description: Spatial reference code from the provider. In case of Landsat that region is a "scene path,row",
-                   in case of ingested products on NCI it's Albers tile, for Sentinel it's MGRS code.
+      description: Spatial reference code from the provider. In case of Landsat that region is a scene path,row,
+                   in case of ingested products on NCI its Albers tile, for Sentinel its MGRS code.
       offset: [properties, 'eo:region_code']
 
     platform:
@@ -54,9 +70,9 @@ dataset:
       - ['extent', 'coord', 'ul', 'lon']
       max_offset:
       - ['extent', 'coord', 'lr', 'lon']
-''')
+''', Loader=Loader)
 
-SAMPLE_ARD_YAML_DOC = yaml.safe_load('''---
+SAMPLE_ARD_YAML_DOC = yaml.load('''---
 # Dataset
 $schema: https://schemas.opendatacube.org/dataset
 
@@ -163,7 +179,7 @@ measurements:
 lineage:
   level1:
   - b3aa06e9-b8e5-5acc-b29c-2bdfb78ba331
-''')
+''', Loader=Loader)
 
 EXPECTED_VALUE = dict(
     region_code='55LFC',
@@ -176,18 +192,74 @@ EXPECTED_VALUE = dict(
 )
 
 
-def test_new_eo_metadata_search_fields():
-    ds_field = get_dataset_fields(EO_STACLIKE_METADATA_DOC)
-    platform = ds_field['platform'].extract(SAMPLE_ARD_YAML_DOC)
-    assert platform == 'SENTINEL_2B'
+def _get_product_info(metadata_definition):
+    fields = toolz.get_in(['dataset'], metadata_definition, {})
+    return {name: parse_dataset_field(value, name=name) for name, value in fields.items() if name not in ('search_fields', 'grid_spatial')}
+
+
+def _convert_datetime(val):
+    try:
+        return val.strftime("%Y-%m-%d %H:%M:%S.%f")
+    except AttributeError:
+        return str(val)
+
+
+def _create_new_metadata_doc():
+    """
+    Translate tif files to new metadata dataset definition yaml files
+    """
+    product_doc = EO_STACLIKE_METADATA_DOC
+    ds_field = _get_product_info(EO_STACLIKE_METADATA_DOC)
+    ds_search_field = get_dataset_fields(EO_STACLIKE_METADATA_DOC)
 
     for key, value in ds_field.items():
+        product_doc['dataset'][key] = value.extract(SAMPLE_ARD_YAML_DOC)
+
+    for key, value in ds_search_field.items():
+        if key not in ('time', 'lat', 'lon'):
+            product_doc['dataset']['search_fields'][key]['offset'] = value.extract(SAMPLE_ARD_YAML_DOC)
+        else:
+            if value.extract(SAMPLE_ARD_YAML_DOC):
+                min_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).begin)
+                max_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).end)
+                product_doc['dataset']['search_fields'][key]['min_offset'] = min_offset
+                product_doc['dataset']['search_fields'][key]['max_offset'] = max_offset
+
+    return product_doc
+
+
+def _create_yamlfile(yaml_path):
+    dataset = _create_new_metadata_doc()
+    Path(yaml_path).mkdir(parents=True, exist_ok=True)
+    yaml_name = yaml_path + f"eo_staclike_new_metadata.yaml"
+    with open(yaml_name, 'w') as fp:
+        yaml.dump(dataset, fp, default_flow_style=False, Dumper=Dumper)
+        print(f"Writing dataset yaml to {Path(yaml_name).name}")
+    return yaml_name
+
+
+def test_new_eo_metadata_search_fields():
+    ds_search_field = get_dataset_fields(EO_STACLIKE_METADATA_DOC)
+    platform = ds_search_field['platform'].extract(SAMPLE_ARD_YAML_DOC)
+    assert platform == 'SENTINEL_2B'
+
+    for key, value in ds_search_field.items():
         assert key == value.name
         assert isinstance(value.description, str)
 
         res = value.extract(SAMPLE_ARD_YAML_DOC)
-        print(res)
         assert res == EXPECTED_VALUE[key]
 
         # Missing data should return None
         assert value.extract({}) is None
+
+
+@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
+def test_index_new_product(clirunner, index, tmpdir, datacube_env_name):
+    """
+    The index product with new metadata changes
+    """
+    new_metadata_file = _create_yamlfile(str(tmpdir))
+
+    # Add the new metadata file
+    clirunner(['-v', 'product', 'add', new_metadata_file])
