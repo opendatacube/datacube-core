@@ -12,16 +12,16 @@ from yaml import CSafeLoader as Loader, CSafeDumper as Dumper
 EO_STACLIKE_METADATA_DOC = yaml.load('''---
 name: eo_stac_like_product
 description: Stack datasets
-metadata_type: eo
-metadata:
-    platform:
-        code: LANDSAT_8
-    instrument:
-        name: OLI_TIRS
-    product_type: level1
-    collection: '1'
-    format:
-        name: GeoTIFF
+# metadata_type: eo
+# metadata:
+#     platform:
+#         code: LANDSAT_8
+#     instrument:
+#         name: OLI_TIRS
+#     product_type: level1
+#     collection: '1'
+#     format:
+#         name: GeoTIFF
 dataset:
   id: [id]
   creation_dt: ['properties', 'odc:processing_datetime']
@@ -194,7 +194,8 @@ EXPECTED_VALUE = dict(
 
 def _get_product_info(metadata_definition):
     fields = toolz.get_in(['dataset'], metadata_definition, {})
-    return {name: parse_dataset_field(value, name=name) for name, value in fields.items() if name not in ('search_fields', 'grid_spatial')}
+    return {name: parse_dataset_field(value, name=name) for name, value in fields.items()
+            if name not in ('search_fields', 'grid_spatial')}
 
 
 def _convert_datetime(val):
