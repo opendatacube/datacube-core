@@ -12,16 +12,10 @@ from yaml import CSafeLoader as Loader, CSafeDumper as Dumper
 EO_STACLIKE_METADATA_DOC = yaml.load('''---
 name: eo_stac_like_product
 description: Stack datasets
-# metadata_type: eo
-# metadata:
-#     platform:
-#         code: LANDSAT_8
-#     instrument:
-#         name: OLI_TIRS
-#     product_type: level1
-#     collection: '1'
-#     format:
-#         name: GeoTIFF
+metadata_type: eo
+metadata:
+    product_type: level2
+    collection: '3'
 dataset:
   id: [id]
   creation_dt: ['properties', 'odc:processing_datetime']
@@ -219,12 +213,11 @@ def _create_new_metadata_doc():
     for key, value in ds_search_field.items():
         if key not in ('time', 'lat', 'lon'):
             product_doc['dataset']['search_fields'][key]['offset'] = value.extract(SAMPLE_ARD_YAML_DOC)
-        else:
-            if value.extract(SAMPLE_ARD_YAML_DOC):
-                min_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).begin)
-                max_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).end)
-                product_doc['dataset']['search_fields'][key]['min_offset'] = min_offset
-                product_doc['dataset']['search_fields'][key]['max_offset'] = max_offset
+        elif value.extract(SAMPLE_ARD_YAML_DOC):
+            min_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).begin)
+            max_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).end)
+            product_doc['dataset']['search_fields'][key]['min_offset'] = min_offset
+            product_doc['dataset']['search_fields'][key]['max_offset'] = max_offset
 
     return product_doc
 
@@ -255,8 +248,9 @@ def test_new_eo_metadata_search_fields():
         assert value.extract({}) is None
 
 
+@pytest.mark.usefixtures('ga_metadata_type_doc')
 @pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
-def test_index_new_product(clirunner, index, tmpdir, datacube_env_name):
+def test_index_new_product(clirunner, index, tmpdir, ga_metadata_type_doc, datacube_env_name):
     """
     The index product with new metadata changes
     """
