@@ -244,7 +244,7 @@ def test_group_datasets(cloud_free_nbar, dc, query):
     query_result = cloud_free_nbar.query(dc, **query)
     group = cloud_free_nbar.group(query_result, **query)
 
-    time, _, _ = group.shape
+    [time] = group.box.shape
     assert time == 2
 
 
