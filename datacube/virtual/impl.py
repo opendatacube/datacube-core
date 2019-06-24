@@ -65,39 +65,10 @@ class VirtualDatasetBag:
 
 class VirtualDatasetBox:
     """ Result of `VirtualProduct.group`. """
-    # our replacement for grid_workflow.Tile basically
-    # TODO: copy the Tile API
     def __init__(self, box, geobox, product_definitions):
         self.box = box
         self.geobox = geobox
         self.product_definitions = product_definitions
-
-    @property
-    def dims(self):
-        """
-        Names of the dimensions, e.g., ``('time', 'y', 'x')``.
-        :return: tuple(str)
-        """
-        return self.box.dims + self.geobox.dimensions
-
-    @property
-    def shape(self):
-        """
-        Lengths of each dimension, e.g., ``(285, 4000, 4000)``.
-        :return: tuple(int)
-        """
-        return self.box.shape + self.geobox.shape
-
-    def __repr__(self):
-        return "<VirtualDatasetBox of shape {}>".format(dict(zip(self.dims, self.shape)))
-
-    def __getitem__(self, chunk):
-        # TODO: test this functionality, I don't think this works at all
-        box = self.box
-
-        return VirtualDatasetBox(_fast_slice(box, chunk[:len(box.shape)]),
-                                 self.geobox[chunk[len(box.shape):]],
-                                 self.product_definitions)
 
     def map(self, func, dtype='O'):
         return VirtualDatasetBox(xr_apply(self.box, func, dtype=dtype), self.geobox, self.product_definitions)
@@ -109,7 +80,6 @@ class VirtualDatasetBox:
         return VirtualDatasetBox(self.box[mask.box], self.geobox, self.product_definitions)
 
     def split(self, dim='time'):
-        # this is slightly different from Tile.split
         box = self.box
 
         [length] = box[dim].shape
@@ -566,9 +536,10 @@ class Collate(VirtualProduct):
             return value['collate'][1]
 
         def fetch_child(child, source_index, r):
-            size = reduce(lambda x, y: x * y, r.shape, 1)
-
-            if size > 0:
+            if any([x == 0 for x in r.box.shape]):
+                # empty raster
+                return None
+            else:
                 result = child.fetch(r, **load_settings)
                 name = self.get('index_measurement_name')
 
@@ -584,9 +555,6 @@ class Collate(VirtualProduct):
                                                 name=name).assign_attrs(units=measurement.units,
                                                                         nodata=measurement.nodata)
                 return result
-            else:
-                # empty raster
-                return None
 
         groups = [fetch_child(child, source_index, grouped.filter(is_from(source_index)).map(strip_source))
                   for source_index, child in enumerate(self._children)]
