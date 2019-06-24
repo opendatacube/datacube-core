@@ -39,8 +39,8 @@ class VirtualProductException(Exception):
 
 class VirtualDatasetBag:
     """ Result of `VirtualProduct.query`. """
-    def __init__(self, pile, geopolygon, product_definitions):
-        self.pile = pile
+    def __init__(self, bag, geopolygon, product_definitions):
+        self.bag = bag
         self.geopolygon = geopolygon
         self.product_definitions = product_definitions
 
@@ -67,8 +67,8 @@ class VirtualDatasetBox:
     """ Result of `VirtualProduct.group`. """
     # our replacement for grid_workflow.Tile basically
     # TODO: copy the Tile API
-    def __init__(self, pile, geobox, product_definitions):
-        self.pile = pile
+    def __init__(self, box, geobox, product_definitions):
+        self.box = box
         self.geobox = geobox
         self.product_definitions = product_definitions
 
@@ -78,7 +78,7 @@ class VirtualDatasetBox:
         Names of the dimensions, e.g., ``('time', 'y', 'x')``.
         :return: tuple(str)
         """
-        return self.pile.dims + self.geobox.dimensions
+        return self.box.dims + self.geobox.dimensions
 
     @property
     def shape(self):
@@ -86,35 +86,35 @@ class VirtualDatasetBox:
         Lengths of each dimension, e.g., ``(285, 4000, 4000)``.
         :return: tuple(int)
         """
-        return self.pile.shape + self.geobox.shape
+        return self.box.shape + self.geobox.shape
 
     def __repr__(self):
         return "<VirtualDatasetBox of shape {}>".format(dict(zip(self.dims, self.shape)))
 
-    # def __getitem__(self, chunk):
-    #     # TODO: test this functionality, I don't think this works at all
-    #     pile = self.pile
-    #
-    #     return VirtualDatasetBox(_fast_slice(pile, chunk[:len(pile.shape)]),
-    #                              self.geobox[chunk[len(pile.shape):]],
-    #                              self.product_definitions)
+    def __getitem__(self, chunk):
+        # TODO: test this functionality, I don't think this works at all
+        box = self.box
+
+        return VirtualDatasetBox(_fast_slice(box, chunk[:len(box.shape)]),
+                                 self.geobox[chunk[len(box.shape):]],
+                                 self.product_definitions)
 
     def map(self, func, dtype='O'):
-        return VirtualDatasetBox(xr_apply(self.pile, func, dtype=dtype), self.geobox, self.product_definitions)
+        return VirtualDatasetBox(xr_apply(self.box, func, dtype=dtype), self.geobox, self.product_definitions)
 
     def filter(self, predicate):
         mask = self.map(predicate, dtype='bool')
 
-        # NOTE: this could possibly result in an empty pile
-        return VirtualDatasetBox(self.pile[mask.pile], self.geobox, self.product_definitions)
+        # NOTE: this could possibly result in an empty box
+        return VirtualDatasetBox(self.box[mask.box], self.geobox, self.product_definitions)
 
     def split(self, dim='time'):
         # this is slightly different from Tile.split
-        pile = self.pile
+        box = self.box
 
-        [length] = pile[dim].shape
+        [length] = box[dim].shape
         for i in range(length):
-            yield VirtualDatasetBox(pile.isel(**{dim: slice(i, i + 1)}), self.geobox, self.product_definitions)
+            yield VirtualDatasetBox(box.isel(**{dim: slice(i, i + 1)}), self.geobox, self.product_definitions)
 
     def input_datasets(self):
         def traverse(entry):
@@ -141,7 +141,7 @@ class VirtualDatasetBox:
         def worker(index, entry):
             return set(traverse(entry))
 
-        return self.map(worker).pile
+        return self.map(worker).box
 
 
 class Transformation(ABC):
@@ -312,7 +312,7 @@ class Product(VirtualProduct):
     def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
               **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
         geopolygon = datasets.geopolygon
-        selected = list(datasets.pile)
+        selected = list(datasets.bag)
 
         # geobox
         merged = merge_search_terms(self, group_settings)
@@ -367,9 +367,10 @@ class Product(VirtualProduct):
 
             geobox = dataset_geobox[subset_geobox_slices(dataset_geobox, geobox)]
 
-        result = Datacube.load_data(grouped.pile,
-                                    geobox, list(measurement_dicts.values()),
-                                    **merged)
+        result = Datacube.load_data(grouped.box,
+                                    grouped.geobox, list(measurements.values()),
+                                    fuse_func=merged.get('fuse_func'),
+                                    dask_chunks=merged.get('dask_chunks'))
 
         return apply_aliases(result, grouped.product_definitions[self._product], list(measurement_dicts))
 
@@ -464,8 +465,8 @@ class Aggregate(VirtualProduct):
             return xarray.DataArray([VirtualDatasetBox(value, grouped.geobox, grouped.product_definitions)],
                                     dims=['_fake_'])
 
-        result = grouped.pile.groupby(self['group_by'](grouped.pile[dim])).apply(to_box).squeeze('_fake_')
-        result[dim].attrs.update(grouped.pile[dim].attrs)
+        result = grouped.box.groupby(self['group_by'](grouped.box[dim])).apply(to_box).squeeze('_fake_')
+        result[dim].attrs.update(grouped.box[dim].attrs)
 
         return VirtualDatasetBox(result, grouped.geobox, grouped.product_definitions)
 
@@ -484,9 +485,9 @@ class Aggregate(VirtualProduct):
             result.coords[dim] = coords[dim]
             return result
 
-        groups = list(xr_map(grouped.pile, statistic))
+        groups = list(xr_map(grouped.box, statistic))
         result = xarray.concat(groups, dim=dim).assign_attrs(**select_unique([g.attrs for g in groups]))
-        result.coords[dim].attrs.update(grouped.pile[dim].attrs)
+        result.coords[dim].attrs.update(grouped.box[dim].attrs)
         return result
 
 
@@ -525,17 +526,17 @@ class Collate(VirtualProduct):
     def query(self, dc: Datacube, **search_terms: Dict[str, Any]) -> VirtualDatasetBag:
         result = [child.query(dc, **search_terms) for child in self._children]
 
-        return VirtualDatasetBag({'collate': [datasets.pile for datasets in result]},
+        return VirtualDatasetBag({'collate': [datasets.bag for datasets in result]},
                                  select_unique([datasets.geopolygon for datasets in result]),
                                  merge_dicts([datasets.product_definitions for datasets in result]))
 
     def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
               **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
-        self._assert('collate' in datasets.pile and len(datasets.pile['collate']) == len(self._children),
+        self._assert('collate' in datasets.bag and len(datasets.bag['collate']) == len(self._children),
                      "invalid dataset pile")
 
-        def build(source_index, product, dataset_pile):
-            grouped = product.group(VirtualDatasetBag(dataset_pile,
+        def build(source_index, product, dataset_bag):
+            grouped = product.group(VirtualDatasetBag(dataset_bag,
                                                       datasets.geopolygon, datasets.product_definitions),
                                     auto_geobox=auto_geobox,
                                     **group_settings)
@@ -545,18 +546,18 @@ class Collate(VirtualProduct):
 
             return grouped.map(tag)
 
-        groups = [build(source_index, product, dataset_pile)
-                  for source_index, (product, dataset_pile)
-                  in enumerate(zip(self._children, datasets.pile['collate']))]
+        groups = [build(source_index, product, dataset_bag)
+                  for source_index, (product, dataset_bag)
+                  in enumerate(zip(self._children, datasets.bag['collate']))]
 
-        return VirtualDatasetBox(xarray.concat([grouped.pile for grouped in groups], dim=self.get('dim', 'time')),
+        return VirtualDatasetBox(xarray.concat([grouped.box for grouped in groups], dim=self.get('dim', 'time')),
                                  select_unique([grouped.geobox for grouped in groups]),
                                  merge_dicts([grouped.product_definitions for grouped in groups]))
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         def is_from(source_index):
             def result(_, value):
-                self._assert('collate' in value, "malformed dataset pile in collate")
+                self._assert('collate' in value, "malformed dataset box in collate")
                 return value['collate'][0] == source_index
 
             return result
@@ -627,41 +628,39 @@ class Juxtapose(VirtualProduct):
         result = [child.query(dc, **search_terms)
                   for child in self._children]
 
-        return VirtualDatasetBag({'juxtapose': [datasets.pile for datasets in result]},
+        return VirtualDatasetBag({'juxtapose': [datasets.bag for datasets in result]},
                                  select_unique([datasets.geopolygon for datasets in result]),
                                  merge_dicts([datasets.product_definitions for datasets in result]))
 
-    def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
-              **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
-        self._assert('juxtapose' in datasets.pile and len(datasets.pile['juxtapose']) == len(self._children),
-                     "invalid dataset pile")
+    def group(self, datasets: VirtualDatasetBag, **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
+        self._assert('juxtapose' in datasets.bag and len(datasets.bag['juxtapose']) == len(self._children),
+                     "invalid dataset bag")
 
-        groups = [product.group(VirtualDatasetBag(dataset_pile,
+        groups = [product.group(VirtualDatasetBag(dataset_bag,
                                                   datasets.geopolygon, datasets.product_definitions),
-                                auto_geobox=auto_geobox,
-                                **group_settings)
-                  for product, dataset_pile in zip(self._children, datasets.pile['juxtapose'])]
+                                **search_terms)
+                  for product, dataset_bag in zip(self._children, datasets.bag['juxtapose'])]
 
-        aligned_piles = xarray.align(*[grouped.pile for grouped in groups])
+        aligned_boxes = xarray.align(*[grouped.box for grouped in groups])
 
         def tuplify(indexes, _):
-            return {'juxtapose': [pile.sel(**indexes).item() for pile in aligned_piles]}
+            return {'juxtapose': [box.sel(**indexes).item() for box in aligned_boxes]}
 
-        return VirtualDatasetBox(xr_apply(aligned_piles[0], tuplify),
+        return VirtualDatasetBox(xr_apply(aligned_boxes[0], tuplify),
                                  select_unique([grouped.geobox for grouped in groups]),
                                  merge_dicts([grouped.product_definitions for grouped in groups]))
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         def select_child(source_index):
             def result(_, value):
-                self._assert('juxtapose' in value, "malformed dataset pile in juxtapose")
+                self._assert('juxtapose' in value, "malformed dataset box in juxtapose")
                 return value['juxtapose'][source_index]
 
             return result
 
         def fetch_recipe(source_index):
             child_groups = grouped.map(select_child(source_index))
-            return VirtualDatasetBox(child_groups.pile, grouped.geobox, grouped.product_definitions)
+            return VirtualDatasetBox(child_groups.box, grouped.geobox, grouped.product_definitions)
 
         groups = [child.fetch(fetch_recipe(source_index), **load_settings)
                   for source_index, child in enumerate(self._children)]
