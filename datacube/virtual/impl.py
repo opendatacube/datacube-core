@@ -338,7 +338,7 @@ class Product(VirtualProduct):
             geobox = dataset_geobox[subset_geobox_slices(dataset_geobox, geobox)]
 
         result = Datacube.load_data(grouped.box,
-                                    grouped.geobox, list(measurements.values()),
+                                    grouped.geobox, list(measurement_dicts.values()),
                                     fuse_func=merged.get('fuse_func'),
                                     dask_chunks=merged.get('dask_chunks'))
 
@@ -600,13 +600,14 @@ class Juxtapose(VirtualProduct):
                                  select_unique([datasets.geopolygon for datasets in result]),
                                  merge_dicts([datasets.product_definitions for datasets in result]))
 
-    def group(self, datasets: VirtualDatasetBag, **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
+    def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
+              **search_terms: Dict[str, Any]) -> VirtualDatasetBox:
         self._assert('juxtapose' in datasets.bag and len(datasets.bag['juxtapose']) == len(self._children),
                      "invalid dataset bag")
 
         groups = [product.group(VirtualDatasetBag(dataset_bag,
                                                   datasets.geopolygon, datasets.product_definitions),
-                                **search_terms)
+                                auto_geobox=auto_geobox, **search_terms)
                   for product, dataset_bag in zip(self._children, datasets.bag['juxtapose'])]
 
         aligned_boxes = xarray.align(*[grouped.box for grouped in groups])
