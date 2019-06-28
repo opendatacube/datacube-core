@@ -208,8 +208,8 @@ def _crete_sample_product_def(metadata_definition,
                                             'nbar_band03', 'nbar_band04', 'nbar_band05', 'nbar_band07',
                                             'relative_azimuth', 'relative_slope', 'satellite_azimuth',
                                             'satellite_view', 'solar_azimuth', 'solar_zenith', 'timedelta'),
-                        with_grid_spec=False,
-                        storage=None):
+                              with_grid_spec=False,
+                              storage=None):
 
     if storage is None and with_grid_spec is True:
         storage = {'crs': 'EPSG:3577',
