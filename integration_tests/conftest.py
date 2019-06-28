@@ -96,7 +96,7 @@ def ingest_configs(datacube_env_name):
     }
 
 
-@pytest.fixture(params=["UTC", ])
+@pytest.fixture(params=["US/Pacific", "UTC", ])
 def uninitialised_postgres_db(local_config, request):
     """
     Return a connection to an empty PostgreSQL database

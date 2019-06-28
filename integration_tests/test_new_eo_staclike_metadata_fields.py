@@ -385,8 +385,8 @@ def _create_yamlfile(yaml_path):
     dataset_definition = _create_new_dataset_def(Path('ga_ls5t_granule_3-0-0_091084_1993-07-07_final'))
 
     Path(yaml_path).mkdir(parents=True, exist_ok=True)
-    product_def_yamlfile = yaml_path + f"eo_staclike_new_product.yaml"
-    dataset_def_yamlfile = yaml_path + f"eo_staclike_new_dataset.yaml"
+    product_def_yamlfile = yaml_path + "eo_staclike_new_product.yaml"
+    dataset_def_yamlfile = yaml_path + "eo_staclike_new_dataset.yaml"
 
     with open(product_def_yamlfile, 'w') as fp:
         yaml.dump(product_definition, fp, default_flow_style=False, Dumper=Dumper)
