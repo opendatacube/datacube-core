@@ -4,18 +4,14 @@ from datacube.model.fields import get_dataset_fields, parse_dataset_field
 from datacube.model import Range
 import pytest
 import toolz
+import uuid
 
 from pathlib import Path
 from yaml import CSafeLoader as Loader, CSafeDumper as Dumper
 
-
 EO_STACLIKE_METADATA_DOC = yaml.load('''---
 name: eo_stac_like_product
-description: Stack datasets
-metadata_type: eo
-metadata:
-    product_type: level2
-    collection: '3'
+description: Stack_datasets
 dataset:
   id: [id]
   creation_dt: ['properties', 'odc:processing_datetime']
@@ -186,6 +182,56 @@ EXPECTED_VALUE = dict(
 )
 
 
+def mk_measurement(m):
+    common = dict(dtype='int16',
+                  nodata=-999,
+                  units='1')
+
+    if isinstance(m, str):
+        return dict(name=m, **common)
+    elif isinstance(m, tuple):
+        name, dtype, nodata = m
+        m = common.copy()
+        m.update(name=name, dtype=dtype, nodata=nodata)
+        return m
+    elif isinstance(m, dict):
+        m_merged = common.copy()
+        m_merged.update(m)
+        return m_merged
+    else:
+        raise ValueError('Only support str|dict|(name, dtype, nodata)')
+
+
+def _crete_sample_product_def(metadata_definition,
+                              measurements=('azimuthal_exiting', 'azimuthal_incident', 'combined_terrain_shadow',
+                                            'exiting_angle', 'incident_angle', 'nbar_band01', 'nbar_band02',
+                                            'nbar_band03', 'nbar_band04', 'nbar_band05', 'nbar_band07',
+                                            'relative_azimuth', 'relative_slope', 'satellite_azimuth',
+                                            'satellite_view', 'solar_azimuth', 'solar_zenith', 'timedelta'),
+                        with_grid_spec=False,
+                        storage=None):
+
+    if storage is None and with_grid_spec is True:
+        storage = {'crs': 'EPSG:3577',
+                   'resolution': {'x': 25, 'y': -25},
+                   'tile_size': {'x': 100000.0, 'y': 100000.0}}
+
+    measurements = [mk_measurement(m) for m in measurements]
+
+    definition = dict(
+        name=metadata_definition['name'],
+        description=metadata_definition['description'],
+        metadata_type='eo',
+        metadata={},
+        measurements=measurements
+    )
+
+    if storage is not None:
+        definition['storage'] = storage
+
+    return definition
+
+
 def _get_product_info(metadata_definition):
     fields = toolz.get_in(['dataset'], metadata_definition, {})
     return {name: parse_dataset_field(value, name=name) for name, value in fields.items()
@@ -199,37 +245,158 @@ def _convert_datetime(val):
         return str(val)
 
 
-def _create_new_metadata_doc():
+def _create_new_dataset_def(input_file: Path):
     """
-    Translate tif files to new metadata dataset definition yaml files
+    Create new metadata dataset definition yaml files
     """
-    product_doc = EO_STACLIKE_METADATA_DOC
+    now = datetime.utcnow()
+    creation_dt = now.strftime('%Y-%m-%dT%H:%M:%S.%f')
+
+    dataset_def_template = {
+        'id': str(uuid.uuid4()),
+        'creation_dt': creation_dt,
+        'label': '',
+        'product_type': '',
+        'platform': {'code': ''},
+        'region': {'code': ''},
+        'instrument': {
+            'name': ''
+        },
+        'extent': {
+            'coord': {'ll': {'lat': ''},
+                      'ur': {'lat': ''},
+                      'ul': {'lon': ''},
+                      'lr': {'lon': ''}},
+        },
+        'format': {'name': 'GeoTIFF'},
+        'grid_spatial': {},
+        'image': {
+            'bands': {
+                'azimuthal_exiting': {
+                    'path': str(input_file.stem) + '_azimuthal-exiting.tif',
+                    'layer': 1
+                },
+                'azimuthal_incident': {
+                    'path': str(input_file.stem) + '_azimuthal-incident.tif',
+                    'layer': 1
+                },
+                'combined_terrain_shadow': {
+                    'path': str(input_file.stem) + '_combined-terrain-shadow.tif',
+                    'layer': 1
+                },
+                'exiting_angle': {
+                    'path': str(input_file.stem) + '_exiting-angle.tif',
+                    'layer': 1
+                },
+                'incident_angle': {
+                    'path': str(input_file.stem) + '_incident-angle.tif',
+                    'layer': 1
+                },
+                'nbar_band01': {
+                    'path': str(input_file.stem) + '_nbar-band01.tif',
+                    'layer': 1
+                },
+                'nbar_band02': {
+                    'path': str(input_file.stem) + '_nbar-band02.tif',
+                    'layer': 1
+                },
+                'nbar_band03': {
+                    'path': str(input_file.stem) + '_nbar-band03.tif',
+                    'layer': 1
+                },
+                'nbar_band04': {
+                    'path': str(input_file.stem) + '_nbar-band04.tif',
+                    'layer': 1
+                },
+                'nbar_band05': {
+                    'path': str(input_file.stem) + '_nbar-band05.tif',
+                    'layer': 1
+                },
+                'nbar_band07': {
+                    'path': str(input_file.stem) + '_nbar-band07.tif',
+                    'layer': 1
+                },
+                'relative_azimuth': {
+                    'path': str(input_file.stem) + '_relative-azimuth.tif',
+                    'layer': 1
+                },
+                'relative_slope': {
+                    'path': str(input_file.stem) + '_relative-slope.tif',
+                    'layer': 1
+                },
+                'satellite_azimuth': {
+                    'path': str(input_file.stem) + '_satellite-azimuth.tif',
+                    'layer': 1
+                },
+                'satellite_view': {
+                    'path': str(input_file.stem) + '_satellite-view.tif',
+                    'layer': 1
+                },
+                'solar_azimuth': {
+                    'path': str(input_file.stem) + '_solar-azimuth.tif',
+                    'layer': 1
+                },
+                'solar_zenith': {
+                    'path': str(input_file.stem) + '_solar-zenith.tif',
+                    'layer': 1
+                },
+                'timedelta': {
+                    'path': str(input_file.stem) + '_timedelta.tif',
+                    'layer': 1
+                }
+            }
+        },
+        'lineage': {
+            'source_datasets': {}
+        }
+    }
     ds_field = _get_product_info(EO_STACLIKE_METADATA_DOC)
     ds_search_field = get_dataset_fields(EO_STACLIKE_METADATA_DOC)
 
     for key, value in ds_field.items():
-        product_doc['dataset'][key] = value.extract(SAMPLE_ARD_YAML_DOC)
+        if key not in ('id', 'creation_dt', 'measurements', 'format', 'sources'):
+            dataset_def_template[key] = value.extract(SAMPLE_ARD_YAML_DOC)
+        elif key in 'sources':
+            dataset_def_template['lineage']['source_datasets'] = value.extract(SAMPLE_ARD_YAML_DOC)
 
     for key, value in ds_search_field.items():
-        if key not in ('time', 'lat', 'lon'):
-            product_doc['dataset']['search_fields'][key]['offset'] = value.extract(SAMPLE_ARD_YAML_DOC)
-        elif value.extract(SAMPLE_ARD_YAML_DOC):
+        if key in 'region_code':
+            dataset_def_template['region']['code'] = value.extract(SAMPLE_ARD_YAML_DOC)
+        elif key in 'lat':
             min_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).begin)
             max_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).end)
-            product_doc['dataset']['search_fields'][key]['min_offset'] = min_offset
-            product_doc['dataset']['search_fields'][key]['max_offset'] = max_offset
+            dataset_def_template['extent']['coord']['ll'][key] = min_offset
+            dataset_def_template['extent']['coord']['ur'][key] = max_offset
+        elif key in 'lon':
+            min_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).begin)
+            max_offset = _convert_datetime(value.extract(SAMPLE_ARD_YAML_DOC).end)
+            dataset_def_template['extent']['coord']['ul'][key] = min_offset
+            dataset_def_template['extent']['coord']['lr'][key] = max_offset
+        elif key in 'instrument':
+            dataset_def_template[key]['name'] = value.extract(SAMPLE_ARD_YAML_DOC)
+        elif key in ('platform', 'region'):
+            dataset_def_template[key]['code'] = value.extract(SAMPLE_ARD_YAML_DOC)
 
-    return product_doc
+    return dataset_def_template
 
 
 def _create_yamlfile(yaml_path):
-    dataset = _create_new_metadata_doc()
+    product_definition = _crete_sample_product_def(EO_STACLIKE_METADATA_DOC)
+    dataset_definition = _create_new_dataset_def(Path('ga_ls5t_granule_3-0-0_091084_1993-07-07_final'))
+
     Path(yaml_path).mkdir(parents=True, exist_ok=True)
-    yaml_name = yaml_path + f"eo_staclike_new_metadata.yaml"
-    with open(yaml_name, 'w') as fp:
-        yaml.dump(dataset, fp, default_flow_style=False, Dumper=Dumper)
-        print(f"Writing dataset yaml to {Path(yaml_name).name}")
-    return yaml_name
+    product_def_yamlfile = yaml_path + f"eo_staclike_new_product.yaml"
+    dataset_def_yamlfile = yaml_path + f"eo_staclike_new_dataset.yaml"
+
+    with open(product_def_yamlfile, 'w') as fp:
+        yaml.dump(product_definition, fp, default_flow_style=False, Dumper=Dumper)
+        print(f"Writing product definition to {Path(product_def_yamlfile).name} file")
+
+    with open(dataset_def_yamlfile, 'w') as fp:
+        yaml.dump(dataset_definition, fp, default_flow_style=False, Dumper=Dumper)
+        print(f"Writing product definition to {Path(dataset_def_yamlfile).name} file")
+
+    return product_def_yamlfile, dataset_def_yamlfile
 
 
 def test_new_eo_metadata_search_fields():
@@ -254,7 +421,21 @@ def test_index_new_product(clirunner, index, tmpdir, ga_metadata_type_doc, datac
     """
     The index product with new metadata changes
     """
-    new_metadata_file = _create_yamlfile(str(tmpdir))
+    product_definition, dataset_definition = _create_yamlfile(str(tmpdir))
+    with open(dataset_definition) as config_file:
+        _ds = yaml.load(config_file, Loader=Loader)
 
     # Add the new metadata file
-    clirunner(['-v', 'product', 'add', new_metadata_file])
+    clirunner(['-v', 'product', 'add', product_definition])
+
+    clirunner(['dataset', 'add', '--confirm-ignore-lineage', '--product', 'eo_stac_like_product',
+               str(dataset_definition)])
+
+    datasets = index.datasets.search_eager(product='eo_stac_like_product')
+    assert len(datasets) > 0
+    assert not datasets[0].managed
+
+    ds_ = index.datasets.get(_ds['id'], include_sources=True)
+    assert ds_ is not None
+    assert str(ds_.id) == _ds['id']
+    assert ds_.sources == {}
