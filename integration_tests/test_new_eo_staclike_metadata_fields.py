@@ -15,10 +15,10 @@ ROOT_DIR = Path(__file__).parents[0]
 ARD_METADATA_FILE = ROOT_DIR / 'sample_ard_3-0-0_odc-metadata.yaml'
 SAMPLE_METADATA_TEMPLATE_FILE = ROOT_DIR / 'new-eo-staclike-metadata-type.yaml'
 
-with open(SAMPLE_METADATA_TEMPLATE_FILE) as metadata_doc:
+with open(str(SAMPLE_METADATA_TEMPLATE_FILE)) as metadata_doc:
     EO_STACLIKE_METADATA_DOC = yaml.load(metadata_doc, Loader=Loader)
 
-with open(ARD_METADATA_FILE) as ard_metadata_doc:
+with open(str(ARD_METADATA_FILE)) as ard_metadata_doc:
     SAMPLE_ARD_YAML_DOC = yaml.load(ard_metadata_doc, Loader=Loader)
 
 EXPECTED_VALUE = dict(
