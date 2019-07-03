@@ -1,5 +1,4 @@
 from datetime import datetime
-from osgeo import osr
 from pathlib import Path
 import pytest
 import toolz
@@ -8,8 +7,7 @@ import yaml
 from yaml import CSafeLoader as Loader, CSafeDumper as Dumper
 from datacube.model.fields import get_dataset_fields, parse_dataset_field
 from datacube.model import Range
-from datacube.utils.geometry import CRS
-from datacube.utils.geometry import Geometry
+from datacube.utils.geometry import CRS, Geometry
 
 ROOT_DIR = Path(__file__).parents[0]
 ARD_METADATA_FILE = ROOT_DIR / 'sample_ard_3-0-0_odc-metadata.yaml'
