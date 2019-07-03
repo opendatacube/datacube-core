@@ -1,0 +1,50 @@
+name: ga_ls5t_ard_3
+description: eo stack like
+dataset:
+  id: [id]
+  creation_dt: ['properties', 'odc:processing_datetime']
+  label: ['product', 'name']
+  measurements: [measurements]
+  grid_spatial: []
+  format: ['properties', 'odc:file_format']
+  sources: ['lineage']
+
+  search_fields:
+    region_code:
+      description: Spatial reference code from the provider. In case of Landsat that region is a scene path,row,
+                   in case of ingested products on NCI its Albers tile, for Sentinel its MGRS code.
+      offset: [properties, 'odc:reference_code']
+
+    platform:
+      description: Platform code
+      offset: [properties, 'eo:platform']
+
+    instrument:
+      description: Instrument name
+      offset: [properties, 'eo:instrument']
+
+    time:
+      description: Acquisition time range
+      type: datetime-range
+      min_offset:
+        - [properties, 'dtr:start_datetime']
+        - [properties, 'datetime']
+      max_offset:
+        - [properties, 'dtr:end_datetime']
+        - [properties, 'datetime']
+
+    lat:
+      description: Latitude range
+      type: double-range
+      min_offset:
+      - ['bbox', 1]
+      max_offset:
+      - ['bbox', 3]
+
+    lon:
+      description: Longitude range
+      type: double-range
+      min_offset:
+      - ['bbox', 0]
+      max_offset:
+      - ['bbox', 2]
