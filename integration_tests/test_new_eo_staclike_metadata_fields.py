@@ -99,7 +99,7 @@ def _convert_datetime(val):
 
 
 def _get_geo_boundingbox(metadata_fname):
-    with open(metadata_fname) as fl:
+    with open(str(metadata_fname)) as fl:
         metadata = yaml.load(fl)
     crs = CRS(metadata['crs'])
     geo = Geometry(metadata['geometry'], crs=crs)
