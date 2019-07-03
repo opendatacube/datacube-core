@@ -98,32 +98,30 @@ def _convert_datetime(val):
         return str(val)
 
 
-def _get_geo_boundingbox(metadata_fname):
+def _get_boundingbox(metadata_fname):
     with open(str(metadata_fname)) as fl:
         metadata = yaml.load(fl)
     crs = CRS(metadata['crs'])
     geo = Geometry(metadata['geometry'], crs=crs)
-    left, bottom, right, top = geo.to_crs(CRS('EPSG:4326')).boundingbox
-
     spatial_reference = str(crs.wkt)
-    geo_ref_points = {
+
+    left, bottom, right, top = geo.to_crs(CRS('EPSG:4326')).boundingbox
+    lat_lon_coords = {
+        'ul': {'lat': left, 'lon': top},
+        'll': {'lat': left, 'lon': bottom},
+        'ur': {'lat': right, 'lon': top},
+        'lr': {'lat': right, 'lon': bottom},
+        }
+
+    left, bottom, right, top = geo.boundingbox
+    xy_geo_ref_points = {
         'ul': {'x': left, 'y': top},
         'll': {'x': left, 'y': bottom},
         'ur': {'x': right, 'y': top},
         'lr': {'x': right, 'y': bottom},
         }
-    return geo_ref_points, spatial_reference
 
-
-def _get_coords(geo_ref_points, spatial_ref):
-    spatial_ref = osr.SpatialReference(spatial_ref)
-    t = osr.CoordinateTransformation(spatial_ref, spatial_ref.CloneGeogCS())
-
-    def _transform(p):
-        lon, lat, z = t.TransformPoint(p['x'], p['y'])
-        return {'lon': lon, 'lat': lat}
-
-    return {key: _transform(p) for key, p in geo_ref_points.items()}
+    return xy_geo_ref_points, spatial_reference, lat_lon_coords
 
 
 def _create_new_dataset_def(input_file: Path):
@@ -133,7 +131,7 @@ def _create_new_dataset_def(input_file: Path):
     now = datetime.utcnow()
     creation_dt = now.strftime('%Y-%m-%dT%H:%M:%S.%f')
 
-    geo_ref_points, spatial_ref = _get_geo_boundingbox(input_file)
+    xy_geo_ref_points, spatial_ref, lat_lon_coords = _get_boundingbox(input_file)
 
     def _get_measurements(m):
         m_dict = {}
@@ -152,12 +150,12 @@ def _create_new_dataset_def(input_file: Path):
             'name': ''
         },
         'extent': {
-            'coord': _get_coords(geo_ref_points, spatial_ref),
+            'coord': lat_lon_coords,
         },
         'format': {'name': 'GeoTIFF'},
         'grid_spatial': {
             'projection': {
-                'geo_ref_points': geo_ref_points,
+                'geo_ref_points': xy_geo_ref_points,
                 'spatial_reference': spatial_ref,
             }
         },
