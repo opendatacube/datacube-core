@@ -63,9 +63,7 @@ def _create_sample_product_def(metadata_definition,
                                storage=None):
 
     if storage is None and with_grid_spec is True:
-        storage = {'crs': 'epsg:4326',
-                   'resolution': {'x': 25, 'y': -25},
-                   'tile_size': {'x': 100000.0, 'y': 100000.0}}
+        storage = {'crs': 'epsg:4326'}
 
     measurements = [mk_measurement(m) for m in measurements]
 
@@ -170,8 +168,6 @@ def _create_new_dataset_def(input_file: Path):
     for key, value in ds_field.items():
         if key not in ('id', 'creation_dt', 'measurements', 'format', 'sources'):
             dataset_def_template[key] = value.extract(SAMPLE_ARD_YAML_DOC)
-        elif key in 'sources':
-            dataset_def_template['lineage']['source_datasets'] = value.extract(SAMPLE_ARD_YAML_DOC)
         elif key in 'measurements':
             measurements = _get_measurements(value.extract(SAMPLE_ARD_YAML_DOC))
             dataset_def_template['image']['bands'] = measurements
@@ -233,8 +229,7 @@ def test_index_new_product(clirunner, index, tmpdir, ga_metadata_type_doc, datac
     # Add the new metadata file
     clirunner(['-v', 'product', 'add', product_definition])
 
-    clirunner(['dataset', 'add', '--confirm-ignore-lineage', '--product', 'ga_ls5t_ard_3',
-               str(dataset_definition)])
+    clirunner(['dataset', 'add', '--product', 'ga_ls5t_ard_3', str(dataset_definition)])
 
     datasets = index.datasets.search_eager(product='ga_ls5t_ard_3')
     assert len(datasets) > 0
