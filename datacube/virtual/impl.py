@@ -45,19 +45,19 @@ class VirtualDatasetBag:
         self.product_definitions = product_definitions
 
     def contained_datasets(self):
-        def worker(pile):
-            if isinstance(pile, Sequence):
-                for child in self.pile:
+        def worker(bag):
+            if isinstance(bag, Sequence):
+                for child in self.bag:
                     yield child
 
-            elif isinstance(pile, Mapping):
-                for child in pile.values():
+            elif isinstance(bag, Mapping):
+                for child in bag.values():
                     yield from worker(child)
 
             else:
-                raise VirtualProductException("unexpected pile")
+                raise VirtualProductException("unexpected bag")
 
-        return worker(self.pile)
+        return worker(self.bag)
 
     def __repr__(self):
         return "<VirtualDatasetBag of {} datacube datasets>".format(len(list(self.contained_datasets())))
@@ -331,14 +331,14 @@ class Product(VirtualProduct):
         if not isinstance(geobox, GeoBox):
             # native load, the geobox is really the target extent
             canonical_names = [measurement.name for measurement in measurement_dicts.values()]
-            dataset_geobox, *rest = [native_geobox(ds, measurements=canonical_names) for ds in grouped.pile.item()]
+            dataset_geobox, *rest = [native_geobox(ds, measurements=canonical_names) for ds in grouped.box.item()]
             for box in rest:
                 dataset_geobox = dataset_geobox | box
 
             geobox = dataset_geobox[subset_geobox_slices(dataset_geobox, geobox)]
 
         result = Datacube.load_data(grouped.box,
-                                    grouped.geobox, list(measurement_dicts.values()),
+                                    geobox, list(measurement_dicts.values()),
                                     fuse_func=merged.get('fuse_func'),
                                     dask_chunks=merged.get('dask_chunks'))
 
@@ -503,7 +503,7 @@ class Collate(VirtualProduct):
     def group(self, datasets: VirtualDatasetBag, auto_geobox=False,
               **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
         self._assert('collate' in datasets.bag and len(datasets.bag['collate']) == len(self._children),
-                     "invalid dataset pile")
+                     "invalid dataset bag")
 
         def build(source_index, product, dataset_bag):
             grouped = product.group(VirtualDatasetBag(dataset_bag,
@@ -688,7 +688,7 @@ class Reproject(VirtualProduct):
         input_box = self._input.group(datasets, auto_geobox=True,
                                       **reject_keys(merged, self._GEOBOX_KEYS))
 
-        return VirtualDatasetBox(input_box.pile,
+        return VirtualDatasetBox(input_box.box,
                                  geobox,
                                  datasets.product_definitions)
 
@@ -702,7 +702,7 @@ class Reproject(VirtualProduct):
                                  per_band_load_data_settings(measurements,
                                                              resampling=self.get('resampling', 'nearest'))))
 
-        boxes = [VirtualDatasetBox(box_slice.pile, geobox.extent, box_slice.product_definitions)
+        boxes = [VirtualDatasetBox(box_slice.box, geobox.extent, box_slice.product_definitions)
                  for box_slice in grouped.split()]
 
         dask_chunks = load_settings.get('dask_chunks')
@@ -717,16 +717,16 @@ class Reproject(VirtualProduct):
                        for box in boxes]
 
         result = xarray.Dataset()
-        result.coords['time'] = grouped.pile.coords['time']
+        result.coords['time'] = grouped.box.coords['time']
 
         for name, coord in grouped.geobox.coordinates.items():
-            result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
+            result.coords[name] = (name, coord.values, {'units': coord.units})
 
         for measurement in measurements:
             result[measurement] = xarray.concat([reproject_band(raster[measurement],
                                                                 geobox,
                                                                 band_settings[measurement]['resampling_method'],
-                                                                grouped.dims,
+                                                                grouped.box.dims+geobox.dims,
                                                                 dask_chunks)
                                                  for raster in rasters], dim='time')
 
@@ -784,7 +784,7 @@ def wrap_in_dataarray(reprojected_data, src_band, dst_geobox, dims):
     result.coords['time'] = src_band.coords['time']
 
     for name, coord in dst_geobox.coordinates.items():
-        result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
+        result.coords[name] = (name, coord.values, {'units': coord.units})
 
     result.attrs['crs'] = dst_geobox.crs
     return result
