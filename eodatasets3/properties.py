@@ -3,6 +3,7 @@ import warnings
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from datetime import datetime
+from enum import Enum
 from typing import Tuple, Dict, Optional, Any, Mapping, Callable, Union
 
 import ciso8601
@@ -48,8 +49,11 @@ def datetime_type(value):
     return value
 
 
-def of_enum_type(vals: Tuple[str, ...], lower=False, upper=False, strict=True):
+def of_enum_type(vals: Tuple[str, ...] = None, lower=False, upper=False, strict=True):
     def normalise(v: str):
+        if isinstance(v, Enum):
+            v = v.name
+
         if upper:
             v = v.upper()
         if lower:
