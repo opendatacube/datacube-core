@@ -177,6 +177,7 @@ class StacPropertyView(collections.abc.Mapping):
         "eo:instrument": None,
         "eo:off_nadir": None,
         "eo:platform": normalise_platform,
+        "eo:constellation": None,
         "eo:sun_azimuth": degrees_type,
         "eo:sun_elevation": degrees_type,
         "landsat:landsat_product_id": None,
@@ -184,6 +185,7 @@ class StacPropertyView(collections.abc.Mapping):
         "landsat:wrs_path": int,
         "landsat:wrs_row": int,
         "odc:dataset_version": None,
+        # Not strict as there may be more added in ODC...
         "odc:file_format": of_enum_type(("GeoTIFF", "NetCDF"), strict=False),
         "odc:processing_datetime": datetime_type,
         "odc:producer": producer_check,
