@@ -58,6 +58,7 @@ class MeasurementDoc:
     grid: str = "default"
 
     name: str = attr.ib(metadata=dict(doc_exclude=True), default=None)
+    alias: str = attr.ib(metadata=dict(doc_exclude=True), default=None)
 
 
 @attr.s(auto_attribs=True, slots=True)
