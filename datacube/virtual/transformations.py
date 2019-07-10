@@ -84,6 +84,7 @@ class ApplyMask(Transformation):
 
             result = value.copy()
             result['dtype'] = self.fallback_dtype
+            result['nodata'] = float('nan')
             return Measurement(**result)
 
         return selective_apply_dict(rest, apply_to=self.apply_to, value_map=worker)
@@ -110,7 +111,9 @@ class ApplyMask(Transformation):
                     raise VirtualProductException("measurement {} has no nodata value".format(key))
                 return value.where(mask, value.attrs['nodata'])
 
-            return value.where(mask).astype(self.fallback_dtype)
+            result = value.where(mask).astype(self.fallback_dtype)
+            result.attrs['nodata'] = float('nan')
+            return result
 
         return selective_apply(rest, apply_to=self.apply_to, value_map=worker)
 
@@ -267,7 +270,8 @@ class Formula(Transformation):
 
         def measurement(output_var, output_desc):
             return Measurement(name=output_var, dtype=deduce_type(output_var, output_desc),
-                               nodata=output_desc.get('nodata'), units=output_desc.get('units'))
+                               nodata=output_desc.get('nodata', float('nan')),
+                               units=output_desc.get('units', '1'))
 
         return {output_var: measurement(output_var, output_desc)
                 for output_var, output_desc in self.output.items()}
@@ -285,8 +289,11 @@ class Formula(Transformation):
         def result(output_var, output_desc):
             formula = output_desc['formula']
             tree = parser.parse(formula)
-
-            return ev.transform(tree)
+            result = ev.transform(tree)
+            result.attrs['crs'] = data.attrs['crs']
+            result.attrs['nodata'] = output_desc.get('nodata', float('nan'))
+            result.attrs['units'] = output_desc.get('units', '1')
+            return result
 
         return xarray.Dataset(data_vars={output_var: result(output_var, output_desc)
                                          for output_var, output_desc in self.output.items()},
