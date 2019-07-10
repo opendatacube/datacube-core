@@ -134,13 +134,20 @@ class DeaNamingConventions:
         return self._file(work_dir, "", suffix)
 
     def measurement_file_path(
-        self, work_dir: Path, measurement_name: str, suffix: str
+        self, work_dir: Path, measurement_name: str, suffix: str, file_id: str = None
     ) -> Path:
         if ":" in measurement_name:
             subgroup, name = measurement_name.split(":")
         else:
             subgroup, name = None, measurement_name
-        return self._file(work_dir, name, suffix, sub_name=subgroup)
+
+        return self._file(
+            work_dir,
+            # We use 'band01'/etc in the filename if provided, rather than 'red'
+            file_id or name,
+            suffix,
+            sub_name=subgroup,
+        )
 
     def _file(self, work_dir: Path, file_id: str, suffix: str, sub_name: str = None):
         p = self.dataset
