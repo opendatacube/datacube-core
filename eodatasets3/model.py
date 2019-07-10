@@ -328,7 +328,7 @@ def valid_region(
     )
 
     def name_grid(grid, measurements: List[MeasurementDoc], name=None):
-        name = name or "_".join(m.name for m in measurements)
+        name = name or "_".join(m.alias or m.name for m in measurements)
         for m in measurements:
             m.grid = name
 
