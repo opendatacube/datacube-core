@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Tuple, Dict, Optional, Any, Mapping, Callable, Union
 
 import ciso8601
+from ruamel.yaml.timestamp import TimeStamp as RuamelTimeStamp
 
 from eodatasets3.utils import default_utc
 
@@ -37,16 +38,19 @@ def nest_properties(d: Mapping[str, Any], separator=":") -> Dict[str, Any]:
 
 
 def datetime_type(value):
+    # Ruamel's TimeZone class can become invalid from the .replace(utc) call.
+    # (I think it no longer matches the internal ._yaml fields.)
+    # Convert to a regular datetime.
+    if isinstance(value, RuamelTimeStamp):
+        value = value.isoformat()
+
     if isinstance(value, str):
         value = ciso8601.parse_datetime(value)
 
     # Store all dates with a timezone.
     # yaml standard says all dates default to UTC.
     # (and ruamel normalises timezones to UTC itself)
-    if isinstance(value, datetime):
-        value = default_utc(value)
-
-    return value
+    return default_utc(value)
 
 
 def of_enum_type(vals: Tuple[str, ...] = None, lower=False, upper=False, strict=True):
