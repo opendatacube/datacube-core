@@ -175,7 +175,7 @@ ODC has a (growing) set of built-in transformations:
 - ``to_float``
 - ``rename``
 - ``select``
-- ``formula``
+- ``expressions``
 
 For more information on transformations, see :ref:`user-defined-virtual-product-transforms`.
 

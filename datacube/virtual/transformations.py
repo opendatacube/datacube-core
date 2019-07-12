@@ -247,7 +247,7 @@ class EvaluateTree(lark.Transformer):
     int_literal = int
 
 
-class Formula(Transformation):
+class Expressions(Transformation):
     def __init__(self, output):
         self.output = output
 
