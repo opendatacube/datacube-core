@@ -109,11 +109,7 @@ class DeaNamingConventions:
         d = self.dataset
         version = d.dataset_version.replace(".", "-")
 
-        fs = (
-            f"{self.product_name}-{version}",
-            d.reference_code,
-            f"{d.datetime:%Y-%m-%d}",
-        )
+        fs = (f"{self.product_name}-{version}", d.region_code, f"{d.datetime:%Y-%m-%d}")
 
         if "dea:dataset_maturity" in d:
             fs = fs + (d.properties["dea:dataset_maturity"],)
@@ -124,7 +120,7 @@ class DeaNamingConventions:
         # Example: "ga_ls8c_ard_3/092/084/2016/06/28"
 
         # Cut the reference code in subfolders
-        code = utils.subfolderise(self.dataset.reference_code)
+        code = utils.subfolderise(self.dataset.region_code)
         return base / f"{self.product_name}/{code}/{self.dataset.datetime:%Y/%m/%d}"
 
     def metadata_path(self, work_dir: Path, kind: str = "", suffix: str = "yaml"):
@@ -162,7 +158,7 @@ class DeaNamingConventions:
             (
                 self._product_group(sub_name),
                 version,
-                p.reference_code,
+                p.region_code,
                 f"{p.datetime:%Y-%m-%d}",
                 end,
             )

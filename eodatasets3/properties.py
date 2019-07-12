@@ -194,7 +194,7 @@ class StacPropertyView(collections.abc.Mapping):
         "odc:processing_datetime": datetime_type,
         "odc:producer": producer_check,
         "odc:product_family": None,
-        "odc:reference_code": None,
+        "odc:region_code": None,
         **_LANDSAT_EXTENDED_PROPS,
         **_GQA_FMASK_PROPS,
     }
@@ -336,9 +336,9 @@ class EoFields(metaclass=ABCMeta):
         self.properties["odc:product_family"] = value
 
     @property
-    def reference_code(self) -> str:
-        return self.properties.get("odc:reference_code")
+    def region_code(self) -> str:
+        return self.properties.get("odc:region_code")
 
-    @reference_code.setter
-    def reference_code(self, value: str):
-        self.properties["odc:reference_code"] = value
+    @region_code.setter
+    def region_code(self, value: str):
+        self.properties["odc:region_code"] = value
