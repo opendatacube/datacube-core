@@ -2,7 +2,6 @@ from datetime import datetime
 from pathlib import Path
 import pytest
 import toolz
-import uuid
 import yaml
 from yaml import CSafeLoader as Loader, CSafeDumper as Dumper
 from datacube.model.fields import get_dataset_fields, parse_dataset_field
@@ -21,17 +20,17 @@ with open(str(ARD_METADATA_FILE)) as ard_metadata_doc:
 
 EXPECTED_VALUE = dict(
     region_code='092084',
-    platform='landsat-5',
-    instrument='TM',
+    platform='landsat-8',
+    instrument='OLI_TIRS',
     lat=None,
     lon=None,
-    time=Range(datetime.strptime('2009-12-17 23:53:03.946464', "%Y-%m-%d %H:%M:%S.%f"),
-               datetime.strptime('2009-12-17 23:53:31.463325', "%Y-%m-%d %H:%M:%S.%f")),
+    time=Range(datetime.strptime('2016-06-28 00:02:13.898559', "%Y-%m-%d %H:%M:%S.%f"),
+               datetime.strptime('2016-06-28 00:02:43.187396', "%Y-%m-%d %H:%M:%S.%f")),
 )
 
 
 def mk_measurement(m):
-    common = dict(dtype='int16',
+    common = dict(dtype='float64',
                   nodata=-999,
                   units='1')
 
@@ -51,19 +50,15 @@ def mk_measurement(m):
 
 
 def _create_sample_product_def(metadata_definition,
-                               measurements=('nbar_band01', 'nbar_band02', 'nbar_band03', 'nbar_band04', 'nbar_band05',
-                                             'nbar_band07', 'nbart_band01', 'nbart_band02', 'nbart_band03',
-                                             'nbart_band04', 'nbart_band05', 'nbart_band07', 'oa_azimuthal_exiting',
+                               measurements=('nbar_blue', 'nbar_green', 'nbar_red', 'nbar_nir', 'nbar_swir_1',
+                                             'nbar_swir_2', 'nbart_blue', 'nbart_green', 'nbart_red',
+                                             'nbart_nir', 'nbart_swir_1', 'nbart_swir_2', 'oa_azimuthal_exiting',
                                              'oa_azimuthal_incident', 'oa_combined_terrain_shadow', 'oa_exiting_angle',
                                              'oa_fmask', 'oa_incident_angle', 'oa_nbar_contiguity',
                                              'oa_nbart_contiguity', 'oa_relative_azimuth', 'oa_relative_slope',
                                              'oa_satellite_azimuth', 'oa_satellite_view', 'oa_solar_azimuth',
                                              'oa_solar_zenith', 'oa_time_delta'),
-                               with_grid_spec=False,
                                storage=None):
-
-    if storage is None and with_grid_spec is True:
-        storage = {'crs': 'epsg:4326'}
 
     measurements = [mk_measurement(m) for m in measurements]
 
@@ -99,7 +94,7 @@ def _get_boundingbox(metadata_fname):
         metadata = yaml.load(fl)
     crs = CRS(metadata['crs'])
     geo = Geometry(metadata['geometry'], crs=crs)
-    spatial_reference = str(crs.wkt)
+    spatial_reference = 'epsg:{}'.format(crs.epsg) if crs.epsg else crs.wkt
 
     left, bottom, right, top = geo.to_crs(CRS('EPSG:4326')).boundingbox
     lat_lon_coords = {
@@ -124,10 +119,8 @@ def _create_new_dataset_def(input_file: Path):
     """
     Create new metadata dataset definition yaml files
     """
-    now = datetime.utcnow()
-    creation_dt = now.strftime('%Y-%m-%dT%H:%M:%S.%f')
-
     xy_geo_ref_points, spatial_ref, lat_lon_coords = _get_boundingbox(input_file)
+    dtime = str(SAMPLE_ARD_YAML_DOC['properties']['odc:processing_datetime'])
 
     def _get_measurements(m):
         m_dict = {}
@@ -136,9 +129,9 @@ def _create_new_dataset_def(input_file: Path):
         return m_dict
 
     dataset_def_template = {
-        'id': str(uuid.uuid4()),
-        'creation_dt': creation_dt,
-        'label': '',
+        'id': SAMPLE_ARD_YAML_DOC['id'],
+        'creation_dt': dtime,
+        'label': input_file.name.split('.')[0],
         'product_type': 'ard',
         'platform': {'code': ''},
         'region': {'code': ''},
@@ -160,7 +153,9 @@ def _create_new_dataset_def(input_file: Path):
         },
         'lineage': {
             'source_datasets': {}
-        }
+        },
+        'properties': {},
+        'accessories': {}
     }
     ds_field = _get_product_info(EO_STACLIKE_METADATA_DOC)
     ds_search_field = get_dataset_fields(EO_STACLIKE_METADATA_DOC)
@@ -179,6 +174,13 @@ def _create_new_dataset_def(input_file: Path):
             dataset_def_template[key]['name'] = value.extract(SAMPLE_ARD_YAML_DOC)
         elif key in ('platform', 'region'):
             dataset_def_template[key]['code'] = value.extract(SAMPLE_ARD_YAML_DOC)
+
+    # Users want many of the cloud_cover/gqa/fmask fields indexed too,
+    # so we might want to add them to the converted dataset file
+    dataset_def_template['properties'] = SAMPLE_ARD_YAML_DOC['properties']
+
+    # Similarly copy all of accessories
+    dataset_def_template['accessories'] = SAMPLE_ARD_YAML_DOC['accessories']
 
     return dataset_def_template
 
@@ -203,7 +205,7 @@ def _create_yamlfile(yaml_path):
 def test_new_eo_metadata_search_fields():
     ds_search_field = get_dataset_fields(EO_STACLIKE_METADATA_DOC)
     platform = ds_search_field['platform'].extract(SAMPLE_ARD_YAML_DOC)
-    assert platform == 'landsat-5'
+    assert platform == 'landsat-8'
 
     for key, value in ds_search_field.items():
         assert key == value.name
@@ -229,9 +231,9 @@ def test_index_new_product(clirunner, index, tmpdir, ga_metadata_type_doc, datac
     # Add the new metadata file
     clirunner(['-v', 'product', 'add', product_definition])
 
-    clirunner(['dataset', 'add', '--product', 'ga_ls5t_ard_3', str(dataset_definition)])
+    clirunner(['dataset', 'add', '--product', 'ga_ls8c_ard_3', str(dataset_definition)])
 
-    datasets = index.datasets.search_eager(product='ga_ls5t_ard_3')
+    datasets = index.datasets.search_eager(product='ga_ls8c_ard_3')
     assert len(datasets) > 0
     assert not datasets[0].managed
 

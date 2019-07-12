@@ -2,125 +2,158 @@
 # Dataset
 $schema: https://schemas.opendatacube.org/dataset
 
-id: 6601ec0d-ddd4-436f-8e83-8e54d42953f4
+id: 0fa267fe-3987-447b-be8e-d9ccc44a091c
 product:
-  name: ga_ls5t_ard_3
-  href: https://collections.dea.ga.gov.au/product/ga_ls5t_ard_3
+  name: ga_ls8c_ard_3
+  href: https://collections.dea.ga.gov.au/product/ga_ls8c_ard_3
 
 crs: epsg:32655
 geometry:
   type: Polygon
-  coordinates: [[[352485.0, -3723885.0], [352485.0, -3936915.0], [593715.0, -3936915.0],
-      [593715.0, -3723885.0], [352485.0, -3723885.0]]]
+  coordinates: [[[360765.17153515684, -3903644.255017129], [360716.8933982822, -3903633.106601718],
+      [360712.79128986463, -3903574.558257973], [360847.8825401532, -3902974.134013127],
+      [368512.8844571052, -3869719.1256991997], [383722.8871097983, -3803944.1142297843],
+      [399442.88987959444, -3736219.10229758], [404782.8920677736, -3713299.092902105],
+      [404812.5, -3713257.5], [404891.0505317082, -3713275.7066973243], [404895.0,
+        -3713265.0], [550230.180507942, -3746962.8822174855], [589900.8883572302,
+        -3756157.8877094444], [592615.8977024199, -3756787.8898795946], [592633.68561642,
+        -3756794.6952427975], [592635.0, -3756795.0], [592634.9597881064, -3756795.1827199184],
+      [592732.5, -3756832.5], [591292.1167625728, -3763315.869013489], [549427.1158679354,
+        -3944950.8728926005], [548917.5, -3947092.5], [548811.5002745531, -3947068.0224818266],
+      [548805.0, -3947085.0], [361118.2503333374, -3903764.2308398774], [360765.0,
+        -3903645.0], [360765.17153515684, -3903644.255017129]]]
 grids:
   default:
-    shape: [7101, 8041]
-    transform: [30.0, 0.0, 352485.0, 0.0, -30.0, -3723885.0, 0.0, 0.0, 1.0]
+    shape: [7811, 7751]
+    transform: [30.0, 0.0, 360585.0, 0.0, -30.0, -3713085.0, 0.0, 0.0, 1.0]
+  panchromatic:
+    shape: [15621, 15501]
+    transform: [15.0, 0.0, 360592.5, 0.0, -15.0, -3713092.5, 0.0, 0.0, 1.0]
 
 properties:
-  datetime: 2009-12-17 23:53:17.782063Z
+  datetime: 2016-06-28 00:02:28.624635Z
   dea:dataset_maturity: final
   dea:processing_level: level-2
-  dtr:end_datetime: 2009-12-17 23:53:31.463325Z
-  dtr:start_datetime: 2009-12-17 23:53:03.946464Z
-  eo:cloud_cover: 9.0
-  eo:gsd: 30.0  # Ground sample distance (m)
-  eo:instrument: TM
-  eo:platform: landsat-5
-  eo:sun_azimuth: 78.43854778
-  eo:sun_elevation: 58.34011168
-  fmask:clear: 88.11193011535336
-  fmask:cloud: 11.075193403092793
-  fmask:cloud_shadow: 0.7480692845131156
-  fmask:snow: 0.00016254691510337173
-  fmask:water: 0.06464465012563457
-  gqa:abs_iterative_mean_x: 0.16
-  gqa:abs_iterative_mean_xy: 0.23
-  gqa:abs_iterative_mean_y: 0.17
-  gqa:abs_x: 0.22
-  gqa:abs_xy: 0.32
-  gqa:abs_y: 0.23
-  gqa:cep90: 0.44
-  gqa:iterative_mean_x: -0.11
-  gqa:iterative_mean_xy: 0.12
-  gqa:iterative_mean_y: 0.02
-  gqa:iterative_stddev_x: 0.16
-  gqa:iterative_stddev_xy: 0.27
-  gqa:iterative_stddev_y: 0.21
-  gqa:mean_x: -0.12
-  gqa:mean_xy: 0.13
-  gqa:mean_y: 0.03
-  gqa:stddev_x: 0.42
-  gqa:stddev_xy: 0.72
-  gqa:stddev_y: 0.59
+  dtr:end_datetime: 2016-06-28 00:02:43.187396Z
+  dtr:start_datetime: 2016-06-28 00:02:13.898559Z
+  eo:cloud_cover: 63.069613577531236
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-8
+  eo:sun_azimuth: 33.65512534
+  eo:sun_elevation: 23.98836172
+  fmask:clear: 32.735343657403305
+  fmask:cloud_shadow: 4.139470857647722
+  fmask:snow: 0.005053323801138007
+  fmask:water: 0.050518583616596675
+  gqa:abs_iterative_mean_x: 0.21
+  gqa:abs_iterative_mean_xy: 0.27
+  gqa:abs_iterative_mean_y: 0.18
+  gqa:abs_x: 0.3
+  gqa:abs_xy: 0.39
+  gqa:abs_y: 0.25
+  gqa:cep90: 0.46
+  gqa:iterative_mean_x: -0.17
+  gqa:iterative_mean_xy: 0.21
+  gqa:iterative_mean_y: 0.12
+  gqa:iterative_stddev_x: 0.19
+  gqa:iterative_stddev_xy: 0.25
+  gqa:iterative_stddev_y: 0.17
+  gqa:mean_x: -0.1
+  gqa:mean_xy: 0.14
+  gqa:mean_y: 0.1
+  gqa:stddev_x: 0.35
+  gqa:stddev_xy: 0.45
+  gqa:stddev_y: 0.29
   landsat:collection_category: T1
   landsat:collection_number: 1
-  landsat:landsat_product_id: LT05_L1TP_092084_20091217_20161017_01_T1
-  landsat:landsat_scene_id: LT50920842009351ASA00
+  landsat:landsat_product_id: LC08_L1TP_092084_20160628_20170323_01_T1
+  landsat:landsat_scene_id: LC80920842016180LGN01
   landsat:wrs_path: 92
   landsat:wrs_row: 84
   odc:dataset_version: 3.0.0
-  odc:processing_datetime: 2019-06-27 08:01:53.388627Z  # When the data was processed
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2019-07-10 07:44:48.045950Z
   odc:producer: ga.gov.au
   odc:product_family: ard
   odc:reference_code: '092084'
 
 measurements:
-  nbar_band01:
-    path: ga_ls5t_nbar_3-0-0_092084_2009-12-17_final_band01.tif
-  nbar_band02:
-    path: ga_ls5t_nbar_3-0-0_092084_2009-12-17_final_band02.tif
-  nbar_band03:
-    path: ga_ls5t_nbar_3-0-0_092084_2009-12-17_final_band03.tif
-  nbar_band04:
-    path: ga_ls5t_nbar_3-0-0_092084_2009-12-17_final_band04.tif
-  nbar_band05:
-    path: ga_ls5t_nbar_3-0-0_092084_2009-12-17_final_band05.tif
-  nbar_band07:
-    path: ga_ls5t_nbar_3-0-0_092084_2009-12-17_final_band07.tif
-  nbart_band01:
-    path: ga_ls5t_nbart_3-0-0_092084_2009-12-17_final_band01.tif
-  nbart_band02:
-    path: ga_ls5t_nbart_3-0-0_092084_2009-12-17_final_band02.tif
-  nbart_band03:
-    path: ga_ls5t_nbart_3-0-0_092084_2009-12-17_final_band03.tif
-  nbart_band04:
-    path: ga_ls5t_nbart_3-0-0_092084_2009-12-17_final_band04.tif
-  nbart_band05:
-    path: ga_ls5t_nbart_3-0-0_092084_2009-12-17_final_band05.tif
-  nbart_band07:
-    path: ga_ls5t_nbart_3-0-0_092084_2009-12-17_final_band07.tif
+  nbar_blue:
+    path: ga_ls8c_nbar_3-0-0_092084_2016-06-28_final_band02.tif
+  nbar_coastal_aerosol:
+    path: ga_ls8c_nbar_3-0-0_092084_2016-06-28_final_band01.tif
+  nbar_green:
+    path: ga_ls8c_nbar_3-0-0_092084_2016-06-28_final_band03.tif
+  nbar_nir:
+    path: ga_ls8c_nbar_3-0-0_092084_2016-06-28_final_band05.tif
+  nbar_panchromatic:
+    path: ga_ls8c_nbar_3-0-0_092084_2016-06-28_final_band08.tif
+    grid: panchromatic
+  nbar_red:
+    path: ga_ls8c_nbar_3-0-0_092084_2016-06-28_final_band04.tif
+  nbar_swir_1:
+    path: ga_ls8c_nbar_3-0-0_092084_2016-06-28_final_band06.tif
+  nbar_swir_2:
+    path: ga_ls8c_nbar_3-0-0_092084_2016-06-28_final_band07.tif
+  nbart_blue:
+    path: ga_ls8c_nbart_3-0-0_092084_2016-06-28_final_band02.tif
+  nbart_coastal_aerosol:
+    path: ga_ls8c_nbart_3-0-0_092084_2016-06-28_final_band01.tif
+  nbart_green:
+    path: ga_ls8c_nbart_3-0-0_092084_2016-06-28_final_band03.tif
+  nbart_nir:
+    path: ga_ls8c_nbart_3-0-0_092084_2016-06-28_final_band05.tif
+  nbart_panchromatic:
+    path: ga_ls8c_nbart_3-0-0_092084_2016-06-28_final_band08.tif
+    grid: panchromatic
+  nbart_red:
+    path: ga_ls8c_nbart_3-0-0_092084_2016-06-28_final_band04.tif
+  nbart_swir_1:
+    path: ga_ls8c_nbart_3-0-0_092084_2016-06-28_final_band06.tif
+  nbart_swir_2:
+    path: ga_ls8c_nbart_3-0-0_092084_2016-06-28_final_band07.tif
   oa_azimuthal_exiting:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_azimuthal-exiting.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_azimuthal-exiting.tif
   oa_azimuthal_incident:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_azimuthal-incident.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_azimuthal-incident.tif
   oa_combined_terrain_shadow:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_combined-terrain-shadow.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_combined-terrain-shadow.tif
   oa_exiting_angle:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_exiting-angle.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_exiting-angle.tif
   oa_fmask:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_fmask.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_fmask.tif
   oa_incident_angle:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_incident-angle.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_incident-angle.tif
   oa_nbar_contiguity:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_nbar-contiguity.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_nbar-contiguity.tif
   oa_nbart_contiguity:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_nbart-contiguity.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_nbart-contiguity.tif
   oa_relative_azimuth:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_relative-azimuth.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_relative-azimuth.tif
   oa_relative_slope:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_relative-slope.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_relative-slope.tif
   oa_satellite_azimuth:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_satellite-azimuth.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_satellite-azimuth.tif
   oa_satellite_view:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_satellite-view.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_satellite-view.tif
   oa_solar_azimuth:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_solar-azimuth.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_solar-azimuth.tif
   oa_solar_zenith:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_solar-zenith.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_solar-zenith.tif
   oa_time_delta:
-    path: ga_ls5t_oa_3-0-0_092084_2009-12-17_final_time-delta.tif
+    path: ga_ls8c_oa_3-0-0_092084_2016-06-28_final_time-delta.tif
+
+accessories:
+  thumbnail:nbar:
+    path: ga_ls8c_nbar_3-0-0_092084_2016-06-28_final_thumbnail.jpg
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-0-0_092084_2016-06-28_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls8c_ard_3-0-0_092084_2016-06-28_final.sha1
+  metadata:processor:
+    path: ga_ls8c_ard_3-0-0_092084_2016-06-28_final.proc-info.yaml
 
 lineage:
   level1:
-  - 142f8091-a88e-5765-9f5b-bf183e580e36
+  - fb1c622e-90aa-50e8-9d5e-ad69db82d0f6
