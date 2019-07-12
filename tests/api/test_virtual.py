@@ -345,9 +345,9 @@ def test_aliases(dc, query):
     assert 'green' not in data
 
 
-def test_formula(dc, query):
+def test_expressions(dc, query):
     bluegreen = construct_from_yaml("""
-        transform: formula
+        transform: expressions
         output:
             bluegreen:
                 formula: blue + green
