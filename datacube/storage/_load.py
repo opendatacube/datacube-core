@@ -15,6 +15,7 @@ from typing import (
 )
 
 from datacube.utils import ignore_exceptions_if
+from datacube.utils.math import dtype_is_float
 from datacube.utils.geometry import GeoBox, Coordinate, roi_is_empty
 from datacube.model import Measurement
 from datacube.drivers._types import ReaderDriver
@@ -26,13 +27,23 @@ FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=inval
 ProgressFunction = Callable[[int, int], Any]  # pylint: disable=invalid-name
 
 
-def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata: float) -> None:
+def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata) -> None:
     """ Overwrite only those pixels in `dst` with `src` that are "not valid"
 
         For every pixel in dst that equals to dst_nodata replace it with pixel
         from src.
     """
-    where_nodata = (dst == dst_nodata) if not np.isnan(dst_nodata) else np.isnan(dst)
+    if dtype_is_float(dst.dtype):
+        if dst_nodata is None or np.isnan(dst_nodata):
+            where_nodata = np.isnan(dst)
+        else:
+            where_nodata = np.isnan(dst) | (dst == dst_nodata)
+    else:
+        if dst_nodata is None:
+            where_nodata = np.full_like(dst, False, dtype=np.bool)
+        else:
+            where_nodata = dst == dst_nodata
+
     np.copyto(dst, src, where=where_nodata)
 
 

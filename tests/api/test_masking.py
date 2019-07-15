@@ -361,3 +361,38 @@ def test_valid_data_mask():
 
     output_da = valid_data_mask(data_array)
     assert output_da.equals(expected_data_array)
+
+    expected_data_array = DataArray(np.array([[True, True, True], [True, True, True], [True, True, True]],
+                                             dtype='bool'))
+    data_array = DataArray([[1, -999, -999], [2, 3, -999], [-999, -999, -999]])
+    dataset = Dataset(data_vars={'var_one': data_array})
+
+    output_ds = valid_data_mask(dataset)
+    assert output_ds.data_vars['var_one'].equals(expected_data_array)
+
+    output_da = valid_data_mask(data_array)
+    assert output_da.equals(expected_data_array)
+
+    expected_data_array = DataArray(np.array([[True, False, False], [True, True, False], [False, False, False]],
+                                             dtype='bool'))
+
+    data_array = DataArray([[1, -999, -999], [2, 3, -999], [-999, -999, float('nan')]], attrs=attrs)
+    dataset = Dataset(data_vars={'var_one': data_array})
+
+    output_ds = valid_data_mask(dataset)
+    assert output_ds.data_vars['var_one'].equals(expected_data_array)
+
+    output_da = valid_data_mask(data_array)
+    assert output_da.equals(expected_data_array)
+
+    expected_data_array = DataArray(np.array([[True, True, True], [True, True, True], [True, True, False]],
+                                             dtype='bool'))
+
+    data_array = DataArray([[1, -999, -999], [2, 3, -999], [-999, -999, float('nan')]])
+    dataset = Dataset(data_vars={'var_one': data_array})
+
+    output_ds = valid_data_mask(dataset)
+    assert output_ds.data_vars['var_one'].equals(expected_data_array)
+
+    output_da = valid_data_mask(data_array)
+    assert output_da.equals(expected_data_array)
