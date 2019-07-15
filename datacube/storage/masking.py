@@ -117,15 +117,17 @@ def valid_data_mask(data):
     if not isinstance(data, DataArray):
         raise TypeError('valid_data_mask not supported for type {}'.format(type(data)))
 
+    nodata = data.attrs.get('nodata', None)
+
     if dtype_is_float(data.dtype):
-        if 'nodata' not in data.attrs or numpy.isnan(data.attrs['nodata']):
+        if nodata is None or numpy.isnan(nodata):
             return ~xarray.ufuncs.isnan(data)
-        return (data != data.nodata) & ~xarray.ufuncs.isnan(data)
+        return (data != nodata) & ~xarray.ufuncs.isnan(data)
 
     # not float
-    if 'nodata' not in data.attrs:
+    if nodata is None:
         return xarray.full_like(data, True, dtype=numpy.bool)
-    return data != data.nodata
+    return data != nodata
 
 
 def mask_valid_data(data, keep_attrs=True):
