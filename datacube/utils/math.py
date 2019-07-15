@@ -56,6 +56,13 @@ def is_almost_int(x: float, tol: float):
     return x < tol
 
 
+def dtype_is_float(dtype) -> bool:
+    """
+    Check if `dtype` is floating-point.
+    """
+    return numpy.dtype(dtype).kind == 'f'
+
+
 def valid_mask(xx, nodata):
     """
     Compute mask such that xx[mask] contains valid pixels.

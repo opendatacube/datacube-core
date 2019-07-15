@@ -6,9 +6,14 @@ The main functions are `make_mask(variable)` `describe_flags(variable)`
 
 import collections
 import warnings
-import pandas
 
+import pandas
+import numpy
+import xarray
 from xarray import DataArray, Dataset
+
+from datacube.utils.math import dtype_is_float
+
 
 FLAGS_ATTR_NAME = 'flags_definition'
 
@@ -109,12 +114,18 @@ def valid_data_mask(data):
     if isinstance(data, Dataset):
         return data.apply(valid_data_mask)
 
-    if isinstance(data, DataArray):
-        if 'nodata' not in data.attrs:
-            return True
-        return data != data.nodata
+    if not isinstance(data, DataArray):
+        raise TypeError('valid_data_mask not supported for type {}'.format(type(data)))
 
-    raise TypeError('valid_data_mask not supported for type {}'.format(type(data)))
+    if dtype_is_float(data.dtype):
+        if 'nodata' not in data.attrs or numpy.isnan(data.attrs['nodata']):
+            return ~xarray.ufuncs.isnan(data)
+        return (data != data.nodata) & ~xarray.ufuncs.isnan(data)
+
+    # not float
+    if 'nodata' not in data.attrs:
+        return xarray.full_like(data, True, dtype=numpy.bool)
+    return data != data.nodata
 
 
 def mask_valid_data(data, keep_attrs=True):
