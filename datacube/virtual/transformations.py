@@ -4,6 +4,9 @@ import lark
 
 from datacube.storage.masking import make_mask as make_mask_prim
 from datacube.storage.masking import mask_invalid_data as mask_invalid_data_prim
+from datacube.storage.masking import valid_data_mask
+
+from datacube.utils.math import dtype_is_float
 
 from .impl import VirtualProductException, Transformation, Measurement
 
@@ -248,8 +251,9 @@ class EvaluateTree(lark.Transformer):
 
 
 class Expressions(Transformation):
-    def __init__(self, output):
+    def __init__(self, output, masked=True):
         self.output = output
+        self.masked = masked
 
     def measurements(self, input_measurements):
         parser = formula_parser()
@@ -284,15 +288,59 @@ class Expressions(Transformation):
             def var_name(self, key):
                 return data[key.value]
 
-        ev = EvaluateData()
+        @lark.v_args(inline=True)
+        class EvaluateNodataMask(lark.Transformer):
+            # the result of an expression is nodata whenever any of its subexpressions is nodata
+            from operator import or_
+
+            # pylint: disable=invalid-name
+            not_ = and_ = _xor = or_
+            eq = ne = le = ge = lt = gt = or_
+            add = sub = mul = truediv = floordiv = neg = pos = inv = mod = pow = lshift = rshift = or_
+
+            def float_literal(self, value):
+                return False
+
+            def int_literal(self, value):
+                return False
+
+            def var_name(self, key):
+                # pylint: disable=invalid-unary-operand-type
+                return ~valid_data_mask(data[key.value])
+
+        ev_data = EvaluateData()
+        ev_mask = EvaluateNodataMask()
 
         def result(output_var, output_desc):
+            # pylint: disable=invalid-unary-operand-type
+
+            nodata = output_desc.get('nodata')
+
             formula = output_desc['formula']
             tree = parser.parse(formula)
-            result = ev.transform(tree)
+            result = ev_data.transform(tree)
             result.attrs['crs'] = data.attrs['crs']
-            result.attrs['nodata'] = output_desc.get('nodata', float('nan'))
+            if nodata is not None:
+                result.attrs['nodata'] = nodata
             result.attrs['units'] = output_desc.get('units', '1')
+
+            if not self.masked:
+                return result
+
+            # masked output
+            dtype = result.dtype
+            mask = ev_mask.transform(tree)
+
+            if not dtype_is_float(dtype) and nodata is None:
+                raise VirtualProductException("cannot mask without specified nodata")
+
+            if nodata is None:
+                result = result.where(~mask)
+                result.attrs['nodata'] = numpy.nan
+            else:
+                result = result.where(~mask, nodata)
+                result.attrs['nodata'] = nodata
+
             return result
 
         return xarray.Dataset(data_vars={output_var: result(output_var, output_desc)
