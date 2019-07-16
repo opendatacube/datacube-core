@@ -30,7 +30,7 @@ from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING
 from datacube.utils.dates import date_sequence
 from datacube.utils.documents import parse_yaml, without_lineage_sources
 from datacube.utils.generic import map_with_lookahead
-from datacube.utils.math import num2numpy, is_almost_int, valid_mask, clamp
+from datacube.utils.math import num2numpy, is_almost_int, valid_mask, invalid_mask, clamp
 from datacube.utils.py import sorted_items
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
                                  pick_uri, uri_resolve,
@@ -928,26 +928,46 @@ def test_valid_mask():
     assert mm.shape == xx.shape
     assert not mm.all()
     assert not mm.any()
+    nn = invalid_mask(xx, 0)
+    assert nn.dtype == 'bool'
+    assert nn.shape == xx.shape
+    assert nn.all()
+    assert nn.any()
 
     mm = valid_mask(xx, 13)
     assert mm.dtype == 'bool'
     assert mm.shape == xx.shape
     assert mm.all()
+    nn = invalid_mask(xx, 13)
+    assert nn.dtype == 'bool'
+    assert nn.shape == xx.shape
+    assert not nn.any()
 
     mm = valid_mask(xx, None)
     assert mm.dtype == 'bool'
     assert mm.shape == xx.shape
     assert mm.all()
+    nn = invalid_mask(xx, None)
+    assert nn.dtype == 'bool'
+    assert nn.shape == xx.shape
+    assert not nn.any()
 
     mm = valid_mask(xx, np.nan)
     assert mm.dtype == 'bool'
     assert mm.shape == xx.shape
     assert mm.all()
+    nn = invalid_mask(xx, np.nan)
+    assert nn.dtype == 'bool'
+    assert nn.shape == xx.shape
+    assert not nn.any()
 
     xx[0, 0] = np.nan
     mm = valid_mask(xx, np.nan)
     assert not mm[0, 0]
     assert mm.sum() == (4 * 8 - 1)
+    nn = invalid_mask(xx, np.nan)
+    assert nn[0, 0]
+    assert nn.sum() == 1
 
 
 def test_num2numpy():

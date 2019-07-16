@@ -15,7 +15,7 @@ from typing import (
 )
 
 from datacube.utils import ignore_exceptions_if
-from datacube.utils.math import dtype_is_float
+from datacube.utils.math import invalid_mask
 from datacube.utils.geometry import GeoBox, Coordinate, roi_is_empty
 from datacube.model import Measurement
 from datacube.drivers._types import ReaderDriver
@@ -33,18 +33,7 @@ def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata) -> None:
         For every pixel in dst that equals to dst_nodata replace it with pixel
         from src.
     """
-    if dtype_is_float(dst.dtype):
-        if dst_nodata is None or np.isnan(dst_nodata):
-            where_nodata = np.isnan(dst)
-        else:
-            where_nodata = np.isnan(dst) | (dst == dst_nodata)
-    else:
-        if dst_nodata is None:
-            where_nodata = np.full_like(dst, False, dtype=np.bool)
-        else:
-            where_nodata = dst == dst_nodata
-
-    np.copyto(dst, src, where=where_nodata)
+    np.copyto(dst, src, where=invalid_mask(dst, dst_nodata))
 
 
 def reproject_and_fuse(datasources: List[DataSource],
