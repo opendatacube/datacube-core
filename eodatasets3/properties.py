@@ -258,8 +258,8 @@ class EoFields(metaclass=ABCMeta):
         raise NotImplementedError
 
     @property
-    def platform(self) -> str:
-        return self.properties["eo:platform"]
+    def platform(self) -> Optional[str]:
+        return self.properties.get("eo:platform")
 
     @platform.setter
     def platform(self, value: str):
@@ -267,7 +267,7 @@ class EoFields(metaclass=ABCMeta):
 
     @property
     def instrument(self) -> str:
-        return self.properties["eo:instrument"]
+        return self.properties.get("eo:instrument")
 
     @instrument.setter
     def instrument(self, value: str):
