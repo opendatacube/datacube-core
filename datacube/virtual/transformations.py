@@ -294,14 +294,21 @@ class Expressions(Transformation):
             from operator import or_
 
             # pylint: disable=invalid-name
-            not_ = and_ = _xor = or_
+            and_ = _xor = or_
             eq = ne = le = ge = lt = gt = or_
-            add = sub = mul = truediv = floordiv = neg = pos = inv = mod = pow = lshift = rshift = or_
+            add = sub = mul = truediv = floordiv = mod = pow = lshift = rshift = or_
 
-            def float_literal(self, value):
+            def not_(self, value):
+                return value
+
+            neg = pos = inv = not_
+
+            @staticmethod
+            def float_literal(value):
                 return False
 
-            def int_literal(self, value):
+            @staticmethod
+            def int_literal(value):
                 return False
 
             def var_name(self, key):
