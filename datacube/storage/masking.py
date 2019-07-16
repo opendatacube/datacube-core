@@ -12,7 +12,7 @@ import numpy
 import xarray
 from xarray import DataArray, Dataset
 
-from datacube.utils.math import dtype_is_float
+from datacube.utils.math import dtype_is_float, valid_mask
 
 
 FLAGS_ATTR_NAME = 'flags_definition'
@@ -119,15 +119,7 @@ def valid_data_mask(data):
 
     nodata = data.attrs.get('nodata', None)
 
-    if dtype_is_float(data.dtype):
-        if nodata is None or numpy.isnan(nodata):
-            return ~xarray.ufuncs.isnan(data)
-        return (data != nodata) & ~xarray.ufuncs.isnan(data)
-
-    # not float
-    if nodata is None:
-        return xarray.full_like(data, True, dtype=numpy.bool)
-    return data != nodata
+    return xarray.apply_ufunc(lambda xx: valid_mask(xx, nodata), data)
 
 
 def mask_valid_data(data, keep_attrs=True):
