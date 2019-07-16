@@ -63,15 +63,32 @@ def dtype_is_float(dtype) -> bool:
     return numpy.dtype(dtype).kind == 'f'
 
 
-def valid_mask(xx, nodata):
+def valid_mask(dst, dst_nodata):
     """
-    Compute mask such that xx[mask] contains valid pixels.
+    Compute mask such that dst[mask] contains only valid pixels.
     """
-    if nodata is None:
-        return numpy.ones(xx.shape, dtype='bool')
-    if numpy.isnan(nodata):
-        return ~numpy.isnan(xx)
-    return xx != nodata
+    if dtype_is_float(dst.dtype):
+        if dst_nodata is None or numpy.isnan(dst_nodata):
+            return ~numpy.isnan(dst)
+        return ~numpy.isnan(dst) & (dst != dst_nodata)
+
+    if dst_nodata is None:
+        return numpy.full_like(dst, True, dtype=numpy.bool)
+    return dst != dst_nodata
+
+
+def invalid_mask(dst, dst_nodata):
+    """
+    Compute mask such that dst[mask] contains only invalid pixels.
+    """
+    if dtype_is_float(dst.dtype):
+        if dst_nodata is None or numpy.isnan(dst_nodata):
+            return numpy.isnan(dst)
+        return numpy.isnan(dst) | (dst == dst_nodata)
+
+    if dst_nodata is None:
+        return numpy.full_like(dst, False, dtype=numpy.bool)
+    return dst == dst_nodata
 
 
 def num2numpy(x, dtype, ignore_range=None):
