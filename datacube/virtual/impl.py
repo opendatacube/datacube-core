@@ -752,8 +752,12 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
         subset_band = band[(...,) + slices].chunk(-1)
         dsk.update(subset_band.data.dask)
         band_key = list(flatten(subset_band.data.__dask_keys__()))[0]
-        dsk[(dsk_name,) + tile_index] = (reproject_array,
-                                         band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
+
+        if numpy.any(numpy.array(subset_band.shape) == 0):
+            dsk[(dsk_name,) + tile_index] = (numpy.full, sub_geobox.shape, band.nodata, band.dtype)
+        else:
+            dsk[(dsk_name,) + tile_index] = (reproject_array,
+                                             band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
 
     data = dask.array.Array(dsk, dsk_name,
                             chunks=spatial_chunks,

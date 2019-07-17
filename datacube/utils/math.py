@@ -119,6 +119,14 @@ def num2numpy(x, dtype, ignore_range=None):
     return None
 
 
+def data_resolution(data):
+    if data.size == 1:
+        return None
+
+    res = (data[data.size - 1] - data[0]) / (data.size - 1.0)
+    return res.item()
+
+
 def data_resolution_and_offset(data):
     """
     >>> data_resolution_and_offset(numpy.array([1.5, 2.5, 3.5]))

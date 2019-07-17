@@ -13,7 +13,7 @@ This extension is reliant on an `xarray` object having a `.crs` property of type
 import xarray
 from affine import Affine
 
-from datacube.utils import data_resolution_and_offset, geometry
+from datacube.utils import data_resolution, geometry
 
 
 def _norm_crs(crs):
@@ -32,8 +32,21 @@ def _xarray_affine(obj):
 
     dims = crs.dimensions
 
-    xres, xoff = data_resolution_and_offset(obj[dims[1]].values)
-    yres, yoff = data_resolution_and_offset(obj[dims[0]].values)
+    xres = data_resolution(obj[dims[1]].values)
+    yres = data_resolution(obj[dims[0]].values)
+    if xres is None and yres is None:
+        try:
+            xres, yres = obj.resolution
+        except:
+            raise ValueError('Resolution is missing')
+    elif xres is None:
+        # assume the pixel is square
+        xres = -yres
+    else:
+        yres = -xres
+
+    xoff = obj[dims[1]].values[0] - xres/2.
+    yoff = obj[dims[0]].values[0] - yres/2.
 
     return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
 
