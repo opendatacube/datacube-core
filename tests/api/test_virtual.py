@@ -352,6 +352,7 @@ def test_expressions(dc, query):
             bluegreen:
                 formula: blue + green
                 nodata: -999
+            blue: blue
         input:
             product: ls8_nbar_albers
             measurements: [blue, green]
@@ -368,6 +369,9 @@ def test_expressions(dc, query):
 
     assert 'bluegreen' in data
     assert numpy.all((data.bluegreen == -999).values)
+    assert 'blue' in data
+    assert numpy.all((data.blue == -999).values)
+    assert 'green' not in data
 
 
 def test_aggregate(dc, query, catalog):
