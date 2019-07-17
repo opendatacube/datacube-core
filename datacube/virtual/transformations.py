@@ -273,6 +273,10 @@ class Expressions(Transformation):
             return result.dtype
 
         def measurement(output_var, output_desc):
+            if isinstance(output_desc, str):
+                # copy measurement over
+                return input_measurements[output_desc]
+
             return Measurement(name=output_var, dtype=deduce_type(output_var, output_desc),
                                nodata=output_desc.get('nodata', float('nan')),
                                units=output_desc.get('units', '1'))
@@ -320,6 +324,10 @@ class Expressions(Transformation):
 
         def result(output_var, output_desc):
             # pylint: disable=invalid-unary-operand-type
+
+            if isinstance(output_desc, str):
+                # copy measurement over
+                return data[output_desc]
 
             nodata = output_desc.get('nodata')
 
