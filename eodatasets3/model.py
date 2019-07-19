@@ -68,17 +68,83 @@ class AccessoryDoc:
     name: str = attr.ib(metadata=dict(doc_exclude=True), default=None)
 
 
-class DeaNamingConventions:
-    def __init__(self, dataset: EoFields, base_uri: str = None) -> None:
+class ComplicatedNamingConventions:
+    """
+    Naming conventions based on the DEA standard.
+
+    Unlike the DEA standard, almost every field is optional by default.
+    """
+
+    _ABSOLUTE_MINIMAL_PROPERTIES = {
+        "odc:product_family",
+        # Required by Stac regardless.
+        "datetime",
+    }
+
+    # Displayed to user for friendlier errors.
+    _REQUIRED_PROPERTY_HINTS = {
+        "odc:product_family": 'eg. "wofs" or "level1"',
+        "odc:processing_datetime": "Time of processing, perhaps datetime.utcnow()?",
+        "odc:producer": "Creator of data, eg 'usgs.gov' or 'ga.gov.au'",
+    }
+
+    def __init__(
+        self,
+        dataset: EoFields,
+        base_uri: str = None,
+        required_fields: Sequence[str] = (),
+    ) -> None:
         self.dataset = dataset
         self.base_uri = base_uri
+        self.required_fields = self._ABSOLUTE_MINIMAL_PROPERTIES.union(required_fields)
+
+    @classmethod
+    def for_standard_dea(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
+        """
+        Strict mode to follow the full DEA naming conventions.
+
+        Only use the (default) DEA URI if you're making DEA products.
+        """
+        return cls(
+            dataset=dataset,
+            base_uri=uri,
+            # These fields are needed to fulfill official DEA naming conventions.
+            required_fields=(
+                # TODO: Add conventions for multi-platform/composite products?
+                "eo:instrument",
+                "eo:platform",
+                "odc:dataset_version",
+                "odc:processing_datetime",
+                "odc:producer",
+                "odc:product_family",
+                "odc:region_code",
+            ),
+        )
+
+    def _check_enough_properties_to_name(self):
+        """
+        Do we have enough properties to generate file or product names?
+        """
+        for f in self.required_fields:
+            if f not in self.dataset.properties:
+                raise ValueError(
+                    f"Property {f!r} is required. "
+                    f"{self._REQUIRED_PROPERTY_HINTS.get(f, '')}"
+                )
 
     @property
     def product_name(self) -> str:
-        return f"{self._product_group()}_{self._org_collection_number}"
+        self._check_enough_properties_to_name()
+
+        org_number = self._org_collection_number
+        if org_number:
+            return f"{self._product_group()}_{org_number}"
+        return self._product_group()
 
     @property
-    def _org_collection_number(self):
+    def _org_collection_number(self) -> Optional[int]:
+        if not self.dataset.dataset_version:
+            return None
         return int(self.dataset.dataset_version.split(".")[0])
 
     def _product_group(self, subname=None):
@@ -86,15 +152,27 @@ class DeaNamingConventions:
         if not subname:
             subname = self.dataset.product_family
 
-        return "{producer}_{platform}{instrument}_{family}".format(
-            producer=self.producer_abbreviated,
-            platform=self.platform_abbreviated,
-            instrument=self.instrument_abbreviated,
-            family=subname,
-        )
+        parts = []
+        if self.producer_abbreviated:
+            parts.append(self.producer_abbreviated)
+
+        platform = self.platform_abbreviated
+        inst = self.instrument_abbreviated
+        if platform and inst:
+            parts.append(f"{platform}{inst}")
+
+        if not subname:
+            raise ValueError(
+                "Not even metadata to create a useful filename! "
+                'Set the `product_family` (eg. "wofs") or a subname'
+            )
+        parts.append(subname)
+
+        return "_".join(parts)
 
     @property
     def product_uri(self) -> Optional[str]:
+        self._check_enough_properties_to_name()
         if not self.base_uri:
             return None
 
@@ -105,33 +183,49 @@ class DeaNamingConventions:
         """
         Label for a dataset
         """
+        self._check_enough_properties_to_name()
         # TODO: Dataset label Configurability?
         d = self.dataset
         version = d.dataset_version.replace(".", "-")
 
-        fs = (f"{self.product_name}-{version}", d.region_code, f"{d.datetime:%Y-%m-%d}")
+        fs = (
+            f"{self.product_name}-{version}",
+            self._displayable_region_code,
+            f"{d.datetime:%Y-%m-%d}",
+        )
 
         if "dea:dataset_maturity" in d:
             fs = fs + (d.properties["dea:dataset_maturity"],)
         return "_".join(fs)
 
     def destination_folder(self, base: Path):
+        self._check_enough_properties_to_name()
         # DEA naming conventions folder hierarchy.
         # Example: "ga_ls8c_ard_3/092/084/2016/06/28"
 
-        # Cut the reference code in subfolders
-        code = utils.subfolderise(self.dataset.region_code)
-        return base / f"{self.product_name}/{code}/{self.dataset.datetime:%Y/%m/%d}"
+        parts = [self.product_name]
+
+        # Cut the region code in subfolders
+        region_code = self.dataset.region_code
+        if region_code:
+            parts.extend(utils.subfolderise(region_code))
+
+        parts.extend(f"{self.dataset.datetime:%Y/%m/%d}".split("/"))
+
+        return base.joinpath(*parts)
 
     def metadata_path(self, work_dir: Path, kind: str = "", suffix: str = "yaml"):
+        self._check_enough_properties_to_name()
         return self._file(work_dir, kind, suffix)
 
     def checksum_path(self, work_dir: Path, suffix: str = "sha1"):
+        self._check_enough_properties_to_name()
         return self._file(work_dir, "", suffix)
 
     def measurement_file_path(
         self, work_dir: Path, measurement_name: str, suffix: str, file_id: str = None
     ) -> Path:
+        self._check_enough_properties_to_name()
         if ":" in measurement_name:
             subgroup, name = measurement_name.split(":")
         else:
@@ -147,24 +241,33 @@ class DeaNamingConventions:
 
     def _file(self, work_dir: Path, file_id: str, suffix: str, sub_name: str = None):
         p = self.dataset
-        version = p.dataset_version.replace(".", "-")
-
-        if file_id:
-            end = f'{p.properties["dea:dataset_maturity"]}_{file_id.replace("_", "-")}.{suffix}'
+        if p.dataset_version:
+            version = p.dataset_version.replace(".", "-")
         else:
-            end = f'{p.properties["dea:dataset_maturity"]}.{suffix}'
+            version = "beta"
+
+        maturity = p.properties.get("dea:dataset_maturity") or "user"
+        if file_id:
+            end = f'{maturity}_{file_id.replace("_", "-")}.{suffix}'
+        else:
+            end = f"{maturity}.{suffix}"
 
         return work_dir / "_".join(
             (
                 self._product_group(sub_name),
                 version,
-                p.region_code,
+                self._displayable_region_code,
                 f"{p.datetime:%Y-%m-%d}",
                 end,
             )
         )
 
+    @property
+    def _displayable_region_code(self):
+        return self.dataset.region_code or "x"
+
     def thumbnail_name(self, work_dir: Path, kind: str = None, suffix: str = "jpg"):
+        self._check_enough_properties_to_name()
         if kind:
             name = f"{kind}:thumbnail"
         else:
@@ -172,9 +275,12 @@ class DeaNamingConventions:
         return self.measurement_file_path(work_dir, name, suffix)
 
     @property
-    def platform_abbreviated(self) -> str:
+    def platform_abbreviated(self) -> Optional[str]:
         """Abbreviated form of a satellite, as used in dea product names. eg. 'ls7'."""
         p = self.dataset.platform
+        if not p:
+            return None
+
         if not p.startswith("landsat"):
             raise NotImplementedError(
                 f"TODO: implement non-landsat platform abbreviation " f"(got {p!r})"
@@ -183,9 +289,11 @@ class DeaNamingConventions:
         return f"ls{p[-1]}"
 
     @property
-    def instrument_abbreviated(self) -> str:
+    def instrument_abbreviated(self) -> Optional[str]:
         """Abbreviated form of an instrument name, as used in dea product names. eg. 'c'."""
         p = self.dataset.platform
+        if not p:
+            return None
         if not p.startswith("landsat"):
             raise NotImplementedError(
                 f"TODO: implement non-landsat instrument abbreviation " f"(got {p!r})"
@@ -199,7 +307,7 @@ class DeaNamingConventions:
         ) or self.dataset.properties.get("landsat:landsat_scene_id")
         if not landsat_id:
             raise NotImplementedError(
-                f"TODO: Can only currently abbreviate instruments from landsat refernces."
+                f"TODO: Can only currently abbreviate instruments from landsat references."
             )
 
         return landsat_id[1].lower()
