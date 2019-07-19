@@ -86,6 +86,7 @@ class ComplicatedNamingConventions:
         "odc:product_family": 'eg. "wofs" or "level1"',
         "odc:processing_datetime": "Time of processing, perhaps datetime.utcnow()?",
         "odc:producer": "Creator of data, eg 'usgs.gov' or 'ga.gov.au'",
+        "odc:dataset_version": "eg. 1.0.0",
     }
 
     def __init__(
@@ -125,12 +126,22 @@ class ComplicatedNamingConventions:
         """
         Do we have enough properties to generate file or product names?
         """
+        missing_props = []
         for f in self.required_fields:
             if f not in self.dataset.properties:
-                raise ValueError(
-                    f"Property {f!r} is required. "
-                    f"{self._REQUIRED_PROPERTY_HINTS.get(f, '')}"
-                )
+                missing_props.append(f)
+        if missing_props:
+            examples = []
+            for p in sorted(missing_props):
+                hint = self._REQUIRED_PROPERTY_HINTS.get(p, "")
+                if hint:
+                    hint = f" ({hint})"
+                examples.append(f"\n- {p!r}{hint}")
+
+            raise ValueError(
+                f"Need more properties to fulfill naming conventions."
+                f"{''.join(examples)}"
+            )
 
     @property
     def product_name(self) -> str:
