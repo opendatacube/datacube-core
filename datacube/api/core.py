@@ -447,7 +447,7 @@ class Datacube(object):
         for name, coord in coords.items():
             result[name] = coord
         for name, coord in geobox.coordinates.items():
-            result[name] = (name, coord.values, {'units': coord.units})
+            result[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
 
         for measurement in measurements:
             data = data_func(measurement)

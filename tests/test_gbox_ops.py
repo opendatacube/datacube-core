@@ -18,7 +18,6 @@ def test_gbox_ops():
     assert d.resolution == (-s.resolution[0], s.resolution[1])
     assert d.extent.contains(s.extent)
     with pytest.raises(ValueError):
-        # not the same resolution
         (s | d)
 
     d = gbx.flipx(s)
@@ -46,7 +45,6 @@ def test_gbox_ops():
     assert d.extent.contains(s.extent)
     assert all(ds < ss for ds, ss in zip(d.shape, s.shape))
     with pytest.raises(ValueError):
-        # not the same resolution
         (s | d)
 
     d = gbx.zoom_to(s, s.shape)

@@ -11,7 +11,7 @@ from osgeo import ogr, osr
 
 from .tools import roi_normalise, roi_shape
 
-Coordinate = namedtuple('Coordinate', ('values', 'units'))
+Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
 _BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
 
 # pylint: disable=too-many-lines
@@ -949,8 +949,8 @@ class GeoBox(object):
 
         crs = self.crs
 
-        return OrderedDict((dim, Coordinate(labels, units))
-                           for dim, labels, units in zip(crs.dimensions, (ys, xs), crs.units))
+        return OrderedDict((dim, Coordinate(labels, units, res))
+                           for dim, labels, units, res in zip(crs.dimensions, (ys, xs), crs.units, (yres, xres)))
 
     @property
     def geographic_extent(self):
