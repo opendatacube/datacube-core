@@ -473,6 +473,9 @@ class Geometry(object):
         """
         clone = self._geom.Clone()
         clone.Segmentize(resolution)
+        # Segmentize can cause issues with polygons using GDAL 2.4.1
+        # See: https://github.com/OSGeo/gdal/issues/1414
+        clone.CloseRings()
         return _make_geom_from_ogr(clone, self.crs)
 
     def interpolate(self, distance):
@@ -516,6 +519,9 @@ class Geometry(object):
             clone = _chop_along_antimeridian(clone, transform, rtransform)
 
         clone.Segmentize(resolution)
+        # Segmentize can cause issues with polygons using GDAL 2.4.1
+        # See: https://github.com/OSGeo/gdal/issues/1414
+        clone.CloseRings()
         clone.Transform(transform)
 
         return _make_geom_from_ogr(clone, crs)  # pylint: disable=protected-access
@@ -570,6 +576,9 @@ def _chop_along_antimeridian(geom, transform, rtransform):
 
     left_of_dt = _make_line([(180 - eps, -90), (180 - eps, 90)])
     left_of_dt.Segmentize(1)
+    # Segmentize can cause issues with polygons using GDAL 2.4.1
+    # See: https://github.com/OSGeo/gdal/issues/1414
+    left_of_dt.CloseRings()
     left_of_dt.Transform(rtransform)
 
     if not left_of_dt.Intersects(geom):
@@ -577,6 +586,9 @@ def _chop_along_antimeridian(geom, transform, rtransform):
 
     right_of_dt = _make_line([(-180 + eps, -90), (-180 + eps, 90)])
     right_of_dt.Segmentize(1)
+    # Segmentize can cause issues with polygons using GDAL 2.4.1
+    # See: https://github.com/OSGeo/gdal/issues/1414
+    right_of_dt.CloseRings()
     right_of_dt.Transform(rtransform)
 
     chopper = _make_multipolygon([[[(minx, maxy), (minx, miny)] + left_of_dt.GetPoints() + [(minx, maxy)]],
