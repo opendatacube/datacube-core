@@ -720,7 +720,7 @@ class Reproject(VirtualProduct):
         result.coords['time'] = grouped.box.coords['time']
 
         for name, coord in grouped.geobox.coordinates.items():
-            result.coords[name] = (name, coord.values, {'units': coord.units})
+            result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
 
         for measurement in measurements:
             result[measurement] = xarray.concat([reproject_band(raster[measurement],
@@ -752,8 +752,12 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
         subset_band = band[(...,) + slices].chunk(-1)
         dsk.update(subset_band.data.dask)
         band_key = list(flatten(subset_band.data.__dask_keys__()))[0]
-        dsk[(dsk_name,) + tile_index] = (reproject_array,
-                                         band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
+
+        if min(subset_band.shape) == 0:
+            dsk[(dsk_name,) + tile_index] = (numpy.full, sub_geobox.shape, band.nodata, band.dtype)
+        else:
+            dsk[(dsk_name,) + tile_index] = (reproject_array,
+                                             band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
 
     data = dask.array.Array(dsk, dsk_name,
                             chunks=spatial_chunks,
@@ -784,7 +788,7 @@ def wrap_in_dataarray(reprojected_data, src_band, dst_geobox, dims):
     result.coords['time'] = src_band.coords['time']
 
     for name, coord in dst_geobox.coordinates.items():
-        result.coords[name] = (name, coord.values, {'units': coord.units})
+        result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
 
     result.attrs['crs'] = dst_geobox.crs
     return result
