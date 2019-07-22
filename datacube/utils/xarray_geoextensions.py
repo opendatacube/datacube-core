@@ -36,7 +36,7 @@ def _xarray_affine(obj):
         xres, xoff = data_resolution_and_offset(obj[dims[1]].values)
         yres, yoff = data_resolution_and_offset(obj[dims[0]].values)
 
-    except KeyError:
+    except ValueError:
         xres = obj[dims[1]].attrs['resolution']
         xoff = obj[dims[1]].values[0] - xres / 2
         yres = obj[dims[0]].attrs['resolution']
