@@ -126,6 +126,9 @@ def data_resolution_and_offset(data):
     >>> data_resolution_and_offset(numpy.array([5, 3, 1]))
     (-2.0, 6.0)
     """
+    if data.size < 2:
+        raise ValueError("Can't calculate resolution with data size < 2")
+
     res = (data[data.size - 1] - data[0]) / (data.size - 1.0)
     off = data[0] - 0.5 * res
     return res.item(), off.item()
