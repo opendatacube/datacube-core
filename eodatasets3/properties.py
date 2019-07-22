@@ -347,6 +347,12 @@ class EoFields(metaclass=ABCMeta):
     def processed(self, value):
         self.properties["odc:processing_datetime"] = value
 
+    def processed_now(self):
+        """
+        Shorthand for when the dataset was processed right now on the current system.
+        """
+        self.properties["odc:processing_datetime"] = datetime.utcnow()
+
     @property
     def dataset_version(self) -> str:
         """
