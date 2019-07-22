@@ -102,7 +102,8 @@ class ApplyMask(Transformation):
             # pylint: disable=invalid-unary-operand-type
             y, x = numpy.ogrid[-self.dilation:(self.dilation+1), -self.dilation:(self.dilation+1)]
             kernel = ((x * x) + (y * y) <= (self.dilation + 0.5) ** 2)  # disk-like `self.dilation` radial dilation
-            return ~scipy.ndimage.binary_dilation(~array, structure=kernel.reshape((1, )+kernel.shape))
+            return ~scipy.ndimage.binary_dilation(~array.astype(numpy.bool),
+                                                  structure=kernel.reshape((1, )+kernel.shape))
 
         if self.dilation > 0:
             import scipy.ndimage
