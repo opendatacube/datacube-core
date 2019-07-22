@@ -259,6 +259,14 @@ class EoFields(metaclass=ABCMeta):
 
     @property
     def platform(self) -> Optional[str]:
+        """
+        Unique name of the specific platform the instrument is attached to.
+
+        For satellites this would be the name of the satellite (e.g., landsat-8, sentinel-2A),
+        whereas for drones this would be a unique name for the drone.
+
+        Shorthand for 'eo:platform' property
+        """
         return self.properties.get("eo:platform")
 
     @platform.setter
@@ -267,6 +275,11 @@ class EoFields(metaclass=ABCMeta):
 
     @property
     def instrument(self) -> str:
+        """
+        Name of instrument or sensor used (e.g., MODIS, ASTER, OLI, Canon F-1).
+
+        Shorthand for 'eo:instrument' property
+        """
         return self.properties.get("eo:instrument")
 
     @instrument.setter
@@ -279,6 +292,8 @@ class EoFields(metaclass=ABCMeta):
         Organisation that produced the data.
 
         eg. usgs.gov or ga.gov.au
+
+        Shorthand for 'odc:producer' property
         """
         return self.properties.get("odc:producer")
 
@@ -287,7 +302,15 @@ class EoFields(metaclass=ABCMeta):
         self.properties["odc:producer"] = domain
 
     @property
-    def datetime_range(self):
+    def datetime_range(self) -> Tuple[datetime, datetime]:
+        """
+        An optional date range for the dataset.
+
+        The `datetime` is still mandatory when this is set.
+
+        This field is a shorthand for reading/setting the datetime-range
+        stac extension properties: 'dtr:start_datetime' and 'dtr:end_datetime'
+        """
         return (
             self.properties.get("dtr:start_datetime"),
             self.properties.get("dtr:end_datetime"),
@@ -302,6 +325,9 @@ class EoFields(metaclass=ABCMeta):
 
     @property
     def datetime(self) -> datetime:
+        """
+        The searchable date and time of the assets. (Default to UTC if not specified)
+        """
         return self.properties.get("datetime")
 
     @datetime.setter
@@ -312,6 +338,8 @@ class EoFields(metaclass=ABCMeta):
     def processed(self) -> datetime:
         """
         When the dataset was processed (Default to UTC if not specified)
+
+        Shorthand for the 'odc:processing_datetime' field
         """
         return self.properties.get("odc:processing_datetime")
 
@@ -320,7 +348,16 @@ class EoFields(metaclass=ABCMeta):
         self.properties["odc:processing_datetime"] = value
 
     @property
-    def dataset_version(self):
+    def dataset_version(self) -> str:
+        """
+        The version of the dataset.
+
+        Typically digits separated by a dot. Eg. '1.0.0'
+
+        The first digit is usually the collection number for
+        this 'producer' organisation, such as USGS Collection 1 or
+        GA Collection 3.
+        """
         return self.properties.get("odc:dataset_version")
 
     @dataset_version.setter
@@ -328,7 +365,20 @@ class EoFields(metaclass=ABCMeta):
         self.properties["odc:dataset_version"] = value
 
     @property
-    def product_family(self):
+    def product_family(self) -> str:
+        """
+        The identifier for this "family" of products, such as 'ard', 'level1` or 'fc'.
+        It's used for grouping similar products together.
+
+        They products in a family are usually produced the same way but have small variations:
+        they come from different sensors, or are written in different projections, etc.
+
+        'ard' family of products: 'ls7_ard', 'ls5_ard' ....
+
+        On older versions of opendatacube this was called "product_type".
+
+        Shorthand for 'odc:product_family' property.
+        """
         return self.properties.get("odc:product_family")
 
     @product_family.setter
@@ -336,7 +386,20 @@ class EoFields(metaclass=ABCMeta):
         self.properties["odc:product_family"] = value
 
     @property
-    def region_code(self) -> str:
+    def region_code(self) -> Optional[str]:
+        """
+        The "region" of acquisition. This is a platform-agnostic representation of things like
+        the Landsat Path+Row. Datasets with the same Region Code will *roughly* (but usually
+        not *exactly*) cover the same spatial footprint.
+
+        It's generally treated as an opaque string to group datasets and process as stacks.
+
+        For Landsat products it's the concatenated '{path}{row}' (both numbers formatted to three digits).
+
+        For Sentinel 2, it's the MGRS grid (TODO presumably?).
+
+        Shorthand for 'odc:region_code' property.
+        """
         return self.properties.get("odc:region_code")
 
     @region_code.setter
