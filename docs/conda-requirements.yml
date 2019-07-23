@@ -93,7 +93,7 @@ dependencies:
   - pillow=6.0.0=py37he7afcd5_0
   - pip=19.0.3=py37_0
   - pixman=0.34.0=h14c3975_1003
-  - poppler=0.67.0=h4d7e492_3
+  - poppler=<66
   - poppler-data=0.4.9=1
   - postgresql=11.2=h61314c7_0
   - proj4=5.2.0=he1b5a44_1004
