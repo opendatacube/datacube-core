@@ -142,7 +142,8 @@ def catalog():
 
             mean_blue:
                 recipe:
-                    aggregate: mean
+                    aggregate: xarray_reduction
+                    method: mean
                     group_by: month
                     input:
                         transform: to_float

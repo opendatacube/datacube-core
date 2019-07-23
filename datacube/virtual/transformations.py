@@ -381,16 +381,37 @@ def day(time):
 
 # TODO: all time stats
 
-class Mean(Transformation):
+class XarrayReduction(Transformation):
     """
-    Take the mean of the measurements.
+    Apply an `xarray` reduction method to the data.
     """
 
-    def __init__(self, dim='time'):
+    def __init__(self, method=None, apply_to=None, dtype=None, dim='time', **kwargs):
+        if method is None:
+            raise VirtualProductException("no method specified in xarray reduction")
+
+        self.method = method
+        self.kwargs = kwargs
+        self.apply_to = apply_to
+        self.dtype = dtype
         self.dim = dim
 
     def measurements(self, input_measurements):
-        return input_measurements
+        def worker(_, value):
+            if self.dtype is None:
+                return value
+
+            result = value.copy()
+            result['dtype'] = self.dtype
+            return Measurement(**result)
+
+        return selective_apply_dict(input_measurements,
+                                    apply_to=self.apply_to, value_map=worker)
 
     def compute(self, data):
-        return data.mean(dim=self.dim)
+        func = getattr(xarray.DataArray, self.method)
+
+        def worker(_, value):
+            return func(value, dim=self.dim, **self.kwargs)
+
+        return selective_apply(data, apply_to=self.apply_to, value_map=worker)
