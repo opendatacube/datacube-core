@@ -3,7 +3,7 @@ from typing import Mapping, Any
 from .impl import VirtualProduct, Transformation, VirtualProductException
 from .impl import from_validated_recipe
 from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select, Expressions
-from .transformations import Mean, year, month, week, day
+from .transformations import XarrayReduction, year, month, week, day
 from .catalog import Catalog
 from .utils import reject_keys
 
@@ -113,7 +113,7 @@ DEFAULT_RESOLVER = NameResolver({'transform': dict(make_mask=MakeMask,
                                                    rename=Rename,
                                                    select=Select,
                                                    expressions=Expressions),
-                                 'aggregate': dict(mean=Mean),
+                                 'aggregate': dict(xarray_reduction=XarrayReduction),
                                  'aggregate/group_by': dict(year=year,
                                                             month=month,
                                                             week=week,
