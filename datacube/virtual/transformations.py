@@ -266,6 +266,9 @@ class Expressions(Transformation):
         ev = EvaluateType()
 
         def deduce_type(output_var, output_desc):
+            if 'dtype' in output_desc:
+                return numpy.dtype(output_desc['dtype'])
+
             formula = output_desc['formula']
             tree = parser.parse(formula)
 
@@ -330,6 +333,7 @@ class Expressions(Transformation):
                 return data[output_desc]
 
             nodata = output_desc.get('nodata')
+            dtype = output_desc.get('dtype')
 
             formula = output_desc['formula']
             tree = parser.parse(formula)
@@ -340,9 +344,14 @@ class Expressions(Transformation):
             result.attrs['units'] = output_desc.get('units', '1')
 
             if not self.masked:
-                return result
+                if dtype is None:
+                    return result
+                return result.astype(dtype)
 
             # masked output
+            if dtype is not None:
+                result = result.astype(dtype)
+
             dtype = result.dtype
             mask = ev_mask.transform(tree)
 
