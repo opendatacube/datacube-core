@@ -71,7 +71,7 @@ python-dateutil==2.7.2
 pytz==2018.4
 pytzdata==2018.4
 PyYAML==3.12
-rasterio==1.0.22  # rq.filter: >=1.0.21,<1.1
+rasterio==1.0.24  # rq.filter: >=1.0.21,<1.1
 redis==2.10.6
 regex==2017.7.28
 requests==2.20.1
