@@ -68,7 +68,7 @@ def test_gbox_ops():
     d = gbx.pad_wh(s, 100, 8)
     assert d.width == s.width
     assert d.height % 8 == 0
-    assert d.height > s.height
+    assert 0 < d.height - s.height < 8
     assert d.affine == s.affine
     assert d.crs is s.crs
 
@@ -77,8 +77,8 @@ def test_gbox_ops():
     assert d.crs is s.crs
     assert d.height % 17 == 0
     assert d.width % 13 == 0
-    assert d.height > s.height
-    assert d.width > s.width
+    assert 0 < d.height - s.height < 17
+    assert 0 < d.width - s.width < 13
 
     d = gbx.translate_pix(s, 1, 2)
     assert d.crs is s.crs
