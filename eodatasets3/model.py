@@ -149,7 +149,7 @@ class ComplicatedNamingConventions:
             return None
         return int(self.dataset.dataset_version.split(".")[0])
 
-    def _product_group(self, subname=None):
+    def _product_group(self, subname=None) -> str:
         # Fallback to the whole product's name
         if not subname:
             subname = self.dataset.product_family
@@ -243,30 +243,32 @@ class ComplicatedNamingConventions:
 
     def _file(self, work_dir: Path, file_id: str, suffix: str, sub_name: str = None):
         p = self.dataset
-        if p.dataset_version:
-            version = p.dataset_version.replace(".", "-")
-        else:
-            version = "beta"
 
-        maturity = p.properties.get("dea:dataset_maturity") or "user"
-        if file_id:
-            end = f'{maturity}_{file_id.replace("_", "-")}.{suffix}'
-        else:
-            end = f"{maturity}.{suffix}"
+        version = p.dataset_version.replace(".", "-") if p.dataset_version else None
+        maturity: str = p.properties.get("dea:dataset_maturity")
+        file_id = file_id.replace("_", "-") if file_id else None
 
-        return work_dir / "_".join(
-            (
-                self._product_group(sub_name),
-                version,
-                self._displayable_region_code,
-                f"{p.datetime:%Y-%m-%d}",
-                end,
+        return work_dir / (
+            "_".join(
+                [
+                    p
+                    for p in (
+                        self._product_group(sub_name),
+                        version,
+                        self._displayable_region_code,
+                        f"{p.datetime:%Y-%m-%d}",
+                        maturity,
+                        file_id,
+                    )
+                    if p
+                ]
             )
+            + f".{suffix}"
         )
 
     @property
     def _displayable_region_code(self):
-        return self.dataset.region_code or "x"
+        return self.dataset.region_code
 
     def thumbnail_name(self, work_dir: Path, kind: str = None, suffix: str = "jpg"):
         self._check_enough_properties_to_name()
