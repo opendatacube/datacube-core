@@ -7,6 +7,7 @@ import math
 from affine import Affine
 
 from . import Geometry, GeoBox, BoundingBox
+from .tools import align_up
 from datacube.utils.math import clamp
 
 # pylint: disable=invalid-name
@@ -53,6 +54,20 @@ def pad(gbox: GeoBox, padx: int, pady: MaybeInt = None) -> GeoBox:
     H, W = gbox.shape
     A = gbox.affine*Affine.translation(-padx, -pady)
     return GeoBox(W + padx*2, H + pady*2, A, gbox.crs)
+
+
+def pad_wh(gbox: GeoBox,
+           alignx: int = 16,
+           aligny: MaybeInt = None) -> GeoBox:
+    """
+    Expand GeoBox such that width and height are multiples of supplied number.
+    """
+    aligny = alignx if aligny is None else aligny
+    H, W = gbox.shape
+
+    return GeoBox(align_up(W, alignx),
+                  align_up(H, aligny),
+                  gbox.affine, gbox.crs)
 
 
 def zoom_out(gbox: GeoBox, factor: float) -> GeoBox:

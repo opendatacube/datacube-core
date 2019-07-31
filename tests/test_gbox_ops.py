@@ -62,6 +62,24 @@ def test_gbox_ops():
     assert d[1:-1, 1:-1].affine == s.affine
     assert d[1:-1, 1:-1].shape == s.shape
 
+    d = gbx.pad_wh(s, 10)
+    assert d == s
+
+    d = gbx.pad_wh(s, 100, 8)
+    assert d.width == s.width
+    assert d.height % 8 == 0
+    assert d.height > s.height
+    assert d.affine == s.affine
+    assert d.crs is s.crs
+
+    d = gbx.pad_wh(s, 13, 17)
+    assert d.affine == s.affine
+    assert d.crs is s.crs
+    assert d.height % 17 == 0
+    assert d.width % 13 == 0
+    assert d.height > s.height
+    assert d.width > s.width
+
     d = gbx.translate_pix(s, 1, 2)
     assert d.crs is s.crs
     assert d.resolution == s.resolution
