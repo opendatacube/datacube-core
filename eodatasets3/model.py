@@ -186,19 +186,7 @@ class ComplicatedNamingConventions:
         Label for a dataset
         """
         self._check_enough_properties_to_name()
-        # TODO: Dataset label Configurability?
-        d = self.dataset
-        version = d.dataset_version.replace(".", "-")
-
-        fs = (
-            f"{self.product_name}-{version}",
-            self._displayable_region_code,
-            f"{d.datetime:%Y-%m-%d}",
-        )
-
-        if "dea:dataset_maturity" in d:
-            fs = fs + (d.properties["dea:dataset_maturity"],)
-        return "_".join(fs)
+        return self._dataset_label()
 
     def destination_folder(self, base: Path):
         self._check_enough_properties_to_name()
@@ -241,29 +229,30 @@ class ComplicatedNamingConventions:
             sub_name=subgroup,
         )
 
-    def _file(self, work_dir: Path, file_id: str, suffix: str, sub_name: str = None):
+    def _dataset_label(self, sub_name: str = None):
         p = self.dataset
 
         version = p.dataset_version.replace(".", "-") if p.dataset_version else None
         maturity: str = p.properties.get("dea:dataset_maturity")
-        file_id = file_id.replace("_", "-") if file_id else None
+        return "_".join(
+            [
+                p
+                for p in (
+                    self._product_group(sub_name),
+                    version,
+                    self._displayable_region_code,
+                    f"{p.datetime:%Y-%m-%d}",
+                    maturity,
+                )
+                if p
+            ]
+        )
+
+    def _file(self, work_dir: Path, file_id: str, suffix: str, sub_name: str = None):
+        file_id = "_" + file_id.replace("_", "-") if file_id else ""
 
         return work_dir / (
-            "_".join(
-                [
-                    p
-                    for p in (
-                        self._product_group(sub_name),
-                        version,
-                        self._displayable_region_code,
-                        f"{p.datetime:%Y-%m-%d}",
-                        maturity,
-                        file_id,
-                    )
-                    if p
-                ]
-            )
-            + f".{suffix}"
+            f"{self._dataset_label(sub_name=sub_name)}{file_id}.{suffix}"
         )
 
     @property
@@ -333,6 +322,7 @@ class ComplicatedNamingConventions:
 @attr.s(auto_attribs=True, slots=True)
 class DatasetDoc(EoFields):
     id: UUID = None
+    label: str = None
     product: ProductDoc = None
     locations: List[str] = None
 
