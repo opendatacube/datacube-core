@@ -740,24 +740,23 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
         data = reproject_array(band.data, band.nodata, band.geobox, geobox, resampling)
         return wrap_in_dataarray(data, band, geobox, dims)
 
-    token = uuid.uuid4().hex
-    dsk_name = 'warp_{name}-{token}'.format(name=band.name, token=token)
+    dsk_name = 'warp_{name}-{token}'.format(name=band.name, token=uuid.uuid4().hex)
     dsk = band.data.dask
     dependencies = [band.data]
 
     spatial_chunks = tuple(dask_chunks[k] for k in geobox.dims)
     gt = GeoboxTiles(geobox, spatial_chunks)
     new_layer = {}
+
     for tile_index in numpy.ndindex(gt.shape):
         sub_geobox = gt[tile_index]
-        slices = subset_geobox_slices(band.geobox, sub_geobox.extent)
-        subset_band = band[(...,) + slices].chunk(-1)
-        dependencies.append(subset_band.data)
-        band_key = list(flatten(subset_band.data.__dask_keys__()))[0]
+        subset_band = band[(...,) + subset_geobox_slices(band.geobox, sub_geobox.extent)].chunk(-1)
 
         if min(subset_band.shape) == 0:
             new_layer[(dsk_name,) + tile_index] = (numpy.full, sub_geobox.shape, band.nodata, band.dtype)
         else:
+            dependencies.append(subset_band.data)
+            band_key = list(flatten(subset_band.data.__dask_keys__()))[0]
             new_layer[(dsk_name,) + tile_index] = (reproject_array,
                                                    band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
 
