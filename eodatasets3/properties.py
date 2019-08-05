@@ -171,7 +171,6 @@ class StacPropertyView(collections.abc.Mapping):
     KNOWN_STAC_PROPERTIES: Mapping[str, Optional[NormaliseValueFn]] = {
         "datetime": datetime_type,
         "dea:dataset_maturity": of_enum_type(("final", "interim", "nrt"), lower=True),
-        "dea:processing_level": None,
         "dtr:end_datetime": datetime_type,
         "dtr:start_datetime": datetime_type,
         "eo:azimuth": float,
