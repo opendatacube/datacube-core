@@ -340,7 +340,8 @@ class Product(VirtualProduct):
         result = Datacube.load_data(grouped.box,
                                     geobox, list(measurement_dicts.values()),
                                     fuse_func=merged.get('fuse_func'),
-                                    dask_chunks=merged.get('dask_chunks'))
+                                    dask_chunks=merged.get('dask_chunks'),
+                                    resampling=merged.get('resampling', 'nearest'))
 
         return apply_aliases(result, grouped.product_definitions[self._product], list(measurement_dicts))
 
