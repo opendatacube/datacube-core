@@ -178,7 +178,7 @@ class StacPropertyView(collections.abc.Mapping):
         "eo:epsg": None,
         "eo:gsd": None,
         "eo:instrument": None,
-        "eo:off_nadir": None,
+        "eo:off_nadir": float,
         "eo:platform": normalise_platform,
         "eo:constellation": None,
         "eo:sun_azimuth": degrees_type,
@@ -410,3 +410,17 @@ class EoFields(metaclass=ABCMeta):
     @region_code.setter
     def region_code(self, value: str):
         self.properties["odc:region_code"] = value
+
+    @property
+    def maturity(self) -> str:
+        """
+        The dataset maturity. The same data may be processed multiple times -- becoming more
+        mature -- as new ancillary data becomes available.
+
+        Typical values (from least to most mature): "nrt", "interim", "final"
+        """
+        return self.properties.get("dea:dataset_maturity")
+
+    @maturity.setter
+    def maturity(self, value):
+        self.properties["dea:dataset_maturity"] = value
