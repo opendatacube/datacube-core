@@ -4,6 +4,7 @@ Catalog of virtual products.
 
 from collections.abc import Mapping
 
+
 class Catalog(Mapping):
     """
     A catalog of virtual products specified in a yaml document.
