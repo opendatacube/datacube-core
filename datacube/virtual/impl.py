@@ -65,9 +65,10 @@ class VirtualDatasetBag:
 
 class VirtualDatasetBox:
     """ Result of `VirtualProduct.group`. """
+
     def __init__(self, box, geobox, load_natively, product_definitions, geopolygon=None):
         if not load_natively and geobox is None:
-            raise VirtualProductException("VirtualDatasetBox has not geobox")
+            raise VirtualProductException("VirtualDatasetBox has no geobox")
         if not load_natively and geopolygon is not None:
             raise VirtualProductException("unexpected geopolygon for VirtualDatasetBox")
 
@@ -76,6 +77,47 @@ class VirtualDatasetBox:
         self.load_natively = load_natively
         self.product_definitions = product_definitions
         self.geopolygon = geopolygon
+
+    def __repr__(self):
+        if not self.load_natively:
+            return "<VirtualDatasetBox of shape {}>".format(dict(zip(self.dims, self.shape)))
+
+        return "<natively loaded VirtualDatasetBox>"
+
+    @property
+    def dims(self):
+        """
+        Names of the dimensions, e.g., ``('time', 'y', 'x')``.
+        :return: tuple(str)
+        """
+        if self.load_natively:
+            raise VirtualProductException("dims requires known geobox")
+
+        return self.box.dims + self.geobox.dimensions
+
+    @property
+    def shape(self):
+        """
+        Lengths of each dimension, e.g., ``(285, 4000, 4000)``.
+        :return: tuple(int)
+        """
+        if self.load_natively:
+            raise VirtualProductException("shape requires known geobox")
+
+        return self.box.shape + self.geobox.shape
+
+    def __getitem__(self, chunk):
+        if self.load_natively:
+            raise VirtualProductException("slicing requires known geobox")
+
+        # TODO implement this properly
+        box = self.box
+
+        return VirtualDatasetBox(_fast_slice(box, chunk[:len(box.shape)]),
+                                 self.geobox[chunk[len(box.shape):]],
+                                 self.load_natively,
+                                 self.product_definitions,
+                                 geopolygon=self.geopolygon)
 
     def map(self, func, dtype='O'):
         return VirtualDatasetBox(xr_apply(self.box, func, dtype=dtype),
