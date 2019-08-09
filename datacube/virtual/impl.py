@@ -776,9 +776,7 @@ class Reproject(VirtualProduct):
         if dask_chunks is None:
             rasters = [self._input.fetch(box, **load_settings) for box in boxes]
         else:
-            self._assert('input_dask_chunks' in self, "no input_dask_chunks specified in reproject")
-
-            rasters = [self._input.fetch(box, dask_chunks=self['input_dask_chunks'],
+            rasters = [self._input.fetch(box, dask_chunks={key: 1 for key in dask_chunks if key not in geobox.dims},
                                          **reject_keys(load_settings, ['dask_chunks']))
                        for box in boxes]
 
