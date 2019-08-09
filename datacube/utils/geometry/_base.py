@@ -9,7 +9,8 @@ import numpy
 from affine import Affine
 from osgeo import ogr, osr
 
-from .tools import roi_normalise, roi_shape
+from .tools import roi_normalise, roi_shape, is_affine_st
+from ..math import is_almost_int
 
 Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
 _BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
@@ -97,7 +98,6 @@ class CRS(object):
 
     def __init__(self, crs_str):
         """
-
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
         :raises: InvalidCRSError
         """
@@ -802,7 +802,7 @@ class GeoBox(object):
     """
 
     def __init__(self, width, height, affine, crs):
-        assert height > 0 and width > 0, "Can't create GeoBox of zero size"
+        assert is_affine_st(affine), "Only axis-aligned geoboxes are currently supported"
         #: :type: int
         self.width = width
         #: :type: int
@@ -871,35 +871,11 @@ class GeoBox(object):
 
     def __or__(self, other):
         """ A geobox that encompasses both self and other. """
-        if self.crs != other.crs:
-            raise ValueError("Cannot combine geoboxes in different CRSs")
+        return geobox_union_conservative([self, other])
 
-        def linear_part(geobox):
-            aff = geobox.affine
-            return numpy.array([[aff.a, aff.b], [aff.d, aff.e]])
-
-        if not numpy.allclose(linear_part(self), linear_part(other)):
-            raise ValueError("Cannot combine geoboxes with incompatible grids")
-
-        def shift_part(geobox):
-            aff = geobox.affine
-            return numpy.array([aff.c, aff.f])
-
-        linear = linear_part(self)
-        steps = numpy.linalg.solve(linear, shift_part(other) - shift_part(self))
-        if not numpy.allclose(steps, numpy.around(steps)):
-            raise ValueError("non-integer steps encountered in geobox union")
-        steps = numpy.around(steps).astype('int32')
-
-        shift = numpy.array(self.affine * numpy.where(steps > 0, 0, steps))
-        affine = Affine(linear[0, 0], linear[0, 1], shift[0], linear[1, 0], linear[1, 1], shift[1])
-
-        self_end = ~affine * (self.affine * (self.width, self.height))
-        other_end = ~affine * (other.affine * (other.width, other.height))
-        width = int(max(self_end[0], other_end[0]))
-        height = int(max(self_end[1], other_end[1]))
-
-        return GeoBox(width=width, height=height, affine=affine, crs=self.crs)
+    def __and__(self, other):
+        """ A geobox that is contained in both self and other. """
+        return geobox_intersection_conservative([self, other])
 
     @property
     def transform(self):
@@ -994,6 +970,68 @@ class GeoBox(object):
         return (self.shape == other.shape
                 and self.transform == other.transform
                 and self.crs == other.crs)
+
+
+def relative_translation(A: GeoBox, B: GeoBox):  # pylint: disable=invalid-name
+    """
+    Return the relative pixel translation `t` in
+    the equations `X_A` = `X_B` + `t`, where
+    the Xs are pixel coordinates of the same geographical point,
+    if their grids are compatible, otherwise return `None`.
+    """
+    tol = 1.e-8
+
+    if A.crs != B.crs:
+        return None
+
+    a, b, c, d, e, f, *_ = ~A.affine * B.affine
+
+    if not (numpy.isclose(a, 1) and numpy.isclose(b, 0) and is_almost_int(c, tol)
+            and numpy.isclose(d, 0) and numpy.isclose(e, 1) and is_almost_int(f, tol)):
+        return None
+
+    return round(c), round(f)
+
+
+def geobox_union_conservative(geoboxes: List[GeoBox]):
+    """ Union of geoboxes. Fails whenever incompatible grids are encountered. """
+
+    if len(geoboxes) == 0:
+        raise ValueError("No geoboxes supplied")
+
+    first, *rest = geoboxes
+    if len(rest) == 0:
+        return first
+
+    ul = (0, 0)
+    lr = (first.width, first.height)
+
+    for other in rest:
+        t = relative_translation(first, other)
+        if t is None:
+            raise ValueError("Cannot combine geoboxes in different CRSs")
+
+        # the bounding box of `other` in the pixel coordinate space of `first`
+        ul_ = t
+        lr_ = (t[0] + other.width, t[1] + other.height)
+
+        ul = tuple(min(a, b) for a, b in zip(ul, ul_))
+        lr = tuple(max(a, b) for a, b in zip(lr, lr_))
+
+    affine = first.affine * Affine.translation(*ul)
+    width = lr[0] - ul[0]
+    height = lr[1] - ul[1]
+
+    return GeoBox(width=width, height=height, affine=affine, crs=first.crs)
+
+
+def geobox_intersection_conservative(geoboxes: List[GeoBox]):
+    """
+    Intersection of geoboxes. Fails whenever incompatible grids are encountered.
+    Currently not implemented.
+    """
+    # TODO: implement this for completeness
+    raise NotImplementedError
 
 
 def scaled_down_geobox(src_geobox, scaler: int):
