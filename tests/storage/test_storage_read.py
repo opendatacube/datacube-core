@@ -63,7 +63,6 @@ def test_can_paste():
     dst = GeoBox.from_geopolygon(src.extent.to_crs(epsg3857).buffer(10),
                                  resolution=src.resolution)
     check_false(dst)  # non ST
-    check_false(gbx.affine_transform_pix(src, Affine.rotation(1)))  # non ST
 
     check_false(gbx.zoom_out(src, 1.9))   # non integer scale
     check_false(gbx.affine_transform_pix(src, Affine.scale(1, 2)))  # sx != sy
