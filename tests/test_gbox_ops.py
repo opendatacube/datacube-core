@@ -20,6 +20,9 @@ def test_gbox_ops():
     with pytest.raises(ValueError):
         # flipped grid
         (s | d)
+    with pytest.raises(ValueError):
+        # flipped grid
+        (s & d)
 
     d = gbx.flipx(s)
     assert d.shape == s.shape
@@ -48,6 +51,9 @@ def test_gbox_ops():
     with pytest.raises(ValueError):
         # lower resolution grid
         (s | d)
+    with pytest.raises(ValueError):
+        # lower resolution grid
+        (s & d)
 
     d = gbx.zoom_to(s, s.shape)
     assert d == s
@@ -68,6 +74,7 @@ def test_gbox_ops():
     assert d[1:-1, 1:-1].affine == s.affine
     assert d[1:-1, 1:-1].shape == s.shape
     assert d == (s | d)
+    assert s == (s & d)
 
     d = gbx.pad_wh(s, 10)
     assert d == s
