@@ -5,11 +5,10 @@ from uuid import UUID
 
 import affine
 import attr
-from ruamel.yaml.comments import CommentedMap
-from shapely.geometry.base import BaseGeometry
-
 from eodatasets3 import utils
 from eodatasets3.properties import StacPropertyView, EoFields
+from ruamel.yaml.comments import CommentedMap
+from shapely.geometry.base import BaseGeometry
 
 # TODO: these need discussion.
 DEA_URI_PREFIX = "https://collections.dea.ga.gov.au"
@@ -338,48 +337,3 @@ class DatasetDoc(EoFields):
     accessories: Dict[str, AccessoryDoc] = attr.ib(factory=CommentedMap)
 
     lineage: Dict[str, Sequence[UUID]] = attr.ib(factory=CommentedMap)
-
-
-def resolve_absolute_offset(
-    dataset_path: Path, offset: str, target_path: Optional[Path] = None
-) -> str:
-    """
-    Expand a filename (offset) relative to the dataset.
-
-    >>> external_metadata_loc = Path('/tmp/target-metadata.yaml')
-    >>> resolve_absolute_offset(
-    ...     Path('/tmp/great_test_dataset'),
-    ...     'band/my_great_band.jpg',
-    ...     external_metadata_loc,
-    ... )
-    '/tmp/great_test_dataset/band/my_great_band.jpg'
-    >>> resolve_absolute_offset(
-    ...     Path('/tmp/great_test_dataset.tar.gz'),
-    ...     'band/my_great_band.jpg',
-    ...     external_metadata_loc,
-    ... )
-    'tar:/tmp/great_test_dataset.tar.gz!band/my_great_band.jpg'
-    >>> resolve_absolute_offset(
-    ...     Path('/tmp/great_test_dataset.tar'),
-    ...     'band/my_great_band.jpg',
-    ... )
-    'tar:/tmp/great_test_dataset.tar!band/my_great_band.jpg'
-    >>> resolve_absolute_offset(
-    ...     Path('/tmp/MY_DATASET'),
-    ...     'band/my_great_band.jpg',
-    ...     Path('/tmp/MY_DATASET/ga-metadata.yaml'),
-    ... )
-    'band/my_great_band.jpg'
-    """
-    dataset_path = dataset_path.absolute()
-
-    if target_path:
-        # If metadata is stored inside the dataset, keep paths relative.
-        if str(target_path.absolute()).startswith(str(dataset_path)):
-            return offset
-    # Bands are inside a tar file
-
-    if ".tar" in dataset_path.suffixes:
-        return "tar:{}!{}".format(dataset_path, offset)
-    else:
-        return str(dataset_path / offset)
