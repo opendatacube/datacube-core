@@ -877,6 +877,12 @@ class GeoBox(object):
         """ A geobox that is contained in both self and other. """
         return geobox_intersection_conservative([self, other])
 
+    def is_empty(self):
+        return self.width == 0 or self.height == 0
+
+    def __bool__(self):
+        return not self.is_empty()
+
     @property
     def transform(self):
         return self.affine
@@ -972,66 +978,61 @@ class GeoBox(object):
                 and self.crs == other.crs)
 
 
-def relative_translation(A: GeoBox, B: GeoBox):  # pylint: disable=invalid-name
+def bounding_box_in_pixel_domain(reference: GeoBox, other: GeoBox):
     """
-    Return the relative pixel translation `t` in
-    the equations `X_A` = `X_B` + `t`, where
-    the Xs are pixel coordinates of the same geographical point,
-    if their grids are compatible, otherwise return `None`.
+    Returns the bounding box of `other` with respect to the pixel grid
+    defined by `reference` when their coordinate grids are compatible,
+    otherwise raises `ValueError`.
     """
     tol = 1.e-8
 
-    if A.crs != B.crs:
-        return None
+    if reference.crs != other.crs:
+        raise ValueError("Cannot combine geoboxes in different CRSs")
 
-    a, b, c, d, e, f, *_ = ~A.affine * B.affine
+    a, b, c, d, e, f, *_ = ~reference.affine * other.affine
 
     if not (numpy.isclose(a, 1) and numpy.isclose(b, 0) and is_almost_int(c, tol)
             and numpy.isclose(d, 0) and numpy.isclose(e, 1) and is_almost_int(f, tol)):
-        return None
+        raise ValueError("Incompatible grids")
 
-    return round(c), round(f)
+    t = round(c), round(f)
+    return BoundingBox(t[0], t[1], t[0] + other.width, t[1] + other.height)
 
 
 def geobox_union_conservative(geoboxes: List[GeoBox]):
     """ Union of geoboxes. Fails whenever incompatible grids are encountered. """
-
     if len(geoboxes) == 0:
         raise ValueError("No geoboxes supplied")
 
     first, *rest = geoboxes
-    if len(rest) == 0:
-        return first
 
-    ul = (0, 0)
-    lr = (first.width, first.height)
+    bbox = bbox_union(bounding_box_in_pixel_domain(first, other) for other in geoboxes)
 
-    for other in rest:
-        t = relative_translation(first, other)
-        if t is None:
-            raise ValueError("Cannot combine geoboxes in different CRSs")
+    affine = first.affine * Affine.translation(*bbox[:2])
 
-        # the bounding box of `other` in the pixel coordinate space of `first`
-        ul_ = t
-        lr_ = (t[0] + other.width, t[1] + other.height)
-
-        ul = tuple(min(a, b) for a, b in zip(ul, ul_))
-        lr = tuple(max(a, b) for a, b in zip(lr, lr_))
-
-    affine = first.affine * Affine.translation(*ul)
-    width = lr[0] - ul[0]
-    height = lr[1] - ul[1]
-
-    return GeoBox(width=width, height=height, affine=affine, crs=first.crs)
+    return GeoBox(width=bbox.width, height=bbox.height, affine=affine, crs=first.crs)
 
 
 def geobox_intersection_conservative(geoboxes: List[GeoBox]):
     """
     Intersection of geoboxes. Fails whenever incompatible grids are encountered.
-    Currently not implemented.
     """
-    # TODO: implement this for completeness
-    raise NotImplementedError
+    if len(geoboxes) == 0:
+        raise ValueError("No geoboxes supplied")
+
+    first, *rest = geoboxes
+
+    bbox = bbox_intersection(bounding_box_in_pixel_domain(first, other) for other in geoboxes)
+
+    # standardise empty geobox representation
+    if bbox.left > bbox.right:
+        bbox = BoundingBox(left=bbox.left, bottom=bbox.bottom, right=bbox.left, top=bbox.top)
+    if bbox.bottom > bbox.top:
+        bbox = BoundingBox(left=bbox.left, bottom=bbox.bottom, right=bbox.right, top=bbox.bottom)
+
+    affine = first.affine * Affine.translation(*bbox[:2])
+
+    return GeoBox(width=bbox.width, height=bbox.height, affine=affine, crs=first.crs)
 
 
 def scaled_down_geobox(src_geobox, scaler: int):
@@ -1087,5 +1088,23 @@ def bbox_union(bbs: Iterable[BoundingBox]) -> BoundingBox:
         B = min(b, B)
         R = max(r, R)
         T = max(t, T)
+
+    return BoundingBox(L, B, R, T)
+
+
+def bbox_intersection(bbs: Iterable[BoundingBox]) -> BoundingBox:
+    """ Given a stream of bounding boxes compute the overlap BoundingBox
+    """
+    # pylint: disable=invalid-name
+
+    L = B = float('-inf')
+    R = T = float('+inf')
+
+    for bb in bbs:
+        l, b, r, t = bb
+        L = max(l, L)
+        B = max(b, B)
+        R = min(r, R)
+        T = min(t, T)
 
     return BoundingBox(L, B, R, T)
