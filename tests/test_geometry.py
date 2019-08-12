@@ -630,10 +630,8 @@ def test_crs():
                 'UNIT["degree",0.0174532925199433, AUTHORITY["EPSG","9122"]], AUTHORITY["EPSG","4326"]]]')]
 
     for bad in bad_crs:
-        with pytest.raises(geometry.InvalidCRSError) as e:
-            CRS('cupcakes')
-
-        assert 'Not a valid CRS:' in str(e)
+        with pytest.raises(geometry.InvalidCRSError):
+            CRS(bad)
 
 
 def test_polygon_path():
