@@ -978,51 +978,55 @@ class GeoBox(object):
                 and self.crs == other.crs)
 
 
-def bounding_box_in_pixel_domain(reference: GeoBox, other: GeoBox):
+def bounding_box_in_pixel_domain(geobox: GeoBox, reference: GeoBox) -> BoundingBox:
     """
-    Returns the bounding box of `other` with respect to the pixel grid
+    Returns the bounding box of `geobox` with respect to the pixel grid
     defined by `reference` when their coordinate grids are compatible,
+    that is, have the same CRS, same pixel size and orientation, and
+    are related by whole pixel translation,
     otherwise raises `ValueError`.
     """
     tol = 1.e-8
 
-    if reference.crs != other.crs:
+    if reference.crs != geobox.crs:
         raise ValueError("Cannot combine geoboxes in different CRSs")
 
-    a, b, c, d, e, f, *_ = ~reference.affine * other.affine
+    a, b, c, d, e, f, *_ = ~reference.affine * geobox.affine
 
     if not (numpy.isclose(a, 1) and numpy.isclose(b, 0) and is_almost_int(c, tol)
             and numpy.isclose(d, 0) and numpy.isclose(e, 1) and is_almost_int(f, tol)):
         raise ValueError("Incompatible grids")
 
-    t = round(c), round(f)
-    return BoundingBox(t[0], t[1], t[0] + other.width, t[1] + other.height)
+    tx, ty = round(c), round(f)
+    return BoundingBox(tx, ty, tx + geobox.width, ty + geobox.height)
 
 
-def geobox_union_conservative(geoboxes: List[GeoBox]):
+def geobox_union_conservative(geoboxes: List[GeoBox]) -> GeoBox:
     """ Union of geoboxes. Fails whenever incompatible grids are encountered. """
     if len(geoboxes) == 0:
         raise ValueError("No geoboxes supplied")
 
-    first, *rest = geoboxes
+    reference, *_ = geoboxes
 
-    bbox = bbox_union(bounding_box_in_pixel_domain(first, other) for other in geoboxes)
+    bbox = bbox_union(bounding_box_in_pixel_domain(geobox, reference=reference)
+                      for geobox in geoboxes)
 
-    affine = first.affine * Affine.translation(*bbox[:2])
+    affine = reference.affine * Affine.translation(*bbox[:2])
 
-    return GeoBox(width=bbox.width, height=bbox.height, affine=affine, crs=first.crs)
+    return GeoBox(width=bbox.width, height=bbox.height, affine=affine, crs=reference.crs)
 
 
-def geobox_intersection_conservative(geoboxes: List[GeoBox]):
+def geobox_intersection_conservative(geoboxes: List[GeoBox]) -> GeoBox:
     """
     Intersection of geoboxes. Fails whenever incompatible grids are encountered.
     """
     if len(geoboxes) == 0:
         raise ValueError("No geoboxes supplied")
 
-    first, *rest = geoboxes
+    reference, *_ = geoboxes
 
-    bbox = bbox_intersection(bounding_box_in_pixel_domain(first, other) for other in geoboxes)
+    bbox = bbox_intersection(bounding_box_in_pixel_domain(geobox, reference=reference)
+                             for geobox in geoboxes)
 
     # standardise empty geobox representation
     if bbox.left > bbox.right:
@@ -1030,9 +1034,9 @@ def geobox_intersection_conservative(geoboxes: List[GeoBox]):
     if bbox.bottom > bbox.top:
         bbox = BoundingBox(left=bbox.left, bottom=bbox.bottom, right=bbox.right, top=bbox.bottom)
 
-    affine = first.affine * Affine.translation(*bbox[:2])
+    affine = reference.affine * Affine.translation(*bbox[:2])
 
-    return GeoBox(width=bbox.width, height=bbox.height, affine=affine, crs=first.crs)
+    return GeoBox(width=bbox.width, height=bbox.height, affine=affine, crs=reference.crs)
 
 
 def scaled_down_geobox(src_geobox, scaler: int):
