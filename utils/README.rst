@@ -1,6 +1,6 @@
 Deprecation Warning
 ===================
 
-The scripts in this directory are being reviewed and shifted to the new `Dataset Config <https://github.com/opendatacube/datacube-dataset-config>`__ repository.
+The scripts in this directory have been shifted to the new `Dataset Config <https://github.com/opendatacube/datacube-dataset-config>`__ repository.
 
-Scripts that remain in this directory may be out of date, and should be considered deprecated.
+For reference `deleted scripts <https://github.com/opendatacube/datacube-core/tree/e1a4c0d6313eba574b731062fd34ce7577e1aa15/utils>`__ are still in git history.
