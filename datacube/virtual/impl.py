@@ -23,7 +23,7 @@ from datacube.api.query import Query, query_group_by
 from datacube.model import Measurement, DatasetType
 from datacube.model.utils import xr_apply, xr_iter, SafeDumper
 from datacube.testutils.io import native_geobox
-from datacube.utils.geometry import GeoBox, rio_reproject
+from datacube.utils.geometry import GeoBox, rio_reproject, geobox_union_conservative
 from datacube.utils.geometry.gbox import GeoboxTiles
 from datacube.utils.geometry._warp import resampling_s2rio
 from datacube.api.core import per_band_load_data_settings
@@ -391,9 +391,8 @@ class Product(VirtualProduct):
 
         if grouped.load_natively:
             canonical_names = [measurement.name for measurement in measurement_dicts.values()]
-            dataset_geobox, *rest = [native_geobox(ds, measurements=canonical_names) for ds in grouped.box.item()]
-            for box in rest:
-                dataset_geobox = dataset_geobox | box
+            dataset_geobox = geobox_union_conservative([native_geobox(ds, measurements=canonical_names)
+                                                        for ds in grouped.box.item()])
 
             if grouped.geopolygon is not None:
                 geobox = dataset_geobox[subset_geobox_slices(dataset_geobox, grouped.geopolygon)]
