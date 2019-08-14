@@ -248,6 +248,33 @@ def test_group_datasets(cloud_free_nbar, dc, query):
     assert time == 2
 
 
+def test_explode(dc, query):
+    collate = construct_from_yaml("""
+        collate:
+            - product: ls8_nbar_albers
+            - product: ls7_nbar_albers
+    """)
+
+    bag = collate.query(dc, **query)
+
+    # three datasets in two products
+    assert len(list(bag.contained_datasets())) == 3
+
+    bags = list(bag.explode())
+
+    # each element should contain one dataset
+    assert len(bags) == 3
+
+    for bag in bags:
+        assert len(list(bag.contained_datasets())) == 1
+
+        # the smaller bags should have the same structure
+        assert 'collate' in bag.bag
+
+        # there were two products (only one of them should have the single dataset)
+        assert len(bag.bag['collate']) == 2
+
+
 def test_load_data(cloud_free_nbar, dc, query):
     with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
         mock_datacube.load_data = load_data
