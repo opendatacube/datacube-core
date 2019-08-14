@@ -47,17 +47,42 @@ class VirtualDatasetBag:
     def contained_datasets(self):
         def worker(bag):
             if isinstance(bag, Sequence):
-                for child in self.bag:
+                for child in bag:
                     yield child
 
             elif isinstance(bag, Mapping):
-                for child in bag.values():
-                    yield from worker(child)
+                # there should only be one key (collate or juxtapose)
+                for key in bag:
+                    # bag[key] should be a list
+                    for child in bag[key]:
+                        yield from worker(child)
 
             else:
                 raise VirtualProductException("unexpected bag")
 
         return worker(self.bag)
+
+    def explode(self):
+        def worker(bag):
+            if isinstance(bag, Sequence):
+                for child in bag:
+                    yield [child]
+
+            elif isinstance(bag, Mapping):
+                if 'juxtapose' in bag:
+                    # too hard, giving up
+                    raise NotImplementedError
+
+                for index, child_bag in enumerate(bag['collate']):
+                    for child in worker(child_bag):
+                        yield {'collate': [child if i == index else []
+                                           for i, _ in enumerate(bag['collate'])]}
+
+            else:
+                raise VirtualProductException("unexpected bag")
+
+        for child in worker(self.bag):
+            yield VirtualDatasetBag(child, self.geopolygon, self.product_definitions)
 
     def __repr__(self):
         return "<VirtualDatasetBag of {} datacube datasets>".format(len(list(self.contained_datasets())))
