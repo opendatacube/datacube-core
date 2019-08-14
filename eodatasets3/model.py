@@ -42,6 +42,10 @@ class GridDoc:
 
 @attr.s(auto_attribs=True, slots=True)
 class MeasurementDoc:
+    """
+    A Dataset's reference to a measurement file.
+    """
+
     path: str
     band: Optional[int] = 1
     layer: Optional[str] = None
