@@ -184,7 +184,7 @@ earth observation data products. The following are a good place to start
 looking.
 
 * Landsat
-    * `USGS Landsat Surface Reflectance - ESPA 30m`__
+    * `USGS Landsat Surface Reflectance - LEDAPS and LaSRC available via ESPA 30m`__
 * MODIS
     * `MCD43A1 - BRDF-Albedo Model Parameters 16-Day L3 Global 500m`__
     * `MCD43A2 - BRDF-Albedo Quality 16-Day L3 Global 500m`__
