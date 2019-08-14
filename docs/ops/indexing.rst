@@ -184,14 +184,14 @@ earth observation data products. The following are a good place to start
 looking.
 
 * Landsat
-    * `USGS Landsat Surface Reflectance - LEDAPS 30m`__
+    * `USGS Landsat Surface Reflectance - ESPA 30m`__
 * MODIS
     * `MCD43A1 - BRDF-Albedo Model Parameters 16-Day L3 Global 500m`__
     * `MCD43A2 - BRDF-Albedo Quality 16-Day L3 Global 500m`__
     * `MCD43A3 - Albedo 16-Day L3 Global 500m`__
     * `MCD43A4 - Nadir BRDF-Adjusted Reflectance 16-Day L3 Global 500m`__
 
-__ http://landsat.usgs.gov/CDR_LSR.php
+__ https://espa.cr.usgs.gov/
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1_v006
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2_v006
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3_v006
