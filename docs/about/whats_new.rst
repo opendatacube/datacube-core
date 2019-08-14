@@ -5,6 +5,12 @@
 What's New
 **********
 
+v1.7.1 (???)
+============
+
+- New virtual product combinator ``reproject`` for on-the-fly reprojection of rasters (:pull:`773`)
+- Enhancements to the ``expressions`` transformation in virtual products (:pull:`776`, :pull:`761`)
+
 
 v1.7.0 (16 May 2019)
 ====================
