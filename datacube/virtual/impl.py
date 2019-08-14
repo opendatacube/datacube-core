@@ -24,13 +24,13 @@ from datacube.model import Measurement, DatasetType
 from datacube.model.utils import xr_apply, xr_iter, SafeDumper
 from datacube.testutils.io import native_geobox
 from datacube.utils.geometry import GeoBox, rio_reproject, geobox_union_conservative
+from datacube.utils.geometry import compute_reproject_roi
 from datacube.utils.geometry.gbox import GeoboxTiles
 from datacube.utils.geometry._warp import resampling_s2rio
 from datacube.api.core import per_band_load_data_settings
 
 from .utils import qualified_name, merge_dicts
 from .utils import select_unique, select_keys, reject_keys, merge_search_terms
-from .utils import subset_geobox_slices
 
 
 class VirtualProductException(Exception):
@@ -395,7 +395,16 @@ class Product(VirtualProduct):
                                                         for ds in grouped.box.item()])
 
             if grouped.geopolygon is not None:
-                geobox = dataset_geobox[subset_geobox_slices(dataset_geobox, grouped.geopolygon)]
+                reproject_roi = compute_reproject_roi(dataset_geobox,
+                                                      GeoBox.from_geopolygon(grouped.geopolygon,
+                                                                             crs=dataset_geobox.crs,
+                                                                             align=dataset_geobox.alignment,
+                                                                             resolution=dataset_geobox.resolution))
+
+                self._assert(reproject_roi.is_st, "native load is not axis-aligned")
+                self._assert(numpy.isclose(reproject_roi.scale, 1.0), "native load should not require scaling")
+
+                geobox = dataset_geobox[reproject_roi.roi_src]
             else:
                 geobox = dataset_geobox
         else:
@@ -803,8 +812,7 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
         data = reproject_array(band.data, band.nodata, band.geobox, geobox, resampling)
         return wrap_in_dataarray(data, band, geobox, dims)
 
-    dsk_name = 'warp_{name}-{token}'.format(name=band.name, token=uuid.uuid4().hex)
-    dsk = band.data.dask
+    dask_name = 'warp_{name}-{token}'.format(name=band.name, token=uuid.uuid4().hex)
     dependencies = [band.data]
 
     spatial_chunks = tuple(dask_chunks[k] for k in geobox.dims)
@@ -813,19 +821,20 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
 
     for tile_index in numpy.ndindex(gt.shape):
         sub_geobox = gt[tile_index]
-        subset_band = band[(...,) + subset_geobox_slices(band.geobox, sub_geobox.extent)].chunk(-1)
+        reproject_roi = compute_reproject_roi(band.geobox, sub_geobox, padding=1)
+
+        subset_band = band[(...,) + reproject_roi.roi_src].chunk(-1)
 
         if min(subset_band.shape) == 0:
-            new_layer[(dsk_name,) + tile_index] = (numpy.full, sub_geobox.shape, band.nodata, band.dtype)
+            new_layer[(dask_name,) + tile_index] = (numpy.full, sub_geobox.shape, band.nodata, band.dtype)
         else:
             dependencies.append(subset_band.data)
             band_key = list(flatten(subset_band.data.__dask_keys__()))[0]
-            new_layer[(dsk_name,) + tile_index] = (reproject_array,
-                                                   band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
+            new_layer[(dask_name,) + tile_index] = (reproject_array,
+                                                    band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
 
-    dsk = dsk.from_collections(dsk_name, new_layer, dependencies=dependencies)
-
-    data = dask.array.Array(dsk, dsk_name,
+    data = dask.array.Array(band.data.dask.from_collections(dask_name, new_layer, dependencies=dependencies),
+                            dask_name,
                             chunks=spatial_chunks,
                             dtype=band.dtype,
                             shape=gt.base.shape)
