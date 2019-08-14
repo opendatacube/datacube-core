@@ -4,22 +4,6 @@ import warnings
 import math
 
 
-def subset_geobox_slices(dataset_geobox, extent):
-    """ Returns the slices to subset a geobox that encompasses a given extent. """
-    subset_bb = (extent.to_crs(dataset_geobox.crs).boundingbox
-                 .transform(~dataset_geobox.affine).buffered(1, 1))
-
-    y_start, y_end = sorted([subset_bb.top, subset_bb.bottom])
-    x_start, x_end = sorted([subset_bb.left, subset_bb.right])
-
-    y_start = max(math.floor(y_start), 0)
-    y_end = min(math.ceil(y_end), dataset_geobox.shape[0])
-    x_start = max(math.floor(x_start), 0)
-    x_end = min(math.ceil(x_end), dataset_geobox.shape[1])
-
-    return (slice(y_start, y_end), slice(x_start, x_end))
-
-
 def select_unique(things):
     """ Checks that all the members of `things` are equal, and then returns it. """
     first, *rest = things
