@@ -23,7 +23,7 @@ Functionalities related to virtual products are mainly in the :mod:`datacube.vir
 Design
 ------
 
-Currently, virtual products are constructed by applying a fixed set of combinators to either existing products or other
+Virtual products are constructed by applying a set of combinators to either existing datacube products or other
 virtual products. That is, a virtual product can be viewed as a tree whose nodes are combinators and leaves are
 ordinary datacube products.
 
@@ -89,10 +89,10 @@ data reflects the tree structure of the recipe:
 .. image:: ../diagrams/cloud_free.svg
 
 
-Grammar
--------
+Combinators
+-----------
 
-Currently, there are four combinators for creating virtual products:
+Currently, there are six combinators for creating virtual products:
 
 1. ``product``
 ~~~~~~~~~~~~~~
@@ -198,6 +198,48 @@ Observations without corresponding entries in the other products will get droppe
 .. image:: ../diagrams/juxtapose.svg
 
 
+5. ``aggregate``
+~~~~~~~~~~~~~~~~
+
+This combinator performs (partial) temporal reduction, that is, statistics, on the loaded data.
+The form of the recipe for this is:
+
+.. code-block:: text
+
+    {'aggregate': <transformation-class>,
+     'group_by': <grouping-function>,
+     'input': <input-virtual-product>,
+     **settings}
+
+As in ``transform``, the ``settings`` are keyword arguments to the initializer of the transformation class that
+performs the time reduction. The grouping function takes the timestamp of the input dataset and returns another
+timestamp to be assigned to the group it would belong to. Some grouping functions (``year``, ``month``, ``week``,
+``day``) are built-in.
+
+The only built-in statistics class in ODC at the moment is ``xarray_reduction`` which applies a reducing ``method``
+of the ``xarray.DataArray`` object to each individual band. Users can define their own aggregate transformations
+as in :ref:`user-defined-virtual-product-transforms`.
+
+
+6. ``reproject``
+~~~~~~~~~~~~~~~~
+
+This performs an on-the-fly reprojection of loaded data to a specified CRS and resolution.
+The recipe looks like:
+
+.. code-block:: text
+
+    {'reproject': <input-virtual-product>,
+     'output_crs': <crs-string>,
+     'resolution': [<y-resolution>, <x-resolution>],
+     'align': [<y-alignment>, <x-alignment>],
+     'resampling': <resampling-settings>}
+
+Here ``align`` and ``resampling`` are optional (defaults to edge-aligned and nearest neighbor respectively).
+This combinator enables performing transformations to raster data in their native grids before aligning different
+rasters to a common grid.
+
+
 Using virtual products
 ----------------------
 
@@ -206,14 +248,13 @@ Virtual products provide a common interface to query and then to load the data. 
     ``query(dc, **search_terms)``
         Retrieves datasets that match the ``search_terms`` from the database index of the datacube instance ``dc``.
 
-    ``group(datasets, **search_terms)``
-        Groups the datasets from ``query`` by the timestamps, and optionally restricts the region of interest. Does not
-        connect to the database.
+    ``group(datasets, **group_settings)``
+        Groups the datasets from ``query`` by the timestamps. Does not connect to the database.
         
     ``fetch(grouped, **load_settings)``
         Loads the data from the grouped datasets according to ``load_settings``. Does not connect to the database. The
-        on-the-fly transformations are applied at this stage. The ``resampling`` method or ``dask_chunks`` size can be
-        specified in the ``load_settings``.
+        on-the-fly transformations are applied at this stage. To load data lazily using ``dask``, the preferred
+        ``dask_chunks`` size can be specified in the ``load_settings``.
 
 Currently, virtual products also provide a ``load(dc, **query)`` method that roughly correspond to ``dc.load``.
 However, this method exists only to facilitate code migration, and its extensive use is not recommended. It implements
