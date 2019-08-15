@@ -35,7 +35,6 @@ _LOG = logging.getLogger(__name__)
 
 GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units', 'sort_key'])
 
-FLOAT_TOLERANCE = 0.0000001  # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
 OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan', 'product', 'geopolygon', 'like',
