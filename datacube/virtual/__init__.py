@@ -148,3 +148,11 @@ def catalog_from_yaml(catalog_body: str, name_resolver=None) -> Catalog:
         name_resolver = DEFAULT_RESOLVER
 
     return Catalog(name_resolver, parse_yaml(catalog_body))
+
+
+def catalog_from_file(filename: str, name_resolver=None) -> Catalog:
+    """
+    Load a catalog of virtual products from a yaml file.
+    """
+    with open(filename) as fl:
+        return catalog_from_yaml(fl.read(), name_resolver=name_resolver)
