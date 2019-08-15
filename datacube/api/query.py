@@ -274,8 +274,8 @@ def _time_to_search_dims(time_range):
         tr_start, tr_end = time_range, time_range
 
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
-            l = list(time_range)
-            tr_start, tr_end = l[0], l[-1]
+            tmp = list(time_range)
+            tr_start, tr_end = tmp[0], tmp[-1]
 
         # Attempt conversion to isoformat
         # allows pandas.Period to handle
