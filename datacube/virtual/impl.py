@@ -392,7 +392,7 @@ class Product(VirtualProduct):
         if grouped.load_natively:
             canonical_names = [measurement.name for measurement in measurement_dicts.values()]
             dataset_geobox = geobox_union_conservative([native_geobox(ds, measurements=canonical_names)
-                                                        for ds in grouped.box.item()])
+                                                        for ds in grouped.box.sum().item()])
 
             if grouped.geopolygon is not None:
                 reproject_roi = compute_reproject_roi(dataset_geobox,
