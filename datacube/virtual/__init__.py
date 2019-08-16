@@ -1,4 +1,5 @@
 from typing import Mapping, Any
+import copy
 
 from .impl import VirtualProduct, Transformation, VirtualProductException
 from .impl import from_validated_recipe
@@ -19,6 +20,10 @@ class NameResolver:
 
     def __init__(self, lookup_table):
         self.lookup_table = lookup_table
+
+    def clone(self):
+        """ Safely copy the resolver in order to possibly extend it. """
+        return NameResolver(copy.deepcopy(self.lookup_table))
 
     def construct(self, **recipe) -> VirtualProduct:
         """ Validate recipe and construct virtual product. """
