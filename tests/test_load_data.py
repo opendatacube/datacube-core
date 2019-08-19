@@ -10,7 +10,7 @@ from datacube.testutils import (
     mk_sample_dataset,
     mk_test_image,
 )
-from datacube.testutils.io import write_gtiff, rio_slurp
+from datacube.testutils.io import write_gtiff, rio_slurp, rio_slurp_xarray
 from datacube.testutils.iodriver import NetCDF
 from datacube.utils import ignore_exceptions_if
 
@@ -220,11 +220,17 @@ def test_rio_slurp(tmpdir):
     np.testing.assert_array_equal(aa, aa0)
     assert mm.gbox == mm0.gbox
     assert aa.shape == mm.gbox.shape
+    xx = rio_slurp_xarray(mm0.path)
+    assert mm.gbox == xx.geobox
+    np.testing.assert_array_equal(xx.values, aa0)
 
     aa, mm = rio_slurp(mm0.path, aa0.shape)
     np.testing.assert_array_equal(aa, aa0)
     assert aa.shape == mm.gbox.shape
     assert mm.gbox is mm.src_gbox
+    xx = rio_slurp_xarray(mm0.path, aa0.shape)
+    assert mm.gbox == xx.geobox
+    np.testing.assert_array_equal(xx.values, aa0)
 
     aa, mm = rio_slurp(mm0.path, (3, 7))
     assert aa.shape == (3, 7)
@@ -239,10 +245,17 @@ def test_rio_slurp(tmpdir):
 
     aa, mm = rio_slurp(mm0.path, mm0.gbox, resampling='nearest')
     np.testing.assert_array_equal(aa, aa0)
+    xx = rio_slurp_xarray(mm0.path, mm0.gbox)
+    assert mm.gbox == xx.geobox
+    np.testing.assert_array_equal(xx.values, aa0)
 
     aa, mm = rio_slurp(mm0.path, gbox=mm0.gbox, dtype='float32')
     assert aa.dtype == 'float32'
     np.testing.assert_array_equal(aa, aa0.astype('float32'))
+    xx = rio_slurp_xarray(mm0.path, gbox=mm0.gbox)
+    assert mm.gbox == xx.geobox
+    assert mm.nodata == xx.nodata
+    np.testing.assert_array_equal(xx.values, aa0)
 
     aa, mm = rio_slurp(mm0.path, mm0.gbox, dst_nodata=-33)
     np.testing.assert_array_equal(aa == -33, aa0 == -999)

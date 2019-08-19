@@ -103,6 +103,11 @@ def _coord_to_xr(name: str, c: Coordinate) -> XrDataArray:
                        attrs={'units': c.units})
 
 
+def xr_coords(geobox):
+    return OrderedDict((n, _coord_to_xr(n, c))
+                       for n, c in geobox.coords.items())
+
+
 def _mk_empty_ds(coords: Mapping[str, XrDataArray], geobox: GeoBox) -> XrDataset:
     cc = OrderedDict(coords.items())
     cc.update((n, _coord_to_xr(n, c)) for n, c in geobox.coordinates.items())
