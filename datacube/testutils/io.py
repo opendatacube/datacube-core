@@ -329,3 +329,34 @@ def rio_slurp(fname, *args, **kw):
         return rio_slurp_reproject(fname, *args, **kw)
     else:
         return rio_slurp_read(fname, *args, **kw)
+
+
+def rio_slurp_xarray(fname, *args, **kw):
+    """
+    Dispatches to either:
+
+    rio_slurp_read(fname, out_shape, ..)
+    rio_slurp_reproject(fname, gbox, ...)
+
+    then wraps it all in xarray.DataArray with .crs,.nodata etc.
+    """
+    from datacube.storage._load import xr_coords
+    from xarray import DataArray
+
+    if len(args) == 0:
+        if 'gbox' in kw:
+            im, mm = rio_slurp_reproject(fname, **kw)
+        else:
+            im, mm = rio_slurp_read(fname, **kw)
+    else:
+        if isinstance(args[0], GeoBox):
+            im, mm = rio_slurp_reproject(fname, *args, **kw)
+        else:
+            im, mm = rio_slurp_read(fname, *args, **kw)
+
+    return DataArray(im,
+                     dims=mm.gbox.dims,
+                     coords=xr_coords(mm.gbox),
+                     attrs=dict(
+                         crs=mm.gbox.crs,
+                         nodata=mm.nodata))
