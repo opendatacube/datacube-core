@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Tuple, Dict, Optional, List, Sequence
+from typing import Tuple, Dict, Optional, List, Sequence, Union
 from uuid import UUID
 
 import affine
@@ -18,6 +18,11 @@ ODC_DATASET_SCHEMA_URL = "https://schemas.opendatacube.org/dataset"
 class FileFormat(Enum):
     GeoTIFF = 1
     NetCDF = 2
+
+
+# Either a local filesystem path or a string URI.
+# (the URI can use any scheme supported by rasterio, such as tar:// or https:// or ...)
+Location = Union[Path, str]
 
 
 def _dea_uri(product_name, base_uri):
@@ -86,11 +91,11 @@ class ComplicatedNamingConventions:
     def __init__(
         self,
         dataset: EoFields,
-        base_uri: str = None,
+        base_product_uri: str = None,
         required_fields: Sequence[str] = (),
     ) -> None:
         self.dataset = dataset
-        self.base_uri = base_uri
+        self.base_product_uri = base_product_uri
         self.required_fields = self._ABSOLUTE_MINIMAL_PROPERTIES.union(required_fields)
 
     @classmethod
@@ -102,7 +107,7 @@ class ComplicatedNamingConventions:
         """
         return cls(
             dataset=dataset,
-            base_uri=uri,
+            base_product_uri=uri,
             # These fields are needed to fulfill official DEA naming conventions.
             required_fields=(
                 # TODO: Add conventions for multi-platform/composite products?
@@ -178,10 +183,10 @@ class ComplicatedNamingConventions:
     @property
     def product_uri(self) -> Optional[str]:
         self._check_enough_properties_to_name()
-        if not self.base_uri:
+        if not self.base_product_uri:
             return None
 
-        return _dea_uri(self.product_name, base_uri=self.base_uri)
+        return _dea_uri(self.product_name, base_uri=self.base_product_uri)
 
     @property
     def dataset_label(self) -> str:
