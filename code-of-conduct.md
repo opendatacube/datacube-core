@@ -55,8 +55,7 @@ a project may be further defined and clarified by project maintainers.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported by contacting someone from the 
-[ODC Steering Council](https://github.com/opendatacube/governance/blob/master/people.md). 
+reported by contacting the ODC Steering Council Chair, currently [Rob Woodcock](robert.woodcock@csiro.au) or alternatively, a member of the ODC Secretariat, currently [George Dyke](george@symbioscomms.com). 
 All complaints will be reviewed and investigated and will result in a response that
 is deemed necessary and appropriate to the circumstances. The project team is
 obligated to maintain confidentiality with regard to the reporter of an incident.
