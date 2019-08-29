@@ -55,7 +55,9 @@ format
     Format the data is stored in. For NetCDF and HDF formats it **must** be 'NetCDF' and 'HDF'
 
 extent
-    Spatio-tempral extents of the data. Used for search in the database.
+    Spatio-temporal extents of the data in EPSG:4326 (lat/lon) coordinates. Used for search in the database.
+    Note: Take care when reprojecting the geo_ref_points bounding box to the new coordinate system. The extent
+    should be the bounding box of the data in EPSG:4326. (Don't just re-project the four points, its likely wrong)
 
 grid_spatial/projection
     spatial_reference
