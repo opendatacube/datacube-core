@@ -537,3 +537,28 @@ def without_lineage_sources(doc: Dict[str, Any],
         doc_view.sources = {}
 
     return doc
+
+
+def schema_validated(schema):
+    """
+    Decorate a class to enable validating its definition against a JSON Schema file.
+
+    Adds a self.validate() method which takes a dict used to populate the instantiated class.
+
+    :param pathlib.Path schema: filename of the json schema, relative to `SCHEMA_PATH`
+    :return: wrapped class
+    """
+
+    def validate(cls, document):
+        return validate_document(document, cls.schema, schema.parent)
+
+    def decorate(cls):
+        cls.schema = next(iter(read_documents(schema)))[1]
+        cls.validate = classmethod(validate)
+        return cls
+
+    return decorate
+
+
+def _readable_offset(offset):
+    return '.'.join(map(str, offset))
