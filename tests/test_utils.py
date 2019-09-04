@@ -36,6 +36,8 @@ from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_u
                                  pick_uri, uri_resolve,
                                  normalise_path, default_base_dir)
 
+from datacube.utils.io import check_write_path
+
 
 def test_stats_dates():
     # Winter for 1990
@@ -990,3 +992,23 @@ def test_num2numpy():
     assert num2numpy(3.3, np.dtype('float32')).dtype == np.dtype('float32')
     assert num2numpy(3.3, np.float32).dtype == np.dtype('float32')
     assert num2numpy(3.3, np.float64).dtype == np.dtype('float64')
+
+
+def test_check_write_path(tmpdir):
+    tmpdir = Path(str(tmpdir))
+    some_path = tmpdir/"_should_not_exist-5125177.txt"
+    assert not some_path.exists()
+    assert check_write_path(some_path, overwrite=False) is some_path
+    assert check_write_path(str(some_path), overwrite=False) == some_path
+    assert isinstance(check_write_path(str(some_path), overwrite=False), Path)
+
+    p = tmpdir/"ttt.tmp"
+    with open(str(p), 'wt') as f:
+        f.write("text")
+
+    assert p.exists()
+    with pytest.raises(IOError):
+        check_write_path(p, overwrite=False)
+
+    assert check_write_path(p, overwrite=True) == p
+    assert not p.exists()
