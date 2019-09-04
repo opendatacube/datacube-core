@@ -1,12 +1,8 @@
 """
 Utility functions
 """
-
-import logging
 import os
 from .documents import read_documents, validate_document
-
-_LOG = logging.getLogger(__name__)
 
 
 class DatacubeException(Exception):
