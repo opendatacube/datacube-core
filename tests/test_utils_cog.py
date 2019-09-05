@@ -1,6 +1,8 @@
 from pathlib import Path
 import numpy as np
 from types import SimpleNamespace
+from dask.delayed import Delayed
+import dask
 
 from datacube.testutils import (
     mk_test_image,
@@ -20,7 +22,7 @@ def gen_test_data(prefix, dask=False):
     extras = {}
 
     if dask:
-        extras.update(dask_chunks={})
+        extras.update(dask_chunks={'time': 1})
 
     xx = native_load(ds, **extras)
 
@@ -36,6 +38,24 @@ def test_cog_file(tmpdir):
     assert isinstance(ff, Path)
     assert ff == pp / "cog.tif"
     assert ff.exists()
+
+    yy = rio_slurp_xarray(pp / "cog.tif")
+    np.testing.assert_array_equal(yy.values, xx.values)
+    assert yy.geobox == xx.geobox
+    assert yy.nodata == xx.nodata
+
+
+def test_cog_file_dask(tmpdir):
+    pp = Path(str(tmpdir))
+    xx, ds = gen_test_data(pp, dask=True)
+    assert dask.is_dask_collection(xx)
+
+    path = pp / "cog.tif"
+    ff = write_cog(xx, path)
+    assert isinstance(ff, Delayed)
+    assert path.exists() is False
+    assert ff.compute() == path
+    assert path.exists()
 
     yy = rio_slurp_xarray(pp / "cog.tif")
     np.testing.assert_array_equal(yy.values, xx.values)
@@ -61,6 +81,40 @@ def test_cog_mem(tmpdir):
 
     # write to memory 2
     bb = to_cog(xx)
+    assert isinstance(bb, bytes)
+    path = pp / "cog2.tiff"
+    with open(str(path), "wb") as f:
+        f.write(bb)
+
+    yy = rio_slurp_xarray(path)
+    np.testing.assert_array_equal(yy.values, xx.values)
+    assert yy.geobox == xx.geobox
+    assert yy.nodata == xx.nodata
+
+
+def test_cog_mem_dask(tmpdir):
+    pp = Path(str(tmpdir))
+    xx, ds = gen_test_data(pp, dask=True)
+
+    # write to memory 1
+    bb = write_cog(xx, ":mem:")
+    assert isinstance(bb, Delayed)
+    bb = bb.compute()
+    assert isinstance(bb, bytes)
+
+    path = pp / "cog1.tiff"
+    with open(str(path), "wb") as f:
+        f.write(bb)
+
+    yy = rio_slurp_xarray(path)
+    np.testing.assert_array_equal(yy.values, xx.values)
+    assert yy.geobox == xx.geobox
+    assert yy.nodata == xx.nodata
+
+    # write to memory 2
+    bb = to_cog(xx)
+    assert isinstance(bb, Delayed)
+    bb = bb.compute()
     assert isinstance(bb, bytes)
     path = pp / "cog2.tiff"
     with open(str(path), "wb") as f:
