@@ -1,7 +1,6 @@
 from datacube import Datacube
 from datacube.api.query import query_group_by
 import numpy as np
-from collections import Sequence
 from types import SimpleNamespace
 import pytest
 
@@ -9,49 +8,11 @@ from pathlib import Path
 from datacube.testutils import (
     mk_sample_dataset,
     mk_test_image,
+    gen_tiff_dataset,
 )
 from datacube.testutils.io import write_gtiff, rio_slurp, rio_slurp_xarray
 from datacube.testutils.iodriver import NetCDF
 from datacube.utils import ignore_exceptions_if
-
-
-def gen_tiff_dataset(bands,
-                     base_folder,
-                     prefix='',
-                     timestamp='2018-07-19',
-                     **kwargs):
-    """
-       each band:
-         .name    - string
-         .values  - ndarray
-         .nodata  - numeric|None
-
-    :returns:  (Dataset, GeoBox)
-    """
-    if not isinstance(bands, Sequence):
-        bands = (bands,)
-
-    # write arrays to disk and construct compatible measurement definitions
-    gbox = None
-    mm = []
-    for band in bands:
-        name = band.name
-        fname = prefix + name + '.tiff'
-        meta = write_gtiff(base_folder/fname, band.values,
-                           nodata=band.nodata,
-                           overwrite=True,
-                           **kwargs)
-
-        gbox = meta.gbox
-
-        mm.append(dict(name=name,
-                       path=fname,
-                       layer=1,
-                       dtype=meta.dtype))
-
-    uri = Path(base_folder/'metadata.yaml').absolute().as_uri()
-    ds = mk_sample_dataset(mm, uri=uri, timestamp=timestamp)
-    return ds, gbox
 
 
 def test_load_data(tmpdir):
