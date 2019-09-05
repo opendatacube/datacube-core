@@ -149,7 +149,9 @@ def write_cog(geo_im: xr.DataArray,
     :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32]
     :param **extra_rio_opts: Any other option is passed to `rasterio.open`
     """
-    pix, geobox, nodata = geo_im.data, geo_im.geobox, geo_im.attrs.get("nodata", None)
+    pix = geo_im.data
+    geobox = getattr(geo_im, 'geobox', None)
+    nodata = geo_im.attrs.get("nodata", None)
 
     if geobox is None:
         raise ValueError("Need geo-registered array on input")
