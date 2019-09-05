@@ -394,5 +394,8 @@ def gen_tiff_dataset(bands,
                        dtype=meta.dtype))
 
     uri = Path(base_folder/'metadata.yaml').absolute().as_uri()
-    ds = mk_sample_dataset(mm, uri=uri, timestamp=timestamp)
+    ds = mk_sample_dataset(mm,
+                           uri=uri,
+                           timestamp=timestamp,
+                           geobox=gbox)
     return ds, gbox
