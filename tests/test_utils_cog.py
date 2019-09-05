@@ -1,3 +1,4 @@
+import pytest
 from pathlib import Path
 import numpy as np
 from types import SimpleNamespace
@@ -124,3 +125,17 @@ def test_cog_mem_dask(tmpdir):
     np.testing.assert_array_equal(yy.values, xx.values)
     assert yy.geobox == xx.geobox
     assert yy.nodata == xx.nodata
+
+
+@pytest.mark.parametrize("with_dask", [True, False])
+def test_cog_no_crs(tmpdir, with_dask):
+    pp = Path(str(tmpdir))
+
+    xx, ds = gen_test_data(pp, dask=with_dask)
+    del xx.attrs['crs']
+
+    with pytest.raises(ValueError):
+        write_cog(xx, ":mem:")
+
+    with pytest.raises(ValueError):
+        to_cog(xx)
