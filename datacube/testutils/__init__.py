@@ -354,3 +354,45 @@ def split_test_image(aa):
         y = aa & mask
         x = aa >> nshift
     return x, y
+
+
+def gen_tiff_dataset(bands,
+                     base_folder,
+                     prefix='',
+                     timestamp='2018-07-19',
+                     **kwargs):
+    """
+       each band:
+         .name    - string
+         .values  - ndarray
+         .nodata  - numeric|None
+
+    :returns:  (Dataset, GeoBox)
+    """
+    from .io import write_gtiff
+    from pathlib import Path
+
+    if not isinstance(bands, Sequence):
+        bands = (bands,)
+
+    # write arrays to disk and construct compatible measurement definitions
+    gbox = None
+    mm = []
+    for band in bands:
+        name = band.name
+        fname = prefix + name + '.tiff'
+        meta = write_gtiff(base_folder/fname, band.values,
+                           nodata=band.nodata,
+                           overwrite=True,
+                           **kwargs)
+
+        gbox = meta.gbox
+
+        mm.append(dict(name=name,
+                       path=fname,
+                       layer=1,
+                       dtype=meta.dtype))
+
+    uri = Path(base_folder/'metadata.yaml').absolute().as_uri()
+    ds = mk_sample_dataset(mm, uri=uri, timestamp=timestamp)
+    return ds, gbox
