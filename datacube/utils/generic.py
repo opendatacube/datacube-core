@@ -1,5 +1,7 @@
 import itertools
 
+EOS = object()
+
 
 def map_with_lookahead(it, if_one=None, if_many=None):
     """
@@ -26,3 +28,34 @@ def map_with_lookahead(it, if_one=None, if_many=None):
 
     for v in itertools.chain(iter(p1), it):
         yield proc(v)
+
+
+def qmap(func, q, eos_marker=EOS):
+    """ Converts queue to an iterator.
+
+    For every `item` in the `q` that is not `eos_marker`, `yield proc(item)`
+
+    Takes care of calling `.task_done()` on every item extracted from the queue.
+    """
+    while True:
+        item = q.get(block=True)
+        if item is eos_marker:
+            q.task_done()
+            break
+        else:
+            try:
+                yield func(item)
+            finally:
+                q.task_done()
+
+
+def it2q(its, q, eos_marker=EOS):
+    """ Convert iterator into a Queue
+
+        [1, 2, 3] => [1, 2, 3, eos_marker]
+    """
+    try:
+        for x in its:
+            q.put(x, block=True)
+    finally:
+        q.put(eos_marker, block=True)
