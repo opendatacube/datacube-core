@@ -363,6 +363,17 @@ def test_map_with_lookahead():
     assert list(map_with_lookahead(iter([1]), if_many=if_many)) == [1]
 
 
+def test_qmap():
+    from datacube.utils.generic import qmap, it2q
+    from queue import Queue
+
+    q = Queue(maxsize=100)
+    it2q(range(10), q)
+    rr = [x for x in qmap(str, q)]
+    assert rr == [str(x) for x in range(10)]
+    q.join()  # should not block
+
+
 def test_parse_yaml():
     assert parse_yaml('a: 10') == {'a': 10}
 
