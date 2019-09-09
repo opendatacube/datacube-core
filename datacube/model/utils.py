@@ -19,7 +19,7 @@ from datacube.utils.py import sorted_items
 try:
     from yaml import CSafeDumper as SafeDumper  # type: ignore
 except ImportError:
-    from yaml import SafeDumper
+    from yaml import SafeDumper  # type: ignore
 
 
 def machine_info():

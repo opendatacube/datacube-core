@@ -803,13 +803,13 @@ class DatasetResource(object):
 
             select_fields = self.make_select_fields(product, field_names, custom_offsets)
             select_field_names = tuple(field.name for field in select_fields)
-            result_type = namedtuple('DatasetLight', select_field_names)
+            result_type = namedtuple('DatasetLight', select_field_names)  # type: ignore
 
             if 'grid_spatial' in select_field_names:
                 class DatasetLight(result_type, DatasetSpatialMixin):
                     pass
             else:
-                class DatasetLight(result_type):
+                class DatasetLight(result_type):  # type: ignore
                     __slots__ = ()
 
             with self._db.connect() as connection:
@@ -828,7 +828,7 @@ class DatasetResource(object):
                     else:
                         field_values[field.name] = result[i_]
 
-                yield DatasetLight(**field_values)
+                yield DatasetLight(**field_values)  # type: ignore
 
     def make_select_fields(self, product, field_names, custom_offsets):
         """
