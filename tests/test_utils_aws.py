@@ -92,6 +92,12 @@ aws_secret_access_key = fake-fake-fake
     assert (pp/"credentials").exists()
     assert (pp/"config").exists()
 
+    for e in ("AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"
+              "AWS_DEFAULT_REGION AWS_DEFAULT_OUTPUT AWS_PROFILE "
+              "AWS_ROLE_SESSION_NAME AWS_CA_BUNDLE "
+              "AWS_SHARED_CREDENTIALS_FILE AWS_CONFIG_FILE").split(" "):
+        monkeypatch.delenv(e, raising=False)
+
     monkeypatch.setenv("AWS_CONFIG_FILE", str(pp/"config"))
     monkeypatch.setenv("AWS_SHARED_CREDENTIALS_FILE", str(pp/"credentials"))
 
