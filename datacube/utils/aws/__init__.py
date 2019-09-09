@@ -3,6 +3,7 @@ Helper methods for working with AWS
 """
 import botocore
 import botocore.session
+import time
 from urllib.request import urlopen
 
 
@@ -67,3 +68,83 @@ def auto_find_region(session=None):
         raise ValueError('Region name is not supplied and default can not be found')
 
     return region_name
+
+
+def get_creds_with_retry(session, max_tries=10, sleep=0.1):
+    """ Attempt to obtain credentials upto `max_tries` times with back off
+    :param session: botocore session, see get_boto_session
+    :param max_tries: number of attempt before failing and returing None
+    :param sleep: number of seconds to sleep after first failure (doubles on every consecutive failure)
+    """
+    for i in range(max_tries):
+        if i > 0:
+            time.sleep(sleep)
+            sleep = min(sleep*2, 10)
+
+        creds = session.get_credentials()
+        if creds is not None:
+            return creds
+
+    return None
+
+
+def mk_boto_session(profile=None,
+                    creds=None,
+                    region_name=None):
+    """ Get botocore session with correct `region` configured
+
+    :param profile: profile name to lookup
+    :param creds: Override credentials with supplied data
+    :param region_name: default region_name to use if not configured for a given profile
+    """
+    session = botocore.session.Session(profile=profile)
+
+    if creds is not None:
+        session.set_credentials(creds.access_key,
+                                creds.secret_key,
+                                creds.token)
+
+    _region = session.get_config_variable("region")
+    if _region is None:
+        if region_name is None or region_name == "auto":
+            _region = auto_find_region(session)
+        else:
+            _region = region_name
+        session.set_config_variable("region", _region)
+
+    return session
+
+
+def get_aws_settings(profile=None,
+                     region_name="auto",
+                     aws_unsigned=False,
+                     requester_pays=False):
+    """Compute `aws=` parameter for `set_default_rio_config`
+
+    see also `datacube.utils.rio.set_default_rio_config`
+
+    Returns a tuple of (aws: Dictionary, creds: session credentials from
+    botocore). Note that credentials are baked in to `aws` setting dictionary,
+    however since those might be STS credentials they might require refresh
+    hence they are returned from this function separately as well.
+    """
+    session = mk_boto_session(profile=profile,
+                              region_name=region_name)
+
+    region_name = session.get_config_variable("region")
+
+    if aws_unsigned:
+        return (dict(region_name=region_name,
+                     aws_unsigned=True), None)
+
+    creds = get_creds_with_retry(session)
+    if creds is None:
+        raise ValueError("Couldn't get credentials")
+
+    cc = creds.get_frozen_credentials()
+
+    return (dict(region_name=region_name,
+                 aws_access_key_id=cc.access_key,
+                 aws_secret_access_key=cc.secret_key,
+                 aws_session_token=cc.token,
+                 requester_pays=requester_pays), creds)
