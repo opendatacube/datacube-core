@@ -22,7 +22,7 @@ import yaml
 try:
     from yaml import CSafeLoader as SafeLoader  # type: ignore
 except ImportError:
-    from yaml import SafeLoader
+    from yaml import SafeLoader  # type: ignore
 
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.uris import mk_part_uri, as_url, uri_to_local_path
