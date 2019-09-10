@@ -7,6 +7,7 @@ from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.session import Session
 import time
 from urllib.request import urlopen
+from urllib.parse import urlparse
 from typing import Optional, Dict, Tuple, Any
 
 
@@ -19,6 +20,15 @@ def _fetch_text(url: str, timeout: float = 0.1) -> Optional[str]:
                 return None
     except IOError:
         return None
+
+
+def s3_url_parse(url: str) -> Tuple[str, str]:
+    """ Return Bucket, Key tuple
+    """
+    uu = urlparse(url)
+    if uu.scheme != "s3":
+        raise ValueError("Not a valid s3 url")
+    return uu.netloc, uu.path.lstrip('/')
 
 
 def ec2_metadata(timeout: float = 0.1) -> Optional[Dict[str, Any]]:

@@ -11,6 +11,7 @@ from datacube.utils.aws import (
     get_aws_settings,
     mk_boto_session,
     get_creds_with_retry,
+    s3_url_parse,
 )
 
 
@@ -146,3 +147,12 @@ def test_creds_with_retry():
 
     assert get_creds_with_retry(session, 2, 0.01) is None
     assert session.get_credentials.call_count == 2
+
+
+def test_s3():
+    assert s3_url_parse('s3://bucket/key') == ('bucket', 'key')
+    assert s3_url_parse('s3://bucket/key/') == ('bucket', 'key/')
+    assert s3_url_parse('s3://bucket/k/k/key') == ('bucket', 'k/k/key')
+
+    with pytest.raises(ValueError):
+        s3_url_parse("file://some/path")
