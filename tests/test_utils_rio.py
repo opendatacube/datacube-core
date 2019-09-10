@@ -7,6 +7,7 @@ from datacube.utils.rio import (
     get_rio_env,
     set_default_rio_config,
     activate_from_config,
+    configure_s3_access,
 )
 
 
@@ -121,3 +122,54 @@ def test_rio_env_via_config():
 
     deactivate_rio_env()
     assert get_rio_env() == {}
+
+
+def test_rio_configure_aws_access(monkeypatch, without_aws_env):
+    from distributed import Client
+
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "fake-region")
+
+    creds = configure_s3_access()
+    cc = creds.get_frozen_credentials()
+    assert cc.access_key == 'fake-key-id'
+    assert cc.secret_key == 'fake-secret'
+    assert cc.token is None
+
+    ee = activate_from_config()
+    assert ee is not None
+    assert 'AWS_ACCESS_KEY_ID' in ee
+    assert 'AWS_SECRET_ACCESS_KEY' in ee
+    assert 'AWS_REGION' in ee
+    assert 'AWS_SESSION_TOKEN' not in ee
+
+    ee = get_rio_env(sanitize=False)
+    assert ee is not None
+    assert ee['AWS_ACCESS_KEY_ID'] == 'fake-key-id'
+    assert ee['AWS_SECRET_ACCESS_KEY'] == 'fake-secret'
+    assert ee['AWS_REGION'] == 'fake-region'
+    assert ee['GDAL_DISABLE_READDIR_ON_OPEN'] == 'EMPTY_DIR'
+
+    ee_local = ee
+
+    client = Client(processes=False,
+                    threads_per_worker=1,
+                    dashboard_address=None)
+
+    assert client
+    creds = configure_s3_access(client=client)
+    cc = creds.get_frozen_credentials()
+    assert cc.access_key == 'fake-key-id'
+    assert cc.secret_key == 'fake-secret'
+    assert cc.token is None
+
+    ee = client.submit(activate_from_config).result()
+    assert ee is not None
+    assert 'AWS_ACCESS_KEY_ID' in ee
+    assert 'AWS_SECRET_ACCESS_KEY' in ee
+    assert 'AWS_REGION' in ee
+    assert 'AWS_SESSION_TOKEN' not in ee
+
+    ee = client.submit(get_rio_env, sanitize=False).result()
+    assert ee == ee_local
