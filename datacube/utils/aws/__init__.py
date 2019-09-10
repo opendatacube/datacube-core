@@ -3,11 +3,14 @@ Helper methods for working with AWS
 """
 import botocore
 import botocore.session
+from botocore.credentials import Credentials, ReadOnlyCredentials
+from botocore.session import Session
 import time
 from urllib.request import urlopen
+from typing import Optional, Dict, Tuple, Any
 
 
-def _fetch_text(url, timeout=0.1):
+def _fetch_text(url: str, timeout: float = 0.1) -> Optional[str]:
     try:
         with urlopen(url, timeout=timeout) as resp:
             if 200 <= resp.getcode() < 300:
@@ -18,7 +21,7 @@ def _fetch_text(url, timeout=0.1):
         return None
 
 
-def ec2_metadata(timeout=0.1):
+def ec2_metadata(timeout: float = 0.1) -> Optional[Dict[str, Any]]:
     """ When running inside AWS returns dictionary describing instance identity.
         Returns None when not inside AWS
     """
@@ -34,7 +37,7 @@ def ec2_metadata(timeout=0.1):
         return None
 
 
-def ec2_current_region():
+def ec2_current_region() -> Optional[str]:
     """ Returns name of the region  this EC2 instance is running in.
     """
     cfg = ec2_metadata()
@@ -43,7 +46,7 @@ def ec2_current_region():
     return cfg.get('region', None)
 
 
-def botocore_default_region(session=None):
+def botocore_default_region(session: Optional[Session] = None) -> Optional[str]:
     """ Returns default region name as configured on the system.
     """
     if session is None:
@@ -51,7 +54,7 @@ def botocore_default_region(session=None):
     return session.get_config_variable('region')
 
 
-def auto_find_region(session=None):
+def auto_find_region(session: Optional[Session] = None) -> str:
     """
     Try to figure out which region name to use
 
@@ -70,7 +73,9 @@ def auto_find_region(session=None):
     return region_name
 
 
-def get_creds_with_retry(session, max_tries=10, sleep=0.1):
+def get_creds_with_retry(session: Session,
+                         max_tries: int = 10,
+                         sleep: float = 0.1) -> Optional[Credentials]:
     """ Attempt to obtain credentials upto `max_tries` times with back off
     :param session: botocore session, see get_boto_session
     :param max_tries: number of attempt before failing and returing None
@@ -88,9 +93,9 @@ def get_creds_with_retry(session, max_tries=10, sleep=0.1):
     return None
 
 
-def mk_boto_session(profile=None,
-                    creds=None,
-                    region_name=None):
+def mk_boto_session(profile: Optional[str] = None,
+                    creds: Optional[ReadOnlyCredentials] = None,
+                    region_name: Optional[str] = None) -> Session:
     """ Get botocore session with correct `region` configured
 
     :param profile: profile name to lookup
@@ -115,10 +120,10 @@ def mk_boto_session(profile=None,
     return session
 
 
-def get_aws_settings(profile=None,
-                     region_name="auto",
-                     aws_unsigned=False,
-                     requester_pays=False):
+def get_aws_settings(profile: Optional[str] = None,
+                     region_name: str = "auto",
+                     aws_unsigned: bool = False,
+                     requester_pays: bool = False) -> Tuple[Dict[str, Any], Credentials]:
     """Compute `aws=` parameter for `set_default_rio_config`
 
     see also `datacube.utils.rio.set_default_rio_config`
