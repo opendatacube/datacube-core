@@ -10,6 +10,7 @@ from datacube.utils.aws import (
     auto_find_region,
     get_aws_settings,
     mk_boto_session,
+    get_creds_with_retry,
 )
 
 
@@ -137,3 +138,10 @@ aws_secret_access_key = fake-fake-fake
     with mock.patch('datacube.utils.aws.get_creds_with_retry', return_value=None):
         with pytest.raises(ValueError):
             aws, creds = get_aws_settings(profile='no_region')
+
+
+def test_creds_with_retry():
+    session = mock.MagicMock()
+    session.get_credentials = lambda: None
+
+    assert get_creds_with_retry(session, 2, 0.01) is None
