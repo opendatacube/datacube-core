@@ -15,6 +15,12 @@ from affine import Affine
 from datacube.utils import geometry
 
 
+AWS_ENV_VARS = ("AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"
+                "AWS_DEFAULT_REGION AWS_DEFAULT_OUTPUT AWS_PROFILE "
+                "AWS_ROLE_SESSION_NAME AWS_CA_BUNDLE "
+                "AWS_SHARED_CREDENTIALS_FILE AWS_CONFIG_FILE").split(" ")
+
+
 @pytest.fixture
 def example_gdal_path(data_folder):
     """Return the pathname of a sample geotiff file
@@ -74,6 +80,12 @@ def odc_style_xr_dataset():
     #  {'nodata': 0, 'units': '1', 'crs': geobox.crs})
 
     return dataset
+
+
+@pytest.fixture
+def without_aws_env(monkeypatch):
+    for e in AWS_ENV_VARS:
+        monkeypatch.delenv(e, raising=False)
 
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
