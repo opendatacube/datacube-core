@@ -9,6 +9,7 @@ from datacube.utils.aws import (
     ec2_current_region,
     auto_find_region,
     get_aws_settings,
+    mk_boto_session,
 )
 
 
@@ -106,6 +107,12 @@ aws_secret_access_key = fake-fake-fake
     assert aws['aws_access_key_id'] == 'AKIAWYXYXYXYXYXYXYXY'
     assert aws['aws_secret_access_key'] == 'fake-fake-fake'
 
+    sess = mk_boto_session(profile="no_region",
+                           creds=creds.get_frozen_credentials(),
+                           region_name="mordor")
+
+    assert sess.get_credentials().get_frozen_credentials() == creds.get_frozen_credentials()
+
     aws, creds = get_aws_settings(profile='east')
     assert aws['region_name'] == 'us-east-1'
     assert aws['aws_access_key_id'] == 'AKIAEYXYXYXYXYXYXYXY'
@@ -120,6 +127,7 @@ aws_secret_access_key = fake-fake-fake
                                   region_name="us-west-1",
                                   aws_unsigned=True)
 
+    assert creds is None
     assert aws['region_name'] == 'us-west-1'
     assert aws['aws_unsigned'] is True
 
@@ -130,3 +138,8 @@ aws_secret_access_key = fake-fake-fake
 
         assert aws['region_name'] == 'mordor'
         assert aws['aws_unsigned'] is True
+
+    # test failing due to credentials missing
+    with mock.patch('datacube.utils.aws.get_creds_with_retry', return_value=None):
+        with pytest.raises(ValueError):
+            aws, creds = get_aws_settings(profile='no_region')
