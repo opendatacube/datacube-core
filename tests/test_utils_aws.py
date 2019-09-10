@@ -142,6 +142,7 @@ aws_secret_access_key = fake-fake-fake
 
 def test_creds_with_retry():
     session = mock.MagicMock()
-    session.get_credentials = lambda: None
+    session.get_credentials = mock.MagicMock(return_value=None)
 
     assert get_creds_with_retry(session, 2, 0.01) is None
+    assert session.get_credentials.call_count == 2
