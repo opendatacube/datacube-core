@@ -165,8 +165,11 @@ def get_aws_settings(profile: Optional[str] = None,
 
     see also `datacube.utils.rio.set_default_rio_config`
 
-    Returns a tuple of (aws: Dictionary, creds: session credentials from
-    botocore). Note that credentials are baked in to `aws` setting dictionary,
+    Returns a tuple of:
+      (aws: Dictionary,
+       creds: session credentials from botocore).
+
+    Note that credentials are baked in to `aws` setting dictionary,
     however since those might be STS credentials they might require refresh
     hence they are returned from this function separately as well.
     """
