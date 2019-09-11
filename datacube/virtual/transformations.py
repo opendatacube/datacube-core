@@ -343,7 +343,12 @@ class Expressions(Transformation):
                 result.attrs['nodata'] = nodata
             result.attrs['units'] = output_desc.get('units', '1')
 
-            if not self.masked:
+            if 'masked' in output_desc:
+                masked = output_desc['masked']
+            else:
+                masked = self.masked
+
+            if not masked:
                 if dtype is None:
                     return result
                 return result.astype(dtype)
@@ -355,12 +360,18 @@ class Expressions(Transformation):
             dtype = result.dtype
             mask = ev_mask.transform(tree)
 
-            if not dtype_is_float(dtype) and nodata is None:
-                raise VirtualProductException("cannot mask without specified nodata")
+            if numpy.dtype(dtype) == numpy.bool:
+                # any operation on nodata should evaluate to False
+                # omission of attrs['nodata'] is deliberate
+                result = result.where(~mask, False)
 
-            if nodata is None:
+            elif nodata is None:
+                if not dtype_is_float(dtype):
+                    raise VirtualProductException("cannot mask without specified nodata")
+
                 result = result.where(~mask)
                 result.attrs['nodata'] = numpy.nan
+
             else:
                 result = result.where(~mask, nodata)
                 result.attrs['nodata'] = nodata
