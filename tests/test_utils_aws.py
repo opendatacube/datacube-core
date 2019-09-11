@@ -139,10 +139,12 @@ aws_secret_access_key = fake-fake-fake
         assert aws['region_name'] == 'mordor'
         assert aws['aws_unsigned'] is True
 
-    # test failing due to credentials missing
-    with mock.patch('datacube.utils.aws.get_creds_with_retry', return_value=None):
-        with pytest.raises(ValueError):
-            aws, creds = get_aws_settings(profile='no_region')
+
+@mock.patch('datacube.utils.aws.get_creds_with_retry', return_value=None)
+def test_get_aws_settings_no_credentials(without_aws_env):
+    # get_aws_settings should fail when credentials are not available
+    with pytest.raises(ValueError, match="Couldn't get credentials"):
+        aws, creds = get_aws_settings(region_name="fake")
 
 
 def test_creds_with_retry():
@@ -167,6 +169,7 @@ def test_s3_basics(without_aws_env):
     assert s3_fmt_range((0, 3)) == "bytes=0-2"
     assert s3_fmt_range(s_[4:10]) == "bytes=4-9"
     assert s3_fmt_range(s_[:10]) == "bytes=0-9"
+    assert s3_fmt_range(None) is None
 
     for bad in (s_[10:], s_[-2:3], s_[:-3], (-1, 3), (3, -1), s_[1:100:3]):
         with pytest.raises(ValueError):
