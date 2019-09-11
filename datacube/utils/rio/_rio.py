@@ -6,10 +6,7 @@ import functools
 import rasterio
 from rasterio.session import AWSSession, DummySession
 import rasterio.env
-
-# _local.env    None|rasterio.Env
-# _local.epoch  None|Int
-_local = threading.local()  # pylint: disable=invalid-name
+from datacube.utils.generic import thread_local_cache
 
 _CFG_LOCK = threading.Lock()
 _CFG = SimpleNamespace(aws=None,
@@ -27,6 +24,16 @@ def _sanitize(opts, keys):
     return {k: (v if k not in keys
                 else 'xx..xx')
             for k, v in opts.items()}
+
+
+def _state(purge=False):
+    """
+    .env   None| rasterio.Env
+    .epoch -1  | +Int
+    """
+    return thread_local_cache("__rio_state__",
+                              SimpleNamespace(env=None, epoch=-1),
+                              purge=purge)
 
 
 def get_rio_env(sanitize=True):
@@ -48,12 +55,10 @@ def get_rio_env(sanitize=True):
 def deactivate_rio_env():
     """ Exit previously configured environment, or do nothing if one wasn't configured.
     """
-    env_old = getattr(_local, 'env', None)
+    state = _state(purge=True)
 
-    if env_old is not None:
-        env_old.__exit__(None, None, None)
-        _local.env = None
-        _local.epoch = -1
+    if state.env is not None:
+        state.env.__exit__(None, None, None)
 
 
 def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
@@ -94,11 +99,16 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
 
     opts.update(**kwargs)
 
-    deactivate_rio_env()
+    state = _state()
+
+    if state.env is not None:
+        state.env.__exit__(None, None, None)
 
     env = rasterio.Env(session=session, **opts)
     env.__enter__()
-    _local.env = env
+    state.env = env
+    state.epoch = -1
+
     return get_rio_env()
 
 
@@ -109,14 +119,13 @@ def activate_from_config():
     - Configures current thread with default rio settings
     """
     cfg = _CFG
+    state = _state()
 
-    epoch = getattr(_local, 'epoch', -1)
-
-    if cfg.epoch != epoch:
+    if cfg.epoch != state.epoch:
         ee = activate_rio_env(aws=cfg.aws,
                               cloud_defaults=cfg.cloud_defaults,
                               **cfg.kwargs)
-        _local.epoch = cfg.epoch
+        state.epoch = cfg.epoch
         return ee
 
     return None
