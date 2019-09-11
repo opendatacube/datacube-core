@@ -261,7 +261,7 @@ class Expressions(Transformation):
         @lark.v_args(inline=True)
         class EvaluateType(EvaluateTree):
             def var_name(self, key):
-                return numpy.array([0], dtype=input_measurements[key.value].dtype)
+                return numpy.array([], dtype=input_measurements[key.value].dtype)
 
         ev = EvaluateType()
 
