@@ -8,7 +8,10 @@ from botocore.session import Session
 import time
 from urllib.request import urlopen
 from urllib.parse import urlparse
-from typing import Optional, Dict, Tuple, Any, Union
+from typing import Optional, Dict, Tuple, Any, Union, IO
+
+ByteRange = Union[slice, Tuple[int, int]]      # pylint: disable=invalid-name
+MaybeS3 = Optional[botocore.client.BaseClient] # pylint: disable=invalid-name
 
 
 def _fetch_text(url: str, timeout: float = 0.1) -> Optional[str]:
@@ -31,7 +34,7 @@ def s3_url_parse(url: str) -> Tuple[str, str]:
     return uu.netloc, uu.path.lstrip('/')
 
 
-def s3_fmt_range(r: Optional[Union[slice, Tuple[int, int]]]):
+def s3_fmt_range(r: Optional[ByteRange]):
     """ None -> None
         (in, out) -> "bytes={in}-{out-1}"
     """
@@ -187,3 +190,92 @@ def get_aws_settings(profile: Optional[str] = None,
                  aws_secret_access_key=cc.secret_key,
                  aws_session_token=cc.token,
                  requester_pays=requester_pays), creds)
+
+
+def s3_client(profile: Optional[str] = None,
+              creds: Optional[ReadOnlyCredentials] = None,
+              region_name: Optional[str] = None,
+              session: Optional[Session] = None,
+              use_ssl: bool = True,
+              **cfg) -> botocore.client.BaseClient:
+    """ Construct s3 client with configured region_name.
+
+    :param profile    : profile name to lookup (only used if session is not supplied)
+    :param creds      : Override credentials with supplied data
+    :param region_name: region_name to use, overrides session setting
+    :param session    : botocore session to use
+    :param use_ssl    : Whether to connect via http or https
+
+    **cfg: passed on to botocore.client.Config(..)
+       max_pool_connections
+       connect_timeout
+       read_timeout
+       parameter_validation
+       ...
+    """
+
+    if session is None:
+        session = mk_boto_session(profile=profile,
+                                  creds=creds,
+                                  region_name=region_name)
+
+    extras = {}  # type: Dict[str, Any]
+    if creds is not None:
+        extras.update(aws_access_key_id=creds.access_key,
+                      aws_secret_access_key=creds.secret_key,
+                      aws_session_token=creds.token)
+    if region_name is not None:
+        extras['region_name'] = region_name
+
+    return session.create_client('s3',
+                                 use_ssl=use_ssl,
+                                 **extras,
+                                 config=botocore.client.Config(**cfg))
+
+
+def s3_fetch(url: str,
+             s3: MaybeS3 = None,
+             range: Optional[ByteRange] = None,  # pylint: disable=redefined-builtin
+             **kwargs):
+    """ Read entire or part of object into memory and return as bytes
+
+    :param url: s3://bucket/path/to/object
+    :param s3: pre-configured s3 client, see make_s3_client()
+    :param range: Byte range to read (first_byte, one_past_last_byte), default is whole object
+    """
+    if range is not None:
+        try:
+            kwargs['Range'] = s3_fmt_range(range)
+        except Exception:
+            raise ValueError('Bad range passed in: ' + str(range))
+
+    s3 = s3 or s3_client()
+    bucket, key = s3_url_parse(url)
+    oo = s3.get_object(Bucket=bucket, Key=key, **kwargs)
+    return oo['Body'].read()
+
+
+def s3_dump(data: Union[bytes, str, IO],
+            url: str,
+            s3: MaybeS3 = None,
+            **kwargs):
+    """ Write data to s3 object.
+
+    :param data: bytes to write
+    :param url: s3://bucket/path/to/object
+    :param s3: pre-configured s3 client, see s3_client()
+    **kwargs -- Are passed on to `s3.put_object(..)`
+
+    ContentType
+    ACL
+    """
+
+    s3 = s3 or s3_client()
+    bucket, key = s3_url_parse(url)
+
+    r = s3.put_object(Bucket=bucket,
+                      Key=key,
+                      Body=data,
+                      **kwargs)
+    code = r['ResponseMetadata']['HTTPStatusCode']
+    return 200 <= code < 300

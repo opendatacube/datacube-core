@@ -13,6 +13,9 @@ from datacube.utils.aws import (
     get_creds_with_retry,
     s3_url_parse,
     s3_fmt_range,
+    s3_client,
+    s3_dump,
+    s3_fetch,
 )
 
 
@@ -150,8 +153,10 @@ def test_creds_with_retry():
     assert session.get_credentials.call_count == 2
 
 
-def test_s3():
+def test_s3_basics(without_aws_env):
     from numpy import s_
+    from botocore.credentials import ReadOnlyCredentials
+
     assert s3_url_parse('s3://bucket/key') == ('bucket', 'key')
     assert s3_url_parse('s3://bucket/key/') == ('bucket', 'key/')
     assert s3_url_parse('s3://bucket/k/k/key') == ('bucket', 'k/k/key')
@@ -166,3 +171,34 @@ def test_s3():
     for bad in (s_[10:], s_[-2:3], s_[:-3], (-1, 3), (3, -1), s_[1:100:3]):
         with pytest.raises(ValueError):
             s3_fmt_range(bad)
+
+    creds = ReadOnlyCredentials('fake-key', 'fake-secret', None)
+
+    assert str(s3_client(region_name='kk')._endpoint) == 's3(https://s3.kk.amazonaws.com)'
+    assert str(s3_client(region_name='kk', use_ssl=False)._endpoint) == 's3(http://s3.kk.amazonaws.com)'
+
+    s3 = s3_client(region_name='us-west-2', creds=creds)
+    assert s3 is not None
+
+
+def test_s3_io(monkeypatch, without_aws_env):
+    import moto
+    from numpy import s_
+
+    url = "s3://bucket/file.txt"
+    bucket, _ = s3_url_parse(url)
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
+
+    with moto.mock_s3():
+        s3 = s3_client(region_name='kk')
+        s3.create_bucket(Bucket=bucket)
+        assert s3_dump(b"33", url, s3=s3) is True
+        assert s3_fetch(url, s3=s3) == b"33"
+
+        assert s3_dump(b"0123456789ABCDEF", url, s3=s3) is True
+        assert s3_fetch(url, range=s_[:4], s3=s3) == b"0123"
+        assert s3_fetch(url, range=s_[3:8], s3=s3) == b"34567"
+
+        with pytest.raises(ValueError):
+            s3_fetch(url, range=s_[::2], s3=s3)
