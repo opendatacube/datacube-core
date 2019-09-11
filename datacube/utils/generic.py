@@ -1,6 +1,17 @@
 import itertools
+import threading
+from typing import Any
 
 EOS = object()
+_LCL = threading.local()
+
+__all__ = (
+    "EOS",
+    "map_with_lookahead",
+    "qmap",
+    "it2q",
+    "thread_local_cache",
+)
 
 
 def map_with_lookahead(it, if_one=None, if_many=None):
@@ -59,3 +70,33 @@ def it2q(its, q, eos_marker=EOS):
             q.put(x, block=True)
     finally:
         q.put(eos_marker, block=True)
+
+
+def thread_local_cache(name: str,
+                       initial_value: Any = None,
+                       purge: bool = False) -> Any:
+    """ Define/get thread local object with a given name.
+
+    :param name:          name for this cache
+    :param initial_value: Initial value if not set for this thread
+    :param purge:         If True delete from cache (returning what was there previously)
+
+    Returns
+    -------
+    value previously set in the thread or `initial_value`
+    """
+    absent = object()
+    cc = getattr(_LCL, name, absent)
+    absent = cc is absent
+
+    if absent:
+        cc = initial_value
+
+    if purge:
+        if not absent:
+            delattr(_LCL, name)
+    else:
+        if absent:
+            setattr(_LCL, name, cc)
+
+    return cc

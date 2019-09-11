@@ -1,5 +1,10 @@
 from queue import Queue
-from datacube.utils.generic import qmap, it2q, map_with_lookahead
+from datacube.utils.generic import (
+    qmap,
+    it2q,
+    map_with_lookahead,
+    thread_local_cache,
+)
 
 
 def test_map_with_lookahead():
@@ -22,3 +27,17 @@ def test_qmap():
     rr = [x for x in qmap(str, q)]
     assert rr == [str(x) for x in range(10)]
     q.join()  # should not block
+
+
+def test_thread_local_cache():
+    name = "test_0123394"
+    v = {}
+
+    assert thread_local_cache(name, v) is v
+    assert thread_local_cache(name) is v
+    assert thread_local_cache(name, purge=True) is v
+    assert thread_local_cache(name, 33) == 33
+    assert thread_local_cache(name, purge=True) == 33
+
+    assert thread_local_cache("no_such_key", purge=True) is None
+    assert thread_local_cache("no_such_key", 111, purge=True) == 111
