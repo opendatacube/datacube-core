@@ -1,9 +1,9 @@
 import pytest
 import mock
 import json
+from botocore.credentials import ReadOnlyCredentials
 
 from datacube.testutils import write_files
-
 from datacube.utils.aws import (
     _fetch_text,
     ec2_current_region,
@@ -16,6 +16,7 @@ from datacube.utils.aws import (
     s3_client,
     s3_dump,
     s3_fetch,
+    _s3_cache_key,
 )
 
 
@@ -205,3 +206,27 @@ def test_s3_io(monkeypatch, without_aws_env):
 
         with pytest.raises(ValueError):
             s3_fetch(url, range=s_[::2], s3=s3)
+
+
+def test_s3_client_cache(monkeypatch, without_aws_env):
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
+
+    s3 = s3_client(cache=True)
+    assert s3 is s3_client(cache=True)
+    assert s3 is s3_client(cache='purge')
+    assert s3_client(cache='purge') is None
+    assert s3 is not s3_client(cache=True)
+
+    opts = (dict(),
+            dict(region_name="foo"),
+            dict(region_name="bar"),
+            dict(profile="foo"),
+            dict(profile="foo", region_name="xxx"),
+            dict(profile="bar"),
+            dict(creds=ReadOnlyCredentials('fake1', '...', None)),
+            dict(creds=ReadOnlyCredentials('fake1', '...', None), region_name='custom'),
+            dict(creds=ReadOnlyCredentials('fake2', '...', None)))
+
+    keys = set(_s3_cache_key(**o) for o in opts)
+    assert len(keys) == len(opts)

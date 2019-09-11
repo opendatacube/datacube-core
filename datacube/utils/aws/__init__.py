@@ -9,9 +9,10 @@ import time
 from urllib.request import urlopen
 from urllib.parse import urlparse
 from typing import Optional, Dict, Tuple, Any, Union, IO
+from datacube.utils.generic import thread_local_cache
 
-ByteRange = Union[slice, Tuple[int, int]]      # pylint: disable=invalid-name
-MaybeS3 = Optional[botocore.client.BaseClient] # pylint: disable=invalid-name
+ByteRange = Union[slice, Tuple[int, int]]       # pylint: disable=invalid-name
+MaybeS3 = Optional[botocore.client.BaseClient]  # pylint: disable=invalid-name
 
 
 def _fetch_text(url: str, timeout: float = 0.1) -> Optional[str]:
@@ -195,12 +196,23 @@ def get_aws_settings(profile: Optional[str] = None,
                  requester_pays=requester_pays), creds)
 
 
-def s3_client(profile: Optional[str] = None,
-              creds: Optional[ReadOnlyCredentials] = None,
-              region_name: Optional[str] = None,
-              session: Optional[Session] = None,
-              use_ssl: bool = True,
-              **cfg) -> botocore.client.BaseClient:
+def _s3_cache_key(profile: Optional[str] = None,
+                  creds: Optional[ReadOnlyCredentials] = None,
+                  region_name: Optional[str] = None,
+                  prefix: str = "s3") -> str:
+    parts = [prefix,
+             "" if creds is None else creds.access_key,
+             profile or "",
+             region_name or ""]
+    return ":".join(parts)
+
+
+def _mk_s3_client(profile: Optional[str] = None,
+                  creds: Optional[ReadOnlyCredentials] = None,
+                  region_name: Optional[str] = None,
+                  session: Optional[Session] = None,
+                  use_ssl: bool = True,
+                  **cfg) -> botocore.client.BaseClient:
     """ Construct s3 client with configured region_name.
 
     :param profile    : profile name to lookup (only used if session is not supplied)
@@ -216,7 +228,6 @@ def s3_client(profile: Optional[str] = None,
        parameter_validation
        ...
     """
-
     if session is None:
         session = mk_boto_session(profile=profile,
                                   creds=creds,
@@ -234,6 +245,61 @@ def s3_client(profile: Optional[str] = None,
                                  use_ssl=use_ssl,
                                  **extras,
                                  config=botocore.client.Config(**cfg))
+
+
+def s3_client(profile: Optional[str] = None,
+              creds: Optional[ReadOnlyCredentials] = None,
+              region_name: Optional[str] = None,
+              session: Optional[Session] = None,
+              use_ssl: bool = True,
+              cache: Union[bool, str] = False,
+              **cfg) -> botocore.client.BaseClient:
+    """ Construct s3 client with configured region_name.
+
+    :param profile    : profile name to lookup (only used if session is not supplied)
+    :param creds      : Override credentials with supplied data
+    :param region_name: region_name to use, overrides session setting
+    :param session    : botocore session to use
+    :param use_ssl    : Whether to connect via http or https
+    :param cache      : True -- Store/lookup s3 client in thread local cache
+                        "purge" -- delete from cache and return what was there to begin with
+
+    **cfg: passed on to botocore.client.Config(..)
+       max_pool_connections
+       connect_timeout
+       read_timeout
+       parameter_validation
+       ...
+    """
+    if not cache:
+        return _mk_s3_client(profile,
+                             creds=creds,
+                             region_name=region_name,
+                             session=session,
+                             use_ssl=use_ssl,
+                             **cfg)
+
+    _cache = thread_local_cache("__aws_s3_cache", {})
+
+    key = _s3_cache_key(profile=profile,
+                        region_name=region_name,
+                        creds=creds)
+
+    if cache == "purge":
+        return _cache.pop(key, None)
+
+    s3 = _cache.get(key, None)
+
+    if s3 is None:
+        s3 = _mk_s3_client(profile,
+                           creds=creds,
+                           region_name=region_name,
+                           session=session,
+                           use_ssl=use_ssl,
+                           **cfg)
+        _cache[key] = s3
+
+    return s3
 
 
 def s3_fetch(url: str,
