@@ -9,8 +9,8 @@ from datacube.testutils import (
     mk_test_image,
     gen_tiff_dataset,
 )
-from datacube.testutils.io import native_load, rio_slurp_xarray
-from datacube.utils.cog import write_cog, to_cog
+from datacube.testutils.io import native_load, rio_slurp_xarray, rio_slurp
+from datacube.utils.cog import write_cog, to_cog, _write_cog
 
 
 def gen_test_data(prefix, dask=False):
@@ -44,6 +44,20 @@ def test_cog_file(tmpdir):
     np.testing.assert_array_equal(yy.values, xx.values)
     assert yy.geobox == xx.geobox
     assert yy.nodata == xx.nodata
+
+    _write_cog(np.stack([xx.values, xx.values]),
+               xx.geobox,
+               pp / "cog-2-bands.tif",
+               overview_levels=[])
+
+    yy, mm = rio_slurp(pp / "cog-2-bands.tif")
+    assert mm.gbox == xx.geobox
+    assert yy.shape == (2, *xx.shape)
+    np.testing.assert_array_equal(yy[0], xx.values)
+    np.testing.assert_array_equal(yy[1], xx.values)
+
+    with pytest.raises(ValueError, match="Need 2d or 3d ndarray on input"):
+        _write_cog(xx.values.ravel(), xx.geobox, pp / "wontwrite.tif")
 
 
 def test_cog_file_dask(tmpdir):
