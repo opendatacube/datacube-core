@@ -8,7 +8,7 @@ from botocore.session import Session
 import time
 from urllib.request import urlopen
 from urllib.parse import urlparse
-from typing import Optional, Dict, Tuple, Any
+from typing import Optional, Dict, Tuple, Any, Union
 
 
 def _fetch_text(url: str, timeout: float = 0.1) -> Optional[str]:
@@ -29,6 +29,30 @@ def s3_url_parse(url: str) -> Tuple[str, str]:
     if uu.scheme != "s3":
         raise ValueError("Not a valid s3 url")
     return uu.netloc, uu.path.lstrip('/')
+
+
+def s3_fmt_range(r: Optional[Union[slice, Tuple[int, int]]]):
+    """ None -> None
+        (in, out) -> "bytes={in}-{out-1}"
+    """
+    if r is None:
+        return None
+
+    if isinstance(r, slice):
+        if r.step not in [1, None]:
+            raise ValueError("Can not process decimated slices")
+        if r.stop is None:
+            raise ValueError("Can not process open ended slices")
+
+        _in = 0 if r.start is None else r.start
+        _out = r.stop
+    else:
+        _in, _out = r
+
+    if _in < 0 or _out < 0:
+        raise ValueError("Slice has to be positive")
+
+    return 'bytes={:d}-{:d}'.format(_in, _out-1)
 
 
 def ec2_metadata(timeout: float = 0.1) -> Optional[Dict[str, Any]]:
