@@ -19,7 +19,7 @@ def get_metadata_path(possible_path: Union[str, Path]):
     :rtype: str
     """
     # We require exact URLs, lets skip any sort of fancy investigation and mapping
-    if is_url(possible_path):
+    if isinstance(possible_path, str) and is_url(possible_path):
         return possible_path
 
     dataset_path = Path(possible_path)
