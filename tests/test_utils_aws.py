@@ -12,6 +12,7 @@ from datacube.utils.aws import (
     mk_boto_session,
     get_creds_with_retry,
     s3_url_parse,
+    s3_fmt_range,
 )
 
 
@@ -150,9 +151,18 @@ def test_creds_with_retry():
 
 
 def test_s3():
+    from numpy import s_
     assert s3_url_parse('s3://bucket/key') == ('bucket', 'key')
     assert s3_url_parse('s3://bucket/key/') == ('bucket', 'key/')
     assert s3_url_parse('s3://bucket/k/k/key') == ('bucket', 'k/k/key')
 
     with pytest.raises(ValueError):
         s3_url_parse("file://some/path")
+
+    assert s3_fmt_range((0, 3)) == "bytes=0-2"
+    assert s3_fmt_range(s_[4:10]) == "bytes=4-9"
+    assert s3_fmt_range(s_[:10]) == "bytes=0-9"
+
+    for bad in (s_[10:], s_[-2:3], s_[:-3], (-1, 3), (3, -1), s_[1:100:3]):
+        with pytest.raises(ValueError):
+            s3_fmt_range(bad)
