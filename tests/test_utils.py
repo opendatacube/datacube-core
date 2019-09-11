@@ -29,7 +29,6 @@ from datacube.utils import (gen_password, write_user_secret_file, slurp, read_do
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 from datacube.utils.documents import parse_yaml, without_lineage_sources
-from datacube.utils.generic import map_with_lookahead
 from datacube.utils.math import num2numpy, is_almost_int, valid_mask, invalid_mask, clamp
 from datacube.utils.py import sorted_items
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
@@ -347,31 +346,6 @@ def test_without_lineage_sources():
 
     assert without_lineage_sources(mk_sample(10), no_sources_type) == mk_sample(10)
     assert without_lineage_sources(mk_sample(10), no_sources_type, inplace=True) == mk_sample(10)
-
-
-def test_map_with_lookahead():
-    def if_one(x):
-        return 'one' + str(x)
-
-    def if_many(x):
-        return 'many' + str(x)
-
-    assert list(map_with_lookahead(iter([]), if_one, if_many)) == []
-    assert list(map_with_lookahead(iter([1]), if_one, if_many)) == [if_one(1)]
-    assert list(map_with_lookahead(range(5), if_one, if_many)) == list(map(if_many, range(5)))
-    assert list(map_with_lookahead(range(10), if_one=if_one)) == list(range(10))
-    assert list(map_with_lookahead(iter([1]), if_many=if_many)) == [1]
-
-
-def test_qmap():
-    from datacube.utils.generic import qmap, it2q
-    from queue import Queue
-
-    q = Queue(maxsize=100)
-    it2q(range(10), q)
-    rr = [x for x in qmap(str, q)]
-    assert rr == [str(x) for x in range(10)]
-    q.join()  # should not block
 
 
 def test_parse_yaml():
