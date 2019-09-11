@@ -74,8 +74,6 @@ def partition_map(n: int, func: Any, its: Iterable[Any],
     :param name: How the computation should be named in dask visualizations
     """
     def lump_proc(dd):
-        if dd is None:
-            return None
         return [func(d) for d in dd]
 
     proc = dask.delayed(lump_proc, nout=1, pure=True)
