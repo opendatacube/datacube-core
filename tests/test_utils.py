@@ -373,15 +373,15 @@ def test_read_docs_from_file_uris(sample_document_files):
     _test_read_docs_impl(uris)
 
 
-def test_read_docs_from_s3(sample_document_files):
+def test_read_docs_from_s3(sample_document_files, monkeypatch):
     """
     Use a mocked S3 bucket to test reading documents from S3
     """
     boto3 = pytest.importorskip('boto3')
     moto = pytest.importorskip('moto')
 
-    os.environ['AWS_ACCESS_KEY_ID'] = 'fake'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'fake'
+    monkeypatch.setenv('AWS_ACCESS_KEY_ID', 'fake')
+    monkeypatch.setenv('AWS_SECRET_ACCESS_KEY', 'fake')
 
     with moto.mock_s3():
         s3 = boto3.resource('s3', region_name='us-east-1')
@@ -682,18 +682,20 @@ def test_dedup():
         dedup_lineage(ds0)
 
 
-def test_default_base_dir():
+def test_default_base_dir(monkeypatch):
     def set_pwd(p):
-        os.environ['PWD'] = str(p)
+        if p is None:
+            monkeypatch.delenv('PWD')
+        else:
+            monkeypatch.setenv('PWD', str(p))
 
-    pwd_backup = os.environ.get('PWD', None)
     cwd = Path('.').resolve()
 
     # Default base dir (once resolved) will never be different from cwd
     assert default_base_dir().resolve() == cwd
 
     # should work when PWD is not set
-    os.environ.pop('PWD', None)
+    set_pwd(None)
     assert 'PWD' not in os.environ
     assert default_base_dir() == cwd
 
@@ -716,10 +718,6 @@ def test_default_base_dir():
     # - create symlink to current directory in temp
     # - set PWD to that link
     # - make sure that returned path is the same as symlink and different from cwd
-
-    # restore environment (should probably do it even test fails, eh)
-    if pwd_backup:
-        set_pwd(pwd_backup)
 
 
 def test_normalise_path():
