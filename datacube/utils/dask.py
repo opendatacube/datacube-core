@@ -1,7 +1,7 @@
 """ Dask Distributed Tools
 
 """
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Union, Tuple
 from random import randint
 import toolz
 import queue
@@ -9,12 +9,17 @@ from dask.distributed import Client
 import dask
 import threading
 import logging
+from botocore.credentials import ReadOnlyCredentials
+from .aws import s3_dump, s3_client
+
 
 __all__ = (
     "start_local_dask",
     "pmap",
     "compute_tasks",
     "partition_map",
+    "save_blob_to_file",
+    "save_blob_to_s3",
 )
 
 _LOG = logging.getLogger(__name__)
@@ -159,3 +164,105 @@ def pmap(func: Any,
 
     for xx in compute_tasks(tasks, client=client, max_in_flight=max_in_flight):
         yield from xx
+
+
+def _save_blob_to_file(data: Union[bytes, str],
+                       fname: str) -> Tuple[str, bool]:
+    if isinstance(data, str):
+        data = data.encode('utf8')
+
+    try:
+        with open(fname, 'wb') as f:
+            f.write(data)
+    except IOError:
+        return (fname, False)
+
+    return (fname, True)
+
+
+@dask.delayed(name='save-to-disk', pure=False)
+def save_blob_to_file(data,
+                      fname,
+                      with_deps=None):
+    """ Dump from memory to local filesystem as a dask delayed operation.
+
+    NOTE: dask workers better be local or have network filesystem mounted in
+    the same path as calling code.
+
+    :param data     : Data blob to save to file (have to fit into memory all at once),
+                      strings will be saved in UTF8 format.
+    :param fname    : Path to file
+    :param with_deps: Useful for introducing dependencies into dask graph,
+                      for example save yaml file after saving all tiff files.
+
+    Returns
+    -------
+    (File Path, True) tuple on success
+    (File Path, False) on any error
+    """
+    return _save_blob_to_file(data, fname)
+
+
+def _save_blob_to_s3(data: Union[bytes, str],
+                     url: str,
+                     profile: Optional[str] = None,
+                     creds: Optional[ReadOnlyCredentials] = None,
+                     region_name: Optional[str] = None,
+                     **kw) -> Tuple[str, bool]:
+    """ Dump from memory to S3 as a dask delayed operation.
+
+    :param data       : Data blob to save to file (have to fit into memory all at once)
+    :param url        : Url in a form s3://bucket/path/to/file
+
+    :param profile    : Profile name to lookup (only used if session is not supplied)
+    :param creds      : Override credentials with supplied data
+    :param region_name: Region name to use, overrides session setting
+
+    Returns
+    -------
+    (url, True) tuple on success
+    (url, False) on any error
+    """
+    try:
+        s3 = s3_client(profile=profile,
+                       creds=creds,
+                       region_name=region_name,
+                       cache=True)
+
+        result = s3_dump(data, url, s3=s3, **kw)
+    except IOError:
+        result = False
+
+    return url, result
+
+
+@dask.delayed(name='save-to-s3', pure=False)
+def save_blob_to_s3(data,
+                    url,
+                    profile=None,
+                    creds=None,
+                    region_name=None,
+                    with_deps=None,
+                    **kw):
+    """ Dump from memory to S3 as a dask delayed operation.
+
+    :param data       : Data blob to save to file (have to fit into memory all at once)
+    :param url        : Url in a form s3://bucket/path/to/file
+
+    :param profile    : Profile name to lookup (only used if session is not supplied)
+    :param creds      : Override credentials with supplied data
+    :param region_name: Region name to use, overrides session setting
+
+    :param with_deps  : Useful for introducing dependencies into dask graph,
+                        for example save yaml file after saving all tiff files.
+
+    Returns
+    -------
+    (url, True) tuple on success
+    (url, False) on any error
+    """
+    return _save_blob_to_s3(data, url,
+                            profile=profile,
+                            creds=creds,
+                            region_name=region_name,
+                            **kw)
