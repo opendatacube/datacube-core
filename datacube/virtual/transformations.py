@@ -99,6 +99,7 @@ class ApplyMask(Transformation):
         def dilate(array):
             """Dilation e.g. for the mask"""
             # e.g. kernel = [[1] * 7] * 7 # blocky 3-pixel dilation
+            # pylint: disable=invalid-unary-operand-type
             y, x = numpy.ogrid[-self.dilation:(self.dilation+1), -self.dilation:(self.dilation+1)]
             kernel = ((x * x) + (y * y) <= (self.dilation + 0.5) ** 2)  # disk-like `self.dilation` radial dilation
             return ~scipy.ndimage.binary_dilation(~array, structure=kernel.reshape((1, )+kernel.shape))
