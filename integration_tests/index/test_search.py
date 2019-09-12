@@ -688,6 +688,7 @@ def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
 
 def test_fetch_all_of_md_type(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # Get every dataset of the md type.
+    assert pseudo_ls8_dataset.metadata_type is not None  # to shut up mypy
     results = index.datasets.search_eager(
         metadata_type=pseudo_ls8_dataset.metadata_type.name
     )
@@ -1063,7 +1064,7 @@ def test_find_duplicates(index, pseudo_ls8_type,
     f = pseudo_ls8_type.metadata_type.dataset_fields.get
     field_res = sorted(index.datasets.search_product_duplicates(
         pseudo_ls8_type,
-        f('time').lower.day
+        f('time').lower.day  # type: ignore
     ))
 
     # Datasets 1 & 3 are on the 26th.
