@@ -208,6 +208,7 @@ def test_s3_io(monkeypatch, without_aws_env):
             s3_fetch(url, range=s_[::2], s3=s3)
 
 
+@mock.patch('datacube.utils.aws.ec2_current_region', return_value="us-west-2")
 def test_s3_client_cache(monkeypatch, without_aws_env):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
