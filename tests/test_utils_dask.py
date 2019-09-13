@@ -73,7 +73,7 @@ def test_save_blob_file_direct(tmpdir, blob):
     assert _save_blob_to_file(blob, fname) == (fname, True)
     assert slurp(fname, mode=mode) == blob
 
-    fname = tmpdir/"missing"/"file.txt"
+    fname = str(tmpdir/"missing"/"file.txt")
     assert _save_blob_to_file(blob, fname) == (fname, False)
 
 
@@ -91,7 +91,7 @@ def test_save_blob_file(tmpdir, blob, dask_client):
     assert dask_client.compute(rr).result() == (fname, True)
     assert slurp(fname, mode=mode) == blob
 
-    fname = tmpdir/"missing"/"file.txt"
+    fname = str(tmpdir/"missing"/"file.txt")
     rr = save_blob_to_file(dask_blob, fname)
     assert dask_client.compute(rr).result() == (fname, False)
 
