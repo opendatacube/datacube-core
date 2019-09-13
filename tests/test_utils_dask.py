@@ -24,17 +24,6 @@ from datacube.utils.aws import (
 )
 
 
-@pytest.fixture(scope="module")
-def dask_client():
-    from distributed import Client
-    client = Client(processes=False,
-                    threads_per_worker=1,
-                    dashboard_address=None)
-    yield client
-    client.close()
-    del client
-
-
 def test_compute_tasks():
     client = start_local_dask(threads_per_worker=1,
                               dashboard_address=None)
