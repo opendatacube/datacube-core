@@ -127,6 +127,8 @@ def test_save_blob_s3_direct(blob, monkeypatch):
         assert bb1 == blob
         assert bb2 == blob2
 
+        assert _save_blob_to_s3("", "s3://not-a-bucket/f.txt") == ("s3://not-a-bucket/f.txt", False)
+
 
 @pytest.mark.parametrize("blob", [
     "some utf8 string",

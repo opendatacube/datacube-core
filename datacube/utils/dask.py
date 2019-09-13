@@ -10,6 +10,7 @@ import dask
 import threading
 import logging
 from botocore.credentials import ReadOnlyCredentials
+from botocore.exceptions import BotoCoreError
 from .aws import s3_dump, s3_client
 
 
@@ -223,6 +224,7 @@ def _save_blob_to_s3(data: Union[bytes, str],
     (url, True) tuple on success
     (url, False) on any error
     """
+    from botocore.errorfactory import ClientError
     try:
         s3 = s3_client(profile=profile,
                        creds=creds,
@@ -230,7 +232,7 @@ def _save_blob_to_s3(data: Union[bytes, str],
                        cache=True)
 
         result = s3_dump(data, url, s3=s3, **kw)
-    except IOError:
+    except (IOError, BotoCoreError, ClientError):
         result = False
 
     return url, result
