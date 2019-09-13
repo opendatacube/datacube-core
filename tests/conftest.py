@@ -91,3 +91,14 @@ def without_aws_env(monkeypatch):
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
            'AUTHORITY["EPSG","4326"]]'
+
+
+@pytest.fixture(scope="module")
+def dask_client():
+    from distributed import Client
+    client = Client(processes=False,
+                    threads_per_worker=1,
+                    dashboard_address=None)
+    yield client
+    client.close()
+    del client

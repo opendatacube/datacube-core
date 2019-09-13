@@ -124,9 +124,7 @@ def test_rio_env_via_config():
     assert get_rio_env() == {}
 
 
-def test_rio_configure_aws_access(monkeypatch, without_aws_env):
-    from distributed import Client
-
+def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
     monkeypatch.setenv("AWS_DEFAULT_REGION", "fake-region")
@@ -152,12 +150,8 @@ def test_rio_configure_aws_access(monkeypatch, without_aws_env):
     assert ee['GDAL_DISABLE_READDIR_ON_OPEN'] == 'EMPTY_DIR'
 
     ee_local = ee
+    client = dask_client
 
-    client = Client(processes=False,
-                    threads_per_worker=1,
-                    dashboard_address=None)
-
-    assert client
     creds = configure_s3_access(client=client)
     cc = creds.get_frozen_credentials()
     assert cc.access_key == 'fake-key-id'
