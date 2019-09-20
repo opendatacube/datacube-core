@@ -105,6 +105,11 @@ class CRS(object):
             crs_str = crs_str.crs_str
         self.crs_str = crs_str
         self._crs = _make_crs(crs_str)
+        # compatible with GDAL 3.0+
+        try:
+            self._crs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        except AttributeError as e:
+            pass
 
     def __getitem__(self, item):
         return self._crs.GetAttrValue(item)
