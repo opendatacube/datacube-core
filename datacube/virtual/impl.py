@@ -846,18 +846,28 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
 
     for tile_index in numpy.ndindex(gt.shape):
         sub_geobox = gt[tile_index]
+        # find the input array slice from the output geobox
         reproject_roi = compute_reproject_roi(band.geobox, sub_geobox, padding=1)
 
+        # find the chunk from the input array with the slice index
         subset_band = band[(...,) + reproject_roi.roi_src].chunk(-1)
 
         if min(subset_band.shape) == 0:
+            # pad the empty chunk
             new_layer[(dask_name,) + tile_index] = (numpy.full, sub_geobox.shape, band.nodata, band.dtype)
         else:
+            # next 3 lines to generate the new graph
             dependencies.append(subset_band.data)
+            # get the input dask array for the function `reproject_array`
             band_key = list(flatten(subset_band.data.__dask_keys__()))[0]
+            # generate a new layer of dask graph with reroject
             new_layer[(dask_name,) + tile_index] = (reproject_array,
                                                     band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
 
+    # a new graph with the additional layer and pack the graph into dask.array
+    # since dask.array is a higher level interface than the graph and only regular chunking is allowed in dask.array,
+    # with output dask.array of regular chunks, the input dask.array for reproject has irregular chunks (got by reproject_goi),
+    # to manipulate the graph seems the only way to obtain a dask.array with user defined chunks after reproject
     data = dask.array.Array(band.data.dask.from_collections(dask_name, new_layer, dependencies=dependencies),
                             dask_name,
                             chunks=spatial_chunks,
