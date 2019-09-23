@@ -229,10 +229,10 @@ The recipe looks like:
 
 .. code-block:: text
 
-    {'reproject': <input-virtual-product>,
-     'output_crs': <crs-string>,
-     'resolution': [<y-resolution>, <x-resolution>],
-     'align': [<y-alignment>, <x-alignment>],
+    {'reproject': {'output_crs': <crs-string>,
+                   'resolution': [<y-resolution>, <x-resolution>],
+                   'align': [<y-alignment>, <x-alignment>]},
+     'input':  <input-virtual-product>,
      'resampling': <resampling-settings>}
 
 Here ``align`` and ``resampling`` are optional (defaults to edge-aligned and nearest neighbor respectively).

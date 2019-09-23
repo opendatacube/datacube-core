@@ -95,19 +95,18 @@ class NameResolver:
                                               **reject_keys(recipe, ['aggregate', 'input', 'group_by'])))
 
         if kind == 'reproject':
-            input_product = get('reproject')
-            output_crs = get('output_crs')
-            resolution = get('resolution')
-            align = get('align')
+            input_product = get('input')
+            output_crs = recipe['reproject'].get('output_crs')
+            resolution = recipe['reproject'].get('resolution')
+            align = recipe['reproject'].get('align')
 
             self._assert(input_product is not None, "no input for reproject in {}".format(recipe))
             self._assert(output_crs is not None, "no output_crs for reproject in {}".format(recipe))
             self._assert(resolution is not None, "no resolution for reproject in {}".format(recipe))
 
-            return from_validated_recipe(dict(reproject=self.construct(**input_product),
-                                              output_crs=output_crs, resolution=resolution, align=align,
-                                              **reject_keys(recipe,
-                                                            ['reproject', 'output_crs', 'resolution', 'align'])))
+            return from_validated_recipe(dict(reproject=recipe['reproject'],
+                                              input=self.construct(**input_product),
+                                              **reject_keys(recipe, ['reproject', 'input'])))
 
         raise VirtualProductException("could not understand virtual product recipe: {}".format(recipe))
 

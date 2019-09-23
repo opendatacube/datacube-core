@@ -747,11 +747,11 @@ class Reproject(VirtualProduct):
     @property
     def _input(self) -> "VirtualProduct":
         """ The input product of a transform product. """
-        return from_validated_recipe(self["reproject"])
+        return from_validated_recipe(self["input"])
 
     def _reconstruct(self):
         # pylint: disable=protected-access
-        return dict(reproject=self._input._reconstruct(), **reject_keys(self, ["reproject"]))
+        return dict(input=self._input._reconstruct(), **reject_keys(self, ["input"]))
 
     def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
         """
@@ -778,9 +778,9 @@ class Reproject(VirtualProduct):
             selected = None
 
         geobox = output_geobox(datasets=selected,
-                               output_crs=self['output_crs'],
-                               resolution=self['resolution'],
-                               align=self.get('align'),
+                               output_crs=self['reproject']['output_crs'],
+                               resolution=self['reproject']['resolution'],
+                               align=self['reproject'].get('align'),
                                geopolygon=geopolygon)
 
         # load natively
