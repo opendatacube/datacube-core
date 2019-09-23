@@ -864,10 +864,9 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
             new_layer[(dask_name,) + tile_index] = (reproject_array,
                                                     band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
 
-    # a new graph with the additional layer and pack the graph into dask.array
-    # since dask.array is a higher level interface than the graph and only regular chunking is allowed in dask.array,
-    # with output dask.array of regular chunks, the input dask.array for reproject has irregular chunks (got by reproject_goi),
-    # to manipulate the graph seems the only way to obtain a dask.array with user defined chunks after reproject
+    # create a new graph with the additional layer and pack the graph into dask.array
+    # since only regular chunking is allowed at the higher level dask.array interface,
+    # to manipulate the graph seems to be the easiest way to obtain a dask.array with irregular chunks after reproject
     data = dask.array.Array(band.data.dask.from_collections(dask_name, new_layer, dependencies=dependencies),
                             dask_name,
                             chunks=spatial_chunks,
