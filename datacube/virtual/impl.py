@@ -409,7 +409,7 @@ class Product(VirtualProduct):
                 self._assert(measurement in measurement_dicts,
                              '{} not found in {}'.format(measurement, self._product))
 
-            measurement_names = load_settings['measurement']
+            measurement_names = load_settings['measurements']
 
         if measurement_names is not None:
             measurement_dicts = {name: measurement_dicts[name] for name in measurement_names}
