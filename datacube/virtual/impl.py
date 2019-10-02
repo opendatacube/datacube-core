@@ -618,7 +618,8 @@ class Collate(VirtualProduct):
                   for source_index, (product, dataset_bag)
                   in enumerate(zip(self._children, datasets.bag['collate']))]
 
-        return VirtualDatasetBox(xarray.concat([grouped.box for grouped in groups], dim=self.get('dim', 'time')),
+        dim = self.get('dim', 'time')
+        return VirtualDatasetBox(xarray.concat([grouped.box for grouped in groups], dim=dim).sortby(dim),
                                  select_unique([grouped.geobox for grouped in groups]),
                                  select_unique([grouped.load_natively for grouped in groups]),
                                  merge_dicts([grouped.product_definitions for grouped in groups]),
@@ -661,9 +662,10 @@ class Collate(VirtualProduct):
 
         non_empty = [g for g in groups if g is not None]
 
+        dim = self.get('dim', 'time')
         return xarray.concat(non_empty,
-                             dim=self.get('dim', 'time')).assign_attrs(**select_unique([g.attrs
-                                                                                        for g in non_empty]))
+                             dim=dim).sortby(dim).assign_attrs(**select_unique([g.attrs
+                                                                                for g in non_empty]))
 
 
 class Juxtapose(VirtualProduct):
