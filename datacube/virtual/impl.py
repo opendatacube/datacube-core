@@ -241,7 +241,7 @@ class VirtualProduct(Mapping):
 
     _GEOBOX_KEYS = {'output_crs', 'resolution', 'align'}
     _GROUPING_KEYS = {'group_by'}
-    _LOAD_KEYS = {'measurements', 'fuse_func', 'resampling', 'dask_chunks'}
+    _LOAD_KEYS = {'measurements', 'fuse_func', 'resampling', 'dask_chunks', 'like'}
     _ADDITIONAL_KEYS = {'dataset_predicate'}
 
     _NON_SPATIAL_KEYS = _GEOBOX_KEYS | _GROUPING_KEYS
@@ -416,7 +416,9 @@ class Product(VirtualProduct):
 
         if grouped.load_natively:
             canonical_names = [measurement.name for measurement in measurement_dicts.values()]
-            dataset_geobox = geobox_union_conservative([native_geobox(ds, measurements=canonical_names)
+            dataset_geobox = geobox_union_conservative([native_geobox(ds,
+                                                                      measurements=canonical_names,
+                                                                      basis=merged.get('like'))
                                                         for ds in grouped.box.sum().item()])
 
             if grouped.geopolygon is not None:
