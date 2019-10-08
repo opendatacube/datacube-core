@@ -485,7 +485,12 @@ class Transform(VirtualProduct):
         return self._input.group(datasets, **group_settings)
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
-        return self._transformation.compute(self._input.fetch(grouped, **load_settings))
+        input_data = self._input.fetch(grouped, **load_settings)
+        output_data = self._transformation.compute(input_data)
+        output_data.attrs['crs'] = input_data.attrs['crs']
+        for data_var in output_data.data_vars:
+            output_data[data_var].attrs['crs'] = input_data.attrs['crs']
+        return output_data
 
 
 class Aggregate(VirtualProduct):
