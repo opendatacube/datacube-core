@@ -151,7 +151,9 @@ def mask_invalid_data(data, keep_attrs=True):
             return data
         out_data_array = data.where(data != data.nodata)
         if keep_attrs:
-            out_data_array.attrs = data.attrs
+            out_data_array.attrs = {key: value
+                                    for key, value in data.attrs.items()
+                                    if key != 'nodata'}
         return out_data_array
 
     raise TypeError('mask_invalid_data not supported for type {}'.format(type(data)))
