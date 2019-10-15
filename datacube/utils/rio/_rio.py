@@ -157,7 +157,8 @@ def configure_s3_access(profile=None,
                         aws_unsigned=False,
                         requester_pays=False,
                         cloud_defaults=True,
-                        client=None):
+                        client=None,
+                        **gdal_opts):
     """ Credentialize for S3 bucket access.
 
     This function obtains credentials for S3 access and passes them on to
@@ -189,11 +190,12 @@ def configure_s3_access(profile=None,
                                   requester_pays=requester_pays)
 
     if client is None:
-        set_default_rio_config(aws=aws, cloud_defaults=cloud_defaults)
+        set_default_rio_config(aws=aws, cloud_defaults=cloud_defaults, **gdal_opts)
     else:
         client.register_worker_callbacks(
             functools.partial(set_default_rio_config,
                               aws=aws,
-                              cloud_defaults=cloud_defaults))
+                              cloud_defaults=cloud_defaults,
+                              **gdal_opts))
 
     return creds
