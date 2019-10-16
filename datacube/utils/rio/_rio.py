@@ -94,7 +94,9 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
         session = AWSSession(**aws)
 
     opts = dict(
-        GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR'
+        GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR',
+        GDAL_HTTP_MAX_RETRY='10',
+        GDAL_HTTP_RETRY_DELAY='0.5',
     ) if cloud_defaults else {}
 
     opts.update(**kwargs)
