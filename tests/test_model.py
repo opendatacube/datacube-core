@@ -122,3 +122,11 @@ def test_measurement():
 
     assert 'required keys missing:' in str(e.value)
     assert 'dtype' in str(e.value)
+
+
+def test_like_geobox():
+    from datacube.testutils.geom import AlbersGS
+    from datacube.api.core import output_geobox
+
+    geobox = AlbersGS.tile_geobox((15, -40))
+    assert output_geobox(like=geobox) is geobox
