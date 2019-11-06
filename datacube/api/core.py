@@ -682,6 +682,9 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
         assert output_crs is None, "'like' and 'output_crs' are not supported together"
         assert resolution is None, "'like' and 'resolution' are not supported together"
         assert align is None, "'like' and 'align' are not supported together"
+        if isinstance(like, GeoBox):
+            return like
+
         return like.geobox
 
     if output_crs is not None:
