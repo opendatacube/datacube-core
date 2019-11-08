@@ -8,6 +8,8 @@ from datacube.utils.io import slurp
 
 from datacube.utils.dask import (
     start_local_dask,
+    get_total_available_memory,
+    compute_memory_per_worker,
     compute_tasks,
     pmap,
     partition_map,
@@ -167,3 +169,24 @@ def test_save_blob_s3(blob, monkeypatch, dask_client):
 
         assert bb1 == blob
         assert bb2 == blob2
+
+
+def test_memory_functions(monkeypatch):
+    gig = 10**9
+
+    total_mem = get_total_available_memory()
+    default_safety = min(500*(1 << 20), total_mem//2)
+
+    assert total_mem - compute_memory_per_worker() == default_safety
+    assert total_mem - compute_memory_per_worker(2)*2 == default_safety
+
+    assert compute_memory_per_worker(mem_safety_margin=1) == total_mem - 1
+    assert compute_memory_per_worker(memory_limit='4G') == 4*gig
+    assert compute_memory_per_worker(2, memory_limit='4G') == 2*gig
+    assert compute_memory_per_worker(memory_limit='4G',
+                                     mem_safety_margin='1G') == 3*gig
+
+    total_mem = 1*gig
+    monkeypatch.setenv('MEM_LIMIT', str(total_mem))
+    assert get_total_available_memory() == 1*gig
+    assert compute_memory_per_worker(mem_safety_margin=1) == total_mem - 1
