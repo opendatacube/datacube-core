@@ -9,6 +9,7 @@ from dask.distributed import Client
 import dask
 import threading
 import logging
+import os
 from botocore.credentials import ReadOnlyCredentials
 from botocore.exceptions import BotoCoreError
 from .aws import s3_dump, s3_client
@@ -26,9 +27,54 @@ __all__ = (
 _LOG = logging.getLogger(__name__)
 
 
+def get_total_available_memory(check_jupyter_hub=True):
+    """ Figure out how much memory is available
+        1. Check MEM_LIMIT environment variable, set by jupyterhub
+        2. Use hardware information if that not set
+    """
+    if check_jupyter_hub:
+        mem_limit = os.environ.get('MEM_LIMIT', None)
+        if mem_limit is not None:
+            return int(mem_limit)
+
+    from psutil import virtual_memory
+    return virtual_memory().total
+
+
+def compute_memory_per_worker(n_workers: int = 1,
+                              mem_safety_margin: Optional[Union[str, int]] = None,
+                              memory_limit: Optional[Union[str, int]] = None) -> int:
+    """ Figure out how much memory to assign per worker.
+
+        result can be passed into `memory_limit=` parameter of dask worker/cluster/client
+    """
+    from dask.utils import parse_bytes
+
+    if isinstance(memory_limit, str):
+        memory_limit = parse_bytes(memory_limit)
+
+    if isinstance(mem_safety_margin, str):
+        mem_safety_margin = parse_bytes(mem_safety_margin)
+
+    if memory_limit is None and mem_safety_margin is None:
+        total_bytes = get_total_available_memory()
+        # leave 500Mb or half of all memory if RAM is less than 1 Gb
+        mem_safety_margin = min(500*(1024*1024), total_bytes//2)
+    elif memory_limit is None:
+        total_bytes = get_total_available_memory()
+    elif mem_safety_margin is None:
+        total_bytes = memory_limit
+        mem_safety_margin = 0
+    else:
+        total_bytes = memory_limit
+
+    return (total_bytes - mem_safety_margin)//n_workers
+
+
 def start_local_dask(n_workers: int = 1,
                      threads_per_worker: Optional[int] = None,
-                     mem_safety_margin: Optional[int] = None,
+                     mem_safety_margin: Optional[Union[str, int]] = None,
+                     memory_limit: Optional[Union[str, int]] = None,
                      **kw):
     """Wrapper around `distributed.Client(..)` constructor that deals with memory better.
 
@@ -37,25 +83,15 @@ def start_local_dask(n_workers: int = 1,
     :param mem_safety_margin: bytes to reserve for the rest of the system, only applicable
                               if `memory_limit=` is not supplied.
 
-    NOTE: if `memory_limit` is supplied, it will passed on to `distributed.Client`
-    unmodified. It applies per worker not per whole cluster, so if you have
-    `n_workers > 1`, total cluster memory will then be `n_workers*memory_limit`
-    you should take that into account.
+    NOTE: if `memory_limit` is supplied, it will be parsed and divided equally between workers.
     """
-
-    mem = kw.pop('memory_limit', None)
-    if mem is None:
-        from psutil import virtual_memory
-        total_bytes = virtual_memory().total
-        if mem_safety_margin is None:
-            # Default to 500Mb or half of all memory if there is less than 1G of RAM
-            mem_safety_margin = min(500*(1024*1024), total_bytes//2)
-
-        mem = (total_bytes - mem_safety_margin)//n_workers
+    memory_limit = compute_memory_per_worker(n_workers=n_workers,
+                                             memory_limit=memory_limit,
+                                             mem_safety_margin=mem_safety_margin)
 
     client = Client(n_workers=n_workers,
                     threads_per_worker=threads_per_worker,
-                    memory_limit=mem,
+                    memory_limit=memory_limit,
                     **kw)
 
     return client
