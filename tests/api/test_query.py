@@ -20,6 +20,7 @@ import pytest
 from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day, GroupBy
 from datacube.model import Range
 from datacube.utils import parse_time
+from datacube.utils.geometry import CRS
 
 
 def test_datetime_to_timestamp():
@@ -63,6 +64,11 @@ def test_query_kwargs():
     assert 'lon' in query.search_terms
 
     query = Query(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577')
+    assert query.geopolygon
+    assert 'lat' in query.search_terms
+    assert 'lon' in query.search_terms
+
+    query = Query(index=mock_index, y=-4174726, x=1515184, crs=CRS('EPSG:3577'))
     assert query.geopolygon
     assert 'lat' in query.search_terms
     assert 'lon' in query.search_terms
