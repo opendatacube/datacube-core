@@ -101,9 +101,12 @@ class CRS(object):
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
         :raises: InvalidCRSError
         """
-        to_wkt = getattr(crs_str, 'to_wkt', None)
-        if to_wkt is not None:
+        if not isinstance(crs_str, str):
+            to_wkt = getattr(crs_str, 'to_wkt', None)
+            if to_wkt is None:
+                raise ValueError("Expect string or any object with `.to_wkt()` method")
             crs_str = to_wkt()
+
         self.crs_str = crs_str
         self._crs = _make_crs(crs_str)
         # compatible with GDAL 3.0+
