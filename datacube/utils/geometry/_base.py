@@ -101,8 +101,9 @@ class CRS(object):
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
         :raises: InvalidCRSError
         """
-        if isinstance(crs_str, CRS):
-            crs_str = crs_str.crs_str
+        to_wkt = getattr(crs_str, 'to_wkt', None)
+        if to_wkt is not None:
+            crs_str = to_wkt()
         self.crs_str = crs_str
         self._crs = _make_crs(crs_str)
         # compatible with GDAL 3.0+
@@ -120,6 +121,14 @@ class CRS(object):
     def __setstate__(self, state):
         self.__init__(state['crs_str'])
 
+    def to_wkt(self):
+        """
+        WKT representation of the CRS
+
+        :type: str
+        """
+        return self._crs.ExportToWkt()
+
     @property
     def wkt(self):
         """
@@ -127,7 +136,7 @@ class CRS(object):
 
         :type: str
         """
-        return self._crs.ExportToWkt()
+        return self.to_wkt()
 
     @property
     def epsg(self):
