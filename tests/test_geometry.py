@@ -7,6 +7,7 @@ import pickle
 from datacube.utils import geometry
 from datacube.utils.geometry import (
     GeoBox,
+    CRS,
     BoundingBox,
     bbox_union,
     decompose_rws,
@@ -1081,3 +1082,20 @@ def test_axis_overlap():
     # D: |<--->|
     assert compute_axis_overlap(10, 10, 1, -11) == s_[0:0, 10:10]
     assert compute_axis_overlap(40, 10, 1, -11) == s_[0:0, 10:10]
+
+
+def test_crs_compat():
+    import rasterio.crs
+
+    crs = CRS("epsg:3577")
+    assert crs.epsg == 3577
+    crs2 = CRS(crs)
+    assert crs.epsg == crs2.epsg
+
+    crs_rio = rasterio.crs.CRS(init='epsg:3577')
+    assert CRS(crs_rio).epsg == 3577
+
+    assert rasterio.crs.CRS.from_user_input(crs).to_epsg() == 3577
+
+    with pytest.raises(ValueError):
+        CRS(("random", "tuple"))
