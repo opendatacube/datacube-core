@@ -141,11 +141,11 @@ class Query(object):
 
 def query_geopolygon(geopolygon=None, **kwargs):
     spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
-    crs = {v for k, v in kwargs.items() if k in CRS_KEYS}
+    crs = [v for k, v in kwargs.items() if k in CRS_KEYS]
     if len(crs) == 1:
-        spatial_dims['crs'] = crs.pop()
+        spatial_dims['crs'] = crs[0]
     elif len(crs) > 1:
-        raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
+        raise ValueError('CRS is supplied twice')
 
     if geopolygon is not None and len(spatial_dims) > 0:
         raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS + CRS_KEYS,))
