@@ -1095,6 +1095,8 @@ def test_crs_compat():
     crs_rio = rasterio.crs.CRS(init='epsg:3577')
     assert CRS(crs_rio).epsg == 3577
 
+    assert (CRS(crs_rio) == crs_rio) is True
+
     assert rasterio.crs.CRS.from_user_input(crs).to_epsg() == 3577
 
     with pytest.raises(ValueError):

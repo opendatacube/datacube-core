@@ -228,7 +228,10 @@ class CRS(object):
         if isinstance(other, str):
             other = CRS(other)
         elif not isinstance(other, CRS):
-            return False
+            to_wkt = getattr(other, 'to_wkt', None)
+            if to_wkt is None:
+                return False
+            other = CRS(to_wkt())
         gdal_thinks_issame = self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
         if gdal_thinks_issame:
             return True
