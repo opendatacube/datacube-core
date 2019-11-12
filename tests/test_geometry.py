@@ -1101,3 +1101,11 @@ def test_crs_compat():
 
     with pytest.raises(ValueError):
         CRS(("random", "tuple"))
+
+
+def test_crs_hash():
+    crs = CRS("epsg:3577")
+    crs2 = CRS(crs)
+
+    assert crs is not crs2
+    assert len(set([crs, crs2])) == 1

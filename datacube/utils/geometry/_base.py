@@ -219,6 +219,9 @@ class CRS(object):
     def __str__(self):
         return self.crs_str
 
+    def __hash__(self):
+        return hash(self.to_wkt())
+
     def __repr__(self):
         return "CRS('%s')" % self.crs_str
 
