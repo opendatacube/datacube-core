@@ -110,8 +110,7 @@ class Tile(object):
         :param kwargs: other keyword arguments passed to ``pandas.period_range``
         :return: Generator[tuple(str, Tile)] generator of the key string (eg '1994') and the slice of Tile
         """
-        start_range = self.sources[time_dim][0].data
-        end_range = self.sources[time_dim][-1].data
+        start_range, end_range = self.sources[time_dim].data[[0, -1]]
 
         for p in pd.period_range(start=start_range,
                                  end=end_range,
