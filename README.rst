@@ -44,7 +44,7 @@ Developer setup
 
 ::
 
-   conda create -n odc -c conda-forge python=3.7 datacube pre_commit
+   conda create -n odc -c conda-forge python=3.6 datacube pre_commit
    conda activate odc
 
 3. Install a develop version of datacube-core.
