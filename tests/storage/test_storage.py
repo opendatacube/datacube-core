@@ -15,7 +15,7 @@ from datacube.testutils.io import RasterFileDataSource
 from datacube.storage import BandInfo
 from datacube.drivers.netcdf import create_netcdf_storage_unit, write_dataset_to_netcdf, Variable
 from datacube.storage import reproject_and_fuse
-from datacube.storage._rio import RasterDatasetDataSource
+from datacube.storage._rio import RasterDatasetDataSource, _url2rasterio, _is_hdf
 from datacube.storage._read import read_time_slice
 from datacube.utils.geometry import GeoBox
 
@@ -710,3 +710,18 @@ def test_rasterio_nodata(tmpdir):
 
     yy = dc_read(mm.path)
     np.testing.assert_array_equal(xx, yy)
+
+
+def test_rio_driver_specifics():
+    assert _url2rasterio('file:///f.nc', 'NetCDF', 'band') == 'NetCDF:"/f.nc":band'
+    assert _url2rasterio('file:///f.nc', 'HDF5', 'band') == 'HDF5:"/f.nc":band'
+    assert _url2rasterio('file:///f.nc', 'HDF4_EOS:EOS_GRID', 'band') == 'HDF4_EOS:EOS_GRID:"/f.nc":band'
+    assert _url2rasterio('file:///f.tiff', 'GeoTIFF', None) == '/f.tiff'
+    s3_url = 's3://bucket/file'
+    assert _url2rasterio(s3_url, 'GeoTIFF', None) is s3_url
+
+    with pytest.raises(ValueError):
+        _url2rasterio('file:///f.nc', 'NetCDF', None)
+
+    with pytest.raises(RuntimeError):
+        _url2rasterio('http://example.com/f.nc', 'NetCDF', 'aa')
