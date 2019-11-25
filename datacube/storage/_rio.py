@@ -215,7 +215,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         :param measurement_id: measurement to read. a single 'band' or 'slice'
         """
         self._band_info = band
-        self._netcdf = ('netcdf' in band.format.lower())
+        self._netcdf = _is_hdf(band.format)
         self._part = get_part_from_uri(band.uri)
         filename = _url2rasterio(band.uri, band.format, band.layer)
         lock = _HDF5_LOCK if self._netcdf else None
@@ -272,20 +272,29 @@ class RasterDatasetDataSource(RasterioDataSource):
         return self._band_info.crs
 
 
-def _url2rasterio(url_str, fmt, layer):
+def _is_hdf(fmt: str) -> bool:
+    """ Check if format is of HDF type (this includes netcdf variants)
+    """
+    fmt = fmt.lower()
+    return any(f in fmt for f in ('netcdf', 'hdf'))
+
+
+def _url2rasterio(url_str: str, fmt: str, layer: Optional[str]) -> str:
     """
     turn URL into a string that could be passed to raterio.open
     """
     url = urlparse(url_str)
     assert url.scheme, "Expecting URL with scheme here"
 
-    # if format is NETCDF or HDF need to pass NETCDF:path:band as filename to rasterio/GDAL
-    for nasty_format in ('netcdf', 'hdf'):
-        if nasty_format in fmt.lower():
-            if url.scheme != 'file':
-                raise RuntimeError("Can't access %s over %s" % (fmt, url.scheme))
-            filename = '%s:"%s":%s' % (fmt, uri_to_local_path(url_str), layer)
-            return filename
+    if _is_hdf(fmt):
+        # if format is NETCDF or HDF need to pass NETCDF:"path":band as filename to rasterio/GDAL
+        if url.scheme != 'file':
+            raise RuntimeError("Can't access %s over %s" % (fmt, url.scheme))
+        if layer is None:
+            raise ValueError("Missing layer for hdf/netcdf format dataset")
+
+        filename = '%s:"%s":%s' % (fmt, uri_to_local_path(url_str), layer)
+        return filename
 
     if url.scheme and url.scheme != 'file':
         return url_str
