@@ -215,10 +215,10 @@ class RasterDatasetDataSource(RasterioDataSource):
         :param measurement_id: measurement to read. a single 'band' or 'slice'
         """
         self._band_info = band
-        self._netcdf = _is_hdf(band.format)
+        self._hdf = _is_hdf(band.format)
         self._part = get_part_from_uri(band.uri)
         filename = _url2rasterio(band.uri, band.format, band.layer)
-        lock = _HDF5_LOCK if self._netcdf else None
+        lock = _HDF5_LOCK if self._hdf else None
         super(RasterDatasetDataSource, self).__init__(filename, nodata=band.nodata, lock=lock)
 
     def get_bandnumber(self, src=None) -> Optional[int]:
@@ -228,10 +228,10 @@ class RasterDatasetDataSource(RasterioDataSource):
         if bi.band is not None:
             return bi.band
 
-        if not self._netcdf:
+        if not self._hdf:
             return 1
 
-        # Netcdf only below
+        # Netcdf/hdf only below
         if self._part is not None:
             return self._part + 1  # Convert to rasterio 1-based indexing
 
