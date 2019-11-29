@@ -152,7 +152,7 @@ class SimpleVariableWithFlagsDef(object):
             16383: true
         """
 
-    flags_definition = yaml.load(bits_def_yaml)
+    flags_definition = yaml.safe_load(bits_def_yaml)
 
 
 class VariableWithMultiBitFlags(object):
@@ -225,7 +225,7 @@ class VariableWithMultiBitFlags(object):
             1: True
     """
 
-    flags_definition = yaml.load(bits_def_yaml)
+    flags_definition = yaml.safe_load(bits_def_yaml)
 
 
 bits_def_json = {
