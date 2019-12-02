@@ -35,11 +35,11 @@ System
 Developer setup
 ===============
 
-1. Clone:
+#. Clone:
 
    -  ``git clone https://github.com/opendatacube/datacube-core.git``
 
-2. Create a Python environment to use ODC within, we recommend `conda <https://docs.conda.io/en/latest/miniconda.html>`__ as the
+#. Create a Python environment to use ODC within, we recommend `conda <https://docs.conda.io/en/latest/miniconda.html>`__ as the
    easiest way to handle Python dependencies.
 
 ::
@@ -47,28 +47,32 @@ Developer setup
    conda create -n odc -c conda-forge python=3.6 datacube pre_commit
    conda activate odc
 
-3. Install a develop version of datacube-core.
+#. Install a develop version of datacube-core.
 
 ::
 
    cd datacube-core
    pip install --upgrade -e .
 
-4. Install the `pre-commit <https://pre-commit.com>`__ hooks to help follow ODC coding
+#. Install the `pre-commit <https://pre-commit.com>`__ hooks to help follow ODC coding
    conventions when committing with git.
 
 ::
 
    pre-commit install
 
-4. Run unit tests + PyLint
-
+#. Run unit tests + PyLint
+   
    ``./check-code.sh``
 
    (this script approximates what is run by Travis. You can
-   alternatively run ``pytest`` yourself)
+   alternatively run ``pytest`` yourself). Some test dependencies may need to be install, attempt to install these using:
+   
+   ``pip install -r requirements-test.txt``
+   
+   If install for these fails please lodge them as issues.
 
-5. **(or)** Run all tests, including integration tests.
+#. **(or)** Run all tests, including integration tests.
 
    ``./check-code.sh integration_tests``
 
