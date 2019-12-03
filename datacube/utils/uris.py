@@ -1,14 +1,13 @@
 import os
-
 import pathlib
 import re
-from typing import Optional, List, Union
 import urllib.parse
-from urllib.parse import urlparse, parse_qsl, urljoin
-from urllib.request import url2pathname
 from pathlib import Path
+from typing import List, Optional, Union
+from urllib.parse import parse_qsl, urljoin, urlparse
+from urllib.request import url2pathname
 
-URL_RE = re.compile(r'\A\s*[\w\d\+]+://')
+URL_RE = re.compile(r'\A\s*(?:/vsicurl/)?[\w\d\+]+://')
 
 
 def is_url(url_str: str) -> bool:

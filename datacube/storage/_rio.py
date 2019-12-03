@@ -284,19 +284,24 @@ def _url2rasterio(url_str: str, fmt: str, layer: Optional[str]) -> str:
     turn URL into a string that could be passed to raterio.open
     """
     url = urlparse(url_str)
-    assert url.scheme, "Expecting URL with scheme here"
+    if url_str.startswith("/vsicurl/"):
+        url_scheme = "vsicurl"
+    else:
+        url_scheme = url.scheme
+
+    assert url_scheme, "Expecting URL with scheme here"
 
     if _is_hdf(fmt):
         # if format is NETCDF or HDF need to pass NETCDF:"path":band as filename to rasterio/GDAL
-        if url.scheme != 'file':
-            raise RuntimeError("Can't access %s over %s" % (fmt, url.scheme))
+        if url_scheme not in ('file', 'vsicurl'):
+            raise RuntimeError("Can't access %s over %s" % (fmt, url_scheme))
         if layer is None:
             raise ValueError("Missing layer for hdf/netcdf format dataset")
-
-        filename = '%s:"%s":%s' % (fmt, uri_to_local_path(url_str), layer)
+        local_path = url_str if url_scheme == "vsicurl" else uri_to_local_path(url_str)
+        filename = '%s:"%s":%s' % (fmt, local_path, layer)
         return filename
 
-    if url.scheme and url.scheme != 'file':
+    if url_scheme and url_scheme != 'file':
         return url_str
 
     # if local path strip scheme and other gunk

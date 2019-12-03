@@ -717,6 +717,11 @@ def test_rio_driver_specifics():
     assert _url2rasterio('file:///f.nc', 'HDF5', 'band') == 'HDF5:"/f.nc":band'
     assert _url2rasterio('file:///f.nc', 'HDF4_EOS:EOS_GRID', 'band') == 'HDF4_EOS:EOS_GRID:"/f.nc":band'
     assert _url2rasterio('file:///f.tiff', 'GeoTIFF', None) == '/f.tiff'
+    curl_path = '/vsicurl/https://bucket.s3.amazonaws.com/path/to/file.tif'
+    assert _url2rasterio(curl_path, 'GeoTIFF', None) == curl_path
+    nc_curl_path = "/vsicurl/https://bucket.s3.amazonaws.com/path/to/file.tif"
+    assert _url2rasterio(nc_curl_path, 'NetCDF', "band") == 'NetCDF:"{}":band'.format(nc_curl_path)
+
     s3_url = 's3://bucket/file'
     assert _url2rasterio(s3_url, 'GeoTIFF', None) is s3_url
 

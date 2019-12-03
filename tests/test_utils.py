@@ -880,6 +880,7 @@ def test_testutils_geobox():
     ("sftp://user:pass@host.name.com/path/file.txt", True),
     ("file+gzip://host.name.com/path/file.txt", True),
     ("bongo:host.name.com/path/file.txt", False),
+    ("/vsicurl/https://bucket.s3.amazonaws.com/path/to/file.tif", True),
 ])
 def test_is_url(test_input, expected):
     assert is_url(test_input) == expected
