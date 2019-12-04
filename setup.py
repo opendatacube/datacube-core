@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 import os
 
 tests_require = [
-    'compliance-checker',
+    'compliance-checker>=4.0.0',
     'hypothesis',
     'mock',
     'pycodestyle',
