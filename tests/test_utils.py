@@ -106,6 +106,8 @@ def test_uri_resolve():
     some_uri = 'http://example.com/file.txt'
     s3_base = 's3://foo'
     gs_base = 'gs://foo'
+    vsi_base = '/vsizip//vsicurl/https://host.tld/some/path'
+
     assert uri_resolve(s3_base, abs_path) == "file://" + abs_path
     assert uri_resolve(s3_base, some_uri) is some_uri
     assert uri_resolve(s3_base, None) is s3_base
@@ -116,6 +118,9 @@ def test_uri_resolve():
     assert uri_resolve(gs_base, None) is gs_base
     assert uri_resolve(gs_base, '') is gs_base
     assert uri_resolve(gs_base, 'relative/path') == gs_base + '/relative/path'
+
+    assert uri_resolve(vsi_base, 'relative/path') == vsi_base + '/relative/path'
+    assert uri_resolve(vsi_base + '/', 'relative/path') == vsi_base + '/relative/path'
 
 
 def test_pick_uri():
