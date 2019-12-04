@@ -188,18 +188,22 @@ def check_cf_compliance(dataset):
         warnings.warn('compliance_checker unavailable, skipping NetCDF-CF Compliance Checks')
         return
 
+    if compliance_checker.__version__ < '4.0.0':
+        warnings.warn('Please upgrade compliance-checker to 4+ version')
+        warnings.warn('compliance_checker version is too old, skipping NetCDF-CF Compliance Checks')
+        return
+
+    skip = ['check_dimension_order',
+            'check_all_features_are_same_type',
+            'check_conventions_version',
+            'check_appendix_a']
+
     cs = CheckSuite()
     cs.load_all_available_checkers()
-    if compliance_checker.__version__ >= '2.3.0':
-        # This skips a failing compliance check. Our files don't contain all the lats/lons
-        # as an auxiliary cordinate var as it's unnecessary for any software we've tried.
-        # It may be added at some point in the future, and this check should be re-enabled.
-        score_groups = cs.run(dataset, ['check_dimension_order'], 'cf')
-    else:
-        warnings.warn('Please upgrade to compliance-checker 2.3.0 or higher.')
-        score_groups = cs.run(dataset, 'cf')
+    score_groups = cs.run(dataset, skip, 'cf')
+    score_dict = {dataset.filepath(): score_groups}
 
-    groups = ComplianceChecker.stdout_output(cs, score_groups, verbose=1, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
+    groups = ComplianceChecker.stdout_output(cs, score_dict, verbose=1, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
     assert cs.passtree(groups, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
 
 
