@@ -720,8 +720,19 @@ def test_rio_driver_specifics():
     s3_url = 's3://bucket/file'
     assert _url2rasterio(s3_url, 'GeoTIFF', None) is s3_url
 
+    vsi_url = '/vsicurl/https://host.tld/path'
+    assert _url2rasterio(vsi_url, 'GeoTIFF', None) is vsi_url
+    assert _url2rasterio(vsi_url, 'NetCDF', 'aa') == 'NetCDF:"{}":aa'.format(vsi_url)
+    assert _url2rasterio(vsi_url, 'HDF5', 'aa') == 'HDF5:"{}":aa'.format(vsi_url)
+
     with pytest.raises(ValueError):
         _url2rasterio('file:///f.nc', 'NetCDF', None)
 
     with pytest.raises(RuntimeError):
         _url2rasterio('http://example.com/f.nc', 'NetCDF', 'aa')
+
+    with pytest.raises(ValueError):
+        _url2rasterio('/some/path/', 'GeoTIFF', None)
+
+    with pytest.raises(ValueError):
+        _url2rasterio('/some/path/', 'NetCDF', 'aa')

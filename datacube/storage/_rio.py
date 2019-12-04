@@ -15,7 +15,7 @@ from typing import Optional, Iterator
 from datacube.utils import datetime_to_seconds_since_1970
 from datacube.utils import geometry
 from datacube.utils.math import num2numpy
-from datacube.utils import uri_to_local_path, get_part_from_uri
+from datacube.utils import uri_to_local_path, get_part_from_uri, is_vsipath
 from datacube.utils.rio import activate_from_config
 from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
 
@@ -279,25 +279,40 @@ def _is_hdf(fmt: str) -> bool:
     return any(f in fmt for f in ('netcdf', 'hdf'))
 
 
+def _build_hdf_uri(url_str: str, fmt: str, layer: str) -> str:
+    if is_vsipath(url_str):
+        base = url_str
+    else:
+        url = urlparse(url_str)
+        if url.scheme in (None, ''):
+            raise ValueError("Expect either URL or /vsi path")
+
+        if url.scheme != 'file':
+            raise RuntimeError("Can't access %s over %s" % (fmt, url.scheme))
+        base = str(uri_to_local_path(url_str))
+
+    return '{}:"{}":{}'.format(fmt, base, layer)
+
+
 def _url2rasterio(url_str: str, fmt: str, layer: Optional[str]) -> str:
     """
     turn URL into a string that could be passed to raterio.open
     """
-    url = urlparse(url_str)
-    assert url.scheme, "Expecting URL with scheme here"
-
     if _is_hdf(fmt):
-        # if format is NETCDF or HDF need to pass NETCDF:"path":band as filename to rasterio/GDAL
-        if url.scheme != 'file':
-            raise RuntimeError("Can't access %s over %s" % (fmt, url.scheme))
         if layer is None:
             raise ValueError("Missing layer for hdf/netcdf format dataset")
 
-        filename = '%s:"%s":%s' % (fmt, uri_to_local_path(url_str), layer)
-        return filename
+        return _build_hdf_uri(url_str, fmt, layer)
 
-    if url.scheme and url.scheme != 'file':
+    if is_vsipath(url_str):
         return url_str
 
-    # if local path strip scheme and other gunk
-    return str(uri_to_local_path(url_str))
+    url = urlparse(url_str)
+    if url.scheme in (None, ''):
+        raise ValueError("Expect either URL or /vsi path")
+
+    if url.scheme == 'file':
+        # if local path strip scheme and other gunk
+        return str(uri_to_local_path(url_str))
+
+    return url_str

@@ -34,6 +34,21 @@ def is_url(url_str: str) -> bool:
         return False
 
 
+def is_vsipath(path: str) -> bool:
+    """ Check if string is a GDAL "/vsi.*" path
+    """
+    path = path.lower()
+    return path.startswith("/vsi")
+
+
+def vsi_join(base: str, path: str) -> str:
+    """ Extend GDAL's vsi path
+
+        Basically just base/path, but taking care of trailing `/` in base
+    """
+    return base.rstrip('/') + '/' + path
+
+
 def uri_to_local_path(local_uri: Optional[str]) -> Optional[pathlib.Path]:
     """
     Transform a URI to a platform dependent Path.
@@ -163,21 +178,24 @@ def normalise_path(p: Union[str, pathlib.Path],
 
 def uri_resolve(base: str, path: Optional[str]) -> str:
     """
-    path                  -- if path is a uri
+    path                  -- if path is a uri or /vsi.* style path
     Path(path).as_uri()   -- if path is absolute filename
     base/path             -- in all other cases
     """
     if not path:
         return base
 
-    if is_url(path):
+    if is_vsipath(path) or is_url(path):
         return path
 
     p = Path(path)
     if p.is_absolute():
         return p.as_uri()
 
-    return urljoin(base, path)
+    if is_vsipath(base):
+        return vsi_join(base, path)
+    else:
+        return urljoin(base, path)
 
 
 def pick_uri(uris: List[str], scheme: Optional[str] = None) -> str:
