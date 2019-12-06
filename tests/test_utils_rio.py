@@ -1,5 +1,6 @@
 import pytest
 import mock
+import os
 
 from datacube.utils.rio import (
     activate_rio_env,
@@ -17,11 +18,13 @@ def test_rio_env_no_aws():
     # make sure we start without env configured
     assert get_rio_env() == {}
 
-    ee = activate_rio_env()
+    ee = activate_rio_env(FAKE_OPTION=1)
     assert isinstance(ee, dict)
     assert ee == get_rio_env()
     assert 'GDAL_DISABLE_READDIR_ON_OPEN' not in ee
-    assert 'GDAL_DATA' in ee
+    if os.getenv('GDAL_DATA', None):
+        assert 'GDAL_DATA' in ee
+    assert ee.get('FAKE_OPTION') == 1
     assert 'AWS_ACCESS_KEY_ID' not in ee
 
     ee = activate_rio_env(cloud_defaults=True)
