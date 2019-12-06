@@ -62,11 +62,10 @@ Developer setup
    pre-commit install
 
 5. Run unit tests + PyLint
-   
    ``./check-code.sh``
 
    (this script approximates what is run by Travis. You can
-   alternatively run ``pytest`` yourself). Some test dependencies may need to be install, attempt to install these using:
+   alternatively run ``pytest`` yourself). Some test dependencies may need to be installed, attempt to install these using:
    
    ``pip install --upgrade -e '.[test]'``
    
