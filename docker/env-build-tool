@@ -1,0 +1,95 @@
+#!/bin/bash
+
+set -o errexit
+set -o noclobber
+set -o pipefail
+set -o nounset
+
+cmd_wheels () {
+   local requirements="${1:-/conf/requirements.txt}"
+   local dst_wheels="${2:-/wheels}"
+   local src_wheels="${WHEELS:-/wheels}"
+   local bins="$(mktemp /tmp/bins-XXXX.txt)"
+
+   find "${src_wheels}" -type f -name "*whl" >> "${bins}"
+
+   pip wheel \
+       --no-cache \
+       --no-cache-dir \
+       --find-links="${src_wheels}" \
+       --constraint="${bins}" \
+       --requirement="${requirements}" \
+       --wheel-dir="${dst_wheels}"
+
+   rm "${bins}"
+}
+
+cmd_new () {
+    local requirements="${1:-/conf/requirements.txt}"
+    local wheels="${2:-/wheels}"
+    local env="${3:-/env}"
+
+    mkdir -p "${env}"
+    python3 -m venv "${env}"
+    local pip="${env}/bin/pip"
+    $pip install --upgrade pip setuptools
+    $pip install \
+         --no-cache \
+         --no-cache-dir \
+         --no-index \
+         --find-links="${wheels}" \
+         --requirement="${requirements}"
+}
+
+cmd_extend () {
+    local requirements="${1:-/conf/requirements.txt}"
+    local wheels="${2:-/wheels}"
+    local env="${3:-/env}"
+
+    local bins="$(mktemp /tmp/bins-XXXX.txt)"
+    find "${wheels}" -type f -name "*whl" >> "${bins}"
+
+    mkdir -p "${env}"
+    python3 -m venv "${env}"
+    local pip="${env}/bin/pip"
+    $pip install --upgrade pip setuptools
+    $pip install \
+         --no-cache \
+         --no-cache-dir \
+         --find-links="${wheels}" \
+         --requirement="${requirements}"
+
+    rm "${bins}"
+}
+
+cmd_help () {
+    echo 'env-build-tool <wheels|new|help> ARGS
+
+Given requirements.txt assemble all the wheels:
+  > env-build-tool wheels <requirements.txt> <wheel_dir:/wheels>
+
+Given requirements.txt and wheels folder make python environment
+  > env-build-tool new <requirements.txt> <wheel_dir:/wheels> <env:/env>
+
+Given requirements.txt and wheels folder add packages to python environment
+  > env-build-tool extend <requirements.txt> <wheel_dir:/wheels> <env:/env>
+'
+}
+
+
+cmd_main () {
+   local cmd="${1:-help}"
+   shift
+
+   case "${cmd}" in
+       wheels|extend|new|help)
+           "cmd_${cmd}" $@
+           ;;
+       *)
+           echo "Run $0 help"
+           exit 1
+           ;;
+   esac
+}
+
+cmd_main $@
