@@ -1,0 +1,18 @@
+#!/bin/bash
+
+[ -n "$GDAL_DATA" ] || {
+    export GDAL_DATA=$(gdal-config --datadir)
+}
+
+dc_config_render.py auto
+
+if [ -e "${PYENV:-/env}/bin/activate" ]; then
+    [ -n "${VIRTUAL_ENV}" ] || {
+        source "${PYENV}/bin/activate"
+    }
+fi
+
+[ -z "$@" ] || {
+    exec "$@"
+}
+
