@@ -123,20 +123,15 @@ def uninitialised_postgres_db(local_config, request):
 
 
 @pytest.fixture
-def index(local_config, uninitialised_postgres_db):
-    """
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
-    """
+def index(local_config,
+          uninitialised_postgres_db: PostgresDb):
     index = index_connect(local_config, validate_connection=False)
     index.init_db()
     return index
 
 
 @pytest.fixture
-def index_empty(local_config, uninitialised_postgres_db):
-    """
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
-    """
+def index_empty(local_config, uninitialised_postgres_db: PostgresDb):
     index = index_connect(local_config, validate_connection=False)
     index.init_db(with_default_types=False)
     return index

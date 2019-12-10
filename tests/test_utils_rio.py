@@ -71,6 +71,7 @@ def test_rio_env_aws():
     assert get_rio_env() == {}
 
 
+@pytest.mark.xfail(reason='This test fails if a default region is set in `~/.aws/config`')
 @mock.patch('datacube.utils.aws.botocore_default_region',
             return_value=None)
 def test_rio_env_aws_auto_region(*mocks):
