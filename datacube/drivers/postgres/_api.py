@@ -1016,23 +1016,19 @@ class PostgresDbAPI(object):
     def create_user(self, username, password, role, description=None):
         pg_role = _core.to_pg_role(role)
         username = escape_pg_identifier(self._connection, username)
-        sql = text('create user :username password :password in role :role')
+        sql = text('create user {username} password :password in role {role}'.format(username=username, role=pg_role))
         self._connection.execute(sql,
-                                 username=username,
-                                 role=pg_role,
                                  password=password)
         if description:
-            sql = text('comment on role :username is :description')
+            sql = text('comment on role {username} is :description'.format(username=username))
             self._connection.execute(sql,
-                                     username=username,
                                      description=description)
 
     def drop_users(self, users):
         # type: (Iterable[str]) -> None
         for username in users:
-            sql = text('drop role :username')
-            self._connection.execute(sql,
-                                     username=escape_pg_identifier(self._connection, username))
+            sql = text('drop role {username}'.format(username=escape_pg_identifier(self._connection, username)))
+            self._connection.execute(sql)
 
     def grant_role(self, role, users):
         # type: (str, Iterable[str]) -> None
