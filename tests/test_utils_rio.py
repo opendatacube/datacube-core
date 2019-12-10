@@ -2,6 +2,7 @@ import pytest
 import mock
 import os
 
+from datacube.testutils import write_files
 from datacube.utils.rio import (
     activate_rio_env,
     deactivate_rio_env,
@@ -74,10 +75,18 @@ def test_rio_env_aws():
     assert get_rio_env() == {}
 
 
-@pytest.mark.xfail(reason='This test fails if a default region is set in `~/.aws/config`')
-@mock.patch('datacube.utils.aws.botocore_default_region',
-            return_value=None)
-def test_rio_env_aws_auto_region(*mocks):
+def test_rio_env_aws_auto_region(monkeypatch, without_aws_env):
+    import datacube.utils.aws
+
+    pp = write_files({
+        "config": """[default]
+"""})
+
+    assert (pp/"config").exists()
+    monkeypatch.setenv("AWS_CONFIG_FILE", str(pp/"config"))
+
+    assert datacube.utils.aws.botocore_default_region() is None
+
     aws = dict(aws_secret_access_key='blabla',
                aws_access_key_id='not a real one',
                aws_session_token='faketoo')
