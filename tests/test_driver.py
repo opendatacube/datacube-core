@@ -51,7 +51,7 @@ def test_reader_drivers():
     assert isinstance(available_drivers, list)
 
     pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
-    assert 's3aio' not in available_drivers  # TODO: remove once s3aio moved out of legacy
+    assert 's3aio' not in available_drivers
 
 
 def test_writer_drivers():
@@ -63,6 +63,8 @@ def test_writer_drivers():
 def test_index_drivers():
     available_drivers = index_drivers()
     assert 'default' in available_drivers
+
+    pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
     assert 's3aio_index' in available_drivers
 
 
