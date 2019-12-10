@@ -21,7 +21,7 @@ INVALID_MAPPING_DOCS = map(str, Path(__file__).parent.parent.joinpath('docs').gl
 
 def _dataset_type_count(db):
     with db.connect() as connection:
-        return len(list(connection.get_all_dataset_types()))
+        return len(list(connection.get_all_products()))
 
 
 def test_add_example_dataset_types(clirunner, initialised_postgres_db, default_metadata_type):
