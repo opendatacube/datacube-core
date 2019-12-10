@@ -12,8 +12,9 @@ from .index import Index
 _LOG = logging.getLogger(__name__)
 
 
-def index_connect(local_config=None, application_name=None, validate_connection=True):
-    # type: (LocalConfig, str, bool) -> Index
+def index_connect(local_config: LocalConfig = None,
+                  application_name: str = None,
+                  validate_connection: bool = True) -> Index:
     """
     Create a Data Cube Index that can connect to a PostgreSQL server
 
@@ -21,10 +22,9 @@ def index_connect(local_config=None, application_name=None, validate_connection=
     check that the server is available.
 
     :param application_name: A short, alphanumeric name to identify this application.
-    :param datacube.config.LocalConfig local_config: Config object to use. (optional)
+    :param local_config: Config object to use. (optional)
     :param validate_connection: Validate database connection and schema immediately
-    :rtype: datacube.index.index.Index
-    :raises datacube.drivers.postgres._connections.IndexSetupError:
+    :raises datacube.index.Exceptions.IndexSetupError:
     """
     if local_config is None:
         local_config = LocalConfig.find()
