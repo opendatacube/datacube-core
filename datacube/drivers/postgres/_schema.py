@@ -31,7 +31,7 @@ METADATA_TYPE = Table(
     CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
 )
 
-DATASET_TYPE = Table(
+PRODUCT = Table(
     'dataset_type', _core.METADATA,
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
 
@@ -60,7 +60,7 @@ DATASET = Table(
     Column('id', postgres.UUID(as_uuid=True), primary_key=True),
 
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
-    Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), index=True, nullable=False),
+    Column('dataset_type_ref', None, ForeignKey(PRODUCT.c.id), index=True, nullable=False),
 
     Column('metadata', postgres.JSONB, index=False, nullable=False),
 

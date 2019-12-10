@@ -98,7 +98,7 @@ class ProductResource(object):
                 metadata_type = self.metadata_type_resource.add(product.metadata_type,
                                                                 allow_table_lock=allow_table_lock)
             with self._db.connect() as connection:
-                connection.insert_dataset_type(
+                connection.insert_product(
                     name=product.name,
                     metadata=product.metadata_doc,
                     metadata_type_id=metadata_type.id,
@@ -207,7 +207,7 @@ class ProductResource(object):
         # TODO: should we add metadata type here?
         assert metadata_type, "TODO: should we add metadata type here?"
         with self._db.connect() as conn:
-            conn.update_dataset_type(
+            conn.update_product(
                 name=product.name,
                 metadata=product.metadata_doc,
                 metadata_type_id=metadata_type.id,
@@ -279,7 +279,7 @@ class ProductResource(object):
     # pylint: disable=method-hidden
     def get_unsafe(self, id_):  # type: ignore
         with self._db.connect() as connection:
-            result = connection.get_dataset_type(id_)
+            result = connection.get_product(id_)
         if not result:
             raise KeyError('"%s" is not a valid Product id' % id_)
         return self._make(result)
@@ -288,7 +288,7 @@ class ProductResource(object):
     # pylint: disable=method-hidden
     def get_by_name_unsafe(self, name):  # type: ignore
         with self._db.connect() as connection:
-            result = connection.get_dataset_type_by_name(name)
+            result = connection.get_product_by_name(name)
         if not result:
             raise KeyError('"%s" is not a valid Product name' % name)
         return self._make(result)
@@ -366,7 +366,7 @@ class ProductResource(object):
         Retrieve all Products
         """
         with self._db.connect() as connection:
-            return (self._make(record) for record in connection.get_all_dataset_types())
+            return (self._make(record) for record in connection.get_all_products())
 
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)
