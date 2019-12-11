@@ -1,23 +1,7 @@
 """
 
-
-Examples:
-
-    platform = "LANDSAT_8"
-    platform = "LAND SAT_8"
-    platform = 4
-    4<lat<6
-    6 > lat > 4
-    lat in range(4, 6)
-    time = 2014-03-02
-    time = 2014-3-2
-    time in 2014-03-08
-
 """
-
 # flake8: noqa
-
-from collections import namedtuple
 
 import logging
 from datetime import datetime
@@ -29,43 +13,40 @@ from datacube.model import Range
 logging.basicConfig()
 
 search_grammar = """
-
     start: expression+
     ?expression: equals_expr
                | in_expr
-               | range_expr
-               | lt_expr
-               | gt_expr
+               | between_expr
     
-    equals_expr: FIELD "=" value
-    in_expr: FIELD "in" date
-           | FIELD "in" "[" orderable "," orderable "]" -> range_expr
-    range_expr: FIELD "in" "range(" orderable "," orderable ")"
-    lt_expr: orderable "<" FIELD "<" orderable
-    gt_expr: orderable ">" FIELD ">" orderable
+    equals_expr: field "=" value
+    in_expr: field "in" date
+    between_expr: field "in" "[" orderable "," orderable "]"
     
-    FIELD: /[a-zA-Z][\w\d_]*/
+    ?field: /[a-zA-Z][\w\d_]*/
     
-    ?orderable: SIGNED_NUMBER -> number
-              | date
-
+    ?orderable: date
+              | SIGNED_NUMBER -> number
     
     value: date
          | INT -> integer
          | SIGNED_NUMBER -> number
          | ESCAPED_STRING -> string
          | simple_string
-    
+         | /[a-z0-9+.-]+:\/\/([:\/\w._-])*/
     
     simple_string: /[a-zA-Z][\w._-]*/
     
-    date: INT ["-" INT ["-" INT]]
-        
-        
-    
+    date: YEAR ["-" MONTH ["-" DAY ]]
+
+    YEAR: DIGIT ~ 4
+    MONTH: DIGIT ~ 1..2
+    DAY: DIGIT ~ 1..2
+
+
     %import common.ESCAPED_STRING
     %import common.SIGNED_NUMBER
     %import common.INT
+    %import common.DIGIT
     %import common.CNAME
     %import common.WS
     %ignore WS
@@ -79,21 +60,18 @@ class TreeToSearchExprs(Transformer):
         return {str(k): v}
     equals_expr = in_expr
 
-    def lt_expr(self, lower, field, upper):
-        return {str(field): Range(lower, upper)}
-
-    def gt_expr(self, upper, field, lower):
-        return {str(field): Range(lower, upper)}
-
     def range_expr(self, field, lower, upper):
         return {str(field): Range(lower, upper)}
 
+    between_expr = range_expr
 
     # Convert the literals
     def string(self, val):
         return str(val[1:-1])
 
     simple_string = str
+    field = str
+    value = str
     number = float
     integer = int
 
@@ -122,21 +100,17 @@ def main():
     sample_inputs = """platform = "LANDSAT_8"
     platform = "LAND SAT_8"
     platform = 4
-    4 < lat < 6
-    -4 < lat < 6
-    6 > lat > -4
-    6 > lat > 4
-    -6 > lat > -4
-    lat in range(4, 6)
+    lat in [4, 6]
+    time in [2014, 2014]
+    time in [2014-03-01, 2014-04-01]
     time = 2014-03-02
     time = 2014-3-2
     time = 2014-3
     time = 2014
     platform = LANDSAT_8
-    lat in range(4, 6) time = 2014-03-02
-    platform=LS8 -4<lat<23.5 instrument="OTHER"
+    lat in [4, 6] time = 2014-03-02
+    platform=LS8 lat in [-14, -23.5] instrument="OTHER"
     """.strip().split('\n')
-    # time in 2014-03-08
 
     for sample in sample_inputs:
         transformer = TreeToSearchExprs()
