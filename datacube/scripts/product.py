@@ -138,13 +138,14 @@ def _write_tab(products):
         echo('No products discovered :(')
         return
 
-    echo(df.to_string(columns=('id', 'name', 'description', 'ancillary_quality',
-                               'product_type', 'gqa_abs_iterative_mean_xy',
-                               'gqa_ref_source', 'sat_path',
-                               'gqa_iterative_stddev_xy', 'time', 'sat_row',
-                               'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
-                               'resolution', 'tile_size', 'spatial_dimensions'),
-                      justify='left'))
+    output_columns=('id', 'name', 'description', 'ancillary_quality',
+                    'product_type', 'gqa_abs_iterative_mean_xy',
+                    'gqa_ref_source', 'sat_path',
+                    'gqa_iterative_stddev_xy', 'time', 'sat_row',
+                    'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
+                    'resolution', 'tile_size', 'spatial_dimensions')
+
+    echo(df.to_string(columns=[col for col in output_columns if col in df.columns],justify='left',index=False))
 
 
 def _default_lister(products):
