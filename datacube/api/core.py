@@ -447,12 +447,14 @@ class Datacube(object):
         for name, coord in coords.items():
             result[name] = coord
         for name, coord in geobox.coordinates.items():
-            result[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
+            result[name] = (name, coord.values, {'units': coord.units,
+                                                 'resolution': coord.resolution,
+                                                 'crs': str(geobox.crs)})
 
         for measurement in measurements:
             data = data_func(measurement)
             attrs = measurement.dataarray_attrs()
-            attrs['crs'] = geobox.crs
+            attrs['crs'] = str(geobox.crs)
             dims = tuple(coords.keys()) + tuple(geobox.dimensions)
             result[measurement.name] = (dims, data, attrs)
 

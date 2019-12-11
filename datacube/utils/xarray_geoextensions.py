@@ -25,8 +25,34 @@ def _norm_crs(crs):
         raise ValueError('Can not interpret {} as CRS'.format(type(crs)))
 
 
+def _get_crs(obj):
+    if not isinstance(obj, xarray.Dataset) and not isinstance(obj, xarray.DataArray):
+        raise ValueError('Can not get crs from {}'.format(type(obj)))
+
+    if isinstance(obj, xarray.Dataset):
+        if len(obj.data_vars) > 0:
+            data_array = next(iter(obj.data_vars.values()))
+        else:
+            # fall back option
+            return obj.crs
+    else:
+        data_array = obj
+
+    # Assumption: spatial dimensions are always the last 2)
+    spatial_dims = data_array.dims[-2:]
+
+    if 'crs' in data_array[data_array.dims[-1]].attrs:
+        if data_array[spatial_dims[0]].crs != data_array[spatial_dims[1]].crs:
+            raise ValueError('Spatial dimensions have different crs.')
+        crs = data_array[data_array.dims[-1]].crs
+    else:
+        # fall back option
+        crs = obj.crs
+    return crs
+
+
 def _xarray_affine(obj):
-    crs = _norm_crs(obj.crs)
+    crs = _norm_crs(_get_crs(obj))
     if crs is None:
         return None
 
@@ -51,7 +77,7 @@ def _xarray_extent(obj):
 
 
 def _xarray_geobox(obj):
-    crs = _norm_crs(obj.crs)
+    crs = _norm_crs(_get_crs(obj))
     if crs is None:
         return None
 
