@@ -22,12 +22,11 @@ from collections import namedtuple
 import logging
 from datetime import datetime
 from dateutil.tz import tzutc
-
-logging.basicConfig()
-
 from lark import Lark, v_args, Transformer
 
-Range = namedtuple('Range', ('begin', 'end'))
+from datacube.model import Range
+
+logging.basicConfig()
 
 search_grammar = """
 
@@ -47,10 +46,12 @@ search_grammar = """
     
     FIELD: /[a-zA-Z][\w\d_]*/
     
-    ?orderable: SIGNED_NUMBER | date
+    ?orderable: SIGNED_NUMBER -> number
+              | date
 
     
     value: date
+         | INT -> integer
          | SIGNED_NUMBER -> number
          | ESCAPED_STRING -> string
          | simple_string
@@ -73,9 +74,10 @@ search_grammar = """
 
 @v_args(inline=True)
 class TreeToSearchExprs(Transformer):
-    # Convert the of expressions
+    # Convert the expressions
     def in_expr(self, k, v):
-        return {str(k): str(v)}
+        return {str(k): v}
+    equals_expr = in_expr
 
     def lt_expr(self, lower, field, upper):
         return {str(field): Range(lower, upper)}
@@ -86,7 +88,6 @@ class TreeToSearchExprs(Transformer):
     def range_expr(self, field, lower, upper):
         return {str(field): Range(lower, upper)}
 
-    equals_expr = in_expr
 
     # Convert the literals
     def string(self, val):
@@ -94,6 +95,7 @@ class TreeToSearchExprs(Transformer):
 
     simple_string = str
     number = float
+    integer = int
 
     def date(self, y, m=None, d=None):
         m = 1 if m is None else int(m)
