@@ -147,6 +147,8 @@ def test_cog_no_crs(tmpdir, with_dask):
 
     xx, ds = gen_test_data(pp, dask=with_dask)
     del xx.attrs['crs']
+    for dim in xx.dims:
+        del xx[dim].attrs['crs']
 
     with pytest.raises(ValueError):
         write_cog(xx, ":mem:")

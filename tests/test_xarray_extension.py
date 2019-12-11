@@ -22,6 +22,8 @@ def test_xr_extension(odc_style_xr_dataset):
     assert (zz0, zz1) == (0, 0)
 
     odc_style_xr_dataset.attrs['crs'] = None
+    for dim in odc_style_xr_dataset.B10.dims:
+        odc_style_xr_dataset[dim].attrs['crs'] = None
     assert _xarray_affine(odc_style_xr_dataset) is None
     assert _xarray_geobox(odc_style_xr_dataset) is None
     assert _xarray_extent(odc_style_xr_dataset) is None
