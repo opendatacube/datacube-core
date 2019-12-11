@@ -259,6 +259,7 @@ def test_write_geotiff_str_crs(tmpdir, odc_style_xr_dataset):
         assert (written_data == odc_style_xr_dataset['B10']).all()
 
     del odc_style_xr_dataset.attrs['crs']
+    del odc_style_xr_dataset.B10.attrs['crs']
     for dim in odc_style_xr_dataset.B10.dims:
         del odc_style_xr_dataset[dim].attrs['crs']
     with pytest.raises(ValueError):

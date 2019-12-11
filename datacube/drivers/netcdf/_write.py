@@ -79,11 +79,14 @@ def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_
     if not dataset.data_vars.keys():
         raise DatacubeException('Cannot save empty dataset to disk.')
 
-    if not hasattr(dataset, 'crs'):
-        raise DatacubeException('Dataset does not contain CRS, cannot write to NetCDF file.')
+    if dataset.geobox is None:
+        raise DatacubeException('Dataset geobox property is None, cannot write to NetCDF file.')
+
+    if dataset.geobox.crs is None:
+        raise DatacubeException('Dataset geobox.crs property is None, cannot write to NetCDF file.')
 
     nco = create_netcdf_storage_unit(filename,
-                                     dataset.crs,
+                                     dataset.geobox.crs,
                                      dataset.coords,
                                      dataset.data_vars,
                                      variable_params,

@@ -181,8 +181,14 @@ def do_fixer_task(config, task):
     data['dataset'] = datasets_to_doc(unwrapped_datasets)
 
     try:
+        if data.geobox is None:
+            raise DatacubeException('Dataset geobox property is None, cannot write to NetCDF file.')
+
+        if data.geobox.crs is None:
+            raise DatacubeException('Dataset geobox.crs property is None, cannot write to NetCDF file.')
+
         nco = create_netcdf_storage_unit(temp_filename,
-                                         data.crs,
+                                         data.geobox.crs,
                                          data.coords,
                                          data.data_vars,
                                          variable_params,

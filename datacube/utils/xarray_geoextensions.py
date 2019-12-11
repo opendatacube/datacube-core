@@ -34,20 +34,20 @@ def _get_crs(obj):
             data_array = next(iter(obj.data_vars.values()))
         else:
             # fall back option
-            return obj.crs
+            return obj.attrs.get('crs', None)
     else:
         data_array = obj
 
     # Assumption: spatial dimensions are always the last 2)
     spatial_dims = data_array.dims[-2:]
-
-    if 'crs' in data_array[data_array.dims[-1]].attrs:
-        if data_array[spatial_dims[0]].crs != data_array[spatial_dims[1]].crs:
-            raise ValueError('Spatial dimensions have different crs.')
+    crs_set = set(data_array[d].attrs.get('crs', None) for d in spatial_dims)
+    if len(crs_set) > 1:
+        raise ValueError('Spatial dimensions have different crs.')
+    elif len(crs_set) == 1 and None not in crs_set:
         crs = data_array[data_array.dims[-1]].crs
     else:
         # fall back option
-        crs = obj.crs
+        crs = data_array.attrs.get('crs', None) or obj.attrs.get('crs', None)
     return crs
 
 

@@ -443,18 +443,18 @@ class Datacube(object):
 
         data_func = data_func or empty_func
 
-        result = xarray.Dataset(attrs={'crs': geobox.crs})
+        result = xarray.Dataset(attrs={'crs': str(geobox.crs)})
         for name, coord in coords.items():
             result[name] = coord
         for name, coord in geobox.coordinates.items():
             result[name] = (name, coord.values, {'units': coord.units,
                                                  'resolution': coord.resolution,
-                                                 'crs': str(geobox.crs)})
+                                                 'crs': result.crs})
 
         for measurement in measurements:
             data = data_func(measurement)
             attrs = measurement.dataarray_attrs()
-            attrs['crs'] = str(geobox.crs)
+            attrs['crs'] = result.crs
             dims = tuple(coords.keys()) + tuple(geobox.dimensions)
             result[measurement.name] = (dims, data, attrs)
 

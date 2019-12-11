@@ -284,4 +284,4 @@ def test_useful_error_on_write_empty_dataset(tmpnetcdf_filename):
     with pytest.raises(DatacubeException) as excinfo:
         ds = xr.Dataset(data_vars={'blue': (('time',), numpy.array([0, 1, 2]))})
         write_dataset_to_netcdf(ds, tmpnetcdf_filename)
-    assert 'CRS' in str(excinfo.value)
+    assert 'geobox' in str(excinfo.value)
