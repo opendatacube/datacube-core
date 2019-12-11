@@ -144,8 +144,9 @@ def _write_tab(products):
                     'gqa_iterative_stddev_xy', 'time', 'sat_row',
                     'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
                     'resolution', 'tile_size', 'spatial_dimensions')
-
-    echo(df.to_string(columns=[col for col in output_columns if col in df.columns],justify='left',index=False))
+    # If the intersection of desired columns with available columns is empty, just use whatever IS in df
+    output_columns=tuple(col for col in output_columns if col in df.columns) or df.columns
+    echo(df.to_string(columns=output_columns,justify='left',index=False))
 
 
 def _default_lister(products):
