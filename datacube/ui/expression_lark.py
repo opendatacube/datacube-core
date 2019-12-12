@@ -9,38 +9,45 @@ from dateutil.tz import tzutc
 from lark import Lark, v_args, Transformer
 
 from datacube.model import Range
+from datacube.api.query import _time_to_search_dims
 
 logging.basicConfig()
 
-search_grammar = """
+search_grammar = r"""
     start: expression+
     ?expression: equals_expr
-               | in_expr
-               | between_expr
-    
+               | time_in_expr
+               | field_in_expr
+
     equals_expr: field "=" value
-    in_expr: field "in" date
-    between_expr: field "in" "[" orderable "," orderable "]"
-    
-    ?field: /[a-zA-Z][\w\d_]*/
-    
-    ?orderable: date
+    time_in_expr: time "in" date_range
+    field_in_expr: field "in" "[" orderable "," orderable "]"
+
+    field: FIELD
+    time: TIME
+
+    ?orderable: INT -> integer
               | SIGNED_NUMBER -> number
-    
-    value: date
-         | INT -> integer
-         | SIGNED_NUMBER -> number
-         | ESCAPED_STRING -> string
-         | simple_string
-         | /[a-z0-9+.-]+:\/\/([:\/\w._-])*/
-    
-    simple_string: /[a-zA-Z][\w._-]*/
-    
+
+    ?value: INT -> integer
+          | SIGNED_NUMBER -> number
+          | ESCAPED_STRING -> string
+          | SIMPLE_STRING -> simple_string
+          | URL_STRING -> url_string
+
+
+    ?date_range: date -> single_date
+               | "[" date "," date "]" -> pair_date
+
     date: YEAR ["-" MONTH ["-" DAY ]]
 
+    TIME: "time"
+    FIELD: /[a-zA-Z][\w\d_]*/
     YEAR: DIGIT ~ 4
     MONTH: DIGIT ~ 1..2
     DAY: DIGIT ~ 1..2
+    SIMPLE_STRING: /[a-zA-Z][\w._-]*/
+    URL_STRING: /[a-z0-9+.-]+:\/\/([:\/\w._-])*/
 
 
     %import common.ESCAPED_STRING
@@ -53,32 +60,43 @@ search_grammar = """
 """
 
 
+def identity(x):
+    return x
+
+
 @v_args(inline=True)
 class TreeToSearchExprs(Transformer):
     # Convert the expressions
-    def in_expr(self, k, v):
+    def equals_expr(self, k, v):
         return {str(k): v}
-    equals_expr = in_expr
 
-    def range_expr(self, field, lower, upper):
+    def field_in_expr(self, field, lower, upper):
         return {str(field): Range(lower, upper)}
 
-    between_expr = range_expr
+    def time_in_expr(self, time_field, date_range):
+        return {str(time_field): date_range}
 
     # Convert the literals
     def string(self, val):
         return str(val[1:-1])
 
     simple_string = str
+    url_string = str
     field = str
-    value = str
+    time = str
     number = float
     integer = int
 
+    value = identity
+
+    def single_date(self, val):
+        return _time_to_search_dims(val)
+
+    def pair_date(self, start, end):
+        return _time_to_search_dims((start, end))
+
     def date(self, y, m=None, d=None):
-        m = 1 if m is None else int(m)
-        d = 1 if d is None else int(d)
-        return datetime(year=int(y), month=m, day=d, tzinfo=tzutc())
+        return "-".join(x for x in [y, m, d] if x is not None)
 
     # Merge everything into a single dict
     def start(self, *vals):
@@ -103,12 +121,12 @@ def main():
     lat in [4, 6]
     time in [2014, 2014]
     time in [2014-03-01, 2014-04-01]
-    time = 2014-03-02
-    time = 2014-3-2
-    time = 2014-3
-    time = 2014
+    time in 2014-03-02
+    time in 2014-3-2
+    time in 2014-3
+    time in 2014
     platform = LANDSAT_8
-    lat in [4, 6] time = 2014-03-02
+    lat in [4, 6] time in 2014-03-02
     platform=LS8 lat in [-14, -23.5] instrument="OTHER"
     """.strip().split('\n')
 

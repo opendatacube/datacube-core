@@ -19,8 +19,8 @@ def test_between_expression():
         assert k in q
         r = q[k]
         assert isinstance(r, Range)
-        assert isinstance(r.begin, float)
-        assert isinstance(r.end, float)
+        assert isinstance(r.begin, (int, float))
+        assert isinstance(r.end, (int, float))
         assert r == Range(10, 11.3)
 
 
@@ -43,8 +43,8 @@ def test_parse_uri_expression():
 
 
 def test_parse_dates():
-    assert parse_expressions('time = 2014-03-02') == {'time': datetime(2014, 3, 2, tzinfo=tzutc())}
-    assert parse_expressions('time = 2014-3-2') == {'time': datetime(2014, 3, 2, tzinfo=tzutc())}
+    assert parse_expressions('time in 2014-03-02') == {'time': datetime(2014, 3, 2, tzinfo=tzutc())}
+    assert parse_expressions('time in 2014-3-2') == {'time': datetime(2014, 3, 2, tzinfo=tzutc())}
 
     # A missing day defaults to the first of the month.
     # They are probably better off using in-expessions in these cases (eg. "time in 2013-01"), but it's here
@@ -52,8 +52,8 @@ def test_parse_dates():
     march_2014 = {
         'time': datetime(2014, 3, 1, tzinfo=tzutc())
     }
-    assert parse_expressions('time = 2014-03') == march_2014
-    assert parse_expressions('time = 2014-3') == march_2014
+    assert parse_expressions('time in 2014-03') == march_2014
+    assert parse_expressions('time in 2014-3') == march_2014
 
     implied_feb_2014 = {
         'time': Range(datetime(2014, 2, 1, tzinfo=tzutc()), datetime(2014, 3, 1, tzinfo=tzutc()))
