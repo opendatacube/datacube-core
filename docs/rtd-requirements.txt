@@ -3,7 +3,6 @@ affine
 cachetools
 click
 dask[array]
-pypeg2
 python-dateutil
 pyyaml
 jsonschema

@@ -158,6 +158,5 @@ dependencies:
   - zlib=1.2.11=h7b6447c_3
   - zstd=1.3.7=h0b5b093_0
   - pip:
-    - pypeg2==2.15.2
     - rasterio==1.0.22
     - sphinxcontrib-plantuml==0.14

@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 Common functions for click-based cli scripts.
 """
@@ -329,23 +328,25 @@ def parsed_search_expressions(f):
     Search Expressions
     ------------------
 
-    Select data using multiple [EXPRESSIONS] to limit by date, product type,
-    spatial extent and other searchable fields.
+    Select data using multiple [EXPRESSIONS] to filter by date, product type,
+    spatial extents or any other searchable field.
 
-    Specify either an Equals Expression with param=value, or a Range
-    Expression with less<param<greater. Numbers or Dates are supported.
+    Three types of expressions are available:
+
+        FIELD = VALUE
+        FIELD in DATE-RANGE
+        FIELD in [START, END]
+
+    Where DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
+    and START, END are either numbers or dates.
 
     Searchable fields include: x, y, time, product and more.
 
-    NOTE: Range expressions using <,> symbols should be escaped with '', otherwise
-    the shell will try to interpret them.
-
     \b
-    eg. 'time in [1996-01-01, 1996-12-31]'
+    eg. 'time in [1996-01-01, 1996-12-31]' or simply 'time in 1996'
         'lon in [130, 140]' 'lat in [-40, -30]'
         product=ls5_nbar_albers
 
-    or (deprecated) '1996-01-01 < time < 1996-12-31'
     """
 
     def my_parse(ctx, param, value):

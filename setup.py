@@ -99,7 +99,6 @@ setup(
         'netcdf4',
         'numpy',
         'psycopg2',
-        'pypeg2',
         'lark-parser>=0.6.7',
         'python-dateutil',
         'pyyaml',
