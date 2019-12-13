@@ -3,7 +3,7 @@ from dateutil.tz import tzutc
 
 from datacube.model import Range
 # from datacube.ui import parse_expressions
-from datacube.ui.expression_lark import parse_expressions
+from datacube.ui.expression import parse_expressions
 
 
 def test_between_expression():
