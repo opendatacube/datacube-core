@@ -5,6 +5,9 @@ python-dateutil==2.8.0
 # every new version finds new errors, so we pin it
 pylint==1.8.4
 
+# last one to support proj 5.2
+pyproj==1.9.6
+
 # force compilation of some geo and related libs
 --no-binary=GDAL,rasterio,fiona,shapely,pyproj,psycopg2,h5py,netcdf4
 
