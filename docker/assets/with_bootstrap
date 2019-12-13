@@ -6,9 +6,11 @@
 
 dc_config_render.py auto
 
-if [ -e "${PYENV:-/env}/bin/activate" ]; then
+env="${PYENV:-/env}"
+
+if [ -e "${env}/bin/activate" ]; then
     [ -n "${VIRTUAL_ENV}" ] || {
-        source "${PYENV}/bin/activate"
+        source "${env}/bin/activate"
     }
 fi
 

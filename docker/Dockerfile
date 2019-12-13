@@ -60,10 +60,15 @@ RUN mkdir -p /wheels \
   && echo "================================================================================"
 
 
-COPY dc_config_render.py /usr/local/bin/
-COPY with_bootstrap /usr/local/bin/
-COPY env-build-tool /usr/local/bin/
+COPY assets/dc_config_render.py /usr/local/bin/
+COPY assets/with_bootstrap /usr/local/bin/
+COPY assets/env-build-tool /usr/local/bin/
 
 # build environment with all dependencies of datacube but no datacube
 RUN find /wheels/ -type f -name "*whl" > /tmp/reqs.txt \
 && env-build-tool new /tmp/reqs.txt /wheels /env
+
+VOLUME /src/datacube-core
+WORKDIR /src/datacube-core
+
+ENTRYPOINT ["/usr/local/bin/with_bootstrap"]
