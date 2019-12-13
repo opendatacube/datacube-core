@@ -3,15 +3,11 @@
 """
 # flake8: noqa
 
-import logging
-from datetime import datetime
-from dateutil.tz import tzutc
 from lark import Lark, v_args, Transformer
 
-from datacube.model import Range
 from datacube.api.query import _time_to_search_dims
+from datacube.model import Range
 
-logging.basicConfig()
 
 search_grammar = r"""
     start: expression+
@@ -37,7 +33,7 @@ search_grammar = r"""
 
 
     ?date_range: date -> single_date
-               | "[" date "," date "]" -> pair_date
+               | "[" date "," date "]" -> date_pair
 
     date: YEAR ["-" MONTH ["-" DAY ]]
 
@@ -67,8 +63,8 @@ def identity(x):
 @v_args(inline=True)
 class TreeToSearchExprs(Transformer):
     # Convert the expressions
-    def equals_expr(self, k, v):
-        return {str(k): v}
+    def equals_expr(self, field, value):
+        return {str(field): value}
 
     def field_in_expr(self, field, lower, upper):
         return {str(field): Range(lower, upper)}
@@ -80,30 +76,26 @@ class TreeToSearchExprs(Transformer):
     def string(self, val):
         return str(val[1:-1])
 
-    simple_string = str
-    url_string = str
-    field = str
-    time = str
+    simple_string = url_string = field = time = str
     number = float
     integer = int
-
     value = identity
 
-    def single_date(self, val):
-        return _time_to_search_dims(val)
+    def single_date(self, date):
+        return _time_to_search_dims(date)
 
-    def pair_date(self, start, end):
+    def date_pair(self, start, end):
         return _time_to_search_dims((start, end))
 
     def date(self, y, m=None, d=None):
         return "-".join(x for x in [y, m, d] if x is not None)
 
     # Merge everything into a single dict
-    def start(self, *vals):
-        result = {}
-        for val in vals:
-            result.update(val)
-        return result
+    def start(self, *search_exprs):
+        combined = {}
+        for expr in search_exprs:
+            combined.update(expr)
+        return combined
 
 
 def parse_expressions(*expression_text):
@@ -113,7 +105,7 @@ def parse_expressions(*expression_text):
 
 
 def main():
-    expr_parser = Lark(search_grammar)  # , parser='lalr')
+    expr_parser = Lark(search_grammar)
 
     sample_inputs = """platform = "LANDSAT_8"
     platform = "LAND SAT_8"
