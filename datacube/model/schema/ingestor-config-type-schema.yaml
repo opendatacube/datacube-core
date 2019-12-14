@@ -21,6 +21,8 @@ properties:
                 type: string
             source:
                 type: string
+            history:
+                type: string
             institution:
                 type: string
             instrument:
@@ -35,6 +37,12 @@ properties:
                 type: string
             product_version:
                 type: [number, string]
+            publisher_email:
+                type: string
+            publisher_name:
+                type: string
+            publisher_url:
+                type: string
             product_suite:
                 type: string
             project:
@@ -48,6 +56,8 @@ properties:
             naming_authority:
                 type: string
             acknowkledgment:
+                type: string
+            references:
                 type: string
     ingestion_bounds:
         type: object
@@ -64,10 +74,9 @@ properties:
         "$ref": "#/definitions/storage"
     measurements:
         type: array
-        additionalProperties: true
+        additionalProperties: false
         items:
             "$ref": "#/definitions/measurement"
-        
 required:
     - output_type
     - location
@@ -75,6 +84,7 @@ required:
     - global_attributes
     - storage
     - measurements
+additionalProperties: false
 
 definitions:
     dtype:
@@ -127,12 +137,19 @@ definitions:
                                 properties:
                                     description:
                                         type: string
+            attrs:
+                type: object
+                properties:
+                    long_name:
+                        type: string
+                    alias:
+                        type: string
         required:
             - name
             - dtype
             - nodata
             - src_varname
-        additionalProperties: true
+        additionalProperties: false
 
     storage:
         type: object
@@ -150,5 +167,7 @@ definitions:
             origin:
                 type: object
             driver:
+                type: string
+            bucket:
                 type: string
         additionalProperties: false
