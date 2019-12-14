@@ -13,11 +13,12 @@ from typing import Tuple
 import datacube
 from datacube.api.core import Datacube
 from datacube.index.index import Index
-from datacube.model import DatasetType, Range, Measurement
+from datacube.model import DatasetType, Range, Measurement, IngestorConfig
 from datacube.utils import geometry
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
 from datacube.utils import read_documents
+from datacube.utils.documents import InvalidDocException
 from datacube.utils.uris import normalise_path
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
 from datacube.drivers import storage_writer_by_name
@@ -408,19 +409,28 @@ def ingest_cmd(index,
 
     if config_file:
         config = load_config_from_file(config_file)
-        driver = get_driver_from_config(config)
-        source_type, output_type = ensure_output_type(index, config, driver.format,
-                                                      allow_product_changes=allow_product_changes)
-
-        tasks = create_task_list(index, output_type, year, source_type, config)
     elif load_tasks:
         config, tasks = load_tasks_(load_tasks)
-        driver = get_driver_from_config(config)
-        source_type, output_type = ensure_output_type(index, config, driver.format,
-                                                      allow_product_changes=allow_product_changes)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
         sys.exit(-1)
+
+    try:
+        IngestorConfig.validate(config)
+    except InvalidDocException as e:
+        exception, = e.args
+        _LOG.error(exception.message)
+        sys.exit(-1)
+
+    if config_file:
+        driver = get_driver_from_config(config)
+        source_type, output_type = ensure_output_type(index, config, driver.format,
+                                                      allow_product_changes=allow_product_changes)
+        tasks = create_task_list(index, output_type, year, source_type, config)
+    elif load_tasks:
+        driver = get_driver_from_config(config)
+        source_type, output_type = ensure_output_type(index, config, driver.format,
+                                                      allow_product_changes=allow_product_changes)
 
     if dry_run:
         check_existing_files(get_filename(config, task['tile_index'], task['tile'].sources) for task in tasks)
