@@ -539,6 +539,14 @@ class DatasetType(object):
         return hash(self.name)
 
 
+@schema_validated(SCHEMA_PATH / 'ingestor-config-type-schema.yaml')
+class IngestorConfig(object):
+    """
+    Ingestor configuration definition
+    """
+    pass
+
+
 class GridSpec(object):
     """
     Definition for a regular spatial grid
@@ -574,10 +582,11 @@ class GridSpec(object):
         if not isinstance(other, GridSpec):
             return False
 
-        return (self.crs == other.crs
-                and self.tile_size == other.tile_size
-                and self.resolution == other.resolution
-                and self.origin == other.origin)
+        crs_result = self.crs == other.crs
+        tile_size_result = self.tile_size == other.tile_size
+        resolution_result = self.resolution == other.resolution
+        origin_result = self.origin == other.origin
+        return (crs_result and tile_size_result and resolution_result and origin_result)
 
     @property
     def dimensions(self) -> Tuple[str, str]:
