@@ -416,7 +416,9 @@ def ingest_cmd(index,
         sys.exit(-1)
 
     try:
-        IngestorConfig.validate(config)
+        # ignore the added filename key which is not part of the schema
+        tmp_config = {key:config[key] for key in config if key != 'filename'}
+        IngestorConfig.validate(tmp_config)
     except InvalidDocException as e:
         exception, = e.args
         _LOG.error(exception.message)
