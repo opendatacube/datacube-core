@@ -37,6 +37,8 @@ RUN apt-get update \
   # include db for running tests
   postgresql-client-10 \
   postgresql-10 \
+  # to become test user
+  sudo \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --no-cache --no-cache-dir --upgrade \
@@ -60,13 +62,14 @@ RUN mkdir -p /wheels \
   && echo "================================================================================"
 
 
-COPY assets/dc_config_render.py /usr/local/bin/
-COPY assets/with_bootstrap /usr/local/bin/
 COPY assets/env-build-tool /usr/local/bin/
 
 # build environment with all dependencies of datacube but no datacube
 RUN find /wheels/ -type f -name "*whl" > /tmp/reqs.txt \
 && env-build-tool new /tmp/reqs.txt /wheels /env
+
+COPY assets/dc_config_render.py /usr/local/bin/
+COPY assets/with_bootstrap /usr/local/bin/
 
 VOLUME /src/datacube-core
 WORKDIR /src/datacube-core
