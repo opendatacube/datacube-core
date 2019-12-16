@@ -35,10 +35,14 @@ RUN apt-get update \
   # datacube tests need redis
   redis-server \
   # include db for running tests
+  postgresql \
   postgresql-client-10 \
   postgresql-10 \
   # to become test user
   sudo \
+  # for debugging
+  less \
+  vim \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --no-cache --no-cache-dir --upgrade \
@@ -67,6 +71,20 @@ COPY assets/env-build-tool /usr/local/bin/
 # build environment with all dependencies of datacube but no datacube
 RUN find /wheels/ -type f -name "*whl" > /tmp/reqs.txt \
 && env-build-tool new /tmp/reqs.txt /wheels /env
+
+# prep db
+RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/postgresql \
+  && sudo -u postgres "/usr/lib/postgresql/10/bin/initdb" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
+
+RUN groupadd --gid 1000 odc \
+  && useradd --gid 1000 \
+  --uid 1000 \
+  --create-home \
+  --shell /bin/bash -N odc \
+  && adduser odc sudo \
+  && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+  && true
+
 
 COPY assets/dc_config_render.py /usr/local/bin/
 COPY assets/with_bootstrap /usr/local/bin/
