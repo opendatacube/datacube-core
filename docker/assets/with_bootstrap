@@ -4,6 +4,27 @@
     export GDAL_DATA=$(gdal-config --datadir)
 }
 
+# Become `odc` user with UID/GID compatible to datacube-core volume
+#  If Running As root
+#    If outside volume not owned by root
+#       create user `odc` with compatible UID/GID
+#       re-exec this script as odc user
+
+[[ $UID -ne 0 ]] || {
+    target_uid=$(stat -c '%u' .)
+    target_gid=$(stat -c '%g' .)
+
+    [[ $target_uid -eq 0 ]] || {
+        groupadd --gid "${target_gid}" odc
+        useradd --uid "${target_uid}" \
+                --gid "${target_gid}" \
+                --create-home \
+                --shell /bin/bash odc
+
+        exec sudo -u odc -H bash "$0" "$@"
+    }
+}
+
 dc_config_render.py auto
 
 env="${PYENV:-/env}"
