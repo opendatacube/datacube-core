@@ -5,6 +5,13 @@ FROM $base_image as env_builder
 ENV LC_ALL C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Install Tini
+# tini is useful inside runners, it's easier to copy it from builder than download (which requires curl or wget)
+RUN curl -s -L -O https://github.com/krallin/tini/releases/download/v0.18.0/tini \
+&& echo "12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855 *tini" | sha256sum -c - \
+&& install -m 755 tini /bin/tini \
+&& rm tini
+
 RUN apt-get update \
   && apt-get install -y --fix-missing --no-install-recommends \
   python3 \
@@ -95,14 +102,6 @@ RUN mkdir -p /wheels \
   && find /wheels/ -type f -name "datacube-*whl" -delete \
   && ls -lh /wheels/ \
   && echo "================================================================================"
-
-# Install Tini
-# tini is useful inside runners, it's easier to copy it from builder than download (which requires curl or wget)
-RUN curl -s -L -O https://github.com/krallin/tini/releases/download/v0.18.0/tini \
-  && echo "12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855 *tini" | sha256sum -c - \
-  && install -m 755 tini /bin/tini \
-  && rm tini
-
 
 COPY assets/env-build-tool /usr/local/bin/
 
