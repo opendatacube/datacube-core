@@ -1,15 +1,9 @@
-FROM buildpack-deps:bionic
+ARG base_image="osgeo/gdal:ubuntu-full-3.0.2"
+FROM $base_image as env_builder
+
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
-
-# First add the UbuntuGIS repo
-RUN apt-get update \
-  && apt-get install -y --fix-missing --no-install-recommends \
-  software-properties-common \
-  && add-apt-repository ppa:ubuntugis/ppa \
-  && rm -rf /var/lib/apt/lists/*
-
 
 RUN apt-get update \
   && apt-get install -y --fix-missing --no-install-recommends \
@@ -17,13 +11,6 @@ RUN apt-get update \
   python3-dev \
   python3-pip \
   python3-venv \
-  gdal-bin \
-  gdal-data \
-  proj-bin \
-  proj-data \
-  libgdal-dev \
-  libgeos-dev \
-  libproj-dev \
   libnetcdf-dev \
   libhdf4-alt-dev \
   libhdf5-serial-dev \
@@ -32,6 +19,47 @@ RUN apt-get update \
   git \
   libudunits2-0 \
   libudunits2-dev \
+  # copied from build-deps
+  autoconf \
+  automake \
+  bzip2 \
+  dpkg-dev \
+  file \
+  g++ \
+  gcc \
+  imagemagick \
+  libbz2-dev \
+  libc6-dev \
+  libcurl4-openssl-dev \
+  libdb-dev \
+  libevent-dev \
+  libffi-dev \
+  libgdbm-dev \
+  libglib2.0-dev \
+  libgmp-dev \
+  libjpeg-dev \
+  libkrb5-dev \
+  liblzma-dev \
+  libmagickcore-dev \
+  libmagickwand-dev \
+  libmaxminddb-dev \
+  libncurses5-dev \
+  libncursesw5-dev \
+  libpng-dev \
+  libpq-dev \
+  libreadline-dev \
+  libsqlite3-dev \
+  libssl-dev \
+  libtool \
+  libwebp-dev \
+  libxml2-dev \
+  libxslt-dev \
+  libyaml-dev \
+  make \
+  patch \
+  unzip \
+  xz-utils \
+  zlib1g-dev \
   # datacube tests need redis
   redis-server \
   # include db for running tests
@@ -44,6 +72,9 @@ RUN apt-get update \
   less \
   vim \
   && rm -rf /var/lib/apt/lists/*
+
+# fix "missing libproj"
+RUN ln -s /usr/local/lib/libproj.so.15 /usr/local/lib/libproj.so
 
 RUN pip3 install --no-cache --no-cache-dir --upgrade \
          pip setuptools wheel cython numpy \
@@ -64,6 +95,13 @@ RUN mkdir -p /wheels \
   && find /wheels/ -type f -name "datacube-*whl" -delete \
   && ls -lh /wheels/ \
   && echo "================================================================================"
+
+# Install Tini
+# tini is useful inside runners, it's easier to copy it from builder than download (which requires curl or wget)
+RUN curl -s -L -O https://github.com/krallin/tini/releases/download/v0.18.0/tini \
+  && echo "12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855 *tini" | sha256sum -c - \
+  && install -m 755 tini /bin/tini \
+  && rm tini
 
 
 COPY assets/env-build-tool /usr/local/bin/
@@ -92,4 +130,4 @@ COPY assets/with_bootstrap /usr/local/bin/
 VOLUME /src/datacube-core
 WORKDIR /src/datacube-core
 
-ENTRYPOINT ["/usr/local/bin/with_bootstrap"]
+ENTRYPOINT ["/bin/tini", "-s", "--", "/usr/local/bin/with_bootstrap"]
