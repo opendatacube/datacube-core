@@ -1,13 +1,17 @@
 image_name := opendatacube/datacube-tests
 image_tag := latest
+dkr := $(image_name):$(image_tag)
 
 all: docker
 
 docker:
-	@echo Building $(image_name):$(image_tag)
-	docker build -t $(image_name):$(image_tag) .
+	@echo Building $(dkr)
+	docker build -t $(dkr) .
 
 debug: docker
-	@docker run --rm -ti -v "$$(dirname $$(pwd))":/src/datacube-core $(image_name):$(image_tag) bash
+	@docker run --rm -ti \
+  -v "$$(dirname $$(pwd))":/src/datacube-core \
+  $(dkr) \
+  bash
 
 PHONY: all clean docker
