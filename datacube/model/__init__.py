@@ -582,11 +582,10 @@ class GridSpec(object):
         if not isinstance(other, GridSpec):
             return False
 
-        crs_result = self.crs == other.crs
-        tile_size_result = self.tile_size == other.tile_size
-        resolution_result = self.resolution == other.resolution
-        origin_result = self.origin == other.origin
-        return (crs_result and tile_size_result and resolution_result and origin_result)
+        return (self.crs == other.crs
+                and self.tile_size == other.tile_size
+                and self.resolution == other.resolution
+                and self.origin == other.origin)
 
     @property
     def dimensions(self) -> Tuple[str, str]:
