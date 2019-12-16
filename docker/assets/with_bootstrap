@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ -n "$GDAL_DATA" ] || {
+[ -n "${GDAL_DATA:-}" ] || {
     export GDAL_DATA=$(gdal-config --datadir)
 }
 
@@ -9,7 +9,7 @@ dc_config_render.py auto
 env="${PYENV:-/env}"
 
 if [ -e "${env}/bin/activate" ]; then
-    [ -n "${VIRTUAL_ENV}" ] || {
+    [ -n "${VIRTUAL_ENV:-}" ] || {
         source "${env}/bin/activate"
     }
 fi
