@@ -30,8 +30,10 @@ launch_db () {
 #       re-exec this script as odc user
 
 [[ $UID -ne 0 ]] || {
-    launch_db /srv/postgresql odc > /dev/null 2> /dev/null || {
-        echo "WARNING: Failed to launch db integration tests might not run"
+    [[ "${SKIP_DB:-no}" == "yes" ]] || {
+        launch_db /srv/postgresql odc > /dev/null 2> /dev/null || {
+            echo "WARNING: Failed to launch db, integration tests might not run"
+        }
     }
 
     target_uid=$(stat -c '%u' .)
@@ -44,6 +46,8 @@ launch_db () {
         exec sudo -u odc -H bash "$0" "$@"
     }
 }
+
+[[ $UID -ne 0 ]] || echo "WARNING: Running as root"
 
 dc_config_render.py auto
 cat <<EOL > $HOME/.datacube_integration.conf
