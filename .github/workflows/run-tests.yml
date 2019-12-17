@@ -1,6 +1,14 @@
 name: Run Datacube Test Suite
 
-on: push
+on:
+  push:
+    paths:
+      - datacube/**
+      - tests/**
+      - integration_tests/**
+      - datacube_apps/**
+      - examples/io_plugin/**
+      - '.github/workflows/run-tests.yml'
 
 env:
   DKR: opendatacube/datacube-tests:latest
