@@ -67,17 +67,6 @@ RUN apt-get update \
   unzip \
   xz-utils \
   zlib1g-dev \
-  # datacube tests need redis
-  redis-server \
-  # include db for running tests
-  postgresql \
-  postgresql-client-10 \
-  postgresql-10 \
-  # to become test user
-  sudo \
-  # for debugging
-  less \
-  vim \
   && rm -rf /var/lib/apt/lists/*
 
 # fix "missing libproj"
@@ -109,9 +98,44 @@ COPY assets/env-build-tool /usr/local/bin/
 RUN find /wheels/ -type f -name "*whl" > /tmp/reqs.txt \
 && env-build-tool new /tmp/reqs.txt /wheels /env
 
+
+#################################################################################
+# Runner stage
+#################################################################################
+FROM $base_image
+
+# Set the locale, this is required for some of the Python packages
+ENV LC_ALL C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+
+# fix "missing libproj"
+RUN ln -s /usr/local/lib/libproj.so.15 /usr/local/lib/libproj.so
+
+RUN apt-get update \
+  && apt-get install -y --fix-missing --no-install-recommends \
+  python3 \
+  python3-dev \
+  python3-pip \
+  python3-venv \
+  # datacube tests need redis
+  redis-server \
+  # include db for running tests
+  postgresql \
+  postgresql-client-10 \
+  postgresql-10 \
+  # to become test user
+  sudo \
+  # for debugging
+  less \
+  vim \
+  && rm -rf /var/lib/apt/lists/*
+
 # prep db
 RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/postgresql \
   && sudo -u postgres "/usr/lib/postgresql/10/bin/initdb" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
+
+COPY --from=env_builder /env /env
+COPY --from=env_builder /bin/tini /bin/tini
 
 RUN groupadd --gid 1000 odc \
   && useradd --gid 1000 \
@@ -121,7 +145,6 @@ RUN groupadd --gid 1000 odc \
   && adduser odc sudo \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
   && true
-
 
 COPY assets/dc_config_render.py /usr/local/bin/
 COPY assets/with_bootstrap /usr/local/bin/
