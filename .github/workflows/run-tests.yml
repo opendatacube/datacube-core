@@ -1,0 +1,47 @@
+name: Run Datacube Test Suite
+
+on: push
+
+env:
+  DKR: opendatacube/datacube-tests:latest
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Pull Docker
+      run: |
+        docker pull ${DKR}
+
+    - name: Check Code Style
+      run: |
+        docker run --rm  \
+          -v $(pwd):/src/datacube-core \
+          -e SKIP_DB=yes \
+          ${DKR} \
+          pycodestyle tests integration_tests examples utils --max-line-length 120
+
+    - name: Lint Code
+      run: |
+        docker run --rm  \
+          -v $(pwd):/src/datacube-core \
+          -e SKIP_DB=yes \
+          ${DKR} \
+          pylint -j 2 --reports no datacube datacube_apps
+
+    - name: Run Tests
+      run: |
+        docker run --rm  \
+          -v $(pwd):/src/datacube-core \
+          ${DKR} \
+          py.test -r a \
+            --cov datacube \
+            --doctest-ignore-import-errors \
+            --durations=5 \
+            datacube \
+            tests \
+            datacube_apps \
+            integration_tests
