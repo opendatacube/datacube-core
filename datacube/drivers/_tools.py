@@ -22,7 +22,10 @@ def singleton_setup(obj: object,
     with DRIVER_CACHE_LOCK:
         v = getattr(obj, key, NOT_SET_MARKER)
         if v is not NOT_SET_MARKER:
-            return v
+            # very rare multi-thread only event.
+            # Other thread did it first but after this thread's initial check above.
+            # Disable test cover
+            return v  # pragma: no cover
         v = factory(*args, **kwargs)
         setattr(obj, key, v)
         return v
