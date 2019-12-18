@@ -75,6 +75,10 @@ if [ -e "${env}/bin/activate" ]; then
         if [ -e "./setup.py" ]; then
             pip install --no-deps -e '.[all]'
         fi
+
+        if [ -e "./tests/drivers/fail_drivers" ]; then
+            pip install --no-deps -e "./tests/drivers/fail_drivers"
+        fi
     }
 fi
 
