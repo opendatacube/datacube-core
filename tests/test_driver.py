@@ -2,6 +2,7 @@ import pytest
 import yaml
 
 from collections import namedtuple
+from types import SimpleNamespace
 
 from datacube.drivers import new_datasource, reader_drivers, writer_drivers
 from datacube.drivers import index_drivers, index_driver_by_name
@@ -114,3 +115,19 @@ def test_reader_cache_throws_on_missing_fallback():
 
     with pytest.raises(KeyError):
         rdrs('file', 'aint-such-format')
+
+
+def test_driver_singleton():
+    from datacube.drivers._tools import singleton_setup
+    from unittest.mock import MagicMock
+
+    result = object()
+    factory = MagicMock(return_value=result)
+    obj = SimpleNamespace()
+
+    assert singleton_setup(obj, 'xx', factory) is result
+    assert singleton_setup(obj, 'xx', factory) is result
+    assert singleton_setup(obj, 'xx', factory) is result
+    assert obj.xx is result
+
+    factory.assert_called_once()
