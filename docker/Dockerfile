@@ -96,7 +96,12 @@ COPY assets/env-build-tool /usr/local/bin/
 
 # build environment with all dependencies of datacube but no datacube
 RUN find /wheels/ -type f -name "*whl" > /tmp/reqs.txt \
-&& env-build-tool new /tmp/reqs.txt /wheels /env
+# make env root:users with write permissions for group
+  && (umask 002 \
+  && mkdir -p /env \
+  && chgrp users /env \
+  && chmod g+s /env \
+  && env-build-tool new /tmp/reqs.txt /wheels /env )
 
 
 #################################################################################
@@ -139,11 +144,12 @@ RUN groupadd --gid 1000 odc \
   --uid 1000 \
   --create-home \
   --shell /bin/bash -N odc \
+  && adduser odc users \
   && adduser odc sudo \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
   && true
 
-COPY --from=env_builder --chown=odc:odc /env /env
+COPY --from=env_builder --chown=root:users /env /env
 COPY --from=env_builder /bin/tini /bin/tini
 
 COPY assets/dc_config_render.py /usr/local/bin/

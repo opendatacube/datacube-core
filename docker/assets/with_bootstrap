@@ -43,7 +43,6 @@ launch_db () {
         groupmod --gid "${target_gid}" odc
         usermod --gid "${target_gid}" --uid "${target_uid}" odc
         chown -R odc:odc /home/odc/
-        chown -R odc:odc /env/
         exec sudo -u odc -H bash "$0" "$@"
     }
 }
