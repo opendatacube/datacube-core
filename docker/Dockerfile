@@ -130,6 +130,8 @@ RUN apt-get update \
   postgresql-10 \
   # to become test user
   sudo \
+  # for packaging
+  git \
   # for debugging
   less \
   vim \
