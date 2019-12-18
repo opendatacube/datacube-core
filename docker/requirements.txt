@@ -1,9 +1,16 @@
 # s3/boto, let aiobotocore decide botocore/boto3 versions
-aiobotocore[boto3]==0.11.0
+aiobotocore[boto3,awscli]==0.11.0
 python-dateutil==2.8.0
+pyyaml==5.1.2
 
 # every new version finds new errors, so we pin it
 pylint==1.8.4
+
+# for packaging
+wheel
+
+# for test coverage reporting
+codecov
 
 # force compilation of some geo and related libs
 --no-binary=GDAL,rasterio,fiona,shapely,pyproj,psycopg2,h5py,netcdf4
