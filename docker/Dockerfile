@@ -134,9 +134,6 @@ RUN apt-get update \
 RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/postgresql \
   && sudo -u postgres "/usr/lib/postgresql/10/bin/initdb" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
 
-COPY --from=env_builder /env /env
-COPY --from=env_builder /bin/tini /bin/tini
-
 RUN groupadd --gid 1000 odc \
   && useradd --gid 1000 \
   --uid 1000 \
@@ -145,6 +142,9 @@ RUN groupadd --gid 1000 odc \
   && adduser odc sudo \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
   && true
+
+COPY --from=env_builder --chown=odc:odc /env /env
+COPY --from=env_builder /bin/tini /bin/tini
 
 COPY assets/dc_config_render.py /usr/local/bin/
 COPY assets/with_bootstrap /usr/local/bin/

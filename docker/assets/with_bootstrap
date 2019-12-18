@@ -2,7 +2,7 @@
 
 
 launch_db () {
-    local pgdata="${1:-${HOME}/srv/postgresql}"
+    local pgdata="${1:-/srv/postgresql}"
     local dbuser="${2:-odc}"
     local bin=/usr/lib/postgresql/10/bin
 
@@ -43,6 +43,7 @@ launch_db () {
         groupmod --gid "${target_gid}" odc
         usermod --gid "${target_gid}" --uid "${target_uid}" odc
         chown -R odc:odc /home/odc/
+        chown -R odc:odc /env/
         exec sudo -u odc -H bash "$0" "$@"
     }
 }
@@ -71,6 +72,10 @@ env="${PYENV:-/env}"
 if [ -e "${env}/bin/activate" ]; then
     [ -n "${VIRTUAL_ENV:-}" ] || {
         source "${env}/bin/activate"
+
+        if [ -e "./setup.py" ]; then
+            pip install --no-deps -e '.[all]'
+        fi
     }
 fi
 
