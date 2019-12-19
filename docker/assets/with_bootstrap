@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 launch_db () {
     local pgdata="${1:-/srv/postgresql}"
     local dbuser="${2:-odc}"
@@ -16,10 +15,6 @@ launch_db () {
     sudo -u postgres createdb "${dbuser}"
     sudo -u postgres createdb datacube
     sudo -u postgres createdb agdcintegration
-}
-
-[ -n "${GDAL_DATA:-}" ] || {
-    export GDAL_DATA=$(gdal-config --datadir)
 }
 
 # Become `odc` user with UID/GID compatible to datacube-core volume
@@ -73,12 +68,23 @@ if [ -e "${env}/bin/activate" ]; then
         source "${env}/bin/activate"
 
         if [ -e "./setup.py" ]; then
-            pip install --no-deps -e '.[all]'
+            pip install --no-deps -e '.[test,celery,s3,performance,distributed]'
         fi
 
         if [ -e "./tests/drivers/fail_drivers" ]; then
             pip install --no-deps -e "./tests/drivers/fail_drivers"
         fi
+
+        [ -n "${GDAL_DATA:-}" ] || {
+            # if binary version of rasterio was used, set GDAL_DATA to that
+            RIO_GDAL_DATA=$(dirname $(python -c 'import rasterio; print(rasterio.__file__)'))"/gdal_data"
+
+            if [ -d "${RIO_GDAL_DATA}" ]; then
+                export GDAL_DATA="${RIO_GDAL_DATA}"
+            else
+                export GDAL_DATA=$(gdal-config --datadir)
+            fi
+        }
     }
 fi
 
