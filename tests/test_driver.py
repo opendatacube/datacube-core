@@ -130,4 +130,4 @@ def test_driver_singleton():
     assert singleton_setup(obj, 'xx', factory) is result
     assert obj.xx is result
 
-    factory.assert_called_once()
+    factory.assert_called_once_with()
