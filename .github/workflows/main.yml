@@ -1,6 +1,10 @@
 name: Run Datacube Test Suite and Packaging
 
 on:
+  pull_request:
+    paths:
+      - '**'
+
   push:
     paths:
       - '**'
