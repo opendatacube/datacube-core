@@ -1,5 +1,5 @@
 import pytest
-from pathlib import PosixPath
+from pathlib import PurePosixPath
 
 from integration_tests.test_full_ingestion import ensure_datasets_are_indexed
 
@@ -9,7 +9,6 @@ from integration_tests.test_full_ingestion import ensure_datasets_are_indexed
                          'indexed_ls5_scene_products')
 def test_index_datasets_search_light(index, tmpdir, clirunner,
                                      example_ls5_dataset_paths):
-
     def index_dataset(path):
         return clirunner(['dataset', 'add', str(path)])
 
@@ -80,7 +79,7 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
         assert len(result.uri) == 1
 
     # Add a new uri to a dataset
-    new_loc = PosixPath(tmpdir.strpath) / 'temp_location' / 'agdc-metadata.yaml'
+    new_loc = PurePosixPath(tmpdir.strpath) / 'temp_location' / 'agdc-metadata.yaml'
     index.datasets.add_location(valid_uuids[0], new_loc.as_uri())
 
     results_with_uri = list(index.datasets.search_returning_datasets_light(field_names=('id', 'uris'),
@@ -100,7 +99,6 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_index_get_product_time_bounds(index, clirunner, example_ls5_dataset_paths):
-
     def index_dataset(path):
         return clirunner(['dataset', 'add', str(path)])
 

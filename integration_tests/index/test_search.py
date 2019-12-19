@@ -900,7 +900,7 @@ def test_count_time_groups_cli(clirunner: Any,
         [
             'product-counts',
             '1 day',
-            '2014-07-25 < time < 2014-07-27'
+            'time in [2014-07-25, 2014-07-27]'
         ], cli_method=datacube.scripts.search_tool.cli,
         verbose_flag=''
     )
@@ -1131,34 +1131,35 @@ def test_csv_search_via_cli(clirunner: Any,
         with pytest.raises(ValueError):
             _cli_csv_search(('datasets',) + args, clirunner)
 
-    matches_both(' -40 < lat < -10')
+    matches_both('lat in [-40, -10]')
     matches_both('product=' + pseudo_ls8_type.name)
 
     # Don't return on a mismatch
-    matches_none('150<lat<160')
+    matches_none('lat in [150, 160]')
 
     # Match only a single dataset using multiple fields
-    matches_1('platform=LANDSAT_8', '2014-07-24<time<2014-07-27')
+    matches_1('platform=LANDSAT_8', 'time in [2014-07-24, 2014-07-26]')
 
     # One matching field, one non-matching
-    no_such_product('2014-07-24<time<2014-07-27', 'platform=LANDSAT_5')
+    no_such_product('time in [2014-07-24, 2014-07-26]', 'platform=LANDSAT_5')
 
     # Test date shorthand
-    matches_both('2014-7 < time < 2014-8')
-    matches_none('2014-6 < time < 2014-7')
+    matches_both('time in [2014-07, 2014-07]')
+    matches_none('time in [2014-06, 2014-06]')
 
     matches_both('time in 2014-07')
     matches_none('time in 2014-08')
     matches_both('time in 2014')
     matches_none('time in 2015')
 
-    matches_both('2014 < time < 2015')
-    matches_none('2015 < time < 2016')
-    matches_none('2014 < time < 2014')
+    matches_both('time in [2014, 2014]')
+    matches_both('time in [2013, 2014]')
+    matches_none('time in [2015, 2015]')
+    matches_none('time in [2013, 2013]')
 
-    matches_both('time in range(2014-7, 2014-8)')
-    matches_none('time in range(2014-6, 2014-7)')
-    matches_both('time in range(2005, 2015)')
+    matches_both('time in [2014-7, 2014-8]')
+    matches_none('time in [2014-6, 2014-6]')
+    matches_both('time in [2005, 2015]')
 
 
 # Headers are currently in alphabetical order.
@@ -1169,7 +1170,7 @@ _EXPECTED_OUTPUT_HEADER = 'creation_time,dataset_type_id,format,gsi,id,indexed_b
 
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
                        pseudo_ls8_dataset, pseudo_ls8_dataset2):
-    output = _csv_search_raw(['datasets', ' -40 < lat < -10'], clirunner)
+    output = _csv_search_raw(['datasets', ' lat in [-40, -10]'], clirunner)
     lines = [line.strip() for line in output.split('\n') if line]
     # A header and two dataset rows
     assert len(lines) == 3
