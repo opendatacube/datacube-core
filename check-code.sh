@@ -4,6 +4,14 @@
 set -eu
 set -x
 
+if [ "${1:-}" == "--with-docker" ]; then
+    shift
+    exec docker run \
+         -v $(pwd):/src/datacube-core \
+         opendatacube/datacube-tests:latest \
+         ./check-code.sh $@
+fi
+
 pycodestyle tests integration_tests examples utils --max-line-length 120
 
 pylint -j 2 --reports no datacube datacube_apps

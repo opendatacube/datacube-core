@@ -83,6 +83,16 @@ Developer setup
       ``~/.datacube_integration.conf`` and edit to customise.
 
 
+Alternatively one can use ``opendatacube/datacube-tests`` docker image to run
+tests. This docker includes database server pre-configured for running
+integration tests. Add ``--with-docker`` command line option as a first argument
+to ``./check-code.sh`` script.
+
+::
+
+   ./check-code.sh --with-docker integration_tests
+
+
 .. |Build Status| image:: https://travis-ci.org/opendatacube/datacube-core.svg?branch=develop
    :target: https://travis-ci.org/opendatacube/datacube-core
 .. |Coverage Status| image:: https://coveralls.io/repos/opendatacube/datacube-core/badge.svg?branch=develop&service=github
