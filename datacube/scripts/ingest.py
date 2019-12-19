@@ -178,6 +178,7 @@ def get_full_lineage(index, id_):
 def load_config_from_file(path):
     config_file = Path(path)
     _, config = next(read_documents(config_file))
+    IngestorConfig.validate(config)
     config['filename'] = str(normalise_path(config_file))
 
     return config
@@ -407,22 +408,15 @@ def ingest_cmd(index,
                executor):
     # pylint: disable=too-many-locals
 
-    if config_file:
-        config = load_config_from_file(config_file)
-    elif load_tasks:
-        config, tasks = load_tasks_(load_tasks)
-    else:
-        click.echo('Must specify exactly one of --config-file, --load-tasks')
-        sys.exit(-1)
-
     try:
-        # ignore the added filename key which is not part of the schema
-        filename = config['filename']
-        del config['filename']
+        if config_file:
+            config = load_config_from_file(config_file)
+        elif load_tasks:
+            config, tasks = load_tasks_(load_tasks)
+        else:
+            click.echo('Must specify exactly one of --config-file, --load-tasks')
+            sys.exit(-1)
 
-        IngestorConfig.validate(config)
-        
-        config['filename'] = filename
     except InvalidDocException as e:
         exception, = e.args
         _LOG.error(exception.message)
