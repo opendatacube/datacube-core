@@ -1,4 +1,4 @@
-name: Run Datacube Test Suite and Packaging
+name: build 
 
 on:
   pull_request:
