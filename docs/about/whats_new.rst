@@ -5,12 +5,14 @@
 What's New
 **********
 
-v1.7.1 (???)
+v1.8rc (???)
 ============
 
 - New virtual product combinator ``reproject`` for on-the-fly reprojection of rasters (:pull:`773`)
 - Enhancements to the ``expressions`` transformation in virtual products (:pull:`776`, :pull:`761`)
 - Support ``/vsi**`` style paths for dataset locations (:pull:`825`)
+- Remove old Search Expressions and replace with a simpler implementation based on Lark Parser. (:pull:`840`)
+- Remove no longer required PyPEG2 dependency. (:pull:`840`)
 
 
 v1.7.0 (16 May 2019)
