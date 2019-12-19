@@ -1,16 +1,9 @@
-ARG base_image="osgeo/gdal:ubuntu-full-3.0.2"
+ARG base_image="osgeo/gdal:ubuntu-small-3.0.2"
 FROM $base_image as env_builder
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
-
-# Install Tini
-# tini is useful inside runners, it's easier to copy it from builder than download (which requires curl or wget)
-RUN curl -s -L -O https://github.com/krallin/tini/releases/download/v0.18.0/tini \
-&& echo "12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855 *tini" | sha256sum -c - \
-&& install -m 755 tini /bin/tini \
-&& rm tini
 
 RUN apt-get update \
   && apt-get install -y --fix-missing --no-install-recommends \
@@ -72,6 +65,14 @@ RUN apt-get update \
 # fix "missing libproj"
 RUN ln -s /usr/local/lib/libproj.so.15 /usr/local/lib/libproj.so
 
+# Install Tini
+# tini is useful inside runners, it's easier to copy it from builder than download (which requires curl or wget)
+RUN curl -s -L -O https://github.com/krallin/tini/releases/download/v0.18.0/tini \
+  && echo "12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855 *tini" | sha256sum -c - \
+  && install -m 755 tini /bin/tini \
+  && rm tini
+
+
 RUN pip3 install --no-cache --no-cache-dir --upgrade \
          pip setuptools wheel cython numpy \
   && hash -r \
@@ -122,6 +123,12 @@ RUN apt-get update \
   python3-dev \
   python3-pip \
   python3-venv \
+  libyaml-0-2 \
+  # compliance checker
+  libudunits2-0 \
+  # netcdf4 libs
+  libnetcdf-c++4 netcdf-bin \
+  libhdf4-0-alt libhdf5-100 libhdf5-cpp-100 \
   # datacube tests need redis
   redis-server \
   # include db for running tests
@@ -130,12 +137,13 @@ RUN apt-get update \
   postgresql-10 \
   # to become test user
   sudo \
-  # for packaging
+  # git is needed for sdist|bdist_wheel
   git \
-  # for debugging
-  less \
-  vim \
   && rm -rf /var/lib/apt/lists/*
+
+# if using binary rasterio package, to support https
+RUN mkdir -p /etc/pki/tls/certs \
+&& ln -s /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt;
 
 # prep db
 RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/postgresql \
