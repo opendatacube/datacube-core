@@ -19,7 +19,7 @@ from datacube.model import Range
 
 
 search_grammar = r"""
-    start: expression+
+    start: expression*
     ?expression: equals_expr
                | time_in_expr
                | field_in_expr

@@ -342,8 +342,7 @@ def parsed_search_expressions(f):
     """
 
     def my_parse(ctx, param, value):
-        parsed_expressions = parse_expressions(*list(value))
-        return parsed_expressions
+        return parse_expressions(*list(value))
 
     f = click.argument('expressions', callback=my_parse, nargs=-1)(f)
     return f
