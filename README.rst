@@ -93,8 +93,8 @@ to ``./check-code.sh`` script.
    ./check-code.sh --with-docker integration_tests
 
 
-.. |Build Status| image:: https://travis-ci.org/opendatacube/datacube-core.svg?branch=develop
-   :target: https://travis-ci.org/opendatacube/datacube-core
+.. |Build Status| image:: https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
+   :target: https://github.com/opendatacube/datacube-core/actions
 .. |Coverage Status| image:: https://coveralls.io/repos/opendatacube/datacube-core/badge.svg?branch=develop&service=github
    :target: https://coveralls.io/github/opendatacube/datacube-core?branch=develop
 .. |Documentation Status| image:: https://readthedocs.org/projects/datacube-core/badge/?version=latest
