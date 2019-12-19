@@ -301,19 +301,12 @@ def handle_exception(msg, e):
         ctx.exit(1)
 
 
-def to_pathlib(ctx, param, value):
-    if value:
-        return Path(value)
-    else:
-        return None
-
-
 def parsed_search_expressions(f):
     """
-    Add [expression] arguments and --crs option to a click application
+    Add [EXPRESSIONs] arguments to a click application
 
     Passes a parsed dict of search expressions to the `expressions` argument
-    of the command. The dict may include a `crs`.
+    of the command.
 
     Also appends documentation on using search expressions to the command.
 
@@ -324,26 +317,25 @@ def parsed_search_expressions(f):
     if not f.__doc__:
         f.__doc__ = ""
     f.__doc__ += """
+    EXPRESSIONS
+    
+    Select datasets using [EXPRESSIONS] to filter by date, product type,
+    spatial extents or other searchable fields.
+
     \b
-    Search Expressions
-    ------------------
-
-    Select data using multiple [EXPRESSIONS] to filter by date, product type,
-    spatial extents or any other searchable field.
-
-    Three types of expressions are available:
-
         FIELD = VALUE
         FIELD in DATE-RANGE
         FIELD in [START, END]
 
-    Where DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
-    and START, END are either numbers or dates.
+    \b
+    DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
+    START and END can be either numbers or dates
 
-    Searchable fields include: x, y, time, product and more.
+    FIELD: x, y, lat, lon, time, product, ... 
 
     \b
-    eg. 'time in [1996-01-01, 1996-12-31]' or simply 'time in 1996'
+    eg. 'time in [1996-01-01, 1996-12-31]'
+        'time in 1996'
         'lon in [130, 140]' 'lat in [-40, -30]'
         product=ls5_nbar_albers
 
@@ -351,19 +343,7 @@ def parsed_search_expressions(f):
 
     def my_parse(ctx, param, value):
         parsed_expressions = parse_expressions(*list(value))
-        # ctx.ensure_object(dict)
-        # try:
-        #     parsed_expressions['crs'] = ctx.obj['crs']
-        # except KeyError:
-        #     pass
         return parsed_expressions
 
-    def store_crs(ctx, param, value):
-        ctx.ensure_object(dict)
-        # if value:
-        #     ctx.obj['crs'] = value
-
     f = click.argument('expressions', callback=my_parse, nargs=-1)(f)
-    # f = click.option('--crs', expose_value=False, help='Coordinate Reference used for x,y search expressions',
-    #                  callback=store_crs)(f)
     return f
