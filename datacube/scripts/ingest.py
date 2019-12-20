@@ -418,7 +418,7 @@ def ingest_cmd(index,
 
     try:
         if config_file:
-            config = load_config_from_file(config_file)
+            config, tasks = load_config_from_file(config_file), None
         elif load_tasks:
             config, tasks = load_tasks_(load_tasks)
         else:
@@ -430,15 +430,17 @@ def ingest_cmd(index,
         _LOG.error(exception.message)
         sys.exit(-1)
 
-    if config_file:
-        driver = get_driver_from_config(config)
+    driver = get_driver_from_config(config)
+
+    try:
         source_type, output_type = ensure_output_type(index, config, driver.format,
                                                       allow_product_changes=allow_product_changes)
+    except ValueError as e:
+        _LOG.error(str(e))
+        sys.exit(-1)
+
+    if tasks is None:
         tasks = create_task_list(index, output_type, year, source_type, config)
-    elif load_tasks:
-        driver = get_driver_from_config(config)
-        source_type, output_type = ensure_output_type(index, config, driver.format,
-                                                      allow_product_changes=allow_product_changes)
 
     if dry_run:
         check_existing_files(get_filename(config, task['tile_index'], task['tile'].sources) for task in tasks)
