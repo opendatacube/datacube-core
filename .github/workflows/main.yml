@@ -9,7 +9,7 @@ on:
     paths:
       - '**'
       - '!.github/**'
-      - '.github/workflows/run-tests.yml'
+      - '.github/workflows/main.yml'
       - '!docker/**'
       - '!examples/**'
       - '!docs/**'
