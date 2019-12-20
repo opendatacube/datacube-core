@@ -65,11 +65,19 @@ def morph_dataset_type(source_type, config, index, storage_format):
     if 'metadata_type' in config:
         output_type.definition['metadata_type'] = config['metadata_type']
 
-    def merge_measurement(measurement, spec):
+    def morph_measurement(src_measurements, spec):
+        src_varname = spec.get('src_varname',
+                               spec.get('name', None))
+        assert src_varname is not None
+
+        measurement = src_measurements.get(src_varname, None)
+        if measurement is None:
+            raise ValueError("No such variable in the source product: {}".format(src_varname))
+
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
         return Measurement(**measurement)
 
-    output_type.definition['measurements'] = [merge_measurement(output_type.measurements[spec['src_varname']], spec)
+    output_type.definition['measurements'] = [morph_measurement(output_type.measurements, spec)
                                               for spec in config['measurements']]
     return output_type
 
