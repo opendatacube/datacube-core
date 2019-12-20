@@ -390,6 +390,31 @@ def clirunner(global_integration_cli_args, datacube_env_name):
 
 
 @pytest.fixture
+def clirunner_raw():
+    def _run_cli(opts,
+                 catch_exceptions=False,
+                 expect_success=True,
+                 cli_method=datacube.scripts.cli_app.cli,
+                 verbose_flag='-v'):
+        exe_opts = []
+        if verbose_flag:
+            exe_opts.append(verbose_flag)
+        exe_opts.extend(opts)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli_method,
+            exe_opts,
+            catch_exceptions=catch_exceptions
+        )
+        if expect_success:
+            assert 0 == result.exit_code, "Error for %r. output: %r" % (opts, result.output)
+        return result
+
+    return _run_cli
+
+
+@pytest.fixture
 def dataset_add_configs():
     B = INTEGRATION_TESTS_DIR / 'data' / 'dataset_add'
     return SimpleNamespace(metadata=str(B / 'metadata.yml'),
