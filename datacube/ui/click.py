@@ -185,7 +185,14 @@ def pass_config(f):
         # If the user is overriding the defaults
         specific_environment = obj.get('config_environment')
 
-        parsed_config = config.LocalConfig.find(paths=paths, env=specific_environment)
+        try:
+            parsed_config = config.LocalConfig.find(paths=paths, env=specific_environment)
+        except ValueError:
+            if specific_environment:
+                raise click.ClickException("No datacube config found for '{}'".format(specific_environment))
+            else:
+                raise click.ClickException("No datacube config found")
+
         _LOG.debug("Loaded datacube config: %r", parsed_config)
         return f(parsed_config, *args, **kwargs)
 
