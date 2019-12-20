@@ -12,7 +12,7 @@ from functools import partial
 import click
 from dateutil import tz
 from psycopg2._range import Range
-from singledispatch import singledispatch
+from functools import singledispatch
 
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS

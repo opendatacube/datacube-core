@@ -103,7 +103,6 @@ setup(
         'python-dateutil',
         'pyyaml',
         'rasterio>=1.0.2',  # Multi-band re-project fixed in that version
-        'singledispatch',
         'sqlalchemy',
         'toolz',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
