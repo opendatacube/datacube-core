@@ -54,3 +54,10 @@ def test_connecting_to_s3_environment(index, clirunner):
 
     result = clirunner(['system', 'check'])
     assert 'Index Driver:  s3aio_index' in result.output
+
+
+def test_wrong_env_error_message(clirunner_raw):
+    result = clirunner_raw(['-E', 'nosuch-env', 'system', 'check'],
+                           expect_success=False)
+    assert "No datacube config found for 'nosuch-env'" in result.output
+    assert result.exit_code != 0
