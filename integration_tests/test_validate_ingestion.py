@@ -8,6 +8,8 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 @pytest.mark.timeout(20)
 @pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
+@pytest.mark.usefixtures('default_metadata_type',
+                         'indexed_ls5_scene_products')
 def test_invalid_ingestor_config(clirunner, index, tmpdir):
     """
     Test that the ingestor correctly identifies an invalid ingestor config file.
@@ -17,9 +19,13 @@ def test_invalid_ingestor_config(clirunner, index, tmpdir):
     """
     base = PROJECT_ROOT / 'integration_tests/data/ingester/'
 
-    for cfg in ('invalid_config.yaml', 'invalid_src_name.yaml'):
+    for cfg, err in (('invalid_config.yaml', "'src_varname' is a required property"),
+                     ('invalid_src_name.yaml', 'No such variable in the source product:')):
         config = base / cfg
         config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config)
 
-        clirunner(['ingest', '--config-file', str(config_path)],
-                  expect_success=False)
+        result = clirunner(['ingest', '--config-file', str(config_path)],
+                           expect_success=False)
+
+        assert result.exit_code != 0
+        assert err in result.output
