@@ -4,6 +4,11 @@ User configuration.
 """
 
 import os
+import configparser
+from typing import Optional, Iterable, Union, Any
+
+PathLike = Union[str, 'os.PathLike[Any]']
+
 
 ENVIRONMENT_VARNAME = 'DATACUBE_CONFIG_PATH'
 #: Config locations in order. Properties found in latter locations override
@@ -13,12 +18,10 @@ ENVIRONMENT_VARNAME = 'DATACUBE_CONFIG_PATH'
 #: - file at `$DATACUBE_CONFIG_PATH` environment variable
 #: - `~/.datacube.conf`
 #: - `datacube.conf`
-DEFAULT_CONF_PATHS = (
-    '/etc/datacube.conf',
-    os.environ.get(ENVIRONMENT_VARNAME),
-    os.path.expanduser("~/.datacube.conf"),
-    'datacube.conf'
-)
+DEFAULT_CONF_PATHS = tuple(p for p in ['/etc/datacube.conf',
+                                       os.environ.get(ENVIRONMENT_VARNAME, ''),
+                                       str(os.path.expanduser("~/.datacube.conf")),
+                                       'datacube.conf'] if len(p) > 0)
 
 DEFAULT_ENV = 'default'
 
@@ -42,10 +45,9 @@ db_connection_timeout: 60
 _UNSET = object()
 
 
-def read_config(default_text=None):
-    import configparser
+def read_config(default_text: Optional[str] = None) -> configparser.ConfigParser:
     config = configparser.ConfigParser()
-    if default_text:
+    if default_text is not None:
         config.read_string(default_text)
     return config
 
@@ -60,7 +62,9 @@ class LocalConfig(object):
 
     """
 
-    def __init__(self, config, files_loaded=None, env=None):
+    def __init__(self, config: configparser.ConfigParser,
+                 files_loaded: Optional[Iterable[str]] = None,
+                 env: Optional[str] = None):
         """
         Datacube environment resolution precedence is:
           1. Supplied as a function argument `env`
@@ -71,10 +75,8 @@ class LocalConfig(object):
         If environment is supplied by any of the first 3 methods is not present
         in the config, then throw an exception.
         """
-        self._config = config  # type: configparser.ConfigParser
-        self.files_loaded = []
-        if files_loaded:
-            self.files_loaded = files_loaded  # type: list[str]
+        self._config = config
+        self.files_loaded = [] if files_loaded is None else list(iter(files_loaded))
 
         if env is None:
             env = os.environ.get('DATACUBE_ENVIRONMENT',
@@ -99,19 +101,21 @@ class LocalConfig(object):
             raise ValueError('No ODC environment, checked configurations for %s' % fallbacks)
 
     @classmethod
-    def find(cls, paths=DEFAULT_CONF_PATHS, env=None):
+    def find(cls,
+             paths: Optional[Union[str, Iterable[PathLike]]] = None,
+             env: Optional[str] = None) -> 'LocalConfig':
         """
         Find config from possible filesystem locations.
 
         'env' is which environment to use from the config: it corresponds to the name of a
         config section
-
-        :type paths: str|list[str]
-        :type env: str
-        :rtype: LocalConfig
         """
+        if paths is None:
+            paths = DEFAULT_CONF_PATHS
+
         if isinstance(paths, str) or hasattr(paths, '__fspath__'):  # Use os.PathLike in 3.6+
-            paths = [paths]
+            paths = [str(paths)]
+
         config = read_config(_DEFAULT_CONF)
         files_loaded = config.read(str(p) for p in paths if p)
 
@@ -121,27 +125,23 @@ class LocalConfig(object):
             env=env,
         )
 
-    def get(self, item, fallback=_UNSET):
+    def get(self, item: str, fallback=_UNSET):
         if fallback == _UNSET:
             return self._config.get(self._env, item)
         else:
-            if self._config.has_option(self._env, item):
-                # TODO: simplify when dropping python 2 support
-                return self._config.get(self._env, item)
-            else:
-                return fallback
+            return self._config.get(self._env, item, fallback=fallback)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str):
         return self.get(item, fallback=None)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "LocalConfig<loaded_from={}, environment={!r}, config={}>".format(
             self.files_loaded or 'defaults',
             self._env,
             dict(self._config[self._env]),
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
