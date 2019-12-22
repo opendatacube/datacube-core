@@ -56,8 +56,16 @@ def test_connecting_to_s3_environment(index, clirunner):
     assert 'Index Driver:  s3aio_index' in result.output
 
 
-def test_wrong_env_error_message(clirunner_raw):
+def test_wrong_env_error_message(clirunner_raw, monkeypatch):
+    from datacube import config
+    monkeypatch.setattr(config, 'DEFAULT_CONF_PATHS', ('/no/such/path-264619',))
+
     result = clirunner_raw(['-E', 'nosuch-env', 'system', 'check'],
                            expect_success=False)
     assert "No datacube config found for 'nosuch-env'" in result.output
+    assert result.exit_code != 0
+
+    result = clirunner_raw(['system', 'check'],
+                           expect_success=False)
+    assert "No datacube config found" in result.output
     assert result.exit_code != 0
