@@ -67,11 +67,11 @@ if [ -e "${env}/bin/activate" ]; then
         source "${env}/bin/activate"
 
         if [ -e "./setup.py" ]; then
-            pip install --no-deps -e '.[test,celery,s3,performance,distributed]'
+            pip install -e '.[test,celery,s3,performance,distributed]'
         fi
 
         if [ -e "./tests/drivers/fail_drivers" ]; then
-            pip install --no-deps -e "./tests/drivers/fail_drivers"
+            pip install -e "./tests/drivers/fail_drivers"
         fi
 
         [ -n "${GDAL_DATA:-}" ] || {
