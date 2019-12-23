@@ -8,16 +8,16 @@ docker:
 	@echo Building $(dkr)
 	docker build -t $(dkr) .
 
-test:
+check:
 	@docker run --rm -ti \
   -v "$$(dirname $$(pwd))":/src/datacube-core \
   $(dkr) \
   ./check-code.sh integration_tests/
 
-debug: docker
+debug:
 	@docker run --rm -ti \
   -v "$$(dirname $$(pwd))":/src/datacube-core \
   $(dkr) \
   bash
 
-PHONY: all clean docker
+PHONY: all clean docker check debug
