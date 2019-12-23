@@ -6,7 +6,7 @@ Module
 import configparser
 from textwrap import dedent
 
-from datacube.config import LocalConfig, parse_connect_url
+from datacube.config import LocalConfig, parse_connect_url, parse_env_params
 from datacube.testutils import write_files
 
 
@@ -118,3 +118,47 @@ def test_parse_db_url():
         database='db',
         hostname='some.tld',
         port='3344')
+
+
+def test_parse_env(monkeypatch):
+    def set_env(**kw):
+        for e in ('DATACUBE_DB_URL',
+                  'DB_HOSTNAME',
+                  'DB_PORT',
+                  'DB_USERNAME',
+                  'DB_PASSWORD'):
+            monkeypatch.delenv(e, raising=False)
+        for e, v in kw.items():
+            monkeypatch.setenv(e, v)
+
+    def check_env(**kw):
+        set_env(**kw)
+        return parse_env_params()
+
+    assert check_env() == {}
+    assert check_env(DATACUBE_DB_URL='postgresql:///db') == dict(
+        hostname='',
+        database='db'
+    )
+    assert check_env(DATACUBE_DB_URL='postgresql://uu:%20pass%40@host.tld:3344/db') == dict(
+        username='uu',
+        password=' pass@',
+        hostname='host.tld',
+        port='3344',
+        database='db'
+    )
+    assert check_env(DB_DATABASE='db') == dict(
+        database='db'
+    )
+    assert check_env(DB_DATABASE='db', DB_HOSTNAME='host.tld') == dict(
+        database='db',
+        hostname='host.tld'
+    )
+    assert check_env(DB_DATABASE='db',
+                     DB_HOSTNAME='host.tld',
+                     DB_USERNAME='user',
+                     DB_PASSWORD='pass@') == dict(
+                         database='db',
+                         hostname='host.tld',
+                         username='user',
+                         password='pass@')
