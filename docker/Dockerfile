@@ -162,7 +162,6 @@ RUN groupadd --gid 1000 odc \
 COPY --from=env_builder --chown=root:users /env /env
 COPY --from=env_builder /bin/tini /bin/tini
 
-COPY assets/dc_config_render.py /usr/local/bin/
 COPY assets/with_bootstrap /usr/local/bin/
 
 VOLUME /src/datacube-core
