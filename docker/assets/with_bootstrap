@@ -44,7 +44,6 @@ launch_db () {
 
 [[ $UID -ne 0 ]] || echo "WARNING: Running as root"
 
-dc_config_render.py auto
 cat <<EOL > $HOME/.datacube_integration.conf
 [datacube]
 db_hostname:
