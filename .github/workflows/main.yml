@@ -80,13 +80,14 @@ jobs:
 
     - name: Publish to dea packages repo
       if: |
-        (github.ref == 'refs/heads/master' || true)
+        github.ref == 'refs/heads/develop'
         && github.event_name == 'push'
 
       run: |
-        echo Checking if AWS key is right
         echo "Using Keys: ...${AWS_ACCESS_KEY_ID:(-4)}/...${AWS_SECRET_ACCESS_KEY:(-4)}"
         aws s3 ls ${S3_DST}
+        aws s3 cp ./dist/datacube-*whl "${S3_DST}/"
+        aws s3 cp ./dist/datacube-*tar.gz "${S3_DST}/"
       env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
