@@ -1,6 +1,12 @@
 name: Docker (test runner)
 
 on:
+  pull_request:
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker-test-runner.yml'
+      - 'setup.py'
+
   push:
     paths:
       - 'docker/**'
@@ -15,7 +21,7 @@ env:
 
 
 jobs:
-  build:
+  docker:
     runs-on: ubuntu-latest
 
     steps:
@@ -56,8 +62,10 @@ jobs:
 
     - name: DockerHub Push
       if: |
-        github.ref == 'refs/heads/master' ||
-        github.ref == 'refs/heads/kk-gh-actions'
+        github.event_name == 'push' && (
+          github.ref == 'refs/heads/develop'
+          || github.ref == 'refs/heads/kk-gh-actions'
+          )
       run: |
         echo "Login to DockerHub as ${DOCKER_USER}"
         echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
