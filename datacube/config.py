@@ -27,7 +27,7 @@ DEFAULT_CONF_PATHS = tuple(p for p in ['/etc/datacube.conf',
 DEFAULT_ENV = 'default'
 
 # Default configuration options.
-_DEFAULT_CONF = u"""
+_DEFAULT_CONF = """
 [DEFAULT]
 # Blank implies localhost
 db_hostname:
@@ -81,8 +81,7 @@ class LocalConfig(object):
 
         if env is None:
             env = os.environ.get('DATACUBE_ENVIRONMENT',
-                                 (config.get('user', 'default_environment')
-                                  if config.has_option('user', 'default_environment') else None))
+                                 config.get('user', 'default_environment', fallback=None))
 
         # If the user specifies a particular env, we either want to use it or Fail
         if env:
