@@ -106,18 +106,24 @@ class LocalConfig(object):
              paths: Optional[Union[str, Iterable[PathLike]]] = None,
              env: Optional[str] = None) -> 'LocalConfig':
         """
-        Find config from possible filesystem locations.
+        Find config from environment variables or possible filesystem locations.
 
         'env' is which environment to use from the config: it corresponds to the name of a
         config section
         """
+        config = read_config(_DEFAULT_CONF)
+
         if paths is None:
+            if env is None:
+                env_opts = parse_env_params()
+                if env_opts:
+                    return _cfg_from_env_opts(env_opts, config)
+
             paths = DEFAULT_CONF_PATHS
 
         if isinstance(paths, str) or hasattr(paths, '__fspath__'):  # Use os.PathLike in 3.6+
             paths = [str(paths)]
 
-        config = read_config(_DEFAULT_CONF)
         files_loaded = config.read(str(p) for p in paths if p)
 
         return LocalConfig(
@@ -228,6 +234,12 @@ def parse_env_params() -> Dict[str, str]:
     return {k: v
             for k, v in params.items()
             if v is not None}
+
+
+def _cfg_from_env_opts(opts: Dict[str, str],
+                       base: configparser.ConfigParser) -> LocalConfig:
+    base['default'] = {'db_'+k: v for k, v in opts.items()}
+    return LocalConfig(base, files_loaded=[], env='default')
 
 
 def render_dc_config(params: Dict[str, Any],

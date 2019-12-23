@@ -168,6 +168,35 @@ def test_parse_env(monkeypatch):
                          password='pass@')
 
 
+def test_cfg_from_env(monkeypatch):
+    def set_env(**kw):
+        _clear_cfg_env(monkeypatch)
+        for e, v in kw.items():
+            monkeypatch.setenv(e, v)
+
+    set_env(DATACUBE_DB_URL='postgresql://uu:%20pass%40@host.tld:3344/db')
+    cfg = LocalConfig.find()
+    assert '3344' in str(cfg)
+    assert '3344' in repr(cfg)
+    assert cfg['db_username'] == 'uu'
+    assert cfg['db_password'] == ' pass@'
+    assert cfg['db_hostname'] == 'host.tld'
+    assert cfg['db_database'] == 'db'
+    assert cfg['db_port'] == '3344'
+
+    set_env(DB_DATABASE='dc2',
+            DB_HOSTNAME='remote.db',
+            DB_PORT='4433',
+            DB_USERNAME='dcu',
+            DB_PASSWORD='gg')
+    cfg = LocalConfig.find()
+    assert cfg['db_username'] == 'dcu'
+    assert cfg['db_password'] == 'gg'
+    assert cfg['db_hostname'] == 'remote.db'
+    assert cfg['db_database'] == 'dc2'
+    assert cfg['db_port'] == '4433'
+
+
 def test_auto_config(monkeypatch, tmpdir):
     from pathlib import Path
 
