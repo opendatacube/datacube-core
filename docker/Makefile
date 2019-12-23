@@ -4,7 +4,11 @@ dkr := $(image_name):$(image_tag)
 
 all: docker
 
-docker:
+dist/datacube.tar.gz: ../setup.py
+	(cd .. && python3 setup.py sdist --dist-dir ./docker/dist/)
+	(cd dist && find . -type f -exec ln -sf '{}' datacube.tar.gz ';')
+
+docker: dist/datacube.tar.gz
 	@echo Building $(dkr)
 	docker build -t $(dkr) .
 
@@ -19,5 +23,8 @@ debug:
   -v "$$(dirname $$(pwd))":/src/datacube-core \
   $(dkr) \
   bash
+
+clean:
+	rm dist/*
 
 PHONY: all clean docker check debug

@@ -79,9 +79,11 @@ RUN pip3 install --no-cache --no-cache-dir --upgrade \
   && true
 
 COPY requirements.txt /conf/requirements.txt
+COPY ./dist/datacube-*tar.gz /conf/
 
 RUN mkdir -p /wheels \
   && echo "GDAL==$(gdal-config --version)" > /tmp/constraints.txt \
+  && find /conf -type f -name 'datacube-*tar.gz' >> /tmp/constraints.txt \
   && pip wheel \
   --no-cache \
   --no-cache-dir \

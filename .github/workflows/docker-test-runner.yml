@@ -5,6 +5,7 @@ on:
     paths:
       - 'docker/**'
       - '.github/workflows/docker-test-runner.yml'
+      - 'setup.py'
 
 env:
   ORG: opendatacube
@@ -19,12 +20,26 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: '3.6'
 
-    - name: Build Test Runner Docker
+    # This is just to get dependencies right, we do not keep datacube in the final image
+    - name: Build datacube source distribution
+      run: |
+        mkdir -p ./docker/dist/
+        find ./docker/dist/ -type f -delete
+        python setup.py sdist --dist-dir ./docker/dist/
+        ls -lh ./docker/dist/
+
+    - name: Pull docker cache
       run: |
         docker pull ${ORG}/${IMAGE}:latest         || true
         docker pull ${ORG}/${IMAGE}:${BUILDER_TAG} || true
 
+    - name: Build Test Runner Docker
+      run: |
         # build and cache first stage (env_builder)
         docker build \
           --target env_builder \
