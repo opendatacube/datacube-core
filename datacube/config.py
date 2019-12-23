@@ -4,6 +4,7 @@ User configuration.
 """
 
 import os
+from pathlib import Path
 import configparser
 from urllib.parse import unquote_plus, urlparse
 from typing import Optional, Iterable, Union, Any, Tuple, Dict
@@ -177,6 +178,9 @@ class set_options(object):
         OPTIONS.update(self.old)
 
 
+DB_KEYS = ('hostname', 'port', 'database', 'username', 'password')
+
+
 def parse_connect_url(url: str) -> Dict[str, str]:
     """ Extract database,hostname,port,username,password from db URL.
 
@@ -214,14 +218,57 @@ def parse_env_params() -> Dict[str, str]:
     - Else look for DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE
     - Return {} otherwise
     """
-    keys = 'hostname port username password database'.split()
 
     db_url = os.environ.get('DATACUBE_DB_URL', None)
     if db_url is not None:
         return parse_connect_url(db_url)
 
     params = {k: os.environ.get('DB_{}'.format(k.upper()), None)
-              for k in keys}
+              for k in DB_KEYS}
     return {k: v
             for k, v in params.items()
             if v is not None}
+
+
+def render_dc_config(params: Dict[str, Any],
+                     section_name: str = 'default') -> str:
+    """ Render output of parse_env_params to a string that can be written to config file.
+    """
+    oo = '[{}]\n'.format(section_name)
+    for k in DB_KEYS:
+        v = params.get(k, None)
+        if v is not None:
+            oo += 'db_{k}: {v}\n'.format(k=k, v=v)
+    return oo
+
+
+def auto_config() -> str:
+    """
+    Render config to $DATACUBE_CONFIG_PATH or ~/.datacube.conf, but only if doesn't exist.
+
+    option1:
+      DATACUBE_DB_URL  postgresql://user:password@host/database
+
+    option2:
+      DB_{HOSTNAME|PORT|USERNAME|PASSWORD|DATABASE}
+
+    option3:
+       default config
+    """
+    cfg_path = os.environ.get('DATACUBE_CONFIG_PATH', None)
+    cfg_path = Path(cfg_path) if cfg_path else Path.home()/'.datacube.conf'
+
+    if cfg_path.exists():
+        return str(cfg_path)
+
+    opts = parse_env_params()
+
+    if len(opts) == 0:
+        opts['hostname'] = ''
+        opts['database'] = 'datacube'
+
+    cfg_text = render_dc_config(opts)
+    with open(str(cfg_path), 'wt') as f:
+        f.write(cfg_text)
+
+    return str(cfg_path)

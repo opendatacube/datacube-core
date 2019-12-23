@@ -6,7 +6,7 @@ Module
 import configparser
 from textwrap import dedent
 
-from datacube.config import LocalConfig, parse_connect_url, parse_env_params
+from datacube.config import LocalConfig, parse_connect_url, parse_env_params, auto_config
 from datacube.testutils import write_files
 
 
@@ -120,14 +120,18 @@ def test_parse_db_url():
         port='3344')
 
 
+def _clear_cfg_env(monkeypatch):
+    for e in ('DATACUBE_DB_URL',
+              'DB_HOSTNAME',
+              'DB_PORT',
+              'DB_USERNAME',
+              'DB_PASSWORD'):
+        monkeypatch.delenv(e, raising=False)
+
+
 def test_parse_env(monkeypatch):
     def set_env(**kw):
-        for e in ('DATACUBE_DB_URL',
-                  'DB_HOSTNAME',
-                  'DB_PORT',
-                  'DB_USERNAME',
-                  'DB_PASSWORD'):
-            monkeypatch.delenv(e, raising=False)
+        _clear_cfg_env(monkeypatch)
         for e, v in kw.items():
             monkeypatch.setenv(e, v)
 
@@ -162,3 +166,39 @@ def test_parse_env(monkeypatch):
                          hostname='host.tld',
                          username='user',
                          password='pass@')
+
+
+def test_auto_config(monkeypatch, tmpdir):
+    from pathlib import Path
+
+    cfg_file = Path(str(tmpdir/"dc.cfg"))
+    assert cfg_file.exists() is False
+    cfg_file_name = str(cfg_file)
+
+    _clear_cfg_env(monkeypatch)
+    monkeypatch.setenv('DATACUBE_CONFIG_PATH', cfg_file_name)
+
+    assert auto_config() == cfg_file_name
+    assert cfg_file.exists() is True
+
+    monkeypatch.setenv('DB_HOSTNAME', 'should-not-be-used.local')
+    # second run should skip overwriting
+    assert auto_config() == cfg_file_name
+
+    config = LocalConfig.find(paths=cfg_file_name)
+    assert config['db_hostname'] == ''
+    assert config['db_database'] == 'datacube'
+
+    cfg_file.unlink()
+    assert cfg_file.exists() is False
+    _clear_cfg_env(monkeypatch)
+
+    monkeypatch.setenv('DATACUBE_CONFIG_PATH', cfg_file_name)
+    monkeypatch.setenv('DB_HOSTNAME', 'some.db')
+    monkeypatch.setenv('DB_USERNAME', 'user')
+
+    assert auto_config() == cfg_file_name
+    config = LocalConfig.find(paths=cfg_file_name)
+    assert config['db_hostname'] == 'some.db'
+    assert config['db_database'] == 'datacube'
+    assert config['db_username'] == 'user'
