@@ -5,7 +5,8 @@ User configuration.
 
 import os
 import configparser
-from typing import Optional, Iterable, Union, Any
+from urllib.parse import unquote_plus, urlparse
+from typing import Optional, Iterable, Union, Any, Tuple, Dict
 
 PathLike = Union[str, 'os.PathLike[Any]']
 
@@ -175,3 +176,34 @@ class set_options(object):
     def __exit__(self, exc_type, value, traceback):
         OPTIONS.clear()
         OPTIONS.update(self.old)
+
+
+def parse_connect_url(url: str) -> Dict[str, str]:
+    """ Extract database,hostname,port,username,password from db URL.
+
+    Example: postgresql://username:password@hostname:port/database
+
+    For local password-less db use `postgresql:///<your db>`
+    """
+    def split2(s: str, separator: str) -> Tuple[str, str]:
+        i = s.find(separator)
+        return (s, '') if i < 0 else (s[:i], s[i+1:])
+
+    _, netloc, path, *_ = urlparse(url)
+
+    db = path[1:] if path else ''
+    if '@' in netloc:
+        (user, password), (host, port) = (split2(p, ':') for p in split2(netloc, '@'))
+    else:
+        user, password = '', ''
+        host, port = split2(netloc, ':')
+
+    oo = dict(hostname=host, database=db)
+
+    if port:
+        oo['port'] = port
+    if password:
+        oo['password'] = unquote_plus(password)
+    if user:
+        oo['username'] = user
+    return oo

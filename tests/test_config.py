@@ -6,7 +6,7 @@ Module
 import configparser
 from textwrap import dedent
 
-from datacube.config import LocalConfig
+from datacube.config import LocalConfig, parse_connect_url
 from datacube.testutils import write_files
 
 
@@ -89,3 +89,32 @@ def test_empty_configfile(tmpdir):
     sample_file.write(default_only)
     config = configparser.ConfigParser()
     config.read(str(sample_file))
+
+
+def test_parse_db_url():
+
+    assert parse_connect_url('postgresql:///db') == dict(database='db', hostname='')
+    assert parse_connect_url('postgresql://some.tld/db') == dict(database='db', hostname='some.tld')
+    assert parse_connect_url('postgresql://some.tld:3344/db') == dict(
+        database='db',
+        hostname='some.tld',
+        port='3344')
+    assert parse_connect_url('postgresql://user@some.tld:3344/db') == dict(
+        username='user',
+        database='db',
+        hostname='some.tld',
+        port='3344')
+    assert parse_connect_url('postgresql://user:pass@some.tld:3344/db') == dict(
+        password='pass',
+        username='user',
+        database='db',
+        hostname='some.tld',
+        port='3344')
+
+    # check urlencode is reversed for password field
+    assert parse_connect_url('postgresql://user:pass%40@some.tld:3344/db') == dict(
+        password='pass@',
+        username='user',
+        database='db',
+        hostname='some.tld',
+        port='3344')
