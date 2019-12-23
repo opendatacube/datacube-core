@@ -670,9 +670,15 @@ class Collate(VirtualProduct):
         non_empty = [g for g in groups if g is not None]
 
         dim = self.get('dim', 'time')
-        return xarray.concat(non_empty,
-                             dim=dim).sortby(dim).assign_attrs(**select_unique([g.attrs
-                                                                                for g in non_empty]))
+
+        result = xarray.concat(non_empty,
+                               dim=dim).sortby(dim).assign_attrs(**select_unique([g.attrs
+                                                                                  for g in non_empty]))
+
+        # concat and sortby mess up chunking
+        if 'dask_chunks' not in load_settings or dim not in load_settings['dask_chunks']:
+            return result
+        return result.apply(lambda x: x.chunk({dim: load_settings['dask_chunks'][dim]}), keep_attrs=True)
 
 
 class Juxtapose(VirtualProduct):
