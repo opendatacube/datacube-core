@@ -206,3 +206,22 @@ def parse_connect_url(url: str) -> Dict[str, str]:
     if user:
         oo['username'] = user
     return oo
+
+
+def parse_env_params() -> Dict[str, str]:
+    """
+    - Extract parameters from DATACUBE_DB_URL if present
+    - Else look for DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE
+    - Return {} otherwise
+    """
+    keys = 'hostname port username password database'.split()
+
+    db_url = os.environ.get('DATACUBE_DB_URL', None)
+    if db_url is not None:
+        return parse_connect_url(db_url)
+
+    params = {k: os.environ.get('DB_{}'.format(k.upper()), None)
+              for k in keys}
+    return {k: v
+            for k, v in params.items()
+            if v is not None}
