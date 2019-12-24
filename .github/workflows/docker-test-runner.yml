@@ -60,11 +60,14 @@ jobs:
           --tag        ${ORG}/${IMAGE}:latest \
           ./docker/
 
+    - name: Verify Docker Image
+      run: |
+        ./check-code.sh --with-docker integration_tests
+
     - name: DockerHub Push
       if: |
         github.event_name == 'push' && (
           github.ref == 'refs/heads/develop'
-          || github.ref == 'refs/heads/kk-gh-actions'
           )
       run: |
         echo "Login to DockerHub as ${DOCKER_USER}"
