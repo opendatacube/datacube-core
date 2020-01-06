@@ -83,11 +83,13 @@ COPY ./dist/datacube-*tar.gz /conf/
 
 RUN mkdir -p /wheels \
   && echo "GDAL==$(gdal-config --version)" > /tmp/constraints.txt \
-  && find /conf -type f -name 'datacube-*tar.gz' >> /tmp/constraints.txt \
+  && find /conf -type f -name 'datacube-*tar.gz' | head -1 >> /tmp/constraints.txt \
+  && cat /tmp/constraints.txt \
   && pip wheel \
   --no-cache \
   --no-cache-dir \
   --wheel-dir=/wheels \
+  --find-links=/conf/ \
   --constraint=/tmp/constraints.txt \
   --requirement=/conf/requirements.txt \
   && rm /tmp/constraints.txt \
