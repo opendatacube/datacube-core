@@ -13,6 +13,21 @@ v1.8rc (???)
 - Support ``/vsi**`` style paths for dataset locations (:pull:`825`)
 - Remove old Search Expressions and replace with a simpler implementation based on Lark Parser. (:pull:`840`)
 - Remove no longer required PyPEG2 dependency. (:pull:`840`)
+- Switched from Travis-CI to Github Actions for CI testing and docker image builds (:pull:`845`)
+- Removed dependency on ``singledispatch``, it's available in the Python 3.4+ standard library.
+- Added some configuration validation to Ingestion
+- Allow configuring ODC Database connection settings entirely through environment variables. (:pull:`845`, :issue:`829`)
+
+  Uses ``DATACUBE_DB_URL`` if present, then falls back to ``DB_HOSTNAME``,
+  ``DB_USERNAME``, ``DB_PASSWORD``, ``DB_DATABASE``
+
+- New Docker images. Should be smaller, better tested, more reliable and easier to work with. (:pull:`845`).
+
+  - No longer uses an entrypoint script to write database configuration into a file.
+  - Fixes binary incompatibilities in geospatial libraries.
+  - Tested before being pushed to Docker Hub.
+
+- Drop support for Python 3.5.
 - Remove S3AIO driver. (:pull:`865`)
 - Change development version numbers generation. Use ``setuptools_scm`` instead of ``versioneer``. (:issue:`871`)
 - Deprecated ``datacube.helpers.write_geotiff``, use ``datacube.utils.cog.write_cog`` for similar functionality
