@@ -11,11 +11,12 @@ print(sys.path)
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 # -- RTD Debugging
-import subprocess
+if on_rtd:
+    import subprocess
 
-subprocess.call('which java', shell=True)
-subprocess.call('java -version', shell=True)
-subprocess.call('plantuml -v', shell=True)
+    subprocess.call('which java', shell=True)
+    subprocess.call('java -version', shell=True)
+    subprocess.call('plantuml -v', shell=True)
 
 # -- General configuration ------------------------------------------------
 
@@ -44,13 +45,6 @@ templates_path = ['_templates']
 
 # The suffix of source filenames.
 source_suffix = ['.rst', '.md']
-
-source_parsers = {
-    '.md': 'recommonmark.parser.CommonMarkParser',
-}
-
-# The encoding of source files.
-# source_encoding = 'utf-8-sig'
 
 # The master toctree document.
 master_doc = 'index'
@@ -97,7 +91,6 @@ intersphinx_mapping = {
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'xarray': ('https://xarray.pydata.org/en/stable/', None),
-#    'dask': ('https://dask.pydata.org/en/stable/', None),
 }
 
 graphviz_output_format = 'svg'
@@ -119,20 +112,6 @@ html_theme_options = {
     'logo_only': True,
 }
 
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-# html_theme_options = {}
-
-# Add any paths that contain custom themes here, relative to this directory.
-# html_theme_path = []
-
-# The name for this set of Sphinx documents.  If None, it defaults to
-# "<project> v<release> documentation".
-# html_title = None
-
-# A shorter title for the navigation bar.  Default is the same as html_title.
-# html_short_title = None
 
 html_logo = '_static/odc-logo-central-blue.svg'
 html_static_path = ['_static']
@@ -146,15 +125,6 @@ html_static_path = ['_static']
 # using the given strftime format.
 html_last_updated_fmt = '%b %d, %Y'
 
-# Custom sidebar templates, maps document names to template names.
-# html_sidebars = {}
-
-# Additional templates that should be rendered to pages, maps page names to
-# template names.
-# html_additional_pages = {}
-
-# If true, links to the reST sources are added to the pages.
-# html_show_sourcelink = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 html_show_sphinx = False
