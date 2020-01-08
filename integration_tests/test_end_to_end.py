@@ -105,6 +105,7 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs, datacube_env
 
     check_open_with_dc(index)
     check_open_with_grid_workflow(index)
+    check_load_via_dss(index)
 
     if datacube_env_name == "s3aio_env":
         check_legacy_open(index)
@@ -239,6 +240,20 @@ def check_open_with_grid_workflow(index):
 
     dataset_cell = gw.load(tile)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
+
+
+def check_load_via_dss(index):
+    from datacube.api.core import Datacube
+    dc = Datacube(index=index)
+
+    dss = dc.find_datasets(product='ls5_nbar_albers')
+    assert len(dss) > 0
+
+    xx1 = dc.load(product='ls5_nbar_albers', measurements=['blue'])
+    xx2 = dc.load(datasets=dss, measurements=['blue'])
+    assert xx1.blue.shape
+    assert (xx1.blue != -999).any()
+    assert (xx1.blue == xx2.blue).all()
 
 
 def check_legacy_open(index):

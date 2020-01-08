@@ -1,4 +1,5 @@
 import uuid
+import collections
 from itertools import groupby
 from typing import Union, Optional, Dict, Tuple
 import datetime
@@ -292,18 +293,27 @@ class Datacube(object):
         if use_threads is not None:
             legacy_args['use_threads'] = use_threads
 
-        observations = datasets or self.find_datasets(product=product, like=like, ensure_location=True, **query)
-        if not observations:
+        if product is None and datasets is None:
+            raise ValueError("Must specify a product or supply datasets")
+
+        if datasets is None:
+            datasets = self.find_datasets(product=product, like=like, ensure_location=True, **query)
+        elif isinstance(datasets, collections.Iterator):
+            datasets = list(datasets)
+
+        if len(datasets) == 0:
             return xarray.Dataset()
 
+        ds, *_ = datasets
+        datacube_product = ds.type
+
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
-                               grid_spec=self.index.products.get_by_name(product).grid_spec,
-                               datasets=observations, **query)
+                               grid_spec=datacube_product.grid_spec,
+                               datasets=datasets, **query)
 
         group_by = query_group_by(**query)
-        grouped = self.group_datasets(observations, group_by)
+        grouped = self.group_datasets(datasets, group_by)
 
-        datacube_product = self.index.products.get_by_name(product)
         measurement_dicts = datacube_product.lookup_measurements(measurements)
 
         result = self.load_data(grouped, geobox,
