@@ -255,6 +255,17 @@ def check_load_via_dss(index):
     assert (xx1.blue != -999).any()
     assert (xx1.blue == xx2.blue).all()
 
+    xx2 = dc.load(datasets=iter(dss), measurements=['blue'])
+    assert xx1.blue.shape
+    assert (xx1.blue != -999).any()
+    assert (xx1.blue == xx2.blue).all()
+
+    with pytest.raises(ValueError):
+        dc.load(measurements=['blue'])
+
+    with pytest.raises(DeprecationWarning):
+        dc.load(product='ls5_nbar_albers', stack=True)
+
 
 def check_legacy_open(index):
     from datacube.api.core import Datacube
