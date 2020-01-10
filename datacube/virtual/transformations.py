@@ -1,3 +1,5 @@
+from typing import Optional, Dict, Collection
+
 import numpy
 import xarray
 import lark
@@ -39,19 +41,14 @@ def selective_apply(data, apply_to=None, key_map=None, value_map=None):
 
 class MakeMask(Transformation):
     """
-    Create a mask that would only keep pixels for which the specified measurement
-    satisfies `flags` specification.
+    Create a mask that would only keep pixels for which the measurement with `mask_measurement_name`
+    of the `product` satisfies `flags`.
 
-    Alias in recipe: ``make_mask``.
+    :param mask_measurement_name: the name of the measurement to create the mask from
+    :param flags: definition of the flags for the mask
     """
 
     def __init__(self, mask_measurement_name, flags):
-        """
-        Initialize transformation.
-
-        :param mask_measurement_name: the name of the measurement to turn into a boolean mask
-        :param flags: a dictionary of flag value specifications for the ``flags_definition`` of that measurement
-        """
         self.mask_measurement_name = mask_measurement_name
         self.flags = flags
 
@@ -80,18 +77,15 @@ class ApplyMask(Transformation):
     Apply a boolean mask to other measurements.
 
     Alias in recipe: ``apply_mask``.
-    """
-    def __init__(self, mask_measurement_name, apply_to=None,
-                 preserve_dtype=True, fallback_dtype='float32', dilation=0):
-        """
-        Initialize transformation.
 
-        :param mask_measurement_name: the measurement name of the boolean mask
-        :param apply_to: list of names of measurements to apply the mask to
-        :param preserve_dtype: whether to cast back to original ``dtype`` after masking
-        :param fallback_dtype: default ``dtype`` for masked measurements
-        :param dilation: the dilation to apply to mask in pixels
-        """
+    :param mask_measurement_name: name of the measurement to use as a mask
+    :param apply_to: list of names of measurements to apply the mask to
+    :param preserve_dtype: whether to cast back to original ``dtype`` after masking
+    :param fallback_dtype: default ``dtype`` for masked measurements
+    :param dilation: the dilation to apply to mask in pixels
+    """
+    def __init__(self, mask_measurement_name, apply_to: Optional[Collection[str]] = None,
+                 preserve_dtype=True, fallback_dtype='float32', dilation: int = 0):
         self.mask_measurement_name = mask_measurement_name
         self.apply_to = apply_to
         self.preserve_dtype = preserve_dtype
@@ -150,14 +144,11 @@ class ToFloat(Transformation):
     Convert measurements to floats and mask invalid data.
 
     Alias in recipe: ``to_float``.
+
+    :param apply_to: list of names of measurements to apply conversion to
+    :param dtype: default ``dtype`` for conversion
     """
     def __init__(self, apply_to=None, dtype='float32'):
-        """
-        Initialize transformation.
-
-        :param apply_to: list of names of measurements to apply conversion to
-        :param dtype: default ``dtype`` for conversion
-        """
         self.apply_to = apply_to
         self.dtype = dtype
 
@@ -184,13 +175,10 @@ class Rename(Transformation):
     Rename measurements.
 
     Alias in recipe: ``rename``.
+
+    :param measurement_names: mapping from INPUT NAME to OUTPUT NAME
     """
     def __init__(self, measurement_names):
-        """
-        Initialize transformation.
-
-        :param measurement_names: a dictionary mapping original names to new names
-        """
         self.measurement_names = measurement_names
 
     def measurements(self, input_measurements):
@@ -214,13 +202,10 @@ class Select(Transformation):
     Keep only specified measurements.
 
     Alias in recipe: ``select``.
+
+    :param measurement_names: list of measurements to keep
     """
     def __init__(self, measurement_names):
-        """
-        Initialize transformation.
-
-        :param measurement_names: list of measurements to keep
-        """
         self.measurement_names = measurement_names
 
     def measurements(self, input_measurements):
