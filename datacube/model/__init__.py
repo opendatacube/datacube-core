@@ -285,9 +285,9 @@ class Dataset:
 
     def __str__(self):
         str_loc = 'not available' if not self.uris else self.uris[0]
-        return "Dataset <id={id} type={type} location={loc}>".format(id=self.id,
-                                                                     type=self.type.name,
-                                                                     loc=str_loc)
+        return "Dataset <id={id} product={type} location={loc}>".format(id=self.id,
+                                                                        type=self.type.name,
+                                                                        loc=str_loc)
 
     def __repr__(self) -> str:
         return self.__str__()

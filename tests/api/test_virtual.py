@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from datetime import datetime
-from types import SimpleNamespace
 from copy import deepcopy
 import warnings
 
@@ -14,6 +13,9 @@ from datacube.virtual import construct_from_yaml, catalog_from_yaml, VirtualProd
 from datacube.virtual import DEFAULT_RESOLVER, Transformation
 from datacube.virtual.impl import Datacube
 
+
+##########################################
+# Set up some common test data and fixtures
 
 PRODUCT_LIST = ['ls7_pq_albers', 'ls8_pq_albers', 'ls7_nbar_albers', 'ls8_nbar_albers']
 
@@ -222,6 +224,9 @@ def query():
     }
 
 
+##################################
+# Virtual Product Tests Start Here
+
 def test_name_resolution(cloud_free_nbar):
     for prod in cloud_free_nbar['collate']:
         assert callable(prod['transform'])
@@ -241,10 +246,10 @@ def test_output_measurements(cloud_free_nbar, dc):
 
 
 def test_group_datasets(cloud_free_nbar, dc, query):
-    query_result = cloud_free_nbar.query(dc, **query)
-    group = cloud_free_nbar.group(query_result, **query)
+    bag = cloud_free_nbar.query(dc, **query)
+    box = cloud_free_nbar.group(bag, **query)
 
-    [time] = group.box.shape
+    [time] = box.box.shape
     assert time == 2
 
 
@@ -295,10 +300,14 @@ def test_misspelled_product(dc, query):
     ls8_nbar = construct_from_yaml("product: ls8_nbar")
 
     with pytest.raises(VirtualProductException):
-        datasets = ls8_nbar.query(dc, **query)
+        ls8_nbar.query(dc, **query)
+
+#####################################
+# Virtual Product Transform Tests
+#####################################
 
 
-def test_select(dc, query):
+def test_select_transform(dc, query):
     select = construct_from_yaml("""
         transform: select
         measurement_names:
@@ -317,7 +326,7 @@ def test_select(dc, query):
     assert 'blue' not in data
 
 
-def test_rename(dc, query):
+def test_rename_transform(dc, query):
     rename = construct_from_yaml("""
         transform: rename
         measurement_names:
@@ -337,7 +346,7 @@ def test_rename(dc, query):
     assert 'green' not in data
 
 
-def test_to_float(dc, query):
+def test_to_float_transform(dc, query):
     to_float = construct_from_yaml("""
         transform: to_float
         input:
@@ -354,7 +363,7 @@ def test_to_float(dc, query):
     assert data.blue.dtype == 'float32'
 
 
-def test_aliases(dc, query):
+def test_vp_handles_product_aliases(dc, query):
     verde = construct_from_yaml("""
         product: ls8_nbar_albers
         measurements: [verde]
@@ -374,7 +383,7 @@ def test_aliases(dc, query):
     assert 'green' not in data
 
 
-def test_expressions(dc, query):
+def test_expressions_transform(dc, query):
     bluegreen = construct_from_yaml("""
         transform: expressions
         output:
