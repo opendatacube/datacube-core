@@ -55,11 +55,12 @@ Virtual products are constructed by applying a set of combinators to either exis
 virtual products. That is, a virtual product can be viewed as a tree whose nodes are combinators and leaves are
 ordinary datacube products.
 
-Continuing the example in the previous section, consider the configuration (or the "recipe") for a cloud-free SR
+Continuing the example in the previous section, consider the recipe for a cloud-free surface reflectance
 product from SR products for two sensors (``ls7_nbar_albers`` and ``ls8_nbar_albers``) and their corresponding
 PQ products (``ls7_pq_albers`` and ``ls8_pq_albers``):
 
-.. code:: yaml
+.. code-block:: yaml
+   :caption: Sample Virtual Product Recipe
 
    collate:
      - transform: apply_mask
@@ -107,13 +108,13 @@ PQ products (``ls7_pq_albers`` and ``ls8_pq_albers``):
                    swir2_saturated: false
                mask_measurement_name: pixelquality
 
-.. code:: python
+.. code-block:: python
 
     from datacube.virtual import construct_from_yaml
 
     cloud_free_ls_nbar = construct_from_yaml(recipe)
 
-The virtual product ``cloud_free_ls_nbar`` can now be used to load cloud-free SR imagery. The dataflow for loading the
+The virtual product ``cloud_free_ls_nbar`` can now be used to load cloud-free surface reflectance imagery. The dataflow for loading the
 data reflects the tree structure of the recipe:
 
 .. image:: ../../diagrams/cloud_free.svg
@@ -210,7 +211,7 @@ This combinator enables performing transformations to raster data in their nativ
 rasters to a common grid.
 
 Transform (Data Modifing)
-------------------------
+-------------------------
 
 This node applies an on-the-fly data transformation on the loaded data. The recipe
 for a ``transform`` has the form:
@@ -236,6 +237,9 @@ where the ``settings`` are keyword arguments to a class implementing
        def measurements(self, input_measurements):
            """ Dict[str, Measurement] -> Dict[str, Measurement] """
 
+See :ref:`built-in-vp-transforms` for the available built in Transforms.
+
+Custom Transforms can also be written, see :ref:`user-defined-virtual-product-transforms`.
 
 Aggregate (Summary statistics)
 ------------------------------
@@ -265,27 +269,44 @@ as in :ref:`user-defined-virtual-product-transforms`.
 Built in Transforms
 ===================
 
-ODC has a (growing) set of built-in transformations:
+.. py:module:: datacube.virtual.transformations
 
-.. currentmodule:: datacube.virtual.transformations
+Make mask
+---------
 
-.. autosummary::
-   :toctree: generate/
+.. autoclass:: MakeMask
 
-   Expressions
-   MakeMask
-   ApplyMask
-   ToFloat
-   Rename
-   Select
+Apply mask
+----------
 
-For more information on transformations, see :ref:`user-defined-virtual-product-transforms`.
+.. autoclass:: ApplyMask
+
+To Float
+--------
+
+.. autoclass:: ToFloat
+
+Rename
+------
+
+.. autoclass:: Rename
+
+Select
+------
+
+.. autoclass:: Select
+
+Expressions
+-----------
+
+.. autoclass:: Expressions
+
 
 
 .. _user-defined-virtual-product-transforms:
 
 User-defined transformations
-===========================
+============================
 
 Custom transformations must inherit from :class:`datacube.virtual.Transformation`. If the user-defined transformation class
 is already installed in the Python environment the datacube instance is running from, the recipe may refer to it by its
