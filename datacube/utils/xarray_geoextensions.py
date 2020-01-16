@@ -38,8 +38,12 @@ def _get_crs(obj):
     else:
         data_array = obj
 
-    # Assumption: spatial dimensions are always the last 2)
-    spatial_dims = data_array.dims[-2:]
+    # Assumption: (... y,x) or (...y,x,band)
+    if data_array.dims[-1] == 'band':
+        spatial_dims = data_array.dims[-3:-1]
+    else:
+        spatial_dims = data_array.dims[-2:]
+
     crs_set = set(data_array[d].attrs.get('crs', None) for d in spatial_dims)
     crs = None
     if len(crs_set) > 1:

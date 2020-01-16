@@ -60,6 +60,11 @@ def _write_cog(pix: np.ndarray,
         nbands = 1
         band = 1  # type: Any
     elif pix.ndim == 3:
+        if pix.shape[:2] == geobox.shape:
+            pix = pix.transpose([2, 0, 1])
+        elif pix.shape[-2:] != geobox.shape:
+            raise ValueError('GeoBox shape does not match image shape')
+
         nbands, h, w = pix.shape
         band = tuple(i for i in range(1, nbands + 1))
     else:

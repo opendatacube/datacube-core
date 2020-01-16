@@ -331,7 +331,7 @@ def rio_slurp(fname, *args, **kw):
         return rio_slurp_read(fname, *args, **kw)
 
 
-def rio_slurp_xarray(fname, *args, **kw):
+def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
     """
     Dispatches to either:
 
@@ -354,8 +354,16 @@ def rio_slurp_xarray(fname, *args, **kw):
         else:
             im, mm = rio_slurp_read(fname, *args, **kw)
 
+    if im.ndim == 3:
+        dims = ('band', *mm.gbox.dims)
+        if rgb and im.shape[0] in (3, 4):
+            im = im.transpose([1, 2, 0])
+            dims = tuple(dims[i] for i in [1, 2, 0])
+    else:
+        dims = mm.gbox.dims
+
     return DataArray(im,
-                     dims=mm.gbox.dims,
+                     dims=dims,
                      coords=xr_coords(mm.gbox),
                      attrs=dict(
                          crs=mm.gbox.crs,
