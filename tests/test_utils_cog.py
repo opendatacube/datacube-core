@@ -175,3 +175,6 @@ def test_cog_rgba(tmpdir):
     assert(yy.geobox == rgba.geobox)
     assert(yy.shape == rgba.shape)
     np.testing.assert_array_equal(yy.values, rgba.values)
+
+    with pytest.raises(ValueError):
+        _write_cog(rgba.values[1:, :, :], rgba.geobox, ':mem:')
