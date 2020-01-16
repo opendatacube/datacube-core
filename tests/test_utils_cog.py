@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 import numpy as np
+import xarray as xr
 from types import SimpleNamespace
 from dask.delayed import Delayed
 import dask
@@ -155,3 +156,22 @@ def test_cog_no_crs(tmpdir, with_dask):
 
     with pytest.raises(ValueError):
         to_cog(xx)
+
+
+def test_cog_rgba(tmpdir):
+    pp = Path(str(tmpdir))
+    xx, ds = gen_test_data(pp)
+    pix = np.dstack([xx.values] * 4)
+    rgba = xr.DataArray(pix,
+                        attrs=xx.attrs,
+                        dims=('y', 'x', 'band'),
+                        coords=xx.coords)
+    assert(rgba.geobox == xx.geobox)
+    assert(rgba.shape[:2] == rgba.geobox.shape)
+
+    ff = write_cog(rgba, pp / "cog.tif")
+    yy = rio_slurp_xarray(ff)
+
+    assert(yy.geobox == rgba.geobox)
+    assert(yy.shape == rgba.shape)
+    np.testing.assert_array_equal(yy.values, rgba.values)
