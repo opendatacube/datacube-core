@@ -29,8 +29,23 @@ each section of the user config file.
 Runtime Config
 ==============
 
+Data Cube needs to be told which database index to connect to. This can be done via a file with profiles,
+or directly via environment variables.
+
+Environment Variables
+---------------------
+
+DATACUBE_DB_URL:
+   postgresql://user:password@host/database
+
+
+- Else look for ``DB_HOSTNAME``, ``DB_USERNAME``, ``DB_PASSWORD``, ``DB_DATABASE``
+
 The runtime config specifies configuration options for the current user, such as
 available Data Cube instances and which to use by default.
+
+Configuration from a file
+-------------------------
 
 This is loaded from the following locations in order, if they exist, with properties from latter files
 overriding those in earlier ones:
