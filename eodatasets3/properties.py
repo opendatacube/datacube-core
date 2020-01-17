@@ -163,6 +163,10 @@ _LANDSAT_EXTENDED_PROPS = {
     "landsat:station_id": None,
 }
 
+_SENTINEL_EXTENDED_PROPS = {
+    "sentinel:sentinel_tile_id": None,
+}
+
 
 class StacPropertyView(collections.abc.Mapping):
     # Every property we've seen or dealt with so far. Feel free to expand with abandon...
@@ -196,6 +200,7 @@ class StacPropertyView(collections.abc.Mapping):
         "odc:region_code": None,
         **_LANDSAT_EXTENDED_PROPS,
         **_GQA_FMASK_PROPS,
+        **_SENTINEL_EXTENDED_PROPS,
     }
 
     def __init__(self, properties=None) -> None:
