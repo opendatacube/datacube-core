@@ -10,7 +10,7 @@ import json
 import uuid
 import numpy as np
 from datetime import datetime
-from collections import Sequence, Mapping
+from collections.abc import Sequence, Mapping
 import pathlib
 
 from datacube.model import Dataset, DatasetType, MetadataType

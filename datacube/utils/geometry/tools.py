@@ -16,7 +16,7 @@ class WindowFromSlice(object):
         if roi is None:
             return None
 
-        if not isinstance(roi, collections.Sequence) or len(roi) != 2:
+        if not isinstance(roi, collections.abc.Sequence) or len(roi) != 2:
             raise ValueError("Need 2d roi")
 
         row, col = roi

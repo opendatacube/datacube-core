@@ -4,7 +4,7 @@ import copy
 from .impl import VirtualProduct, Transformation, VirtualProductException
 from .impl import from_validated_recipe, virtual_product_kind
 from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select, Expressions
-from .transformations import XarrayReduction, year, month, week, day
+from .transformations import XarrayReduction, year, month, week, day, earliest_time
 from .catalog import Catalog
 from .utils import reject_keys
 
@@ -131,7 +131,8 @@ DEFAULT_RESOLVER = NameResolver({'transform': dict(make_mask=MakeMask,
                                  'aggregate/group_by': dict(year=year,
                                                             month=month,
                                                             week=week,
-                                                            day=day)})
+                                                            day=day,
+                                                            earliest_time=earliest_time)})
 
 
 def construct(name_resolver=None, **recipe: Mapping[str, Any]) -> VirtualProduct:

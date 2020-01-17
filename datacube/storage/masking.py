@@ -175,7 +175,7 @@ def create_mask_value(bits_def, **flags):
             raise ValueError('Unknown value %s specified for flag %s' %
                              (flag_ref, flag_name))
 
-        if isinstance(defn['bits'], collections.Iterable):  # Multi-bit flag
+        if isinstance(defn['bits'], collections.abc.Iterable):  # Multi-bit flag
             # Set mask
             for bit in defn['bits']:
                 mask = set_value_at_index(mask, bit, True)
