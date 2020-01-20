@@ -181,7 +181,7 @@ def pass_config(f):
     def new_func(*args, **kwargs):
         obj = click.get_current_context().obj
 
-        paths = obj.get('config_files') or config.DEFAULT_CONF_PATHS
+        paths = obj.get('config_files', None)
         # If the user is overriding the defaults
         specific_environment = obj.get('config_environment')
 
