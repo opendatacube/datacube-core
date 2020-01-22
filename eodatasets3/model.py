@@ -285,6 +285,9 @@ class ComplicatedNamingConventions:
         if p.startswith("sentinel-2"):
             return f"s2{p[-1]}"
 
+        if p.startswith("sentinel-1"):
+            return f"s1{p[-1]}"
+
         if not p.startswith("landsat"):
             raise NotImplementedError(
                 f"TODO: implement non-landsat platform abbreviation " f"(got {p!r})"
@@ -300,6 +303,9 @@ class ComplicatedNamingConventions:
             return None
 
         if p.startswith("sentinel-2"):
+            return self.dataset.instrument[0].lower()
+
+        if p.startswith("sentinel-1"):
             return self.dataset.instrument[0].lower()
 
         if not p.startswith("landsat"):
