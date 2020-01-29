@@ -121,6 +121,30 @@ class ComplicatedNamingConventions:
             ),
         )
 
+    @classmethod
+    def for_standard_dea_s2(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
+        """
+        Strict mode to follow the full DEA naming conventions.
+
+        Only use the (default) DEA URI if you're making DEA products.
+        """
+        return cls(
+            dataset=dataset,
+            base_product_uri=uri,
+            # These fields are needed to fulfill official DEA naming conventions.
+            required_fields=(
+                # TODO: Add conventions for multi-platform/composite products?
+                "eo:instrument",
+                "eo:platform",
+                "odc:dataset_version",
+                "odc:processing_datetime",
+                "odc:producer",
+                "odc:product_family",
+                "odc:region_code",
+                "sentinel:sentinel_tile_id",
+            ),
+        )
+
     def _check_enough_properties_to_name(self):
         """
         Do we have enough properties to generate file or product names?
@@ -209,7 +233,9 @@ class ComplicatedNamingConventions:
             parts.extend(utils.subfolderise(region_code))
 
         parts.extend(f"{self.dataset.datetime:%Y/%m/%d}".split("/"))
-
+        datatake_sensing_time = self.datatake_sensing_time
+        if datatake_sensing_time:
+            parts.extend(datatake_sensing_time)
         return base.joinpath(*parts)
 
     def metadata_path(self, work_dir: Path, kind: str = "", suffix: str = "yaml"):
@@ -339,6 +365,16 @@ class ComplicatedNamingConventions:
                 f"TODO: cannot yet abbreviate organisation domain name {self.dataset.producer!r}"
             )
 
+    @property
+    def datatake_sensing_time(self) -> Optional[str]:
+        """datatake_sensing_time"""
+        if "sentinel:sentinel_tile_id" in self.dataset.properties:
+            tile_id = self.dataset.properties.get("sentinel:sentinel_tile_id")
+            split_tile_id = tile_id.split('_')
+            assert len(split_tile_id) >= 7
+            return split_tile_id[-4]
+        else:
+            return None
 
 @attr.s(auto_attribs=True, slots=True)
 class DatasetDoc(EoFields):
