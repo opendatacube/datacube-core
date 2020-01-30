@@ -74,7 +74,7 @@ properties:
         "$ref": "#/definitions/storage"
     measurements:
         type: array
-        additionalProperties: false
+        additionalProperties: true
         items:
             "$ref": "#/definitions/measurement"
 required:
@@ -84,7 +84,7 @@ required:
     - global_attributes
     - storage
     - measurements
-additionalProperties: false
+additionalProperties: true
 
 definitions:
     dtype:
@@ -149,7 +149,7 @@ definitions:
             - dtype
             - nodata
             - src_varname
-        additionalProperties: false
+        additionalProperties: true
 
     storage:
         type: object
@@ -170,4 +170,4 @@ definitions:
                 type: string
             bucket:
                 type: string
-        additionalProperties: false
+        additionalProperties: true
