@@ -20,5 +20,4 @@ help:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 livehtml:
-#	sphinx-autobuild -b html $(SPHINXOPTS) $(BUILDDIR)/html
 	sphinx-autobuild -b html -p 8123 --ignore "*_tmp_*" --ignore "*_old_*" --watch "../datacube" --ignore "notebooks/*" --ignore "dev/api/generate/*" $(SPHINXOPTS) . $(BUILDDIR)/html
