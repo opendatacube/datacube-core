@@ -133,7 +133,6 @@ class ComplicatedNamingConventions:
             base_product_uri=uri,
             # These fields are needed to fulfill official DEA naming conventions.
             required_fields=(
-                # TODO: Add conventions for multi-platform/composite products?
                 "eo:instrument",
                 "eo:platform",
                 "odc:dataset_version",
