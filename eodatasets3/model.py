@@ -370,12 +370,13 @@ class ComplicatedNamingConventions:
         datatake_sensing_time = None
         if "sentinel:sentinel_tile_id" in self.dataset.properties:
             tile_id = self.dataset.properties.get("sentinel:sentinel_tile_id")
-            split_tile_id = tile_id.split('_')
+            split_tile_id = tile_id.split("_")
             try:
-                datatake_sensing_time =  split_tile_id[-4]
+                datatake_sensing_time = split_tile_id[-4]
             except IndexError:
                 pass
         return datatake_sensing_time
+
 
 @attr.s(auto_attribs=True, slots=True)
 class DatasetDoc(EoFields):

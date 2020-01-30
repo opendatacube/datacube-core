@@ -163,9 +163,7 @@ _LANDSAT_EXTENDED_PROPS = {
     "landsat:station_id": None,
 }
 
-_SENTINEL_EXTENDED_PROPS = {
-    "sentinel:sentinel_tile_id": None,
-}
+_SENTINEL_EXTENDED_PROPS = {"sentinel:sentinel_tile_id": None}
 
 
 class StacPropertyView(collections.abc.Mapping):
