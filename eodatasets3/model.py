@@ -235,7 +235,7 @@ class ComplicatedNamingConventions:
         parts.extend(f"{self.dataset.datetime:%Y/%m/%d}".split("/"))
         datatake_sensing_time = self.datatake_sensing_time
         if datatake_sensing_time:
-            parts.extend(datatake_sensing_time)
+            parts.append(datatake_sensing_time)
         return base.joinpath(*parts)
 
     def metadata_path(self, work_dir: Path, kind: str = "", suffix: str = "yaml"):
