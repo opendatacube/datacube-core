@@ -1,4 +1,4 @@
-ARG base_image="osgeo/gdal:ubuntu-small-3.0.2"
+ARG base_image="osgeo/gdal:ubuntu-small-3.0.4"
 FROM $base_image as env_builder
 
 # Set the locale, this is required for some of the Python packages
