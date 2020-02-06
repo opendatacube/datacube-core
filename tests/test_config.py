@@ -69,10 +69,7 @@ db_hostname:
 ## Staging environment ##
 [staging]
 db_hostname: staging.dea.ga.gov.au
-
-[s3_test]
-db_hostname: staging.dea.ga.gov.au
-index_driver: s3aio"""
+"""
 
 
 def test_using_configparser(tmpdir):

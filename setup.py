@@ -2,7 +2,6 @@
 
 import versioneer
 from setuptools import setup, find_packages
-import os
 
 tests_require = [
     'compliance-checker>=4.0.0',
@@ -24,23 +23,13 @@ extras_require = {
     'doc': ['Sphinx', 'setuptools'],
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'celery': ['celery>=4', 'redis'],
-    's3': ['boto3', 'SharedArray', 'pathos', 'zstandard'],
+    's3': ['boto3'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
 
 extra_plugins = dict(read=[], write=[], index=[])
-
-if os.name != 'nt':
-    extra_plugins['write'].extend([
-        's3aio = datacube.drivers.s3.driver:writer_driver_init [s3]',
-        's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init [s3]',
-    ])
-
-    extra_plugins['index'].extend([
-        's3aio_index = datacube.drivers.s3aio_index:index_driver_init [s3]',
-    ])
 
 setup(
     name='datacube',

@@ -72,9 +72,6 @@ Example:
     [staging]
     db_hostname: staging.dea.ga.gov.au
 
-    [s3_test]
-    db_hostname: staging.dea.ga.gov.au
-    index_driver: s3aio_index
 
 Note that the staging environment only specifies the hostname, all other fields will use default values (dbname
 datacube, current username, password loaded from ``~/.pgpass``)

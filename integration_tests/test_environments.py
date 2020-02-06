@@ -47,15 +47,6 @@ db_hostname: alt-db.opendatacube.test
             pass
 
 
-@pytest.mark.parametrize('datacube_env_name', ('s3aio_env',), indirect=True)
-def test_connecting_to_s3_environment(index, clirunner):
-    assert index is not None
-    assert index.connected_to_s3_database()
-
-    result = clirunner(['system', 'check'])
-    assert 'Index Driver:  s3aio_index' in result.output
-
-
 def test_wrong_env_error_message(clirunner_raw, monkeypatch):
     from datacube import config
     monkeypatch.setattr(config, 'DEFAULT_CONF_PATHS', ('/no/such/path-264619',))

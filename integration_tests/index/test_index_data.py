@@ -249,8 +249,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
         index.datasets.add(child, sources_policy=p)
 
 
-# Make sure that both normal and s3aio index can handle normal data locations correctly
-@pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env',), indirect=True)
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ), indirect=True)
 def test_index_dataset_with_location(index: Index, default_metadata_type: MetadataType):
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()

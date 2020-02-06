@@ -12,28 +12,6 @@ from datacube.storage._rio import RasterDatasetDataSource
 from datacube.testutils import mk_sample_dataset
 from datacube.model import MetadataType
 
-S3_dataset = namedtuple('S3_dataset', ['macro_shape', 'numpy_type'])
-
-
-def test_new_datasource_s3():
-    pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
-
-    from datacube.drivers.s3 import driver as s3_driver
-    from datacube.drivers.s3.datasource import S3DataSource
-
-    bands = [dict(name='green',
-                  path='')]
-    dataset = mk_sample_dataset(bands, s3_driver.PROTOCOL + ':///foo', format=s3_driver.FORMAT)
-    s3_dataset_fake = S3_dataset(macro_shape=(10, 12), numpy_type='float32')
-    dataset.s3_metadata = {'green': {'s3_dataset': s3_dataset_fake}}
-
-    assert dataset.format == s3_driver.FORMAT
-    assert dataset.uri_scheme == s3_driver.PROTOCOL
-
-    rdr = s3_driver.reader_driver_init().new_datasource(BandInfo(dataset, 'green'))
-    assert rdr is not None
-    assert isinstance(rdr, S3DataSource)
-
 
 def test_new_datasource_fallback():
     bands = [dict(name='green',
@@ -51,9 +29,6 @@ def test_reader_drivers():
     available_drivers = reader_drivers()
     assert isinstance(available_drivers, list)
 
-    pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
-    assert 's3aio' not in available_drivers
-
 
 def test_writer_drivers():
     available_drivers = writer_drivers()
@@ -64,9 +39,6 @@ def test_writer_drivers():
 def test_index_drivers():
     available_drivers = index_drivers()
     assert 'default' in available_drivers
-
-    pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
-    assert 's3aio_index' in available_drivers
 
 
 def test_default_injection():

@@ -84,12 +84,6 @@ def local_config(datacube_env_name):
 def ingest_configs(datacube_env_name):
     """ Provides dictionary product_name => config file name
     """
-    if datacube_env_name == "s3aio_env":
-        return {
-            'ls5_nbar_albers': 'ls5_nbar_albers_s3test.yaml',
-            'ls5_pq_albers': 'ls5_pq_albers_s3test.yaml',
-        }
-
     return {
         'ls5_nbar_albers': 'ls5_nbar_albers.yaml',
         'ls5_pq_albers': 'ls5_pq_albers.yaml',

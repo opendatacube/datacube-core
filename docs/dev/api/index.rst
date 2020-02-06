@@ -360,7 +360,6 @@ Everything Else
    :maxdepth: 1
 
    analytics_engine.rst
-   s3block.rst
 
 
 .. toctree::

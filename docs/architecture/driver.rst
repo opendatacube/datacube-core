@@ -67,14 +67,6 @@ Example code to implement a reader driver
     class AbstractDataSource(object):  # Same interface as before
         ...
 
-S3 Driver
----------
-
-:URI Protocol: ``s3://``
-:Dataset Format: ``aio``
-:Implementation location:
-    `datacube/drivers/s3/driver.py <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/datacube/drivers/s3/driver.py>`_
-
 Example Pickle Based Driver
 ---------------------------
 
@@ -135,16 +127,6 @@ NetCDF Writer Driver
 :Implementation:
    :py:class:`datacube.drivers.netcdf.driver.NetcdfWriterDriver`
 
-S3 Writer Driver
-----------------
-
-:Name: ``s3aio``
-:Protocol: ``s3``
-:Format: ``aio``
-:Implementation:
-   :py:class:`datacube.drivers.s3.driver.S3WriterDriver`
-
-
 Index Plug-ins
 ==============
 
@@ -177,33 +159,6 @@ Default Implementation
 
 The default ``Index`` uses a PostgreSQL database for all storage and
 retrieval.
-
-S3 Extensions
--------------
-
-
-The :py:class:`datacube.drivers.s3aio_index.S3AIOIndex` driver subclasses the default PostgreSQL Index with
-support for saving additional data about the size and shape of chunks
-stored in S3 objects. As such, it implements an identical interface,
-while overriding the ``dataset.add()`` method to save the additional
-data.
-
-
-Drivers Plugin Management Module
-================================
-
-Drivers are defined in ``setup.py -> entry_points``::
-
-    entry_points={
-        'datacube.plugins.io.read': [
-            's3aio = datacube.drivers.s3.driver:reader_driver_init'
-        ],
-        'datacube.plugins.io.write': [
-            'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
-            's3aio = datacube.drivers.s3.driver:writer_driver_init',
-            's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init',
-        ]
-    }
 
 Data Cube Drivers API
 =====================
