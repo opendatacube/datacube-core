@@ -13,6 +13,7 @@ v1.8rc (???)
 - Support ``/vsi**`` style paths for dataset locations (:pull:`825`)
 - Remove old Search Expressions and replace with a simpler implementation based on Lark Parser. (:pull:`840`)
 - Remove no longer required PyPEG2 dependency. (:pull:`840`)
+- Remove S3AIO driver. (:pull:`865`)
 
 
 v1.7.0 (16 May 2019)
