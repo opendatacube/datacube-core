@@ -41,7 +41,6 @@ def system():
     help="Allow table to be locked (eg. while creating missing indexes)"
 )
 @ui.pass_index(expect_initialised=False)
-# TODO: Need to be able to specify the type of index. In our current case, whether to create s3aio specific tables
 def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table):
     echo('Initialising database...')
 
