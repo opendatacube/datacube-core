@@ -9,7 +9,6 @@ pylint==2.4.4
 # for packaging
 wheel
 
-# force compilation of some geo and related libs
---no-binary=GDAL,fiona,shapely,pyproj,psycopg2,h5py,netcdf4
+psycopg2 --no-binary=psycopg2
 
 datacube[test,celery,s3,performance,distributed]
