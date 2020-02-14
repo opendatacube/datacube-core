@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Tuple, Dict, Optional, List, Sequence, Union
@@ -93,10 +94,17 @@ class ComplicatedNamingConventions:
         dataset: EoFields,
         base_product_uri: str = None,
         required_fields: Sequence[str] = (),
+        dataset_separator_field: Optional[str] = None,
     ) -> None:
         self.dataset = dataset
         self.base_product_uri = base_product_uri
         self.required_fields = self._ABSOLUTE_MINIMAL_PROPERTIES.union(required_fields)
+
+        # An extra folder to put each dataset inside, using the value of the given property name.
+        self.dataset_separator_field = dataset_separator_field
+
+        if self.dataset_separator_field is not None:
+            self.required_fields.add(dataset_separator_field)
 
     @classmethod
     def for_standard_dea(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
@@ -124,9 +132,9 @@ class ComplicatedNamingConventions:
     @classmethod
     def for_standard_dea_s2(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
         """
-        Strict mode to follow the full DEA naming conventions.
+        DEA naming conventions, but with an extra subfolder for each unique datatake.
 
-        Only use the (default) DEA URI if you're making DEA products.
+        It will figure out the datatake if you set a sentinel_tile_id.
         """
         return cls(
             dataset=dataset,
@@ -142,6 +150,7 @@ class ComplicatedNamingConventions:
                 "odc:region_code",
                 "sentinel:sentinel_tile_id",
             ),
+            dataset_separator_field="sentinel:datatake_start_datetime",
         )
 
     def _check_enough_properties_to_name(self):
@@ -232,9 +241,13 @@ class ComplicatedNamingConventions:
             parts.extend(utils.subfolderise(region_code))
 
         parts.extend(f"{self.dataset.datetime:%Y/%m/%d}".split("/"))
-        datatake_sensing_time = self.datatake_sensing_time
-        if datatake_sensing_time:
-            parts.append(datatake_sensing_time)
+
+        if self.dataset_separator_field is not None:
+            val = self.dataset.properties[self.dataset_separator_field]
+            # TODO: choosable formatter?
+            if isinstance(val, datetime):
+                val = f"{val:%Y%m%dT%H%M%S}"
+            parts.append(val)
         return base.joinpath(*parts)
 
     def metadata_path(self, work_dir: Path, kind: str = "", suffix: str = "yaml"):
@@ -363,19 +376,6 @@ class ComplicatedNamingConventions:
             raise NotImplementedError(
                 f"TODO: cannot yet abbreviate organisation domain name {self.dataset.producer!r}"
             )
-
-    @property
-    def datatake_sensing_time(self) -> Optional[str]:
-        """datatake_sensing_time"""
-        datatake_sensing_time = None
-        if "sentinel:sentinel_tile_id" in self.dataset.properties:
-            tile_id = self.dataset.properties.get("sentinel:sentinel_tile_id")
-            split_tile_id = tile_id.split("_")
-            try:
-                datatake_sensing_time = split_tile_id[-4]
-            except IndexError:
-                pass
-        return datatake_sensing_time
 
 
 @attr.s(auto_attribs=True, slots=True)

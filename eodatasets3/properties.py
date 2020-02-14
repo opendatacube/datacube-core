@@ -7,9 +7,8 @@ from enum import Enum
 from typing import Tuple, Dict, Optional, Any, Mapping, Callable, Union
 
 import ciso8601
-from ruamel.yaml.timestamp import TimeStamp as RuamelTimeStamp
-
 from eodatasets3.utils import default_utc
+from ruamel.yaml.timestamp import TimeStamp as RuamelTimeStamp
 
 
 def nest_properties(d: Mapping[str, Any], separator=":") -> Dict[str, Any]:
@@ -108,12 +107,33 @@ def producer_check(value):
     return value
 
 
+def parsed_sentinel_tile_id(tile_id) -> Tuple[str, Dict]:
+    """Extract useful extra fields from a sentinel tile id"""
+    extras = {}
+    split_tile_id = tile_id.split("_")
+    try:
+        datatake_sensing_time = datetime_type(split_tile_id[-4])
+        extras["sentinel:datatake_start_datetime"] = datatake_sensing_time
+    except IndexError:
+        pass
+
+    # TODO: we could extract other useful fields?
+
+    return tile_id, extras
+
+
 # The primitive types allowed as stac values.
 PrimitiveType = Union[str, int, float, datetime]
+
+ExtraProperties = Dict
 # A function to normalise a value.
 # (eg. convert to int, or make string lowercase).
 # They throw a ValueError if not valid.
-NormaliseValueFn = Callable[[Any], PrimitiveType]
+NormaliseValueFn = Callable[
+    [Any],
+    # It returns the normalised value, but can optionally also return extra property values extracted from it.
+    Union[PrimitiveType, Tuple[PrimitiveType, ExtraProperties]],
+]
 
 # Extras typically on the ARD product.
 _GQA_FMASK_PROPS = {
@@ -163,7 +183,10 @@ _LANDSAT_EXTENDED_PROPS = {
     "landsat:station_id": None,
 }
 
-_SENTINEL_EXTENDED_PROPS = {"sentinel:sentinel_tile_id": None}
+_SENTINEL_EXTENDED_PROPS = {
+    "sentinel:sentinel_tile_id": parsed_sentinel_tile_id,
+    "sentinel:datatake_start_datetime": datetime_type,
+}
 
 
 class StacPropertyView(collections.abc.Mapping):
@@ -242,6 +265,15 @@ class StacPropertyView(collections.abc.Mapping):
             normalise = self.KNOWN_STAC_PROPERTIES.get(key)
             if normalise:
                 value = normalise(value)
+                # If the normaliser has extracted extra properties, we'll get two return values.
+                if isinstance(value, Tuple):
+                    value, extra_properties = value
+                    for k, v in extra_properties.items():
+                        if k == key:
+                            raise RuntimeError(
+                                f"Infinite loop: writing key {k!r} from itself"
+                            )
+                        self[k] = v
 
         self._props[key] = value
 
