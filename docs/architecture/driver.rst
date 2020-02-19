@@ -160,6 +160,30 @@ Default Implementation
 The default ``Index`` uses a PostgreSQL database for all storage and
 retrieval.
 
+
+Drivers Plugin Management Module
+================================
+
+Drivers are registered in ``setup.py -> entry_points``::
+
+    entry_points={
+        'datacube.plugins.io.read': [
+            'netcdf = datacube.drivers.netcdf.driver:reader_driver_init',
+        ],
+        'datacube.plugins.io.write': [
+            'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
+        ],
+        'datacube.plugins.index': [
+            'default = datacube.index.index:index_driver_init',
+            *extra_plugins['index'],
+        ],
+    }
+
+These are drivers ``datacube-core`` ships with. When developing custom driver one
+does not need to add them to ``datacube-core/setup.py``, rather you have to define
+these in the ``setup.py`` of your driver package.
+
+
 Data Cube Drivers API
 =====================
 
