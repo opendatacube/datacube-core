@@ -72,7 +72,7 @@ RUN groupadd --gid 1000 odc \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
   && true
 
-COPY --from=env_builder --chown=root:users /env /env
+COPY --from=env_builder --chown=odc:users /env /env
 COPY --from=env_builder /bin/tini /bin/tini
 
 COPY assets/with_bootstrap /usr/local/bin/
