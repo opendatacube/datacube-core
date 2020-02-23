@@ -287,12 +287,6 @@ class Datacube(object):
             raise DeprecationWarning("the `stack` keyword argument is not supported anymore, "
                                      "please apply `xarray.Dataset.to_array()` to the result instead")
 
-        # TODO: get rid of this block when removing legacy load support
-        legacy_args = {}
-        use_threads = query.pop('use_threads', None)
-        if use_threads is not None:
-            legacy_args['use_threads'] = use_threads
-
         if product is None and datasets is None:
             raise ValueError("Must specify a product or supply datasets")
 
@@ -322,8 +316,7 @@ class Datacube(object):
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
                                 skip_broken_datasets=skip_broken_datasets,
-                                progress_cbk=progress_cbk,
-                                **legacy_args)
+                                progress_cbk=progress_cbk)
 
         return apply_aliases(result, datacube_product, measurements)
 
