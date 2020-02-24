@@ -164,6 +164,16 @@ def test_parse_env(monkeypatch):
                          username='user',
                          password='pass@')
 
+    assert check_env(DB_DATABASE='db',
+                     DB_HOSTNAME='host.tld',
+                     DB_USERNAME='user',
+                     DB_PORT='',
+                     DB_PASSWORD='pass@') == dict(
+                         database='db',
+                         hostname='host.tld',
+                         username='user',
+                         password='pass@')
+
 
 def test_cfg_from_env(monkeypatch):
     def set_env(**kw):
