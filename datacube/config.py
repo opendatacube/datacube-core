@@ -233,7 +233,7 @@ def parse_env_params() -> Dict[str, str]:
               for k in DB_KEYS}
     return {k: v
             for k, v in params.items()
-            if v is not None}
+            if v is not None and v != ""}
 
 
 def _cfg_from_env_opts(opts: Dict[str, str],
