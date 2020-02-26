@@ -16,12 +16,21 @@ To initialise this class, you will need a config pointing to a database, such as
     db_username: cube_user
 
 """
-from .version import __version__
+from pkg_resources import get_distribution, DistributionNotFound
+
+# Set up the version number first, since some deeper code depends on it
+try:
+    __version__ = get_distribution(__name__).version
+except DistributionNotFound:
+    # package is not installed
+    __version__ = "Unknown/Not Installed"
+
 from .api import Datacube
 from .config import set_options
 import warnings
 from .utils import xarray_geoextensions
 
-
 # Ensure deprecation warnings from datacube modules are shown
 warnings.filterwarnings('always', category=DeprecationWarning, module=r'^datacube\.')
+
+__all__ = (Datacube, __version__, set_options, xarray_geoextensions)

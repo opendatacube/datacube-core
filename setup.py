@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import versioneer
 from setuptools import setup, find_packages
 
 tests_require = [
@@ -33,9 +32,9 @@ extra_plugins = dict(read=[], write=[], index=[])
 
 setup(
     name='datacube',
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
     python_requires='>=3.5.2',
+    use_scm_version=True,
+    setup_requires=["setuptools_scm"],
 
     url='https://github.com/opendatacube/datacube-core',
     author='Open Data Cube',
@@ -72,9 +71,6 @@ setup(
     },
     scripts=[
         'datacube_apps/scripts/pbs_helpers.sh'
-    ],
-    setup_requires=[
-        'pytest-runner'
     ],
     install_requires=[
         'affine',
