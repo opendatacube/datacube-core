@@ -14,6 +14,7 @@ v1.8rc (???)
 - Remove old Search Expressions and replace with a simpler implementation based on Lark Parser. (:pull:`840`)
 - Remove no longer required PyPEG2 dependency. (:pull:`840`)
 - Remove S3AIO driver. (:pull:`865`)
+- Change development version numbers generation. Use ``setuptools_scm`` instead of ``versioneer``. (:issue:`871`)
 
 
 v1.7.0 (16 May 2019)
