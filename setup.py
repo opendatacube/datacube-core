@@ -33,8 +33,6 @@ extra_plugins = dict(read=[], write=[], index=[])
 setup(
     name='datacube',
     python_requires='>=3.5.2',
-    use_scm_version=True,
-    setup_requires=["setuptools_scm"],
 
     url='https://github.com/opendatacube/datacube-core',
     author='Open Data Cube',
