@@ -16,14 +16,11 @@ To initialise this class, you will need a config pointing to a database, such as
     db_username: cube_user
 
 """
-from pkg_resources import get_distribution, DistributionNotFound
 
-# Set up the version number first, since some deeper code depends on it
 try:
-    __version__ = get_distribution(__name__).version
-except DistributionNotFound:
-    # package is not installed
-    __version__ = "Unknown/Not Installed"
+    from ._version import version as __version__
+except ImportError:
+    __version__ = 'Unknown/Not Installed'
 
 from .api import Datacube
 from .config import set_options
