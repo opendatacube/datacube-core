@@ -6,7 +6,8 @@ pull_request_rules:
   - '#approved-reviews-by>=1'
   - "#changes-requested-reviews-by=0"
   - base=develop
-  - status-success=continuous-integration/travis-ci/pr
+  - status-success=build
+  - status-success=Docker (test runner)
   actions:
     merge:
       method: rebase
