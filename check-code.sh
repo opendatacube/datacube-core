@@ -12,7 +12,7 @@ if [ "${1:-}" == "--with-docker" ]; then
          $0 $@
 fi
 
-pycodestyle tests integration_tests examples utils --max-line-length 120
+pycodestyle tests integration_tests examples --max-line-length 120
 
 pylint -j 2 --reports no datacube datacube_apps
 

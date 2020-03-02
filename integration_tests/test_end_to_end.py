@@ -1,4 +1,3 @@
-import imp
 import shutil
 from pathlib import Path
 import numpy
@@ -18,8 +17,6 @@ TEST_DATA = PROJECT_ROOT / 'tests' / 'data' / 'lbg'
 LBG_NBAR = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323'
 LBG_PQ = 'LS5_TM_PQ_P55_GAPQ01-002_090_084_19920323'
 LBG_CELL = (15, -40)  # x,y
-
-galsprepare = imp.load_source('module.name', str(PROJECT_ROOT / 'utils/galsprepare.py'))
 
 
 def custom_dumb_fuser(dst, src):
@@ -60,9 +57,6 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs, datacube_env
     lbg_pq = testdata_dir / 'lbg' / LBG_PQ
     ls5_nbar_albers_ingest_config = testdata_dir / ingest_configs['ls5_nbar_albers']
     ls5_pq_albers_ingest_config = testdata_dir / ingest_configs['ls5_pq_albers']
-
-    # Run galsprepare.py on the NBAR and PQ scenes
-    assert_click_command(galsprepare.main, [str(lbg_nbar)])
 
     # Add the LS5 Dataset Types
     clirunner(['-v', 'product', 'add', str(LS5_DATASET_TYPES)])

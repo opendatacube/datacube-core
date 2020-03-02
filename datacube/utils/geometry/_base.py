@@ -3,12 +3,17 @@ import itertools
 import math
 from collections import namedtuple, OrderedDict
 from typing import Tuple, Callable, Iterable, List, Union
+from collections.abc import Sequence
 
 import cachetools
 import numpy
 import xarray as xr
 from affine import Affine
-from osgeo import ogr, osr
+from shapely import geometry, ops
+from shapely.geometry import base
+from pyproj import CRS as _CRS
+from pyproj.transformer import Transformer
+from pyproj.exceptions import CRSError
 
 from .tools import roi_normalise, roi_shape, is_affine_st
 from ..math import is_almost_int
@@ -61,61 +66,41 @@ class BoundingBox(_BoundingBox):
         return BoundingBox(min(xx), min(yy), max(xx), max(yy))
 
 
-class CRSProjProxy(object):
-    def __init__(self, crs):
-        self._crs = crs
-
-    def __getattr__(self, item):
-        return self._crs.GetProjParm(item)
-
-
-class InvalidCRSError(ValueError):
-    pass
-
-
 @cachetools.cached({})
 def _make_crs(crs_str):
-    crs = osr.SpatialReference()
+    return _CRS.from_user_input(crs_str)
 
-    # We don't bother checking the return code for errors, as the below ExportToProj4 does a more thorough job.
-    crs.SetFromUserInput(crs_str)
 
-    # Some will "validly" be parsed above, but return OGRERR_CORRUPT_DATA error when used here.
-    # see the PROJCS["unnamed... doctest below for an example.
-    if not crs.ExportToProj4():
-        raise InvalidCRSError("Not a valid CRS: %r" % crs_str)
-
-    if crs.IsGeographic() == crs.IsProjected():
-        raise InvalidCRSError('CRS must be geographic or projected: %r' % crs_str)  # pragma: no cover
-
-    return crs
+def _guess_crs_str(crs_spec):
+    """
+    Returns a string representation of the crs spec.
+    Returns `None` if it does not understand the spec.
+    """
+    if isinstance(crs_spec, str):
+        return crs_spec
+    if hasattr(crs_spec, 'to_epsg'):
+        return 'EPSG:{}'.format(crs_spec.to_epsg())
+    if hasattr(crs_spec, 'to_wkt'):
+        return crs_spec.to_wkt()
+    return None
 
 
 class CRS(object):
     """
-    Wrapper around `osr.SpatialReference` providing a more pythonic interface
-
+    Wrapper around `pyproj.CRS` for backwards compatibility.
     """
 
     def __init__(self, crs_str):
         """
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
-        :raises: InvalidCRSError
+        :raises: `pyproj.exceptions.CRSError`
         """
-        if not isinstance(crs_str, str):
-            to_wkt = getattr(crs_str, 'to_wkt', None)
-            if to_wkt is None:
-                raise ValueError("Expect string or any object with `.to_wkt()` method")
-            crs_str = to_wkt()
+        # TODO figure out SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        self.crs_str = _guess_crs_str(crs_str)
+        if self.crs_str is None:
+            raise CRSError("Expect string or any object with `.to_epsg()` or `.to_wkt()` method")
 
-        self.crs_str = crs_str
-        self._crs = _make_crs(crs_str)
-        # If GDAL 3.0+ make CRS behave like GDAL 2.X as far axis order goes
-        if hasattr(self._crs, 'SetAxisMappingStrategy'):
-            self._crs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
-
-    def __getitem__(self, item):
-        return self._crs.GetAttrValue(item)
+        self._crs = _make_crs(self.crs_str)
 
     def __getstate__(self):
         return {'crs_str': self.crs_str}
@@ -123,74 +108,63 @@ class CRS(object):
     def __setstate__(self, state):
         self.__init__(state['crs_str'])
 
-    def to_wkt(self):
+    def to_wkt(self, pretty=False, version='WKT1_GDAL'):
         """
         WKT representation of the CRS
 
         :type: str
         """
-        return self._crs.ExportToWkt()
+        return self._crs.to_wkt(pretty=pretty, version=version)
 
     @property
     def wkt(self):
-        """
-        WKT representation of the CRS
-
-        :type: str
-        """
         return self.to_wkt()
 
-    @property
-    def epsg(self):
+    def to_epsg(self):
         """
         EPSG Code of the CRS or None
 
         :type: int | None
         """
-        code = None
-        if self.projected:
-            code = self._crs.GetAuthorityCode('PROJCS')
-        elif self.geographic:
-            code = self._crs.GetAuthorityCode('GEOGCS')
-
-        return None if code is None else int(code)
+        return self._crs.to_epsg()
 
     @property
-    def proj(self):
-        return CRSProjProxy(self._crs)
+    def epsg(self):
+        return self.to_epsg()
 
     @property
     def semi_major_axis(self):
-        return self._crs.GetSemiMajor()
+        return self._crs.ellipsoid.semi_major_metre
 
     @property
     def semi_minor_axis(self):
-        return self._crs.GetSemiMinor()
+        return self._crs.ellipsoid.semi_minor_metre
 
     @property
     def inverse_flattening(self):
-        return self._crs.GetInvFlattening()
+        return self._crs.ellipsoid.inverse_flattening
 
     @property
     def geographic(self):
         """
         :type: bool
         """
-        return self._crs.IsGeographic() == 1
+        return self._crs.is_geographic
 
     @property
     def projected(self):
         """
         :type: bool
         """
-        return self._crs.IsProjected() == 1
+        return self._crs.is_projected
 
     @property
     def dimensions(self):
         """
-        List of dimension names of the CRS
+        List of dimension names of the CRS.
+        The ordering of the names is intended to reflect the `numpy` array axis order of the loaded raster.
 
-        :type: (str,str)
+        :type: (str, str)
         """
         if self.geographic:
             return 'latitude', 'longitude'
@@ -203,7 +177,8 @@ class CRS(object):
     @property
     def units(self):
         """
-        List of dimension units of the CRS
+        List of dimension units of the CRS.
+        The ordering of the units is intended to reflect the `numpy` array axis order of the loaded raster.
 
         :type: (str,str)
         """
@@ -211,7 +186,8 @@ class CRS(object):
             return 'degrees_north', 'degrees_east'
 
         if self.projected:
-            return self['UNIT'], self['UNIT']
+            x, y = self._crs.axis_info
+            return x.unit_name, y.unit_name
 
         raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
@@ -227,156 +203,105 @@ class CRS(object):
     def __eq__(self, other):
         if other is self:
             return True
-        if isinstance(other, str):
-            other = CRS(other)
-        elif not isinstance(other, CRS):
-            to_wkt = getattr(other, 'to_wkt', None)
-            if to_wkt is None:
-                return False
-            other = CRS(to_wkt())
-        gdal_thinks_issame = self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
-        if gdal_thinks_issame:
-            return True
+        if isinstance(other, CRS):
+            if self.epsg is not None and other.epsg is not None:
+                return self.epsg == other.epsg
+            return self._crs == other._crs
 
-        def to_canonincal_proj4(crs):
-            return set(crs.ExportToProj4().split() + ['+wktext'])
-        # pylint: disable=protected-access
-        proj4_repr_is_same = to_canonincal_proj4(self._crs) == to_canonincal_proj4(other._crs)
-        return proj4_repr_is_same
+        crs_str = _guess_crs_str(other)
+        if crs_str is None:
+            return False
+        return self._crs == CRS(crs_str)._crs
 
     def __ne__(self, other):
-        if isinstance(other, str):
-            other = CRS(other)
-        assert isinstance(other, self.__class__)
-        return self._crs.IsSame(other._crs) != 1  # pylint: disable=protected-access
+        return not (self == other)
+
+    def transformer_to_crs(self, other, always_xy=True):
+        """
+        Returns a function that maps x, y -> x', y' where x, y are coordinates in
+        this stored either as scalars or ndarray objects and x', y' are the same
+        points in the `other` CRS.
+        """
+        transform = Transformer.from_crs(self._crs, other._crs, always_xy=always_xy).transform
+
+        def result(x, y):
+            rx, ry = transform(x, y)
+
+            if not isinstance(rx, numpy.ndarray) or not isinstance(ry, numpy.ndarray):
+                return (rx, ry)
+
+            missing = numpy.isnan(rx) | numpy.isnan(ry)
+            rx[missing] = numpy.nan
+            ry[missing] = numpy.nan
+            return (rx, ry)
+
+        return result
 
 
-def mk_osr_point_transform(src_crs, dst_crs):
-    return osr.CoordinateTransformation(src_crs._crs, dst_crs._crs)  # pylint: disable=protected-access
+class CRSMismatchError(ValueError):
+    pass
 
 
-def mk_point_transformer(src_crs: CRS, dst_crs: CRS) -> Callable[
-        [numpy.ndarray, numpy.ndarray],
-        Tuple[numpy.ndarray, numpy.ndarray]]:
+def wrap_shapely(method):
     """
-
-    :returns: Function that maps X,Y -> X',Y' where X,Y are coordinates in
-              src_crs stored in ndarray of any shape and X',Y' are same shape
-              but in dst CRS.
+    Takes a method that expects shapely geometry arguments
+    and converts it to a method that operates on `Geometry`
+    objects that carry their CRSs.
     """
-
-    tr = mk_osr_point_transform(src_crs, dst_crs)
-
-    def transform(x: numpy.ndarray, y: numpy.ndarray) -> Tuple[numpy.ndarray, numpy.ndarray]:
-        assert x.shape == y.shape
-
-        xy = numpy.vstack([x.ravel(), y.ravel()])
-        xy = numpy.vstack(tr.TransformPoints(xy.T)).T[:2]
-
-        x_ = xy[0].reshape(x.shape)
-        y_ = xy[1].reshape(y.shape)
-
-        # ogr doesn't seem to deal with NaNs properly
-        missing = numpy.isnan(x) + numpy.isnan(y)
-        x_[missing] = numpy.nan
-        y_[missing] = numpy.nan
-
-        return (x_, y_)
-
-    return transform
-
-###################################################
-# Helper methods to build ogr.Geometry from geojson
-###################################################
-
-
-def _make_point(pt):
-    geom = ogr.Geometry(ogr.wkbPoint)
-    # Ignore the third dimension
-    geom.AddPoint_2D(*pt[0:2])
-    return geom
-
-
-def _make_multi(type_, maker, coords):
-    geom = ogr.Geometry(type_)
-    for coord in coords:
-        geom.AddGeometryDirectly(maker(coord))
-    return geom
-
-
-def _make_linear(type_, coordinates):
-    geom = ogr.Geometry(type_)
-    for pt in coordinates:
-        # Ignore the third dimension
-        geom.AddPoint_2D(*pt[0:2])
-    return geom
-
-
-def _make_multipoint(coordinates):
-    return _make_multi(ogr.wkbMultiPoint, _make_point, coordinates)
-
-
-def _make_line(coordinates):
-    return _make_linear(ogr.wkbLineString, coordinates)
-
-
-def _make_multiline(coordinates):
-    return _make_multi(ogr.wkbMultiLineString, _make_line, coordinates)
-
-
-def _make_polygon(coordinates):
-    return _make_multi(ogr.wkbPolygon, functools.partial(_make_linear, ogr.wkbLinearRing), coordinates)
-
-
-def _make_multipolygon(coordinates):
-    return _make_multi(ogr.wkbMultiPolygon, _make_polygon, coordinates)
-
-
-###################################################
-# Helper methods to build ogr.Geometry from geojson
-###################################################
-
-
-def _get_coordinates(geom):
-    """
-    recursively extract coordinates from geometry
-    """
-    if geom.GetGeometryType() == ogr.wkbPoint:
-        return geom.GetPoint_2D(0)
-    if geom.GetGeometryType() in [ogr.wkbMultiPoint, ogr.wkbLineString, ogr.wkbLinearRing]:
-        return geom.GetPoints()
-    else:
-        return [_get_coordinates(geom.GetGeometryRef(i)) for i in range(geom.GetGeometryCount())]
-
-
-def _make_geom_from_ogr(geom, crs):
-    if geom is None:
-        return None
-    result = Geometry.__new__(Geometry)
-    result._geom = geom  # pylint: disable=protected-access
-    result.crs = crs
-    return result
-
-
-#############################################
-# Helper methods to wrap ogr.Geometry methods
-#############################################
-
-
-def _wrap_binary_bool(method):
     @functools.wraps(method, assigned=('__doc__', ))
-    def wrapped(self, other):
-        assert self.crs == other.crs
-        return bool(method(self._geom, other._geom))  # pylint: disable=protected-access
+    def wrapped(*args):
+        first = args[0]
+        for arg in args[1:]:
+            if first.crs != arg.crs:
+                raise CRSMismatchError((first.crs, arg.crs))
+
+        result = method(*[arg.geom for arg in args])
+        if isinstance(result, base.BaseGeometry):
+            return Geometry(result, first.crs)
+        return result
     return wrapped
 
 
-def _wrap_binary_geom(method):
-    @functools.wraps(method, assigned=('__doc__', ))
-    def wrapped(self, other):
-        assert self.crs == other.crs
-        return _make_geom_from_ogr(method(self._geom, other._geom), self.crs)  # pylint: disable=protected-access
-    return wrapped
+def ensure_2d(geojson):
+    assert 'type' in geojson
+    assert 'coordinates' in geojson
+
+    def is_scalar(x):
+        return isinstance(x, (int, float))
+
+    def go(x):
+        if is_scalar(x):
+            return x
+
+        if isinstance(x, Sequence):
+            if all(is_scalar(y) for y in x):
+                return x[:2]
+            return [go(y) for y in x]
+
+        raise ValueError('invalid coordinate {}'.format(x))
+
+    return {'type': geojson['type'],
+            'coordinates': go(geojson['coordinates'])}
+
+
+def densify(line, distance):
+    """
+    Adds points so they are at most `distance` apart.
+    """
+    if distance <= 0.0 or distance >= line.length:
+        return line
+
+    coords = list(line.coords)
+    new_coords = [coords[0]]
+    for start, end in zip(coords[:-1], coords[1:]):
+        segment = geometry.LineString([start, end])
+        while segment.length > distance:
+            new_point = segment.interpolate(distance)
+            segment = geometry.LineString([new_point, end])
+            new_coords.append(new_point.coords[0])
+        new_coords.append(end)
+
+    return type(line)(new_coords)
 
 
 class Geometry(object):
@@ -387,90 +312,112 @@ class Geometry(object):
 
     If 3D coordinates are supplied, they are converted to 2D by dropping the Z points.
 
-    :type _geom: ogr.Geometry
+    :type geom: shapely.geometry.base.BaseGeometry
     :type crs: CRS
     """
-    _geom_makers = {
-        'Point': _make_point,
-        'MultiPoint': _make_multipoint,
-        'LineString': _make_line,
-        'MultiLineString': _make_multiline,
-        'Polygon': _make_polygon,
-        'MultiPolygon': _make_multipolygon,
-    }
 
-    _geom_types = {
-        ogr.wkbPoint: 'Point',
-        ogr.wkbMultiPoint: 'MultiPoint',
-        ogr.wkbLineString: 'LineString',
-        ogr.wkbMultiLineString: 'MultiLineString',
-        ogr.wkbPolygon: 'Polygon',
-        ogr.wkbMultiPolygon: 'MultiPolygon',
-    }
-
-    contains = _wrap_binary_bool(ogr.Geometry.Contains)
-    crosses = _wrap_binary_bool(ogr.Geometry.Crosses)
-    disjoint = _wrap_binary_bool(ogr.Geometry.Disjoint)
-    intersects = _wrap_binary_bool(ogr.Geometry.Intersects)
-    touches = _wrap_binary_bool(ogr.Geometry.Touches)
-    within = _wrap_binary_bool(ogr.Geometry.Within)
-    overlaps = _wrap_binary_bool(ogr.Geometry.Overlaps)
-
-    difference = _wrap_binary_geom(ogr.Geometry.Difference)
-    intersection = _wrap_binary_geom(ogr.Geometry.Intersection)
-    symmetric_difference = _wrap_binary_geom(ogr.Geometry.SymDifference)
-    union = _wrap_binary_geom(ogr.Geometry.Union)
-
-    def __init__(self, geo, crs=None):
-        if isinstance(crs, str):
-            crs = CRS(crs)
-
+    def __init__(self, geom, crs=None):
         self.crs = crs
-        self._geom = Geometry._geom_makers[geo['type']](geo['coordinates'])
+        if isinstance(geom, base.BaseGeometry):
+            self.geom = geom
+        else:
+            self.geom = geometry.shape(ensure_2d(geom))
+
+    @wrap_shapely
+    def contains(self, other):
+        return self.contains(other)
+
+    @wrap_shapely
+    def crosses(self, other):
+        return self.crosses(other)
+
+    @wrap_shapely
+    def disjoint(self, other):
+        return self.disjoint(other)
+
+    @wrap_shapely
+    def intersects(self, other):
+        return self.intersects(other)
+
+    @wrap_shapely
+    def touches(self, other):
+        return self.touches(other)
+
+    @wrap_shapely
+    def within(self, other):
+        return self.within(other)
+
+    @wrap_shapely
+    def overlaps(self, other):
+        return self.overlaps(other)
+
+    @wrap_shapely
+    def difference(self, other):
+        return self.difference(other)
+
+    @wrap_shapely
+    def intersection(self, other):
+        return self.intersection(other)
+
+    @wrap_shapely
+    def symmetric_difference(self, other):
+        return self.symmetric_difference(other)
+
+    @wrap_shapely
+    def union(self, other):
+        return self.union(other)
 
     @property
     def type(self):
-        return Geometry._geom_types[self._geom.GetGeometryType()]
+        return self.geom.type
 
     @property
+    @wrap_shapely
     def is_empty(self):
-        return self._geom.IsEmpty()
+        return self.is_empty
 
     @property
+    @wrap_shapely
     def is_valid(self):
-        return self._geom.IsValid()
+        return self.is_valid
 
     @property
+    @wrap_shapely
     def boundary(self):
-        return _make_geom_from_ogr(self._geom.Boundary(), self.crs)
+        return self.boundary
 
     @property
+    @wrap_shapely
     def centroid(self):
-        return _make_geom_from_ogr(self._geom.Centroid(), self.crs)
+        return self.centroid
 
     @property
+    @wrap_shapely
     def coords(self):
-        return self._geom.GetPoints()
+        return self.coords
 
     @property
     def points(self):
         return self.coords
 
     @property
+    @wrap_shapely
     def length(self):
-        return self._geom.Length()
+        return self.length
 
     @property
+    @wrap_shapely
     def area(self):
-        return self._geom.GetArea()
+        return self.area
 
     @property
+    @wrap_shapely
     def convex_hull(self):
-        return _make_geom_from_ogr(self._geom.ConvexHull(), self.crs)
+        return self.convex_hull
 
     @property
     def envelope(self):
-        minx, maxx, miny, maxy = self._geom.GetEnvelope()
+        minx, miny, maxx, maxy = self.geom.bounds
         return BoundingBox(left=minx, right=maxx, bottom=miny, top=maxy)
 
     @property
@@ -478,46 +425,56 @@ class Geometry(object):
         return self.envelope
 
     @property
+    @wrap_shapely
     def wkt(self):
-        return getattr(self._geom, 'ExportToIsoWkt', self._geom.ExportToWkt)()
+        return self.wkt
+
+    @property
+    @wrap_shapely
+    def __geo_interface__(self):
+        return self.__geo_interface__
 
     @property
     def json(self):
         return self.__geo_interface__
 
-    @property
-    def __geo_interface__(self):
-        return {
-            'type': self.type,
-            'coordinates': _get_coordinates(self._geom)
-        }
-
     def segmented(self, resolution):
         """
-        Possibly add more points to the geometry so that no edge is longer than `resolution`
+        Possibly add more points to the geometry so that no edge is longer than `resolution`.
         """
-        clone = self._geom.Clone()
-        clone.Segmentize(resolution)
-        # Segmentize can cause issues with polygons using GDAL 2.4.1
-        # See: https://github.com/OSGeo/gdal/issues/1414
-        clone.CloseRings()
-        return _make_geom_from_ogr(clone, self.crs)
+
+        def segmentize_shapely(geom):
+            if geom.type in ['Point', 'MultiPoint']:
+                return geom
+
+            if geom.type in ['GeometryCollection', 'MultiPolygon', 'MultiLineString']:
+                return type(geom)([segmentize_shapely(g) for g in geom])
+
+            if geom.type in ['LineString', 'LinearRing']:
+                return densify(geom, resolution)
+
+            if geom.type == 'Polygon':
+                return geometry.Polygon(densify(geom.exterior, resolution),
+                                        [densify(i, resolution) for i in geom.interiors])
+
+            raise ValueError('unknown geometry type {}'.format(geom.type))
+
+        clone = geometry.shape(self.json)
+
+        return Geometry(segmentize_shapely(clone), self.crs)
 
     def interpolate(self, distance):
         """
         Returns a point distance units along the line or None if underlying
         geometry doesn't support this operation.
         """
-        geom = self._geom.Value(distance)
-        if geom is None:
-            return None
-        return _make_geom_from_ogr(geom, self.crs)
+        return Geometry(self.geom.interpolate(distance), self.crs)
 
-    def buffer(self, distance, quadsecs=30):
-        return _make_geom_from_ogr(self._geom.Buffer(distance, quadsecs), self.crs)
+    def buffer(self, distance, resolution=30):
+        return Geometry(self.geom.buffer(distance, resolution=resolution), self.crs)
 
-    def simplify(self, tolerance):
-        return _make_geom_from_ogr(self._geom.Simplify(tolerance), self.crs)
+    def simplify(self, tolerance, preserve_topology=True):
+        return Geometry(self.geom.simplify(tolerance, preserve_topology=preserve_topology), self.crs)
 
     def to_crs(self, crs, resolution=None, wrapdateline=False):
         """
@@ -536,24 +493,19 @@ class Geometry(object):
         if resolution is None:
             resolution = 1 if self.crs.geographic else 100000
 
-        transform = mk_osr_point_transform(self.crs, crs)
-        clone = self._geom.Clone()
+        transform = self.crs.transformer_to_crs(crs)
+        clone = geometry.shape(self.json)
 
         if wrapdateline and crs.geographic:
-            rtransform = mk_osr_point_transform(crs, self.crs)
+            rtransform = crs.transformer_to_crs(self.crs)
             clone = _chop_along_antimeridian(clone, transform, rtransform)
 
-        clone.Segmentize(resolution)
-        # Segmentize can cause issues with polygons using GDAL 2.4.1
-        # See: https://github.com/OSGeo/gdal/issues/1414
-        clone.CloseRings()
-        clone.Transform(transform)
-
-        return _make_geom_from_ogr(clone, crs)  # pylint: disable=protected-access
+        seg = Geometry(clone, self.crs).segmented(resolution)
+        return Geometry(ops.transform(transform, seg.geom), crs)
 
     def __iter__(self):
-        for i in range(self._geom.GetGeometryCount()):
-            yield _make_geom_from_ogr(self._geom.GetGeometryRef(i), self.crs)
+        for geom in self.geom:
+            yield Geometry(geom, self.crs)
 
     def __nonzero__(self):
         return not self.is_empty
@@ -563,19 +515,19 @@ class Geometry(object):
 
     def __eq__(self, other):
         return (hasattr(other, 'crs') and self.crs == other.crs and
-                hasattr(other, '_geom') and self._geom.Equal(other._geom))  # pylint: disable=protected-access
+                hasattr(other, 'geom') and self.geom == other.geom)
 
     def __str__(self):
         return 'Geometry(%s, %r)' % (self.__geo_interface__, self.crs)
 
     def __repr__(self):
-        return 'Geometry(%s, %s)' % (self._geom, self.crs)
+        return 'Geometry(%s, %s)' % (self.geom, self.crs)
 
     # Implement pickle/unpickle
     # It does work without these two methods, but gdal/ogr prints 'ERROR 1: Empty geometries cannot be constructed'
     # when unpickling, which is quite unpleasant.
     def __getstate__(self):
-        return {'geo': self.json, 'crs': self.crs}
+        return {'geom': self.json, 'crs': self.crs}
 
     def __setstate__(self, state):
         self.__init__(**state)
@@ -590,35 +542,28 @@ def _chop_along_antimeridian(geom, transform, rtransform):
     attempt to cut the geometry along the dateline
     idea borrowed from TransformBeforeAntimeridianToWGS84 with minor mods...
     """
-    minx, maxx, miny, maxy = geom.GetEnvelope()
+    minx, miny, maxx, maxy = geom.bounds
 
-    midx, midy = (minx+maxx)/2, (miny+maxy)/2
-    mid_lon, mid_lat, _ = transform.TransformPoint(midx, midy)
+    midx, midy = (minx + maxx) / 2, (miny + maxy) / 2
+    mid_lon, mid_lat = transform(midx, midy)
 
     eps = 1.0e-9
     if not _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
         return geom
 
-    left_of_dt = _make_line([(180 - eps, -90), (180 - eps, 90)])
-    left_of_dt.Segmentize(1)
-    # Segmentize can cause issues with polygons using GDAL 2.4.1
-    # See: https://github.com/OSGeo/gdal/issues/1414
-    left_of_dt.CloseRings()
-    left_of_dt.Transform(rtransform)
+    left_of_dt = geometry.LineString([(180 - eps, -90), (180 - eps, 90)])
+    left_of_dt = ops.transform(rtransform, densify(left_of_dt, 1))
 
-    if not left_of_dt.Intersects(geom):
+    if not left_of_dt.intersects(geom):
         return geom
 
-    right_of_dt = _make_line([(-180 + eps, -90), (-180 + eps, 90)])
-    right_of_dt.Segmentize(1)
-    # Segmentize can cause issues with polygons using GDAL 2.4.1
-    # See: https://github.com/OSGeo/gdal/issues/1414
-    right_of_dt.CloseRings()
-    right_of_dt.Transform(rtransform)
+    right_of_dt = geometry.LineString([(-180 + eps, -90), (-180 + eps, 90)])
+    right_of_dt = ops.transform(rtransform, densify(right_of_dt, 1))
 
-    chopper = _make_multipolygon([[[(minx, maxy), (minx, miny)] + left_of_dt.GetPoints() + [(minx, maxy)]],
-                                  [[(maxx, maxy), (maxx, miny)] + right_of_dt.GetPoints() + [(maxx, maxy)]]])
-    return geom.Intersection(chopper)
+    poly1 = geometry.Polygon([(minx, maxy), (minx, miny)] + list(left_of_dt.coords) + [(minx, maxy)])
+    poly2 = geometry.Polygon([(maxx, maxy), (maxx, miny)] + list(right_of_dt.coords) + [(maxx, maxy)])
+    chopper = geometry.MultiPolygon([poly1, poly2])
+    return geom.intersection(chopper)
 
 
 def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
@@ -626,14 +571,14 @@ def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
     test whether the CRS is smooth over the dateline
     idea borrowed from IsAntimeridianProjToWGS84 with minor mods...
     """
-    left_of_dt_x, left_of_dt_y, _ = rtransform.TransformPoint(180-eps, mid_lat)
-    right_of_dt_x, right_of_dt_y, _ = rtransform.TransformPoint(-180+eps, mid_lat)
+    left_of_dt_x, left_of_dt_y = rtransform(180-eps, mid_lat)
+    right_of_dt_x, right_of_dt_y = rtransform(-180+eps, mid_lat)
 
     if _dist(right_of_dt_x-left_of_dt_x, right_of_dt_y-left_of_dt_y) > 1:
         return False
 
-    left_of_dt_lon, left_of_dt_lat, _ = transform.TransformPoint(left_of_dt_x, left_of_dt_y)
-    right_of_dt_lon, right_of_dt_lat, _ = transform.TransformPoint(right_of_dt_x, right_of_dt_y)
+    left_of_dt_lon, left_of_dt_lat = transform(left_of_dt_x, left_of_dt_y)
+    right_of_dt_lon, right_of_dt_lat = transform(right_of_dt_x, right_of_dt_y)
     if (_dist(left_of_dt_lon - 180 + eps, left_of_dt_lat - mid_lat) > 2 * eps or
             _dist(right_of_dt_lon + 180 - eps, right_of_dt_lat - mid_lat) > 2 * eps):
         return False
@@ -663,7 +608,7 @@ def multipoint(coords, crs):
     Create a 2D MultiPoint Geometry
 
     >>> multipoint([(10, 10), (20, 20)], None)
-    Geometry(MULTIPOINT (10 10,20 20), None)
+    Geometry(MULTIPOINT (10 10, 20 20), None)
 
     :param list coords: list of x,y coordinate tuples
     :rtype: Geometry
@@ -676,7 +621,7 @@ def line(coords, crs):
     Create a 2D LineString (Connected set of lines)
 
     >>> line([(10, 10), (20, 20), (30, 40)], None)
-    Geometry(LINESTRING (10 10,20 20,30 40), None)
+    Geometry(LINESTRING (10 10, 20 20, 30 40), None)
 
     :param list coords: list of x,y coordinate tuples
     :rtype: Geometry
@@ -689,7 +634,7 @@ def multiline(coords, crs):
     Create a 2D MultiLineString (Multiple disconnected sets of lines)
 
     >>> multiline([[(10, 10), (20, 20), (30, 40)], [(50, 60), (70, 80), (90, 99)]], None)
-    Geometry(MULTILINESTRING ((10 10,20 20,30 40),(50 60,70 80,90 99)), None)
+    Geometry(MULTILINESTRING ((10 10, 20 20, 30 40), (50 60, 70 80, 90 99)), None)
 
     :param list coords: list of lists of x,y coordinate tuples
     :rtype: Geometry
@@ -702,7 +647,7 @@ def polygon(outer, crs, *inners):
     Create a 2D Polygon
 
     >>> polygon([(10, 10), (20, 20), (20, 10), (10, 10)], None)
-    Geometry(POLYGON ((10 10,20 20,20 10,10 10)), None)
+    Geometry(POLYGON ((10 10, 20 20, 20 10, 10 10)), None)
 
     :param list coords: list of 2d x,y coordinate tuples
     :rtype: Geometry
@@ -715,7 +660,7 @@ def multipolygon(coords, crs):
     Create a 2D MultiPolygon
 
     >>> multipolygon([[[(10, 10), (20, 20), (20, 10), (10, 10)]], [[(40, 10), (50, 20), (50, 10), (40, 10)]]], None)
-    Geometry(MULTIPOLYGON (((10 10,20 20,20 10,10 10)),((40 10,50 20,50 10,40 10))), None)
+    Geometry(MULTIPOLYGON (((10 10, 20 20, 20 10, 10 10)), ((40 10, 50 20, 50 10, 40 10))), None)
 
     :param list coords: list of lists of x,y coordinate tuples
     :rtype: Geometry
@@ -728,7 +673,7 @@ def box(left, bottom, right, top, crs):
     Create a 2D Box (Polygon)
 
     >>> box(10, 10, 20, 20, None)
-    Geometry(POLYGON ((10 10,10 20,20 20,20 10,10 10)), None)
+    Geometry(POLYGON ((10 10, 10 20, 20 20, 20 10, 10 10)), None)
     """
     points = [(left, bottom), (left, top), (right, top), (right, bottom), (left, bottom)]
     return polygon(points, crs=crs)
@@ -758,23 +703,17 @@ def unary_union(geoms):
     """
     compute union of multiple (multi)polygons efficiently
     """
-    # pylint: disable=protected-access
-    geom = ogr.Geometry(ogr.wkbMultiPolygon)
-    crs = None
-    for g in geoms:
-        if crs:
-            assert crs == g.crs
-        else:
-            crs = g.crs
-        if g._geom.GetGeometryType() == ogr.wkbPolygon:
-            geom.AddGeometry(g._geom)
-        elif g._geom.GetGeometryType() == ogr.wkbMultiPolygon:
-            for poly in g._geom:
-                geom.AddGeometry(poly)
-        else:
-            raise ValueError('"%s" is not supported' % g.type)
-    union = geom.UnionCascaded()
-    return _make_geom_from_ogr(union, crs)
+    geoms = list(geoms)
+    if len(geoms) == 0:
+        return None
+
+    first = geoms[0]
+    crs = first.crs
+    for g in geoms[1:]:
+        if crs != g.crs:
+            raise CRSMismatchError((crs, g.crs))
+
+    return Geometry(ops.unary_union([g.geom for g in geoms]), crs)
 
 
 def unary_intersection(geoms):
@@ -822,7 +761,7 @@ class GeoBox(object):
     Defines the location and resolution of a rectangular grid of data,
     including it's :py:class:`CRS`.
 
-    :param geometry.CRS crs: Coordinate Reference System
+    :param CRS crs: Coordinate Reference System
     :param affine.Affine affine: Affine transformation defining the location of the geobox
     """
 
@@ -842,7 +781,7 @@ class GeoBox(object):
         """
         :type geopolygon: geometry.Geometry
         :param resolution: (y_resolution, x_resolution)
-        :param geometry.CRS crs: CRS to use, if different from the geopolygon
+        :param CRS crs: CRS to use, if different from the geopolygon
         :param (float,float) align: Align geobox such that point 'align' lies on the pixel boundary.
         :rtype: GeoBox
         """

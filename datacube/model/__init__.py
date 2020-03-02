@@ -240,7 +240,7 @@ class Dataset(object):
                         return geometry.CRS('EPSG:327' + str(abs(int(zone_[:-1]))))
                     else:
                         return geometry.CRS('EPSG:326' + str(abs(int(zone_[:-1]))))
-            except geometry.InvalidCRSError:
+            except geometry.CRSError:
                 # We still return None, as they didn't specify a CRS explicitly...
                 _LOG.warning(
                     "Can't figure out projection: possibly invalid zone (%r) for datum (%r).", zone_, datum_
