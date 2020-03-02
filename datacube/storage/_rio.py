@@ -23,11 +23,11 @@ from ._hdf5 import HDF5_LOCK
 _LOG = logging.getLogger(__name__)
 
 
-def _rasterio_crs_wkt(src):
-    if src.crs:
-        return str(src.crs.wkt)
-    else:
-        return ''
+def _rasterio_crs(src):
+    if src.crs is None:
+        raise ValueError('no CRS')
+
+    return geometry.CRS(src.crs)
 
 
 def maybe_lock(lock):
@@ -58,7 +58,7 @@ class BandDataSource(GeoRasterReader):
 
     @property
     def crs(self) -> geometry.CRS:
-        return geometry.CRS(_rasterio_crs_wkt(self.source.ds))
+        return _rasterio_crs(self.source.ds)
 
     @property
     def transform(self) -> Affine:
@@ -169,7 +169,7 @@ class RasterioDataSource(DataSource):
                     transform = self.get_transform(src.shape)
 
                 try:
-                    crs = geometry.CRS(_rasterio_crs_wkt(src))
+                    crs = _rasterio_crs(src)
                 except ValueError:
                     override = True
                     crs = self.get_crs()

@@ -37,7 +37,7 @@ jobs:
           -v $(pwd):/src/datacube-core \
           -e SKIP_DB=yes \
           ${DKR} \
-          pycodestyle tests integration_tests examples utils --max-line-length 120
+          pycodestyle tests integration_tests examples --max-line-length 120
 
     - name: Lint Code
       run: |

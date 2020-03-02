@@ -147,8 +147,11 @@ def create_variable(nco, name, var, grid_mapping=None, attrs=None, **kwargs):
 
 def _create_latlon_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
     crs_var = nco.createVariable(name, 'i4')
-    crs_var.long_name = crs['GEOGCS']  # "Lon/Lat Coords in WGS84"
+    crs_var.long_name = crs._crs.name  # "Lon/Lat Coords in WGS84"
+
+    # also available as crs._crs.to_cf()['grid_mapping_name']
     crs_var.grid_mapping_name = 'latitude_longitude'
+
     crs_var.longitude_of_prime_meridian = 0.0
     return crs_var
 
@@ -156,58 +159,67 @@ def _create_latlon_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
 def _write_albers_params(crs_var, crs):
     # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
     # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
-    crs_var.grid_mapping_name = 'albers_conical_equal_area'
-    crs_var.standard_parallel = (crs.proj.standard_parallel_1,
-                                 crs.proj.standard_parallel_2)
-    crs_var.longitude_of_central_meridian = crs.proj.longitude_of_center
-    crs_var.latitude_of_projection_origin = crs.proj.latitude_of_center
+    cf = crs._crs.to_cf()
+
+    crs_var.grid_mapping_name = cf['grid_mapping_name']
+    crs_var.standard_parallel = tuple(cf['standard_parallel'])
+    crs_var.longitude_of_central_meridian = cf['longitude_of_central_meridian']
+    crs_var.latitude_of_projection_origin = cf['latitude_of_projection_origin']
 
 
 def _write_sinusoidal_params(crs_var, crs):
-    crs_var.grid_mapping_name = 'sinusoidal'
-    crs_var.longitude_of_central_meridian = crs.proj.central_meridian
+    cf = crs._crs.to_cf()
+
+    crs_var.grid_mapping_name = cf['grid_mapping_name']
+    crs_var.longitude_of_central_meridian = cf['longitude_of_projection_origin']
 
 
 def _write_transverse_mercator_params(crs_var, crs):
+    cf = crs._crs.to_cf()
+
     # http://spatialreference.org/ref/epsg/wgs-84-utm-zone-54s/
-    crs_var.grid_mapping_name = 'transverse_mercator'
-    crs_var.scale_factor_at_central_meridian = crs.proj.scale_factor
-    crs_var.longitude_of_central_meridian = crs.proj.central_meridian
-    crs_var.latitude_of_projection_origin = crs.proj.latitude_of_origin
+    crs_var.grid_mapping_name = cf['grid_mapping_name']
+    crs_var.scale_factor_at_central_meridian = cf['scale_factor_at_central_meridian']
+    crs_var.longitude_of_central_meridian = cf['longitude_of_central_meridian']
+    crs_var.latitude_of_projection_origin = cf['latitude_of_projection_origin']
 
 
 def _write_lcc2_params(crs_var, crs):
+    cf = crs._crs.to_cf()
+
     # e.g. http://spatialreference.org/ref/sr-org/mexico-inegi-lambert-conformal-conic/
-    crs_var.grid_mapping_name = 'lambert_conformal_conic'
-    crs_var.standard_parallel = (crs.proj.standard_parallel_1,
-                                 crs.proj.standard_parallel_2)
-    crs_var.latitude_of_projection_origin = crs.proj.latitude_of_origin
-    crs_var.longitude_of_central_meridian = crs.proj.central_meridian
-    crs_var.false_easting = crs.proj.false_easting
-    crs_var.false_northing = crs.proj.false_northing
+    crs_var.grid_mapping_name = cf['grid_mapping_name']
+    crs_var.standard_parallel =  cf['standard_parallel']
+    crs_var.latitude_of_projection_origin = cf['latitude_of_projection_origin']
+    crs_var.longitude_of_central_meridian = cf['longitude_of_central_meridian']
+    crs_var.false_easting = cf['false_easting']
+    crs_var.false_northing = cf['false_northing']
     crs_var.semi_major_axis = crs.semi_major_axis
     crs_var.semi_minor_axis = crs.semi_minor_axis
 
 
 CRS_PARAM_WRITERS = {
     'albers_conic_equal_area': _write_albers_params,
+    'albers_conical_equal_area': _write_albers_params,
     'sinusoidal': _write_sinusoidal_params,
     'transverse_mercator': _write_transverse_mercator_params,
     'lambert_conformal_conic_2sp': _write_lcc2_params,
+    'lambert_conformal_conic': _write_lcc2_params,
 }
 
 
 def _create_projected_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
-    grid_mapping_name = crs['PROJECTION'].lower()
+    cf = crs._crs.to_cf()
+    grid_mapping_name = cf['grid_mapping_name']
     if grid_mapping_name not in CRS_PARAM_WRITERS:
         raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
 
     crs_var = nco.createVariable(name, 'i4')
     CRS_PARAM_WRITERS[grid_mapping_name](crs_var, crs)
 
-    crs_var.false_easting = crs.proj.false_easting
-    crs_var.false_northing = crs.proj.false_northing
-    crs_var.long_name = crs['PROJCS']
+    crs_var.false_easting = cf['false_easting']
+    crs_var.false_northing = cf['false_northing']
+    crs_var.long_name = crs._crs.name
 
     return crs_var
 

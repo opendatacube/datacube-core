@@ -4,7 +4,7 @@
 from ._base import (
     Coordinate,
     BoundingBox,
-    InvalidCRSError,
+    CRSError,
     CRS,
     Geometry,
     GeoBox,
@@ -17,7 +17,6 @@ from ._base import (
     point,
     multipoint,
     line,
-    mk_point_transformer,
     multiline,
     polygon,
     multipolygon,
@@ -60,7 +59,7 @@ from ._warp import (
 __all__ = [
     "Coordinate",
     "BoundingBox",
-    "InvalidCRSError",
+    "CRSError",
     "CRS",
     "Geometry",
     "GeoBox",
@@ -72,7 +71,6 @@ __all__ = [
     "point",
     "multipoint",
     "line",
-    "mk_point_transformer",
     "multiline",
     "polygon",
     "multipolygon",

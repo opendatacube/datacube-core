@@ -1,7 +1,6 @@
 import numpy as np
 from mock import MagicMock
 from affine import Affine
-import osgeo
 import pytest
 import pickle
 
@@ -14,7 +13,6 @@ from datacube.utils.geometry import (
     decompose_rws,
     affine_from_pts,
     get_scale_at_point,
-    mk_point_transformer,
     native_pix_transform,
     scaled_down_geobox,
     compute_reproject_roi,
@@ -96,8 +94,7 @@ def test_props():
     triangle = geometry.polygon([(10, 20), (20, 20), (20, 10), (10, 20)], crs=crs)
     assert triangle.envelope == geometry.BoundingBox(10, 10, 20, 20)
 
-    outer = next(iter(box1))
-    assert outer.length == 80.0
+    assert box1.length == 80.0
 
     box1copy = geometry.box(10, 10, 30, 30, crs=crs)
     assert box1 == box1copy
@@ -193,13 +190,20 @@ def test_ops():
     assert line.crs is line2.crs
     assert line.length == line2.length
     assert len(line.coords) < len(line2.coords)
+    poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)
+    poly2 = poly.segmented(2)
+    assert poly.crs is poly2.crs
+    assert poly.length == poly2.length
+    assert poly.area == poly2.area
+    assert len(poly.geom.exterior.coords) < len(poly2.geom.exterior.coords)
 
     # test interpolate
     pt = line.interpolate(1)
     assert pt.crs is line.crs
     assert pt.coords[0] == (0, 1)
 
-    assert pt.interpolate(3) is None
+    with pytest.raises(TypeError):
+        pt.interpolate(3)
 
 
 def test_bbox_union():
@@ -243,10 +247,6 @@ def test_unary_union():
 
     assert geometry.unary_union([]) is None
 
-    with pytest.raises(ValueError):
-        pt = geometry.point(6, 7, epsg4326)
-        geometry.unary_union([pt, pt])
-
 
 def test_unary_intersection():
     box1 = geometry.box(10, 10, 30, 30, crs=epsg4326)
@@ -283,26 +283,6 @@ def test_unary_intersection():
 
 
 class TestCRSEqualityComparisons(object):
-    def test_sinusoidal_comparison(self):
-        a = geometry.CRS("""PROJCS["unnamed",
-                                GEOGCS["Unknown datum based upon the custom spheroid",
-                                DATUM["Not specified (based on custom spheroid)",
-                                    SPHEROID["Custom spheroid",6371007.181,0]],
-                           PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],
-                           PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],
-                           PARAMETER["false_northing",0],UNIT["Meter",1]]""")
-        b = geometry.CRS("""PROJCS["unnamed",GEOGCS["unnamed ellipse",
-                           DATUM["unknown",SPHEROID["unnamed",6371007.181,0]],
-                           PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],
-                           PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],
-                           PARAMETER["false_northing",0],UNIT["Meter",1]]""")
-        c = geometry.CRS('+a=6371007.181 +b=6371007.181 +units=m +y_0=0 +proj=sinu +lon_0=0 +no_defs +x_0=0')
-        assert a == b
-        assert a == c
-        assert b == c
-
-        assert a != epsg4326
-
     def test_comparison_edge_cases(self):
         a = epsg4326
         none_crs = None
@@ -311,20 +291,6 @@ class TestCRSEqualityComparisons(object):
         assert (a == none_crs) is False
         assert (a == []) is False
         assert (a == TestCRSEqualityComparisons) is False
-
-    def test_grs80_comparison(self):
-        a = geometry.CRS("""GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",
-                                DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],
-                                PRIMEM["Greenwich",0],
-                                UNIT["degree",0.0174532925199433]]""")
-        b = geometry.CRS("""GEOGCS["GRS 1980(IUGG, 1980)",DATUM["unknown",SPHEROID["GRS80",6378137,298.257222101]],
-                            PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
-        c = geometry.CRS('+proj=longlat +no_defs +ellps=GRS80')
-        assert a == b
-        assert a == c
-        assert b == c
-
-        assert a != epsg4326
 
     def test_australian_albers_comparison(self):
         a = geometry.CRS("""PROJCS["GDA94_Australian_Albers",GEOGCS["GCS_GDA_1994",
@@ -582,8 +548,6 @@ def test_geobox_xr_coords():
     assert _mk_crs_coord(crs).attrs['grid_mapping_name'] == '??'
 
 
-@pytest.mark.xfail(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
-                   reason='Fails under GDAL 2.1')
 def test_wrap_dateline():
     sinus_crs = geometry.CRS("""PROJCS["unnamed",
                            GEOGCS["Unknown datum based upon the custom spheroid",
@@ -712,7 +676,7 @@ def test_crs():
                 'UNIT["degree",0.0174532925199433, AUTHORITY["EPSG","9122"]], AUTHORITY["EPSG","4326"]]]')]
 
     for bad in bad_crs:
-        with pytest.raises(geometry.InvalidCRSError):
+        with pytest.raises(geometry.CRSError):
             CRS(bad)
 
 
@@ -857,8 +821,8 @@ def test_apply_affine():
 def test_point_transformer():
     from datacube.utils.geometry import point
 
-    tr = mk_point_transformer(epsg3857, epsg4326)
-    tr_back = mk_point_transformer(epsg4326, epsg3857)
+    tr = epsg3857.transformer_to_crs(epsg4326)
+    tr_back = epsg4326.transformer_to_crs(epsg3857)
 
     pts = [(0, 0), (0, 1),
            (1, 2), (10, 11)]
@@ -1175,9 +1139,7 @@ def test_crs_compat():
 
     assert (CRS(crs_rio) == crs_rio) is True
 
-    assert rasterio.crs.CRS.from_user_input(crs).to_epsg() == 3577
-
-    with pytest.raises(ValueError):
+    with pytest.raises(geometry.CRSError):
         CRS(("random", "tuple"))
 
 

@@ -1,3 +1,4 @@
+from pyproj.transformer import Transformer
 import numpy as np
 import collections
 from types import SimpleNamespace
@@ -357,15 +358,15 @@ def get_scale_at_point(pt, tr, r=None):
 def _same_crs_pix_transform(src, dst):
     assert src.crs == dst.crs
 
-    def transorm(pts, A):
+    def transform(pts, A):
         return [A*pt[:2] for pt in pts]
 
     _fwd = (~dst.transform) * src.transform  # src -> dst
     _bwd = ~_fwd                             # dst -> src
 
     def pt_tr(pts):
-        return transorm(pts, _fwd)
-    pt_tr.back = lambda pts: transorm(pts, _bwd)
+        return transform(pts, _fwd)
+    pt_tr.back = lambda pts: transform(pts, _bwd)
     pt_tr.back.back = pt_tr
     pt_tr.linear = _fwd
     pt_tr.back.linear = _bwd
@@ -454,8 +455,6 @@ def native_pix_transform(src, dst):
     .back: goes the other way
     .linear: None|Affine linear transform src->dst if transform is linear (i.e. same CRS)
     """
-    from ._base import mk_osr_point_transform
-
     # Special case CRS_in == CRS_out
     if src.crs == dst.crs:
         return _same_crs_pix_transform(src, dst)
@@ -463,15 +462,15 @@ def native_pix_transform(src, dst):
     _in = SimpleNamespace(crs=src.crs, A=src.transform)
     _out = SimpleNamespace(crs=dst.crs, A=dst.transform)
 
-    _fwd = mk_osr_point_transform(_in.crs, _out.crs)
-    _bwd = mk_osr_point_transform(_out.crs, _in.crs)
+    _fwd = _in.crs.transformer_to_crs(_out.crs)
+    _bwd = _out.crs.transformer_to_crs(_in.crs)
 
     _fwd = (_in.A, _fwd, ~_out.A)
     _bwd = (_out.A, _bwd, ~_in.A)
 
     def transform(pts, params):
         A, f, B = params
-        return [B*pt[:2] for pt in f.TransformPoints([A*pt[:2] for pt in pts])]
+        return [B*pt[:2] for pt in [f(*(A*pt[:2])) for pt in pts]]
 
     def tr(pts):
         return transform(pts, _fwd)

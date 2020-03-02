@@ -5,6 +5,8 @@ channels:
 dependencies:
   - _libgcc_mutex=0.1=main
   - affine=2.2.2=py37_0
+  - pyproj=2.1.0
+  - shapely=1.6.4
   - alabaster=0.7.12=py37_0
   - asn1crypto=0.24.0=py37_0
   - attrs=19.1.0=py37_1
@@ -37,7 +39,6 @@ dependencies:
   - freetype=2.9.1=h8a8886c_1
   - freexl=1.0.5=h14c3975_0
   - future=0.17.1=py37_0
-  - gdal=2.3.3=py37hbb2a789_0
   - geos=3.7.1=he6710b0_0
   - geotiff=1.4.2=h9c7010b_0
   - gettext=0.19.8.1=hd7bead4_3
