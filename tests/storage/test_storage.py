@@ -8,14 +8,13 @@ import rasterio.warp
 from affine import Affine, identity
 from rasterio.warp import Resampling
 
-import datacube
 from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.testutils.io import RasterFileDataSource
 from datacube.storage import BandInfo
 from datacube.drivers.netcdf import create_netcdf_storage_unit, write_dataset_to_netcdf, Variable
 from datacube.storage import reproject_and_fuse
-from datacube.storage._rio import RasterDatasetDataSource, _url2rasterio, _is_hdf
+from datacube.storage._rio import RasterDatasetDataSource, _url2rasterio
 from datacube.storage._read import read_time_slice
 from datacube.utils.geometry import GeoBox
 
@@ -253,13 +252,12 @@ def assert_same_read_results(source, dst_shape, dst_dtype, dst_transform, dst_no
     result = np.full(dst_shape, dst_nodata, dtype=dst_dtype)
     H, W = dst_shape
     dst_gbox = GeoBox(W, H, dst_transform, dst_projection)
-    with datacube.set_options(reproject_threads=1):
-        with source.open() as rdr:
-            read_time_slice(rdr,
-                            result,
-                            dst_gbox,
-                            dst_nodata=dst_nodata,
-                            resampling=resampling)
+    with source.open() as rdr:
+        read_time_slice(rdr,
+                        result,
+                        dst_gbox,
+                        dst_nodata=dst_nodata,
+                        resampling=resampling)
 
     assert np.isclose(result, expected, atol=0, rtol=0.05, equal_nan=True).all()
     return result
