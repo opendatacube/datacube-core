@@ -245,17 +245,16 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     variable_params = get_variable_params(config)
     global_attributes = config['global_attributes']
 
-    with datacube.set_options(reproject_threads=1):
-        fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
+    fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
 
-        datasets = tile.sources.sum().item()
-        for dataset in datasets:
-            if not dataset.uris:
-                _LOG.error('Locationless dataset found in the database: %r', dataset)
+    datasets = tile.sources.sum().item()
+    for dataset in datasets:
+        if not dataset.uris:
+            _LOG.error('Locationless dataset found in the database: %r', dataset)
 
-        data = Datacube.load_data(tile.sources, tile.geobox, measurements,
-                                  resampling=resampling,
-                                  fuse_func=fuse_func)
+    data = Datacube.load_data(tile.sources, tile.geobox, measurements,
+                              resampling=resampling,
+                              fuse_func=fuse_func)
 
     nudata = data.rename(namemap)
     file_path = get_filename(config, tile_index, tile.sources)
