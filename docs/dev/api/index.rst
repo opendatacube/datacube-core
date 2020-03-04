@@ -56,7 +56,6 @@ for example, to pre-filter the available datasets before loading.
    Datacube.find_datasets
    Datacube.group_datasets
    Datacube.load_data
-   Datacube.measurement_data
 
 .. _grid-workflow-class:
 

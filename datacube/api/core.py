@@ -582,34 +582,6 @@ class Datacube(object):
                                      skip_broken_datasets=skip_broken_datasets,
                                      progress_cbk=progress_cbk)
 
-    @staticmethod
-    def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
-        """
-        Retrieve a single measurement variable as a :class:`xarray.DataArray`.
-
-        .. note:
-
-             This method appears to only be used by the deprecated `get_data()/get_descriptor()`
-              :class:`~datacube.api.API`, so is a prime candidate for future removal.
-
-        .. seealso:: :meth:`load_data`
-
-
-        :param xarray.DataArray sources: DataArray holding a list of :class:`datacube.model.Dataset` objects
-        :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
-        :param measurement: `Measurement` object
-        :param fuse_func: function to merge successive arrays as an output
-        :param dict dask_chunks: If the data should be loaded as needed using :class:`dask.array.Array`,
-            specify the chunk size in each output direction.
-            See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
-            for more information.
-        :rtype: :class:`xarray.DataArray`
-        """
-        dataset = Datacube.load_data(sources, geobox, [measurement], fuse_func=fuse_func, dask_chunks=dask_chunks)
-        dataarray = dataset[measurement.name]
-        dataarray.attrs['crs'] = dataset.crs
-        return dataarray
-
     def __str__(self):
         return "Datacube<index={!r}>".format(self.index)
 
