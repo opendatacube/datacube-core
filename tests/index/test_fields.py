@@ -8,6 +8,7 @@ from datacube.drivers.postgres._fields import SimpleDocField, NumericRangeDocFie
 from datacube.drivers.postgres._api import _split_uri
 from datacube.drivers.postgres._schema import DATASET
 from datacube.model import Range
+import pytest
 
 
 def _assert_same(obj1, obj2):
@@ -17,10 +18,14 @@ def _assert_same(obj1, obj2):
 
 def test_split_uri():
     assert _split_uri('http://test.com/something.txt') == ('http', '//test.com/something.txt')
-    assert _split_uri('eods:LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127') == ('eods', 'LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127')
+    assert _split_uri('eods:LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127') == (
+        'eods', 'LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127')
     assert _split_uri('file://rhe-test-dev.prod.lan/data/fromASA/LANDSAT-7.89274.S4A2C1D3R3') == (
         'file', '//rhe-test-dev.prod.lan/data/fromASA/LANDSAT-7.89274.S4A2C1D3R3')
     assert _split_uri('file:///C:/tmp/first/something.yaml') == ('file', '///C:/tmp/first/something.yaml')
+
+    with pytest.raises(ValueError):
+        _split_uri('/no/semicolon')
 
 
 def test_get_single_field():

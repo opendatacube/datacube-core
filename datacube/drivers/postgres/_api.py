@@ -67,10 +67,11 @@ def _split_uri(uri):
     Split the scheme and the remainder of the URI.
 
     """
-    comp = uri.split(':')
-    scheme = comp[0]
-    body = ':'.join(comp[1:])
-    return scheme, body
+    idx = uri.find(':')
+    if idx < 0:
+        raise ValueError("Not a URI")
+
+    return uri[:idx], uri[idx+1:]
 
 
 def get_native_fields():
