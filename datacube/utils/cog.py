@@ -31,6 +31,7 @@ def _write_cog(pix: np.ndarray,
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
     :param overview_resampling: Use this resampling when computing overviews
     :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32]
+                            to disable overviews supply empty list `[]`
     :param **extra_rio_opts: Any other option is passed to `rasterio.open`
 
     When fname=":mem:" write COG to memory rather than to a file and return it
@@ -99,6 +100,18 @@ def _write_cog(pix: np.ndarray,
 
     rio_opts.update(extra_rio_opts)
 
+    # Deal efficiently with "no overviews needed case"
+    if len(overview_levels) == 0:
+        if fname == ":mem:":
+            with rasterio.MemoryFile() as mem:
+                with mem.open(driver="GTiff", **rio_opts) as dst:
+                    dst.write(pix, band)
+                return bytes(mem.getbuffer())
+        else:
+            with rasterio.open(path, mode='w', driver='GTiff', **rio_opts) as dst:
+                dst.write(pix, band)
+            return path
+
     # copy re-compresses anyway so skip compression for temp image
     tmp_opts = rio_opts.copy()
     tmp_opts.pop("compress")
@@ -151,7 +164,8 @@ def write_cog(geo_im: xr.DataArray,
     :param geo_im: xarray.DataArray with crs
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
     :param overview_resampling: Use this resampling when computing overviews
-    :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32]
+    :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32],
+                            to disable overviews supply empty list `[]`
     :param **extra_rio_opts: Any other option is passed to `rasterio.open`
     """
     pix = geo_im.data

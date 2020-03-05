@@ -107,6 +107,18 @@ def test_cog_mem(tmpdir):
     assert yy.geobox == xx.geobox
     assert yy.nodata == xx.nodata
 
+    # write to memory 3 -- no overviews
+    bb = to_cog(xx, overview_levels=[])
+    assert isinstance(bb, bytes)
+    path = pp / "cog3.tiff"
+    with open(str(path), "wb") as f:
+        f.write(bb)
+
+    yy = rio_slurp_xarray(path)
+    np.testing.assert_array_equal(yy.values, xx.values)
+    assert yy.geobox == xx.geobox
+    assert yy.nodata == xx.nodata
+
 
 def test_cog_mem_dask(tmpdir):
     pp = Path(str(tmpdir))
