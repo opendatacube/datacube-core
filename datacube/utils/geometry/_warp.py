@@ -58,23 +58,17 @@ def warp_affine_rio(src: np.ndarray,
     if isinstance(resampling, str):
         resampling = resampling_s2rio(resampling)
 
-    dst0 = dst
-
-    # TODO: GDAL doesn't support signed 8-bit values, so we coerce to uint8,
-    # *BUT* this is only valid for nearest|mode resampling strategies, proper
-    # way is to perform warp in int16 space and then convert back to int8 with
-    # clamping.
-    if dst.dtype.name == 'int8':
-        dst = dst.view('uint8')
-        if dst_nodata is not None:
-            dst_nodata = int(np.uint8(dst_nodata))
+    # GDAL support for int8 is patchy, warp doesn't support it, so we need to convert to int16
     if src.dtype.name == 'int8':
-        src = src.view('uint8')
-        if src_nodata is not None:
-            src_nodata = int(np.uint8(src_nodata))
+        src = src.astype('int16')
+
+    if dst.dtype.name == 'int8':
+        _dst = dst.astype('int16')
+    else:
+        _dst = dst
 
     rasterio.warp.reproject(src,
-                            dst,
+                            _dst,
                             src_transform=src_transform,
                             dst_transform=dst_transform,
                             src_crs=crs,
@@ -84,7 +78,11 @@ def warp_affine_rio(src: np.ndarray,
                             dst_nodata=dst_nodata,
                             **kwargs)
 
-    return dst0
+    if dst is not _dst:
+        # int8 workaround copy pixels back to int8
+        np.copyto(dst, _dst, casting='unsafe')
+
+    return dst
 
 
 def warp_affine(src: np.ndarray,
@@ -140,23 +138,17 @@ def rio_reproject(src: np.ndarray,
     if isinstance(resampling, str):
         resampling = resampling_s2rio(resampling)
 
-    dst0 = dst
-
-    # TODO: GDAL doesn't support signed 8-bit values, so we coerce to uint8,
-    # *BUT* this is only valid for nearest|mode resampling strategies, proper
-    # way is to perform warp in int16 space and then convert back to int8 with
-    # clamping.
-    if dst.dtype.name == 'int8':
-        dst = dst.view('uint8')
-        if dst_nodata is not None:
-            dst_nodata = int(np.uint8(dst_nodata))
+    # GDAL support for int8 is patchy, warp doesn't support it, so we need to convert to int16
     if src.dtype.name == 'int8':
-        src = src.view('uint8')
-        if src_nodata is not None:
-            src_nodata = int(np.uint8(src_nodata))
+        src = src.astype('int16')
+
+    if dst.dtype.name == 'int8':
+        _dst = dst.astype('int16')
+    else:
+        _dst = dst
 
     rasterio.warp.reproject(src,
-                            dst,
+                            _dst,
                             src_transform=s_gbox.transform,
                             dst_transform=d_gbox.transform,
                             src_crs=str(s_gbox.crs),
@@ -166,4 +158,8 @@ def rio_reproject(src: np.ndarray,
                             dst_nodata=dst_nodata,
                             **kwargs)
 
-    return dst0
+    if dst is not _dst:
+        # int8 workaround copy pixels back to int8
+        np.copyto(dst, _dst, casting='unsafe')
+
+    return dst
