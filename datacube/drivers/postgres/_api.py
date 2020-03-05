@@ -66,14 +66,6 @@ def _split_uri(uri):
     """
     Split the scheme and the remainder of the URI.
 
-    >>> _split_uri('http://test.com/something.txt')
-    ('http', '//test.com/something.txt')
-    >>> _split_uri('eods:LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127')
-    ('eods', 'LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127')
-    >>> _split_uri('file://rhe-test-dev.prod.lan/data/fromASA/LANDSAT-7.89274.S4A2C1D3R3')
-    ('file', '//rhe-test-dev.prod.lan/data/fromASA/LANDSAT-7.89274.S4A2C1D3R3')
-    >>> _split_uri('file:///C:/tmp/first/something.yaml')
-    ('file', '///C:/tmp/first/something.yaml')
     """
     comp = uri.split(':')
     scheme = comp[0]
