@@ -6,6 +6,7 @@ Not used internally, those should go in `utils.py`
 
 import numpy as np
 import rasterio
+import warnings
 
 DEFAULT_PROFILE = {
     'blockxsize': 256,
@@ -17,8 +18,10 @@ DEFAULT_PROFILE = {
     'tiled': True}
 
 
-def write_geotiff(filename, dataset, profile_override=None, time_index=None):
+def write_geotiff(filename, dataset, profile_override=None):
     """
+    DEPRECATED: use datacube.utils.cog.write_cog instead.
+
     Write an ODC style xarray.Dataset to a GeoTIFF file.
 
     :param filename: Output filename
@@ -26,10 +29,9 @@ def write_geotiff(filename, dataset, profile_override=None, time_index=None):
     :param profile_override: option dict, overrides rasterio file creation options.
     :param time_index: DEPRECATED
     """
-    if time_index is not None:
-        raise ValueError('''The write_geotiff function no longer supports passing in `time_index`.
-        The same function can be achieved by calling `dataset.isel(time=<time_index>)` before passing
- in your dataset. It was removed because it made the function much less useful for more advanced cases.''')
+    warnings.warn("""Function datacube.helpers.write_geotiff is deprecated,
+please use datacube.utils.cog.write_cog instead""",
+                  category=DeprecationWarning)
 
     profile_override = profile_override or {}
 

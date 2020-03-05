@@ -233,7 +233,8 @@ def test_write_geotiff(tmpdir, odc_style_xr_dataset):
 
     assert len(odc_style_xr_dataset.latitude) < 256
 
-    write_geotiff(filename, odc_style_xr_dataset)
+    with pytest.warns(DeprecationWarning):
+        write_geotiff(filename, odc_style_xr_dataset)
 
     assert filename.exists()
 
@@ -250,7 +251,10 @@ def test_write_geotiff_str_crs(tmpdir, odc_style_xr_dataset):
     original_crs = odc_style_xr_dataset.crs
 
     odc_style_xr_dataset.attrs['crs'] = str(original_crs)
-    write_geotiff(filename, odc_style_xr_dataset)
+
+    with pytest.warns(DeprecationWarning):
+        write_geotiff(filename, odc_style_xr_dataset)
+
     assert filename.exists()
 
     with rasterio.open(str(filename)) as src:
@@ -263,14 +267,8 @@ def test_write_geotiff_str_crs(tmpdir, odc_style_xr_dataset):
     for dim in odc_style_xr_dataset.B10.dims:
         del odc_style_xr_dataset[dim].attrs['crs']
     with pytest.raises(ValueError):
-        write_geotiff(filename, odc_style_xr_dataset)
-
-
-def test_write_geotiff_time_index_deprecated():
-    """The `time_index` parameter to `write_geotiff()` was a poorly thought out addition and is now deprecated."""
-
-    with pytest.raises(ValueError):
-        write_geotiff("", None, time_index=1)
+        with pytest.warns(DeprecationWarning):
+            write_geotiff(filename, odc_style_xr_dataset)
 
 
 def test_testutils_mk_sample():
