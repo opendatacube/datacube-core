@@ -50,12 +50,9 @@ grid_spatial:
             lr:
                 x: 564487.5
                 y: 6858862.5
-        datum: GDA94
-        ellipsoid: GRS80
-        map_projection: UTM
+        spatial_reference: "EPSG:28351"
         orientation: NORTH_UP
         resampling_option: CUBIC_CONVOLUTION
-        zone: -51
         valid_data:
             coordinates:
             -   -   - 362668.39907393965
@@ -416,12 +413,9 @@ lineage:
                         lr:
                             x: 564487.5
                             y: 6858862.5
-                    datum: GDA94
-                    ellipsoid: GRS80
-                    map_projection: UTM
+                    spatial_reference: "EPSG:28351"
                     orientation: NORTH_UP
                     resampling_option: CUBIC_CONVOLUTION
-                    zone: -51
             gqa:
                 cep90: 0.28
                 colors:
