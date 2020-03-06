@@ -39,7 +39,6 @@ class Dataset(object):
     def __init__(self,
                  type_: 'DatasetType',
                  metadata_doc: dict,
-                 local_uri: Optional[str] = None,
                  uris: Optional[List[str]] = None,
                  sources: Optional[Mapping[str, 'Dataset']] = None,
                  indexed_by: Optional[str] = None,
@@ -52,16 +51,6 @@ class Dataset(object):
         #: The document describing the dataset as a dictionary. It is often serialised as YAML on disk
         #: or inside a NetCDF file, and as JSON-B inside the database index.
         self.metadata_doc = metadata_doc
-
-        if local_uri:
-            warnings.warn(
-                "Dataset.local_uri has been replaced with list Dataset.uris",
-                DeprecationWarning
-            )
-            if not uris:
-                uris = []
-
-            uris.append(local_uri)
 
         #: Active URIs in order from newest to oldest
         self.uris = uris

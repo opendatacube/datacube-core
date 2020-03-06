@@ -226,7 +226,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     child_doc = _telemetry_dataset.copy()
     child_doc['lineage'] = {'source_datasets': {'source': _telemetry_dataset}}
     child_doc['id'] = '051a003f-5bba-43c7-b5f1-7f1da3ae9cfb'
-    child = Dataset(type_, child_doc, local_uri=None, sources={'source': parent})
+    child = Dataset(type_, child_doc, sources={'source': parent})
 
     with pytest.raises(MissingRecordError):
         index.datasets.add(child, with_lineage=False)
