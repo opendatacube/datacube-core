@@ -3,8 +3,8 @@ import yaml
 
 import pytest
 
-from datacube.storage.masking import list_flag_names, create_mask_value, describe_variable_flags
-from datacube.storage.masking import mask_to_dict, mask_invalid_data, valid_data_mask
+from datacube.utils.masking import list_flag_names, create_mask_value, describe_variable_flags
+from datacube.utils.masking import mask_to_dict, mask_invalid_data, valid_data_mask
 
 
 def test_list_flag_names():

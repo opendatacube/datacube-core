@@ -1,5 +1,5 @@
 import datacube
-from datacube.storage.masking import mask_invalid_data
+from datacube.utils.masking import mask_invalid_data
 
 query = {
     'time': ('1990-01-01', '1991-01-01'),

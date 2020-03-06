@@ -9,7 +9,7 @@ from datetime import datetime
 from collections import namedtuple
 import numpy
 
-from datacube.storage.masking import describe_flags_def
+from datacube.utils.masking import describe_flags_def
 from datacube.utils import geometry, data_resolution_and_offset
 
 # pylint: disable=ungrouped-imports
