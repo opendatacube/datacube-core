@@ -361,10 +361,6 @@ class DatasetResource(object):
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             return connection.get_locations(id_)
 
@@ -375,10 +371,6 @@ class DatasetResource(object):
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             return [uri for uri, archived_dt in connection.get_archived_locations(id_)]
 
@@ -389,10 +381,6 @@ class DatasetResource(object):
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: List[Tuple[str, datetime.datetime]]
         """
-        if isinstance(id_, Dataset):
-            raise RuntimeError("Passing a dataset has been deprecated for all index apis, and "
-                               "is not supported in new apis. Pass the id of your dataset.")
-
         with self._db.connect() as connection:
             return list(connection.get_archived_locations(id_))
 
@@ -404,10 +392,6 @@ class DatasetResource(object):
         :param str uri: fully qualified uri
         :returns bool: Was one added?
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         if not uri:
             warnings.warn("Cannot add empty uri. (dataset %s)" % id_)
             return False
@@ -434,10 +418,6 @@ class DatasetResource(object):
         :param str uri: fully qualified uri
         :returns bool: Was one removed?
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             was_removed = connection.remove_location(id_, uri)
             return was_removed
@@ -450,10 +430,6 @@ class DatasetResource(object):
         :param str uri: fully qualified uri
         :return bool: location was able to be archived
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             was_archived = connection.archive_location(id_, uri)
             return was_archived
@@ -466,10 +442,6 @@ class DatasetResource(object):
         :param str uri: fully qualified uri
         :return bool: location was able to be restored
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             was_restored = connection.restore_location(id_, uri)
             return was_restored
