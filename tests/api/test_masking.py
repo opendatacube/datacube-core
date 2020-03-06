@@ -396,3 +396,9 @@ def test_valid_data_mask():
 
     output_da = valid_data_mask(data_array)
     assert output_da.equals(expected_data_array)
+
+
+def test_deprecation():
+    from datacube.storage.masking import make_mask as a
+    from datacube.utils.masking import make_mask as b
+    assert a is b
