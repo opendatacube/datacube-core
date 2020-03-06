@@ -82,9 +82,9 @@ def test_rd_internals_bidx(data_folder):
     assert rio_fname.startswith('NETCDF:')
 
     with rasterio.open(rio_fname) as src:
-        # timestamp search
-        bidx = _rio_band_idx(bi, src)
-        assert bidx == 2
+        # timestamp search was removed
+        with pytest.raises(DeprecationWarning):
+            _rio_band_idx(bi, src)
 
         # extract from .uri
         bi.uri = bi.uri + "#part=5"
@@ -107,10 +107,6 @@ def test_rd_internals_bidx(data_folder):
         # band is the keyword
         bi = mk_band('a', base, path="test.tif", format=GeoTIFF, band=3)
         assert _rio_band_idx(bi, src) == 3
-
-        # Pretend it's netcdf to test missing time dimension
-        bi = mk_band('a', base, path="test.tif", format=NetCDF)
-        assert _rio_band_idx(bi, src) == 1
 
     # TODO: make single time-slice netcdf, for now pretend that this tiff is netcdf
     with rasterio.open(str(data_folder)+"/sample_tile_151_-29.tif", 'r') as src:

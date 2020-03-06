@@ -2,22 +2,20 @@
 """
 from typing import (
     List, Optional, Union, Any, Iterable,
-    Iterator, Tuple, NamedTuple, TypeVar
+    Tuple, NamedTuple, TypeVar
 )
 import numpy as np
 from affine import Affine
 from concurrent.futures import ThreadPoolExecutor
 import rasterio
 from rasterio.io import DatasetReader
-from rasterio.crs import CRS as RioCRS
-from datetime import datetime
+import rasterio.crs
 
 from datacube.storage import BandInfo
 from datacube.utils.geometry import CRS
 from datacube.utils import (
     uri_to_local_path,
     get_part_from_uri,
-    datetime_to_seconds_since_1970,
 )
 from datacube.drivers._types import (
     ReaderDriverEntry,
@@ -67,7 +65,7 @@ def _roi_to_window(roi: Optional[RasterWindow], shape: RasterShape) -> Optional[
     return (s1, s2)
 
 
-def _dc_crs(crs: Optional[RioCRS]) -> Optional[CRS]:
+def _dc_crs(crs: Optional[rasterio.crs.CRS]) -> Optional[CRS]:
     """ Convert RIO version of CRS to datacube
     """
     if crs is None:
@@ -107,31 +105,6 @@ def _rio_uri(band: BandInfo) -> str:
     return band.uri
 
 
-def _find_netcdf_band_by_time(src: DatasetReader, ts: datetime) -> int:
-    """ backwards compatibility code.
-
-        finds band that is nearest to a given timestamp
-    """
-    time_tag = 'NETCDF_DIM_time'
-    ts0 = datetime_to_seconds_since_1970(ts)
-
-    def get_ts() -> Iterator[Tuple[int, float]]:
-        for bidx in range(1, src.count+1):
-            tag_value = src.get_tag_item(time_tag, bidx=bidx)
-            if tag_value is not None:
-                yield (bidx, float(tag_value))
-
-    all_ts = list((bidx, abs(ts - ts0))
-                  for bidx, ts in get_ts())
-
-    if len(all_ts) == 0:
-        return 1  # TODO: copying previous behaviour, should at least log something
-
-    all_ts.sort(key=lambda xx: xx[1])
-    bidx, _ = all_ts[0]
-    return bidx
-
-
 def _rio_band_idx(band: BandInfo, src: DatasetReader) -> int:
     if band.band is not None:
         return band.band
@@ -146,7 +119,7 @@ def _rio_band_idx(band: BandInfo, src: DatasetReader) -> int:
     if src.count == 1:  # Single-slice netcdf file
         return 1
 
-    return _find_netcdf_band_by_time(src, band.center_time)
+    raise DeprecationWarning("Stacked netcdf without explicit time index is not supported anymore")
 
 
 class RIOReader(GeoRasterReader):
