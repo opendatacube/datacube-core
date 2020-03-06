@@ -283,10 +283,6 @@ class Datacube(object):
         :return: Requested data in a :class:`xarray.Dataset`
         :rtype: :class:`xarray.Dataset`
         """
-        if 'stack' in query:
-            raise DeprecationWarning("the `stack` keyword argument is not supported anymore, "
-                                     "please apply `xarray.Dataset.to_array()` to the result instead")
-
         if product is None and datasets is None:
             raise ValueError("Must specify a product or supply datasets")
 
