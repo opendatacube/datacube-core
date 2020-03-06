@@ -67,9 +67,8 @@ _EXAMPLE_NBAR = {
                 'ga_label': 'LS8_OLITIRS_OTH_P51_GALPGS01-002_112_079_20140126',
                 'grid_spatial': {
                     'projection': {
-                        'map_projection': 'UTM',
+                        'spatial_reference': 'EPSG:28350',
                         'resampling_option': 'CUBIC_CONVOLUTION',
-                        'zone': -50,
                         'geo_ref_points': {
                             'ul': {'y': 7082987.5, 'x': 459012.5},
                             'lr': {'y': 6847987.5, 'x': 692012.5},
@@ -77,8 +76,6 @@ _EXAMPLE_NBAR = {
                             'll': {'y': 6847987.5, 'x': 459012.5}
                         },
                         'orientation': 'NORTH_UP',
-                        'datum': 'GDA94',
-                        'ellipsoid': 'GRS80'
                     }
                 },
                 'acquisition': {

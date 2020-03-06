@@ -49,10 +49,8 @@ grid_spatial:
             lr:
                 x: 880025.0
                 y: 6057975.0
-        datum: GDA94
-        ellipsoid: GRS80
-        zone: -55
-        unit: metre
+        zone: -55   # keeping zone for test_index_datasets_search_light
+        spatial_reference: "EPSG:28355"
 image:
     satellite_ref_point_start:
         x: 90
@@ -145,12 +143,10 @@ lineage:
                         lr:
                             x: 882112.5
                             y: 6056887.5
-                    datum: GDA94
-                    ellipsoid: GRS80
-                    map_projection: UTM
+                    spatial_reference: "EPSG:28355"
                     orientation: NORTH_UP
                     resampling_option: CUBIC_CONVOLUTION
-                    zone: -55
+                    zone: -55  # keeping zone for test_index_datasets_search_light
             image:
                 satellite_ref_point_start:
                     x: 90
