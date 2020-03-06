@@ -260,9 +260,6 @@ def check_load_via_dss(index):
     with pytest.raises(ValueError):
         dc.load(measurements=['blue'])
 
-    with pytest.raises(DeprecationWarning):
-        dc.load(product='ls5_nbar_albers', stack=True)
-
 
 def check_legacy_open(index):
     from datacube.api.core import Datacube
