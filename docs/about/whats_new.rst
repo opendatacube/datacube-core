@@ -16,6 +16,7 @@ v1.8rc (???)
 - Remove S3AIO driver. (:pull:`865`)
 - Change development version numbers generation. Use ``setuptools_scm`` instead of ``versioneer``. (:issue:`871`)
 - Deprecated ``datacube.helpers.write_geotiff``, use ``datacube.utils.cog.write_cog`` for similar functionality
+- Deprecated ``datacube.storage.masking``, moved to ``datacube.utils.masking``
 
 
 v1.7.0 (16 May 2019)
