@@ -30,7 +30,7 @@ def test_crs_parse(indexed_ls5_scene_products: List[DatasetType]) -> None:
             }
         }
 
-    }, local_uri=None)
+    })
     assert str(d.crs) == 'EPSG:3577'
     assert d.extent is not None
 
@@ -52,14 +52,14 @@ def test_crs_parse(indexed_ls5_scene_products: List[DatasetType]) -> None:
                 "resampling_option": "CUBIC_CONVOLUTION"
             }
         }
-    }, local_uri=None)
+    })
 
     with pytest.warns(DeprecationWarning):
         assert str(d.crs) == 'EPSG:28351'
         assert d.extent is not None
 
     # No projection specified in the dataset
-    d = Dataset(product, {}, local_uri=None)
+    d = Dataset(product, {})
     assert d.crs is None
     assert d.extent is None
 
@@ -81,7 +81,7 @@ def test_crs_parse(indexed_ls5_scene_products: List[DatasetType]) -> None:
                 "resampling_option": "CUBIC_CONVOLUTION"
             }
         }
-    }, local_uri=None)
+    })
     # Prints warning: Can't figure out projection: possibly invalid zone (-60) for datum ('GDA94')."
     # We still return None, rather than error, as they didn't specify a CRS explicitly
     with pytest.warns(DeprecationWarning):

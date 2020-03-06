@@ -241,15 +241,6 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     # allowed changes go through
     doc = copy.deepcopy(updated.metadata_doc)
     doc['product_type'] = 'foobar'
-    # Backwards compat: third argument was a single local uri.
-    with pytest.warns(DeprecationWarning):
-        update = Dataset(ls5_telem_type, doc, 'file:///test/doc4.yaml')
-    index.datasets.update(update, {('product_type',): changes.allow_any})
-    updated = index.datasets.get(dataset.id)
-    assert updated.metadata_doc['test1'] == {'some': 'thing'}
-    assert updated.metadata_doc['test2'] == {'some': 'other thing'}
-    assert updated.metadata_doc['product_type'] == 'foobar'
-    assert updated.local_uri == 'file:///test/doc4.yaml'
 
 
 def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc):
