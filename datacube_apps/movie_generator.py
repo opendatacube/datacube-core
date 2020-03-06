@@ -16,7 +16,7 @@ from glob import glob
 from dateutil.parser import parse
 from datetime import datetime, timedelta, time, date
 
-from datacube.storage.masking import make_mask
+from datacube.utils.masking import make_mask
 from datacube.ui import click as ui
 from datacube import Datacube
 from datacube.utils.dates import date_sequence

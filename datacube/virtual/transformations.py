@@ -2,9 +2,9 @@ import numpy
 import xarray
 import lark
 
-from datacube.storage.masking import make_mask as make_mask_prim
-from datacube.storage.masking import mask_invalid_data as mask_invalid_data_prim
-from datacube.storage.masking import valid_data_mask
+from datacube.utils.masking import make_mask as make_mask_prim
+from datacube.utils.masking import mask_invalid_data as mask_invalid_data_prim
+from datacube.utils.masking import valid_data_mask
 
 from datacube.utils.math import dtype_is_float
 
