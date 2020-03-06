@@ -240,6 +240,8 @@ class Dataset(object):
         zone_ = projection.get('zone')
         datum_ = projection.get('datum')
         if zone_ and datum_:
+            warnings.warn("Using zone/datum to specify CRS is deprecated",
+                          category=DeprecationWarning)
             try:
                 # TODO: really need CRS specified properly in agdc-metadata.yaml
                 if datum_ == 'GDA94':
