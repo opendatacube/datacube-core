@@ -119,7 +119,8 @@ def valid_data_mask(data):
 
     nodata = data.attrs.get('nodata', None)
 
-    return xarray.apply_ufunc(lambda xx: valid_mask(xx, nodata), data, dask='parallelized',
+    return xarray.apply_ufunc(valid_mask, data, nodata,
+                              dask='parallelized',
                               output_dtypes=[numpy.bool])
 
 
