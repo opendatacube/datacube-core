@@ -15,7 +15,6 @@ from datacube.drivers.rio._reader import (
     _rio_band_idx,
     _roi_to_window,
 )
-from datacube.utils import datetime_to_seconds_since_1970
 from datacube.testutils.geom import SAMPLE_WKT_WITHOUT_AUTHORITY, epsg3857
 from datacube.testutils.iodriver import (
     NetCDF, GeoTIFF, mk_band, mk_rio_driver, open_reader
@@ -76,7 +75,6 @@ def test_rd_internals_bidx(data_folder):
                  timestamp=datetime.utcfromtimestamp(1),
                  layer='a')
     assert bi.uri.endswith('multi_doc.nc')
-    assert datetime_to_seconds_since_1970(bi.center_time) == 1
 
     rio_fname = _rio_uri(bi)
     assert rio_fname.startswith('NETCDF:')
