@@ -18,9 +18,9 @@ from datacube.utils.math import num2numpy
 from datacube.utils import uri_to_local_path, get_part_from_uri, is_vsipath
 from datacube.utils.rio import activate_from_config
 from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
+from ._hdf5 import HDF5_LOCK
 
 _LOG = logging.getLogger(__name__)
-_HDF5_LOCK = RLock()
 
 
 def _rasterio_crs_wkt(src):
@@ -215,7 +215,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         self._hdf = _is_hdf(band.format)
         self._part = get_part_from_uri(band.uri)
         filename = _url2rasterio(band.uri, band.format, band.layer)
-        lock = _HDF5_LOCK if self._hdf else None
+        lock = HDF5_LOCK if self._hdf else None
         super(RasterDatasetDataSource, self).__init__(filename, nodata=band.nodata, lock=lock)
 
     def get_bandnumber(self, src=None) -> Optional[int]:
