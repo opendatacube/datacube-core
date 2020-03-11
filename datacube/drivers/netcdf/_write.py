@@ -3,6 +3,7 @@ import logging
 
 from . import writer as netcdf_writer
 from datacube.utils import DatacubeException
+from datacube.storage._hdf5 import HDF5_LOCK
 
 
 _LOG = logging.getLogger(__name__)
@@ -85,15 +86,19 @@ def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_
     if dataset.geobox.crs is None:
         raise DatacubeException('Dataset geobox.crs property is None, cannot write to NetCDF file.')
 
-    nco = create_netcdf_storage_unit(filename,
-                                     dataset.geobox.crs,
-                                     dataset.coords,
-                                     dataset.data_vars,
-                                     variable_params,
-                                     global_attributes,
-                                     netcdfparams)
+    try:
+        HDF5_LOCK.acquire(blocking=True)
+        nco = create_netcdf_storage_unit(filename,
+                                         dataset.geobox.crs,
+                                         dataset.coords,
+                                         dataset.data_vars,
+                                         variable_params,
+                                         global_attributes,
+                                         netcdfparams)
 
-    for name, variable in dataset.data_vars.items():
-        nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
+        for name, variable in dataset.data_vars.items():
+            nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
 
-    nco.close()
+        nco.close()
+    finally:
+        HDF5_LOCK.release()
