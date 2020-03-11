@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List
 
 import click
+import signal
 import pandas as pd
 import yaml
 import yaml.resolver
@@ -37,11 +38,20 @@ def add_products(index, allow_exclusive_lock, files):
     """
     Add or update products in the generic index.
     """
+    def on_ctrlc(sig, frame):
+        echo(f'''Can not abort `product add` without leaving database in bad state.
+
+This operation requires constructing a bunch of indexes and this takes time, the
+bigger your database the longer it will take. Just wait a bit.''')
+
+    signal.signal(signal.SIGINT, on_ctrlc)
+
     for descriptor_path, parsed_doc in read_documents(*files):
         try:
             type_ = index.products.from_doc(parsed_doc)
+            echo(f'Adding "{type_.name}" (this might take a while)', nl=False)
             index.products.add(type_, allow_table_lock=allow_exclusive_lock)
-            echo('Added "%s"' % type_.name)
+            echo(' DONE')
         except InvalidDocException as e:
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
