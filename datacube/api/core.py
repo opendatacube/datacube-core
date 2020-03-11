@@ -10,6 +10,7 @@ from dask import array as da
 
 from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
+from datacube.utils import ignore_exceptions_if
 from datacube.utils import geometry
 from datacube.utils.geometry import intersects, GeoBox
 from datacube.utils.geometry.gbox import GeoboxTiles
@@ -686,7 +687,19 @@ def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
                       progress_cbk=None):
-    reproject_and_fuse([new_datasource(BandInfo(dataset, measurement.name)) for dataset in datasets],
+    srcs = []
+    for ds in datasets:
+        src = None
+        with ignore_exceptions_if(skip_broken_datasets):
+            src = new_datasource(BandInfo(ds, measurement.name))
+
+        if src is None:
+            if not skip_broken_datasets:
+                raise ValueError(f"Failed to load dataset: {ds.id}")
+        else:
+            srcs.append(src)
+
+    reproject_and_fuse(srcs,
                        dest,
                        geobox,
                        dest.dtype.type(measurement.nodata),
