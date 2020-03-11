@@ -66,6 +66,7 @@ def test_new_xr_load(data_folder):
 
     im, meta = rio_slurp(str(data_folder) + '/test.tif')
     measurements = [ds.type.measurements[n] for n in ('a', 'b')]
+    measurements[1]['fuser'] = lambda dst, src: _default_fuser(dst, src, measurements[1].nodata)
 
     xx, _ = xr_load(sources, meta.gbox, measurements, rdr)
 
