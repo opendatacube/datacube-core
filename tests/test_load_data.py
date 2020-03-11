@@ -140,7 +140,7 @@ def test_load_data_cbk(tmpdir):
 
 
 def test_hdf5_lock_release_on_failure():
-    from datacube.storage._rio import RasterDatasetDataSource, _HDF5_LOCK
+    from datacube.storage._rio import RasterDatasetDataSource, HDF5_LOCK
     from datacube.storage import BandInfo
 
     band = dict(name='xx',
@@ -158,7 +158,7 @@ def test_hdf5_lock_release_on_failure():
         with src.open():
             assert False and "Did not expect to get here"
 
-    assert not _HDF5_LOCK._is_owned()
+    assert not HDF5_LOCK._is_owned()
 
 
 def test_rio_slurp(tmpdir):
