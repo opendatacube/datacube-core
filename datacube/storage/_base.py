@@ -108,7 +108,6 @@ class BandInfo:
         self.units = mp.units
         self.crs = ds.crs
         self.transform = ds.transform
-        self.center_time = ds.center_time
         self.format = ds.format
         self.driver_data = _extract_driver_data(ds)
 
