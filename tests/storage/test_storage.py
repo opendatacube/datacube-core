@@ -519,9 +519,10 @@ class TestRasterDataReading(object):
         transform = Affine(0.01, 0.0, 111.975,
                            0.0, 0.01, -9.975)
         data_source = RasterFileDataSource(no_crs_gdal_path, bandnumber=1, nodata=nodata, crs=crs, transform=transform)
-        with data_source.open() as src:
-            dest1 = src.read()
-            assert dest1.shape == (10, 10)
+        with pytest.warns(DeprecationWarning):
+            with data_source.open() as src:
+                dest1 = src.read()
+                assert dest1.shape == (10, 10)
 
 
 @pytest.fixture

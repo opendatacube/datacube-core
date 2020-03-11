@@ -3,6 +3,7 @@
 Driver implementation for Rasterio based reader.
 """
 import logging
+import warnings
 import contextlib
 from contextlib import contextmanager
 from threading import RLock
@@ -187,6 +188,11 @@ class RasterioDataSource(DataSource):
                     lock.release()
 
                 if override:
+                    warnings.warn(f"""Broken/missing geospatial data was found in file:
+"{self.filename}"
+Will use approximate metadata for backwards compatibility reasons (#673).
+This behaviour is deprecated. Future versions will raise an error.""",
+                                  category=DeprecationWarning)
                     yield OverrideBandDataSource(band, nodata=nodata, crs=crs, transform=transform, lock=lock)
                 else:
                     yield BandDataSource(band, nodata=nodata, lock=lock)
