@@ -69,6 +69,11 @@ def test_geobox_simple():
 
     assert (t == "some random thing") is False
 
+    # ensure GeoBox accepts string CRS
+    assert isinstance(geometry.GeoBox(4000, 4000,
+                                      Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0),
+                                      'epsg:4326').crs, CRS)
+
 
 def test_props():
     crs = epsg4326
@@ -107,6 +112,9 @@ def test_props():
     assert 'Point' in str(pt)
     assert bool(pt) is True
     assert pt.__nonzero__() is True
+
+    # check "CRS as string is converted to class automatically"
+    assert isinstance(geometry.point(3, 4, 'epsg:3857').crs, geometry.CRS)
 
 
 def test_tests():
