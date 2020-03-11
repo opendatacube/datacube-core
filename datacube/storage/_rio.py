@@ -12,7 +12,6 @@ import rasterio
 from urllib.parse import urlparse
 from typing import Optional, Iterator
 
-from datacube.utils import datetime_to_seconds_since_1970
 from datacube.utils import geometry
 from datacube.utils.math import num2numpy
 from datacube.utils import uri_to_local_path, get_part_from_uri, is_vsipath
@@ -21,10 +20,6 @@ from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
 
 _LOG = logging.getLogger(__name__)
 _HDF5_LOCK = RLock()
-
-GDAL_NETCDF_DIM = ('NETCDF_DIM_'
-                   if str(rasterio.__gdal_version__) >= '1.10.0' else
-                   'NETCDF_DIMENSION_')
 
 
 def _rasterio_crs_wkt(src):
@@ -245,25 +240,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         if src.count == 1:  # Single-slice netcdf file
             return 1
 
-        _LOG.debug("Encountered stacked netcdf file without recorded index\n - %s", src.name)
-
-        # Below is backwards compatibility code
-
-        tag_name = GDAL_NETCDF_DIM + 'time'
-        if tag_name not in src.tags(1):  # TODO: support time-less datasets properly
-            return 1
-
-        time = bi.center_time
-        sec_since_1970 = datetime_to_seconds_since_1970(time)
-
-        idx = 0
-        dist = float('+inf')
-        for i in range(1, src.count + 1):
-            v = float(src.tags(i)[tag_name])
-            if abs(sec_since_1970 - v) < dist:
-                idx = i
-                dist = abs(sec_since_1970 - v)
-        return idx
+        raise DeprecationWarning("Stacked netcdf without explicit time index is not supported anymore")
 
     def get_transform(self, shape: RasterShape) -> Affine:
         return self._band_info.transform * Affine.scale(1 / shape[1], 1 / shape[0])
