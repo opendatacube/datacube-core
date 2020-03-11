@@ -174,10 +174,6 @@ class RasterioDataSource(DataSource):
                     override = True
                     crs = self.get_crs()
 
-                # The [1.0a1-1.0a8] releases of rasterio had a bug that means it
-                # cannot read multiband data into a numpy array during reprojection
-                # We override it here to force the reading and reprojection into separate steps
-                # TODO: Remove when we no longer care about those versions of rasterio
                 bandnumber = self.get_bandnumber(src)
                 band = rasterio.band(src, bandnumber)
                 nodata = src.nodatavals[band.bidx-1] if src.nodatavals[band.bidx-1] is not None else self.nodata
