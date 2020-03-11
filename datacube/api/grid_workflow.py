@@ -8,7 +8,7 @@ import pandas as pd
 
 from datacube.utils.geometry import intersects
 from .query import Query, query_group_by
-from .core import Datacube, apply_aliases
+from .core import Datacube
 
 _LOG = logging.getLogger(__name__)
 
@@ -381,7 +381,7 @@ class GridWorkflow(object):
                                      dask_chunks=dask_chunks, fuse_func=fuse_func,
                                      skip_broken_datasets=skip_broken_datasets)
 
-        return apply_aliases(dataset, tile.product, measurements)
+        return dataset
 
     def update_tile_lineage(self, tile):
         for i in range(tile.sources.size):

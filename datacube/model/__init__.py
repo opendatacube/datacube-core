@@ -484,8 +484,14 @@ class DatasetType(object):
         my_measurements = self.measurements
         if measurements is None:
             return my_measurements
-        canonical = [self.canonical_measurement(measurement) for measurement in measurements]
-        return OrderedDict((measurement, my_measurements[measurement]) for measurement in canonical)
+
+        def fix_alias(measurement):
+            result = my_measurements[self.canonical_measurement(measurement)].copy()
+            result['name'] = measurement
+            return result
+
+        return OrderedDict((measurement, fix_alias(measurement))
+                           for measurement in measurements)
 
     def dataset_reader(self, dataset_doc):
         return self.metadata_type.dataset_reader(dataset_doc)

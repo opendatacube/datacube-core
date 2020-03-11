@@ -81,8 +81,13 @@ class BandInfo:
                  ds: Dataset,
                  band: str,
                  uri_scheme: Optional[str] = None):
-        mm = ds.measurements.get(band)
-        mp = ds.type.measurements.get(band)
+        try:
+            canonical_name = ds.type.canonical_measurement(band)
+        except KeyError:
+            raise ValueError('No such band: {}'.format(band))
+
+        mm = ds.measurements.get(canonical_name)
+        mp = ds.type.measurements.get(canonical_name)
 
         if mm is None or mp is None:
             raise ValueError('No such band: {}'.format(band))
