@@ -843,7 +843,9 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
     dask_name = 'warp_{name}-{token}'.format(name=band.name, token=uuid.uuid4().hex)
     dependencies = [band.data]
 
-    spatial_chunks = tuple(dask_chunks[k] for k in geobox.dims)
+    spatial_chunks = tuple(dask_chunks.get(k, geobox.shape[i])
+                           for i, k in enumerate(geobox.dims))
+
     gt = GeoboxTiles(geobox, spatial_chunks)
     new_layer = {}
 
