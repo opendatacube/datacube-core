@@ -314,7 +314,7 @@ class Datacube(object):
                                 skip_broken_datasets=skip_broken_datasets,
                                 progress_cbk=progress_cbk)
 
-        return apply_aliases(result, datacube_product, measurements)
+        return result
 
     def find_datasets(self, **search_terms):
         """
@@ -626,18 +626,6 @@ def per_band_load_data_settings(measurements, resampling=None, fuse_func=None):
                         for m in measurements]
 
     return measurements
-
-
-def apply_aliases(data, product, measurements):
-    """
-    If measurements are referred to by their aliases,
-    rename data arrays to reflect that.
-    """
-    if measurements is None:
-        return data
-
-    return data.rename({product.canonical_measurement(provided_name): provided_name
-                        for provided_name in measurements})
 
 
 def output_geobox(like=None, output_crs=None, resolution=None, align=None,

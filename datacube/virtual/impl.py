@@ -17,7 +17,7 @@ from dask.core import flatten
 import yaml
 
 from datacube import Datacube
-from datacube.api.core import select_datasets_inside_polygon, output_geobox, apply_aliases
+from datacube.api.core import select_datasets_inside_polygon, output_geobox
 from datacube.api.grid_workflow import _fast_slice
 from datacube.api.query import Query, query_group_by
 from datacube.model import Measurement, DatasetType
@@ -318,21 +318,16 @@ class Product(VirtualProduct):
         return {key: value if key not in ['fuse_func', 'dataset_predicate'] else qualified_name(value)
                 for key, value in self.items()}
 
-    def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
+    def output_measurements(self, product_definitions: Dict[str, DatasetType],
+                            measurements: List[str] = None) -> Dict[str, Measurement]:
         self._assert(self._product in product_definitions,
                      "product {} not found in definitions".format(self._product))
 
+        if measurements is None:
+            measurements = self.get('measurements')
+
         product = product_definitions[self._product]
-        measurement_dicts = {measurement['name']: Measurement(**measurement)
-                             for measurement in product.definition['measurements']}
-
-        if self.get('measurements') is None:
-            return measurement_dicts
-
-        try:
-            return {name: measurement_dicts[product.canonical_measurement(name)] for name in self['measurements']}
-        except KeyError as ke:
-            raise VirtualProductException("could not find measurement: {}".format(ke.args))
+        return product.lookup_measurements(measurements)
 
     def query(self, dc: Datacube, **search_terms: Dict[str, Any]) -> VirtualDatasetBag:
         product = dc.index.products.get_by_name(self._product)
@@ -397,25 +392,18 @@ class Product(VirtualProduct):
         merged = merge_search_terms(select_keys(self, load_keys),
                                     select_keys(load_settings, load_keys))
 
-        measurement_dicts = self.output_measurements(grouped.product_definitions)
         product = grouped.product_definitions[self._product]
 
-        if 'measurements' not in self:
-            measurement_names = load_settings.get('measurements')
-        elif 'measurements' not in load_settings:
-            measurement_names = self.get('measurements')
-        else:
+        if 'measurements' in self and 'measurements' in load_settings:
             for measurement in load_settings['measurements']:
-                self._assert(measurement in measurement_dicts,
+                self._assert(measurement in self['measurements'],
                              '{} not found in {}'.format(measurement, self._product))
 
-            measurement_names = load_settings['measurements']
-
-        if measurement_names is not None:
-            measurement_dicts = {name: measurement_dicts[name] for name in measurement_names}
+        measurement_dicts = self.output_measurements(grouped.product_definitions,
+                                                     load_settings.get('measurements'))
 
         if grouped.load_natively:
-            canonical_names = [measurement.name for measurement in measurement_dicts.values()]
+            canonical_names = [product.canonical_measurement(measurement) for measurement in measurement_dicts]
             dataset_geobox = geobox_union_conservative([native_geobox(ds,
                                                                       measurements=canonical_names,
                                                                       basis=merged.get('like'))
@@ -443,7 +431,7 @@ class Product(VirtualProduct):
                                     dask_chunks=merged.get('dask_chunks'),
                                     resampling=merged.get('resampling', 'nearest'))
 
-        return apply_aliases(result, grouped.product_definitions[self._product], list(measurement_dicts))
+        return result
 
 
 class Transform(VirtualProduct):
