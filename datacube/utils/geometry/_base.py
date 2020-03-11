@@ -423,6 +423,9 @@ class Geometry(object):
     union = _wrap_binary_geom(ogr.Geometry.Union)
 
     def __init__(self, geo, crs=None):
+        if isinstance(crs, str):
+            crs = CRS(crs)
+
         self.crs = crs
         self._geom = Geometry._geom_makers[geo['type']](geo['coordinates'])
 
