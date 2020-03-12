@@ -133,7 +133,7 @@ class LocalConfig(object):
         )
 
     def get(self, item: str, fallback=_UNSET):
-        if fallback == _UNSET:
+        if fallback is _UNSET:
             return self._config.get(self._env, item)
         else:
             return self._config.get(self._env, item, fallback=fallback)

@@ -2,7 +2,7 @@
 """
 Module
 """
-
+import pytest
 import configparser
 from textwrap import dedent
 
@@ -238,3 +238,7 @@ def test_auto_config(monkeypatch, tmpdir):
     assert config['db_hostname'] == 'some.db'
     assert config['db_database'] == 'datacube'
     assert config['db_username'] == 'user'
+
+    assert config.get('no_such_key', 10) == 10
+    with pytest.raises(configparser.NoOptionError):
+        config.get('no_such_key')
