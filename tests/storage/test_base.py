@@ -52,6 +52,11 @@ def test_band_info():
     with pytest.raises(ValueError):
         BandInfo(ds, 'no_such_band')
 
+    # Check case where dataset is missing band that is present in the product
+    del ds.metadata_doc['image']['bands']['c']
+    with pytest.raises(ValueError):
+        BandInfo(ds, 'c')
+
     ds.uris = []
     with pytest.raises(ValueError):
         BandInfo(ds, 'a')
