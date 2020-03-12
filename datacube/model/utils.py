@@ -111,7 +111,7 @@ def time_info(time, start_time=None, end_time=None, key_time=None):
         }
     }
     if key_time is not None:
-        extent['extent']['key_time'] = key_time
+        extent['extent']['key_time'] = to_datetime(key_time).isoformat()
     return extent
 
 

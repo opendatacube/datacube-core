@@ -726,6 +726,25 @@ def test_default_base_dir(monkeypatch):
     # - make sure that returned path is the same as symlink and different from cwd
 
 
+def test_time_info():
+    from datacube.model.utils import time_info
+    from datetime import datetime
+
+    date = '2019-03-03T00:00:00'
+    ee = time_info(datetime(2019, 3, 3))
+    assert ee['extent']['from_dt'] == date
+    assert ee['extent']['to_dt'] == date
+    assert ee['extent']['center_dt'] == date
+    assert len(ee['extent']) == 3
+
+    ee = time_info(datetime(2019, 3, 3), key_time=datetime(2019, 4, 4))
+    assert ee['extent']['from_dt'] == date
+    assert ee['extent']['to_dt'] == date
+    assert ee['extent']['center_dt'] == date
+    assert ee['extent']['key_time'] == '2019-04-04T00:00:00'
+    assert len(ee['extent']) == 4
+
+
 def test_normalise_path():
     cwd = Path('.').resolve()
     assert normalise_path('.').resolve() == cwd
