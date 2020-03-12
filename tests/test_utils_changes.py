@@ -1,3 +1,4 @@
+import pytest
 from datacube.utils.changes import (
     contains,
     classify_changes,
@@ -60,3 +61,8 @@ def test_classify_changes():
     assert classify_changes(changes, {('a2', ): allow_addition}) == bad_change
     assert classify_changes(changes, {('a2', ): allow_truncation}) == bad_change
     assert classify_changes(changes, {('a2', ): allow_extension}) == bad_change
+
+    with pytest.raises(RuntimeError):
+        classify_changes(changes, {('a2', ): object()})
+
+    assert str(MISSING) == repr(MISSING)
