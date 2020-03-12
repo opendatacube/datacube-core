@@ -22,7 +22,7 @@ from pandas import to_datetime
 
 from datacube.helpers import write_geotiff
 from datacube.model import MetadataType
-from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage
+from datacube.model.utils import xr_apply, traverse_datasets, flatten_datasets, dedup_lineage, remap_lineage_doc
 from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
 from datacube.utils import (gen_password, write_user_secret_file, slurp, read_documents, InvalidDocException,
                             SimpleDocNav)
@@ -642,13 +642,25 @@ def test_dedup():
     assert ds.sources['ab'].sources['bc'].doc is ds.sources['ac'].doc
     assert ds.sources['ab'].sources['bc'].sources['cd'].doc is ds.sources['ac'].sources['cd'].doc
 
-    # Test that we detect inconsistent metadata for duplicate entries
+    # Test that we detect inconsistent metadata for duplicate entries (test 1)
+    # test: different values in the same spot
     ds0 = SimpleDocNav(gen_dataset_test_dag(3, force_tree=True))
     ds0.sources['ac'].doc['label'] = 'Modified'
     ds0 = SimpleDocNav(ds0.doc)
     assert ds0.sources['ab'].sources['bc'].doc != ds0.sources['ac'].doc
 
     with pytest.raises(InvalidDocException, match=r'Inconsistent metadata .*'):
+        dedup_lineage(ds0)
+
+    # Test that we detect inconsistent metadata for duplicate entries (test 2)
+    # test: different sources structure
+    ds0 = SimpleDocNav(gen_dataset_test_dag(3, force_tree=True))
+    ds0.sources['ac'].doc['lineage']['source_datasets']['extra'] = ds0.sources['ae'].doc.copy()
+    assert ds0.sources['ab'].sources['bc'].doc != ds0.sources['ac'].doc
+
+    ds0 = SimpleDocNav(ds0.doc)
+
+    with pytest.raises(InvalidDocException, match=r'Inconsistent lineage .*'):
         dedup_lineage(ds0)
 
     # Test that we detect inconsistent lineage subtrees for duplicate entries
@@ -688,6 +700,20 @@ def test_dedup():
         dedup_lineage(ds0)
 
 
+def test_remap_lineage_doc():
+    def mk_node(ds, sources):
+        return dict(id=ds.id, **sources)
+
+    ds = SimpleDocNav(gen_dataset_test_dag(3, force_tree=True))
+    xx = remap_lineage_doc(ds, mk_node)
+    assert xx['id'] == ds.id
+    assert xx['ac']['id'] == ds.sources['ac'].id
+
+    xx = remap_lineage_doc(ds.doc, mk_node)
+    assert xx['id'] == ds.id
+    assert xx['ac']['id'] == ds.sources['ac'].id
+
+
 def test_default_base_dir(monkeypatch):
     def set_pwd(p):
         if p is None:
@@ -724,6 +750,25 @@ def test_default_base_dir(monkeypatch):
     # - create symlink to current directory in temp
     # - set PWD to that link
     # - make sure that returned path is the same as symlink and different from cwd
+
+
+def test_merge():
+    from datacube.model.utils import merge
+    assert merge(dict(a=1), dict(b=2)) == dict(a=1, b=2)
+    assert merge(dict(a=1, b=2), dict(b=2)) == dict(a=1, b=2)
+
+    with pytest.raises(Exception):
+        merge(dict(a=1, b=2), dict(b=3))
+
+
+@pytest.mark.xfail(True, reason="Merging dictionaries with content of NaN doesn't work currently")
+def test_merge_with_nan():
+    from datacube.model.utils import merge
+
+    _nan = float("nan")
+    assert _nan != _nan
+    xx = merge(dict(a=_nan), dict(a=_nan))  # <- fails here because of simple equality check
+    assert xx['a'] != xx['a']
 
 
 def test_time_info():
