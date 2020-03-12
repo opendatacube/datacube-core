@@ -4,6 +4,7 @@ import toolz
 import yaml
 
 from datacube.index import Index
+from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
 from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files, dataset_maker
 from datacube.utils import SimpleDocNav
@@ -200,6 +201,15 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
 
     ds = load_dataset_definition(p.datasets)
     ds_bad1 = load_dataset_definition(p.datasets_bad1)
+
+    # Check .hl.Doc2Dataset
+    doc2ds = Doc2Dataset(index)
+    _ds, _err = doc2ds(ds.doc, 'file:///something')
+    assert _err is None
+    assert str(_ds.id) == ds.id
+    assert _ds.metadata_doc == ds.doc
+
+    # Check dataset search
 
     r = clirunner(['dataset', 'search'], expect_success=True)
     assert ds.id in r.output
