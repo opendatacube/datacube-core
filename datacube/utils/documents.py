@@ -73,11 +73,7 @@ def parse_yaml(doc: str) -> typing.Mapping[str, Any]:
 
 
 def load_from_json(handle):
-    if PY35:
-        data = handle.read().decode('utf8')
-        yield json.loads(data)
-    else:
-        yield json.load(handle)
+    yield json.load(handle)
 
 
 def load_from_netcdf(path):
