@@ -34,7 +34,7 @@ from datacube.utils.py import sorted_items
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
                                  pick_uri, uri_resolve,
                                  normalise_path, default_base_dir)
-
+from datacube.utils.serialise import jsonify_document
 from datacube.utils.io import check_write_path
 
 
@@ -1001,3 +1001,27 @@ def test_check_write_path(tmpdir):
 
     assert check_write_path(p, overwrite=True) == p
     assert not p.exists()
+
+
+def test_jsonify():
+    from datetime import datetime
+    from uuid import UUID
+    from decimal import Decimal
+
+    assert sorted(jsonify_document({'a': (1.0, 2.0, 3.0),
+                                    'b': float("inf"),
+                                    'c': datetime(2016, 3, 11),
+                                    'd': np.dtype('int16'),
+                                    }).items()) == [
+                                    ('a', (1.0, 2.0, 3.0)),
+                                    ('b', 'Infinity'),
+                                    ('c', '2016-03-11T00:00:00'),
+                                    ('d', 'int16'),
+                                    ]
+
+    # Converts keys to strings:
+    assert sorted(jsonify_document({1: 'a', '2': Decimal('2')}).items()) == [
+        ('1', 'a'), ('2', '2')]
+
+    assert jsonify_document({'k': UUID("1f231570-e777-11e6-820f-185e0f80a5c0")}) == {
+        'k': '1f231570-e777-11e6-820f-185e0f80a5c0'}
