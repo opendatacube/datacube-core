@@ -59,16 +59,6 @@ class cached_property(object):  # pylint: disable=invalid-name
         return value
 
 
-def namedtuples2dicts(namedtuples):
-    """
-    Convert a dict of namedtuples to a dict of dicts.
-
-    :param namedtuples: dict of namedtuples
-    :return: dict of dicts
-    """
-    return {k: dict(v._asdict()) for k, v in namedtuples.items()}
-
-
 def sorted_items(d, key=None, reverse=False):
     """Given a dictionary `d` return items: (k1, v1), (k2, v2)... sorted in
     ascending order according to key.
@@ -80,12 +70,3 @@ def sorted_items(d, key=None, reverse=False):
     """
     key = toolz.first if key is None else toolz.comp(key, toolz.first)
     return sorted(d.items(), key=key, reverse=reverse)
-
-
-def attrs_all_equal(iterable, attr_name):
-    """
-    Return true if everything in the iterable has the same value for `attr_name`.
-
-    :rtype: bool
-    """
-    return len({getattr(item, attr_name, float('nan')) for item in iterable}) <= 1
