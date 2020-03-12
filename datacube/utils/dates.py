@@ -11,6 +11,11 @@ from dateutil.relativedelta import relativedelta
 from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
 from dateutil.tz import tzutc
 
+try:
+    import ciso8601  # pylint: disable=wrong-import-position
+except ImportError:
+    ciso8601 = None  # pragma: no cover
+
 
 FREQS = {'y': YEARLY, 'm': MONTHLY, 'd': DAILY}
 DURATIONS = {'y': 'years', 'm': 'months', 'd': 'days'}
@@ -65,24 +70,34 @@ def datetime_to_seconds_since_1970(dt):
 
 
 def _parse_time_generic(time):
+    """Convert string to datetime object
+
+    Calling this on datetime object is a no-op.
+    """
     if isinstance(time, str):
         return dateutil.parser.parse(time)
     return time
 
 
-try:
-    import ciso8601  # pylint: disable=wrong-import-position
+def _parse_time_ciso8601(time):
+    """Convert string to datetime object
 
-    def parse_time(time):
-        try:
-            result = ciso8601.parse_datetime(time)
-        except TypeError:
-            return time
+    This function deals with ISO8601 dates fast, and fallbacks to python for
+    other formats.
 
-        if result is not None:
-            return result
+    Calling this on datetime object is a no-op.
+    """
+    if not isinstance(time, str):
+        return time
 
+    try:
+        result = ciso8601.parse_datetime(time)
+    except Exception:  # pylint: disable=broad-except
+        result = None
+
+    if result is None:
         return _parse_time_generic(time)
-except ImportError:
-    def parse_time(time):
-        return _parse_time_generic(time)
+    return result
+
+
+parse_time = _parse_time_generic if ciso8601 is None else _parse_time_ciso8601  # pylint: disable=invalid-name
