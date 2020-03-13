@@ -2,7 +2,7 @@
 import pytest
 import numpy
 from datacube.testutils import mk_sample_dataset, mk_sample_product
-from datacube.model import GridSpec, Measurement
+from datacube.model import GridSpec, Measurement, DatasetType, MetadataType
 from datacube.utils import geometry
 from datacube.storage import measurement_paths
 
@@ -23,6 +23,11 @@ def test_gridspec():
 
     assert c1 == (3, 4) and c2 == c1
     assert gbox1 is gbox2
+
+    assert '4326' in str(gs)
+    assert '4326' in repr(gs)
+    assert (gs == gs)
+    assert (gs == {}) is False
 
 
 def test_gridspec_upperleft():
@@ -76,6 +81,19 @@ def test_dataset_measurement_paths():
         measurement_paths(ds)
 
 
+def test_product_basics():
+    product = mk_sample_product('test_product')
+    assert product.name == 'test_product'
+    assert 'test_product' in str(product)
+    assert 'test_product' in repr(product)
+    assert product == product
+    assert product == mk_sample_product('test_product')
+    assert not (product == mk_sample_product('other'))
+    assert not (product == [()])
+    assert hash(product) == hash(mk_sample_product('test_product'))
+    assert 'time' in dir(product.metadata)
+
+
 def test_product_dimensions():
     product = mk_sample_product('test_product')
     assert product.grid_spec is None
@@ -116,6 +134,8 @@ def test_measurement():
     assert m2.bob == 10
     assert m2.dataarray_attrs() == m.dataarray_attrs()
 
+    assert repr(m2) == repr(m)
+
     # Must specify *all* required keys. name, dtype, nodata and units
     with pytest.raises(ValueError) as e:
         Measurement(name='x', units='1', nodata=0)
@@ -130,3 +150,21 @@ def test_like_geobox():
 
     geobox = AlbersGS.tile_geobox((15, -40))
     assert output_geobox(like=geobox) is geobox
+
+
+def test_metadata_type():
+    m = MetadataType({'name': 'eo',
+                      'dataset': dict(
+                          id=['id'],
+                          label=['ga_label'],
+                          creation_time=['creation_dt'],
+                          measurements=['image', 'bands'],
+                          sources=['lineage', 'source_datasets'],
+                          format=['format', 'name'])},
+                     dataset_search_fields={})
+
+    assert 'eo' in str(m)
+    assert 'eo' in repr(m)
+    assert m.name == 'eo'
+    assert m.description is None
+    assert m.dataset_reader({}) is not None

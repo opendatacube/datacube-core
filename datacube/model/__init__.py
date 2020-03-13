@@ -366,11 +366,11 @@ class MetadataType(object):
 
     @property
     def name(self) -> str:
-        return self.definition['name']
+        return self.definition.get('name', None)
 
     @property
     def description(self) -> str:
-        return self.definition['description']
+        return self.definition.get('description', None)
 
     def dataset_reader(self, dataset_doc: Mapping[str, Field]) -> DocReader:
         return DocReader(self.definition['dataset'], self.dataset_fields, dataset_doc)
