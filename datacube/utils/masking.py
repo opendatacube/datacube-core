@@ -5,14 +5,13 @@ The main functions are `make_mask(variable)` `describe_flags(variable)`
 """
 
 import collections
-import warnings
 
 import pandas
 import numpy
 import xarray
 from xarray import DataArray, Dataset
 
-from datacube.utils.math import dtype_is_float, valid_mask
+from datacube.utils.math import valid_mask
 
 
 FLAGS_ATTR_NAME = 'flags_definition'
@@ -124,15 +123,6 @@ def valid_data_mask(data):
                               output_dtypes=[numpy.bool])
 
 
-def mask_valid_data(data, keep_attrs=True):
-    """
-    Deprecated. This function was poorly named. It is now available as `mask_invalid_data`.
-    """
-    warnings.warn("`mask_valid_data` has been renamed to `mask_invalid_data`. Please use that instead.",
-                  DeprecationWarning)
-    return mask_invalid_data(data, keep_attrs=keep_attrs)
-
-
 def mask_invalid_data(data, keep_attrs=True):
     """
     Sets all `nodata` values to ``nan``.
@@ -226,13 +216,6 @@ def mask_to_dict(bits_def, mask_value):
                 assert flag_name not in return_dict
                 return_dict[flag_name] = value
     return return_dict
-
-
-def _get_minimum_bit(bit_or_bits):
-    try:
-        return min(bit_or_bits)
-    except TypeError:
-        return bit_or_bits
 
 
 def get_flags_def(variable):

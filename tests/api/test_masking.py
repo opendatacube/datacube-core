@@ -58,6 +58,7 @@ def test_ga_good_pixel():
 def test_describe_flags():
     simple_var = SimpleVariableWithFlagsDef()
     describe_variable_flags(simple_var)
+    describe_variable_flags(simple_var, with_pandas=False)
 
 
 class SimpleVariableWithFlagsDef(object):
