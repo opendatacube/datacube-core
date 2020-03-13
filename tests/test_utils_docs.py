@@ -5,6 +5,7 @@ Test utility functions from :module:`datacube.utils`
 """
 import os
 from pathlib import Path
+from collections import OrderedDict
 from types import SimpleNamespace
 from typing import Tuple, Iterable
 
@@ -18,7 +19,18 @@ from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_
 from datacube.utils import (read_documents, InvalidDocException,
                             SimpleDocNav)
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
-from datacube.utils.documents import parse_yaml, without_lineage_sources, _open_from_s3
+from datacube.utils.documents import (
+    parse_yaml,
+    without_lineage_sources,
+    _open_from_s3,
+    netcdf_extract_string,
+    DocReader,
+    is_supported_document_type,
+    get_doc_offset,
+    get_doc_offset_safe,
+    _set_doc_offset,
+    transform_object_tree,
+)
 from datacube.utils.serialise import jsonify_document
 from datacube.utils.uris import as_url
 
@@ -499,3 +511,74 @@ def test_jsonify():
 
     assert jsonify_document({'k': UUID("1f231570-e777-11e6-820f-185e0f80a5c0")}) == {
         'k': '1f231570-e777-11e6-820f-185e0f80a5c0'}
+
+
+def test_netcdf_strings():
+    assert netcdf_extract_string(np.asarray([b'a', b'b'])) == "ab"
+    txt = "some string"
+    assert netcdf_extract_string(txt) is txt
+
+
+def test_doc_reader():
+    d = DocReader({'lat': ['extent', 'lat']}, {}, doc={'extent': {'lat': 4}})
+    assert hasattr(d, 'lat')
+    assert d.lat == 4
+    assert d._doc == {'extent': {'lat': 4}}
+
+    d.lat = 5
+    assert d.lat == 5
+    assert d._doc == {'extent': {'lat': 5}}
+
+    assert d.search_fields == {}
+
+    assert not hasattr(d, 'no_such')
+    with pytest.raises(AttributeError):
+        d.no_such
+
+    with pytest.raises(AttributeError):
+        d.no_such = 0
+
+    assert dir(d) == ['lat']
+
+    d = DocReader({'platform': ['platform', 'code']}, {}, doc={})
+    assert d.platform is None
+
+
+def test_is_supported_doc_type():
+    assert is_supported_document_type(Path('/tmp/something.yaml'))
+    assert is_supported_document_type(Path('/tmp/something.YML'))
+    assert is_supported_document_type(Path('/tmp/something.yaml.gz'))
+    assert not is_supported_document_type(Path('/tmp/something.tif'))
+    assert not is_supported_document_type(Path('/tmp/something.tif.gz'))
+
+
+def test_doc_offset():
+    assert get_doc_offset(['a'], {'a': 4}) == 4
+    assert get_doc_offset(['a', 'b'], {'a': {'b': 4}}) == 4
+    with pytest.raises(KeyError):
+        get_doc_offset(['a'], {})
+
+    assert get_doc_offset_safe(['a'], {'a': 4}) == 4
+    assert get_doc_offset_safe(['a', 'b'], {'a': {'b': 4}}) == 4
+    assert get_doc_offset_safe(['a'], {}) is None
+    assert get_doc_offset_safe(['a', 'b', 'c'], {'a': {'b': {}}}, 10) == 10
+    assert get_doc_offset_safe(['a', 'b', 'c'], {'a': {'b': []}}, 11) == 11
+
+    doc = {'a': 4}
+    _set_doc_offset(['a'], doc, 5)
+    assert doc == {'a': 5}
+    doc = {'a': {'b': 4}}
+    _set_doc_offset(['a', 'b'], doc, 'c')
+    assert doc == {'a': {'b': 'c'}}
+
+
+def test_transform_object_tree():
+    def add_one(a):
+        return a + 1
+    assert transform_object_tree(add_one, [1, 2, 3]) == [2, 3, 4]
+    assert transform_object_tree(add_one, {'a': 1, 'b': 2, 'c': 3}) == {'a': 2, 'b': 3, 'c': 4}
+    assert transform_object_tree(add_one, {'a': 1, 'b': (2, 3), 'c': [4, 5]}) == {'a': 2, 'b': (3, 4), 'c': [5, 6]}
+    assert transform_object_tree(add_one, {1: 1, '2': 2, 3.0: 3}, key_transform=float) == {1.0: 2, 2.0: 3, 3.0: 4}
+    # Order must be maintained
+    assert transform_object_tree(add_one, OrderedDict([('z', 1), ('w', 2), ('y', 3), ('s', 7)])) \
+        == OrderedDict([('z', 2), ('w', 3), ('y', 4), ('s', 8)])
