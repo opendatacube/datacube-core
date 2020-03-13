@@ -237,17 +237,6 @@ def is_supported_document_type(path):
 
     :type path: Union[Path, str]
     :rtype: bool
-    >>> from pathlib import Path
-    >>> is_supported_document_type(Path('/tmp/something.yaml'))
-    True
-    >>> is_supported_document_type(Path('/tmp/something.YML'))
-    True
-    >>> is_supported_document_type(Path('/tmp/something.yaml.gz'))
-    True
-    >>> is_supported_document_type(Path('/tmp/something.tif'))
-    False
-    >>> is_supported_document_type(Path('/tmp/something.tif.gz'))
-    False
     """
     return any([str(path).lower().endswith(suffix) for suffix in _ALL_SUPPORTED_EXTENSIONS])
 
@@ -285,14 +274,6 @@ def get_doc_offset(offset, document):
     :type offset: list[str]
     :type document: dict
 
-    >>> get_doc_offset(['a'], {'a': 4})
-    4
-    >>> get_doc_offset(['a', 'b'], {'a': {'b': 4}})
-    4
-    >>> get_doc_offset(['a'], {})
-    Traceback (most recent call last):
-    ...
-    KeyError: 'a'
     """
     return toolz.get_in(offset, document, no_default=True)
 
@@ -302,16 +283,6 @@ def get_doc_offset_safe(offset, document, value_if_missing=None):
     :type offset: list[str]
     :type document: dict
 
-    >>> get_doc_offset_safe(['a'], {'a': 4})
-    4
-    >>> get_doc_offset_safe(['a', 'b'], {'a': {'b': 4}})
-    4
-    >>> get_doc_offset_safe(['a'], {}) is None
-    True
-    >>> get_doc_offset_safe(['a', 'b', 'c'], {'a':{'b':{}}}, 10)
-    10
-    >>> get_doc_offset_safe(['a', 'b', 'c'], {'a':{'b':[]}}, 11)
-    11
     """
     return toolz.get_in(offset, document, default=value_if_missing)
 
@@ -329,18 +300,6 @@ def transform_object_tree(f, o, key_transform=lambda k: k):
     :param o: document/object
     :param key_transform: Optional function to apply on any dictionary keys.
 
-    >>> add_one = lambda a: a + 1
-    >>> transform_object_tree(add_one, [1, 2, 3])
-    [2, 3, 4]
-    >>> transform_object_tree(add_one, {'a': 1, 'b': 2, 'c': 3}) == {'a': 2, 'b': 3, 'c': 4}
-    True
-    >>> transform_object_tree(add_one, {'a': 1, 'b': (2, 3), 'c': [4, 5]}) == {'a': 2, 'b': (3, 4), 'c': [5, 6]}
-    True
-    >>> transform_object_tree(add_one, {1: 1, '2': 2, 3.0: 3}, key_transform=float) == {1.0: 2, 2.0: 3, 3.0: 4}
-    True
-    >>> # Order must be maintained
-    >>> transform_object_tree(add_one, OrderedDict([('z', 1), ('w', 2), ('y', 3), ('s', 7)]))
-    OrderedDict([('z', 2), ('w', 3), ('y', 4), ('s', 8)])
     """
 
     def recur(o_):
@@ -409,14 +368,6 @@ def _set_doc_offset(offset, document, value):
     :type offset: list[str]
     :type document: dict
 
-    >>> doc = {'a': 4}
-    >>> _set_doc_offset(['a'], doc, 5)
-    >>> doc
-    {'a': 5}
-    >>> doc = {'a': {'b': 4}}
-    >>> _set_doc_offset(['a', 'b'], doc, 'c')
-    >>> doc
-    {'a': {'b': 'c'}}
     """
     read_offset = offset[:-1]
     sub_doc = get_doc_offset(read_offset, document)
@@ -428,23 +379,6 @@ class DocReader(object):
         """
         :type system_offsets: dict[str,list[str]]
         :type doc: dict
-        >>> d = DocReader({'lat': ['extent', 'lat']}, {}, doc={'extent': {'lat': 4}})
-        >>> d.lat
-        4
-        >>> d.lat = 5
-        >>> d._doc
-        {'extent': {'lat': 5}}
-        >>> hasattr(d, 'lat')
-        True
-        >>> hasattr(d, 'lon')
-        False
-        >>> d.lon
-        Traceback (most recent call last):
-        ...
-        AttributeError: Unknown field 'lon'. Expected one of ['lat']
-        >>> # If that section of doc doesn't exist, treat the value not specified (None)
-        >>> d = DocReader({'platform': ['platform', 'code']}, {}, doc={})
-        >>> d.platform
         """
         self.__dict__['_doc'] = doc
 
