@@ -155,7 +155,9 @@ def create_mask_value(bits_def, **flags):
     value = 0
 
     for flag_name, flag_ref in flags.items():
-        defn = bits_def[flag_name]
+        defn = bits_def.get(flag_name, None)
+        if defn is None:
+            raise ValueError(f'Unknown flag: "{flag_name}"')
 
         try:
             [flag_value] = (bit_val
@@ -219,22 +221,20 @@ def mask_to_dict(bits_def, mask_value):
 
 
 def get_flags_def(variable):
-    try:
-        return getattr(variable, FLAGS_ATTR_NAME)
-    except AttributeError:
+    flags = getattr(variable, FLAGS_ATTR_NAME, None)
+    if flags is not None:
+        return flags
+
+    data_vars = getattr(variable, 'data_vars', None)
+
+    if data_vars is not None:
         # Maybe we have a DataSet, not a DataArray
-        for var in variable.data_vars.values():
-            if _is_data_var(var):
-                try:
-                    return getattr(var, FLAGS_ATTR_NAME)
-                except AttributeError:
-                    pass
+        for var in data_vars.values():
+            flags = getattr(var, FLAGS_ATTR_NAME, None)
+            if flags is not None:
+                return flags
 
-        raise ValueError('No masking variable found')
-
-
-def _is_data_var(variable):
-    return variable.name != 'crs' and len(variable.coords) > 1
+    raise ValueError('No masking variable found')
 
 
 def set_value_at_index(bitmask, index, value):
