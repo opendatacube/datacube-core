@@ -28,7 +28,7 @@ from datacube.utils import (gen_password, write_user_secret_file, slurp, read_do
                             SimpleDocNav)
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
-from datacube.utils.documents import parse_yaml, without_lineage_sources
+from datacube.utils.documents import parse_yaml, without_lineage_sources, _open_from_s3
 from datacube.utils.math import num2numpy, is_almost_int, valid_mask, invalid_mask, clamp
 from datacube.utils.py import sorted_items
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
@@ -405,6 +405,10 @@ def test_read_docs_from_s3(sample_document_files, monkeypatch):
 
         _test_read_docs_impl(mocked_s3_objs)
 
+    with pytest.raises(RuntimeError):
+        with _open_from_s3("https://not-s3.ga/file.txt"):
+            pass
+
 
 def test_read_docs_from_http(sample_document_files, httpserver):
     http_docs = []
@@ -624,6 +628,9 @@ A:..:0
                              'BCE',
                              'CD',
                              'D')] == [to_set(xx) for xx in dg]
+
+    with pytest.raises(ValueError):
+        SimpleDocNav([])
 
 
 def test_dedup():
