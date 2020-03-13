@@ -1,21 +1,38 @@
 # coding=utf-8
 import yaml
-
 import pytest
+from xarray import DataArray, Dataset
+import numpy as np
 
-from datacube.utils.masking import list_flag_names, create_mask_value, describe_variable_flags
-from datacube.utils.masking import mask_to_dict, mask_invalid_data, valid_data_mask
+from datacube.utils.masking import (
+    list_flag_names,
+    create_mask_value,
+    describe_variable_flags,
+    mask_to_dict,
+    mask_invalid_data,
+    valid_data_mask,
+)
 
 
-def test_list_flag_names():
-    simple_var = SimpleVariableWithFlagsDef()
+@pytest.fixture
+def simple_var():
+    flags = SimpleVariableWithFlagsDef().flags_definition
+    return DataArray(np.zeros((2, 3)),
+                     dims=('y', 'x'),
+                     name='simple_var',
+                     attrs={'flags_definition': flags})
+
+
+def test_list_flag_names(simple_var):
     flags = list_flag_names(simple_var)
     for flag_name in simple_var.flags_definition.keys():
         assert flag_name in flags
 
+    with pytest.raises(ValueError):
+        list_flag_names(([], {}))
 
-def test_create_mask_value():
-    simple_var = SimpleVariableWithFlagsDef()
+
+def test_create_mask_value(simple_var):
     bits_def = simple_var.flags_definition
 
     assert create_mask_value(bits_def, contiguous=True) == (256, 256)
@@ -47,18 +64,25 @@ def test_create_multi_mask_value():
 
     assert create_mask_value(multi_flags_def, water_confidence='maybe_water') == (0b011000, 0b10000)
 
+    with pytest.raises(ValueError):
+        create_mask_value(multi_flags_def, this_flag_doesnot_exist=9)
 
-def test_ga_good_pixel():
-    simple_var = SimpleVariableWithFlagsDef()
+    with pytest.raises(ValueError):
+        create_mask_value(multi_flags_def, water_confidence='invalid enum value')
+
+
+def test_ga_good_pixel(simple_var):
     bits_def = simple_var.flags_definition
 
     assert create_mask_value(bits_def, ga_good_pixel=True) == (16383, 16383)
 
 
-def test_describe_flags():
-    simple_var = SimpleVariableWithFlagsDef()
+def test_describe_flags(simple_var):
     describe_variable_flags(simple_var)
     describe_variable_flags(simple_var, with_pandas=False)
+
+    describe_variable_flags(simple_var.to_dataset())
+    describe_variable_flags(simple_var.to_dataset(), with_pandas=False)
 
 
 class SimpleVariableWithFlagsDef(object):
@@ -317,8 +341,6 @@ def test_simple_mask_to_dict(bits_def):
 
 
 def test_mask_valid_data():
-    from xarray import DataArray, Dataset
-    import numpy as np
     test_attrs = {
         'one': 1,
         'nodata': -999,
@@ -343,10 +365,16 @@ def test_mask_valid_data():
     assert output_da.equals(expected_data_array)
     assert output_da.attrs['one'] == 1
 
+    missing_nodata = data_array.copy()
+    del missing_nodata.attrs['nodata']
+    assert not hasattr(missing_nodata, 'nodata')
+    np.testing.assert_array_equal(missing_nodata, mask_invalid_data(missing_nodata))
+
+    with pytest.raises(TypeError):
+        mask_invalid_data({})
+
 
 def test_valid_data_mask():
-    from xarray import DataArray, Dataset
-    import numpy as np
     attrs = {
         'nodata': -999,
     }
@@ -397,6 +425,9 @@ def test_valid_data_mask():
 
     output_da = valid_data_mask(data_array)
     assert output_da.equals(expected_data_array)
+
+    with pytest.raises(TypeError):
+        valid_data_mask(([], []))
 
 
 def test_deprecation():
