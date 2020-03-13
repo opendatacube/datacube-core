@@ -1,4 +1,3 @@
-import itertools
 from math import ceil, fmod
 
 import numpy
@@ -155,28 +154,3 @@ def iter_slices(shape, chunk_size):
     for grid_index in numpy.ndindex(*num_grid_chunks):
         yield tuple(
             slice(min(d * c, stop), min((d + 1) * c, stop)) for d, c, stop in zip(grid_index, chunk_size, shape))
-
-
-def _tuplify(keys, values, defaults):
-    assert not set(values.keys()) - set(keys), 'bad keys'
-    return tuple(values.get(key, default) for key, default in zip(keys, defaults))
-
-
-def _slicify(step, size):
-    return (slice(i, min(i + step, size)) for i in range(0, size, step))
-
-
-def _block_iter(steps, shape):
-    return itertools.product(*(_slicify(step, size) for step, size in zip(steps, shape)))
-
-
-def tile_iter(tile, chunk_size):
-    """
-    Return the sequence of chunks to split a tile into computable regions.
-
-    :param tile: a tile of `.shape` size containing `.dim` dimensions
-    :param chunk_size: dict of dimension sizes
-    :return: Sequence of chunks to iterate across the entire tile
-    """
-    steps = _tuplify(tile.dims, chunk_size, tile.shape)
-    return _block_iter(steps, tile.shape)
