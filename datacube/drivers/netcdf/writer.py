@@ -11,12 +11,7 @@ import numpy
 
 from datacube.utils.masking import describe_flags_def
 from datacube.utils import geometry, data_resolution_and_offset
-
-# pylint: disable=ungrouped-imports
-try:
-    from ._safestrings import SafeStringsDataset as Dataset
-except TypeError:  # The above fails when netCDF4.Dataset is mocked, eg in RTD
-    from netCDF4 import Dataset  # type: ignore
+from ._safestrings import SafeStringsDataset as Dataset
 
 from datacube import __version__
 
