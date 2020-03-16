@@ -21,7 +21,16 @@ from datacube.helpers import write_geotiff
 from datacube.utils import gen_password, write_user_secret_file, slurp
 from datacube.model.utils import xr_apply
 from datacube.utils.dates import date_sequence
-from datacube.utils.math import num2numpy, is_almost_int, valid_mask, invalid_mask, clamp
+from datacube.utils.math import (
+    num2numpy,
+    is_almost_int,
+    valid_mask,
+    invalid_mask,
+    clamp,
+    unsqueeze_data_array,
+    unsqueeze_dataset,
+    data_resolution_and_offset
+)
 from datacube.utils.py import sorted_items
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
                                  pick_uri, uri_resolve,
@@ -592,6 +601,33 @@ def test_num2numpy():
     assert num2numpy(3.3, np.dtype('float32')).dtype == np.dtype('float32')
     assert num2numpy(3.3, np.float32).dtype == np.dtype('float32')
     assert num2numpy(3.3, np.float64).dtype == np.dtype('float64')
+
+
+def test_utils_math():
+    assert data_resolution_and_offset(np.array([1.5, 2.5, 3.5])) == (1.0, 1.0)
+    assert data_resolution_and_offset(np.array([5, 3, 1])) == (-2.0, 6.0)
+    assert data_resolution_and_offset(np.array([5, 3])) == (-2.0, 6.0)
+
+    with pytest.raises(ValueError):
+        data_resolution_and_offset(np.array([]))
+
+    with pytest.raises(ValueError):
+        data_resolution_and_offset(np.array([1]))
+
+    xx = xr.DataArray(np.zeros((3, 4)),
+                      name='xx',
+                      dims=('y', 'x'),
+                      coords={'x': np.arange(4),
+                              'y': np.arange(3)})
+    xx_t = unsqueeze_data_array(xx, 'time', 0)
+    assert xx_t.dims == ('time', 'y', 'x')
+    assert 'time' in xx_t.coords
+    assert xx_t.data.shape == (1, 3, 4)
+
+    ds = unsqueeze_dataset(xx.to_dataset(), 'time')
+    assert ds.xx.dims == ('time', 'y', 'x')
+    assert 'time' in ds.xx.coords
+    assert ds.xx.data.shape == (1, 3, 4)
 
 
 def test_check_write_path(tmpdir):

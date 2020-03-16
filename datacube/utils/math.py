@@ -119,11 +119,14 @@ def num2numpy(x, dtype, ignore_range=None):
 
 
 def data_resolution_and_offset(data):
-    """
-    >>> data_resolution_and_offset(numpy.array([1.5, 2.5, 3.5]))
-    (1.0, 1.0)
-    >>> data_resolution_and_offset(numpy.array([5, 3, 1]))
-    (-2.0, 6.0)
+    """ Compute resolution and offset from x/y axis data.
+
+        Only uses first two coordinate values, assumes that data is regularly
+        sampled.
+
+        Returns
+        =======
+        (resolution: float, offset: float)
     """
     if data.size < 2:
         raise ValueError("Can't calculate resolution with data size < 2")
