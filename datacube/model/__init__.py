@@ -68,8 +68,8 @@ class Dataset(object):
         self.archived_time = archived_time
 
     @property
-    def metadata_type(self) -> Optional['MetadataType']:
-        return self.type.metadata_type if self.type else None
+    def metadata_type(self) -> 'MetadataType':
+        return self.type.metadata_type
 
     @property
     def local_uri(self) -> Optional[str]:
@@ -294,8 +294,6 @@ class Dataset(object):
 
     @property
     def metadata(self) -> DocReader:
-        if self.metadata_type is None:
-            raise ValueError('Can not interpret dataset without metadata type set')
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
     def metadata_doc_without_lineage(self) -> Dict[str, Any]:
