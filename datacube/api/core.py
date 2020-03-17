@@ -714,23 +714,6 @@ def get_bounds(datasets, crs):
     return geometry.box(*bbox, crs=crs)
 
 
-def dataset_type_to_row(dt):
-    row = {
-        'id': dt.id,
-        'name': dt.name,
-        'description': dt.definition['description'],
-    }
-    row.update(dt.fields)
-    if dt.grid_spec is not None:
-        row.update({
-            'crs': str(dt.grid_spec.crs),
-            'spatial_dimensions': dt.grid_spec.dimensions,
-            'tile_size': dt.grid_spec.tile_size,
-            'resolution': dt.grid_spec.resolution,
-        })
-    return row
-
-
 def _calculate_chunk_sizes(sources: xarray.DataArray,
                            geobox: GeoBox,
                            dask_chunks: Dict[str, Union[str, int]]):

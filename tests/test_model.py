@@ -2,7 +2,7 @@
 import pytest
 import numpy
 from datacube.testutils import mk_sample_dataset, mk_sample_product
-from datacube.model import GridSpec, Measurement, DatasetType, MetadataType
+from datacube.model import GridSpec, Measurement, MetadataType
 from datacube.utils import geometry
 from datacube.storage import measurement_paths
 
@@ -56,6 +56,14 @@ def test_dataset_basics():
     assert ds != "33"
     assert (ds == "33") is False
     assert str(ds) == repr(ds)
+
+    ds = mk_sample_dataset([dict(name='a')], uri=None, geobox=None)
+    assert ds.uris == []
+    assert ds.uri_scheme == ''
+    assert ds.crs is None
+    assert ds.bounds is None
+    assert ds.extent is None
+    assert ds.transform is None
 
 
 def test_dataset_measurement_paths():
@@ -150,6 +158,22 @@ def test_like_geobox():
 
     geobox = AlbersGS.tile_geobox((15, -40))
     assert output_geobox(like=geobox) is geobox
+
+
+def test_output_geobox_fail_paths():
+    from datacube.api.core import output_geobox
+    gs_nores = GridSpec(crs=geometry.CRS('EPSG:4326'),
+                        tile_size=None,
+                        resolution=None)
+
+    with pytest.raises(ValueError):
+        output_geobox()
+
+    with pytest.raises(ValueError):
+        output_geobox(output_crs='EPSG:4326')  # need resolution as well
+
+    with pytest.raises(ValueError):
+        output_geobox(grid_spec=gs_nores)  # GridSpec with missing resolution
 
 
 def test_metadata_type():

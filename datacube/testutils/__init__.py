@@ -218,6 +218,12 @@ def mk_sample_dataset(bands,
 
     if timestamp is None:
         timestamp = '2018-06-29'
+    if uri is None:
+        uris = []
+    elif isinstance(uri, list):
+        uris = uri.copy()
+    else:
+        uris = [uri]
 
     return Dataset(ds_type, {
         'id': id,
@@ -225,7 +231,7 @@ def mk_sample_dataset(bands,
         'image': {'bands': image_bands},
         'time': timestamp,
         **geobox_to_gridspatial(geobox),
-    }, uris=[uri])
+    }, uris=uris)
 
 
 def make_graph_abcde(node):
