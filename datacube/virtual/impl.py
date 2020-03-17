@@ -342,7 +342,8 @@ class Product(VirtualProduct):
                      "query for {} returned another product {}".format(self._product, query.product))
 
         # find the datasets
-        datasets = dc.index.datasets.search(**query.search_terms)
+        datasets = (dataset for dataset in dc.index.datasets.search(**query.search_terms) if dataset.uris)
+
         if query.geopolygon is not None:
             datasets = select_datasets_inside_polygon(datasets, query.geopolygon)
 
