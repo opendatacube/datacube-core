@@ -6,6 +6,7 @@ import pytest
 import rasterio
 
 from datacube.api.query import query_group_by
+from datacube.api.core import Datacube
 
 from integration_tests.utils import assert_click_command, prepare_test_ingestion_configuration
 
@@ -103,13 +104,19 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs, datacube_env
     # Ingest PQ
     clirunner(['-v', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
 
+    dc = Datacube(index=index)
+    assert isinstance(str(dc), str)
+    assert isinstance(repr(dc), str)
+
+    with pytest.raises(ValueError):
+        dc.find_datasets(time='2019')  # no product supplied, raises exception
+
     check_open_with_dc(index)
     check_open_with_grid_workflow(index)
     check_load_via_dss(index)
 
 
 def check_open_with_dc(index):
-    from datacube.api.core import Datacube
     dc = Datacube(index=index)
 
     data_array = dc.load(product='ls5_nbar_albers', measurements=['blue']).to_array(dim='variable')
@@ -153,6 +160,14 @@ def check_open_with_dc(index):
         assert lazy_dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)).equals(
             dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)))
 
+        # again but with larger time chunks
+        lazy_dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2),
+                               dask_chunks={'time': 2})
+        assert lazy_dataset['blue'].data.dask
+        assert lazy_dataset.blue[:2, :100, :100].equals(dataset.blue[:2, :100, :100])
+        assert lazy_dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)).equals(
+            dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)))
+
     dataset_like = dc.load(product='ls5_nbar_albers', measurements=['blue'], like=dataset)
     assert (dataset.blue == dataset_like.blue).all()
 
@@ -173,6 +188,8 @@ def check_open_with_dc(index):
     assert len(products_df[products_df['name'].isin(['ls5_pq_albers'])])
 
     assert len(dc.list_measurements())
+    assert len(dc.list_measurements(with_pandas=False))
+    assert len(dc.list_products(with_pandas=False))
 
     resamp = ['nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average']
     results = {}
@@ -194,6 +211,16 @@ def check_open_with_dc(index):
 
     assert results['cubic_spline'] < results['nearest']
     assert results['lanczos'] < results['average']
+
+    # check empty result
+    dataset = dc.load(product='ls5_nbar_albers',
+                      time=('1918', '1919'),
+                      measurements=['blue'],
+                      latitude=(-35.28, -35.285),
+                      longitude=(149.15, 149.155),
+                      output_crs='EPSG:4326',
+                      resolution=(-0.0000125, 0.0000125))
+    assert len(dataset.data_vars) == 0
 
 
 def check_open_with_grid_workflow(index):
@@ -240,7 +267,6 @@ def check_open_with_grid_workflow(index):
 
 
 def check_load_via_dss(index):
-    from datacube.api.core import Datacube
     dc = Datacube(index=index)
 
     dss = dc.find_datasets(product='ls5_nbar_albers')
@@ -262,7 +288,6 @@ def check_load_via_dss(index):
 
 
 def check_legacy_open(index):
-    from datacube.api.core import Datacube
     dc = Datacube(index=index)
 
     data_array = dc.load(product='ls5_nbar_albers',
