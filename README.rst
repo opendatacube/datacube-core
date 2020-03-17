@@ -95,7 +95,7 @@ to ``./check-code.sh`` script.
 
 .. |Build Status| image:: https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
    :target: https://github.com/opendatacube/datacube-core/actions
-.. |Coverage Status| image:: https://coveralls.io/repos/opendatacube/datacube-core/badge.svg?branch=develop&service=github
-   :target: https://coveralls.io/github/opendatacube/datacube-core?branch=develop
+.. |Coverage Status| image:: https://codecov.io/gh/opendatacube/datacube-core/branch/develop/graph/badge.svg
+   :target: https://codecov.io/gh/opendatacube/datacube-core
 .. |Documentation Status| image:: https://readthedocs.org/projects/datacube-core/badge/?version=latest
    :target: http://datacube-core.readthedocs.org/en/latest/
