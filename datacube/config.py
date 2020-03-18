@@ -227,7 +227,7 @@ def auto_config() -> str:
     Render config to $DATACUBE_CONFIG_PATH or ~/.datacube.conf, but only if doesn't exist.
 
     option1:
-      DATACUBE_DB_URL  postgresql://user:password@host/database
+      DATACUBE_DB_URL  postgresql://user:password@host:port/database
 
     option2:
       DB_{HOSTNAME|PORT|USERNAME|PASSWORD|DATABASE}

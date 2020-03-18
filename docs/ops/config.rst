@@ -88,3 +88,28 @@ eg.
 or for cli commmands ``-E <name>``::
 
     datacube -E staging system check
+
+
+Configuration via Environment Variables
+---------------------------------------
+
+It is also possible to configure datacube with a single environment variable:
+``DATACUBE_DB_URL``. This is often convenient when using datacube applications
+inside a docker image. Format of the URL is the same as used by SQLAclchemy:
+``postgresql://user:password@host:port/database``. Only ``database`` parameter
+is compulsory. Note that ``password`` is url encoded, so it can contain special
+characters. For more information you can consult `SQLAlchemy documentations
+<https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls>`_
+
+Examples:
+
+``postgresql:///datacube``
+   Connect to local database ``datacube`` via UNIX socket.
+
+``postgresql://ro_user:secret123@db.host.tld/db1``
+   Connect to database ``db1`` on a remote server ``db.host.tld`` on
+   the default port (5432) using ``ro_user`` username with password
+   ``secret123``.
+
+``postgresql://ro_user:secret%21%25@db.host.tld:6432/db1``
+   Same as above but using port ``6432`` and password ``secret!%``.
