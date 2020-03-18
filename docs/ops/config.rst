@@ -12,11 +12,16 @@ to them.
 
 Types of Indexes
 ================
-At the moment, there are two types of indexes supported, but in the future we expect to support more. The two
-indexes currently are the standard PostgreSQL backed index, and the other is an extension to the standard index, with
-additional support for data stored in the ``S3 AIO`` format.
 
-The type of index driver to use is defined by the `index_driver` option in each section of the user config file.
+It is possible to implement custom index driver and hook it into the datacube
+via plugin mechanism. This is an experimental feature that was used to
+investigate ``S3 AIO`` format. The index driver interface however is not
+well defined and it is unrealistic to implement a completely new backend. One
+could however extend existing PostgreSQL backend, and this was the strategy used
+by ``S3 AIO`` driver before it got decommissioned.
+
+The type of index driver to use is defined by the ``index_driver`` option in
+each section of the user config file.
 
 
 .. _runtime-config-doc:
@@ -73,8 +78,8 @@ Example:
     db_hostname: staging.dea.ga.gov.au
 
 
-Note that the staging environment only specifies the hostname, all other fields will use default values (dbname
-datacube, current username, password loaded from ``~/.pgpass``)
+Note that the ``staging`` environment only specifies the hostname, all other fields will use default values (database
+``datacube``, current username, password loaded from ``~/.pgpass``)
 
 When using the datacube, it will use your default environment unless you specify one explicitly
 
