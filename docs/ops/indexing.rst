@@ -322,4 +322,8 @@ command ``python``
 
     dc = datacube.Datacube()
 
-    ds = dc.load("ls8_level1_usgs",output_crs="EPSG:4326", resolution=(-30, 30), latitude=(21,21.2), longitude=(86.7, 86.9))
+    ds = dc.load("ls8_level1_usgs",
+                 output_crs="EPSG:3857",
+                 resolution=(-30, 30),
+                 lat=(21,21.2),
+                 lon=(86.7, 86.9))
