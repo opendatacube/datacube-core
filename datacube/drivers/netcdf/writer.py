@@ -237,6 +237,14 @@ def create_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
         crs_var = _create_projected_grid_mapping_variable(nco, crs, name)
     else:
         raise ValueError('Unknown CRS')
+
+    # mark crs variable as a coordinate
+    coords = getattr(nco, 'coordinates', None)
+    coords = [] if coords is None else coords.split(',')
+    if name not in coords:
+        coords.append(name)
+    nco.coordinates = ','.join(coords)
+
     crs_var.semi_major_axis = crs.semi_major_axis
     crs_var.semi_minor_axis = crs.semi_minor_axis
     crs_var.inverse_flattening = crs.inverse_flattening
