@@ -41,12 +41,15 @@ def create_netcdf_storage_unit(filename,
     for name, coord in coordinates.items():
         netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
 
-    netcdf_writer.create_grid_mapping_variable(nco, crs)
+    grid_mapping = netcdf_writer.DEFAULT_GRID_MAPPING
+    netcdf_writer.create_grid_mapping_variable(nco, crs, name=grid_mapping)
 
     for name, variable in variables.items():
-        set_crs = all(dim in variable.dims for dim in crs.dimensions)
+        has_crs = all(dim in variable.dims for dim in crs.dimensions)
         var_params = variable_params.get(name, {})
-        data_var = netcdf_writer.create_variable(nco, name, variable, set_crs=set_crs, **var_params)
+        data_var = netcdf_writer.create_variable(nco, name, variable,
+                                                 grid_mapping=grid_mapping if has_crs else None,
+                                                 **var_params)
 
         for key, value in var_params.get('attrs', {}).items():
             setattr(data_var, key, value)
