@@ -17,6 +17,7 @@ from datacube import __version__
 
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
 _LOG = logging.getLogger(__name__)
+DEFAULT_GRID_MAPPING = 'crs'
 
 _STANDARD_COORDINATES = {
     'longitude': {
@@ -96,7 +97,7 @@ def create_coordinate(nco, name, labels, units):
     return var
 
 
-def create_variable(nco, name, var, set_crs=False, attrs=None, **kwargs):
+def create_variable(nco, name, var, grid_mapping=None, attrs=None, **kwargs):
     """
     :param nco:
     :param name:
@@ -136,16 +137,16 @@ def create_variable(nco, name, var, set_crs=False, attrs=None, **kwargs):
                                   fill_value=getattr(var, 'nodata', None),
                                   chunksizes=chunksizes,
                                   **kwargs)
-    if set_crs:
-        data_var.grid_mapping = 'crs'
+    if grid_mapping is not None:
+        data_var.grid_mapping = grid_mapping
     if getattr(var, 'units', None):
         data_var.units = var.units
     data_var.set_auto_maskandscale(False)
     return data_var
 
 
-def _create_latlon_grid_mapping_variable(nco, crs):
-    crs_var = nco.createVariable('crs', 'i4')
+def _create_latlon_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
+    crs_var = nco.createVariable(name, 'i4')
     crs_var.long_name = crs['GEOGCS']  # "Lon/Lat Coords in WGS84"
     crs_var.grid_mapping_name = 'latitude_longitude'
     crs_var.longitude_of_prime_meridian = 0.0
@@ -196,12 +197,12 @@ CRS_PARAM_WRITERS = {
 }
 
 
-def _create_projected_grid_mapping_variable(nco, crs):
+def _create_projected_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
     grid_mapping_name = crs['PROJECTION'].lower()
     if grid_mapping_name not in CRS_PARAM_WRITERS:
         raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
 
-    crs_var = nco.createVariable('crs', 'i4')
+    crs_var = nco.createVariable(name, 'i4')
     CRS_PARAM_WRITERS[grid_mapping_name](crs_var, crs)
 
     crs_var.false_easting = crs.proj.false_easting
@@ -229,11 +230,11 @@ def _write_geographical_extents_attributes(nco, extent):
     # nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
 
 
-def create_grid_mapping_variable(nco, crs):
+def create_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
     if crs.geographic:
-        crs_var = _create_latlon_grid_mapping_variable(nco, crs)
+        crs_var = _create_latlon_grid_mapping_variable(nco, crs, name)
     elif crs.projected:
-        crs_var = _create_projected_grid_mapping_variable(nco, crs)
+        crs_var = _create_projected_grid_mapping_variable(nco, crs, name)
     else:
         raise ValueError('Unknown CRS')
     crs_var.semi_major_axis = crs.semi_major_axis
