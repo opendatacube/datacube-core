@@ -296,3 +296,11 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
 
         assert 'abc' in var.ncattrs()
         assert var.getncattr('abc') == 'xyz'
+
+    with pytest.raises(RuntimeError):
+        write_dataset_to_netcdf(odc_style_xr_dataset, tmpnetcdf_filename)
+
+    # Check grid_mapping is a coordinate
+    xx = xr.open_dataset(tmpnetcdf_filename)
+    assert crs_var in xx.coords
+    assert crs_var not in xx.data_vars
