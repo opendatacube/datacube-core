@@ -11,9 +11,9 @@ This extension is reliant on an `xarray` object having a `.crs` property of type
 """
 
 import xarray
-from affine import Affine
 
-from datacube.utils import data_resolution_and_offset, geometry
+from datacube.utils import geometry
+from datacube.utils.math import affine_from_axis
 
 
 def _norm_crs(crs):
@@ -62,19 +62,10 @@ def _xarray_affine(obj):
     if crs is None:
         return None
 
-    dims = crs.dimensions
+    yy, xx = (obj[dim] for dim in crs.dimensions)
+    fallback_res = (coord.attrs.get('resolution', None) for coord in (xx, yy))
 
-    try:
-        xres, xoff = data_resolution_and_offset(obj[dims[1]].values)
-        yres, yoff = data_resolution_and_offset(obj[dims[0]].values)
-
-    except ValueError:
-        xres = obj[dims[1]].attrs['resolution']
-        xoff = obj[dims[1]].values[0] - xres / 2
-        yres = obj[dims[0]].attrs['resolution']
-        yoff = obj[dims[0]].values[0] - yres / 2
-
-    return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
+    return affine_from_axis(xx.values, yy.values, fallback_res)
 
 
 def _xarray_extent(obj):
