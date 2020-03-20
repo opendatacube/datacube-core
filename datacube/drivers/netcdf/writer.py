@@ -17,7 +17,7 @@ from datacube import __version__
 
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
 _LOG = logging.getLogger(__name__)
-DEFAULT_GRID_MAPPING = 'crs'
+DEFAULT_GRID_MAPPING = 'spatial_ref'
 
 _STANDARD_COORDINATES = {
     'longitude': {
