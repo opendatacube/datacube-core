@@ -69,16 +69,6 @@ LCC2_PROJ = geometry.CRS("""PROJCS["unnamed",
                                PARAMETER["false_easting",2500000],
                                PARAMETER["false_northing",0]]""")
 
-GLOBAL_ATTRS = {'test_attribute': 'test_value'}
-
-DATA_VARIABLES = ('B1', 'B2')
-LAT_LON_COORDINATES = ('latitude', 'longitude')
-PROJECTED_COORDINATES = ('x', 'y')
-COMMON_VARIABLES = ('crs', 'time')
-
-DATA_WIDTH = 400
-DATA_HEIGHT = 200
-
 
 def _ensure_spheroid(var):
     assert 'semi_major_axis' in var.ncattrs()
