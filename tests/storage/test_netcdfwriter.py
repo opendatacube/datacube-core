@@ -279,3 +279,20 @@ def test_useful_error_on_write_empty_dataset(tmpnetcdf_filename):
         ds = xr.Dataset(data_vars={'blue': (('time',), numpy.array([0, 1, 2]))})
         write_dataset_to_netcdf(ds, tmpnetcdf_filename)
     assert 'geobox' in str(excinfo.value)
+
+
+def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
+    write_dataset_to_netcdf(odc_style_xr_dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
+                            variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
+
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        nco.set_auto_mask(False)
+        assert 'B10' in nco.variables
+        var = nco.variables['B10']
+        assert (var[:] == odc_style_xr_dataset['B10'].values).all()
+
+        assert 'foo' in nco.ncattrs()
+        assert nco.getncattr('foo') == 'bar'
+
+        assert 'abc' in var.ncattrs()
+        assert var.getncattr('abc') == 'xyz'
