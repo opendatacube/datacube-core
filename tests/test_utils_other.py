@@ -604,7 +604,7 @@ def test_num2numpy():
     assert num2numpy(3.3, np.float64).dtype == np.dtype('float64')
 
 
-def test_utils_math():
+def test_utils_datares():
     assert data_resolution_and_offset(np.array([1.5, 2.5, 3.5])) == (1.0, 1.0)
     assert data_resolution_and_offset(np.array([5, 3, 1])) == (-2.0, 6.0)
     assert data_resolution_and_offset(np.array([5, 3])) == (-2.0, 6.0)
@@ -619,6 +619,8 @@ def test_utils_math():
     with pytest.raises(ValueError):
         data_resolution_and_offset(np.array([1]))
 
+
+def test_utils_affine_from_axis():
     assert affine_from_axis(np.asarray([1.5, 2.5, 3.5]),
                             np.asarray([10.5, 11.5])) * (0, 0) == (1.0, 10.0)
 
@@ -632,6 +634,26 @@ def test_utils_math():
     assert sx == 1 and sy == 10
     assert tx == 0.5 and ty == 5
 
+    (sx, _, tx,
+     _, sy, ty, *_) = affine_from_axis(np.asarray([1]),
+                                       np.asarray([10, 20]), 1)
+    assert sx == 1 and sy == 10
+    assert tx == 0.5 and ty == 5
+
+    (sx, _, tx,
+     _, sy, ty, *_) = affine_from_axis(np.asarray([1]),
+                                       np.asarray([10, 20]), (1, 1))
+    assert sx == 1 and sy == 10
+    assert tx == 0.5 and ty == 5
+
+    (sx, _, tx,
+     _, sy, ty, *_) = affine_from_axis(np.asarray([1]),
+                                       np.asarray([10]), (2, 10))
+    assert sx == 2 and sy == 10
+    assert tx == 0 and ty == 5
+
+
+def test_utils_math():
     xx = xr.DataArray(np.zeros((3, 4)),
                       name='xx',
                       dims=('y', 'x'),

@@ -143,8 +143,13 @@ def data_resolution_and_offset(data, fallback_resolution=None):
     return res, off.item()
 
 
-def affine_from_axis(xx, yy):
+def affine_from_axis(xx, yy, fallback_resolution=None):
     """ Compute Affine transform from pixel to real space given X,Y coordinates.
+
+        :param xx: X axis coordinates
+        :param yy: Y axis coordinates
+        :param fallback_resolution: None|float|(resx:float, resy:float) resolution to
+                                    assume for single element axis.
 
         (0, 0) in pixel space is defined as top left corner of the top left pixel
             \
@@ -158,10 +163,19 @@ def affine_from_axis(xx, yy):
         Only uses first two coordinate values, assumes that data is regularly
         sampled.
 
-        raises ValueError when any axis has fewer than 2 values.
+        raises ValueError when any axis is empty
+        raises ValueError when any axis has single value and fallback resolution was not supplied.
     """
-    xres, xoff = data_resolution_and_offset(xx)
-    yres, yoff = data_resolution_and_offset(yy)
+    if fallback_resolution is not None:
+        if isinstance(fallback_resolution, (float, int)):
+            frx, fry = fallback_resolution, fallback_resolution
+        else:
+            frx, fry = fallback_resolution
+    else:
+        frx, fry = None, None
+
+    xres, xoff = data_resolution_and_offset(xx, frx)
+    yres, yoff = data_resolution_and_offset(yy, fry)
 
     return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
 
