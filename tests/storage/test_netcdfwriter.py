@@ -10,7 +10,11 @@ import string
 from datacube.drivers.netcdf.writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
     create_grid_mapping_variable, flag_mask_meanings, Variable
 from datacube.drivers.netcdf import write_dataset_to_netcdf
+from datacube.drivers.netcdf.writer import DEFAULT_GRID_MAPPING
 from datacube.utils import geometry, DatacubeException, read_strings_from_netcdf
+
+
+crs_var = DEFAULT_GRID_MAPPING
 
 GEO_PROJ = geometry.CRS("""GEOGCS["WGS 84",
                            DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],
@@ -105,13 +109,13 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'albers_conical_equal_area'
-        assert 'standard_parallel' in nco['crs'].ncattrs()
-        assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
-        assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
-        _ensure_spheroid(nco['crs'])
-        _ensure_gdal(nco['crs'])
+        assert crs_var in nco.variables
+        assert nco[crs_var].grid_mapping_name == 'albers_conical_equal_area'
+        assert 'standard_parallel' in nco[crs_var].ncattrs()
+        assert 'longitude_of_central_meridian' in nco[crs_var].ncattrs()
+        assert 'latitude_of_projection_origin' in nco[crs_var].ncattrs()
+        _ensure_spheroid(nco[crs_var])
+        _ensure_gdal(nco[crs_var])
         _ensure_geospatial(nco)
 
 
@@ -123,15 +127,15 @@ def test_create_lambert_conformal_conic_2sp_projection_netcdf(tmpnetcdf_filename
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'lambert_conformal_conic'
-        assert 'standard_parallel' in nco['crs'].ncattrs()
-        assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
-        assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
-        assert 'false_easting' in nco['crs'].ncattrs()
-        assert 'false_northing' in nco['crs'].ncattrs()
-        _ensure_spheroid(nco['crs'])
-        _ensure_gdal(nco['crs'])
+        assert crs_var in nco.variables
+        assert nco[crs_var].grid_mapping_name == 'lambert_conformal_conic'
+        assert 'standard_parallel' in nco[crs_var].ncattrs()
+        assert 'longitude_of_central_meridian' in nco[crs_var].ncattrs()
+        assert 'latitude_of_projection_origin' in nco[crs_var].ncattrs()
+        assert 'false_easting' in nco[crs_var].ncattrs()
+        assert 'false_northing' in nco[crs_var].ncattrs()
+        _ensure_spheroid(nco[crs_var])
+        _ensure_gdal(nco[crs_var])
         _ensure_geospatial(nco)
 
 
@@ -143,9 +147,9 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'latitude_longitude'
-        _ensure_spheroid(nco['crs'])
+        assert crs_var in nco.variables
+        assert nco[crs_var].grid_mapping_name == 'latitude_longitude'
+        _ensure_spheroid(nco[crs_var])
         _ensure_geospatial(nco)
 
 
@@ -157,10 +161,10 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'sinusoidal'
-        assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
-        _ensure_spheroid(nco['crs'])
+        assert crs_var in nco.variables
+        assert nco[crs_var].grid_mapping_name == 'sinusoidal'
+        assert 'longitude_of_central_meridian' in nco[crs_var].ncattrs()
+        _ensure_spheroid(nco[crs_var])
         _ensure_geospatial(nco)
 
 
