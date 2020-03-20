@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 
 import mock
-import netCDF4
 import numpy as np
 import pytest
 import rasterio.warp
@@ -12,7 +11,7 @@ from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.testutils.io import RasterFileDataSource
 from datacube.storage import BandInfo
-from datacube.drivers.netcdf import create_netcdf_storage_unit, write_dataset_to_netcdf, Variable
+from datacube.drivers.netcdf import create_netcdf_storage_unit, Variable
 from datacube.storage import reproject_and_fuse
 from datacube.storage._rio import RasterDatasetDataSource, _url2rasterio
 from datacube.storage._read import read_time_slice
@@ -24,23 +23,6 @@ from datacube.testutils.geom import epsg4326, epsg3577
 def mk_gbox(shape=(2, 2), transform=identity, crs=epsg4326):
     H, W = shape
     return GeoBox(W, H, transform, crs)
-
-
-def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
-    write_dataset_to_netcdf(odc_style_xr_dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
-                            variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
-
-    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        nco.set_auto_mask(False)
-        assert 'B10' in nco.variables
-        var = nco.variables['B10']
-        assert (var[:] == odc_style_xr_dataset['B10'].values).all()
-
-        assert 'foo' in nco.ncattrs()
-        assert nco.getncattr('foo') == 'bar'
-
-        assert 'abc' in var.ncattrs()
-        assert var.getncattr('abc') == 'xyz'
 
 
 def test_first_source_is_priority_in_reproject_and_fuse():
