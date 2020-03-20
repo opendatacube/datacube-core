@@ -86,9 +86,6 @@ def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_
     if dataset.geobox is None:
         raise DatacubeException('Dataset geobox property is None, cannot write to NetCDF file.')
 
-    if dataset.geobox.crs is None:
-        raise DatacubeException('Dataset geobox.crs property is None, cannot write to NetCDF file.')
-
     try:
         HDF5_LOCK.acquire(blocking=True)
         nco = create_netcdf_storage_unit(filename,
