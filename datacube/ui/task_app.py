@@ -3,7 +3,6 @@ import logging
 import os
 import time
 import click
-import cachetools
 import functools
 import itertools
 import re
@@ -16,11 +15,6 @@ from datacube.utils import read_documents
 
 
 _LOG = logging.getLogger(__name__)
-
-
-@cachetools.cached(cache={}, key=lambda index, id_: id_)
-def get_full_lineage(index, id_):
-    return index.datasets.get(id_, include_sources=True)
 
 
 def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs):
@@ -245,12 +239,6 @@ def check_existing_files(paths):
     click.echo('{total} tasks files to be created ({valid} valid files, {invalid} existing paths)'.format(
         total=total, valid=total - len(existing_files), invalid=len(existing_files)
     ))
-
-
-def add_dataset_to_db(index, datasets):
-    for dataset in datasets.values:
-        index.datasets.add(dataset, with_lineage=False)
-        _LOG.info('Dataset added')
 
 
 def do_nothing(result):

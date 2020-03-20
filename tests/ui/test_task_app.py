@@ -3,7 +3,7 @@
 Module
 """
 
-from datacube.ui.task_app import task_app, run_tasks
+from datacube.ui.task_app import task_app, run_tasks, wrap_task
 import datacube.executor
 
 
@@ -86,6 +86,7 @@ def test_task_app_year_splitting():
     def is_close(ts1, ts2, max_delta=one_millisecond):
         return abs(pd.Timestamp(ts1) - pd.Timestamp(ts2)) < max_delta
 
+    assert validate_year(None, None, None) is None
     year_range = validate_year(None, None, '1996-2004')
     assert is_close(year_range[0], '1996-01-01 00:00:00')
     assert is_close(year_range[1], '2004-12-31 23:59:59.999999999')
@@ -139,6 +140,7 @@ def test_task_app_year_splitting():
 def test_task_app_cell_index(tmpdir):
     from datacube.ui.task_app import validate_cell_index, validate_cell_list, cell_list_to_file
 
+    assert validate_cell_index(None, None, None) is None
     assert validate_cell_index(None, None, '17,-12') == (17, -12)
 
     cell_list = [(17, 12), (16, -10), (-23, 0)]
@@ -152,6 +154,7 @@ def test_task_app_cell_index(tmpdir):
 
     assert cell_list_file.check()
 
+    assert validate_cell_list(None, None, None) is None
     assert validate_cell_list(None, None, str(cell_list_file)) == cell_list
 
 
@@ -169,5 +172,16 @@ def test_run_tasks():
         tasks_to_do.remove(result[0])
 
     run_tasks(tasks, executor, task_func, process_result_func)
-
     assert not tasks_to_do
+
+    # no task proc specified
+    tasks = ({'val': i} for i in range(3))
+    run_tasks(tasks, executor, task_func)
+
+
+def test_wrap_task():
+    def task_with_args(task, a, b):
+        return (task, a, b)
+
+    assert task_with_args(1, 2, 'a') == (1, 2, 'a')
+    assert wrap_task(task_with_args, 'a', 'b')(0) == (0, 'a', 'b')
