@@ -608,9 +608,13 @@ def test_utils_math():
     assert data_resolution_and_offset(np.array([1.5, 2.5, 3.5])) == (1.0, 1.0)
     assert data_resolution_and_offset(np.array([5, 3, 1])) == (-2.0, 6.0)
     assert data_resolution_and_offset(np.array([5, 3])) == (-2.0, 6.0)
+    assert data_resolution_and_offset(np.array([1.5]), 1) == (1.0, 1.0)
 
     with pytest.raises(ValueError):
         data_resolution_and_offset(np.array([]))
+
+    with pytest.raises(ValueError):
+        data_resolution_and_offset(np.array([]), 10)
 
     with pytest.raises(ValueError):
         data_resolution_and_offset(np.array([1]))

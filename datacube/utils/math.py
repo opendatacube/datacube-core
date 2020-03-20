@@ -119,7 +119,7 @@ def num2numpy(x, dtype, ignore_range=None):
     return None
 
 
-def data_resolution_and_offset(data):
+def data_resolution_and_offset(data, fallback_resolution=None):
     """ Compute resolution and offset from x/y axis data.
 
         Only uses first two coordinate values, assumes that data is regularly
@@ -130,11 +130,17 @@ def data_resolution_and_offset(data):
         (resolution: float, offset: float)
     """
     if data.size < 2:
-        raise ValueError("Can't calculate resolution with data size < 2")
+        if data.size < 1:
+            raise ValueError("Can't calculate resolution for empty data")
+        if fallback_resolution is None:
+            raise ValueError("Can't calculate resolution with data size < 2")
+        res = fallback_resolution
+    else:
+        res = (data[data.size - 1] - data[0]) / (data.size - 1.0)
+        res = res.item()
 
-    res = (data[data.size - 1] - data[0]) / (data.size - 1.0)
     off = data[0] - 0.5 * res
-    return res.item(), off.item()
+    return res, off.item()
 
 
 def affine_from_axis(xx, yy):
