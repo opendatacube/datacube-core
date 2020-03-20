@@ -2,6 +2,7 @@ from math import ceil, fmod
 
 import numpy
 import xarray
+from affine import Affine
 
 
 def unsqueeze_data_array(da, dim, pos, coord=0, attrs=None):
@@ -134,6 +135,29 @@ def data_resolution_and_offset(data):
     res = (data[data.size - 1] - data[0]) / (data.size - 1.0)
     off = data[0] - 0.5 * res
     return res.item(), off.item()
+
+
+def affine_from_axis(xx, yy):
+    """ Compute Affine transform from pixel to real space given X,Y coordinates.
+
+        (0, 0) in pixel space is defined as top left corner of the top left pixel
+            \
+            `` 0   1
+             +---+---+
+           0 |   |   |
+             +---+---+
+           1 |   |   |
+             +---+---+
+
+        Only uses first two coordinate values, assumes that data is regularly
+        sampled.
+
+        raises ValueError when any axis has fewer than 2 values.
+    """
+    xres, xoff = data_resolution_and_offset(xx)
+    yres, yoff = data_resolution_and_offset(yy)
+
+    return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
 
 
 def iter_slices(shape, chunk_size):

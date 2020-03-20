@@ -29,7 +29,8 @@ from datacube.utils.math import (
     clamp,
     unsqueeze_data_array,
     unsqueeze_dataset,
-    data_resolution_and_offset
+    data_resolution_and_offset,
+    affine_from_axis,
 )
 from datacube.utils.py import sorted_items
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
@@ -613,6 +614,19 @@ def test_utils_math():
 
     with pytest.raises(ValueError):
         data_resolution_and_offset(np.array([1]))
+
+    assert affine_from_axis(np.asarray([1.5, 2.5, 3.5]),
+                            np.asarray([10.5, 11.5])) * (0, 0) == (1.0, 10.0)
+
+    assert affine_from_axis(np.asarray([1.5, 2.5, 3.5]),
+                            np.asarray([10.5, 11.5])) * (2, 1) == (3, 11)
+
+    (sx, z1, tx,
+     z2, sy, ty, *_) = affine_from_axis(np.asarray([1, 2, 3]),
+                                        np.asarray([10, 20]))
+    assert z1 == 0 and z2 == 0
+    assert sx == 1 and sy == 10
+    assert tx == 0.5 and ty == 5
 
     xx = xr.DataArray(np.zeros((3, 4)),
                       name='xx',
