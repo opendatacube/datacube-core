@@ -431,7 +431,6 @@ class DatasetType(object):
         """
         List of dimension labels for data in this product
         """
-        assert self.metadata_type.name == 'eo'
         if self.grid_spec is not None:
             spatial_dims = self.grid_spec.dimensions
         else:
