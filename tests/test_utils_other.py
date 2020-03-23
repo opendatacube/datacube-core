@@ -29,6 +29,7 @@ from datacube.utils.math import (
     clamp,
     unsqueeze_data_array,
     unsqueeze_dataset,
+    spatial_dims,
     data_resolution_and_offset,
     affine_from_axis,
 )
@@ -668,6 +669,24 @@ def test_utils_math():
     assert ds.xx.dims == ('time', 'y', 'x')
     assert 'time' in ds.xx.coords
     assert ds.xx.data.shape == (1, 3, 4)
+
+
+def test_spatial_dims():
+    def tt(d1, d2):
+        coords = {}
+        coords[d1] = np.arange(3)
+        coords[d2] = np.arange(4)
+        return xr.DataArray(np.zeros((3, 4)),
+                            name='xx',
+                            dims=(d1, d2),
+                            coords=coords)
+
+    assert spatial_dims(tt('y', 'x')) == ('y', 'x')
+    assert spatial_dims(tt('x', 'y')) == ('y', 'x')
+    assert spatial_dims(tt('latitude', 'longitude')) == ('latitude', 'longitude')
+    assert spatial_dims(tt('lat', 'lon')) == ('lat', 'lon')
+    assert spatial_dims(tt('a', 'b')) is None
+    assert spatial_dims(tt('a', 'b'), relaxed=True) == ('a', 'b')
 
 
 def test_check_write_path(tmpdir):

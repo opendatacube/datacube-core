@@ -24,9 +24,10 @@ from .documents import (
     _readable_offset,
 )
 from .math import (
-    unsqueeze_data_array,
-    iter_slices,
     unsqueeze_dataset,
+    unsqueeze_data_array,
+    spatial_dims,
+    iter_slices,
     data_resolution_and_offset,
 )
 from ._misc import (
@@ -60,8 +61,9 @@ __all__ = (
     "netcdf_extract_string",
     "without_lineage_sources",
     "unsqueeze_data_array",
-    "iter_slices",
     "unsqueeze_dataset",
+    "spatial_dims",
+    "iter_slices",
     "data_resolution_and_offset",
     "DatacubeException",
     "schema_validated",
