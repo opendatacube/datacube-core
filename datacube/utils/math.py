@@ -35,6 +35,35 @@ def unsqueeze_dataset(ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0) ->
     return ds
 
 
+def spatial_dims(xx: xr.DataArray, relaxed: bool = False) -> Optional[Tuple[str, str]]:
+    """ Find spatial dimensions of `xx`.
+
+        Checks for presence of dimensions named:
+          y, x | latitude, longitude | lat, lon
+
+        Returns
+        =======
+        None -- if no dimensions with expected names are found
+        ('y', 'x') | ('latitude', 'longitude') | ('lat', 'lon')
+
+        If *relaxed* is True and none of the above dimension names are found,
+        assume that last two dimensions are spatial dimensions.
+    """
+    guesses = [('y', 'x'),
+               ('latitude', 'longitude'),
+               ('lat', 'lon')]
+
+    dims = set(xx.dims)
+    for guess in guesses:
+        if dims.issuperset(guess):
+            return guess
+
+    if relaxed and len(xx.dims) >= 2:
+        return xx.dims[-2:]
+
+    return None
+
+
 def clamp(x, l, u):
     """
     clamp x to be l <= x <= u
