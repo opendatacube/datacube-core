@@ -427,7 +427,7 @@ class DatasetType(object):
         return OrderedDict((m['name'], Measurement(**m)) for m in self.definition.get('measurements', []))
 
     @property
-    def dimensions(self) -> Tuple[str, str]:
+    def dimensions(self) -> Tuple[str, str, str]:
         """
         List of dimension labels for data in this product
         """
