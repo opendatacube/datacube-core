@@ -1,32 +1,36 @@
+from typing import Tuple, Optional, Any
 from math import ceil, fmod
 
 import numpy
-import xarray
+import xarray as xr
 from affine import Affine
 
 
-def unsqueeze_data_array(da, dim, pos, coord=0, attrs=None):
+def unsqueeze_data_array(da: xr.DataArray,
+                         dim: str,
+                         pos: int,
+                         coord: Any = 0,
+                         attrs: Optional[dict] = None) -> xr.DataArray:
     """
     Add a 1-length dimension to a data array.
 
-    :param xarray.DataArray da: array to add a 1-length dimension
-    :param str dim: name of new dimension
-    :param int pos: position of dim
+    :param da: array to add a 1-length dimension
+    :param dim: name of new dimension
+    :param pos: position of dim
     :param coord: label of the coordinate on the unsqueezed dimension
     :param attrs: attributes for the coordinate dimension
     :return: A new xarray with a dimension added
-    :rtype: xarray.DataArray
     """
     new_dims = list(da.dims)
     new_dims.insert(pos, dim)
     new_shape = da.data.shape[:pos] + (1,) + da.data.shape[pos:]
     new_data = da.data.reshape(new_shape)
     new_coords = {k: v for k, v in da.coords.items()}
-    new_coords[dim] = xarray.DataArray([coord], dims=[dim], attrs=attrs)
-    return xarray.DataArray(new_data, dims=new_dims, coords=new_coords, attrs=da.attrs)
+    new_coords[dim] = xr.DataArray([coord], dims=[dim], attrs=attrs)
+    return xr.DataArray(new_data, dims=new_dims, coords=new_coords, attrs=da.attrs)
 
 
-def unsqueeze_dataset(ds, dim, coord=0, pos=0):
+def unsqueeze_dataset(ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0) -> xr.Dataset:
     ds = ds.apply(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
     return ds
 
