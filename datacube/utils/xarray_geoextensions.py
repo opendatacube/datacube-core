@@ -12,7 +12,7 @@ This extension is reliant on an `xarray` object having a `.crs` property of type
 
 import xarray
 
-from datacube.utils import geometry
+from datacube.utils import geometry, spatial_dims
 from datacube.utils.math import affine_from_axis
 
 
@@ -38,13 +38,11 @@ def _get_crs(obj):
     else:
         data_array = obj
 
-    # Assumption: (... y,x) or (...y,x,band)
-    if data_array.dims[-1] == 'band':
-        spatial_dims = data_array.dims[-3:-1]
-    else:
-        spatial_dims = data_array.dims[-2:]
+    sdims = spatial_dims(data_array, relaxed=True)
+    if sdims is None:
+        return None
 
-    crs_set = set(data_array[d].attrs.get('crs', None) for d in spatial_dims)
+    crs_set = set(data_array[d].attrs.get('crs', None) for d in sdims)
     crs = None
     if len(crs_set) > 1:
         raise ValueError('Spatial dimensions have different crs.')
@@ -58,11 +56,11 @@ def _get_crs(obj):
 
 
 def _xarray_affine(obj):
-    crs = _norm_crs(_get_crs(obj))
-    if crs is None:
+    sdims = spatial_dims(obj, relaxed=True)
+    if sdims is None:
         return None
 
-    yy, xx = (obj[dim] for dim in crs.dimensions)
+    yy, xx = (obj[dim] for dim in sdims)
     fallback_res = (coord.attrs.get('resolution', None) for coord in (xx, yy))
 
     return affine_from_axis(xx.values, yy.values, fallback_res)
