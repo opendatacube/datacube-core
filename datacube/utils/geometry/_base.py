@@ -2,7 +2,7 @@ import functools
 import itertools
 import math
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Callable, Iterable, List
+from typing import Tuple, Callable, Iterable, List, Union
 
 import cachetools
 import numpy
@@ -973,8 +973,12 @@ class GeoBox(object):
         return OrderedDict((dim, Coordinate(labels, units, res))
                            for dim, labels, units, res in zip(crs.dimensions, (ys, xs), crs.units, (yres, xres)))
 
-    def xr_coords(self):
+    def xr_coords(self, with_crs: Union[bool, str] = False):
         """ Dictionary of Coordinates in xarray format
+
+            :param with_crs: If True include netcdf/cf style CRS Coordinate
+            with default name 'spatial_ref', if with_crs is a string then treat
+            the string as a name of the coordinate.
 
             Returns
             =======
@@ -982,15 +986,26 @@ class GeoBox(object):
             OrderedDict name:str -> xr.DataArray
 
             where names are either `y,x` for projected or `latitude, longitude` for geographic.
+
         """
+        spatial_ref = "spatial_ref"
+        if isinstance(with_crs, str):
+            spatial_ref = with_crs
+            with_crs = True
+
         attrs = {}
         coords = self.coordinates
         crs = self.crs
         if crs is not None:
             attrs['crs'] = str(crs)
 
-        return OrderedDict((n, _coord_to_xr(n, c, **attrs))
-                           for n, c in coords.items())
+        coords = OrderedDict((n, _coord_to_xr(n, c, **attrs))
+                             for n, c in coords.items())
+
+        if with_crs and crs is not None:
+            coords[spatial_ref] = _mk_crs_coord(crs, spatial_ref)
+
+        return coords
 
     @property
     def geographic_extent(self):
@@ -1158,6 +1173,22 @@ def bbox_intersection(bbs: Iterable[BoundingBox]) -> BoundingBox:
         T = min(t, T)
 
     return BoundingBox(L, B, R, T)
+
+
+def _mk_crs_coord(crs: CRS, name: str = 'spatial_ref') -> xr.DataArray:
+    if crs.projected:
+        grid_mapping_name = crs['PROJECTION']
+        if grid_mapping_name is None:
+            grid_mapping_name = "??"
+        grid_mapping_name = grid_mapping_name.lower()
+    else:
+        grid_mapping_name = "latitude_longitude"
+
+    return xr.DataArray(numpy.asarray(0, 'int32'),
+                        name=name,
+                        dims=(),
+                        attrs={'spatial_ref': crs.wkt,
+                               'grid_mapping_name': grid_mapping_name})
 
 
 def _coord_to_xr(name: str, c: Coordinate, **attrs) -> xr.DataArray:
