@@ -6,6 +6,7 @@ from typing import Tuple, Callable, Iterable, List
 
 import cachetools
 import numpy
+import xarray as xr
 from affine import Affine
 from osgeo import ogr, osr
 
@@ -973,6 +974,21 @@ class GeoBox(object):
                            for dim, labels, units, res in zip(crs.dimensions, (ys, xs), crs.units, (yres, xres)))
 
     @property
+    def xr_coords(self):
+        """ Dictionary of Coordinates in xarray format
+
+            Returns
+            =======
+
+            OrderedDict name:str -> xr.DataArray
+
+            where names are either `y,x` for projected or `latitude, longitude` for geographic.
+        """
+        coords = self.coordinates
+        return OrderedDict((n, _coord_to_xr(n, c))
+                           for n, c in coords.items())
+
+    @property
     def geographic_extent(self):
         """
         :rtype: geometry.Geometry
@@ -1138,3 +1154,13 @@ def bbox_intersection(bbs: Iterable[BoundingBox]) -> BoundingBox:
         T = min(t, T)
 
     return BoundingBox(L, B, R, T)
+
+
+def _coord_to_xr(name: str, c: Coordinate) -> xr.DataArray:
+    """ Construct xr.DataArray from named Coordinate object, this can then be used
+        to define coordinates for xr.Dataset|xr.DataArray
+    """
+    return xr.DataArray(c.values,
+                        coords={name: c.values},
+                        dims=(name,),
+                        attrs={'units': c.units, 'resolution': c.resolution})

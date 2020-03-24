@@ -340,7 +340,6 @@ def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
 
     then wraps it all in xarray.DataArray with .crs,.nodata etc.
     """
-    from datacube.storage._load import xr_coords
     from xarray import DataArray
 
     if len(args) == 0:
@@ -364,7 +363,7 @@ def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
 
     return DataArray(im,
                      dims=dims,
-                     coords=xr_coords(mm.gbox),
+                     coords=mm.gbox.xr_coords,
                      attrs=dict(
                          crs=mm.gbox.crs,
                          nodata=mm.nodata))

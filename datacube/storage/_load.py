@@ -16,7 +16,7 @@ from typing import (
 
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.math import invalid_mask
-from datacube.utils.geometry import GeoBox, Coordinate, roi_is_empty
+from datacube.utils.geometry import GeoBox, roi_is_empty
 from datacube.model import Measurement
 from datacube.drivers._types import ReaderDriver
 from . import DataSource, BandInfo
@@ -93,24 +93,9 @@ def reproject_and_fuse(datasources: List[DataSource],
         return destination
 
 
-def _coord_to_xr(name: str, c: Coordinate) -> XrDataArray:
-    """ Construct xr.DataArray from named Coordinate object, this can then be used
-        to define coordinates for xr.Dataset|xr.DataArray
-    """
-    return XrDataArray(c.values,
-                       coords={name: c.values},
-                       dims=(name,),
-                       attrs={'units': c.units, 'resolution': c.resolution})
-
-
-def xr_coords(geobox):
-    return OrderedDict((n, _coord_to_xr(n, c))
-                       for n, c in geobox.coords.items())
-
-
 def _mk_empty_ds(coords: Mapping[str, XrDataArray], geobox: GeoBox) -> XrDataset:
     cc = OrderedDict(coords.items())
-    cc.update((n, _coord_to_xr(n, c)) for n, c in geobox.coordinates.items())
+    cc.update(geobox.xr_coords)
     return XrDataset(coords=cc, attrs={'crs': geobox.crs})
 
 
