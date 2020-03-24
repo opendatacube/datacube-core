@@ -935,7 +935,10 @@ class GeoBox(object):
 
         :type: (str,str)
         """
-        return self.crs.dimensions
+        crs = self.crs
+        if crs is None:
+            return ('y', 'x')
+        return crs.dimensions
 
     @property
     def resolution(self):
@@ -968,10 +971,10 @@ class GeoBox(object):
         xs = numpy.arange(self.width) * xres + (xoff + xres / 2)
         ys = numpy.arange(self.height) * yres + (yoff + yres / 2)
 
-        crs = self.crs
+        units = self.crs.units if self.crs is not None else ('1', '1')
 
         return OrderedDict((dim, Coordinate(labels, units, res))
-                           for dim, labels, units, res in zip(crs.dimensions, (ys, xs), crs.units, (yres, xres)))
+                           for dim, labels, units, res in zip(self.dimensions, (ys, xs), units, (yres, xres)))
 
     def xr_coords(self, with_crs: Union[bool, str] = False):
         """ Dictionary of Coordinates in xarray format
