@@ -435,29 +435,35 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
+        from collections import OrderedDict
 
-        def empty_func(measurement_):
-            coord_shape = tuple(coord_.size for coord_ in coords.values())
-            return numpy.full(coord_shape + geobox.shape, measurement_.nodata, dtype=measurement_.dtype)
+        def empty_func(m, shape):
+            return numpy.full(shape, m.nodata, dtype=m.dtype)
 
-        data_func = data_func or empty_func
+        crs_attrs = {}
+        if geobox.crs is not None:
+            crs_attrs['crs'] = str(geobox.crs)
 
-        result = xarray.Dataset(attrs={'crs': str(geobox.crs)})
-        for name, coord in coords.items():
-            result[name] = coord
-        for name, coord in geobox.coordinates.items():
-            result[name] = (name, coord.values, {'units': coord.units,
-                                                 'resolution': coord.resolution,
-                                                 'crs': result.crs})
+        coords = OrderedDict(**coords, **geobox.xr_coords)
+        dims = tuple(coords)
+        shape = tuple(c.size for c in coords.values())
 
-        for measurement in measurements:
-            data = data_func(measurement)
-            attrs = measurement.dataarray_attrs()
-            attrs['crs'] = result.crs
-            dims = tuple(coords.keys()) + tuple(geobox.dimensions)
-            result[measurement.name] = (dims, data, attrs)
+        data_func = data_func or (lambda m: empty_func(m, shape))
 
-        return result
+        def mk_data_var(m, data_func):
+            data = data_func(m)
+            attrs = dict(**m.dataarray_attrs(),
+                         **crs_attrs)
+            return xarray.DataArray(data,
+                                    name=m.name,
+                                    coords=coords,
+                                    dims=dims,
+                                    attrs=attrs)
+
+        return xarray.Dataset({m.name: mk_data_var(m, data_func)
+                               for m in measurements},
+                              coords=coords,
+                              attrs=crs_attrs)
 
     @staticmethod
     def _dask_load(sources, geobox, measurements, dask_chunks,
