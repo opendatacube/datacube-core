@@ -487,6 +487,7 @@ def test_geobox():
     assert 'EPSG:3577' in repr(gbox)
 
     assert geometry.GeoBox(1, 1, mkA(0), epsg4326).geographic_extent.crs == epsg4326
+    assert geometry.GeoBox(1, 1, mkA(0), None).dimensions == ('y', 'x')
 
     g2 = gbox[:-10, :-20]
     assert g2.shape == (gbox.height - 10, gbox.width - 20)
@@ -543,6 +544,12 @@ def test_geobox_xr_coords():
     assert cc['spatial_ref'].shape is ()
     assert cc['spatial_ref'].attrs['spatial_ref'] == gbox.crs.wkt
     assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
+
+    # missing CRS for GeoBox
+    gbox = geometry.GeoBox(w, h, A, None)
+    cc = gbox.xr_coords(with_crs=True)
+    assert list(cc) == ['y', 'x']
+
 
 @pytest.mark.xfail(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
                    reason='Fails under GDAL 2.1')
