@@ -984,8 +984,13 @@ class GeoBox(object):
 
             where names are either `y,x` for projected or `latitude, longitude` for geographic.
         """
+        attrs = {}
         coords = self.coordinates
-        return OrderedDict((n, _coord_to_xr(n, c))
+        crs = self.crs
+        if crs is not None:
+            attrs['crs'] = str(crs)
+
+        return OrderedDict((n, _coord_to_xr(n, c, **attrs))
                            for n, c in coords.items())
 
     @property
@@ -1156,11 +1161,14 @@ def bbox_intersection(bbs: Iterable[BoundingBox]) -> BoundingBox:
     return BoundingBox(L, B, R, T)
 
 
-def _coord_to_xr(name: str, c: Coordinate) -> xr.DataArray:
+def _coord_to_xr(name: str, c: Coordinate, **attrs) -> xr.DataArray:
     """ Construct xr.DataArray from named Coordinate object, this can then be used
         to define coordinates for xr.Dataset|xr.DataArray
     """
+    attrs = dict(units=c.units,
+                 resolution=c.resolution,
+                 **attrs)
     return xr.DataArray(c.values,
                         coords={name: c.values},
                         dims=(name,),
-                        attrs={'units': c.units, 'resolution': c.resolution})
+                        attrs=attrs)

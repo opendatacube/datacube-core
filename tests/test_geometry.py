@@ -511,6 +511,13 @@ def test_geobox():
     assert (gbox | gbox) == gbox
     assert (gbox & gbox) == gbox
 
+    cc = gbox.xr_coords
+    assert list(cc) == ['y', 'x']
+    assert cc['y'].shape == (gbox.shape[0],)
+    assert cc['x'].shape == (gbox.shape[1],)
+    assert 'crs' in cc['y'].attrs
+    assert 'crs' in cc['x'].attrs
+
 
 @pytest.mark.xfail(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
                    reason='Fails under GDAL 2.1')
