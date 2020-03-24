@@ -415,8 +415,7 @@ class Datacube(object):
         """
         Create a :class:`xarray.Dataset` and (optionally) fill it with data.
 
-        This function makes the in memory storage structure to hold datacube data, loading data from datasets that have
-         been grouped appropriately by :meth:`group_datasets`.
+        This function makes the in memory storage structure to hold datacube data.
 
         :param dict coords:
             OrderedDict holding `DataArray` objects defining the dimensions not specified by `geobox`
@@ -427,10 +426,10 @@ class Datacube(object):
         :param measurements:
             list of :class:`datacube.model.Measurement`
 
-        :param data_func:
+        :param data_func: Callable `Measurement -> np.ndarray`
             function to fill the storage with data. It is called once for each measurement, with the measurement
-            as an argument. It should return an appropriately shaped numpy array. If not provided, an empty
-            :class:`xarray.Dataset` is returned.
+            as an argument. It should return an appropriately shaped numpy array. If not provided memory is
+            allocated an filed with `nodata` value defined on a given Measurement.
 
         :rtype: :class:`xarray.Dataset`
 
