@@ -95,7 +95,7 @@ def reproject_and_fuse(datasources: List[DataSource],
 
 def _mk_empty_ds(coords: Mapping[str, XrDataArray], geobox: GeoBox) -> XrDataset:
     cc = OrderedDict(coords.items())
-    cc.update(geobox.xr_coords)
+    cc.update(geobox.xr_coords())
     return XrDataset(coords=cc, attrs={'crs': geobox.crs})
 
 

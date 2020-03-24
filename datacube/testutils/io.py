@@ -363,7 +363,7 @@ def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
 
     return DataArray(im,
                      dims=dims,
-                     coords=mm.gbox.xr_coords,
+                     coords=mm.gbox.xr_coords(),
                      attrs=dict(
                          crs=mm.gbox.crs,
                          nodata=mm.nodata))

@@ -973,7 +973,6 @@ class GeoBox(object):
         return OrderedDict((dim, Coordinate(labels, units, res))
                            for dim, labels, units, res in zip(crs.dimensions, (ys, xs), crs.units, (yres, xres)))
 
-    @property
     def xr_coords(self):
         """ Dictionary of Coordinates in xarray format
 
