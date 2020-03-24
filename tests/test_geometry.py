@@ -511,6 +511,14 @@ def test_geobox():
     assert (gbox | gbox) == gbox
     assert (gbox & gbox) == gbox
 
+
+def test_geobox_xr_coords():
+    A = mkA(0, scale=(10, -10),
+            translation=(-48800, -2983006))
+
+    w, h = 512, 256
+    gbox = geometry.GeoBox(w, h, A, epsg3577)
+
     cc = gbox.xr_coords()
     assert list(cc) == ['y', 'x']
     assert cc['y'].shape == (gbox.shape[0],)
@@ -518,6 +526,23 @@ def test_geobox():
     assert 'crs' in cc['y'].attrs
     assert 'crs' in cc['x'].attrs
 
+    cc = gbox.xr_coords(with_crs=True)
+    assert list(cc) == ['y', 'x', 'spatial_ref']
+    assert cc['spatial_ref'].shape is ()
+    assert cc['spatial_ref'].attrs['spatial_ref'] == gbox.crs.wkt
+    assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
+
+    cc = gbox.xr_coords(with_crs='Albers')
+    assert list(cc) == ['y', 'x', 'Albers']
+
+    # geographic CRS
+    A = mkA(0, scale=(0.1, -0.1), translation=(10, 30))
+    gbox = geometry.GeoBox(w, h, A, 'epsg:4326')
+    cc = gbox.xr_coords(with_crs=True)
+    assert list(cc) == ['latitude', 'longitude', 'spatial_ref']
+    assert cc['spatial_ref'].shape is ()
+    assert cc['spatial_ref'].attrs['spatial_ref'] == gbox.crs.wkt
+    assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
 
 @pytest.mark.xfail(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
                    reason='Fails under GDAL 2.1')
