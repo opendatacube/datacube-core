@@ -444,7 +444,7 @@ class Datacube(object):
         if geobox.crs is not None:
             crs_attrs['crs'] = str(geobox.crs)
 
-        coords = OrderedDict(**coords, **geobox.xr_coords)
+        coords = OrderedDict(**coords, **geobox.xr_coords())
         dims = tuple(coords)
         shape = tuple(c.size for c in coords.values())
 

@@ -511,7 +511,7 @@ def test_geobox():
     assert (gbox | gbox) == gbox
     assert (gbox & gbox) == gbox
 
-    cc = gbox.xr_coords
+    cc = gbox.xr_coords()
     assert list(cc) == ['y', 'x']
     assert cc['y'].shape == (gbox.shape[0],)
     assert cc['x'].shape == (gbox.shape[1],)
