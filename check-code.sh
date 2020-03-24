@@ -6,10 +6,10 @@ set -x
 
 if [ "${1:-}" == "--with-docker" ]; then
     shift
-    exec docker run \
+    exec docker run -ti \
          -v $(pwd):/src/datacube-core \
          opendatacube/datacube-tests:latest \
-         ./check-code.sh $@
+         $0 $@
 fi
 
 pycodestyle tests integration_tests examples utils --max-line-length 120
