@@ -436,6 +436,7 @@ class Datacube(object):
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
         from collections import OrderedDict
+        spatial_ref = 'spatial_ref'
 
         def empty_func(m, shape):
             return numpy.full(shape, m.nodata, dtype=m.dtype)
@@ -443,10 +444,11 @@ class Datacube(object):
         crs_attrs = {}
         if geobox.crs is not None:
             crs_attrs['crs'] = str(geobox.crs)
+            crs_attrs['grid_mapping'] = spatial_ref
 
         dims = tuple(coords) + geobox.dimensions
         shape = tuple(c.size for c in coords.values()) + geobox.shape
-        coords = OrderedDict(**coords, **geobox.xr_coords(with_crs=True))
+        coords = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
 
         data_func = data_func or (lambda m: empty_func(m, shape))
 
