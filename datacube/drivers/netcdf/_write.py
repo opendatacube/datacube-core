@@ -39,7 +39,8 @@ def create_netcdf_storage_unit(filename,
     nco = netcdf_writer.create_netcdf(str(filename), **(netcdfparams or {}))
 
     for name, coord in coordinates.items():
-        netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
+        if coord.values.ndim > 0:  # skip CRS coordinate
+            netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
 
     grid_mapping = netcdf_writer.DEFAULT_GRID_MAPPING
     netcdf_writer.create_grid_mapping_variable(nco, crs, name=grid_mapping)
