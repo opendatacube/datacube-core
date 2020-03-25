@@ -86,7 +86,7 @@ def _make_crs(crs_str):
         raise InvalidCRSError("Not a valid CRS: %r" % crs_str)
 
     if crs.IsGeographic() == crs.IsProjected():
-        raise InvalidCRSError('CRS must be geographic or projected: %r' % crs_str)
+        raise InvalidCRSError('CRS must be geographic or projected: %r' % crs_str)  # pragma: no cover
 
     return crs
 
@@ -110,11 +110,9 @@ class CRS(object):
 
         self.crs_str = crs_str
         self._crs = _make_crs(crs_str)
-        # compatible with GDAL 3.0+
-        try:
+        # If GDAL 3.0+ make CRS behave like GDAL 2.X as far axis order goes
+        if hasattr(self._crs, 'SetAxisMappingStrategy'):
             self._crs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
-        except AttributeError as e:
-            pass
 
     def __getitem__(self, item):
         return self._crs.GetAttrValue(item)
@@ -200,7 +198,7 @@ class CRS(object):
         if self.projected:
             return 'y', 'x'
 
-        raise ValueError('Neither projected nor geographic')
+        raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
     @property
     def units(self):
@@ -215,7 +213,7 @@ class CRS(object):
         if self.projected:
             return self['UNIT'], self['UNIT']
 
-        raise ValueError('Neither projected nor geographic')
+        raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
     def __str__(self):
         return self.crs_str
