@@ -1,4 +1,5 @@
 import numpy as np
+from mock import MagicMock
 from affine import Affine
 import osgeo
 import pytest
@@ -25,6 +26,12 @@ from datacube.utils.geometry import (
     compute_axis_overlap,
     roi_is_empty,
     w_,
+)
+from datacube.utils.geometry._base import (
+    _mk_crs_coord,
+    bounding_box_in_pixel_domain,
+    geobox_intersection_conservative,
+    geobox_union_conservative,
 )
 from datacube.testutils.geom import (
     epsg4326,
@@ -475,7 +482,7 @@ def test_geobox():
             translation=(-48800, -2983006))
 
     w, h = 512, 256
-    gbox = geometry.GeoBox(w, h, A, epsg3577)
+    gbox = GeoBox(w, h, A, epsg3577)
 
     assert gbox.shape == (h, w)
     assert gbox.transform == A
@@ -486,8 +493,8 @@ def test_geobox():
     assert isinstance(str(gbox), str)
     assert 'EPSG:3577' in repr(gbox)
 
-    assert geometry.GeoBox(1, 1, mkA(0), epsg4326).geographic_extent.crs == epsg4326
-    assert geometry.GeoBox(1, 1, mkA(0), None).dimensions == ('y', 'x')
+    assert GeoBox(1, 1, mkA(0), epsg4326).geographic_extent.crs == epsg4326
+    assert GeoBox(1, 1, mkA(0), None).dimensions == ('y', 'x')
 
     g2 = gbox[:-10, :-20]
     assert g2.shape == (gbox.height - 10, gbox.width - 20)
@@ -511,6 +518,22 @@ def test_geobox():
 
     assert (gbox | gbox) == gbox
     assert (gbox & gbox) == gbox
+    assert gbox.is_empty() is False
+    assert bool(gbox) is True
+
+    assert (gbox[:3, :4] & gbox[3:, 4:]).is_empty()
+    assert (gbox[:3, :4] & gbox[30:, 40:]).is_empty()
+
+    with pytest.raises(ValueError):
+        geobox_intersection_conservative([])
+
+    with pytest.raises(ValueError):
+        geobox_union_conservative([])
+
+    # can not combine across CRSs
+    with pytest.raises(ValueError):
+        bounding_box_in_pixel_domain(GeoBox(1, 1, mkA(0), epsg4326),
+                                     GeoBox(2, 3, mkA(0), epsg3577))
 
 
 def test_geobox_xr_coords():
@@ -518,7 +541,7 @@ def test_geobox_xr_coords():
             translation=(-48800, -2983006))
 
     w, h = 512, 256
-    gbox = geometry.GeoBox(w, h, A, epsg3577)
+    gbox = GeoBox(w, h, A, epsg3577)
 
     cc = gbox.xr_coords()
     assert list(cc) == ['y', 'x']
@@ -538,7 +561,7 @@ def test_geobox_xr_coords():
 
     # geographic CRS
     A = mkA(0, scale=(0.1, -0.1), translation=(10, 30))
-    gbox = geometry.GeoBox(w, h, A, 'epsg:4326')
+    gbox = GeoBox(w, h, A, 'epsg:4326')
     cc = gbox.xr_coords(with_crs=True)
     assert list(cc) == ['latitude', 'longitude', 'spatial_ref']
     assert cc['spatial_ref'].shape is ()
@@ -546,9 +569,17 @@ def test_geobox_xr_coords():
     assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
 
     # missing CRS for GeoBox
-    gbox = geometry.GeoBox(w, h, A, None)
+    gbox = GeoBox(w, h, A, None)
     cc = gbox.xr_coords(with_crs=True)
     assert list(cc) == ['y', 'x']
+
+    # check CRS without name
+    crs = MagicMock()
+    crs.projected = True
+    crs.wkt = epsg3577.wkt
+    crs.__getitem__ = lambda _, k: None
+    assert crs['PROJECTION'] is None
+    assert _mk_crs_coord(crs).attrs['grid_mapping_name'] == '??'
 
 
 @pytest.mark.xfail(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
