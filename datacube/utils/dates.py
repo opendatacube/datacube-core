@@ -4,12 +4,15 @@ Date and time utility functions
 Includes sequence generation functions to be used by statistics apps
 
 """
+from typing import Union
 from datetime import datetime
 
 import dateutil
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
 from dateutil.tz import tzutc
+import numpy as np
+import xarray as xr
 
 try:
     import ciso8601  # pylint: disable=wrong-import-position
@@ -98,6 +101,29 @@ def _parse_time_ciso8601(time):
     if result is None:
         return _parse_time_generic(time)
     return result
+
+
+def normalise_dt(dt: Union[str, datetime]) -> datetime:
+    """ Turn strings into dates, turn timestamps with timezone info into UTC and remove timezone info.
+    """
+    if isinstance(dt, str):
+        dt = parse_time(dt)
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(tzutc()).replace(tzinfo=None)
+    return dt
+
+
+def mk_time_coord(dts, name='time', units='seconds since 1970-01-01 00:00:00'):
+    """ List[datetime] -> time coordinate for xarray
+    """
+
+    dts = [normalise_dt(dt) for dt in dts]
+    data = np.asarray(dts, dtype='datetime64')
+    return xr.DataArray(data,
+                        name=name,
+                        coords={name: data},
+                        dims=(name,),
+                        attrs={'units': units})
 
 
 parse_time = _parse_time_generic if ciso8601 is None else _parse_time_ciso8601  # pylint: disable=invalid-name
