@@ -12,6 +12,7 @@ from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
 from datacube.utils import geometry
+from datacube.utils.dates import normalise_dt
 from datacube.utils.geometry import intersects, GeoBox
 from datacube.utils.geometry.gbox import GeoboxTiles
 from datacube.model.utils import xr_apply
@@ -383,9 +384,7 @@ class Datacube(object):
             if isinstance(x, datetime.datetime):
                 # For datetime we convert to UTC, then strip timezone info
                 # to avoid numpy/pandas warning about timezones
-                if x.tzinfo is not None:
-                    x = x.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-                return numpy.datetime64(x, 'ns')
+                return numpy.datetime64(normalise_dt(x), 'ns')
             return x
 
         def mk_group(group):
