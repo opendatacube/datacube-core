@@ -13,9 +13,14 @@ from datetime import datetime
 from collections.abc import Sequence, Mapping
 import pathlib
 
+from affine import Affine
+from datacube import Datacube
+from datacube.model import Measurement
+from datacube.utils.dates import mk_time_coord
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
+from datacube.utils.geometry import GeoBox, CRS
 
 from datacube.model.fields import parse_search_field
 
@@ -405,3 +410,37 @@ def gen_tiff_dataset(bands,
                            timestamp=timestamp,
                            geobox=gbox)
     return ds, gbox
+
+
+def mk_sample_xr_dataset(crs="EPSG:3578",
+                         shape=(33, 74),
+                         resolution=None,
+                         xy=(0, 0),
+                         time='2020-02-13T11:12:13.1234567Z',
+                         name='band',
+                         dtype='int16',
+                         nodata=-999,
+                         units='1'):
+    """ Note that resolution is in Y,X order to match that of GeoBox.
+
+        shape (height, width)
+        resolution (y: float, x: float) - in YX, to match GeoBox/shape notation
+
+        xy (x: float, y: float) -- location of the top-left corner of the top-left pixel in CRS units
+    """
+
+    if isinstance(crs, str):
+        crs = CRS(crs)
+
+    if resolution is None:
+        resolution = (-10, 10) if crs is None or crs.projected else (-0.01, 0.01)
+
+    t_coords = {}
+    if time is not None:
+        t_coords['time'] = mk_time_coord([time])
+
+    transform = Affine.translation(*xy)*Affine.scale(*resolution[::-1])
+    h, w = shape
+    geobox = GeoBox(w, h, transform, crs)
+
+    return Datacube.create_storage(t_coords, geobox, [Measurement(name=name, dtype=dtype, nodata=nodata, units=units)])
