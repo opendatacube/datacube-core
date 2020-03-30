@@ -72,7 +72,7 @@ setup(
     ],
     install_requires=[
         'affine',
-        'pyproj>=2.1.0',
+        'pyproj>=2.5',
         'shapely>=1.6.4',
         'cachetools',
         'click>=5.0',
