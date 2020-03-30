@@ -1,5 +1,6 @@
 import pytest
 from datacube.testutils.threads import FakeThreadPoolExecutor
+from datacube.testutils import mk_sample_xr_dataset
 
 
 def test_fakethreadpool():
@@ -35,3 +36,19 @@ def test_fakethreadpool():
     assert [f.result() for f in ff[:13]] == [a+b for a, b in zip(aa, bb)]
 
     pool.shutdown()
+
+
+def test_mk_sample_xr():
+    xx = mk_sample_xr_dataset()
+    assert 'band' in xx.data_vars
+    assert list(xx.coords) == ['time', 'y', 'x', 'spatial_ref']
+    assert xx.band.dims == ('time', 'y', 'x')
+    assert xx.geobox is not None
+
+    assert mk_sample_xr_dataset(name='xx', shape=(3, 7)).xx.shape == (1, 3, 7)
+    assert mk_sample_xr_dataset(name='xx', time=None, shape=(3, 7)).xx.shape == (3, 7)
+    assert mk_sample_xr_dataset(name='xx', time=None).xx.dims == ('y', 'x')
+
+    assert mk_sample_xr_dataset(resolution=(1, 100)).geobox.resolution == (1, 100)
+    assert mk_sample_xr_dataset(resolution=(1, 100), xy=(3, 55)).geobox.transform*(0, 0) == (3, 55)
+    assert mk_sample_xr_dataset(crs=None).geobox is None
