@@ -1,5 +1,6 @@
+ARG ORG=opendatacube
 ARG V_BASE=-3.0.4
-FROM opendatacube/geobase:wheels${V_BASE} as env_builder
+FROM ${ORG}/geobase:wheels${V_BASE} as env_builder
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
