@@ -1,6 +1,6 @@
 import pytest
 from datacube.testutils.geom import epsg4326, epsg3857
-from datacube.testutils import mk_sample_xr_dataset
+from datacube.testutils import mk_sample_xr_dataset, remove_crs
 from datacube.utils.xarray_geoextensions import (
     _norm_crs,
     _xarray_affine,
@@ -23,10 +23,8 @@ def test_xr_extension(odc_style_xr_dataset):
     (sx, zz0, tx, zz1, sy, ty) = xx.affine[:6]
     assert (zz0, zz1) == (0, 0)
 
-    xx.attrs['crs'] = None
-    xx.B10.attrs['crs'] = None
-    for dim in xx.B10.dims:
-        xx[dim].attrs['crs'] = None
+    xx = remove_crs(xx)
+
     assert _xarray_geobox(xx) is None
     assert _xarray_extent(xx) is None
 

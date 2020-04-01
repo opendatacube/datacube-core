@@ -38,7 +38,7 @@ from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_u
                                  pick_uri, uri_resolve,
                                  normalise_path, default_base_dir)
 from datacube.utils.io import check_write_path
-from datacube.testutils import mk_sample_product
+from datacube.testutils import mk_sample_product, remove_crs
 
 
 def test_stats_dates():
@@ -214,10 +214,7 @@ def test_write_geotiff_str_crs(tmpdir, odc_style_xr_dataset):
 
         assert (written_data == odc_style_xr_dataset['B10']).all()
 
-    del odc_style_xr_dataset.attrs['crs']
-    del odc_style_xr_dataset.B10.attrs['crs']
-    for dim in odc_style_xr_dataset.B10.dims:
-        del odc_style_xr_dataset[dim].attrs['crs']
+    odc_style_xr_dataset = remove_crs(odc_style_xr_dataset)
     with pytest.raises(ValueError):
         with pytest.warns(DeprecationWarning):
             write_geotiff(filename, odc_style_xr_dataset)
