@@ -9,6 +9,7 @@ import dask
 from datacube.testutils import (
     mk_test_image,
     gen_tiff_dataset,
+    remove_crs,
 )
 from datacube.testutils.io import native_load, rio_slurp_xarray, rio_slurp
 from datacube.utils.cog import write_cog, to_cog, _write_cog
@@ -159,9 +160,7 @@ def test_cog_no_crs(tmpdir, with_dask):
     pp = Path(str(tmpdir))
 
     xx, ds = gen_test_data(pp, dask=with_dask)
-    del xx.attrs['crs']
-    for dim in xx.dims:
-        del xx[dim].attrs['crs']
+    xx = remove_crs(xx)
 
     with pytest.raises(ValueError):
         write_cog(xx, ":mem:")

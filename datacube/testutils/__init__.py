@@ -9,6 +9,7 @@ import tempfile
 import json
 import uuid
 import numpy as np
+import xarray as xr
 from datetime import datetime
 from collections.abc import Sequence, Mapping
 import pathlib
@@ -444,3 +445,17 @@ def mk_sample_xr_dataset(crs="EPSG:3578",
     geobox = GeoBox(w, h, transform, crs)
 
     return Datacube.create_storage(t_coords, geobox, [Measurement(name=name, dtype=dtype, nodata=nodata, units=units)])
+
+
+def remove_crs(xx):
+    xx = xx.reset_coords(['spatial_ref'], drop=True)
+
+    xx.attrs.pop('crs', None)
+    for x in xx.coords.values():
+        x.attrs.pop('crs', None)
+
+    if isinstance(xx, xr.Dataset):
+        for x in xx.data_vars.values():
+            x.attrs.pop('crs', None)
+
+    return xx
