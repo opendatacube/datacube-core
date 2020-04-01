@@ -25,10 +25,17 @@ def _norm_crs(crs):
         raise ValueError('Can not interpret {} as CRS'.format(type(crs)))
 
 
-def _get_crs(obj):
-    if not isinstance(obj, xarray.Dataset) and not isinstance(obj, xarray.DataArray):
-        raise ValueError('Can not get crs from {}'.format(type(obj)))
+def _get_crs_from_attrs(obj):
+    """ Looks for attribute named `crs` containing CRS string
+        1. Checks spatials coords attrs
+        2. Checks data variable attrs
+        3. Checks dataset attrs
 
+        Returns
+        =======
+        Content for `.attrs[crs]` usually it's a string
+        None if not present in any of the places listed above
+    """
     if isinstance(obj, xarray.Dataset):
         if len(obj.data_vars) > 0:
             data_array = next(iter(obj.data_vars.values()))
@@ -39,20 +46,67 @@ def _get_crs(obj):
         data_array = obj
 
     sdims = spatial_dims(data_array, relaxed=True)
-    if sdims is None:
-        return None
-
-    crs_set = set(data_array[d].attrs.get('crs', None) for d in sdims)
-    crs = None
-    if len(crs_set) > 1:
-        raise ValueError('Spatial dimensions have different crs.')
-    elif len(crs_set) == 1:
-        crs = crs_set.pop()
+    if sdims is not None:
+        crs_set = set(data_array[d].attrs.get('crs', None) for d in sdims)
+        crs = None
+        if len(crs_set) > 1:
+            raise ValueError('Spatial dimensions have different crs.')
+        elif len(crs_set) == 1:
+            crs = crs_set.pop()
+    else:
+        crs = None
 
     if crs is None:
         # fall back option
         crs = data_array.attrs.get('crs', None) or obj.attrs.get('crs', None)
     return crs
+
+
+def _get_crs_from_coord(obj, mode='strict'):
+    """ Looks for dimensionless coordinate with `spatial_ref` attribute.
+
+        obj: Dataset | DataArray
+        mode: strict|any|all
+           strict -- raise Error if multiple candidates
+           any    -- return first one
+           all    -- return a list of all found CRSs
+
+       Returns
+       =======
+       None     - if none found
+       crs:str  - if found one
+       crs:str  - if found several but mode is any
+
+       (crs: str, crs: str) - if found several and mode=all
+    """
+    grid_mapping = obj.attrs.get('grid_mapping', None)
+
+    # First check CF convention "pointer"
+    if grid_mapping is not None and grid_mapping in obj.coords:
+        coord = obj.coords[grid_mapping]
+        spatial_ref = coord.attrs.get('spatial_ref', None)
+        if spatial_ref is not None:
+            return spatial_ref
+        else:
+            raise ValueError(f"Coordinate '{grid_mapping}' has no `spatial_ref` attribute")
+
+    # No explicit `grid_mapping` find some "CRS" coordinate
+    candidates = tuple(coord.attrs['spatial_ref'] for coord in obj.coords.values()
+                       if coord.ndim == 0 and 'spatial_ref' in coord.attrs)
+
+    if len(candidates) == 0:
+        return None
+    if len(candidates) == 1:
+        return candidates[0]
+
+    if mode == 'strict':
+        raise ValueError("Too many candidates when looking for CRS")
+    elif mode == 'all':
+        return candidates
+    elif mode == 'any':
+        return candidates[0]
+    else:
+        raise ValueError(f"Mode needs to be: strict|any|all got {mode}")
 
 
 def _xarray_affine(obj):
@@ -72,8 +126,24 @@ def _xarray_extent(obj):
 
 
 def _xarray_geobox(obj):
-    crs = _norm_crs(_get_crs(obj))
+    crs = None
+    try:
+        crs = _get_crs_from_coord(obj)
+    except ValueError:
+        pass
+
     if crs is None:
+        try:
+            crs = _get_crs_from_attrs(obj)
+        except ValueError:
+            pass
+
+    if crs is None:
+        return None
+
+    try:
+        crs = _norm_crs(crs)
+    except ValueError:
         return None
 
     dims = crs.dimensions
