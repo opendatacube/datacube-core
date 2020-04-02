@@ -543,8 +543,8 @@ def test_geobox_xr_coords():
     crs = MagicMock()
     crs.projected = True
     crs.wkt = epsg3577.wkt
-    crs.__getitem__ = lambda _, k: None
-    assert crs['PROJECTION'] is None
+    crs._crs = MagicMock()
+    crs._crs.to_cf.return_value = {}
     assert _mk_crs_coord(crs).attrs['grid_mapping_name'] == '??'
 
 

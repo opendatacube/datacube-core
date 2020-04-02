@@ -127,7 +127,8 @@ class CRS(object):
 
     @property
     def wkt(self):
-        return self.to_wkt()
+        # TODO does the default version return a UTF-8 string? because it breaks the netCDF writer
+        return self.to_wkt(version="WKT1_GDAL")
 
     def to_epsg(self):
         """
@@ -326,6 +327,9 @@ class Geometry(object):
     """
 
     def __init__(self, geom, crs=None):
+        if isinstance(crs, str):
+            crs = CRS(crs)
+
         self.crs = crs
         if isinstance(geom, base.BaseGeometry):
             self.geom = geom
@@ -1126,7 +1130,7 @@ def bbox_intersection(bbs: Iterable[BoundingBox]) -> BoundingBox:
 
 def _mk_crs_coord(crs: CRS, name: str = 'spatial_ref') -> xr.DataArray:
     if crs.projected:
-        grid_mapping_name = crs['PROJECTION']
+        grid_mapping_name = crs._crs.to_cf().get('grid_mapping_name')
         if grid_mapping_name is None:
             grid_mapping_name = "??"
         grid_mapping_name = grid_mapping_name.lower()
