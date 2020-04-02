@@ -428,7 +428,7 @@ class Datacube(object):
         :param data_func: Callable `Measurement -> np.ndarray`
             function to fill the storage with data. It is called once for each measurement, with the measurement
             as an argument. It should return an appropriately shaped numpy array. If not provided memory is
-            allocated an filed with `nodata` value defined on a given Measurement.
+            allocated an filled with `nodata` value defined on a given Measurement.
 
         :rtype: :class:`xarray.Dataset`
 
