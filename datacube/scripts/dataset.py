@@ -436,7 +436,8 @@ def archive_cmd(index, archive_derived, dry_run, ids):
     for id_ in ids:
         to_process = _get_derived_set(index, id_) if archive_derived else [index.datasets.get(id_)]
         for d in to_process:
-            click.echo('archiving %s %s %s' % (d.type.name, d.id, d.local_uri))
+            click.echo('archiving %s %s %s' % (d.type.name, d.id,
+                                               d.local_uri if d.local_uri is not None else "<no location>"))
         if not dry_run:
             index.datasets.archive(d.id for d in to_process)
 
