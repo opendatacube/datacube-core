@@ -2,7 +2,7 @@ import functools
 import itertools
 import math
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Callable, Iterable, List, Union
+from typing import Tuple, Iterable, List, Union
 from collections.abc import Sequence
 from distutils.version import LooseVersion
 
@@ -25,6 +25,7 @@ Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
 _BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
 
 # pylint: disable=too-many-lines
+
 
 class BoundingBox(_BoundingBox):
     """Bounding box, defining extent in cartesian coordinates.
@@ -95,7 +96,6 @@ class CRS(object):
     """
     DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if LooseVersion(rasterio.__gdal_version__) < LooseVersion("3.0.0")
                            else WktVersion.WKT2_2019)
-
 
     def __init__(self, crs_str):
         """
