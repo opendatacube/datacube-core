@@ -40,6 +40,7 @@ setup(
     maintainer_email='',
     description='An analysis environment for satellite and other earth observation data',
     long_description=open('README.rst').read(),
+    long_description_content_type='text/x-rst',
     license='Apache License 2.0',
     classifiers=[
         "Development Status :: 4 - Beta",
