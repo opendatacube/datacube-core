@@ -30,6 +30,7 @@ from datacube.utils.geometry._base import (
     bounding_box_in_pixel_domain,
     geobox_intersection_conservative,
     geobox_union_conservative,
+    _guess_crs_str,
 )
 from datacube.testutils.geom import (
     epsg4326,
@@ -42,6 +43,7 @@ from datacube.testutils.geom import (
     to_fixed_point,
     from_fixed_point,
     gen_test_image_xy,
+    SAMPLE_WKT_WITHOUT_AUTHORITY,
 )
 
 
@@ -1149,3 +1151,9 @@ def test_crs_hash():
 
     assert crs is not crs2
     assert len(set([crs, crs2])) == 1
+
+
+def test_base_internals():
+    assert _guess_crs_str(CRS("epsg:3577")) == 'EPSG:3577'
+    no_epsg_crs = CRS(SAMPLE_WKT_WITHOUT_AUTHORITY)
+    assert _guess_crs_str(no_epsg_crs) == no_epsg_crs.to_wkt()
