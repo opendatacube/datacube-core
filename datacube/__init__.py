@@ -29,4 +29,8 @@ from .utils import xarray_geoextensions
 # Ensure deprecation warnings from datacube modules are shown
 warnings.filterwarnings('always', category=DeprecationWarning, module=r'^datacube\.')
 
-__all__ = (Datacube, __version__, xarray_geoextensions)
+__all__ = (
+    "Datacube",
+    "__version__",
+    "xarray_geoextensions",
+)
