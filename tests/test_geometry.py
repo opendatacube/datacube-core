@@ -172,6 +172,9 @@ def test_ops():
     union1 = box1.union(box2)
     assert union1.area == 600.0
 
+    with pytest.raises(geometry.CRSMismatchError):
+        box1.union(box2.to_crs(epsg3857))
+
     inter1 = box1.intersection(box2)
     assert bool(inter1)
     assert inter1.area == 200.0
@@ -207,6 +210,21 @@ def test_ops():
 
     with pytest.raises(TypeError):
         pt.interpolate(3)
+
+    # test simplify
+    poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)
+    assert poly.simplify(100) == poly
+
+    # test iteration
+    poly_2_parts = geometry.Geometry({
+        "type": "MultiPolygon",
+        "coordinates": [[[[102.0, 2.0], [103.0, 2.0], [103.0, 3.0], [102.0, 3.0], [102.0, 2.0]]],
+                        [[[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]],
+                         [[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]]]},
+        'EPSG:4326')
+    pp = list(poly_2_parts)
+    assert len(pp) == 2
+    assert all(p.crs == poly_2_parts.crs for p in pp)
 
 
 def test_bbox_union():
@@ -249,6 +267,9 @@ def test_unary_union():
     assert union4.area == 2.5 * box1.area
 
     assert geometry.unary_union([]) is None
+
+    with pytest.raises(ValueError):
+        geometry.unary_union([box1, box1.to_crs(epsg3577)])
 
 
 def test_unary_intersection():
@@ -1161,3 +1182,6 @@ def test_base_internals():
 
     gjson_bad = {'type': 'a', 'coordinates': [1, [2, 3, 4]]}
     assert ensure_2d(gjson_bad) == {'type': 'a', 'coordinates': [1, [2, 3]]}
+
+    with pytest.raises(ValueError):
+        ensure_2d({'type': 'a', 'coordinates': [set("not a valid element")]})

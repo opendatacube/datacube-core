@@ -471,7 +471,7 @@ class Geometry(object):
                 return geometry.Polygon(densify(geom.exterior, resolution),
                                         [densify(i, resolution) for i in geom.interiors])
 
-            raise ValueError('unknown geometry type {}'.format(geom.type))
+            raise ValueError('unknown geometry type {}'.format(geom.type))  # pragma: no cover
 
         clone = geometry.shape(self.json)
 
