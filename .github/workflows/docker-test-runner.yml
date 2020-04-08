@@ -74,7 +74,11 @@ jobs:
           github.ref == 'refs/heads/develop'
           )
       run: |
-        echo "Login to DockerHub as ${DOCKER_USER}"
-        echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
-        docker push ${ORG}/${IMAGE}:${BUILDER_TAG}
-        docker push ${ORG}/${IMAGE}:latest
+        if [ -n "${{ secrets.DockerPassword }}" ]; then
+           echo "Login to DockerHub as ${DOCKER_USER}"
+           echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
+           docker push ${ORG}/${IMAGE}:${BUILDER_TAG}
+           docker push ${ORG}/${IMAGE}:latest
+        else
+           echo "Set DockerPassword secret to push to docker"
+        fi
