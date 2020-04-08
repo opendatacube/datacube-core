@@ -10,12 +10,13 @@ import cachetools
 import numpy
 import xarray as xr
 from affine import Affine
+import rasterio
 from shapely import geometry, ops
 from shapely.geometry import base
 from pyproj import CRS as _CRS
+from pyproj.enums import WktVersion
 from pyproj.transformer import Transformer
 from pyproj.exceptions import CRSError
-from rasterio import __gdal_version__
 
 from .tools import roi_normalise, roi_shape, is_affine_st
 from ..math import is_almost_int
@@ -24,7 +25,6 @@ Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
 _BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
 
 # pylint: disable=too-many-lines
-
 
 class BoundingBox(_BoundingBox):
     """Bounding box, defining extent in cartesian coordinates.
@@ -91,6 +91,9 @@ class CRS(object):
     """
     Wrapper around `pyproj.CRS` for backwards compatibility.
     """
+    DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if LooseVersion(rasterio.__gdal_version__) < LooseVersion("3.0.0")
+                           else WktVersion.WKT2_2019)
+
 
     def __init__(self, crs_str):
         """
@@ -116,14 +119,10 @@ class CRS(object):
 
         :type: str
         """
-        if version is not None:
-            return self._crs.to_wkt(pretty=pretty, version=version)
+        if version is None:
+            version = self.DEFAULT_WKT_VERSION
 
-        if LooseVersion(__gdal_version__) > LooseVersion("3.0.0"):
-            return self._crs.to_wkt(pretty=pretty)
-
-        # GDAL 2 compatibility
-        return self._crs.to_wkt(pretty=pretty, version="WKT1_GDAL")
+        return self._crs.to_wkt(pretty=pretty, version=version)
 
     @property
     def wkt(self):
