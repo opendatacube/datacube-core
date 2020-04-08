@@ -10,6 +10,7 @@ pylint==2.4.4
 wheel
 setuptools>=42
 setuptools_scm[toml]>=3.4
+twine
 
 psycopg2 --no-binary=psycopg2
 
