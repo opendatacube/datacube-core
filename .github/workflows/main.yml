@@ -31,6 +31,17 @@ jobs:
       run: |
         docker pull ${DKR}
 
+    - name: Build Packages
+      run: |
+        cat <<EOF | docker run --rm -i  \
+                  -v $(pwd):/src/datacube-core \
+                  -e SKIP_DB=yes \
+                  ${DKR} bash -
+        python setup.py bdist_wheel sdist
+        ls -lh ./dist/
+        twine check ./dist/*
+        EOF
+
     - name: Check Code Style
       run: |
         docker run --rm  \
@@ -68,15 +79,6 @@ jobs:
         token: ${{ secrets.CodeCovToken }}
         file: ./coverage.xml
         fail_ci_if_error: false
-
-    - name: Build Packages
-      run: |
-        docker run --rm  \
-          -v $(pwd):/src/datacube-core \
-          -e SKIP_DB=yes \
-          ${DKR} \
-          python setup.py bdist_wheel sdist
-        ls -lh ./dist/
 
     - name: Publish to dea packages repo
       if: |
