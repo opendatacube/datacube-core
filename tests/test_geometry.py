@@ -31,6 +31,7 @@ from datacube.utils.geometry._base import (
     geobox_intersection_conservative,
     geobox_union_conservative,
     _guess_crs_str,
+    ensure_2d,
 )
 from datacube.testutils.geom import (
     epsg4326,
@@ -1157,3 +1158,6 @@ def test_base_internals():
     assert _guess_crs_str(CRS("epsg:3577")) == 'EPSG:3577'
     no_epsg_crs = CRS(SAMPLE_WKT_WITHOUT_AUTHORITY)
     assert _guess_crs_str(no_epsg_crs) == no_epsg_crs.to_wkt()
+
+    gjson_bad = {'type': 'a', 'coordinates': [1, [2, 3, 4]]}
+    assert ensure_2d(gjson_bad) == {'type': 'a', 'coordinates': [1, [2, 3]]}
