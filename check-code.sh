@@ -6,7 +6,15 @@ set -x
 
 if [ "${1:-}" == "--with-docker" ]; then
     shift
-    exec docker run -ti \
+
+    # Do `docker run -ti` only if running on a TTY
+    if [ -t 0 ]; then
+        ti="-ti"
+    else
+        ti=""
+    fi
+
+    exec docker run $ti \
          -v $(pwd):/src/datacube-core \
          opendatacube/datacube-tests:latest \
          $0 $@

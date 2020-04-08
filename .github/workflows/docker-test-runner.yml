@@ -6,12 +6,16 @@ on:
       - 'docker/**'
       - '.github/workflows/docker-test-runner.yml'
       - 'setup.py'
+      - 'setup.cfg'
+      - 'check-code.sh'
 
   push:
     paths:
       - 'docker/**'
       - '.github/workflows/docker-test-runner.yml'
       - 'setup.py'
+      - 'setup.cfg'
+      - 'check-code.sh'
 
 env:
   ORG: opendatacube
