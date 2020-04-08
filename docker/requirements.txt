@@ -8,6 +8,8 @@ pylint==2.4.4
 
 # for packaging
 wheel
+setuptools>=42
+setuptools_scm[toml]>=3.4
 
 psycopg2 --no-binary=psycopg2
 
