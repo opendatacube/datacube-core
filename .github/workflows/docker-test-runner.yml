@@ -30,18 +30,35 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        fetch-depth: 0
+
     - name: Set up Python
       uses: actions/setup-python@v1
       with:
         python-version: '3.6'
 
     # This is just to get dependencies right, we do not keep datacube in the final image
+    - name: Install packaging dependencies
+      run: |
+        # needed for version getting
+        git fetch --prune --unshallow 2> /dev/null || true
+
+        python -m pip install -U --force \
+          "setuptools>=42" \
+          "setuptools_scm[toml]>=3.4" \
+          wheel \
+          twine
+
+    # This is just to get dependencies right, we do not keep datacube in the final image
     - name: Build datacube source distribution
       run: |
         mkdir -p ./docker/dist/
         find ./docker/dist/ -type f -delete
+
         python setup.py sdist --dist-dir ./docker/dist/
         ls -lh ./docker/dist/
+        twine check ./docker/dist/*
 
     - name: Pull docker cache
       run: |
