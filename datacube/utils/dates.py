@@ -72,7 +72,7 @@ def datetime_to_seconds_since_1970(dt):
     return (dt - epoch).total_seconds()
 
 
-def _parse_time_generic(time):
+def _parse_time_generic(time: Union[str, datetime]) -> datetime:
     """Convert string to datetime object
 
     Calling this on datetime object is a no-op.
@@ -82,7 +82,7 @@ def _parse_time_generic(time):
     return time
 
 
-def _parse_time_ciso8601(time):
+def _parse_time_ciso8601(time: Union[str, datetime]) -> datetime:
     """Convert string to datetime object
 
     This function deals with ISO8601 dates fast, and fallbacks to python for
