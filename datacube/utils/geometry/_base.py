@@ -81,7 +81,9 @@ def _guess_crs_str(crs_spec):
     if isinstance(crs_spec, str):
         return crs_spec
     if hasattr(crs_spec, 'to_epsg'):
-        return 'EPSG:{}'.format(crs_spec.to_epsg())
+        epsg = crs_spec.to_epsg()
+        if epsg is not None:
+            return 'EPSG:{}'.format(crs_spec.to_epsg())
     if hasattr(crs_spec, 'to_wkt'):
         return crs_spec.to_wkt()
     return None
