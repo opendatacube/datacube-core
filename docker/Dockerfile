@@ -25,6 +25,7 @@ RUN find /wheels -type f -name '*whl' > /tmp/constraints.txt \
   && rm /tmp/constraints.txt \
   && find /wheels-tmp/ -type f -name "datacube-*whl" -delete \
   && ls -lh /wheels-tmp/ \
+  && rm -rf /root/.cache/pip \
   && echo "================================================================================" \
   && find /wheels-tmp/ -type f -name "*whl" > /tmp/reqs.txt \
 # make env root:users with write permissions for group
@@ -33,7 +34,9 @@ RUN find /wheels -type f -name '*whl' > /tmp/constraints.txt \
   && chgrp users /env \
   && chmod g+s /env \
   && env-build-tool new_no_index /tmp/reqs.txt /env /wheels-tmp ) \
-  && rm -rf /wheels-tmp
+  && rm -rf /wheels-tmp \
+  && rm -rf /root/.cache/pip \
+  && echo done
 
 
 #################################################################################
