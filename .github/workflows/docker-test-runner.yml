@@ -10,6 +10,8 @@ on:
       - 'check-code.sh'
 
   push:
+    tags-ignore:
+      - '**'
     paths:
       - 'docker/**'
       - '.github/workflows/docker-test-runner.yml'
