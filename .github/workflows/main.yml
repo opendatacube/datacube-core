@@ -27,6 +27,34 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Config
+      id: cfg
+      run: |
+        push_dea=no
+        push_pypi=no
+        push_test_pypi=no
+
+        case "${GITHUB_REF}" in
+        "refs/heads/develop")
+             push_dea=yes
+             ;;
+        "refs/tags/"*)
+             push_pypi=yes
+             push_test_pypi=yes
+             push_dea=yes
+             ;;
+        "refs/heads/"*)
+             ;;
+        "refs/pull/"*)
+             ;;
+        *)
+             ;;
+        esac
+
+        for x in push_pypi push_test_pypi push_dea; do
+           echo "::set-output name=${x}::${!x}"
+        done
+
     - name: Pull Docker
       run: |
         docker pull ${DKR}
@@ -73,18 +101,8 @@ jobs:
             datacube_apps \
             integration_tests
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CodeCovToken }}
-        file: ./coverage.xml
-        fail_ci_if_error: false
-
     - name: Publish to dea packages repo
-      if: |
-        github.ref == 'refs/heads/develop'
-        && github.event_name == 'push'
-
+      if: steps.cfg.outputs.push_dea == 'yes'
       run: |
         if [ -n "${AWS_ACCESS_KEY_ID}" ]; then
            echo "Using Keys: ...${AWS_ACCESS_KEY_ID:(-4)}/...${AWS_SECRET_ACCESS_KEY:(-4)}"
@@ -97,3 +115,59 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           S3_DST: 's3://datacube-core-deployment/datacube'
+
+    - name: Publish to Test PyPi
+      if: steps.cfg.outputs.push_test_pypi == 'yes'
+      run: |
+        if [ -n "${TWINE_PASSWORD}" ]; then
+          docker run --rm  \
+            -v $(pwd):/src/datacube-core \
+            -e SKIP_DB=yes \
+            ${DKR} \
+            twine upload \
+              --verbose \
+              --non-interactive \
+              --disable-progress-bar \
+              --username=__token__ \
+              --password=${TWINE_PASSWORD} \
+              --repository-url=${TWINE_REPOSITORY_URL} \
+              --skip-existing dist/*
+        else
+           echo "Skipping upload as 'TestPyPiToken' is not set"
+        fi
+
+      env:
+        TWINE_PASSWORD: ${{ secrets.TestPyPiToken }}
+        TWINE_REPOSITORY_URL: 'https://test.pypi.org/legacy/'
+
+    - name: Publish to PyPi
+      if: steps.cfg.outputs.push_pypi == 'yes'
+      run: |
+        if [ -n "${TWINE_PASSWORD}" ]; then
+          docker run --rm  \
+            -v $(pwd):/src/datacube-core \
+            -e SKIP_DB=yes \
+            ${DKR} \
+            twine upload \
+              --verbose \
+              --non-interactive \
+              --disable-progress-bar \
+              --username=__token__ \
+              --password=${TWINE_PASSWORD} \
+              --repository-url=${TWINE_REPOSITORY_URL} \
+              --skip-existing dist/*
+        else
+           echo "Skipping upload as 'PyPiToken' is not set"
+        fi
+
+      env:
+        TWINE_PASSWORD: ${{ secrets.PyPiToken }}
+        TWINE_REPOSITORY_URL: 'https://pypi.org/legacy/'
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CodeCovToken }}
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
