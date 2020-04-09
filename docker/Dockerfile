@@ -6,12 +6,14 @@ FROM ${ORG}/geobase:wheels${V_BASE} as env_builder
 ENV LC_ALL C.UTF-8
 
 COPY requirements.txt /conf/requirements.txt
-COPY ./dist/datacube-*tar.gz /conf/
+COPY ./dist/datacube-*.whl /conf/
 
 RUN find /wheels -type f -name '*whl' > /tmp/constraints.txt \
-  && find /conf -type f -name 'datacube-*tar.gz' | head -1 >> /tmp/constraints.txt \
+  && find /conf -type f -name 'datacube-*.whl' | head -1 >> /tmp/constraints.txt \
   && mkdir -p /wheels-tmp \
+  && echo "Constraints:" \
   && cat /tmp/constraints.txt \
+  && echo "..." \
   && pip3 wheel \
      --no-cache \
      --no-cache-dir \
