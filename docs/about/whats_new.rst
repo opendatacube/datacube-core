@@ -18,7 +18,7 @@ v1.8rc (???)
 - Deprecated ``datacube.helpers.write_geotiff``, use ``datacube.utils.cog.write_cog`` for similar functionality
 - Deprecated ``datacube.storage.masking``, moved to ``datacube.utils.masking``
 - Changed geo-registration mechanics for arrays returned by ``dc.load``. (:pull:`899`, :issue:`837`)
-
+- Migrate geometry and CRS backends from ``osgeo.ogr`` and ``osgeo.osr`` to ``shapely`` and ``pyproj`` respectively (:pull:`880`)
 
 v1.7.0 (16 May 2019)
 ====================
@@ -118,10 +118,10 @@ v1.6.0 (23 August 2018)
 - Updates when indexing data with `datacube dataset add` (See :pull:`485`, :issue:`451` and :issue:`480`)
 
 
-  - Allow indexing without lineage :option:`datacube dataset add --ignore-lineage`
+  - Allow indexing without lineage `datacube dataset add --ignore-lineage`
   - Removed the `--sources-policy=skip|verify|ensure`. Instead use
     `--[no-]auto-add-lineage` and `--[no-]verify-lineage`
-  - New option :option:`datacube dataset add --exclude-product` ``<name>``
+  - New option `datacube dataset add --exclude-product` ``<name>``
     allows excluding some products from auto-matching
 
 - Preliminary API for indexing datasets (:pull:`511`)
@@ -298,8 +298,8 @@ Bug Fixes
  - Allow creation of :class:`datacube.utils.geometry.Geometry` objects from 3d
    representations. The Z axis is simply thrown away.
 
- - The :option:`datacube --config_file` option has been renamed to
-   :option:`datacube --config`, which is shorter and more consistent with the
+ - The `datacube --config_file` option has been renamed to
+   `datacube --config`, which is shorter and more consistent with the
    other options. The old name can still be used for now.
 
  - Fix a severe performance regression when extracting and reprojecting a small

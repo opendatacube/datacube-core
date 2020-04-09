@@ -86,7 +86,7 @@ PQ products (``ls7_pq_albers`` and ``ls8_pq_albers``):
 The virtual product ``cloud_free_ls_nbar`` can now be used to load cloud-free SR imagery. The dataflow for loading the
 data reflects the tree structure of the recipe:
 
-.. image:: ../diagrams/cloud_free.svg
+.. image:: ../../diagrams/cloud_free.svg
 
 
 Combinators
@@ -128,7 +128,7 @@ for a ``collate`` node has the form:
 
 Observations from different sensors get interlaced:
 
-.. image:: ../diagrams/collate.svg
+.. image:: ../../diagrams/collate.svg
 
 Optionally, the source product of a pixel can be captured by introducing another measurement in the loaded data
 that consists of the index of the source product:
@@ -170,12 +170,17 @@ where the ``settings`` are keyword arguments to the initializer of the transform
 
 ODC has a (growing) set of built-in transformations:
 
-- ``make_mask``
-- ``apply_mask``
-- ``to_float``
-- ``rename``
-- ``select``
-- ``expressions``
+.. currentmodule:: datacube.virtual.transformations
+
+.. autosummary::
+   :toctree: generate/
+
+   Expressions
+   MakeMask
+   ApplyMask
+   ToFloat
+   Rename
+   Select
 
 For more information on transformations, see :ref:`user-defined-virtual-product-transforms`.
 
@@ -195,7 +200,7 @@ The form of the recipe is:
 
 Observations without corresponding entries in the other products will get dropped.
 
-.. image:: ../diagrams/juxtapose.svg
+.. image:: ../../diagrams/juxtapose.svg
 
 
 5. ``aggregate``
@@ -260,7 +265,7 @@ Currently, virtual products also provide a ``load(dc, **query)`` method that rou
 However, this method exists only to facilitate code migration, and its extensive use is not recommended. It implements
 the pipeline:
 
-.. image:: ../diagrams/virtual_product_load.svg
+.. image:: ../../diagrams/virtual_product_load.svg
 
 For advanced use cases, the intermediate objects ``VirtualDatasetBag`` and ``VirtualDatasetBox`` may be directly manipulated.
 
