@@ -37,7 +37,9 @@ stable version.
     This will also update the `stable` docs.
 
 #. Upload the build to PyPi
-    You might need a PyPI_ account with appropriate authorization.
+    This step is done by GitHub Actions when tag is pushed.
+
+    Manually it looks something like this:
 
     .. code-block:: bash
 
