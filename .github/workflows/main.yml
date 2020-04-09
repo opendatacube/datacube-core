@@ -154,7 +154,6 @@ jobs:
               --disable-progress-bar \
               --username=__token__ \
               --password=${TWINE_PASSWORD} \
-              --repository-url=${TWINE_REPOSITORY_URL} \
               --skip-existing dist/*
         else
            echo "Skipping upload as 'PyPiToken' is not set"
@@ -162,7 +161,6 @@ jobs:
 
       env:
         TWINE_PASSWORD: ${{ secrets.PyPiToken }}
-        TWINE_REPOSITORY_URL: 'https://pypi.org/legacy/'
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
