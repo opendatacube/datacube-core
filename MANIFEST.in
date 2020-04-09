@@ -1,2 +1,1 @@
-include versioneer.py
 include datacube/_version.py

@@ -8,22 +8,6 @@ sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('.'))
 print(sys.path)
 
-import versioneer
-
-current_dir = os.getcwd()
-os.chdir(os.path.dirname(versioneer.__file__))
-
-versioneer.VCS = 'git'
-versioneer.versionfile_source = '../datacube/_version.py'
-versioneer.versionfile_build = '../datacube/_version.py'
-versioneer.tag_prefix = 'datacube-'  # tags are like datacube-1.2.0
-versioneer.parentdir_prefix = '..'
-
-__version = versioneer.get_version().replace('.dirty', '')
-
-del versioneer
-os.chdir(current_dir)
-
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 # -- RTD Debugging
@@ -79,9 +63,9 @@ project = u'Open Data Cube'
 # built documents.
 #
 # The short X.Y version.
-version = __version
+version = "FIXME"
 # The full version, including alpha/beta/rc tags.
-release = __version
+release = version
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
