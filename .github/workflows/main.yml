@@ -131,7 +131,7 @@ jobs:
               --username=__token__ \
               --password=${TWINE_PASSWORD} \
               --repository-url=${TWINE_REPOSITORY_URL} \
-              --skip-existing dist/*
+              --skip-existing dist/* || true
         else
            echo "Skipping upload as 'TestPyPiToken' is not set"
         fi
