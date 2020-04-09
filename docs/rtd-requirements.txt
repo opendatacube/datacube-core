@@ -13,3 +13,5 @@ sphinx-click
 sphinxcontrib-plantuml
 sqlalchemy
 xarray
+shapely
+pyproj
