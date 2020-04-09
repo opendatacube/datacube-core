@@ -34,7 +34,6 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.mathjax',
     'sphinxcontrib.plantuml',
-    'sphinx_click.ext',
     'click_utils',
     'sphinx.ext.napoleon',
 ]
