@@ -2,7 +2,7 @@ import functools
 import itertools
 import math
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Iterable, List, Union
+from typing import Tuple, Iterable, List, Union, Optional, Any
 from collections.abc import Sequence
 from distutils.version import LooseVersion
 
@@ -70,8 +70,9 @@ class BoundingBox(_BoundingBox):
 
 
 @cachetools.cached({})
-def _make_crs(crs_str):
-    return _CRS.from_user_input(crs_str)
+def _make_crs(crs_str: str) -> Tuple[_CRS, Optional[int]]:
+    crs = _CRS.from_user_input(crs_str)
+    return (crs, crs.to_epsg())
 
 
 def _make_crs_transform_key(from_crs, to_crs, always_xy):
@@ -111,11 +112,15 @@ class CRS(object):
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
         :raises: `pyproj.exceptions.CRSError`
         """
-        self.crs_str = _guess_crs_str(crs_str)
-        if self.crs_str is None:
+        crs_str = _guess_crs_str(crs_str)
+        if crs_str is None:
             raise CRSError("Expect string or any object with `.to_epsg()` or `.to_wkt()` method")
 
-        self._crs = _make_crs(self.crs_str)
+        _crs, _epsg = _make_crs(crs_str)
+
+        self._crs = _crs
+        self._epsg = _epsg
+        self.crs_str = crs_str
 
     def __getstate__(self):
         return {'crs_str': self.crs_str}
@@ -138,17 +143,17 @@ class CRS(object):
     def wkt(self):
         return self.to_wkt(version="WKT1_GDAL")
 
-    def to_epsg(self):
+    def to_epsg(self)->Optional[int]:
         """
         EPSG Code of the CRS or None
 
         :type: int | None
         """
-        return self._crs.to_epsg()
+        return self._epsg
 
     @property
-    def epsg(self):
-        return self.to_epsg()
+    def epsg(self)->Optional[int]:
+        return self._epsg
 
     @property
     def semi_major_axis(self):
