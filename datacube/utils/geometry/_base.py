@@ -218,20 +218,20 @@ class CRS(object):
     def __repr__(self):
         return "CRS('%s')" % self.crs_str
 
-    def __eq__(self, other):
-        if hasattr(other, '_crs') and other._crs is self._crs:
+    def __eq__(self, other)->bool:
+        if not isinstance(other, CRS):
+            try:
+                other = CRS(other)
+            except:
+                return False
+
+        if self._crs is other._crs:
             return True
 
-        if isinstance(other, CRS):
-            if self.epsg is not None and other.epsg is not None:
-                return self.epsg == other.epsg
-            return self._crs == other._crs
+        if self.epsg is not None and other.epsg is not None:
+            return self.epsg == other.epsg
 
-
-        crs_str = _guess_crs_str(other)
-        if crs_str is None:
-            return False
-        return self._crs == CRS(crs_str)._crs
+        return self._crs == other._crs
 
     def __ne__(self, other):
         return not (self == other)
