@@ -84,7 +84,7 @@ def _make_crs_transform(from_crs, to_crs, always_xy):
     return Transformer.from_crs(from_crs, to_crs, always_xy=always_xy).transform
 
 
-def _guess_crs_str(crs_spec):
+def _guess_crs_str(crs_spec: Any)->Optional[str]:
     """
     Returns a string representation of the crs spec.
     Returns `None` if it does not understand the spec.
@@ -128,7 +128,7 @@ class CRS(object):
     def __setstate__(self, state):
         self.__init__(state['crs_str'])
 
-    def to_wkt(self, pretty=False, version=None):
+    def to_wkt(self, pretty: bool = False, version: Optional[WktVersion] = None)->str:
         """
         WKT representation of the CRS
 
@@ -140,7 +140,7 @@ class CRS(object):
         return self._crs.to_wkt(pretty=pretty, version=version)
 
     @property
-    def wkt(self):
+    def wkt(self)->str:
         return self.to_wkt(version="WKT1_GDAL")
 
     def to_epsg(self)->Optional[int]:
@@ -168,21 +168,21 @@ class CRS(object):
         return self._crs.ellipsoid.inverse_flattening
 
     @property
-    def geographic(self):
+    def geographic(self)->bool:
         """
         :type: bool
         """
         return self._crs.is_geographic
 
     @property
-    def projected(self):
+    def projected(self)->bool:
         """
         :type: bool
         """
         return self._crs.is_projected
 
     @property
-    def dimensions(self):
+    def dimensions(self)->Tuple[str, str]:
         """
         List of dimension names of the CRS.
         The ordering of the names is intended to reflect the `numpy` array axis order of the loaded raster.
@@ -198,7 +198,7 @@ class CRS(object):
         raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
     @property
-    def units(self):
+    def units(self)->Tuple[str, str]:
         """
         List of dimension units of the CRS.
         The ordering of the units is intended to reflect the `numpy` array axis order of the loaded raster.
@@ -214,13 +214,13 @@ class CRS(object):
 
         raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
-    def __str__(self):
+    def __str__(self)->str:
         return self.crs_str
 
     def __hash__(self):
         return hash(self.to_wkt())
 
-    def __repr__(self):
+    def __repr__(self)->str:
         return "CRS('%s')" % self.crs_str
 
     def __eq__(self, other)->bool:
@@ -238,7 +238,7 @@ class CRS(object):
 
         return self._crs == other._crs
 
-    def __ne__(self, other):
+    def __ne__(self, other)->bool:
         return not (self == other)
 
     def transformer_to_crs(self, other, always_xy=True):
