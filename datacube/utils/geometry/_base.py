@@ -74,6 +74,15 @@ def _make_crs(crs_str):
     return _CRS.from_user_input(crs_str)
 
 
+def _make_crs_transform_key(from_crs, to_crs, always_xy):
+    return (id(from_crs), id(to_crs), always_xy)
+
+
+@cachetools.cached({}, key=_make_crs_transform_key)
+def _make_crs_transform(from_crs, to_crs, always_xy):
+    return Transformer.from_crs(from_crs, to_crs, always_xy=always_xy).transform
+
+
 def _guess_crs_str(crs_spec):
     """
     Returns a string representation of the crs spec.
@@ -102,7 +111,6 @@ class CRS(object):
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
         :raises: `pyproj.exceptions.CRSError`
         """
-        # TODO figure out SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         self.crs_str = _guess_crs_str(crs_str)
         if self.crs_str is None:
             raise CRSError("Expect string or any object with `.to_epsg()` or `.to_wkt()` method")
@@ -128,7 +136,6 @@ class CRS(object):
 
     @property
     def wkt(self):
-        # TODO does the default version return a UTF-8 string? because it breaks the netCDF writer
         return self.to_wkt(version="WKT1_GDAL")
 
     def to_epsg(self):
@@ -212,12 +219,14 @@ class CRS(object):
         return "CRS('%s')" % self.crs_str
 
     def __eq__(self, other):
-        if other is self:
+        if hasattr(other, '_crs') and other._crs is self._crs:
             return True
+
         if isinstance(other, CRS):
             if self.epsg is not None and other.epsg is not None:
                 return self.epsg == other.epsg
             return self._crs == other._crs
+
 
         crs_str = _guess_crs_str(other)
         if crs_str is None:
@@ -233,7 +242,7 @@ class CRS(object):
         this stored either as scalars or ndarray objects and x', y' are the same
         points in the `other` CRS.
         """
-        transform = Transformer.from_crs(self._crs, other._crs, always_xy=always_xy).transform
+        transform = _make_crs_transform(self._crs, other._crs, always_xy=always_xy)
 
         def result(x, y):
             rx, ry = transform(x, y)
@@ -273,7 +282,7 @@ def wrap_shapely(method):
     return wrapped
 
 
-def ensure_2d(geojson):
+def force_2d(geojson):
     assert 'type' in geojson
     assert 'coordinates' in geojson
 
@@ -335,7 +344,7 @@ class Geometry(object):
         if isinstance(geom, base.BaseGeometry):
             self.geom = geom
         else:
-            self.geom = geometry.shape(ensure_2d(geom))
+            self.geom = geometry.shape(force_2d(geom))
 
     @wrap_shapely
     def contains(self, other):
