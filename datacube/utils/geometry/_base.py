@@ -110,6 +110,7 @@ class CRS:
     DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if LooseVersion(rasterio.__gdal_version__) < LooseVersion("3.0.0")
                            else WktVersion.WKT2_2019)
 
+    __slots__ = ('_crs', '_epsg', 'crs_str')
 
     def __init__(self, crs_str: Any):
         """
