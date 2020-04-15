@@ -1,4 +1,4 @@
-# coding=utf-8
+# type: ignore
 """
 API for dataset indexing, access and search.
 """
@@ -209,7 +209,7 @@ class DatasetResource(object):
 
         return dataset
 
-    def search_product_duplicates(self, product: DatasetType, *args) -> Iterable[Tuple[Any, Set[UUID]]]:
+    def search_product_duplicates(self, product: DatasetType, *args):
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -233,7 +233,7 @@ class DatasetResource(object):
             for record in connection.get_duplicates(group_fields, expressions):
                 dataset_ids = set(record[0])
                 grouped_fields = tuple(record[1:])
-                yield result_type(*grouped_fields), dataset_ids  # type: ignore
+                yield result_type(*grouped_fields), dataset_ids
 
     def can_update(self, dataset, updates_allowed=None):
         """

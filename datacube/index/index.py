@@ -1,7 +1,7 @@
 import logging
 
 from datacube.drivers.postgres import PostgresDb
-from datacube.index._datasets import DatasetResource
+from datacube.index._datasets import DatasetResource  # type: ignore
 from datacube.index._metadata_types import MetadataTypeResource, default_metadata_type_docs
 from datacube.index._products import ProductResource
 from datacube.index._users import UserResource
