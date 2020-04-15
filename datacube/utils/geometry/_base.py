@@ -2,7 +2,7 @@ import functools
 import itertools
 import math
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Iterable, List, Union, Optional, Any, Callable
+from typing import Tuple, Iterable, List, Union, Optional, Any, Callable, Mapping, Hashable, Dict
 from collections.abc import Sequence
 from distutils.version import LooseVersion
 
@@ -136,8 +136,6 @@ class CRS:
     def to_wkt(self, pretty: bool = False, version: Optional[WktVersion] = None) -> str:
         """
         WKT representation of the CRS
-
-        :type: str
         """
         if version is None:
             version = self.DEFAULT_WKT_VERSION
@@ -151,8 +149,6 @@ class CRS:
     def to_epsg(self) -> Optional[int]:
         """
         EPSG Code of the CRS or None
-
-        :type: int | None
         """
         return self._epsg
 
@@ -174,16 +170,10 @@ class CRS:
 
     @property
     def geographic(self) -> bool:
-        """
-        :type: bool
-        """
         return self._crs.is_geographic
 
     @property
     def projected(self) -> bool:
-        """
-        :type: bool
-        """
         return self._crs.is_projected
 
     @property
@@ -191,8 +181,6 @@ class CRS:
         """
         List of dimension names of the CRS.
         The ordering of the names is intended to reflect the `numpy` array axis order of the loaded raster.
-
-        :type: (str, str)
         """
         if self.geographic:
             return 'latitude', 'longitude'
@@ -207,8 +195,6 @@ class CRS:
         """
         List of dimension units of the CRS.
         The ordering of the units is intended to reflect the `numpy` array axis order of the loaded raster.
-
-        :type: (str,str)
         """
         if self.geographic:
             return 'degrees_north', 'degrees_east'
@@ -349,12 +335,9 @@ class Geometry:
     Instantiate with a GeoJSON structure
 
     If 3D coordinates are supplied, they are converted to 2D by dropping the Z points.
-
-    :type geom: shapely.geometry.base.BaseGeometry
-    :type crs: CRS
     """
 
-    def __init__(self, geom, crs: MaybeCRS = None):
+    def __init__(self, geom: base.BaseGeometry, crs: MaybeCRS = None):
         crs = _norm_crs(crs)
 
         self.crs = crs
@@ -724,7 +707,6 @@ def polygon_from_transform(width: float, height: float, transform: Affine, crs: 
     :param float height:
     :param Affine transform:
     :param crs: CRS
-    :rtype:  Geometry
     """
     points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
     transform.itransform(points)
@@ -802,25 +784,23 @@ class GeoBox:
     :param affine.Affine affine: Affine transformation defining the location of the geobox
     """
 
-    def __init__(self, width, height, affine, crs):
+    def __init__(self, width: int, height: int, affine: Affine, crs: MaybeCRS):
         assert is_affine_st(affine), "Only axis-aligned geoboxes are currently supported"
-        #: :type: int
         self.width = width
-        #: :type: int
         self.height = height
-        #: :rtype: affine.Affine
         self.affine = affine
-        #: :rtype: geometry.Geometry
         self.extent = polygon_from_transform(width, height, affine, crs=crs)
 
     @classmethod
-    def from_geopolygon(cls, geopolygon, resolution, crs=None, align=None):
+    def from_geopolygon(cls,
+                        geopolygon: Geometry,
+                        resolution: Tuple[float, float],
+                        crs: MaybeCRS = None,
+                        align: Optional[Tuple[float, float]] = None) -> 'GeoBox':
         """
-        :type geopolygon: geometry.Geometry
         :param resolution: (y_resolution, x_resolution)
         :param CRS crs: CRS to use, if different from the geopolygon
         :param (float,float) align: Align geobox such that point 'align' lies on the pixel boundary.
-        :rtype: GeoBox
         """
         align = align or (0.0, 0.0)
         assert 0.0 <= align[1] <= abs(resolution[1]), "X align must be in [0, abs(x_resolution)] range"
@@ -837,7 +817,7 @@ class GeoBox:
         affine = (Affine.translation(offx, offy) * Affine.scale(resolution[1], resolution[0]))
         return GeoBox(crs=crs, affine=affine, width=width, height=height)
 
-    def buffered(self, ybuff, xbuff):
+    def buffered(self, ybuff, xbuff) -> 'GeoBox':
         """
         Produce a tile buffered by ybuff, xbuff (in CRS units)
         """
@@ -849,7 +829,7 @@ class GeoBox:
                       affine=affine,
                       crs=self.crs)
 
-    def __getitem__(self, roi):
+    def __getitem__(self, roi) -> 'GeoBox':
         if isinstance(roi, int):
             roi = (slice(roi, roi+1), slice(None, None))
 
@@ -870,44 +850,36 @@ class GeoBox:
 
         return GeoBox(width=w, height=h, affine=affine, crs=self.crs)
 
-    def __or__(self, other):
+    def __or__(self, other) -> 'GeoBox':
         """ A geobox that encompasses both self and other. """
         return geobox_union_conservative([self, other])
 
-    def __and__(self, other):
+    def __and__(self, other) -> 'GeoBox':
         """ A geobox that is contained in both self and other. """
         return geobox_intersection_conservative([self, other])
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return self.width == 0 or self.height == 0
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return not self.is_empty()
 
     @property
-    def transform(self):
+    def transform(self) -> Affine:
         return self.affine
 
     @property
-    def shape(self):
-        """
-        :type: (int,int)
-        """
+    def shape(self) -> Tuple[int, int]:
         return self.height, self.width
 
     @property
-    def crs(self):
-        """
-        :rtype: CRS
-        """
+    def crs(self) -> Optional[CRS]:
         return self.extent.crs
 
     @property
-    def dimensions(self):
+    def dimensions(self) -> Tuple[str, str]:
         """
         List of dimension names of the GeoBox
-
-        :type: (str,str)
         """
         crs = self.crs
         if crs is None:
@@ -915,29 +887,23 @@ class GeoBox:
         return crs.dimensions
 
     @property
-    def resolution(self):
+    def resolution(self) -> Tuple[float, float]:
         """
         Resolution in Y,X dimensions
-
-        :type: (float,float)
         """
         return self.affine.e, self.affine.a
 
     @property
-    def alignment(self):
+    def alignment(self) -> Tuple[float, float]:
         """
         Alignment of pixel boundaries in Y,X dimensions
-
-        :type: (float,float)
         """
         return self.affine.yoff % abs(self.affine.e), self.affine.xoff % abs(self.affine.a)
 
     @property
-    def coordinates(self):
+    def coordinates(self) -> Dict[str, Coordinate]:
         """
         dict of coordinate labels
-
-        :type: dict[str,numpy.array]
         """
         yres, xres = self.resolution
         yoff, xoff = self.affine.yoff, self.affine.xoff
@@ -950,7 +916,7 @@ class GeoBox:
         return OrderedDict((dim, Coordinate(labels, units, res))
                            for dim, labels, units, res in zip(self.dimensions, (ys, xs), units, (yres, xres)))
 
-    def xr_coords(self, with_crs: Union[bool, str] = False):
+    def xr_coords(self, with_crs: Union[bool, str] = False) -> Dict[Hashable, xr.DataArray]:
         """ Dictionary of Coordinates in xarray format
 
             :param with_crs: If True include netcdf/cf style CRS Coordinate
@@ -976,8 +942,8 @@ class GeoBox:
         if crs is not None:
             attrs['crs'] = str(crs)
 
-        coords = OrderedDict((n, _coord_to_xr(n, c, **attrs))
-                             for n, c in coords.items())
+        coords = dict((n, _coord_to_xr(n, c, **attrs))
+                      for n, c in coords.items()) # type: Dict[Hashable, xr.DataArray]
 
         if with_crs and crs is not None:
             coords[spatial_ref] = _mk_crs_coord(crs, spatial_ref)
