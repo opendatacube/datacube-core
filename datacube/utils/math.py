@@ -1,4 +1,4 @@
-from typing import Tuple, Optional, Any
+from typing import Tuple, Optional, Any, cast
 from math import ceil, fmod
 
 import numpy
@@ -59,7 +59,7 @@ def spatial_dims(xx: xr.DataArray, relaxed: bool = False) -> Optional[Tuple[str,
             return guess
 
     if relaxed and len(xx.dims) >= 2:
-        return xx.dims[-2:]
+        return cast(Tuple[str, str], xx.dims[-2:])
 
     return None
 

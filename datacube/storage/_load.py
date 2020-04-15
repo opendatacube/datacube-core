@@ -7,11 +7,11 @@ Important functions are:
 import logging
 from collections import OrderedDict
 import numpy as np
-from xarray.core.dataarray import DataArray as XrDataArray
+from xarray.core.dataarray import DataArray as XrDataArray, DataArrayCoordinates
 from xarray.core.dataset import Dataset as XrDataset
 from typing import (
     Union, Optional, Callable,
-    List, Any, Iterator, Iterable, Mapping, Tuple
+    List, Any, Iterator, Iterable, Mapping, Tuple, Hashable, cast
 )
 
 from datacube.utils import ignore_exceptions_if
@@ -93,13 +93,13 @@ def reproject_and_fuse(datasources: List[DataSource],
         return destination
 
 
-def _mk_empty_ds(coords: Mapping[str, XrDataArray], geobox: GeoBox) -> XrDataset:
+def _mk_empty_ds(coords: DataArrayCoordinates, geobox: GeoBox) -> XrDataset:
     cc = OrderedDict(coords.items())
     cc.update(geobox.xr_coords())
-    return XrDataset(coords=cc, attrs={'crs': geobox.crs})
+    return XrDataset(coords=cast(Mapping[Hashable, Any], cc), attrs={'crs': geobox.crs})
 
 
-def _allocate_storage(coords: Mapping[str, XrDataArray],
+def _allocate_storage(coords: DataArrayCoordinates,
                       geobox: GeoBox,
                       measurements: Iterable[Measurement]) -> XrDataset:
     xx = _mk_empty_ds(coords, geobox)
@@ -126,7 +126,7 @@ def xr_load(sources: XrDataArray,
 
     out = _allocate_storage(sources.coords, geobox, measurements)
 
-    def all_groups() -> Iterator[Tuple[Any, int, List[BandInfo]]]:
+    def all_groups() -> Iterator[Tuple[Measurement, int, List[BandInfo]]]:
         for idx, dss in np.ndenumerate(sources.values):
             for m in measurements:
                 bbi = [BandInfo(ds, m.name) for ds in dss]
@@ -141,7 +141,7 @@ def xr_load(sources: XrDataArray,
 
     # TODO: run upto N concurrently
     for m, idx, bbi in groups:
-        dst = out[m.name].values[idx]
+        dst = out.data_vars[m.name].values[idx]
         dst[:] = m.nodata
         resampling = m.get('resampling_method', 'nearest')
         fuse_func = m.get('fuser', None)
