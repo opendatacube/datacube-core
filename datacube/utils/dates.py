@@ -4,7 +4,7 @@ Date and time utility functions
 Includes sequence generation functions to be used by statistics apps
 
 """
-from typing import Union
+from typing import Union, Optional, Callable
 from datetime import datetime
 
 import dateutil
@@ -14,11 +14,6 @@ from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
 from dateutil.tz import tzutc
 import numpy as np
 import xarray as xr
-
-try:
-    import ciso8601  # pylint: disable=wrong-import-position
-except ImportError:
-    ciso8601 = None  # pragma: no cover
 
 
 FREQS = {'y': YEARLY, 'm': MONTHLY, 'd': DAILY}
@@ -91,17 +86,15 @@ def _parse_time_ciso8601(time: Union[str, datetime]) -> datetime:
 
     Calling this on datetime object is a no-op.
     """
-    if not isinstance(time, str):
+    from ciso8601 import parse_datetime
+
+    if isinstance(time, datetime):
         return time
 
     try:
-        result = ciso8601.parse_datetime(time)
+        return parse_datetime(time)
     except Exception:  # pylint: disable=broad-except
-        result = None
-
-    if result is None:
         return _parse_time_generic(time)
-    return result
 
 
 def normalise_dt(dt: Union[str, datetime]) -> datetime:
@@ -126,5 +119,11 @@ def mk_time_coord(dts, name='time', units='seconds since 1970-01-01 00:00:00'):
                         dims=(name,),
                         attrs={'units': units})
 
+def _mk_parse_time()->Callable[[Union[str, datetime]], datetime]:
+    try:
+        import ciso8601             # pylint: disable=wrong-import-position
+        return _parse_time_ciso8601
+    except ImportError:             # pragma: no cover
+        return _parse_time_generic  # pragma: no cover
 
-parse_time = _parse_time_generic if ciso8601 is None else _parse_time_ciso8601  # pylint: disable=invalid-name
+parse_time = _mk_parse_time()  # pylint: disable=invalid-name

@@ -598,7 +598,7 @@ class GridSpec(object):
         return (y, x)
 
     @property
-    def tile_resolution(self) -> Tuple[float, float]:
+    def tile_resolution(self) -> Tuple[int, int]:
         """
         Tile size in pixels in CRS dimension order (Usually y,x or lat,lon)
         """

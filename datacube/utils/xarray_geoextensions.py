@@ -150,9 +150,9 @@ def _xarray_geobox(obj):
     return geometry.GeoBox(obj[dims[1]].size, obj[dims[0]].size, obj.affine, crs)
 
 
-xarray.Dataset.geobox = property(_xarray_geobox)
-xarray.Dataset.affine = property(_xarray_affine)
-xarray.Dataset.extent = property(_xarray_extent)
-xarray.DataArray.geobox = property(_xarray_geobox)
-xarray.DataArray.affine = property(_xarray_affine)
-xarray.DataArray.extent = property(_xarray_extent)
+xarray.Dataset.geobox = property(_xarray_geobox)   # type: ignore
+xarray.Dataset.affine = property(_xarray_affine)   # type: ignore
+xarray.Dataset.extent = property(_xarray_extent)   # type: ignore
+xarray.DataArray.geobox = property(_xarray_geobox) # type: ignore
+xarray.DataArray.affine = property(_xarray_affine) # type: ignore
+xarray.DataArray.extent = property(_xarray_extent) # type: ignore

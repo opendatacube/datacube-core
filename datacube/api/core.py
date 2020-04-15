@@ -728,13 +728,11 @@ def _calculate_chunk_sizes(sources: xarray.DataArray,
     if bad_keys:
         raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 
-    chunk_maxsz = {dim: sz
-                   for dim, sz in zip(sources.dims + geobox.dimensions,
-                                      sources.shape + geobox.shape)}  # type: Dict[str, int]
+    chunk_maxsz = dict((dim, sz) for dim, sz in zip(sources.dims + geobox.dimensions,
+                                                    sources.shape + geobox.shape))
 
     # defaults: 1 for non-spatial, whole dimension for Y/X
-    chunk_defaults = dict(**{dim: 1 for dim in sources.dims},
-                          **{dim: -1 for dim in geobox.dimensions})   # type: Dict[str, int]
+    chunk_defaults = dict([(dim, 1) for dim in sources.dims] + [(dim, -1) for dim in geobox.dimensions])
 
     def _resolve(k, v: Optional[Union[str, int]]) -> int:
         if v is None or v == "auto":
@@ -746,8 +744,8 @@ def _calculate_chunk_sizes(sources: xarray.DataArray,
             return v
         raise ValueError("Chunk should be one of int|'auto'")
 
-    irr_chunks = tuple(_resolve(dim, dask_chunks.get(dim)) for dim in sources.dims)
-    grid_chunks = tuple(_resolve(dim, dask_chunks.get(dim)) for dim in geobox.dimensions)
+    irr_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in sources.dims)
+    grid_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in geobox.dimensions)
 
     return irr_chunks, grid_chunks
 
