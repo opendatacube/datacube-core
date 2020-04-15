@@ -411,29 +411,22 @@ class Geometry:
         return self.geom.type
 
     @property
-    @wrap_shapely
-    def is_empty(self):
-        return self.is_empty
+    def is_empty(self) -> bool:
+        return self.geom.is_empty
 
     @property
-    @wrap_shapely
-    def is_valid(self):
-        return self.is_valid
+    def is_valid(self) -> bool:
+        return self.geom.is_valid
 
     @property
-    @wrap_shapely
-    def boundary(self):
-        return self.boundary
+    def boundary(self) -> 'Geometry':
+        return Geometry(self.geom.boundary, self.crs)
 
     @property
-    @wrap_shapely
-    def centroid(self):
-        return self.centroid
+    def centroid(self) -> 'Geometry':
+        return Geometry(self.geom.centroid, self.crs)
 
     @property
-    @wrap_shapely
-    def coords(self):
-        return self.coords
     def coords(self) -> CoordList:
         return self.geom.coords
 
@@ -442,19 +435,16 @@ class Geometry:
         return self.coords
 
     @property
-    @wrap_shapely
-    def length(self):
-        return self.length
+    def length(self) -> float:
+        return self.geom.length
 
     @property
-    @wrap_shapely
-    def area(self):
-        return self.area
+    def area(self) -> float:
+        return self.geom.area
 
     @property
-    @wrap_shapely
-    def convex_hull(self):
-        return self.convex_hull
+    def convex_hull(self) -> 'Geometry':
+        return Geometry(self.geom.convex_hull, self.crs)
 
     @property
     def envelope(self) -> BoundingBox:
@@ -466,14 +456,12 @@ class Geometry:
         return self.envelope
 
     @property
-    @wrap_shapely
-    def wkt(self):
-        return self.wkt
+    def wkt(self) -> str:
+        return self.geom.wkt
 
     @property
-    @wrap_shapely
     def __geo_interface__(self):
-        return self.__geo_interface__
+        return self.geom.__geo_interface__
 
     @property
     def json(self):
