@@ -2,7 +2,7 @@ import functools
 import itertools
 import math
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Iterable, List, Union, Optional, Any
+from typing import Tuple, Iterable, List, Union, Optional, Any, Callable
 from collections.abc import Sequence
 from distutils.version import LooseVersion
 
@@ -23,6 +23,9 @@ from ..math import is_almost_int
 
 Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
 _BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
+SomeCRS = Union[str, 'CRS', _CRS]
+MaybeCRS = Optional[SomeCRS]
+CoordList = List[Tuple[float, float]]
 
 # pylint: disable=too-many-lines
 
@@ -51,7 +54,7 @@ class BoundingBox(_BoundingBox):
         return self.top - self.bottom
 
     @property
-    def points(self) -> List[Tuple[float, float]]:
+    def points(self) -> CoordList:
         """Extract four corners of the bounding box
         """
         x0, y0, x1, y1 = self
@@ -84,7 +87,7 @@ def _make_crs_transform(from_crs, to_crs, always_xy):
     return Transformer.from_crs(from_crs, to_crs, always_xy=always_xy).transform
 
 
-def _guess_crs_str(crs_spec: Any)->Optional[str]:
+def _guess_crs_str(crs_spec: Any) -> Optional[str]:
     """
     Returns a string representation of the crs spec.
     Returns `None` if it does not understand the spec.
@@ -100,14 +103,15 @@ def _guess_crs_str(crs_spec: Any)->Optional[str]:
     return None
 
 
-class CRS(object):
+class CRS:
     """
     Wrapper around `pyproj.CRS` for backwards compatibility.
     """
     DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if LooseVersion(rasterio.__gdal_version__) < LooseVersion("3.0.0")
                            else WktVersion.WKT2_2019)
 
-    def __init__(self, crs_str):
+
+    def __init__(self, crs_str: Any):
         """
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
         :raises: `pyproj.exceptions.CRSError`
@@ -128,7 +132,7 @@ class CRS(object):
     def __setstate__(self, state):
         self.__init__(state['crs_str'])
 
-    def to_wkt(self, pretty: bool = False, version: Optional[WktVersion] = None)->str:
+    def to_wkt(self, pretty: bool = False, version: Optional[WktVersion] = None) -> str:
         """
         WKT representation of the CRS
 
@@ -140,10 +144,10 @@ class CRS(object):
         return self._crs.to_wkt(pretty=pretty, version=version)
 
     @property
-    def wkt(self)->str:
+    def wkt(self) -> str:
         return self.to_wkt(version="WKT1_GDAL")
 
-    def to_epsg(self)->Optional[int]:
+    def to_epsg(self) -> Optional[int]:
         """
         EPSG Code of the CRS or None
 
@@ -152,7 +156,7 @@ class CRS(object):
         return self._epsg
 
     @property
-    def epsg(self)->Optional[int]:
+    def epsg(self) -> Optional[int]:
         return self._epsg
 
     @property
@@ -168,21 +172,21 @@ class CRS(object):
         return self._crs.ellipsoid.inverse_flattening
 
     @property
-    def geographic(self)->bool:
+    def geographic(self) -> bool:
         """
         :type: bool
         """
         return self._crs.is_geographic
 
     @property
-    def projected(self)->bool:
+    def projected(self) -> bool:
         """
         :type: bool
         """
         return self._crs.is_projected
 
     @property
-    def dimensions(self)->Tuple[str, str]:
+    def dimensions(self) -> Tuple[str, str]:
         """
         List of dimension names of the CRS.
         The ordering of the names is intended to reflect the `numpy` array axis order of the loaded raster.
@@ -198,7 +202,7 @@ class CRS(object):
         raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
     @property
-    def units(self)->Tuple[str, str]:
+    def units(self) -> Tuple[str, str]:
         """
         List of dimension units of the CRS.
         The ordering of the units is intended to reflect the `numpy` array axis order of the loaded raster.
@@ -214,20 +218,20 @@ class CRS(object):
 
         raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
-    def __str__(self)->str:
+    def __str__(self) -> str:
         return self.crs_str
 
     def __hash__(self):
         return hash(self.to_wkt())
 
-    def __repr__(self)->str:
+    def __repr__(self) -> str:
         return "CRS('%s')" % self.crs_str
 
-    def __eq__(self, other)->bool:
+    def __eq__(self, other: SomeCRS) -> bool:
         if not isinstance(other, CRS):
             try:
                 other = CRS(other)
-            except:
+            except Exception:
                 return False
 
         if self._crs is other._crs:
@@ -238,10 +242,10 @@ class CRS(object):
 
         return self._crs == other._crs
 
-    def __ne__(self, other)->bool:
+    def __ne__(self, other) -> bool:
         return not (self == other)
 
-    def transformer_to_crs(self, other, always_xy=True):
+    def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[float, float], Tuple[float, float]]:
         """
         Returns a function that maps x, y -> x', y' where x, y are coordinates in
         this stored either as scalars or ndarray objects and x', y' are the same
@@ -265,6 +269,14 @@ class CRS(object):
 
 class CRSMismatchError(ValueError):
     pass
+
+
+def _norm_crs(crs: MaybeCRS) -> Optional[CRS]:
+    if isinstance(crs, CRS):
+        return crs
+    if crs is None:
+        return None
+    return CRS(crs)
 
 
 def wrap_shapely(method):
@@ -329,7 +341,7 @@ def densify(line, distance):
     return type(line)(new_coords)
 
 
-class Geometry(object):
+class Geometry:
     """
     2D Geometry with CRS
 
@@ -341,9 +353,8 @@ class Geometry(object):
     :type crs: CRS
     """
 
-    def __init__(self, geom, crs=None):
-        if isinstance(crs, str):
-            crs = CRS(crs)
+    def __init__(self, geom, crs: MaybeCRS = None):
+        crs = _norm_crs(crs)
 
         self.crs = crs
         if isinstance(geom, base.BaseGeometry):
@@ -352,51 +363,51 @@ class Geometry(object):
             self.geom = geometry.shape(force_2d(geom))
 
     @wrap_shapely
-    def contains(self, other):
+    def contains(self, other: 'Geometry') -> bool:
         return self.contains(other)
 
     @wrap_shapely
-    def crosses(self, other):
+    def crosses(self, other: 'Geometry') -> bool:
         return self.crosses(other)
 
     @wrap_shapely
-    def disjoint(self, other):
+    def disjoint(self, other: 'Geometry') -> bool:
         return self.disjoint(other)
 
     @wrap_shapely
-    def intersects(self, other):
+    def intersects(self, other: 'Geometry') -> bool:
         return self.intersects(other)
 
     @wrap_shapely
-    def touches(self, other):
+    def touches(self, other: 'Geometry') -> bool:
         return self.touches(other)
 
     @wrap_shapely
-    def within(self, other):
+    def within(self, other: 'Geometry') -> bool:
         return self.within(other)
 
     @wrap_shapely
-    def overlaps(self, other):
+    def overlaps(self, other: 'Geometry') -> bool:
         return self.overlaps(other)
 
     @wrap_shapely
-    def difference(self, other):
+    def difference(self, other: 'Geometry') -> 'Geometry':
         return self.difference(other)
 
     @wrap_shapely
-    def intersection(self, other):
+    def intersection(self, other: 'Geometry') -> 'Geometry':
         return self.intersection(other)
 
     @wrap_shapely
-    def symmetric_difference(self, other):
+    def symmetric_difference(self, other: 'Geometry') -> 'Geometry':
         return self.symmetric_difference(other)
 
     @wrap_shapely
-    def union(self, other):
+    def union(self, other: 'Geometry') -> 'Geometry':
         return self.union(other)
 
     @property
-    def type(self):
+    def type(self) -> str:
         return self.geom.type
 
     @property
@@ -423,9 +434,11 @@ class Geometry(object):
     @wrap_shapely
     def coords(self):
         return self.coords
+    def coords(self) -> CoordList:
+        return self.geom.coords
 
     @property
-    def points(self):
+    def points(self) -> CoordList:
         return self.coords
 
     @property
@@ -444,12 +457,12 @@ class Geometry(object):
         return self.convex_hull
 
     @property
-    def envelope(self):
+    def envelope(self) -> BoundingBox:
         minx, miny, maxx, maxy = self.geom.bounds
         return BoundingBox(left=minx, right=maxx, bottom=miny, top=maxy)
 
     @property
-    def boundingbox(self):
+    def boundingbox(self) -> BoundingBox:
         return self.envelope
 
     @property
@@ -466,7 +479,7 @@ class Geometry(object):
     def json(self):
         return self.__geo_interface__
 
-    def segmented(self, resolution):
+    def segmented(self, resolution: float) -> 'Geometry':
         """
         Possibly add more points to the geometry so that no edge is longer than `resolution`.
         """
@@ -491,20 +504,22 @@ class Geometry(object):
 
         return Geometry(segmentize_shapely(clone), self.crs)
 
-    def interpolate(self, distance):
+    def interpolate(self, distance: float) -> 'Geometry':
         """
         Returns a point distance units along the line or None if underlying
         geometry doesn't support this operation.
         """
         return Geometry(self.geom.interpolate(distance), self.crs)
 
-    def buffer(self, distance, resolution=30):
+    def buffer(self, distance: float, resolution: float = 30) -> 'Geometry':
         return Geometry(self.geom.buffer(distance, resolution=resolution), self.crs)
 
-    def simplify(self, tolerance, preserve_topology=True):
+    def simplify(self, tolerance: float, preserve_topology: bool = True) -> 'Geometry':
         return Geometry(self.geom.simplify(tolerance, preserve_topology=preserve_topology), self.crs)
 
-    def to_crs(self, crs, resolution=None, wrapdateline=False):
+    def to_crs(self, crs: SomeCRS,
+               resolution: Optional[float] = None,
+               wrapdateline: bool = False) -> 'Geometry':
         """
         Convert geometry to a different Coordinate Reference System
 
@@ -515,8 +530,13 @@ class Geometry(object):
                                   Currently only works in few specific cases (source CRS is smooth over the dateline).
         :rtype: Geometry
         """
+        crs = _norm_crs(crs)
         if self.crs == crs:
             return self
+
+        assert crs is not None
+        if self.crs is None:
+            raise ValueError("Cannot project geometries without CRS")
 
         if resolution is None:
             resolution = 1 if self.crs.geographic else 100000
@@ -531,17 +551,17 @@ class Geometry(object):
         seg = Geometry(clone, self.crs).segmented(resolution)
         return Geometry(ops.transform(transform, seg.geom), crs)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable['Geometry']:
         for geom in self.geom:
             yield Geometry(geom, self.crs)
 
-    def __nonzero__(self):
+    def __nonzero__(self) -> bool:
         return not self.is_empty
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return not self.is_empty
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (hasattr(other, 'crs') and self.crs == other.crs and
                 hasattr(other, 'geom') and self.geom == other.geom)
 
@@ -619,7 +639,7 @@ def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
 ###########################################
 
 
-def point(x, y, crs):
+def point(x: float, y: float, crs: MaybeCRS):
     """
     Create a 2D Point
 
@@ -631,7 +651,7 @@ def point(x, y, crs):
     return Geometry({'type': 'Point', 'coordinates': (x, y)}, crs=crs)
 
 
-def multipoint(coords, crs):
+def multipoint(coords: CoordList, crs: MaybeCRS) -> Geometry:
     """
     Create a 2D MultiPoint Geometry
 
@@ -644,7 +664,7 @@ def multipoint(coords, crs):
     return Geometry({'type': 'MultiPoint', 'coordinates': coords}, crs=crs)
 
 
-def line(coords, crs):
+def line(coords: CoordList, crs: MaybeCRS) -> Geometry:
     """
     Create a 2D LineString (Connected set of lines)
 
@@ -657,7 +677,7 @@ def line(coords, crs):
     return Geometry({'type': 'LineString', 'coordinates': coords}, crs=crs)
 
 
-def multiline(coords, crs):
+def multiline(coords: List[CoordList], crs: MaybeCRS) -> Geometry:
     """
     Create a 2D MultiLineString (Multiple disconnected sets of lines)
 
@@ -670,7 +690,7 @@ def multiline(coords, crs):
     return Geometry({'type': 'MultiLineString', 'coordinates': coords}, crs=crs)
 
 
-def polygon(outer, crs, *inners):
+def polygon(outer, crs: MaybeCRS, *inners) -> Geometry:
     """
     Create a 2D Polygon
 
@@ -683,7 +703,7 @@ def polygon(outer, crs, *inners):
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 
 
-def multipolygon(coords, crs):
+def multipolygon(coords: List[List[CoordList]], crs: MaybeCRS) -> Geometry:
     """
     Create a 2D MultiPolygon
 
@@ -696,7 +716,7 @@ def multipolygon(coords, crs):
     return Geometry({'type': 'MultiPolygon', 'coordinates': coords}, crs=crs)
 
 
-def box(left, bottom, right, top, crs):
+def box(left, bottom, right, top, crs: MaybeCRS) -> Geometry:
     """
     Create a 2D Box (Polygon)
 
@@ -707,7 +727,7 @@ def box(left, bottom, right, top, crs):
     return polygon(points, crs=crs)
 
 
-def polygon_from_transform(width, height, transform, crs):
+def polygon_from_transform(width: float, height: float, transform: Affine, crs: MaybeCRS) -> Geometry:
     """
     Create a 2D Polygon from an affine transform
 
@@ -727,7 +747,7 @@ def polygon_from_transform(width, height, transform, crs):
 ###########################################
 
 
-def unary_union(geoms):
+def unary_union(geoms: Iterable[Geometry]) -> Optional[Geometry]:
     """
     compute union of multiple (multi)polygons efficiently
     """
@@ -744,7 +764,7 @@ def unary_union(geoms):
     return Geometry(ops.unary_union([g.geom for g in geoms]), crs)
 
 
-def unary_intersection(geoms):
+def unary_intersection(geoms: Iterable[Geometry]) -> Geometry:
     """
     compute intersection of multiple (multi)polygons
     """
@@ -784,7 +804,7 @@ def _align_pix(left, right, res, off):
     return val, width
 
 
-class GeoBox(object):
+class GeoBox:
     """
     Defines the location and resolution of a rectangular grid of data,
     including it's :py:class:`CRS`.
