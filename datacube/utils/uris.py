@@ -222,10 +222,12 @@ def register_scheme(*schemes):
     urllib.parse.uses_params.extend(schemes)
 
 
-# s3:// not recognised by python by default
-#  without this `urljoin` might be broken for s3 urls
-register_scheme('s3')
-
-# gs:// not recognised by python by default
-#  without this `urljoin` might be broken for google storage urls
-register_scheme('gs')
+# `urljoin`, that we use for relative path computation, needs to know which url
+# schemes support relative offsets. By default only well known types are
+# understood. So here we register more common blob store url protocols.
+register_scheme(
+    's3',         # `s3://...`      -- AWS S3 Object Store
+    'gs',         # `gs://...`      -- Google Cloud Storage
+    'wasb',       # `wasb[s]://...` -- Windows Azure Storage Blob
+    'wasbs'
+)
