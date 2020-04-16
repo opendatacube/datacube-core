@@ -227,6 +227,19 @@ def test_ops():
     assert all(p.crs == poly_2_parts.crs for p in pp)
 
 
+def test_to_crs():
+    poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)
+    assert poly.crs is epsg4326
+    assert poly.to_crs(epsg3857).crs is epsg3857
+    assert poly.to_crs('EPSG:3857').crs == 'EPSG:3857'
+    assert poly.to_crs('EPSG:3857', 0.1).crs == epsg3857
+
+    poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], None)
+    assert poly.crs is None
+    with pytest.raises(ValueError):
+        poly.to_crs(epsg3857)
+
+
 def test_bbox_union():
     b1 = BoundingBox(0, 1, 10, 20)
     b2 = BoundingBox(5, 6, 11, 22)
