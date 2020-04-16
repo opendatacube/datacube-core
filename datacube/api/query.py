@@ -27,8 +27,9 @@ from pandas import to_datetime as pandas_to_datetime
 import numpy as np
 
 
-from ..model import Range
+from ..model import Range, Dataset
 from ..utils import geometry, datetime_to_seconds_since_1970
+from ..utils.dates import normalise_dt
 
 _LOG = logging.getLogger(__name__)
 
@@ -156,19 +157,23 @@ def query_geopolygon(geopolygon=None, **kwargs):
     return geopolygon
 
 
+def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
+    return normalise_dt(ds.center_time)
+
+
 def query_group_by(group_by='time', **kwargs):
     if not isinstance(group_by, str):
         return group_by
 
     time_grouper = GroupBy(dimension='time',
-                           group_by_func=lambda ds: ds.center_time,
+                           group_by_func=_extract_time_from_ds,
                            units='seconds since 1970-01-01 00:00:00',
-                           sort_key=lambda ds: ds.center_time)
+                           sort_key=_extract_time_from_ds)
 
     solar_day_grouper = GroupBy(dimension='time',
                                 group_by_func=solar_day,
                                 units='seconds since 1970-01-01 00:00:00',
-                                sort_key=lambda ds: ds.center_time)
+                                sort_key=_extract_time_from_ds)
 
     group_by_map = {
         None: time_grouper,
