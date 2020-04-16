@@ -12,6 +12,11 @@ properties:
         oneOf:
             - type: string
             - "$ref": "metadata-type-schema.yaml"
+    license:
+        title: Product license
+        description: Either a SPDX License identifier, 'various' or 'proprietary'
+        type: string
+        pattern: '^[\w\-.+]+$'
     metadata:
         type: object
     storage:
