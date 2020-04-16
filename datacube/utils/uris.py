@@ -14,19 +14,6 @@ URL_RE = re.compile(r'\A\s*[\w\d\+]+://')
 def is_url(url_str: str) -> bool:
     """
     Check if url_str tastes like a url (starts with blah://)
-
-    >>> is_url('file:///etc/blah')
-    True
-    >>> is_url('http://greg.com/greg.txt')
-    True
-    >>> is_url('s3:///etc/blah')
-    True
-    >>> is_url('gs://data/etc/blah.yaml')
-    True
-    >>> is_url('/etc/blah')
-    False
-    >>> is_url('C:/etc/blah')
-    False
     """
     try:
         return URL_RE.match(url_str) is not None
