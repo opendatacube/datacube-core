@@ -154,6 +154,7 @@ def ls5_telem_doc(ga_metadata_type):
     return {
         "name": "ls5_telem_test",
         "description": 'LS5 Test',
+        "license": "CC-BY-4.0",
         "metadata": {
             "platform": {
                 "code": "LANDSAT_5"
