@@ -2,7 +2,7 @@ import functools
 import itertools
 import math
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Iterable, List, Union, Optional, Any, Callable, Mapping, Hashable, Dict
+from typing import Tuple, Iterable, List, Union, Optional, Any, Callable, Hashable, Dict
 from collections.abc import Sequence
 from distutils.version import LooseVersion
 
@@ -943,7 +943,7 @@ class GeoBox:
             attrs['crs'] = str(crs)
 
         coords = dict((n, _coord_to_xr(n, c, **attrs))
-                      for n, c in coords.items()) # type: Dict[Hashable, xr.DataArray]
+                      for n, c in coords.items())  # type: Dict[Hashable, xr.DataArray]
 
         if with_crs and crs is not None:
             coords[spatial_ref] = _mk_crs_coord(crs, spatial_ref)
