@@ -73,7 +73,7 @@ def test_dask_chunks():
 
     sources = xr.DataArray(coords['time'],
                            coords=coords,
-                           dims=coords.keys())
+                           dims=list(coords))
     geobox = AlbersGS.tile_geobox((0, 0))[:6, :7]
 
     assert geobox.dimensions == ('y', 'x')
