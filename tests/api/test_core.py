@@ -9,6 +9,7 @@ from datacube.api.query import GroupBy
 from datacube.api.core import _calculate_chunk_sizes
 from datacube import Datacube
 from datacube.testutils.geom import AlbersGS
+from datacube.testutils import mk_sample_dataset
 
 
 def test_grouping_datasets():
@@ -36,6 +37,23 @@ def test_grouping_datasets():
 
     assert str(grouped.time.dtype) == 'datetime64[ns]'
     assert grouped.loc['2016-01-01':'2016-01-15']
+
+
+def test_group_datasets_by_time():
+    bands = [dict(name='a')]
+    # Same time instant but one explicitly marked as UTC
+    ds1 = mk_sample_dataset(bands, timestamp="2019-01-01T23:24:00Z")
+    ds2 = mk_sample_dataset(bands, timestamp="2019-01-01T23:24:00")
+    # Same "time" but in a different timezone, and actually later
+    ds3 = mk_sample_dataset(bands, timestamp="2019-01-01T23:24:00-1")
+    assert ds1.center_time.tzinfo is not None
+    assert ds2.center_time.tzinfo is None
+    assert ds3.center_time.tzinfo is not None
+
+    xx = Datacube.group_datasets([ds1, ds2, ds3], 'time')
+    assert xx.time.shape == (2,)
+    assert len(xx.data[0]) == 2
+    assert len(xx.data[1]) == 1
 
 
 def test_grouped_datasets_should_be_in_consistent_order():
