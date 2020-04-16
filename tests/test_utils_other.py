@@ -35,7 +35,7 @@ from datacube.utils.math import (
 )
 from datacube.utils.py import sorted_items
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
-                                 pick_uri, uri_resolve,
+                                 pick_uri, uri_resolve, is_vsipath,
                                  normalise_path, default_base_dir)
 from datacube.utils.io import check_write_path
 from datacube.testutils import mk_sample_product, remove_crs
@@ -104,26 +104,25 @@ def test_uri_to_local_path():
         uri_to_local_path('ftp://example.com/tmp/something.txt')
 
 
-def test_uri_resolve():
+@pytest.mark.parametrize("base", [
+    "s3://foo",
+    "gs://foo",
+    "/vsizip//vsicurl/https://host.tld/some/path",
+])
+def test_uri_resolve(base):
     abs_path = '/abs/path/to/something'
     some_uri = 'http://example.com/file.txt'
-    s3_base = 's3://foo'
-    gs_base = 'gs://foo'
-    vsi_base = '/vsizip//vsicurl/https://host.tld/some/path'
 
-    assert uri_resolve(s3_base, abs_path) == "file://" + abs_path
-    assert uri_resolve(s3_base, some_uri) is some_uri
-    assert uri_resolve(s3_base, None) is s3_base
-    assert uri_resolve(s3_base, '') is s3_base
-    assert uri_resolve(s3_base, 'relative/path') == s3_base + '/relative/path'
-    assert uri_resolve(gs_base, abs_path) == "file://" + abs_path
-    assert uri_resolve(gs_base, some_uri) is some_uri
-    assert uri_resolve(gs_base, None) is gs_base
-    assert uri_resolve(gs_base, '') is gs_base
-    assert uri_resolve(gs_base, 'relative/path') == gs_base + '/relative/path'
+    assert uri_resolve(base, abs_path) == "file://" + abs_path
+    assert uri_resolve(base, some_uri) is some_uri
+    assert uri_resolve(base, None) is base
+    assert uri_resolve(base, '') is base
+    assert uri_resolve(base, 'relative/path') == base + '/relative/path'
+    assert uri_resolve(base + '/', 'relative/path') == base + '/relative/path'
+    assert uri_resolve(base + '/some/dir/', 'relative/path') == base + '/some/dir/relative/path'
 
-    assert uri_resolve(vsi_base, 'relative/path') == vsi_base + '/relative/path'
-    assert uri_resolve(vsi_base + '/', 'relative/path') == vsi_base + '/relative/path'
+    if not is_vsipath(base):
+        assert uri_resolve(base + '/some/dir/file.txt', 'relative/path') == base + '/some/dir/relative/path'
 
 
 def test_pick_uri():
@@ -511,6 +510,7 @@ def test_testutils_geobox():
     ("file:///foo/bar/file.txt", True),
     ("test.bar", False),
     ("s3://mybucket/objname.tiff", True),
+    ("gs://mybucket/objname.tiff", True),
     ("ftp://host.name/filename.txt", True),
     ("https://host.name.com/path/file.txt", True),
     ("http://host.name.com/path/file.txt", True),
