@@ -107,6 +107,8 @@ def test_uri_to_local_path():
 @pytest.mark.parametrize("base", [
     "s3://foo",
     "gs://foo",
+    "wasb://foo",
+    "wasbs://foo",
     "/vsizip//vsicurl/https://host.tld/some/path",
 ])
 def test_uri_resolve(base):
@@ -511,6 +513,8 @@ def test_testutils_geobox():
     ("test.bar", False),
     ("s3://mybucket/objname.tiff", True),
     ("gs://mybucket/objname.tiff", True),
+    ("wasb://mybucket/objname.tiff", True),
+    ("wasbs://mybucket/objname.tiff", True),
     ("ftp://host.name/filename.txt", True),
     ("https://host.name.com/path/file.txt", True),
     ("http://host.name.com/path/file.txt", True),
