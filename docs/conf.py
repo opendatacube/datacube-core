@@ -63,9 +63,10 @@ project = u'Open Data Cube'
 # built documents.
 #
 # The short X.Y version.
-version = "FIXME"
+version = "1.8"
 # The full version, including alpha/beta/rc tags.
-release = version
+# FIXME: obtain real version by running git
+release = version+"-FIXME"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
