@@ -62,7 +62,7 @@ if [ -e "${env}/bin/activate" ]; then
         source "${env}/bin/activate"
 
         if [ -e "./setup.py" ]; then
-            pip install -e '.[test,celery,s3,performance,distributed]'
+            pip install -e '.[test,cf,celery,s3,performance,distributed]'
         fi
 
         if [ -e "./tests/drivers/fail_drivers" ]; then
