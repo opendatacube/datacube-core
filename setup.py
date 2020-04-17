@@ -13,12 +13,22 @@ tests_require = [
     'pytest-httpserver',
     'moto',
 ]
+doc_require = [
+    'Sphinx',
+    'sphinx_rtd_theme',
+    'sphinx-click',
+    'sphinxcontrib-plantuml',  # `apt-get install -y plantuml`
+    'recommonmark',
+    # version related dependencies
+    'setuptools',
+    'setuptools_scm[toml]',
+]
 
 extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
     'interactive': ['matplotlib', 'fiona'],
     'distributed': ['distributed', 'dask[distributed]'],
-    'doc': ['Sphinx', 'setuptools'],
+    'doc': doc_require,
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'celery': ['celery>=4', 'redis'],
     's3': ['boto3'],
