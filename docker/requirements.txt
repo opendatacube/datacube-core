@@ -20,4 +20,4 @@ twine
 
 psycopg2 --no-binary=psycopg2
 
-datacube[test,celery,s3,performance,distributed]
+datacube[test,cf,celery,s3,performance,distributed]

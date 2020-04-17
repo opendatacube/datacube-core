@@ -3,7 +3,6 @@
 from setuptools import setup, find_packages
 
 tests_require = [
-    'compliance-checker>=4.0.0',
     'hypothesis',
     'mock',
     'pycodestyle',
@@ -24,6 +23,7 @@ extras_require = {
     'celery': ['celery>=4', 'redis'],
     's3': ['boto3'],
     'test': tests_require,
+    'cf': ['compliance-checker>=4.0.0'],
 }
 # An 'all' option, following ipython naming conventions.
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
