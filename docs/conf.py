@@ -33,6 +33,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'sphinx.ext.mathjax',
+    'sphinx_click.ext',
     'sphinxcontrib.plantuml',
     'click_utils',
     'sphinx.ext.napoleon',
