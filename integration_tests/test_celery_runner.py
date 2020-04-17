@@ -7,7 +7,7 @@ import subprocess
 import pytest
 import sys
 
-from datacube import _celery_runner as cr
+cr = pytest.importorskip("datacube._celery_runner")
 
 PORT = 29374
 PASS = 'dfhksdjh23iuervao'
