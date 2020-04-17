@@ -530,7 +530,7 @@ class Aggregate(VirtualProduct):
                                                        geopolygon=grouped.geopolygon)],
                                     dims=['_fake_'])
 
-        result = grouped.box.groupby(self['group_by'](grouped.box[dim])).apply(to_box).squeeze('_fake_')
+        result = grouped.box.groupby(self['group_by'](grouped.box[dim]), squeeze=False).apply(to_box).squeeze('_fake_')
         result[dim].attrs.update(grouped.box[dim].attrs)
 
         return VirtualDatasetBox(result, grouped.geobox, grouped.load_natively, grouped.product_definitions,
