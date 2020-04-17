@@ -36,14 +36,14 @@ extras_require = {
     'cf': ['compliance-checker>=4.0.0'],
 }
 
-extras_require['dev'] = sum([extras_require[k] for k in [
+extras_require['dev'] = sorted(set(sum([extras_require[k] for k in [
     'test',
     'doc',
     'replicas',
     'performance',
     's3',
     'distributed',
-]], [])
+]], [])))
 
 # An 'all' option, following ipython naming conventions.
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
