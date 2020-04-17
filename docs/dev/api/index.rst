@@ -323,7 +323,7 @@ Masking
 
    masking.rst
 
-.. currentmodule:: datacube.storage
+.. currentmodule:: datacube.utils
 
 .. autosummary::
 

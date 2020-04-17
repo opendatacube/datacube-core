@@ -6,7 +6,7 @@ Bit Masking
 Masking No Data Values
 ----------------------
 
-.. currentmodule:: datacube.storage
+.. currentmodule:: datacube.utils
 
 .. automethod:: masking.mask_invalid_data
 
@@ -45,7 +45,7 @@ How to Define Meanings on Measurements
 How to Create Masks within code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: datacube.storage
+.. currentmodule:: datacube.utils
 
 .. automethod:: masking.describe_variable_flags
 .. automethod:: masking.make_mask
