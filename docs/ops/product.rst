@@ -3,8 +3,8 @@
 Product Definition
 ******************
 
-Product description document defines some of the metadata common to all the datasets belonging to the products.
-It also describes the measurements that product has and some of the properties of the measurements.
+A product definition document describes the measurements and common metadata
+for a collection of datasets.
 
 .. highlight:: language
 
@@ -19,6 +19,12 @@ description
 
 metadata_type
     Name of the :ref:`metadata-type-definition`
+
+license
+    The license of the data.
+
+    This is either a SPDX License identifier (eg 'CC-BY-SA-4.0') or
+    'various' or 'proprietary'
 
 metadata
     Dictionary containing bits of metadata common to all the datasets in the product.
