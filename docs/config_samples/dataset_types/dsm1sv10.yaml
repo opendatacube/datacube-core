@@ -1,6 +1,7 @@
 name: dsm1sv10
 description: DSM 1sec Version 1.0
 metadata_type: eo
+license: proprietary
 
 metadata:
     platform:
