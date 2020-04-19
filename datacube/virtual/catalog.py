@@ -16,7 +16,13 @@ class UnappliedTransform:
         self.recipe = recipe
 
     def __call__(self, input):
-        return self.name_resolver.construct(**self.recipe, input=input)
+        if isinstance(self.recipe, Mapping):
+            return self.name_resolver.construct(**self.recipe, input=input)
+
+        output = input
+        for subtransform in reversed(self.recipe):
+            output = dict(**subtransform, input=output)
+        return self.name_resolver.construct(**output)
 
     def __repr__(self):
         return yaml.dump(self.recipe, Dumper=SafeDumper,
