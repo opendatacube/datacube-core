@@ -168,6 +168,26 @@ where the ``settings`` are keyword arguments to the initializer of the transform
        def measurements(self, input_measurements):
            """ Dict[str, Measurement] -> Dict[str, Measurement] """
 
+Alternatively, for a chain of transforms to be applied sequentially, the recipe can take the form:
+
+.. code-block:: text
+
+    {'transform': [<unapplied-transformation-1>,
+                   <unapplied-transformation-2>,
+                   ...,
+                   <unapplied-transformation-N>],
+     'input': <input-virtual-product>}
+
+where each of the unapplied transformations has the form:
+
+.. code-block:: text
+
+    {'transform': <transformation-class>,
+     **settings}
+
+where the ``input`` is omitted. The transformations are applied to the common ``input`` in reverse order,
+as in the familiar case of function application.
+
 ODC has a (growing) set of built-in transformations:
 
 .. currentmodule:: datacube.virtual.transformations
