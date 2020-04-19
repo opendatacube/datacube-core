@@ -438,13 +438,12 @@ class Product(VirtualProduct):
 class Transform(VirtualProduct):
     """ An on-the-fly transformation. """
 
-    @property
-    def _transformation(self) -> Transformation:
+    def _transformation(self, recipe) -> Transformation:
         """ The `Transformation` object associated with a transform product. """
-        cls = self['transform']
+        cls = recipe['transform']
 
         try:
-            obj = cls(**{key: value for key, value in self.items() if key not in ['transform', 'input']})
+            obj = cls(**{key: value for key, value in recipe.items() if key not in ['transform', 'input']})
         except TypeError:
             raise VirtualProductException("transformation {} could not be instantiated".format(cls))
 
@@ -459,13 +458,25 @@ class Transform(VirtualProduct):
 
     def _reconstruct(self):
         # pylint: disable=protected-access
-        return dict(transform=qualified_name(self['transform']),
-                    input=self._input._reconstruct(), **reject_keys(self, ['input', 'transform']))
+        if not isinstance(self['transform'], Sequence):
+            return dict(transform=qualified_name(self['transform']),
+                        input=self._input._reconstruct(), **reject_keys(self, ['input', 'transform']))
+
+        return dict(transform=[dict(transform=qualified_name(subtransform['transform']),
+                                    **reject_keys(subtransform, ['transform']))
+                               for subtransform in self['transform']],
+                    input=self._input._reconstruct())
 
     def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
         input_measurements = self._input.output_measurements(product_definitions)
 
-        return self._transformation.measurements(input_measurements)
+        if not isinstance(self['transform'], Sequence):
+            return self._transformation(self).measurements(input_measurements)
+
+        result = input_measurements
+        for subtransform in reversed(self['transform']):
+            result = self._transformation(subtransform).measurements(result)
+        return result
 
     def query(self, dc: Datacube, **search_terms: Dict[str, Any]) -> VirtualDatasetBag:
         return self._input.query(dc, **search_terms)
@@ -475,7 +486,14 @@ class Transform(VirtualProduct):
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         input_data = self._input.fetch(grouped, **load_settings)
-        output_data = self._transformation.compute(input_data)
+
+        if not isinstance(self['transform'], Sequence):
+            output_data = self._transformation(self).compute(input_data)
+        else:
+            output_data = input_data
+            for subtransform in reversed(self['transform']):
+                output_data = self._transformation(subtransform).compute(output_data)
+
         output_data.attrs['crs'] = input_data.attrs['crs']
         for data_var in output_data.data_vars:
             output_data[data_var].attrs['crs'] = input_data.attrs['crs']

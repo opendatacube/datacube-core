@@ -432,6 +432,36 @@ def test_expressions(dc, query):
     assert 'green' not in data
 
 
+def test_chain_transforms(dc, query):
+    bluegreen = construct_from_yaml("""
+        transform:
+            - transform: expressions
+              output:
+                  bluegreen:
+                      formula: verde + azul
+                      nodata: -999
+            - transform: rename
+              measurement_names:
+                  green: verde
+                  blue: azul
+        input:
+            product: ls8_nbar_albers
+            measurements: [blue, green]
+    """)
+
+    measurements = bluegreen.output_measurements({product.name: product
+                                                  for product in dc.index.products.get_all()})
+    assert 'bluegreen' in measurements
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = bluegreen.load(dc, **query)
+
+    assert 'bluegreen' in data
+    assert numpy.all((data.bluegreen == -999).values)
+
+
 def test_aggregate(dc, query, catalog):
     aggr = catalog['mean_blue']
 

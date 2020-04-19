@@ -65,9 +65,19 @@ class NameResolver:
 
             self._assert(input_product is not None, "no input for transformation in {}".format(recipe))
 
-            return from_validated_recipe(dict(transform=lookup(cls_name, 'transform'),
-                                              input=self.construct(**input_product),
-                                              **reject_keys(recipe, ['transform', 'input'])))
+            if isinstance(cls_name, str):
+                return from_validated_recipe(dict(transform=lookup(cls_name, 'transform'),
+                                                  input=self.construct(**input_product),
+                                                  **reject_keys(recipe, ['transform', 'input'])))
+
+            # support for a chain of transforms to be applied sequentially
+            self._assert(not (set(recipe.keys()) - {'transform', 'input'}),
+                         "unexpected settings for chain of transformations")
+
+            return from_validated_recipe(dict(transform=[dict(transform=lookup(transform_recipe['transform'], 'transform'),
+                                                              **reject_keys(transform_recipe, ['transform']))
+                                                         for transform_recipe in recipe['transform']],
+                                              input=self.construct(**input_product)))
 
         if kind == 'collate':
             self._assert(len(recipe['collate']) > 0, "no children for collate in {}".format(recipe))
