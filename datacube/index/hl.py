@@ -143,9 +143,21 @@ def dataset_resolver(index,
 
         ds_by_uuid = toolz.valmap(toolz.first, flatten_datasets(main_ds))
         all_uuid = list(ds_by_uuid)
-        db_dss = {str(ds.id): ds for ds in index.datasets.bulk_get(all_uuid)}
 
         lineage_uuids = set(filter(lambda x: x != main_uuid, all_uuid))
+
+        if not verify_lineage and fail_on_missing_lineage:
+            missing_lineage = {uuid
+                               for uuid, has_uuid in zip(all_uuid, index.datasets.bulk_has(all_uuid))
+                               if has_uuid}
+
+            if missing_lineage:
+                return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
+
+            return Dataset(match_product(main_ds.doc), main_ds.doc, uris=[uri], sources={})
+
+        db_dss = {str(ds.id): ds for ds in index.datasets.bulk_get(all_uuid)}
+
         missing_lineage = lineage_uuids - set(db_dss)
 
         if missing_lineage and fail_on_missing_lineage:
