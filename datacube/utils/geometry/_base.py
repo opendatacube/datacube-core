@@ -412,7 +412,7 @@ class Geometry:
 
     @property
     def coords(self) -> CoordList:
-        return self.geom.coords
+        return list(self.geom.coords)
 
     @property
     def points(self) -> CoordList:
