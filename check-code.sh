@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convenience script for running Travis-like checks.
+# Convenience script for running CI-like checks.
 
 set -eu
 set -x
@@ -15,18 +15,27 @@ if [ "${1:-}" == "--with-docker" ]; then
     fi
 
     exec docker run $ti \
+         -e SKIP_STYLE_CHECK="${SKIP_STYLE_CHECK:-no}" \
          -v $(pwd):/src/datacube-core \
          opendatacube/datacube-tests:latest \
          $0 $@
 fi
 
-pycodestyle tests integration_tests examples --max-line-length 120
-
-pylint -j 2 --reports no datacube datacube_apps
+if [ "${SKIP_STYLE_CHECK:-no}" != "yes" ]; then
+    pycodestyle tests integration_tests examples --max-line-length 120
+    pylint -j 2 --reports no datacube datacube_apps
+fi
 
 # Run tests, taking coverage.
 # Users can specify extra folders as arguments.
-pytest -r a --cov datacube --doctest-ignore-import-errors --durations=5 datacube tests datacube_apps $@
+pytest -r a \
+       --cov datacube \
+       --doctest-ignore-import-errors \
+       --durations=5 \
+       datacube \
+       tests \
+       datacube_apps \
+       $@
 
 set +x
 
