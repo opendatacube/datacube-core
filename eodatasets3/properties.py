@@ -180,6 +180,7 @@ _LANDSAT_EXTENDED_PROPS = {
     "landsat:image_quality_oli": None,
     "landsat:image_quality_tirs": None,
     "landsat:processing_software_version": None,
+    "landsat:scan_gap_interpolation": float,
     "landsat:station_id": None,
 }
 
