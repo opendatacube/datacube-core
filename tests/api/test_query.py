@@ -172,3 +172,12 @@ def test_solar_day():
         solar_day(ds)
 
     assert 'Cannot compute solar_day: dataset is missing spatial info' in str(e.value)
+
+
+@pytest.mark.xfail(True, reason="Queries that pass antimeridian do not work")
+def test_dateline_query_building():
+    lon = Query(x=(618300, 849000),
+                y=(-1876800, -1642500),
+                crs='EPSG:32660').search_terms['lon']
+
+    assert lon.begin < 180 < lon.end
