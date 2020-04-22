@@ -2,7 +2,6 @@ Docker for running test suite
 =============================
 
 - Pushed to docker hub as `opendatacube/datacube-tests`
-- Based on `osgeo/gdal:ubuntu-small-3.0.2`
 
 Example Use:
 
