@@ -207,6 +207,7 @@ def test_ops():
     pt = line.interpolate(1)
     assert pt.crs is line.crs
     assert pt.coords[0] == (0, 1)
+    assert isinstance(pt.coords, list)
 
     with pytest.raises(TypeError):
         pt.interpolate(3)
