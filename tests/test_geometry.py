@@ -259,10 +259,19 @@ def test_shapely_wrappers():
 
 def test_to_crs():
     poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)
+    num_points = 3
     assert poly.crs is epsg4326
     assert poly.to_crs(epsg3857).crs is epsg3857
     assert poly.to_crs('EPSG:3857').crs == 'EPSG:3857'
     assert poly.to_crs('EPSG:3857', 0.1).crs == epsg3857
+
+    # test that by default segmentation happens
+    # +1 is because exterior loops back to start point
+    assert len(poly.to_crs(epsg3857).exterior.xy[0]) > num_points + 1
+
+    # test that +inf disables segmentation
+    # +1 is because exterior loops back to start point
+    assert len(poly.to_crs(epsg3857, float('+inf')).exterior.xy[0]) == num_points + 1
 
     poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], None)
     assert poly.crs is None
