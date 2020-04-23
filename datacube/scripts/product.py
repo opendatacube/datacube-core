@@ -79,7 +79,7 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
     incompatible with existing datasets of that type)
     """
     failures = 0
-    for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
+    for descriptor_path, parsed_doc in read_documents(*files):
         try:
             type_ = index.products.from_doc(parsed_doc)
         except InvalidDocException as e:
