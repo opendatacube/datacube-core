@@ -1,6 +1,7 @@
 import functools
 import itertools
 import math
+import array
 from collections import namedtuple, OrderedDict
 from typing import Tuple, Iterable, List, Union, Optional, Any, Callable, Hashable, Dict
 from collections.abc import Sequence
@@ -455,6 +456,10 @@ class Geometry:
     @property
     def area(self) -> float:
         return self.geom.area
+
+    @property
+    def xy(self) -> Tuple[array.array, array.array]:
+        return self.geom.xy
 
     @property
     def convex_hull(self) -> 'Geometry':
