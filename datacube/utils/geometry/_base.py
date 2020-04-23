@@ -534,12 +534,15 @@ class Geometry:
         """
         Convert geometry to a different Coordinate Reference System
 
-        :param CRS crs: CRS to convert to
-        :param float resolution: Subdivide the geometry such it has no segment longer then the given distance.
-        :param bool wrapdateline: Attempt to gracefully handle geometry that intersects the dateline
+        :param crs: CRS to convert to
+
+        :param resolution: Subdivide the geometry such it has no segment longer then the given distance.
+                           Defaults to 1 degree for geographic and 100km for projected. To disable
+                           completely use Infinity float('+inf')
+
+        :param wrapdateline: Attempt to gracefully handle geometry that intersects the dateline
                                   when converting to geographic projections.
                                   Currently only works in few specific cases (source CRS is smooth over the dateline).
-        :rtype: Geometry
         """
         crs = _norm_crs(crs)
         if self.crs == crs:
@@ -555,12 +558,14 @@ class Geometry:
         transform = self.crs.transformer_to_crs(crs)
         clone = geometry.shape(self.json)
 
+        if math.isfinite(resolution):
+            clone = Geometry(clone, self.crs).segmented(resolution).geom
+
         if wrapdateline and crs.geographic:
             rtransform = crs.transformer_to_crs(self.crs)
             clone = _chop_along_antimeridian(clone, transform, rtransform)
 
-        seg = Geometry(clone, self.crs).segmented(resolution)
-        return Geometry(ops.transform(transform, seg.geom), crs)
+        return Geometry(ops.transform(transform, clone), crs)
 
     def __iter__(self) -> Iterable['Geometry']:
         for geom in self.geom:
