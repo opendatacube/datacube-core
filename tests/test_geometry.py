@@ -232,6 +232,18 @@ def test_ops():
     assert all(p.crs == poly_2_parts.crs for p in pp)
 
 
+def test_shapely_wrappers():
+    poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)
+
+    assert isinstance(poly.svg(), str)
+    assert isinstance(poly._repr_svg_(), str)
+
+    assert (poly | poly) == poly
+    assert (poly & poly) == poly
+    assert (poly ^ poly).is_empty
+    assert (poly - poly).is_empty
+
+
 def test_to_crs():
     poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)
     assert poly.crs is epsg4326
