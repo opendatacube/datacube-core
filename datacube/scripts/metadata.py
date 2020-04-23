@@ -66,7 +66,7 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
     (An unsafe change is anything that may potentially make the metadata type
     incompatible with existing ones of the same name)
     """
-    for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
+    for descriptor_path, parsed_doc in read_documents(*files):
         try:
             type_ = index.metadata_types.from_doc(parsed_doc)
         except InvalidDocException as e:
