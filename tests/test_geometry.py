@@ -246,6 +246,11 @@ def test_shapely_wrappers():
     assert with_hole.interiors[0].crs == with_hole.crs
     assert poly.exterior.crs == poly.crs
 
+    x, y = poly.exterior.xy
+    assert len(x) == len(y)
+    assert x.typecode == y.typecode
+    assert x.typecode == 'd'
+
     assert (poly | poly) == poly
     assert (poly & poly) == poly
     assert (poly ^ poly).is_empty
