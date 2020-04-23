@@ -238,6 +238,14 @@ def test_shapely_wrappers():
     assert isinstance(poly.svg(), str)
     assert isinstance(poly._repr_svg_(), str)
 
+    with_hole = poly.buffer(1) - poly
+    assert len(poly.interiors) == 0
+    assert len(with_hole.interiors) == 1
+    assert isinstance(with_hole.interiors, list)
+    assert isinstance(with_hole.interiors[0], geometry.Geometry)
+    assert with_hole.interiors[0].crs == with_hole.crs
+    assert poly.exterior.crs == poly.crs
+
     assert (poly | poly) == poly
     assert (poly & poly) == poly
     assert (poly ^ poly).is_empty

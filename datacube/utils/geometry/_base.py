@@ -429,6 +429,14 @@ class Geometry:
         return Geometry(self.geom.boundary, self.crs)
 
     @property
+    def exterior(self) -> 'Geometry':
+        return Geometry(self.geom.exterior, self.crs)
+
+    @property
+    def interiors(self) -> List['Geometry']:
+        return [Geometry(g, self.crs) for g in self.geom.interiors]
+
+    @property
     def centroid(self) -> 'Geometry':
         return Geometry(self.geom.centroid, self.crs)
 
