@@ -390,6 +390,28 @@ class Geometry:
     def union(self, other: 'Geometry') -> 'Geometry':
         return self.union(other)
 
+    @wrap_shapely
+    def __and__(self, other: 'Geometry') -> 'Geometry':
+        return self.__and__(other)
+
+    @wrap_shapely
+    def __or__(self, other: 'Geometry') -> 'Geometry':
+        return self.__or__(other)
+
+    @wrap_shapely
+    def __xor__(self, other: 'Geometry') -> 'Geometry':
+        return self.__xor__(other)
+
+    @wrap_shapely
+    def __sub__(self, other: 'Geometry') -> 'Geometry':
+        return self.__sub__(other)
+
+    def svg(self) -> str:
+        return self.geom.svg()
+
+    def _repr_svg_(self) -> str:
+        return self.geom._repr_svg_()
+
     @property
     def type(self) -> str:
         return self.geom.type
