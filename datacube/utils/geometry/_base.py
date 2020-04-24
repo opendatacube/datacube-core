@@ -779,29 +779,7 @@ def unary_intersection(geoms: Iterable[Geometry]) -> Geometry:
     return functools.reduce(Geometry.intersection, geoms)
 
 
-def _align_pix(left, right, res, off):
-    """
-    >>> "%.2f %d" % _align_pix(20, 30, 10, 0)
-    '20.00 1'
-    >>> "%.2f %d" % _align_pix(20, 30.5, 10, 0)
-    '20.00 1'
-    >>> "%.2f %d" % _align_pix(20, 31.5, 10, 0)
-    '20.00 2'
-    >>> "%.2f %d" % _align_pix(20, 30, 10, 3)
-    '13.00 2'
-    >>> "%.2f %d" % _align_pix(20, 30, 10, -3)
-    '17.00 2'
-    >>> "%.2f %d" % _align_pix(20, 30, -10, 0)
-    '30.00 1'
-    >>> "%.2f %d" % _align_pix(19.5, 30, -10, 0)
-    '30.00 1'
-    >>> "%.2f %d" % _align_pix(18.5, 30, -10, 0)
-    '30.00 2'
-    >>> "%.2f %d" % _align_pix(20, 30, -10, 3)
-    '33.00 2'
-    >>> "%.2f %d" % _align_pix(20, 30, -10, -3)
-    '37.00 2'
-    """
+def _align_pix(left: float, right: float, res: float, off: float) -> Tuple[float, int]:
     if res < 0:
         res = -res
         val = math.ceil((right - off) / res) * res + off
