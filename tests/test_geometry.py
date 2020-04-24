@@ -34,6 +34,7 @@ from datacube.utils.geometry._base import (
     geobox_union_conservative,
     _guess_crs_str,
     force_2d,
+    _align_pix,
 )
 from datacube.testutils.geom import (
     epsg4326,
@@ -1253,3 +1254,19 @@ def test_crs_units_per_degree():
     assert crs_units_per_degree('EPSG:3857', 30, 0) == approx(111319.49, 0.5)
     assert crs_units_per_degree('EPSG:3857', 180, 0) == approx(111319.49, 0.5)
     assert crs_units_per_degree('EPSG:3857', -180, 0) == approx(111319.49, 0.5)
+
+
+@pytest.mark.parametrize("left, right, off, res, expect", [
+    (20, 30, 10, 0, (20, 1)),
+    (20, 30.5, 10, 0, (20, 1)),
+    (20, 31.5, 10, 0, (20, 2)),
+    (20, 30, 10, 3, (13, 2)),
+    (20, 30, 10, -3, (17, 2)),
+    (20, 30, -10, 0, (30, 1)),
+    (19.5, 30, -10, 0, (30, 1)),
+    (18.5, 30, -10, 0, (30, 2)),
+    (20, 30, -10, 3, (33, 2)),
+    (20, 30, -10, -3, (37, 2)),
+])
+def test_align_pix(left, right, off, res, expect):
+    assert _align_pix(left, right, off, res) == expect
