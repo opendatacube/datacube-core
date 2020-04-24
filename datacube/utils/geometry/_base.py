@@ -655,16 +655,14 @@ def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
 ###########################################
 
 
-def point(x: float, y: float, crs: MaybeCRS):
+def point(x: float, y: float, crs: MaybeCRS) -> Geometry:
     """
     Create a 2D Point
 
     >>> point(10, 10, crs=None)
     Geometry(POINT (10 10), None)
-
-    :rtype: Geometry
     """
-    return Geometry({'type': 'Point', 'coordinates': (x, y)}, crs=crs)
+    return Geometry({'type': 'Point', 'coordinates': [float(x), float(y)]}, crs=crs)
 
 
 def multipoint(coords: CoordList, crs: MaybeCRS) -> Geometry:
@@ -675,7 +673,6 @@ def multipoint(coords: CoordList, crs: MaybeCRS) -> Geometry:
     Geometry(MULTIPOINT (10 10, 20 20), None)
 
     :param list coords: list of x,y coordinate tuples
-    :rtype: Geometry
     """
     return Geometry({'type': 'MultiPoint', 'coordinates': coords}, crs=crs)
 
@@ -688,7 +685,6 @@ def line(coords: CoordList, crs: MaybeCRS) -> Geometry:
     Geometry(LINESTRING (10 10, 20 20, 30 40), None)
 
     :param list coords: list of x,y coordinate tuples
-    :rtype: Geometry
     """
     return Geometry({'type': 'LineString', 'coordinates': coords}, crs=crs)
 
@@ -701,7 +697,6 @@ def multiline(coords: List[CoordList], crs: MaybeCRS) -> Geometry:
     Geometry(MULTILINESTRING ((10 10, 20 20, 30 40), (50 60, 70 80, 90 99)), None)
 
     :param list coords: list of lists of x,y coordinate tuples
-    :rtype: Geometry
     """
     return Geometry({'type': 'MultiLineString', 'coordinates': coords}, crs=crs)
 
@@ -714,7 +709,6 @@ def polygon(outer, crs: MaybeCRS, *inners) -> Geometry:
     Geometry(POLYGON ((10 10, 20 20, 20 10, 10 10)), None)
 
     :param list coords: list of 2d x,y coordinate tuples
-    :rtype: Geometry
     """
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 
@@ -727,12 +721,11 @@ def multipolygon(coords: List[List[CoordList]], crs: MaybeCRS) -> Geometry:
     Geometry(MULTIPOLYGON (((10 10, 20 20, 20 10, 10 10)), ((40 10, 50 20, 50 10, 40 10))), None)
 
     :param list coords: list of lists of x,y coordinate tuples
-    :rtype: Geometry
     """
     return Geometry({'type': 'MultiPolygon', 'coordinates': coords}, crs=crs)
 
 
-def box(left, bottom, right, top, crs: MaybeCRS) -> Geometry:
+def box(left: float, bottom: float, right: float, top: float, crs: MaybeCRS) -> Geometry:
     """
     Create a 2D Box (Polygon)
 
@@ -995,11 +988,10 @@ class GeoBox:
         return coords
 
     @property
-    def geographic_extent(self):
+    def geographic_extent(self) -> Geometry:
+        """ GeoBox extent in EPSG:4326
         """
-        :rtype: geometry.Geometry
-        """
-        if self.crs.geographic:
+        if self.crs is None or self.crs.geographic:
             return self.extent
         return self.extent.to_crs(CRS('EPSG:4326'))
 
