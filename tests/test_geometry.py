@@ -273,6 +273,13 @@ def test_to_crs():
     # +1 is because exterior loops back to start point
     assert len(poly.to_crs(epsg3857, float('+inf')).exterior.xy[0]) == num_points + 1
 
+    # test the segmentation works on multi-polygons
+    mpoly = (geometry.box(0, 0, 1, 3, 'EPSG:4326') |
+             geometry.box(2, 4, 3, 6, 'EPSG:4326'))
+
+    assert mpoly.type == 'MultiPolygon'
+    assert mpoly.to_crs(epsg3857).type == 'MultiPolygon'
+
     poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], None)
     assert poly.crs is None
     with pytest.raises(ValueError):
