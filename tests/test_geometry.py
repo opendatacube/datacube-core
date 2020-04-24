@@ -2,6 +2,7 @@ import numpy as np
 from mock import MagicMock
 from affine import Affine
 import pytest
+from pytest import approx
 import pickle
 
 from datacube.utils import geometry
@@ -10,6 +11,7 @@ from datacube.utils.geometry import (
     CRS,
     BoundingBox,
     bbox_union,
+    crs_units_per_degree,
     decompose_rws,
     affine_from_pts,
     get_scale_at_point,
@@ -1240,3 +1242,14 @@ def test_base_internals():
 
     with pytest.raises(ValueError):
         force_2d({'type': 'a', 'coordinates': [set("not a valid element")]})
+
+
+def test_crs_units_per_degree():
+    assert crs_units_per_degree('EPSG:3857', (0, 0)) == crs_units_per_degree('EPSG:3857', 0, 0)
+    assert crs_units_per_degree('EPSG:4326', (120, -10)) == approx(1.0, 1e-6)
+
+    assert crs_units_per_degree('EPSG:3857', 0, 0) == approx(111319.49, 0.5)
+    assert crs_units_per_degree('EPSG:3857', 20, 0) == approx(111319.49, 0.5)
+    assert crs_units_per_degree('EPSG:3857', 30, 0) == approx(111319.49, 0.5)
+    assert crs_units_per_degree('EPSG:3857', 180, 0) == approx(111319.49, 0.5)
+    assert crs_units_per_degree('EPSG:3857', -180, 0) == approx(111319.49, 0.5)

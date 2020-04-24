@@ -1189,3 +1189,31 @@ def _coord_to_xr(name: str, c: Coordinate, **attrs) -> xr.DataArray:
                         coords={name: c.values},
                         dims=(name,),
                         attrs=attrs)
+
+
+def crs_units_per_degree(crs: SomeCRS,
+                         lon: Union[float, Tuple[float, float]],
+                         lat: float = 0,
+                         step: float = 0.1) -> float:
+    """ Compute number of CRS units per degree for a projected CRS at a given location
+        in lon/lat.
+
+        Location can be supplied as a tuple or as two arguments.
+
+        Returns
+        -------
+        A floating number S such that `S*degrees -> meters`
+    """
+    if isinstance(lon, tuple):
+        lon, lat = lon
+
+    lon2 = lon + step
+    if lon2 > 180:
+        lon2 = lon - step
+
+    ll = line([(lon, lat),
+               (lon2, lat)],
+              'EPSG:4326')
+    xy = ll.to_crs(crs, resolution=math.inf)
+
+    return xy.length / step
