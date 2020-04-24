@@ -1,3 +1,4 @@
+import warnings
 import rasterio
 from rasterio.shutil import copy as rio_copy
 import numpy as np
@@ -9,8 +10,15 @@ from typing import Union, Optional, List, Any
 
 from .io import check_write_path
 from .geometry import GeoBox
+from .geometry.tools import align_up
 
 __all__ = ("write_cog", "to_cog")
+
+
+def _adjust_blocksize(block, dim):
+    if block > dim:
+        return align_up(dim, 16)
+    return align_up(block, 16)
 
 
 def _write_cog(pix: np.ndarray,
@@ -80,6 +88,9 @@ def _write_cog(pix: np.ndarray,
 
     resampling = rasterio.enums.Resampling[overview_resampling]
 
+    if (blocksize % 16) != 0:
+        warnings.warn(f"Block size must be a multiple of 16, will be adjusted")
+
     rio_opts = dict(
         width=w,
         height=h,
@@ -88,8 +99,8 @@ def _write_cog(pix: np.ndarray,
         crs=str(geobox.crs),
         transform=geobox.transform,
         tiled=True,
-        blockxsize=min(blocksize, w),
-        blockysize=min(blocksize, h),
+        blockxsize=_adjust_blocksize(blocksize, w),
+        blockysize=_adjust_blocksize(blocksize, h),
         zlevel=6,
         predictor=3 if pix.dtype.kind == "f" else 2,
         compress="DEFLATE",

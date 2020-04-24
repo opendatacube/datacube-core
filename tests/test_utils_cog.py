@@ -61,6 +61,21 @@ def test_cog_file(tmpdir):
     with pytest.raises(ValueError, match="Need 2d or 3d ndarray on input"):
         _write_cog(xx.values.ravel(), xx.geobox, pp / "wontwrite.tif")
 
+    # sizes that are not multiples of 16
+    xx_odd = xx[:23, :63]
+    ff = write_cog(xx_odd, pp / "cog_odd.tif")
+    assert isinstance(ff, Path)
+    assert ff == pp / "cog_odd.tif"
+    assert ff.exists()
+
+    yy = rio_slurp_xarray(pp / "cog_odd.tif")
+    np.testing.assert_array_equal(yy.values, xx_odd.values)
+    assert yy.geobox == xx_odd.geobox
+    assert yy.nodata == xx_odd.nodata
+
+    with pytest.warns(UserWarning):
+        write_cog(xx, pp / "cog_badblocksize.tif", blocksize=50)
+
 
 def test_cog_file_dask(tmpdir):
     pp = Path(str(tmpdir))
