@@ -239,6 +239,14 @@ class CRS:
         """
         return self._crs
 
+    @property
+    def valid_region(self) -> 'Geometry':
+        """ Return valid region of this CRS.
+
+            Bounding box in Lon/Lat as a 4 point Polygon in EPSG:4326.
+        """
+        return box(*self._crs.area_of_use.bounds, 'EPSG:4326')
+
     def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[float, float], Tuple[float, float]]:
         """
         Returns a function that maps x, y -> x', y' where x, y are coordinates in
