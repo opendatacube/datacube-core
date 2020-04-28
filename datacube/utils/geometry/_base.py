@@ -517,8 +517,8 @@ class Geometry:
 
     def interpolate(self, distance: float) -> 'Geometry':
         """
-        Returns a point distance units along the line or None if underlying
-        geometry doesn't support this operation.
+        Returns a point distance units along the line.
+        Raises TypeError if geometry doesn't support this operation.
         """
         return Geometry(self.geom.interpolate(distance), self.crs)
 
