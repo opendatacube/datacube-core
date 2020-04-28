@@ -209,7 +209,7 @@ class CRS:
     def __str__(self) -> str:
         return self.crs_str
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.to_wkt())
 
     def __repr__(self) -> str:
@@ -689,7 +689,7 @@ def multipoint(coords: CoordList, crs: MaybeCRS) -> Geometry:
     >>> multipoint([(10, 10), (20, 20)], None)
     Geometry(MULTIPOINT (10 10, 20 20), None)
 
-    :param list coords: list of x,y coordinate tuples
+    :param coords: list of x,y coordinate tuples
     """
     return Geometry({'type': 'MultiPoint', 'coordinates': coords}, crs=crs)
 
@@ -701,7 +701,7 @@ def line(coords: CoordList, crs: MaybeCRS) -> Geometry:
     >>> line([(10, 10), (20, 20), (30, 40)], None)
     Geometry(LINESTRING (10 10, 20 20, 30 40), None)
 
-    :param list coords: list of x,y coordinate tuples
+    :param coords: list of x,y coordinate tuples
     """
     return Geometry({'type': 'LineString', 'coordinates': coords}, crs=crs)
 
@@ -713,7 +713,7 @@ def multiline(coords: List[CoordList], crs: MaybeCRS) -> Geometry:
     >>> multiline([[(10, 10), (20, 20), (30, 40)], [(50, 60), (70, 80), (90, 99)]], None)
     Geometry(MULTILINESTRING ((10 10, 20 20, 30 40), (50 60, 70 80, 90 99)), None)
 
-    :param list coords: list of lists of x,y coordinate tuples
+    :param coords: list of lists of x,y coordinate tuples
     """
     return Geometry({'type': 'MultiLineString', 'coordinates': coords}, crs=crs)
 
@@ -725,7 +725,7 @@ def polygon(outer, crs: MaybeCRS, *inners) -> Geometry:
     >>> polygon([(10, 10), (20, 20), (20, 10), (10, 10)], None)
     Geometry(POLYGON ((10 10, 20 20, 20 10, 10 10)), None)
 
-    :param list coords: list of 2d x,y coordinate tuples
+    :param coords: list of 2d x,y coordinate tuples
     """
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 
@@ -737,7 +737,7 @@ def multipolygon(coords: List[List[CoordList]], crs: MaybeCRS) -> Geometry:
     >>> multipolygon([[[(10, 10), (20, 20), (20, 10), (10, 10)]], [[(40, 10), (50, 20), (50, 10), (40, 10)]]], None)
     Geometry(MULTIPOLYGON (((10 10, 20 20, 20 10, 10 10)), ((40 10, 50 20, 50 10, 40 10))), None)
 
-    :param list coords: list of lists of x,y coordinate tuples
+    :param coords: list of lists of x,y coordinate tuples
     """
     return Geometry({'type': 'MultiPolygon', 'coordinates': coords}, crs=crs)
 
@@ -757,9 +757,9 @@ def polygon_from_transform(width: float, height: float, transform: Affine, crs: 
     """
     Create a 2D Polygon from an affine transform
 
-    :param float width:
-    :param float height:
-    :param Affine transform:
+    :param width:
+    :param height:
+    :param transform:
     :param crs: CRS
     """
     points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
@@ -812,8 +812,8 @@ class GeoBox:
     Defines the location and resolution of a rectangular grid of data,
     including it's :py:class:`CRS`.
 
-    :param CRS crs: Coordinate Reference System
-    :param affine.Affine affine: Affine transformation defining the location of the geobox
+    :param crs: Coordinate Reference System
+    :param affine: Affine transformation defining the location of the geobox
     """
 
     def __init__(self, width: int, height: int, affine: Affine, crs: MaybeCRS):
@@ -831,8 +831,8 @@ class GeoBox:
                         align: Optional[Tuple[float, float]] = None) -> 'GeoBox':
         """
         :param resolution: (y_resolution, x_resolution)
-        :param CRS crs: CRS to use, if different from the geopolygon
-        :param (float,float) align: Align geobox such that point 'align' lies on the pixel boundary.
+        :param crs: CRS to use, if different from the geopolygon
+        :param align: Align geobox such that point 'align' lies on the pixel boundary.
         """
         align = align or (0.0, 0.0)
         assert 0.0 <= align[1] <= abs(resolution[1]), "X align must be in [0, abs(x_resolution)] range"
