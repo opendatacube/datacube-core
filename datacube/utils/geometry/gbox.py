@@ -225,7 +225,7 @@ class GeoboxTiles():
         """ Return tile indexes overlapping with a given geometry.
         """
         poly = polygon.to_crs(self._gbox.crs)
-        yy, xx = self.range_from_bbox(poly.envelope)
+        yy, xx = self.range_from_bbox(poly.boundingbox)
         for idx in itertools.product(yy, xx):
             gbox = self[idx]
             if gbox.extent.intersects(poly):

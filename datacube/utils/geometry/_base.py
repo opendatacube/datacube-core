@@ -466,13 +466,13 @@ class Geometry:
         return Geometry(self.geom.convex_hull, self.crs)
 
     @property
-    def envelope(self) -> BoundingBox:
-        minx, miny, maxx, maxy = self.geom.bounds
-        return BoundingBox(left=minx, right=maxx, bottom=miny, top=maxy)
+    def envelope(self) -> 'Geometry':
+        return Geometry(self.geom.envelope, self.crs)
 
     @property
     def boundingbox(self) -> BoundingBox:
-        return self.envelope
+        minx, miny, maxx, maxy = self.geom.bounds
+        return BoundingBox(left=minx, right=maxx, bottom=miny, top=maxy)
 
     @property
     def wkt(self) -> str:

@@ -98,7 +98,8 @@ def test_props():
     assert box1.centroid == geometry.point(20, 20, crs)
 
     triangle = geometry.polygon([(10, 20), (20, 20), (20, 10), (10, 20)], crs=crs)
-    assert triangle.envelope == geometry.BoundingBox(10, 10, 20, 20)
+    assert triangle.boundingbox == geometry.BoundingBox(10, 10, 20, 20)
+    assert triangle.envelope.contains(triangle)
 
     assert box1.length == 80.0
 
