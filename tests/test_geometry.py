@@ -234,6 +234,9 @@ def test_ops():
     assert len(pp) == 2
     assert all(p.crs == poly_2_parts.crs for p in pp)
 
+    # test transform
+    assert geometry.point(0, 0, epsg4326).transform(lambda x, y: (x+1, y+2)) == geometry.point(1, 2, epsg4326)
+
 
 def test_shapely_wrappers():
     poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)

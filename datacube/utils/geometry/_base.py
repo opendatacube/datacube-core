@@ -528,6 +528,17 @@ class Geometry:
     def simplify(self, tolerance: float, preserve_topology: bool = True) -> 'Geometry':
         return Geometry(self.geom.simplify(tolerance, preserve_topology=preserve_topology), self.crs)
 
+    def transform(self, func) -> 'Geometry':
+        """Applies func to all coordinates of Geometry and returns a new Geometry
+           of the same type and in the same projection from the transformed coordinates.
+
+           func maps x, y, and optionally z to output xp, yp, zp. The input
+           parameters may be iterable types like lists or arrays or single values.
+           The output shall be of the same type: scalars in, scalars out; lists
+           in, lists out.
+        """
+        return Geometry(ops.transform(func, self.geom), self.crs)
+
     def to_crs(self, crs: SomeCRS,
                resolution: Optional[float] = None,
                wrapdateline: bool = False) -> 'Geometry':
