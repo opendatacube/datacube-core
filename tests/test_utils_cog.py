@@ -62,8 +62,10 @@ def test_cog_file(tmpdir):
         _write_cog(xx.values.ravel(), xx.geobox, pp / "wontwrite.tif")
 
     # sizes that are not multiples of 16
+    # also check that supplying `nodata=` doesn't break things
     xx_odd = xx[:23, :63]
-    ff = write_cog(xx_odd, pp / "cog_odd.tif")
+    ff = write_cog(xx_odd, pp / "cog_odd.tif",
+                   nodata=xx_odd.attrs["nodata"])
     assert isinstance(ff, Path)
     assert ff == pp / "cog_odd.tif"
     assert ff.exists()
