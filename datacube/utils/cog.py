@@ -181,7 +181,9 @@ def write_cog(geo_im: xr.DataArray,
     """
     pix = geo_im.data
     geobox = getattr(geo_im, 'geobox', None)
-    nodata = geo_im.attrs.get("nodata", None)
+    nodata = extra_rio_opts.pop('nodata', None)
+    if nodata is None:
+        nodata = geo_im.attrs.get("nodata", None)
 
     if geobox is None:
         raise ValueError("Need geo-registered array on input")
