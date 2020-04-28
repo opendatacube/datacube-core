@@ -748,6 +748,11 @@ def test_crs():
     assert crs2 == crs
     assert crs.proj is crs2.proj
 
+    assert epsg4326.valid_region == geometry.box(-180, -90, 180, 90, epsg4326)
+    assert epsg3857.valid_region.crs == epsg4326
+    xmin, _, xmax, _ = epsg3857.valid_region.boundingbox
+    assert (xmin, xmax) == (-180, 180)
+
     assert epsg3577 == epsg3577
     assert epsg3577 == 'EPSG:3577'
     assert (epsg3577 != epsg3577) is False
