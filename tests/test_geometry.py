@@ -746,6 +746,7 @@ def test_crs():
 
     crs2 = CRS(crs)
     assert crs2 == crs
+    assert crs.proj is crs2.proj
 
     assert epsg3577 == epsg3577
     assert epsg3577 == 'EPSG:3577'

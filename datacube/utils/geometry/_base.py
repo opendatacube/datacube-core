@@ -233,6 +233,12 @@ class CRS:
     def __ne__(self, other) -> bool:
         return not (self == other)
 
+    @property
+    def proj(self) -> _CRS:
+        """ Access proj.CRS object that this wraps
+        """
+        return self._crs
+
     def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[float, float], Tuple[float, float]]:
         """
         Returns a function that maps x, y -> x', y' where x, y are coordinates in
