@@ -771,6 +771,9 @@ def test_crs():
         with pytest.raises(geometry.CRSError):
             CRS(bad)
 
+    with pytest.warns(DeprecationWarning):
+        assert str(epsg3857) == epsg3857.crs_str
+
 
 def test_polygon_path():
     from datacube.utils.geometry.tools import polygon_path
