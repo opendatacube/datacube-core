@@ -639,10 +639,6 @@ class Geometry:
         self.__init__(**state)
 
 
-def _dist(x, y):
-    return x*x + y*y
-
-
 def _chop_along_antimeridian(geom, transform, rtransform):
     """
     attempt to cut the geometry along the dateline
@@ -677,6 +673,10 @@ def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
     test whether the CRS is smooth over the dateline
     idea borrowed from IsAntimeridianProjToWGS84 with minor mods...
     """
+    def _dist(x: float, y: float) -> float:
+        return x*x + y*y
+
+
     left_of_dt_x, left_of_dt_y = rtransform(180-eps, mid_lat)
     right_of_dt_x, right_of_dt_y = rtransform(-180+eps, mid_lat)
 
