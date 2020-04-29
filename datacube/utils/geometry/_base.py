@@ -36,7 +36,7 @@ class BoundingBox(_BoundingBox):
     """Bounding box, defining extent in cartesian coordinates.
     """
 
-    def buffered(self, ybuff, xbuff):
+    def buffered(self, ybuff: float, xbuff: float) -> 'BoundingBox':
         """
         Return a new BoundingBox, buffered in the x and y dimensions.
 
@@ -254,10 +254,11 @@ class CRS:
 
             Bounding box in Lon/Lat as a 4 point Polygon in EPSG:4326.
         """
-        return box(*self._crs.area_of_use.bounds, 'EPSG:4326')
+        x1, y1, x2, y2 = self._crs.area_of_use.bounds
+        return box(x1, y1, x2, y2, 'EPSG:4326')
 
     @property
-    def crs_str(self):
+    def crs_str(self) -> str:
         """ DEPRECATED
         """
         warnings.warn("Please use `str(crs)` instead of `crs.crs_str`", category=DeprecationWarning)
@@ -317,7 +318,7 @@ def wrap_shapely(method):
     return wrapped
 
 
-def force_2d(geojson):
+def force_2d(geojson: Dict[str, Any]) -> Dict[str, Any]:
     assert 'type' in geojson
     assert 'coordinates' in geojson
 
@@ -339,7 +340,7 @@ def force_2d(geojson):
             'coordinates': go(geojson['coordinates'])}
 
 
-def densify(line, distance):
+def densify(line: 'Geometry', distance: float) -> 'Geometry':
     """
     Adds points so they are at most `distance` apart.
     """
@@ -1098,7 +1099,7 @@ def geobox_intersection_conservative(geoboxes: List[GeoBox]) -> GeoBox:
     return GeoBox(width=bbox.width, height=bbox.height, affine=affine, crs=reference.crs)
 
 
-def scaled_down_geobox(src_geobox, scaler: int):
+def scaled_down_geobox(src_geobox: GeoBox, scaler: int) -> GeoBox:
     """Given a source geobox and integer scaler compute geobox of a scaled down image.
 
         Output geobox will be padded when shape is not a multiple of scaler.
@@ -1120,7 +1121,7 @@ def scaled_down_geobox(src_geobox, scaler: int):
     return GeoBox(W, H, A, src_geobox.crs)
 
 
-def _round_to_res(value, res, acc=0.1):
+def _round_to_res(value: float, res: float, acc: float = 0.1) -> int:
     """
     >>> _round_to_res(0.2, 1.0)
     1
@@ -1133,7 +1134,7 @@ def _round_to_res(value, res, acc=0.1):
     return int(math.ceil((value - 0.1 * res) / res))
 
 
-def intersects(a, b):
+def intersects(a: Geometry, b: Geometry) -> bool:
     return a.intersects(b) and not a.touches(b)
 
 
