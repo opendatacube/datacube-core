@@ -293,6 +293,21 @@ def test_to_crs():
         poly.to_crs(epsg3857)
 
 
+def test_boundingbox():
+    bb = BoundingBox(0, 3, 2, 4)
+    assert bb.width == 2
+    assert bb.height == 1
+    assert bb.width == bb.span_x
+    assert bb.height == bb.span_y
+
+    bb = BoundingBox(0, 3, 2.1, 4)
+    assert bb.width == 2
+    assert bb.height == 1
+    assert bb.span_x == 2.1
+    assert bb.width != bb.span_x
+    assert bb.height == bb.span_y
+
+
 def test_bbox_union():
     b1 = BoundingBox(0, 1, 10, 20)
     b2 = BoundingBox(5, 6, 11, 22)

@@ -48,12 +48,20 @@ class BoundingBox(_BoundingBox):
                            top=self.top + ybuff, bottom=self.bottom - ybuff)
 
     @property
-    def width(self):
+    def span_x(self) -> float:
         return self.right - self.left
 
     @property
-    def height(self):
+    def span_y(self) -> float:
         return self.top - self.bottom
+
+    @property
+    def width(self) -> int:
+        return int(self.right - self.left)
+
+    @property
+    def height(self) -> int:
+        return int(self.top - self.bottom)
 
     @property
     def points(self) -> CoordList:
