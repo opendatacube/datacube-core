@@ -53,7 +53,7 @@ please use datacube.utils.cog.write_cog instead""",
         'width': width,
         'height': height,
         'transform': geobox.affine,
-        'crs': geobox.crs.crs_str,
+        'crs': str(geobox.crs),
         'count': len(dataset.data_vars),
         'dtype': str(dtypes.pop())
     })

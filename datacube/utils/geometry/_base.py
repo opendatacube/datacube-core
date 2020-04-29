@@ -2,6 +2,7 @@ import functools
 import itertools
 import math
 import array
+import warnings
 from collections import namedtuple, OrderedDict
 from typing import Tuple, Iterable, List, Union, Optional, Any, Callable, Hashable, Dict
 from collections.abc import Sequence
@@ -111,7 +112,7 @@ class CRS:
     DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if LooseVersion(rasterio.__gdal_version__) < LooseVersion("3.0.0")
                            else WktVersion.WKT2_2019)
 
-    __slots__ = ('_crs', '_epsg', 'crs_str')
+    __slots__ = ('_crs', '_epsg', '_str')
 
     def __init__(self, crs_str: Any):
         """
@@ -126,10 +127,10 @@ class CRS:
 
         self._crs = _crs
         self._epsg = _epsg
-        self.crs_str = crs_str
+        self._str = crs_str
 
     def __getstate__(self):
-        return {'crs_str': self.crs_str}
+        return {'crs_str': self._str}
 
     def __setstate__(self, state):
         self.__init__(state['crs_str'])
@@ -207,13 +208,13 @@ class CRS:
         raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
     def __str__(self) -> str:
-        return self.crs_str
+        return self._str
 
     def __hash__(self) -> int:
         return hash(self.to_wkt())
 
     def __repr__(self) -> str:
-        return "CRS('%s')" % self.crs_str
+        return "CRS('%s')" % self._str
 
     def __eq__(self, other: SomeCRS) -> bool:
         if not isinstance(other, CRS):
@@ -246,6 +247,13 @@ class CRS:
             Bounding box in Lon/Lat as a 4 point Polygon in EPSG:4326.
         """
         return box(*self._crs.area_of_use.bounds, 'EPSG:4326')
+
+    @property
+    def crs_str(self):
+        """ DEPRECATED
+        """
+        warnings.warn("Please use `str(crs)` instead of `crs.crs_str`", category=DeprecationWarning)
+        return self._str
 
     def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[float, float], Tuple[float, float]]:
         """
