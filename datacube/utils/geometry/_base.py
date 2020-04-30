@@ -64,6 +64,14 @@ class BoundingBox(_BoundingBox):
         return int(self.top - self.bottom)
 
     @property
+    def range_x(self) -> Tuple[float, float]:
+        return (self.left, self.right)
+
+    @property
+    def range_y(self) -> Tuple[float, float]:
+        return (self.bottom, self.top)
+
+    @property
     def points(self) -> CoordList:
         """Extract four corners of the bounding box
         """
