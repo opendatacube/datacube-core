@@ -36,6 +36,7 @@ from datacube.utils.geometry._base import (
     _guess_crs_str,
     force_2d,
     _align_pix,
+    _round_to_res,
 )
 from datacube.testutils.geom import (
     epsg4326,
@@ -1308,6 +1309,10 @@ def test_base_internals():
 
     with pytest.raises(ValueError):
         force_2d({'type': 'a', 'coordinates': [set("not a valid element")]})
+
+    assert _round_to_res(0.2, 1.0) == 1
+    assert _round_to_res(0.0, 1.0) == 0
+    assert _round_to_res(0.05, 1.0) == 0
 
 
 def test_crs_units_per_degree():
