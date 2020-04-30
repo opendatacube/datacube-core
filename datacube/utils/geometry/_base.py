@@ -362,25 +362,31 @@ def force_2d(geojson: Dict[str, Any]) -> Dict[str, Any]:
             'coordinates': go(geojson['coordinates'])}
 
 
-def densify(line: 'Geometry', distance: float) -> 'Geometry':
+def densify(coords: CoordList, resolution: float) -> CoordList:
     """
-    Adds points so they are at most `distance` apart.
+    Adds points so they are at most `step` apart.
     """
-    if distance <= 0.0 or distance >= line.length:
-        return line
+    d2 = resolution**2
+    def short_enough(p1, p2):
+        return (p1[0]**2 + p2[0]**2) < d2
 
-    coords = list(line.coords)
     new_coords = [coords[0]]
-    for start, end in zip(coords[:-1], coords[1:]):
-        segment = geometry.LineString([start, end])
-        while segment.length > distance:
-            new_point = segment.interpolate(distance)
-            segment = geometry.LineString([new_point, end])
-            new_coords.append(new_point.coords[0])
-        new_coords.append(end)
+    for p1, p2 in zip(coords[:-1], coords[1:]):
+        if not short_enough(p1, p2):
+            segment = geometry.LineString([p1, p2])
+            segment_length = segment.length
+            d = resolution
+            while d < segment_length:
+                pt, = segment.interpolate(d).coords
+                new_coords.append(pt)
+                d += resolution
 
-    return type(line)(new_coords)
+        new_coords.append(p2)
 
+    return new_coords
+
+def _clone_shapely_geom(geom: base.BaseGeometry) -> base.BaseGeometry:
+    return type(geom)(geom)
 
 class Geometry:
     """
@@ -391,14 +397,26 @@ class Geometry:
     If 3D coordinates are supplied, they are converted to 2D by dropping the Z points.
     """
 
-    def __init__(self, geom: base.BaseGeometry, crs: MaybeCRS = None):
-        crs = _norm_crs(crs)
+    def __init__(self,
+                 geom: Union[base.BaseGeometry, Dict[str, Any], 'Geometry'],
+                 crs: MaybeCRS = None):
+        if isinstance(geom, Geometry):
+            assert crs is None
+            self.crs: Optional[CRS] = geom.crs
+            self.geom: base.BaseGeometry = _clone_shapely_geom(geom.geom)
+            return
 
+        crs = _norm_crs(crs)
         self.crs = crs
         if isinstance(geom, base.BaseGeometry):
             self.geom = geom
-        else:
+        elif isinstance(geom, dict):
             self.geom = geometry.shape(force_2d(geom))
+        else:
+            raise ValueError(f'Unexpected type {type(geom)}')
+
+    def clone(self) -> 'Geometry':
+        return Geometry(self)
 
     @wrap_shapely
     def contains(self, other: 'Geometry') -> bool:
@@ -548,25 +566,23 @@ class Geometry:
         Possibly add more points to the geometry so that no edge is longer than `resolution`.
         """
 
-        def segmentize_shapely(geom):
+        def segmentize_shapely(geom: base.BaseGeometry) -> base.BaseGeometry:
             if geom.type in ['Point', 'MultiPoint']:
-                return geom
+                return type(geom)(geom) # clone without changes
 
             if geom.type in ['GeometryCollection', 'MultiPolygon', 'MultiLineString']:
                 return type(geom)([segmentize_shapely(g) for g in geom])
 
             if geom.type in ['LineString', 'LinearRing']:
-                return densify(geom, resolution)
+                return type(geom)(densify(list(geom.coords), resolution))
 
             if geom.type == 'Polygon':
-                return geometry.Polygon(densify(geom.exterior, resolution),
-                                        [densify(i, resolution) for i in geom.interiors])
+                return geometry.Polygon(densify(list(geom.exterior.coords), resolution),
+                                        [densify(list(i.coords), resolution) for i in geom.interiors])
 
             raise ValueError('unknown geometry type {}'.format(geom.type))  # pragma: no cover
 
-        clone = geometry.shape(self.json)
-
-        return Geometry(segmentize_shapely(clone), self.crs)
+        return Geometry(segmentize_shapely(self.geom), self.crs)
 
     def interpolate(self, distance: float) -> 'Geometry':
         """
@@ -620,7 +636,7 @@ class Geometry:
             resolution = 1 if self.crs.geographic else 100000
 
         transform = self.crs.transformer_to_crs(crs)
-        clone = geometry.shape(self.json)
+        clone = self.clone().geom
 
         if math.isfinite(resolution):
             clone = Geometry(clone, self.crs).segmented(resolution).geom
@@ -675,14 +691,16 @@ def _chop_along_antimeridian(geom, transform, rtransform):
     if not _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
         return geom
 
-    left_of_dt = geometry.LineString([(180 - eps, -90), (180 - eps, 90)])
-    left_of_dt = ops.transform(rtransform, densify(left_of_dt, 1))
+    left_of_dt = geometry.LineString(densify([(180 - eps, -90),
+                                              (180 - eps, 90)], 1))
+    left_of_dt = ops.transform(rtransform, left_of_dt)
 
     if not left_of_dt.intersects(geom):
         return geom
 
-    right_of_dt = geometry.LineString([(-180 + eps, -90), (-180 + eps, 90)])
-    right_of_dt = ops.transform(rtransform, densify(right_of_dt, 1))
+    right_of_dt = geometry.LineString(densify([(-180 + eps, -90),
+                                               (-180 + eps, 90)], 1))
+    right_of_dt = ops.transform(rtransform, right_of_dt)
 
     poly1 = geometry.Polygon([(minx, maxy), (minx, miny)] + list(left_of_dt.coords) + [(minx, maxy)])
     poly2 = geometry.Polygon([(maxx, maxy), (maxx, miny)] + list(right_of_dt.coords) + [(maxx, maxy)])
