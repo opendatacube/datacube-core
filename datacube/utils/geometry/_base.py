@@ -1172,14 +1172,6 @@ def scaled_down_geobox(src_geobox: GeoBox, scaler: int) -> GeoBox:
 
 
 def _round_to_res(value: float, res: float, acc: float = 0.1) -> int:
-    """
-    >>> _round_to_res(0.2, 1.0)
-    1
-    >>> _round_to_res(0.0, 1.0)
-    0
-    >>> _round_to_res(0.05, 1.0)
-    0
-    """
     res = abs(res)
     return int(math.ceil((value - 0.1 * res) / res))
 
