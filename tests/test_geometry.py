@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from mock import MagicMock
 from affine import Affine
@@ -1334,3 +1335,29 @@ def test_crs_units_per_degree():
 ])
 def test_align_pix(left, right, off, res, expect):
     assert _align_pix(left, right, off, res) == expect
+
+
+def test_lonlat_bounds():
+    # example from landsat scene: spans lon=180
+    poly = geometry.box(618300, -1876800, 849000, -1642500, 'EPSG:32660')
+
+    bb = geometry.lonlat_bounds(poly)
+    assert bb.left < 180 < bb.right
+    assert geometry.lonlat_bounds(poly) == geometry.lonlat_bounds(poly, resolution=1e+8)
+
+    bb = geometry.lonlat_bounds(poly, mode='quick')
+    assert bb.right - bb.left > 180
+
+    poly = geometry.box(1, -10, 2, 20, 'EPSG:4326')
+    assert geometry.lonlat_bounds(poly) == poly.boundingbox
+
+    with pytest.raises(ValueError):
+        geometry.lonlat_bounds(geometry.box(0, 0, 1, 1, None))
+
+
+@pytest.mark.xfail(True, reason="Bounds computation for large geometries in safe mode is broken")
+def test_lonalt_bounds_more_than_180():
+    poly = geometry.box(-150, -30, 150, 30, epsg4326).to_crs(epsg3857, math.inf)
+
+    assert geometry.lonlat_bounds(poly, "quick") == approx((-150, -30, 150, 30))
+    assert geometry.lonlat_bounds(poly, "safe") == approx((-150, -30, 150, 30))

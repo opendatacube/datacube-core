@@ -27,6 +27,7 @@ from ._base import (
     polygon_from_transform,
     unary_union,
     unary_intersection,
+    lonlat_bounds,
 )
 
 from .tools import (
@@ -84,6 +85,7 @@ __all__ = [
     "polygon_from_transform",
     "unary_union",
     "unary_intersection",
+    "lonlat_bounds",
     "is_affine_st",
     "apply_affine",
     "compute_axis_overlap",
