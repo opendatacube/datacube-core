@@ -127,6 +127,10 @@ def test_props():
     # check "CRS as string is converted to class automatically"
     assert isinstance(geometry.point(3, 4, 'epsg:3857').crs, geometry.CRS)
 
+    # constructor with bad input should raise ValueError
+    with pytest.raises(ValueError):
+        geometry.Geometry(object())
+
 
 def test_tests():
     box1 = geometry.box(10, 10, 30, 30, crs=epsg4326)
@@ -207,6 +211,11 @@ def test_ops():
     assert poly.area == poly2.area
     assert len(poly.geom.exterior.coords) < len(poly2.geom.exterior.coords)
 
+    poly2 = poly.exterior.segmented(2)
+    assert poly.crs is poly2.crs
+    assert poly.length == poly2.length
+    assert len(poly.geom.exterior.coords) < len(poly2.geom.coords)
+
     # test interpolate
     pt = line.interpolate(1)
     assert pt.crs is line.crs
@@ -282,6 +291,8 @@ def test_to_crs():
     assert poly.to_crs('EPSG:3857').crs == 'EPSG:3857'
     assert poly.to_crs('EPSG:3857', 0.1).crs == epsg3857
 
+    assert poly.exterior.to_crs(epsg3857) == poly.to_crs(epsg3857).exterior
+
     # test that by default segmentation happens
     # +1 is because exterior loops back to start point
     assert len(poly.to_crs(epsg3857).exterior.xy[0]) > num_points + 1
@@ -322,6 +333,15 @@ def test_boundingbox():
     assert BoundingBox.from_points((1, 11), (2, 22)) == (1, 11, 2, 22)
     assert BoundingBox.from_points((1, 22), (2, 11)) == (1, 11, 2, 22)
 
+
+def test_densify():
+    from datacube.utils.geometry._base import densify
+
+    s_x10 = [(0, 0), (10, 0)]
+    assert densify(s_x10, 20) == s_x10
+    assert densify(s_x10, 200) == s_x10
+    assert densify(s_x10, 5) == [(0, 0), (5, 0), (10, 0)]
+    assert densify(s_x10, 4) == [(0, 0), (4, 0), (8, 0), (10, 0)]
 
 
 def test_bbox_union():
