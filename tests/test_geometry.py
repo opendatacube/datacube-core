@@ -317,6 +317,12 @@ def test_boundingbox():
     assert bb.width != bb.span_x
     assert bb.height == bb.span_y
 
+    assert BoundingBox.from_xy((1, 2), (10, 20)) == (1, 10, 2, 20)
+    assert BoundingBox.from_xy((2, 1), (20, 10)) == (1, 10, 2, 20)
+    assert BoundingBox.from_points((1, 11), (2, 22)) == (1, 11, 2, 22)
+    assert BoundingBox.from_points((1, 22), (2, 11)) == (1, 11, 2, 22)
+
+
 
 def test_bbox_union():
     b1 = BoundingBox(0, 1, 10, 20)
