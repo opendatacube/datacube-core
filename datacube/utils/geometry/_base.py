@@ -81,6 +81,28 @@ class BoundingBox(_BoundingBox):
         yy = [y for _, y in pts]
         return BoundingBox(min(xx), min(yy), max(xx), max(yy))
 
+    @staticmethod
+    def from_xy(x: Tuple[float, float],
+                y: Tuple[float, float]) -> 'BoundingBox':
+        """ BoundingBox from x and y ranges
+
+        :param x: (left, right)
+        :param y: (bottom, top)
+        """
+        x1, x2 = sorted(x)
+        y1, y2 = sorted(y)
+        return BoundingBox(x1, y1, x2, y2)
+
+    @staticmethod
+    def from_points(p1: Tuple[float, float],
+                    p2: Tuple[float, float]) -> 'BoundingBox':
+        """ BoundingBox from 2 points
+        :param p1: (x, y)
+        :param p2: (x, y)
+        """
+        return BoundingBox.from_xy((p1[0], p2[0]),
+                                   (p1[1], p2[1]))
+
 
 @cachetools.cached({})
 def _make_crs(crs_str: str) -> Tuple[_CRS, Optional[int]]:
