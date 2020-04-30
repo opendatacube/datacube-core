@@ -238,6 +238,16 @@ def test_ops():
     # test transform
     assert geometry.point(0, 0, epsg4326).transform(lambda x, y: (x+1, y+2)) == geometry.point(1, 2, epsg4326)
 
+    # test sides
+    box = geometry.box(1, 2, 11, 22, epsg4326)
+    ll = list(geometry.sides(box))
+    assert all(l.crs is epsg4326 for l in ll)
+    assert len(ll) == 4
+    assert ll[0] == geometry.line([(1, 2), (1, 22)], epsg4326)
+    assert ll[1] == geometry.line([(1, 22), (11, 22)], epsg4326)
+    assert ll[2] == geometry.line([(11, 22), (11, 2)], epsg4326)
+    assert ll[3] == geometry.line([(11, 2), (1, 2)], epsg4326)
+
 
 def test_shapely_wrappers():
     poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)

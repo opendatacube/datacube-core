@@ -791,6 +791,16 @@ def polygon_from_transform(width: float, height: float, transform: Affine, crs: 
     transform.itransform(points)
     return polygon(points, crs=crs)
 
+def sides(poly: Geometry) -> Iterable[Geometry]:
+    """ Returns a sequence of Geometry[Line] objects.
+
+        One for each side of the exterior ring of the input polygon.
+    """
+    XY = poly.exterior.points
+    crs = poly.crs
+    for p1, p2 in zip(XY[:-1], XY[1:]):
+        yield line([p1, p2], crs)
+
 
 ###########################################
 # Multi-geometry operations
