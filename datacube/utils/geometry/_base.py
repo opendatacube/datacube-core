@@ -697,6 +697,19 @@ class Geometry:
         self.__init__(**state)
 
 
+def common_crs(geoms: Iterable[Geometry]) -> Optional[CRS]:
+    """ Return CRS common across geometries, or raise CRSMismatchError
+    """
+    all_crs = [g.crs for g in geoms]
+    if len(all_crs) == 0:
+        return None
+    ref = all_crs[0]
+    for crs in all_crs[1:]:
+        if crs != ref:
+            raise CRSMismatchError()
+    return ref
+
+
 def _chop_along_antimeridian(geom, transform, rtransform):
     """
     attempt to cut the geometry along the dateline
@@ -861,6 +874,27 @@ def sides(poly: Geometry) -> Iterable[Geometry]:
     crs = poly.crs
     for p1, p2 in zip(XY[:-1], XY[1:]):
         yield line([p1, p2], crs)
+
+
+def multigeom(geoms: Iterable[Geometry]) -> Geometry:
+    """ Construct Multi{Polygon|LineString|Point}
+    """
+    geoms = [g for g in geoms]  # force into list
+    src_type = {g.type for g in geoms}
+    if len(src_type) > 1:
+        raise ValueError("All Geometries must be of the same type")
+
+    crs = common_crs(geoms)  # will raise if some differ
+    raw_geoms = [g.geom for g in geoms]
+    src_type = src_type.pop()
+    if src_type == 'Polygon':
+        return Geometry(geometry.MultiPolygon(raw_geoms), crs)
+    elif src_type == 'Point':
+        return Geometry(geometry.MultiPoint(raw_geoms), crs)
+    elif src_type == 'LineString':
+        return Geometry(geometry.MultiLineString(raw_geoms), crs)
+
+    raise ValueError("Only understand Polygon|LineString|Point")
 
 
 ###########################################
