@@ -1279,3 +1279,48 @@ def crs_units_per_degree(crs: SomeCRS,
     xy = ll.to_crs(crs, resolution=math.inf)
 
     return xy.length / step
+
+
+def lonlat_bounds(geom: Geometry,
+                  mode: str = "safe",
+                  resolution: Optional[float] = None) -> BoundingBox:
+    """
+    :param geom: Geometry in any projection
+    :param mode: safe|quick
+    :param resolution: If supplied will first segmentize input geometry to have no segment longer than ``resolution``,
+                       this increases accuracy at the cost of computation
+    """
+    assert mode in ("safe", "quick")
+    if geom.crs is None:
+        raise ValueError("lonlat_bounds can only operate on Geometry with CRS defined")
+
+    if geom.crs.geographic:
+        return geom.boundingbox
+
+    geom = geom.exterior
+    if resolution is not None and math.isfinite(resolution):
+        geom = geom.segmented(resolution)
+
+    xx, yy = geom.to_crs('EPSG:4326', resolution=math.inf).xy
+    xx_range = min(xx), max(xx)
+    yy_range = min(yy), max(yy)
+
+    if mode == "safe":
+        # If range in Longitude is more than 180 then it's probably wrapped
+        # around 180 (X-360 for X > 180), so we add back 360 but only for X<0
+        # values. This only works if input geometry doesn't span more than half
+        # a globe, so we need to check for that too, but this is not yet
+        # implemented...
+
+        span_x = xx_range[1] - xx_range[0]
+        if span_x > 180:
+            # TODO: check the case when input geometry spans >180 region.
+            #       For now we assume "smaller" geometries not too close
+            #       to poles.
+            xx_ = [x + 360 if x < 0 else x for x in xx]
+            xx_range_ = min(xx_), max(xx_)
+            span_x_ = xx_range_[1] - xx_range_[0]
+            if span_x_ < span_x:
+                xx_range = xx_range_
+
+    return BoundingBox.from_xy(xx_range, yy_range)
