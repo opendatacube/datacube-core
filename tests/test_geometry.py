@@ -10,7 +10,10 @@ from datacube.utils import geometry
 from datacube.utils.geometry import (
     GeoBox,
     CRS,
+    CRSMismatchError,
     BoundingBox,
+    common_crs,
+    multigeom,
     bbox_union,
     crs_units_per_degree,
     decompose_rws,
@@ -267,6 +270,54 @@ def test_geom_split():
     assert len(bb) == 2
     assert box.contains(bb[0] | bb[1])
     assert (box ^ (bb[0] | bb[1])).is_empty
+
+
+def test_common_crs():
+    assert common_crs([]) is None
+    assert common_crs([geometry.point(0, 0, epsg4326),
+                       geometry.line([(0, 0), (1, 1)], epsg4326)]) is epsg4326
+
+    with pytest.raises(CRSMismatchError):
+        common_crs([geometry.point(0, 0, epsg4326),
+                    geometry.line([(0, 0), (1, 1)], epsg3857)])
+
+
+def test_multigeom():
+    p1, p2 = (0, 0), (1, 2)
+    p3, p4 = (3, 4), (5, 6)
+    b1 = geometry.box(*p1, *p2, epsg4326)
+    b2 = geometry.box(*p3, *p4, epsg4326)
+    bb = multigeom([b1, b2])
+    assert bb.type == 'MultiPolygon'
+    assert bb.crs is b1.crs
+    assert len(list(bb)) == 2
+
+    g1 = geometry.line([p1, p2], None)
+    g2 = geometry.line([p3, p4], None)
+    gg = multigeom(iter([g1, g2, g1]))
+    assert gg.type == 'MultiLineString'
+    assert gg.crs is g1.crs
+    assert len(list(gg)) == 3
+
+    g1 = geometry.point(*p1, epsg3857)
+    g2 = geometry.point(*p2, epsg3857)
+    g3 = geometry.point(*p3, epsg3857)
+    gg = multigeom(iter([g1, g2, g3]))
+    assert gg.type == 'MultiPoint'
+    assert gg.crs is g1.crs
+    assert len(list(gg)) == 3
+    assert list(gg)[0] == g1
+    assert list(gg)[1] == g2
+    assert list(gg)[2] == g3
+
+    # can't mix types
+    with pytest.raises(ValueError):
+        multigeom([geometry.line([p1, p2], None), geometry.point(*p1, None)])
+
+    # can't mix CRSs
+    with pytest.raises(CRSMismatchError):
+        multigeom([geometry.line([p1, p2], epsg4326),
+                   geometry.line([p3, p4], epsg3857)])
 
 
 def test_shapely_wrappers():
