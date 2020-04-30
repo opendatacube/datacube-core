@@ -260,6 +260,15 @@ def test_ops():
     assert ll[3] == geometry.line([(11, 2), (1, 2)], epsg4326)
 
 
+def test_geom_split():
+    box = geometry.box(0, 0, 10, 30, epsg4326)
+    line = geometry.line([(5, 0), (5, 30)], epsg4326)
+    bb = list(box.split(line))
+    assert len(bb) == 2
+    assert box.contains(bb[0] | bb[1])
+    assert (box ^ (bb[0] | bb[1])).is_empty
+
+
 def test_shapely_wrappers():
     poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)
 

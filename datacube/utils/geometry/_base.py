@@ -375,6 +375,7 @@ def densify(coords: CoordList, resolution: float) -> CoordList:
     Adds points so they are at most `step` apart.
     """
     d2 = resolution**2
+
     def short_enough(p1, p2):
         return (p1[0]**2 + p2[0]**2) < d2
 
@@ -393,8 +394,10 @@ def densify(coords: CoordList, resolution: float) -> CoordList:
 
     return new_coords
 
+
 def _clone_shapely_geom(geom: base.BaseGeometry) -> base.BaseGeometry:
     return type(geom)(geom)
+
 
 class Geometry:
     """
@@ -576,7 +579,7 @@ class Geometry:
 
         def segmentize_shapely(geom: base.BaseGeometry) -> base.BaseGeometry:
             if geom.type in ['Point', 'MultiPoint']:
-                return type(geom)(geom) # clone without changes
+                return type(geom)(geom)  # clone without changes
 
             if geom.type in ['GeometryCollection', 'MultiPolygon', 'MultiLineString']:
                 return type(geom)([segmentize_shapely(g) for g in geom])
@@ -654,6 +657,15 @@ class Geometry:
             clone = _chop_along_antimeridian(clone, transform, rtransform)
 
         return Geometry(ops.transform(transform, clone), crs)
+
+    def split(self, splitter: 'Geometry') -> Iterable['Geometry']:
+        """ shapely.ops.split
+        """
+        if splitter.crs != self.crs:
+            raise CRSMismatchError(self.crs, splitter.crs)
+
+        for g in ops.split(self.geom, splitter.geom):
+            yield Geometry(g, self.crs)
 
     def __iter__(self) -> Iterable['Geometry']:
         for geom in self.geom:
@@ -838,6 +850,7 @@ def polygon_from_transform(width: float, height: float, transform: Affine, crs: 
     points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
     transform.itransform(points)
     return polygon(points, crs=crs)
+
 
 def sides(poly: Geometry) -> Iterable[Geometry]:
     """ Returns a sequence of Geometry[Line] objects.
