@@ -911,6 +911,15 @@ def test_3d_point_converted_to_2d_point():
 
 def test_crs():
     CRS = geometry.CRS
+    custom_crs = geometry.CRS("""PROJCS["unnamed",
+                           GEOGCS["Unknown datum based upon the custom spheroid",
+                           DATUM["Not specified (based on custom spheroid)", SPHEROID["Custom spheroid",6371007.181,0]],
+                           PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],
+                           PROJECTION["Sinusoidal"],
+                           PARAMETER["longitude_of_center",0],
+                           PARAMETER["false_easting",0],
+                           PARAMETER["false_northing",0],
+                           UNIT["Meter",1]]""")
 
     crs = epsg3577
     assert crs.geographic is False
@@ -934,6 +943,7 @@ def test_crs():
     assert epsg3857.valid_region.crs == epsg4326
     xmin, _, xmax, _ = epsg3857.valid_region.boundingbox
     assert (xmin, xmax) == (-180, 180)
+    assert custom_crs.valid_region is None
 
     assert epsg3577 == epsg3577
     assert epsg3577 == 'EPSG:3577'
