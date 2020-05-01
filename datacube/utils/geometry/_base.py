@@ -384,7 +384,7 @@ def force_2d(geojson: Dict[str, Any]) -> Dict[str, Any]:
 
 def densify(coords: CoordList, resolution: float) -> CoordList:
     """
-    Adds points so they are at most `step` apart.
+    Adds points so they are at most `resolution` units apart.
     """
     d2 = resolution**2
 
