@@ -279,12 +279,16 @@ class CRS:
         return self._crs
 
     @property
-    def valid_region(self) -> 'Geometry':
+    def valid_region(self) -> Optional['Geometry']:
         """ Return valid region of this CRS.
 
             Bounding box in Lon/Lat as a 4 point Polygon in EPSG:4326.
+            None if not defined
         """
-        x1, y1, x2, y2 = self._crs.area_of_use.bounds
+        region = self._crs.area_of_use
+        if region is None:
+            return None
+        x1, y1, x2, y2 = region.bounds
         return box(x1, y1, x2, y2, 'EPSG:4326')
 
     @property
