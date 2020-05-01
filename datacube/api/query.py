@@ -112,7 +112,7 @@ class Query(object):
         kwargs = {}
         kwargs.update(self.search)
         if self.geopolygon:
-            geo_bb = self.geopolygon.to_crs(geometry.CRS('EPSG:4326')).boundingbox
+            geo_bb = geometry.lonlat_bounds(self.geopolygon, resolution=100_000)  # TODO: pick resolution better
             if geo_bb.bottom != geo_bb.top:
                 kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
             else:
