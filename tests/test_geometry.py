@@ -29,6 +29,9 @@ from datacube.utils.geometry import (
     apply_affine,
     compute_axis_overlap,
     roi_is_empty,
+    clip_lon180,
+    chop_along_antimeridian,
+    projected_lon,
     w_,
 )
 from datacube.utils.geometry._base import (
@@ -40,6 +43,8 @@ from datacube.utils.geometry._base import (
     force_2d,
     _align_pix,
     _round_to_res,
+    _norm_crs,
+    _norm_crs_or_error,
 )
 from datacube.testutils.geom import (
     epsg4326,
@@ -271,6 +276,9 @@ def test_geom_split():
     assert box.contains(bb[0] | bb[1])
     assert (box ^ (bb[0] | bb[1])).is_empty
 
+    with pytest.raises(CRSMismatchError):
+        list(box.split(geometry.line([(5, 0), (5, 30)], epsg3857)))
+
 
 def test_common_crs():
     assert common_crs([]) is None
@@ -318,6 +326,10 @@ def test_multigeom():
     with pytest.raises(CRSMismatchError):
         multigeom([geometry.line([p1, p2], epsg4326),
                    geometry.line([p3, p4], epsg3857)])
+
+    # only some types are supported on input
+    with pytest.raises(ValueError):
+        multigeom([gg])
 
 
 def test_shapely_wrappers():
@@ -753,6 +765,49 @@ def test_geobox_xr_coords():
     assert _mk_crs_coord(crs).attrs['grid_mapping_name'] == '??'
 
 
+def test_projected_lon():
+    assert projected_lon(epsg3857, 180).crs is epsg3857
+    assert projected_lon('EPSG:3577', 100).crs == epsg3577
+
+
+def test_chop():
+    poly = geometry.box(618300, -1876800,
+                        849000, -1642500, 'EPSG:32660')
+
+    chopped = chop_along_antimeridian(poly)
+    assert chopped.crs is poly.crs
+    assert chopped.type == 'MultiPolygon'
+    assert len([g for g in chopped]) == 2
+
+    poly = geometry.box(0, 0, 10, 20, 'EPSG:4326')._to_crs(epsg3857)
+    assert poly.crs is epsg3857
+    assert chop_along_antimeridian(poly) is poly
+
+    with pytest.raises(ValueError):
+        chop_along_antimeridian(geometry.box(0, 1, 2, 3, None))
+
+
+def test_clip_lon180():
+    err = 1e-9
+
+    def b(rside):
+        return geometry.box(170, 0, rside, 10, epsg4326)
+
+    def b_neg(lside):
+        return geometry.box(lside, 0, -170, 10, epsg4326)
+
+    assert clip_lon180(b(180 - err)) == b(180)
+    assert clip_lon180(b(-180 + err)) == b(180)
+
+    assert clip_lon180(b_neg(180 - err)) == b_neg(-180)
+    assert clip_lon180(b_neg(-180 + err)) == b_neg(-180)
+
+    bb = multigeom([b(180-err), b_neg(180-err)])
+    bb_ = [g for g in clip_lon180(bb)]
+    assert bb_[0] == b(180)
+    assert bb_[1] == b_neg(-180)
+
+
 def test_wrap_dateline():
     albers_crs = epsg3577
     geog_crs = epsg4326
@@ -770,7 +825,6 @@ def test_wrap_dateline():
     assert not wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=geog_crs))
 
 
-@pytest.mark.xfail(True, reason="Wrap dateline not working in these cases")
 @pytest.mark.parametrize("pts", [
     [(12231455.716333, -5559752.598333),
      (12231455.716333, -4447802.078667),
@@ -803,7 +857,20 @@ def test_wrap_dateline_sinusoidal(pts):
     wrapped = wrap.to_crs(epsg4326)
     assert wrapped.type == 'Polygon'
     wrapped = wrap.to_crs(epsg4326, wrapdateline=True)
-    assert wrapped.type == 'MultiPolygon'  # fails here
+    assert wrapped.type == 'MultiPolygon'
+    assert not wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=epsg4326))
+
+
+def test_wrap_dateline_utm():
+    poly = geometry.box(618300, -1876800,
+                        849000, -1642500, 'EPSG:32660')
+
+    wrapped = poly.to_crs(epsg4326)
+    assert wrapped.type == 'Polygon'
+    assert wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=epsg4326))
+    wrapped = poly.to_crs(epsg4326, wrapdateline=True)
+    assert wrapped.type == 'MultiPolygon'
+    assert not wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=epsg4326))
 
 
 def test_3d_geometry_converted_to_2d_geometry():
@@ -1375,6 +1442,20 @@ def test_base_internals():
     assert _round_to_res(0.2, 1.0) == 1
     assert _round_to_res(0.0, 1.0) == 0
     assert _round_to_res(0.05, 1.0) == 0
+
+    assert _norm_crs(None) is None
+
+    with pytest.raises(ValueError):
+        _norm_crs_or_error(None)
+
+
+def test_geom_clone():
+    b = geometry.box(0, 0, 10, 20, epsg4326)
+    assert b == b.clone()
+    assert b.geom is not b.clone().geom
+
+    assert b == geometry.Geometry(b)
+    assert b.geom is not geometry.Geometry(b).geom
 
 
 def test_crs_units_per_degree():

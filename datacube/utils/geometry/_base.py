@@ -4,7 +4,7 @@ import math
 import array
 import warnings
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Iterable, List, Union, Optional, Any, Callable, Hashable, Dict
+from typing import Tuple, Iterable, List, Union, Optional, Any, Callable, Hashable, Dict, Iterator
 from collections.abc import Sequence
 from distutils.version import LooseVersion
 
@@ -294,7 +294,7 @@ class CRS:
         warnings.warn("Please use `str(crs)` instead of `crs.crs_str`", category=DeprecationWarning)
         return self._str
 
-    def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[float, float], Tuple[float, float]]:
+    def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[Any, Any], Tuple[Any, Any]]:
         """
         Returns a function that maps x, y -> x', y' where x, y are coordinates in
         this stored either as scalars or ndarray objects and x', y' are the same
@@ -325,6 +325,14 @@ def _norm_crs(crs: MaybeCRS) -> Optional[CRS]:
         return crs
     if crs is None:
         return None
+    return CRS(crs)
+
+
+def _norm_crs_or_error(crs: MaybeCRS) -> CRS:
+    if isinstance(crs, CRS):
+        return crs
+    if crs is None:
+        raise ValueError("Expect valid CRS")
     return CRS(crs)
 
 
@@ -619,6 +627,11 @@ class Geometry:
         """
         return Geometry(ops.transform(func, self.geom), self.crs)
 
+    def _to_crs(self, crs: CRS) -> 'Geometry':
+        assert self.crs is not None
+        return Geometry(ops.transform(self.crs.transformer_to_crs(crs),
+                                      self.geom), crs)
+
     def to_crs(self, crs: SomeCRS,
                resolution: Optional[float] = None,
                wrapdateline: bool = False) -> 'Geometry':
@@ -635,28 +648,27 @@ class Geometry:
                                   when converting to geographic projections.
                                   Currently only works in few specific cases (source CRS is smooth over the dateline).
         """
-        crs = _norm_crs(crs)
+        crs = _norm_crs_or_error(crs)
         if self.crs == crs:
             return self
 
-        assert crs is not None
         if self.crs is None:
             raise ValueError("Cannot project geometries without CRS")
 
         if resolution is None:
             resolution = 1 if self.crs.geographic else 100000
 
-        transform = self.crs.transformer_to_crs(crs)
-        clone = self.clone().geom
+        geom = self.segmented(resolution) if math.isfinite(resolution) else self
 
-        if math.isfinite(resolution):
-            clone = Geometry(clone, self.crs).segmented(resolution).geom
-
+        eps = 1e-4
         if wrapdateline and crs.geographic:
-            rtransform = crs.transformer_to_crs(self.crs)
-            clone = _chop_along_antimeridian(clone, transform, rtransform)
+            # TODO: derive precision from resolution by converting to degrees
+            precision = 0.1
+            chopped = chop_along_antimeridian(geom, precision)
+            chopped_lonlat = chopped._to_crs(crs)
+            return clip_lon180(chopped_lonlat, eps)
 
-        return Geometry(ops.transform(transform, clone), crs)
+        return geom._to_crs(crs)
 
     def split(self, splitter: 'Geometry') -> Iterable['Geometry']:
         """ shapely.ops.split
@@ -667,7 +679,7 @@ class Geometry:
         for g in ops.split(self.geom, splitter.geom):
             yield Geometry(g, self.crs)
 
-    def __iter__(self) -> Iterable['Geometry']:
+    def __iter__(self) -> Iterator['Geometry']:
         for geom in self.geom:
             yield Geometry(geom, self.crs)
 
@@ -710,59 +722,67 @@ def common_crs(geoms: Iterable[Geometry]) -> Optional[CRS]:
     return ref
 
 
-def _chop_along_antimeridian(geom, transform, rtransform):
+def projected_lon(crs: MaybeCRS,
+                  lon: float,
+                  lat: Tuple[float, float] = (-90.0, 90.0),
+                  step: float = 1.0) -> Geometry:
+    """ Project vertical line along some longitude into given CRS.
     """
-    attempt to cut the geometry along the dateline
-    idea borrowed from TransformBeforeAntimeridianToWGS84 with minor mods...
+    crs = _norm_crs_or_error(crs)
+    yy = numpy.arange(lat[0], lat[1], step, dtype='float32')
+    xx = numpy.full_like(yy, lon)
+    tr = CRS('EPSG:4326').transformer_to_crs(crs)
+    xx_, yy_ = tr(xx, yy)
+    pts = [(float(x), float(y))
+           for x, y in zip(xx_, yy_)
+           if math.isfinite(x) and math.isfinite(y)]
+    return line(pts, crs)
+
+
+def clip_lon180(geom: Geometry, tol=1e-6) -> Geometry:
+    """For every point in the ``lon=180|-180`` band clip to either 180 or -180
+        180|-180 is decided based on where the majority of other points lie.
+
+        NOTE: this will only do "right thing" for chopped geometries,
+              expectation is that all the points are to one side of lon=180
+              line, or in the the capture zone of lon=(+/-)180
     """
-    minx, miny, maxx, maxy = geom.bounds
+    thresh = 180 - tol
 
-    midx, midy = (minx + maxx) / 2, (miny + maxy) / 2
-    mid_lon, mid_lat = transform(midx, midy)
+    def _clip_180(xx, clip):
+        return [x if abs(x) < thresh else clip for x in xx]
 
-    eps = 1.0e-9
-    if not _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
-        return geom
+    def _pick_clip(xx: List[float]):
+        cc = 0
+        for x in xx:
+            if abs(x) < thresh:
+                cc += (1 if x > 0 else -1)
+        return 180 if cc >= 0 else -180
 
-    left_of_dt = geometry.LineString(densify([(180 - eps, -90),
-                                              (180 - eps, 90)], 1))
-    left_of_dt = ops.transform(rtransform, left_of_dt)
+    def transformer(xx, yy):
+        clip = _pick_clip(xx)
+        return _clip_180(xx, clip), yy
 
-    if not left_of_dt.intersects(geom):
-        return geom
+    if geom.type.startswith('Multi'):
+        return multigeom(g.transform(transformer) for g in geom)
 
-    right_of_dt = geometry.LineString(densify([(-180 + eps, -90),
-                                               (-180 + eps, 90)], 1))
-    right_of_dt = ops.transform(rtransform, right_of_dt)
-
-    poly1 = geometry.Polygon([(minx, maxy), (minx, miny)] + list(left_of_dt.coords) + [(minx, maxy)])
-    poly2 = geometry.Polygon([(maxx, maxy), (maxx, miny)] + list(right_of_dt.coords) + [(maxx, maxy)])
-    chopper = geometry.MultiPolygon([poly1, poly2])
-    return geom.intersection(chopper)
+    return geom.transform(transformer)
 
 
-def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
+def chop_along_antimeridian(geom: Geometry,
+                            precision: float = 0.1) -> Geometry:
     """
-    test whether the CRS is smooth over the dateline
-    idea borrowed from IsAntimeridianProjToWGS84 with minor mods...
+    :param geom: Geometry to maybe partition
+    :param precision: in degrees
     """
-    def _dist(x: float, y: float) -> float:
-        return x*x + y*y
+    if geom.crs is None:
+        raise ValueError("Expect geometry with CRS defined")
 
+    l180 = projected_lon(geom.crs, 180, step=precision)
+    if geom.intersects(l180):
+        return multigeom(geom.split(l180))
 
-    left_of_dt_x, left_of_dt_y = rtransform(180-eps, mid_lat)
-    right_of_dt_x, right_of_dt_y = rtransform(-180+eps, mid_lat)
-
-    if _dist(right_of_dt_x-left_of_dt_x, right_of_dt_y-left_of_dt_y) > 1:
-        return False
-
-    left_of_dt_lon, left_of_dt_lat = transform(left_of_dt_x, left_of_dt_y)
-    right_of_dt_lon, right_of_dt_lat = transform(right_of_dt_x, right_of_dt_y)
-    if (_dist(left_of_dt_lon - 180 + eps, left_of_dt_lat - mid_lat) > 2 * eps or
-            _dist(right_of_dt_lon + 180 - eps, right_of_dt_lat - mid_lat) > 2 * eps):
-        return False
-
-    return True
+    return geom
 
 
 ###########################################

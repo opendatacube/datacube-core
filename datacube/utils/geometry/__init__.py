@@ -30,6 +30,9 @@ from ._base import (
     unary_union,
     unary_intersection,
     lonlat_bounds,
+    projected_lon,
+    clip_lon180,
+    chop_along_antimeridian,
 )
 
 from .tools import (
@@ -90,6 +93,9 @@ __all__ = [
     "unary_union",
     "unary_intersection",
     "lonlat_bounds",
+    "projected_lon",
+    "clip_lon180",
+    "chop_along_antimeridian",
     "is_affine_st",
     "apply_affine",
     "compute_axis_overlap",
