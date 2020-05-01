@@ -12,7 +12,8 @@ from affine import Affine
 
 from datacube import Datacube
 from datacube.utils import geometry
-from datacube.model import Measurement
+from datacube.utils.documents import read_documents
+from datacube.model import Measurement, MetadataType
 
 
 AWS_ENV_VARS = ("AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"
@@ -47,6 +48,17 @@ def data_folder():
 def example_netcdf_path(request):
     """Return a string path to `sample_tile.nc` in the test data dir"""
     return str(request.fspath.dirpath('data/sample_tile.nc'))
+
+
+@pytest.fixture
+def eo3_metadata_file(data_folder):
+    return os.path.join(data_folder, 'eo3.yaml')
+
+
+@pytest.fixture
+def eo3_metadata(eo3_metadata_file):
+    (_, doc), *_ = read_documents(eo3_metadata_file)
+    return MetadataType(doc)
 
 
 netcdf_num = 1
