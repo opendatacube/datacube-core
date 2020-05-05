@@ -304,6 +304,8 @@ def _index_datasets(index, results):
             extra_args['storage_metadata'] = datasets.attrs['storage_metadata']
 
         for dataset in datasets.values:
+            if 'storage_metadata' in extra_args:
+                dataset.metadata_doc['storage_metadata'] = extra_args['storage_metadata']
             index.datasets.add(dataset, with_lineage=False, **extra_args)
             n += 1
     return n

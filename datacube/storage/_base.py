@@ -42,11 +42,10 @@ def _get_band_and_layer(b: Dict[str, Any]) -> Tuple[Optional[int], Optional[str]
 
 
 def _extract_driver_data(ds: Dataset) -> Optional[Any]:
-    dd = getattr(ds, 'driver_data', None)
-    if dd is None:
-        dd = getattr(ds, 's3_metadata', None)  # TODO: change CSIRO driver to populate `driver_data`
-    return dd
-
+    if 'storage_metadata' in ds.metadata_doc:
+        return ds.metadata_doc['storage_metadata']
+    else:
+        return None
 
 def measurement_paths(ds: Dataset) -> Dict[str, str]:
     """
