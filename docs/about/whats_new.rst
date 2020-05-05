@@ -19,6 +19,7 @@ v1.8rc (???)
 - Deprecated ``datacube.storage.masking``, moved to ``datacube.utils.masking``
 - Changed geo-registration mechanics for arrays returned by ``dc.load``. (:pull:`899`, :issue:`837`)
 - Migrate geometry and CRS backends from ``osgeo.ogr`` and ``osgeo.osr`` to ``shapely`` and ``pyproj`` respectively (:pull:`880`)
+- Driver metadata storage and retrieval. (:pull:`931`)
 
 v1.7.0 (16 May 2019)
 ====================
