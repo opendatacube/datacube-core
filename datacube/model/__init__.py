@@ -26,7 +26,7 @@ DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
 
-class Dataset(object):
+class Dataset:
     """
     A Dataset. A container of metadata, and refers typically to a multi-band raster on disk.
 
@@ -38,7 +38,7 @@ class Dataset(object):
 
     def __init__(self,
                  type_: 'DatasetType',
-                 metadata_doc: dict,
+                 metadata_doc: Dict[str, Any],
                  uris: Optional[List[str]] = None,
                  sources: Optional[Mapping[str, 'Dataset']] = None,
                  indexed_by: Optional[str] = None,
@@ -351,7 +351,7 @@ class Measurement(dict):
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
-class MetadataType(object):
+class MetadataType:
     """Metadata Type definition"""
 
     def __init__(self,
@@ -381,7 +381,7 @@ class MetadataType(object):
 
 
 @schema_validated(SCHEMA_PATH / 'dataset-type-schema.yaml')
-class DatasetType(object):
+class DatasetType:
     """
     Product definition
 
@@ -534,14 +534,14 @@ class DatasetType(object):
 
 
 @schema_validated(SCHEMA_PATH / 'ingestor-config-type-schema.yaml')
-class IngestorConfig(object):
+class IngestorConfig:
     """
     Ingestor configuration definition
     """
     pass
 
 
-class GridSpec(object):
+class GridSpec:
     """
     Definition for a regular spatial grid
 
