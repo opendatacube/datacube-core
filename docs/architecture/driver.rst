@@ -67,6 +67,8 @@ Example code to implement a reader driver
     class AbstractDataSource(object):  # Same interface as before
         ...
 
+Driver specific metadata will be present in ``BandInfo.driver_data`` if saved during ``write_dataset_to_storage``
+
 Example Pickle Based Driver
 ---------------------------
 
@@ -118,6 +120,8 @@ Example code to implement a writer driver
                                      **kwargs):
             ...
             return {}  # Can return extra metadata to be saved in the index with the dataset
+
+Extra metadata will be saved into the database and loaded into ``BandInfo`` during a load operation.
 
 NetCDF Writer Driver
 --------------------
