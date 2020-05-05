@@ -2,6 +2,7 @@
 
 This allows extraction of fields of interest from dataset metadata document.
 """
+from typing import Mapping, Dict, Any
 import toolz
 import decimal
 from datacube.utils import parse_time
@@ -25,7 +26,7 @@ _AVAILABLE_TYPE_NAMES = (
 )
 
 
-class Expression(object):
+class Expression:
     # No properties at the moment. These are built and returned by the
     # DB driver (from Field methods), so they're mostly an opaque token.
 
@@ -36,7 +37,7 @@ class Expression(object):
         return self.__dict__ == other.__dict__
 
 
-class Field(object):
+class Field:
     """
     A searchable field within a dataset/storage metadata document.
     """
@@ -71,7 +72,7 @@ class Field(object):
         raise NotImplementedError('between expression')
 
 
-class SimpleField(object):
+class SimpleField:
     def __init__(self,
                  offset,
                  converter,
@@ -91,7 +92,7 @@ class SimpleField(object):
         return self._converter(v)
 
 
-class RangeField(object):
+class RangeField:
     def __init__(self,
                  min_offset,
                  max_offset,
@@ -171,7 +172,7 @@ def parse_search_field(doc, name=''):
                       description=doc.get('description', ''))
 
 
-def get_dataset_fields(metadata_definition):
+def get_dataset_fields(metadata_definition: Mapping[str, Any]) -> Dict[str, Field]:
     """Construct search fields dictionary not tied to any specific db
     implementation.
 

@@ -3,20 +3,18 @@
 Common methods for UI code.
 """
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 from toolz.functoolz import identity
 
 from datacube.utils import read_documents, InvalidDocException, SimpleDocNav, is_supported_document_type, is_url
 
 
-def get_metadata_path(possible_path: Union[str, Path]):
+def get_metadata_path(possible_path: Union[str, Path]) -> str:
     """
     Find a metadata path for a given input/dataset path.
 
     Needs to handle local files as well as remote URLs
-
-    :rtype: str
     """
     # We require exact URLs, lets skip any sort of fancy investigation and mapping
     if isinstance(possible_path, str) and is_url(possible_path):
@@ -26,25 +24,25 @@ def get_metadata_path(possible_path: Union[str, Path]):
 
     # They may have given us a metadata file directly.
     if dataset_path.is_file() and is_supported_document_type(dataset_path):
-        return dataset_path
+        return str(dataset_path)
 
     # Otherwise there may be a sibling file with appended suffix '.agdc-md.yaml'.
     expected_name = dataset_path.parent.joinpath('{}.agdc-md'.format(dataset_path.name))
     found = _find_any_metadata_suffix(expected_name)
     if found:
-        return found
+        return str(found)
 
     # Otherwise if it's a directory, there may be an 'agdc-metadata.yaml' file describing all contained datasets.
     if dataset_path.is_dir():
         expected_name = dataset_path.joinpath('agdc-metadata')
         found = _find_any_metadata_suffix(expected_name)
         if found:
-            return found
+            return str(found)
 
     raise ValueError('No metadata found for input %r' % dataset_path)
 
 
-def _find_any_metadata_suffix(path):
+def _find_any_metadata_suffix(path: Path) -> Optional[Path]:
     """
     Find any supported metadata files that exist with the given file path stem.
     (supported suffixes are tried on the name)
