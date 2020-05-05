@@ -42,10 +42,7 @@ def _get_band_and_layer(b: Dict[str, Any]) -> Tuple[Optional[int], Optional[str]
 
 
 def _extract_driver_data(ds: Dataset) -> Optional[Any]:
-    if 'storage_metadata' in ds.metadata_doc:
-        return ds.metadata_doc['storage_metadata']
-    else:
-        return None
+    return ds.metadata_doc.get('driver_data', None)
 
 def measurement_paths(ds: Dataset) -> Dict[str, str]:
     """

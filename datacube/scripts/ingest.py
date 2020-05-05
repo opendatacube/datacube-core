@@ -282,13 +282,13 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
         'complevel': 9,
     }
 
-    storage_metadata = driver.write_dataset_to_storage(nudata, file_path,
-                                                       global_attributes=global_attributes,
-                                                       variable_params=variable_params,
-                                                       storage_config=config['storage'])
+    driver_data = driver.write_dataset_to_storage(nudata, file_path,
+                                                  global_attributes=global_attributes,
+                                                  variable_params=variable_params,
+                                                  storage_config=config['storage'])
 
-    if (storage_metadata is not None) and len(storage_metadata) > 0:
-        datasets.attrs['storage_metadata'] = storage_metadata
+    if (driver_data is not None) and len(driver_data) > 0:
+        datasets.attrs['driver_data'] = driver_data
 
     _LOG.info('Finished task %s', tile_index)
 
@@ -300,12 +300,12 @@ def _index_datasets(index, results):
     for datasets in results:
         extra_args = {}
         # datasets is an xarray.DataArray
-        if 'storage_metadata' in datasets.attrs:
-            extra_args['storage_metadata'] = datasets.attrs['storage_metadata']
+        if 'driver_data' in datasets.attrs:
+            extra_args['driver_data'] = datasets.attrs['driver_data']
 
         for dataset in datasets.values:
-            if 'storage_metadata' in extra_args:
-                dataset.metadata_doc['storage_metadata'] = extra_args['storage_metadata']
+            if 'driver_data' in extra_args:
+                dataset.metadata_doc['driver_data'] = extra_args['driver_data']
             index.datasets.add(dataset, with_lineage=False, **extra_args)
             n += 1
     return n
