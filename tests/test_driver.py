@@ -1,7 +1,6 @@
 import pytest
 import yaml
 
-from collections import namedtuple
 from types import SimpleNamespace
 
 from datacube.drivers import new_datasource, reader_drivers, writer_drivers

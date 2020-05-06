@@ -7,9 +7,7 @@ tests in this and sub packages.
 
 import os
 
-import numpy as np
 import pytest
-import xarray
 from affine import Affine
 
 from datacube import Datacube

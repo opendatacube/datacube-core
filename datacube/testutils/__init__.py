@@ -18,6 +18,7 @@ from affine import Affine
 from datacube import Datacube
 from datacube.model import Measurement
 from datacube.utils.dates import mk_time_coord
+from datacube.utils.documents import parse_yaml
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
@@ -130,10 +131,32 @@ def geobox_to_gridspatial(geobox):
             "spatial_reference": str(geobox.crs)}}}
 
 
+def mk_sample_eo(name='eo'):
+    eo_yaml = f"""
+name: {name}
+description: Sample
+dataset:
+    id: ['id']
+    label: ['ga_label']
+    creation_time: ['creation_dt']
+    measurements: ['image', 'bands']
+    sources: ['lineage', 'source_datasets']
+    format: ['format', 'name']
+    grid_spatial: ['grid_spatial', 'projection']
+    search_fields:
+       time:
+         type: 'datetime-range'
+         min_offset: [['time']]
+         max_offset: [['time']]
+    """
+    return MetadataType(parse_yaml(eo_yaml))
+
+
 def mk_sample_product(name,
                       description='Sample',
                       measurements=('red', 'green', 'blue'),
                       with_grid_spec=False,
+                      metadata_type=None,
                       storage=None):
 
     if storage is None and with_grid_spec is True:
@@ -141,30 +164,13 @@ def mk_sample_product(name,
                    'resolution': {'x': 25, 'y': -25},
                    'tile_size': {'x': 100000.0, 'y': 100000.0}}
 
-    eo_type = MetadataType({
-        'name': 'eo',
-        'description': 'Sample',
-        'dataset': dict(
-            id=['id'],
-            label=['ga_label'],
-            creation_time=['creation_dt'],
-            measurements=['image', 'bands'],
-            sources=['lineage', 'source_datasets'],
-            format=['format', 'name'],
-            grid_spatial=['grid_spatial', 'projection'],
-        )
-    }, dataset_search_fields={
-        'time': parse_search_field({
-            'type': 'datetime-range',
-            'min_offset': [['time']],
-            'max_offset': [['time']],
-        }),
-    })
-
     common = dict(dtype='int16',
                   nodata=-999,
                   units='1',
                   aliases=[])
+
+    if metadata_type is None:
+        metadata_type = mk_sample_eo('eo')
 
     def mk_measurement(m):
         if isinstance(m, str):
@@ -186,7 +192,7 @@ def mk_sample_product(name,
     definition = dict(
         name=name,
         description=description,
-        metadata_type='eo',
+        metadata_type=metadata_type.name,
         metadata={},
         measurements=measurements
     )
@@ -194,7 +200,7 @@ def mk_sample_product(name,
     if storage is not None:
         definition['storage'] = storage
 
-    return DatasetType(eo_type, definition)
+    return DatasetType(metadata_type, definition)
 
 
 def mk_sample_dataset(bands,
