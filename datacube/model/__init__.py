@@ -16,7 +16,7 @@ from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator
 from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
-from .fields import Field
+from .fields import Field, get_dataset_fields
 from ._base import Range
 
 _LOG = logging.getLogger(__name__)
@@ -356,8 +356,10 @@ class MetadataType:
 
     def __init__(self,
                  definition: Mapping[str, Any],
-                 dataset_search_fields: Mapping[str, Field],
+                 dataset_search_fields: Optional[Mapping[str, Field]] = None,
                  id_: Optional[int] = None):
+        if dataset_search_fields is None:
+            dataset_search_fields = get_dataset_fields(definition)
         self.definition = definition
         self.dataset_fields = dataset_search_fields
         self.id = id_
