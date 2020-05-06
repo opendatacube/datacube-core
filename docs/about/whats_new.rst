@@ -20,6 +20,8 @@ v1.8rc (???)
 - Changed geo-registration mechanics for arrays returned by ``dc.load``. (:pull:`899`, :issue:`837`)
 - Migrate geometry and CRS backends from ``osgeo.ogr`` and ``osgeo.osr`` to ``shapely`` and ``pyproj`` respectively (:pull:`880`)
 - Driver metadata storage and retrieval. (:pull:`931`)
+- Support EO3 style datasets in ``datacube dataset add`` (:pull:`929`, :issue:`864`)
+
 
 v1.7.0 (16 May 2019)
 ====================
