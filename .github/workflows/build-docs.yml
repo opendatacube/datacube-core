@@ -28,7 +28,7 @@ jobs:
                   -v $(pwd):/src/datacube-core \
                   -e SKIP_DB=yes \
                   ${DKR} bash -
-        sudo apt-get update && sudo apt-get install plantuml make
+        sudo apt-get update && sudo apt-get install -y plantuml make
         cd docs
         pip install -r requirements.txt
         make html
