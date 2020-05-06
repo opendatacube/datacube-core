@@ -20,6 +20,7 @@ Requires a Unix like system that includes ``make``.
 .. code-block:: bash
 
    pip install -r docs-requirements.txt
+   pip install git+https://github.com/carrotandcompany/sphinx-autobuild.git@feature_event_delay
 
 #. Start the auto-building development server.
 
@@ -27,4 +28,3 @@ Requires a Unix like system that includes ``make``.
 
    sphinx-autobuild &
    browser-sync
-

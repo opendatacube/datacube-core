@@ -1,0 +1,6 @@
+paramiko==2.7.1
+Sphinx==3.0.1
+sphinx-click==2.3.2
+sphinx-rtd-theme==0.4.3
+sphinxcontrib-plantuml==0.18
+sshtunnel==0.1.5
