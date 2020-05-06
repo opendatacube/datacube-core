@@ -198,6 +198,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     clirunner(['product', 'add', p.products])
     clirunner(['dataset', 'add', p.datasets])
     clirunner(['dataset', 'add', p.datasets_bad1])
+    clirunner(['dataset', 'add', p.datasets_eo3])
 
     ds = load_dataset_definition(p.datasets)
     ds_bad1 = load_dataset_definition(p.datasets_bad1)
@@ -252,6 +253,27 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     # Check that deprecated option is accepted
     r = clirunner(['dataset', 'add', '--auto-match', p.datasets])
     assert 'WARNING --auto-match option is deprecated' in r.output
+
+
+def test_dataset_add_eo3(dataset_add_configs, index_empty, clirunner):
+    p = dataset_add_configs
+    index = index_empty
+    r = clirunner(['dataset', 'add', p.datasets], expect_success=False)
+    assert r.exit_code != 0
+    assert 'Found no products' in r.output
+
+    clirunner(['metadata', 'add', p.metadata])
+    clirunner(['product', 'add', p.products])
+    clirunner(['dataset', 'add', p.datasets])
+    r = clirunner(['dataset', 'add', '--no-verify-lineage', p.datasets_eo3])
+    assert r.exit_code == 0
+
+    ds_eo3 = load_dataset_definition(p.datasets_eo3)
+    _ds = index.datasets.get(ds_eo3.id, include_sources=True)
+    assert sorted(_ds.sources) == ['a', 'bc1', 'bc2']
+    assert _ds.crs == 'EPSG:3857'
+    assert _ds.extent is not None
+    assert _ds.extent.crs == _ds.crs
 
 
 def test_dataset_add_ambgious_products(dataset_add_configs, index_empty, clirunner):
