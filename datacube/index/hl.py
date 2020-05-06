@@ -9,6 +9,7 @@ from datacube.model import Dataset
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
+from .eo3 import prep_eo3
 
 
 class BadMatch(Exception):
@@ -227,6 +228,7 @@ class Doc2Dataset(object):
 
     :param skip_lineage: If True ignore lineage sub-tree in the supplied
                          document and construct dataset without lineage datasets
+    :param eo3: 'auto'|True|False by default auto-detect EO3 datasets and pre-process them
     """
     def __init__(self,
                  index,
@@ -234,13 +236,15 @@ class Doc2Dataset(object):
                  exclude_products=None,
                  fail_on_missing_lineage=False,
                  verify_lineage=True,
-                 skip_lineage=False):
+                 skip_lineage=False,
+                 eo3='auto'):
         rules, err_msg = load_rules_from_types(index,
                                                product_names=products,
                                                excluding=exclude_products)
         if rules is None:
             raise ValueError(err_msg)
 
+        self._eo3 = eo3
         self._ds_resolve = dataset_resolver(index,
                                             rules,
                                             fail_on_missing_lineage=fail_on_missing_lineage,
@@ -258,6 +262,10 @@ class Doc2Dataset(object):
         """
         if not isinstance(doc, SimpleDocNav):
             doc = SimpleDocNav(doc)
+
+        if self._eo3:
+            auto_skip = self._eo3 == 'auto'
+            doc = SimpleDocNav(prep_eo3(doc.doc, auto_skip=auto_skip))
 
         dataset, err = self._ds_resolve(doc, uri)
         if dataset is None:
