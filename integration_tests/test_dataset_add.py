@@ -254,17 +254,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     r = clirunner(['dataset', 'add', '--auto-match', p.datasets])
     assert 'WARNING --auto-match option is deprecated' in r.output
 
-
-def test_dataset_add_eo3(dataset_add_configs, index_empty, clirunner):
-    p = dataset_add_configs
-    index = index_empty
-    r = clirunner(['dataset', 'add', p.datasets], expect_success=False)
-    assert r.exit_code != 0
-    assert 'Found no products' in r.output
-
-    clirunner(['metadata', 'add', p.metadata])
-    clirunner(['product', 'add', p.products])
-    clirunner(['dataset', 'add', p.datasets])
+    # test dataset add eo3
     r = clirunner(['dataset', 'add', '--no-verify-lineage', p.datasets_eo3])
     assert r.exit_code == 0
 
