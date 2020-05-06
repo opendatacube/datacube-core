@@ -43,7 +43,7 @@ Virtual products provide an interface to query and load data. The methods are:
    However, this method is only to facilitate code migration, and its use is not recommended. It implements
    the pipeline:
 
-   .. image:: ../diagrams/virtual_product_load.svg
+   .. image:: ../../diagrams/virtual_product_load.svg
 
 For advanced use cases, the intermediate objects ``VirtualDatasetBag`` and ``VirtualDatasetBox`` may be
 directly manipulated.
@@ -186,7 +186,7 @@ The form of the recipe is:
 
 Observations without corresponding entries in the other products will get dropped.
 
-.. image:: ../diagrams/juxtapose.svg
+.. image:: ../../diagrams/juxtapose.svg
 
 Reproject (Combining)
 ---------------------
