@@ -121,14 +121,16 @@ def index(local_config,
           uninitialised_postgres_db: PostgresDb):
     index = index_connect(local_config, validate_connection=False)
     index.init_db()
-    return index
+    yield index
+    del index
 
 
 @pytest.fixture
 def index_empty(local_config, uninitialised_postgres_db: PostgresDb):
     index = index_connect(local_config, validate_connection=False)
     index.init_db(with_default_types=False)
-    return index
+    yield index
+    del index
 
 
 @pytest.fixture
