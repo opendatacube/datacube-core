@@ -415,4 +415,5 @@ def dataset_add_configs():
     return SimpleNamespace(metadata=str(B / 'metadata.yml'),
                            products=str(B / 'products.yml'),
                            datasets_bad1=str(B / 'datasets_bad1.yml'),
+                           datasets_eo3=str(B / 'datasets_eo3.yml'),
                            datasets=str(B / 'datasets.yml'))

@@ -41,3 +41,10 @@ description: test product E
 metadata_type: minimal
 metadata:
     product_type: E
+
+---
+name: EO3
+description: test product EO3
+metadata_type: eo3_minimal
+metadata:
+  product: EO3
