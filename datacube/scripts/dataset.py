@@ -12,12 +12,13 @@ from click import echo
 
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.hl import Doc2Dataset, check_dataset_consistent
+from datacube.index.eo3 import prep_eo3
 from datacube.index.index import Index
 from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import ui_path_doc_stream
-from datacube.utils import changes
+from datacube.utils import changes, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
 
 _LOG = logging.getLogger('datacube-dataset')
@@ -74,6 +75,9 @@ def load_datasets_for_update(doc_stream, index):
         if existing is None:
             return None, None, "No such dataset in the database: {}".format(uuid)
 
+        ds = SimpleDocNav(prep_eo3(ds.doc, auto_skip=True))
+
+        # TODO: what about sources=?
         return Dataset(existing.type,
                        ds.doc_without_lineage_sources,
                        uris=[uri]), existing, None
