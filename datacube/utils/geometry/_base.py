@@ -25,7 +25,7 @@ from ..math import is_almost_int
 
 Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
 _BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
-SomeCRS = Union[str, 'CRS', _CRS]
+SomeCRS = Union[str, 'CRS', _CRS, Dict[str, Any]]
 MaybeCRS = Optional[SomeCRS]
 CoordList = List[Tuple[float, float]]
 
@@ -134,6 +134,9 @@ def _guess_crs_str(crs_spec: Any) -> Optional[str]:
     """
     if isinstance(crs_spec, str):
         return crs_spec
+    if isinstance(crs_spec, dict):
+        crs_spec = _CRS.from_dict(crs_spec)
+
     if hasattr(crs_spec, 'to_epsg'):
         epsg = crs_spec.to_epsg()
         if epsg is not None:
