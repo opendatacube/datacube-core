@@ -221,7 +221,7 @@ def dc_crs_from_rio(crs):
     from datacube.utils.geometry import CRS
 
     if crs.is_epsg_code:
-        return CRS('epsg:{}'.format(crs.to_epsg()))
+        return CRS('EPSG:{}'.format(crs.to_epsg()))
     return CRS(crs.wkt)
 
 
@@ -363,6 +363,6 @@ def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
 
     return DataArray(im,
                      dims=dims,
-                     coords=mm.gbox.xr_coords(),
+                     coords=mm.gbox.xr_coords(with_crs=True),
                      attrs=dict(
                          nodata=mm.nodata))
