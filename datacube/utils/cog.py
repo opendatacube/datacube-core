@@ -29,6 +29,7 @@ def _write_cog(pix: np.ndarray,
                blocksize: Optional[int] = None,
                overview_resampling: Optional[str] = None,
                overview_levels: Optional[List[int]] = None,
+               ovr_blocksize: Optional[int] = None,
                **extra_rio_opts) -> Union[Path, bytes]:
     """Write geo-registered ndarray to GeoTiff file or RAM.
 
@@ -59,6 +60,8 @@ def _write_cog(pix: np.ndarray,
     # pylint: disable=too-many-locals
     if blocksize is None:
         blocksize = 512
+    if ovr_blocksize is None:
+        ovr_blocksize = blocksize
     if overview_levels is None:
         overview_levels = [2 ** i for i in range(1, 6)]
     if overview_resampling is None:
@@ -129,7 +132,7 @@ def _write_cog(pix: np.ndarray,
     tmp_opts.pop("predictor")
     tmp_opts.pop("zlevel")
 
-    with rasterio.Env(GDAL_TIFF_OVR_BLOCKSIZE=blocksize):
+    with rasterio.Env(GDAL_TIFF_OVR_BLOCKSIZE=ovr_blocksize):
         with rasterio.MemoryFile() as mem:
             with mem.open(driver="GTiff", **tmp_opts) as tmp:
                 tmp.write(pix, band)
