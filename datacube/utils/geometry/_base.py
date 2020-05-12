@@ -1307,7 +1307,9 @@ def _mk_crs_coord(crs: CRS, name: str = 'spatial_ref') -> xr.DataArray:
     else:
         grid_mapping_name = "latitude_longitude"
 
-    return xr.DataArray(numpy.asarray(0, 'int32'),
+    epsg = 0 if crs.epsg is None else crs.epsg
+
+    return xr.DataArray(numpy.asarray(epsg, 'int32'),
                         name=name,
                         dims=(),
                         attrs={'spatial_ref': crs.wkt,
