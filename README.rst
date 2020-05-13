@@ -93,6 +93,41 @@ to ``./check-code.sh`` script.
    ./check-code.sh --with-docker integration_tests
 
 
+Developer setup on Ubuntu
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Building Python virtual environment on Ubuntu suitable for development work.
+
+Install dependencies:
+
+::
+
+   sudo apt-get update
+   sudo apt-get install -y \
+     autoconf automake build-essential make cmake \
+     graphviz \
+     plantuml \
+     python3-venv \
+     python3-dev \
+     libpq-dev \
+     libyaml-dev \
+     libnetcdf-dev \
+     libudunits2-dev
+
+
+Building python virtual environment:
+
+::
+
+   pyenv="${HOME}/.envs/odc"  # Change to suit your needs
+   mkdir -p "${pyenv}"
+   python3 -m venv "${pyenv}"
+   source "${pyenv}/bin/activate"
+   pip install -U pip wheel cython numpy
+   pip install -e '.[dev]'
+   pip install flake8 mypy pylint autoflake black
+
+
 .. |Build Status| image:: https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
    :target: https://github.com/opendatacube/datacube-core/actions
 .. |Coverage Status| image:: https://codecov.io/gh/opendatacube/datacube-core/branch/develop/graph/badge.svg
