@@ -1,4 +1,3 @@
-from pyproj.transformer import Transformer
 import numpy as np
 import collections
 from types import SimpleNamespace
