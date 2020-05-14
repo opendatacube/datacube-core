@@ -13,7 +13,8 @@ from affine import Affine
 from datacube import Datacube
 from datacube.utils import geometry
 from datacube.utils.documents import read_documents
-from datacube.model import Measurement, MetadataType
+from datacube.model import Measurement, MetadataType, DatasetType, Dataset
+from datacube.index.eo3 import prep_eo3
 
 
 AWS_ENV_VARS = ("AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"
@@ -59,6 +60,89 @@ def eo3_metadata_file(data_folder):
 def eo3_metadata(eo3_metadata_file):
     (_, doc), *_ = read_documents(eo3_metadata_file)
     return MetadataType(doc)
+
+
+@pytest.fixture
+def eo3_dataset_s2(eo3_metadata):
+    ds_doc = {
+        '$schema': 'https://schemas.opendatacube.org/dataset',
+        'id': '8b0e2770-5d4e-5238-8995-4aa91691ab85',
+        'product': {'name': 's2b_msil2a'},
+        'label': 'S2B_MSIL2A_20200101T070219_N0213_R120_T39LVG_20200101T091825',
+
+        'crs': 'epsg:32739',
+        'grids': {'g20m': {'shape': [5490, 5490],
+                           'transform': [20, 0, 399960, 0, -20, 8700040, 0, 0, 1]},
+                  'g60m': {'shape': [1830, 1830],
+                           'transform': [60, 0, 399960, 0, -60, 8700040, 0, 0, 1]},
+                  'default': {'shape': [10980, 10980],
+                              'transform': [10, 0, 399960, 0, -10, 8700040, 0, 0, 1]}},
+        'geometry': {'type': 'Polygon',
+                     'coordinates': [[[509759.0000000001, 8590241.0],
+                                      [399960.99999999977, 8590241.0],
+                                      [399960.99999999977, 8700039.0],
+                                      [509758.99999999965, 8700039.0],
+                                      [509759.0000000001, 8590241.0]]]},
+        'properties': {'eo:gsd': 10,
+                       'datetime': '2020-01-01T07:02:54.188Z',
+                       'eo:platform': 'sentinel-2b',
+                       'eo:instrument': 'msi',
+                       'eo:cloud_cover': 0,
+                       'odc:file_format': 'GeoTIFF',
+                       'odc:region_code': '39LVG',
+                       'odc:processing_datetime': '2020-01-01T07:02:54.188Z'},
+
+        'measurements': {'red': {'path': 'B04.tif'},
+                         'scl': {'grid': 'g20m', 'path': 'SCL.tif'},
+                         'blue': {'path': 'B02.tif'},
+                         'green': {'path': 'B03.tif'},
+                         'nir_1': {'path': 'B08.tif'},
+                         'nir_2': {'grid': 'g20m', 'path': 'B8A.tif'},
+                         'swir_1': {'grid': 'g20m', 'path': 'B11.tif'},
+                         'swir_2': {'grid': 'g20m', 'path': 'B12.tif'},
+                         'red_edge_1': {'grid': 'g20m', 'path': 'B05.tif'},
+                         'red_edge_2': {'grid': 'g20m', 'path': 'B06.tif'},
+                         'red_edge_3': {'grid': 'g20m', 'path': 'B07.tif'},
+                         'water_vapour': {'grid': 'g60m', 'path': 'B09.tif'},
+                         'coastal_aerosol': {'grid': 'g60m', 'path': 'B01.tif'}},
+        'lineage': {}}
+    product_doc = {
+        'name': 's2b_msil2a',
+        'description': 'Sentinel-2B Level 2 COGs',
+        'metadata_type': 'eo3',
+        'metadata': {'product': {'name': 's2b_msil2a'}},
+        'measurements':
+        [{'name': 'coastal_aerosol', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_01', 'B01']},
+         {'name': 'blue', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_02', 'B02']},
+         {'name': 'green', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_03', 'B03']},
+         {'name': 'red', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_04', 'B04']},
+         {'name': 'red_edge_1', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_05', 'B05']},
+         {'name': 'red_edge_2', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_06', 'B06']},
+         {'name': 'red_edge_3', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_07', 'B07']},
+         {'name': 'nir_1', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_08', 'B08']},
+         {'name': 'nir_2', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_8a', 'B8A']},
+         {'name': 'water_vapour', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_09', 'B09']},
+         {'name': 'swir_1', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_11', 'B11']},
+         {'name': 'swir_2', 'dtype': 'uint16', 'units': '1', 'nodata': 0, 'aliases': ['band_12', 'B12']},
+         {'name': 'scl', 'dtype': 'uint8', 'units': '1', 'nodata': 0, 'aliases': ['mask', 'qa'],
+          'flags_definition': {'sca': {'description': 'Sen2Cor Scene Classification',
+                                       'bits': [0, 1, 2, 3, 4, 5, 6, 7],
+                                       'values': {
+                                           '0': 'nodata',
+                                           '1': 'defective',
+                                           '2': 'dark',
+                                           '3': 'shadow',
+                                           '4': 'vegetation',
+                                           '5': 'bare',
+                                           '6': 'water',
+                                           '7': 'unclassified',
+                                           '8': 'cloud medium probability',
+                                           '9': 'cloud high probability',
+                                           '10': 'thin cirrus',
+                                           '11': 'snow or ice'}}}}]
+    }
+
+    return Dataset(DatasetType(eo3_metadata, product_doc), prep_eo3(ds_doc))
 
 
 netcdf_num = 1
