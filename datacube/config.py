@@ -142,11 +142,14 @@ class LocalConfig(object):
         return self.get(item, fallback=None)
 
     def __str__(self) -> str:
+        cfg = dict(self._config[self._env])
+        if 'db_password' in cfg:
+            cfg['db_password'] = '***'
+
         return "LocalConfig<loaded_from={}, environment={!r}, config={}>".format(
             self.files_loaded or 'defaults',
             self._env,
-            dict(self._config[self._env]),
-        )
+            cfg)
 
     def __repr__(self) -> str:
         return str(self)
