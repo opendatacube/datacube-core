@@ -191,6 +191,12 @@ def test_cfg_from_env(monkeypatch):
     assert cfg['db_database'] == 'db'
     assert cfg['db_port'] == '3344'
 
+    # check that password is redacted
+    assert " pass@" not in str(cfg)
+    assert "***" in str(cfg)
+    assert " pass@" not in repr(cfg)
+    assert "***" in repr(cfg)
+
     set_env(DB_DATABASE='dc2',
             DB_HOSTNAME='remote.db',
             DB_PORT='4433',
