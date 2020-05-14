@@ -265,26 +265,6 @@ def test_missing_file_handling():
             rio_slurp('no-such-file.tiff')
 
 
-def test_native_geobox_ingested():
-    from datacube.testutils.io import native_geobox
-    from datacube.testutils.geom import AlbersGS
-
-    gbox = AlbersGS.tile_geobox((15, -40))
-    ds = mk_sample_dataset([dict(name='a')],
-                           geobox=gbox,
-                           product_opts=dict(with_grid_spec=True))
-
-    assert native_geobox(ds) == gbox
-
-    # check that dataset covering several tiles is detected as invalid
-    ds = mk_sample_dataset([dict(name='a')],
-                           geobox=gbox.buffered(10, 10),
-                           product_opts=dict(with_grid_spec=True))
-
-    with pytest.raises(ValueError):
-        native_geobox(ds)
-
-
 def test_native_load(tmpdir):
     from datacube.testutils.io import native_load, native_geobox
 
