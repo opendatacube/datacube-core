@@ -10,7 +10,7 @@ from datacube.testutils import (
     mk_test_image,
     gen_tiff_dataset,
 )
-from datacube.testutils.io import write_gtiff, rio_slurp, rio_slurp_xarray
+from datacube.testutils.io import write_gtiff, rio_slurp, rio_slurp_xarray, get_raster_info
 from datacube.testutils.iodriver import NetCDF
 from datacube.utils import ignore_exceptions_if
 
@@ -284,6 +284,8 @@ def test_native_load(tmpdir):
                                 prefix='ds1-',
                                 timestamp='2018-07-19',
                                 **spatial)
+
+    assert set(get_raster_info(ds)) == set(ds.measurements)
 
     xx = native_load(ds)
     assert xx.geobox == gbox
