@@ -101,3 +101,8 @@ def test_native_geobox_eo3(eo3_dataset_s2):
 
     with pytest.raises(ValueError):
         native_geobox(ds, ['no_such_band'])
+
+    ds.metadata_doc['measurements']['red_edge_1']['grid'] = 'no-such-grid'
+
+    with pytest.raises(ValueError):
+        native_geobox(ds, ['red_edge_1'])
