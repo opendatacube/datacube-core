@@ -1,6 +1,6 @@
 """ Tools for working with EO3 metadata
 """
-import collections
+import collections.abc
 from types import SimpleNamespace
 from affine import Affine
 import toolz
@@ -159,12 +159,12 @@ def is_doc_eo3(doc: Dict[str, Any]) -> bool:
     grid = toolz.get_in(["grids", "default"], doc, None)
     if grid is None:
         return False
-    if not isinstance(grid, collections.Mapping):
+    if not isinstance(grid, collections.abc.Mapping):
         return False
 
     for k in ('shape', 'transform'):
         v = grid.get(k, None)
-        if v is None or not isinstance(v, collections.Iterable):
+        if v is None or not isinstance(v, collections.abc.Iterable):
             return False
 
     # TODO: maybe verify that shape/transform are meaningful?
