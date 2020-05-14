@@ -1,6 +1,8 @@
 import pytest
+from datacube.model import Dataset
 from datacube.testutils.threads import FakeThreadPoolExecutor
-from datacube.testutils import mk_sample_xr_dataset
+from datacube.testutils import mk_sample_xr_dataset, mk_sample_product, mk_sample_dataset
+from datacube.testutils.io import native_geobox
 
 
 def test_fakethreadpool():
@@ -52,3 +54,30 @@ def test_mk_sample_xr():
     assert mk_sample_xr_dataset(resolution=(1, 100)).geobox.resolution == (1, 100)
     assert mk_sample_xr_dataset(resolution=(1, 100), xy=(3, 55)).geobox.transform*(0, 0) == (3, 55)
     assert mk_sample_xr_dataset(crs=None).geobox is None
+
+
+def test_native_geobox_eo3(eo3_dataset_s2):
+    ds = eo3_dataset_s2
+    assert ds.crs is not None
+    assert 'blue' in ds.measurements
+
+    gb1 = native_geobox(ds, basis='blue')
+
+    assert gb1.width == 10980
+    assert gb1.height == 10980
+    assert gb1.crs == ds.crs
+
+    gb1_ = native_geobox(ds, ('blue', 'red', 'green'))
+    assert gb1_ == gb1
+
+    gb2 = native_geobox(ds, ['swir_1', 'swir_2'])
+    assert gb2 != gb1
+    assert gb2.width == 5490
+    assert gb2.height == 5490
+    assert gb2.crs == ds.crs
+
+    with pytest.raises(ValueError):
+        native_geobox(ds)
+
+    with pytest.raises(ValueError):
+        native_geobox(ds, ['no_such_band'])

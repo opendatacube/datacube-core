@@ -1,11 +1,14 @@
 import numpy as np
+import toolz
 
+from ..model import Dataset
 from ..storage import reproject_and_fuse, BandInfo
 from ..storage._rio import RasterioDataSource, RasterDatasetDataSource
 from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
 from ..utils.geometry import gbox as gbx
+from ..index.eo3 import is_doc_eo3, _norm_grid
 from types import SimpleNamespace
 
 
@@ -40,7 +43,7 @@ def _raster_metadata(band):
                                geobox=rdr_geobox(rdr))
 
 
-def get_raster_info(ds, measurements=None):
+def get_raster_info(ds: Dataset, measurements=None):
     """
     :param ds: Dataset
     :param measurements: List of band names to load
@@ -50,6 +53,24 @@ def get_raster_info(ds, measurements=None):
 
     return {n: _raster_metadata(BandInfo(ds, n))
             for n in measurements}
+
+
+def eo3_geobox(ds: Dataset, band: str) -> GeoBox:
+    mm = ds.measurements.get(band, None)
+    if mm is None:
+        raise ValueError(f"No such band: {band}")
+
+    crs = ds.crs
+    doc_path = ('grids', mm.get('grid', 'default'))
+
+    grid = toolz.get_in(doc_path, ds.metadata_doc)
+    if crs is None or grid is None:
+        raise ValueError('Not a valid EO3 dataset')
+
+    grid = _norm_grid(grid)
+    h, w = grid.shape
+
+    return GeoBox(w, h, grid.transform, crs)
 
 
 def native_geobox(ds, measurements=None, basis=None):
@@ -71,11 +92,21 @@ def native_geobox(ds, measurements=None, basis=None):
             raise ValueError('Broken GridSpec detected')
         return bb[0]
 
-    if basis is not None:
-        return get_raster_info(ds, [basis])[basis].geobox
+    if measurements is None and basis is None:
+        measurements = list(ds.type.measurements)
 
-    ii = get_raster_info(ds, measurements)
-    gboxes = [info.geobox for info in ii.values()]
+    if is_doc_eo3(ds.metadata_doc):
+        if basis is not None:
+            return eo3_geobox(ds, basis)
+
+        gboxes = [eo3_geobox(ds, band) for band in measurements]
+    else:
+        if basis is not None:
+            return get_raster_info(ds, [basis])[basis].geobox
+
+        ii = get_raster_info(ds, measurements)
+        gboxes = [info.geobox for info in ii.values()]
+
     geobox = gboxes[0]
     consistent = all(geobox == gbox for gbox in gboxes)
     if not consistent:
