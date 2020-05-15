@@ -11,6 +11,114 @@ Dataset metadata documents define critical metadata about a dataset including:
    - acquisition time
    - provenance information
 
+Traditionally :ref:`dataset-metadata-doc-eo` format was used to capture
+information about individual datasets. However there are a number of issues with
+this format, hence deprecation and move to :ref:`dataset-metadata-doc-eo3`.
+
+
+.. _dataset-metadata-doc-eo3:
+
+
+EO3 Format
+==========
+
+EO3 is an intermediate format before we move to something more standard like `STAC <https://stacspec.org/>`_. Primary driver for the development
+
+#. Capture native resolution/geo-registration for every measurement band
+#. Avoid duplication of spatial information, by storing only native projection information
+#. Capture geo-registration information per band, not per entire dataset
+#. Capture image size per band
+#. Allow for lightweight lineage representation
+
+
+.. code-block:: yaml
+
+   # UUID of the dataset
+   id: f884df9b-4458-47fd-a9d2-1a52a2db8a1a
+   $schema: 'https://schemas.opendatacube.org/dataset'
+
+   # Product name
+   product:
+     name: landsat8
+
+   # Native CRS, assumed to be the same across all bands
+   crs: "EPSG:32660"
+
+   # Optional GeoJSON object in the units of native CRS.
+   # Defines a polygon such that, all valid pixels across all bands
+   # are inside this polygon.
+   geometry:
+     type: Polygon
+     coordinates: [[..]]
+
+   # Mapping name:str -> { shape:     Tuple[ny: int, nx: int]
+   #                       transform: Tuple[float x 9]}
+   # Captures image size, and geo-registration
+   grids:
+       default:  # "default" grid must be present
+          shape: [7811, 7691]
+          transform: [30, 0, 618285, 0, -30, -1642485, 0, 0, 1]
+       pan:  # Landsat Panchromatic band is higher res image than other bands
+          shape: [15621, 15381]
+          transform: [15, 0, 618292.5, 0, -15, -1642492.5, 0, 0, 1]
+
+   # Per band storage information and references into `grids`
+   # Bands using "default" grid should not need to reference it
+   measurements:
+      pan:               # Band using non-default "pan" grid
+        grid: "pan"      # should match the name used in `grids` mapping above
+        path: "pan.tif"
+      red:               # Band using "default" grid should omit `grid` key
+        path: red.tif    # Path relative to the dataset location
+      blue:
+        path: blue.tif
+      multiband_example:
+        path: multi_band.tif
+        band: 2          # int: 1-based index into multi-band file
+      netcdf_example:    # just example, mixing TIFF and netcdf in one product is not recommended
+        path: some.nc
+        layer: some_var  # str: netcdf variable to read
+
+   # Dataset properties, prefer STAC standard names here
+   # Timestamp is the only compulsory field here
+   properties:
+     datetime: '2020-01-01T07:02:54.188Z'  # Use UTC
+     # When recording time range use these names
+     #   dtr:start_datetime:
+     #   dtr:end_datetime:
+
+     odc:file_format: GeoTIFF
+     odc:processing_datetime: '2020-01-01T07:02:54.188Z'
+
+   # Lineage only references UUIDs of direct source datasets
+   # Mapping name:str -> [UUID]
+   lineage: {}  # set to empty object if no lineage is defined
+
+
+Elements ``shape`` and ``transform`` can be obtained from the output of ``rio
+info <image-file>``. ``shape`` is basically ``height, width`` tuple and
+``transform`` captures a linear mapping from pixel space to projected space
+encoded in a row-major order:
+
+.. code-block::
+
+   # transform [a0, a1, a2, a3, a4, a5, 0, 0, 1]
+
+   [X]   [a0, a1, a2] [ Pixel]
+   [Y] = [a3, a4, a5] [ Line ]
+   [1]   [ 0,  0,  1] [  1   ]
+
+
+
+.. _dataset-metadata-doc-eo:
+
+EO (deprecated)
+===============
+
+Majority of prepare scripts still generate this format, so this section is
+maintained for historical context.
+
+
 .. code-block:: yaml
 
     id: a066a2ab-42f7-4e72-bc6d-a47a558b8172
@@ -138,6 +246,28 @@ lineage
                         modification_dt: 2011-11-15 02:10:26
                         checksum_sha1: f66265314fc12e005deb356b69721a7031a71374
 
+Reasons for deprecation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+#. Duplication of spatial information
+
+   Extent is stored in native projection ``grid_spatial->projection->geo_ref_points->{ll,lr,ul,ur}->{x,y}``, and then again in
+   lon/lat: ``extent->coord->{ll,lr,ul,ur}->{lat,lon}``
+
+#. Extent in lon/lat uses 4 points to encode a bounding box
+
+   This format strongly suggests `incorrect implementation
+   <https://github.com/opendatacube/datacube-core/issues/537>`_ of simply
+   projecting four image corners into lon/lat in the prepare script.
+
+#. Costly lineage representation
+
+   To record lineage one has to recursively include entire dataset document for
+   every input dataset. This gets expensive for summary products with thousands
+   of input datasets.
+
+#. Format does not capture per band resolution/image size
+
 .. _metadata-type-definition:
 
 Metadata Type Definition
@@ -153,5 +283,3 @@ You can see the default metadata type in the repository at ``datacube/index/defa
 
 Or more elaborate examples (with fewer comments) in GA's configuration
 repository: https://github.com/GeoscienceAustralia/datacube-ingestion
-
-
