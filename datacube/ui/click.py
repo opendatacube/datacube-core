@@ -215,16 +215,21 @@ def pass_index(app_name=None, expect_initialised=True):
         def with_index(local_config: config.LocalConfig,
                        *args,
                        **kwargs):
-            ctx = click.get_current_context()
+            command_path = click.get_current_context().command_path
             try:
                 index = index_connect(local_config,
-                                      application_name=app_name or ctx.command_path,
+                                      application_name=app_name or command_path,
                                       validate_connection=expect_initialised)
-                ctx.obj['index'] = index
                 _LOG.debug("Connected to datacube index: %s", index)
-                return f(index, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
                 handle_exception('Error Connecting to database: %s', e)
+                return
+
+            try:
+                return f(index, *args, **kwargs)
+            finally:
+                index.close()
+                del index
 
         return functools.update_wrapper(with_index, f)
 
