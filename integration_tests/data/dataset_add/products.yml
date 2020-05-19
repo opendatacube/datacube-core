@@ -47,4 +47,5 @@ name: EO3
 description: test product EO3
 metadata_type: eo3_minimal
 metadata:
-  product: EO3
+    product:
+        name: eo3_test
