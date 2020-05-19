@@ -12,8 +12,8 @@ from datacube.index.eo3 import (
     grid2points,
 )
 
-
 SAMPLE_DOC = '''---
+$schema: https://schemas.opendatacube.org/dataset
 id: 7d41a4d0-2ab3-4da1-a010-ef48662ae8ef
 crs: "EPSG:3857"
 grids:
@@ -33,6 +33,7 @@ lineage:
 # https://landsat-pds.s3.amazonaws.com/c1/L8/074/071/LC08_L1TP_074071_20190622_20190704_01_T1/index.html
 #
 SAMPLE_DOC_180 = '''---
+$schema: https://schemas.opendatacube.org/dataset
 id: f884df9b-4458-47fd-a9d2-1a52a2db8a1a
 crs: "EPSG:32660"
 grids:
@@ -90,15 +91,14 @@ def test_is_eo3(sample_doc, sample_doc_180):
     identity = list(Affine.translation(0, 0))
     assert is_doc_eo3(sample_doc) is True
     assert is_doc_eo3(sample_doc_180) is True
+
+    # If there's no schema field at all, it's treated as legacy eo.
     assert is_doc_eo3({}) is False
     assert is_doc_eo3({'crs': 'EPSG:4326'}) is False
     assert is_doc_eo3({'crs': 'EPSG:4326', 'grids': {}}) is False
-    assert is_doc_eo3({'crs': 'EPSG:4326', 'grids': {'default': None}}) is False
-    assert is_doc_eo3({'crs': 'EPSG:4326', 'grids': {'default': 100}}) is False
-    assert is_doc_eo3({'crs': 'EPSG:4326', 'grids': {'default': {'transform': identity}}}) is False
-    assert is_doc_eo3({'crs': 'EPSG:4326', 'grids': {'default': {
-        'shape': 10,
-        'transform': identity}}}) is False
+
+    with pytest.raises(ValueError, match="Unsupported dataset schema.*"):
+        is_doc_eo3({'$schema': 'https://schemas.opendatacube.org/eo4'})
 
 
 def test_add_eo3(sample_doc, sample_doc_180, eo3_product):

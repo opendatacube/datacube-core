@@ -17,6 +17,8 @@ from datacube.utils.geometry import (
     lonlat_bounds,
 )
 
+EO3_SCHEMA = "https://schemas.opendatacube.org/dataset"
+
 
 def _norm_grid(grid: Dict[str, Any]) -> Any:
     shape = grid.get('shape')
@@ -145,30 +147,30 @@ def add_eo3_parts(doc: Dict[str, Any],
 
 
 def is_doc_eo3(doc: Dict[str, Any]) -> bool:
-    """ Heuristics to auto-detect EO3 documents.
+    """ Is this document eo3?
 
     :param doc: Parsed ODC Dataset metadata document
-    Returns:
-    -------
-        False -- if this document not an EO3 document
-        True  -- if this document looks like eo3
+
+    :returns:
+        False if this document is a legacy dataset
+        True if this document is eo3
+
+    :raises ValueError: For an unsupported document
     """
-    if 'crs' not in doc:
+    schema = doc.get('$schema')
+    # All legacy documents had no schema at all.
+    if schema is None:
         return False
 
-    grid = toolz.get_in(["grids", "default"], doc, None)
-    if grid is None:
-        return False
-    if not isinstance(grid, collections.abc.Mapping):
-        return False
+    if schema == EO3_SCHEMA:
+        return True
 
-    for k in ('shape', 'transform'):
-        v = grid.get(k, None)
-        if v is None or not isinstance(v, collections.abc.Iterable):
-            return False
-
-    # TODO: maybe verify that shape/transform are meaningful?
-    return True
+    # Otherwise it has an unknown schema.
+    #
+    # Reject it for now.
+    # We don't want future documents (like Stac items, or "eo4") to be quietly
+    # accepted as legacy eo.
+    raise ValueError(f'Unsupported dataset schema: {schema!r}')
 
 
 def prep_eo3(doc: Dict[str, Any],
