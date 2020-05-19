@@ -13,7 +13,8 @@ Dataset metadata documents define critical metadata about a dataset including:
 
 Traditionally :ref:`dataset-metadata-doc-eo` format was used to capture
 information about individual datasets. However there are a number of issues with
-this format, hence deprecation and move to :ref:`dataset-metadata-doc-eo3`.
+this format, so it is now deprecated and we recommend everyone move to using
+:ref:`dataset-metadata-doc-eo3`.
 
 The format is determined by ODC using the ``$schema`` field in the document.
 Include an eo3 ``$schema`` for eo3 documents. If no schema field exists, it
