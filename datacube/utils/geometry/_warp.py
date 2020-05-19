@@ -47,7 +47,7 @@ def warp_affine_rio(src: np.ndarray,
     :param src_nodata: Value representing "no data" in the source image
     :param dst_nodata: Value to represent "no data" in the destination image
 
-    **kwargs -- any other args to pass to ``rasterio.warp.reproject``
+    :param     kwargs: any other args to pass to ``rasterio.warp.reproject``
 
     :returns: dst
     """
@@ -102,7 +102,7 @@ def warp_affine(src: np.ndarray,
     :param src_nodata: Value representing "no data" in the source image
     :param dst_nodata: Value to represent "no data" in the destination image
 
-    **kwargs -- any other args to pass to implementation
+    :param     kwargs: any other args to pass to implementation
 
     :returns: dst
     """
@@ -131,7 +131,7 @@ def rio_reproject(src: np.ndarray,
     :param src_nodata: Value representing "no data" in the source image
     :param dst_nodata: Value to represent "no data" in the destination image
 
-    **kwargs -- any other args to pass to ``rasterio.warp.reproject``
+    :param     kwargs: any other args to pass to ``rasterio.warp.reproject``
 
     :returns: dst
     """
