@@ -15,6 +15,9 @@ Traditionally :ref:`dataset-metadata-doc-eo` format was used to capture
 information about individual datasets. However there are a number of issues with
 this format, hence deprecation and move to :ref:`dataset-metadata-doc-eo3`.
 
+The format is determined by ODC using the ``$schema`` field in the document.
+Include an eo3 ``$schema`` for eo3 documents. If no schema field exists, it
+is treated as the older ``eo`` format.
 
 .. _dataset-metadata-doc-eo3:
 
@@ -39,10 +42,10 @@ EO3 is an intermediate format before we move to something more standard like `ST
 
    # Product name
    product:
-     name: landsat8
+     name: landsat8_example_product
 
    # Native CRS, assumed to be the same across all bands
-   crs: "EPSG:32660"
+   crs: "epsg:32660"
 
    # Optional GeoJSON object in the units of native CRS.
    # Defines a polygon such that, all valid pixels across all bands
@@ -82,13 +85,13 @@ EO3 is an intermediate format before we move to something more standard like `ST
    # Dataset properties, prefer STAC standard names here
    # Timestamp is the only compulsory field here
    properties:
-     datetime: '2020-01-01T07:02:54.188Z'  # Use UTC
+     datetime: 2020-01-01T07:02:54.188Z  # Use UTC
      # When recording time range use these names
      #   dtr:start_datetime:
      #   dtr:end_datetime:
 
      odc:file_format: GeoTIFF
-     odc:processing_datetime: '2020-01-01T07:02:54.188Z'
+     odc:processing_datetime: 2020-01-01T07:02:54.188Z
 
    # Lineage only references UUIDs of direct source datasets
    # Mapping name:str -> [UUID]
@@ -99,6 +102,11 @@ Elements ``shape`` and ``transform`` can be obtained from the output of ``rio
 info <image-file>``. ``shape`` is basically ``height, width`` tuple and
 ``transform`` captures a linear mapping from pixel space to projected space
 encoded in a row-major order:
+
+A command-line tool to validate eo3 documents called ``eo3-validate`` is available
+in the `eodatasets3 library <https://github.com/GeoscienceAustralia/eo-datasets>`_,
+ as well as optional tools to write these files more easily.
+
 
 .. code-block::
 
