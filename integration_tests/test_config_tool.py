@@ -144,6 +144,9 @@ def test_db_init_noop(clirunner, local_config, ls5_telem_type):
     # It should not rebuild indexes by default
     assert 'Dropping index: dix_{}'.format(ls5_telem_type.name) not in result.output
 
+    result = clirunner(['metadata', 'list'])
+    assert "eo3 " in result.output
+
 
 def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):
     # We set the field creation logging to debug, as we assert its logging output below.
