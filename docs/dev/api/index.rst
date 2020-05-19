@@ -97,7 +97,6 @@ Internal Data Model
    Measurement
    MetadataType
    DatasetType
-   GridSpec
 
    Range
 
@@ -249,21 +248,24 @@ Open Data Cube includes a set of CRS aware geometry utilities.
 Geometry Classes
 ----------------
 
+.. currentmodule:: datacube
+
 .. autosummary::
    :nosignatures:
    :toctree: generate/
 
-   Coordinate
-   BoundingBox
-   CRS
-   Geometry
-   GeoBox
-   BoundingBox
-   gbox.GeoboxTiles
-   datacube.model.GridSpec
+   utils.geometry.Coordinate
+   utils.geometry.BoundingBox
+   utils.geometry.CRS
+   utils.geometry.Geometry
+   utils.geometry.GeoBox
+   utils.geometry.BoundingBox
+   utils.geometry.gbox.GeoboxTiles
+   model.GridSpec
 
-   CRSError
-   CRSMismatchError
+   utils.geometry.CRSError
+   utils.geometry.CRSMismatchError
+
 
 Tools
 -----
@@ -373,9 +375,9 @@ Masking
 =======
 
 .. toctree::
-  :maxdepth: 1
+   :maxdepth: 1
 
-   masking.rst
+   masking
 
 .. currentmodule:: datacube.utils
 

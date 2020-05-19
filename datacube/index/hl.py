@@ -196,7 +196,7 @@ def dataset_resolver(index,
     return resolve_no_lineage if skip_lineage else resolve
 
 
-class Doc2Dataset(object):
+class Doc2Dataset:
     """Used for constructing `Dataset` objects from plain metadata documents.
 
     This requires a database connection to perform the automatic matching against
@@ -228,7 +228,7 @@ class Doc2Dataset(object):
 
     :param skip_lineage: If True ignore lineage sub-tree in the supplied
                          document and construct dataset without lineage datasets
-    :param eo3: 'auto'|True|False by default auto-detect EO3 datasets and pre-process them
+    :param eo3: 'auto'/True/False by default auto-detect EO3 datasets and pre-process them
     """
     def __init__(self,
                  index,

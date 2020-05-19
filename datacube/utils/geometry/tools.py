@@ -9,8 +9,8 @@ from affine import Affine
 # pylint: disable=invalid-name
 
 
-class WindowFromSlice(object):
-    """ Translate numpy slices (numpy.s_) to rasterio window tuples.
+class WindowFromSlice:
+    """ Translate numpy slices to rasterio window tuples.
     """
     def __getitem__(self, roi):
         if roi is None:
