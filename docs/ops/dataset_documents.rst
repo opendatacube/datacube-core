@@ -27,11 +27,10 @@ EO3 Format
 
 EO3 is an intermediate format before we move to something more standard like `STAC <https://stacspec.org/>`_. Primary driver for the development
 
-#. Capture native resolution/geo-registration for every measurement band
 #. Avoid duplication of spatial information, by storing only native projection information
 #. Capture geo-registration information per band, not per entire dataset
-#. Capture image size per band
-#. Allow for lightweight lineage representation
+#. Capture image size/resolution per band
+#. Lightweight lineage representation
 
 
 .. code-block:: yaml
@@ -85,13 +84,25 @@ EO3 is an intermediate format before we move to something more standard like `ST
    # Dataset properties, prefer STAC standard names here
    # Timestamp is the only compulsory field here
    properties:
+     eo:platform: landsat-8
+     eo:instrument: OLI_TIRS
+
+     # If it's a single time instance use datetime
      datetime: 2020-01-01T07:02:54.188Z  # Use UTC
-     # When recording time range use these names
-     #   dtr:start_datetime:
-     #   dtr:end_datetime:
+
+     # When recording time range use dtr:{start,end}_datetime
+     dtr:start_datetime: 2020-01-01T07:02:02.233Z
+     dtr:end_datetime:   2020-01-01T07:03:04.397Z
+
+     # ODC specific "extensions"
+     odc:processing_datetime: 2020-02-02T08:10:00.000Z
 
      odc:file_format: GeoTIFF
-     odc:processing_datetime: 2020-01-01T07:02:54.188Z
+     odc:region_code: "074071"   # provider specific unique identified for the same location
+                                 # for Landsat '{:03d}{:03d}'.format(path, row)
+
+     dea:dataset_maturity: final # one of: final| interim| nrt (near real time)
+     odc:product_family: ard     # can be useful for larger installations
 
    # Lineage only references UUIDs of direct source datasets
    # Mapping name:str -> [UUID]
