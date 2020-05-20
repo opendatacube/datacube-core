@@ -21,7 +21,9 @@ v1.8rc (???)
 - Migrate geometry and CRS backends from ``osgeo.ogr`` and ``osgeo.osr`` to ``shapely`` and ``pyproj`` respectively (:pull:`880`)
 - Driver metadata storage and retrieval. (:pull:`931`)
 - Support EO3 style datasets in ``datacube dataset add`` (:pull:`929`, :issue:`864`)
-
+- Removed migration support from datacube releases before 1.1.5.
+    If you still run a datacube before 1.1.5 (from 2016 or older), you will need to update it
+    using ODC 1.7 first, before coming to 1.8.
 
 v1.7.0 (16 May 2019)
 ====================
