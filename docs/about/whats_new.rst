@@ -5,8 +5,8 @@
 What's New
 **********
 
-v1.8rc (???)
-============
+v1.8.0 (21 May 2020)
+====================
 
 - New virtual product combinator ``reproject`` for on-the-fly reprojection of rasters (:pull:`773`)
 - Enhancements to the ``expressions`` transformation in virtual products (:pull:`776`, :pull:`761`)
