@@ -178,11 +178,25 @@ def write_cog(geo_im: xr.DataArray,
     """
     Save ``xarray.DataArray`` to a file in Cloud Optimized GeoTiff format.
 
-    This function accepts Dask inputs, in which case output is also a Dask
-    delayed object.
+    This function is "Dask aware". If ``geo_im`` is a Dask array, then the
+    output of this function is also a Dask Delayed object. This allows us to
+    save multiple images concurrently across a Dask cluster. If you are not
+    familiar with Dask this can be confusing, as no operation is performed until
+    ``.compute()`` method is called, so if you call this function with Dask
+    array it will return immediately without writing anything to disk.
+
+    If you are using Dask to speed up data loading, follow example below:
+
+    .. code-block:: python
+
+       # Example: save red band from first time slice to file "red.tif"
+       xx = dc.load(.., dask_chunks=dict(x=1024, y=1024))
+       write_cog(xx.isel(time=0).red, "red.tif").compute()
+       # or compute input first instead
+       write_cog(xx.isel(time=0).red.compute(), "red.tif")
 
     :param geo_im: ``xarray.DataArray`` with crs
-    :param fname: Output path
+    :param fname: Output path or ``":mem:"`` in which case compress to RAM and return bytes
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
     :param ovr_blocksize: Size of internal tiles in overview images (defaults to blocksize)
     :param overview_resampling: Use this resampling when computing overviews
@@ -190,11 +204,22 @@ def write_cog(geo_im: xr.DataArray,
                             to disable overviews supply empty list ``[]``
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``
 
-    :returns:
-      Path to which output was written
-    :returns:
-      ``dask.Delayed`` object if input is a Dask array
+    :returns: Path to which output was written
+    :returns: Bytes if ``fname=":mem:"``
+    :returns: ``dask.Delayed`` object if input is a Dask array
 
+    .. note ::
+
+       **memory requirements**
+
+       This function generates temporary in memory tiff file without
+       compression to speed things up. It then adds overviews to this file and
+       only then copies it to the final destination with requested compression
+       settings. This is necessary to produce compliant COG, since COG standard
+       demands overviews to be placed before native resolution data and double
+       pass is the only way to achieve this currently.
+
+       This means that this function will use about 1.5 to 2 times memory taken by ``geo_im``.
     """
     pix = geo_im.data
     geobox = getattr(geo_im, 'geobox', None)
@@ -229,10 +254,17 @@ def to_cog(geo_im: xr.DataArray,
            overview_levels: Optional[List[int]] = None,
            **extra_rio_opts) -> Union[bytes, Delayed]:
     """
-    Compress xarray.Array to Cloud Optimized GeoTiff bytes.
+    Compress ``xarray.DataArray`` into Cloud Optimized GeoTiff bytes in memory.
 
-    This function accepts Dask inputs, in which case output is also a Dask
-    delayed object.
+    This function doesn't write to disk, it compresses in RAM, this is useful
+    for saving data to S3 or other cloud object stores.
+
+    This function is "Dask aware". If ``geo_im`` is a Dask array, then the
+    output of this function is also a Dask Delayed object. This allows us to
+    compress multiple images concurrently across a Dask cluster. If you are not
+    familiar with Dask this can be confusing, as no operation is performed until
+    ``.compute()`` method is called, so if you call this function with Dask
+    array it will return immediately without compressing any data.
 
     :param geo_im: ``xarray.DataArray`` with crs
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
@@ -243,6 +275,9 @@ def to_cog(geo_im: xr.DataArray,
 
     :returns: In-memory GeoTiff file as bytes
     :returns: ``dask.Delayed`` object if input is a Dask array
+
+    Also see :py:meth:`~datacube.utils.cog.write_cog`
+
     """
     bb = write_cog(geo_im,
                    ":mem:",
