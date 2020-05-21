@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Collection
+from typing import Optional, Collection
 
 import numpy
 import xarray
@@ -471,10 +471,12 @@ def week(time):
 def day(time):
     return time.astype('datetime64[D]')
 
+
 def earliest_time(time):
     earliest_time = time.copy()
     earliest_time.data[0:] = year(time).data[0]
     return earliest_time
+
 
 class XarrayReduction(Transformation):
     """
