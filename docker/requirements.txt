@@ -11,6 +11,7 @@ wrapt==1.11.2
 
 # every new version finds new errors, so we pin it
 pylint==2.4.4
+pycodestyle==2.5.0
 
 # for packaging
 wheel
@@ -20,4 +21,4 @@ twine
 
 psycopg2 --no-binary=psycopg2
 
-datacube[test,cf,celery,s3,performance,distributed]
+datacube[all]

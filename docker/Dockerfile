@@ -58,6 +58,9 @@ RUN apt-get update \
   sudo \
   # git is needed for sdist|bdist_wheel
   git \
+  # for docs
+  make \
+  graphviz \
   && rm -rf /var/lib/apt/lists/*
 
 # if using binary rasterio package, to support https
