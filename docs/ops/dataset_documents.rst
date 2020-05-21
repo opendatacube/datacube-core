@@ -117,7 +117,7 @@ encoded in a row-major order:
 
 A command-line tool to validate eo3 documents called ``eo3-validate`` is available
 in the `eodatasets3 library <https://github.com/GeoscienceAustralia/eo-datasets>`_,
- as well as optional tools to write these files more easily.
+as well as optional tools to write these files more easily.
 
 
 .. code-block::
