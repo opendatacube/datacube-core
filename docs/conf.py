@@ -29,6 +29,7 @@ if on_rtd:
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.graphviz',
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
