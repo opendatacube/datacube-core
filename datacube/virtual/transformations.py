@@ -44,6 +44,8 @@ class MakeMask(Transformation):
     Create a mask that would only keep pixels for which the measurement with `mask_measurement_name`
     of the `product` satisfies `flags`.
 
+    Alias in recipe: ``make_mask``.
+
     :param mask_measurement_name: the name of the measurement to create the mask from
     :param flags: definition of the flags for the mask
     """
