@@ -387,6 +387,19 @@ Masking
    masking.describe_variable_flags
    masking.make_mask
 
+
+Writing Image Files
+===================
+
+.. currentmodule:: datacube.utils.cog
+
+.. autosummary::
+   :toctree: generate/
+
+   write_cog
+   to_cog
+
+
 Query Class
 ===========
 

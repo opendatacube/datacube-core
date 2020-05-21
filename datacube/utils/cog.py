@@ -33,15 +33,16 @@ def _write_cog(pix: np.ndarray,
                **extra_rio_opts) -> Union[Path, bytes]:
     """Write geo-registered ndarray to GeoTiff file or RAM.
 
-    :param pix: xarray.DataArray with crs or (ndarray, geobox, nodata) triple
+    :param pix: ``xarray.DataArray`` with crs or (ndarray, geobox, nodata) triple
     :param fname:  Output file or ":mem:"
-    :param nodata: Set `nodata` flag to this value if supplied
+    :param nodata: Set ``nodata`` flag to this value if supplied
     :param overwrite: True -- replace existing file, False -- abort with IOError exception
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
+    :param ovr_blocksize: Size of internal tiles in overview images (defaults to blocksize)
     :param overview_resampling: Use this resampling when computing overviews
     :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32]
-                            to disable overviews supply empty list `[]`
-    :param **extra_rio_opts: Any other option is passed to `rasterio.open`
+                            to disable overviews supply empty list ``[]``
+    :param extra_rio_opts: Any other option is passed to ``rasterio.open``
 
     When fname=":mem:" write COG to memory rather than to a file and return it
     as memoryview object.
@@ -170,17 +171,30 @@ _delayed_write_cog_to_file = dask.delayed(   # pylint: disable=invalid-name
 def write_cog(geo_im: xr.DataArray,
               fname: Union[str, Path],
               blocksize: Optional[int] = None,
+              ovr_blocksize: Optional[int] = None,
               overview_resampling: Optional[str] = None,
               overview_levels: Optional[List[int]] = None,
               **extra_rio_opts) -> Union[Path, bytes, Delayed]:
-    """Compress xarray.DataArray to GeoTiff bytes.
+    """
+    Save ``xarray.DataArray`` to a file in Cloud Optimized GeoTiff format.
 
-    :param geo_im: xarray.DataArray with crs
+    This function accepts Dask inputs, in which case output is also a Dask
+    delayed object.
+
+    :param geo_im: ``xarray.DataArray`` with crs
+    :param fname: Output path
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
+    :param ovr_blocksize: Size of internal tiles in overview images (defaults to blocksize)
     :param overview_resampling: Use this resampling when computing overviews
     :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32],
-                            to disable overviews supply empty list `[]`
-    :param **extra_rio_opts: Any other option is passed to `rasterio.open`
+                            to disable overviews supply empty list ``[]``
+    :param extra_rio_opts: Any other option is passed to ``rasterio.open``
+
+    :returns:
+      Path to which output was written
+    :returns:
+      ``dask.Delayed`` object if input is a Dask array
+
     """
     pix = geo_im.data
     geobox = getattr(geo_im, 'geobox', None)
@@ -202,6 +216,7 @@ def write_cog(geo_im: xr.DataArray,
         fname,
         nodata=nodata,
         blocksize=blocksize,
+        ovr_blocksize=ovr_blocksize,
         overview_resampling=overview_resampling,
         overview_levels=overview_levels,
         **extra_rio_opts)
@@ -209,20 +224,30 @@ def write_cog(geo_im: xr.DataArray,
 
 def to_cog(geo_im: xr.DataArray,
            blocksize: Optional[int] = None,
+           ovr_blocksize: Optional[int] = None,
            overview_resampling: Optional[str] = None,
            overview_levels: Optional[List[int]] = None,
            **extra_rio_opts) -> Union[bytes, Delayed]:
-    """Compress xarray.Array to GeoTiff bytes.
+    """
+    Compress xarray.Array to Cloud Optimized GeoTiff bytes.
 
-    :param geo_im: xarray.DataArray with crs
+    This function accepts Dask inputs, in which case output is also a Dask
+    delayed object.
+
+    :param geo_im: ``xarray.DataArray`` with crs
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
+    :param ovr_blocksize: Size of internal tiles in overview images (defaults to blocksize)
     :param overview_resampling: Use this resampling when computing overviews
     :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32]
-    :param **extra_rio_opts: Any other option is passed to `rasterio.open`
+    :param extra_rio_opts: Any other option is passed to ``rasterio.open``
+
+    :returns: In-memory GeoTiff file as bytes
+    :returns: ``dask.Delayed`` object if input is a Dask array
     """
     bb = write_cog(geo_im,
                    ":mem:",
                    blocksize=blocksize,
+                   ovr_blocksize=ovr_blocksize,
                    overview_resampling=overview_resampling,
                    overview_levels=overview_levels,
                    **extra_rio_opts)
