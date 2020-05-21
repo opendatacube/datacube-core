@@ -15,13 +15,13 @@ Data Cube is using `PostgreSQL <https://www.postgresql.org>`_
 Ubuntu
 ------
 
-Ubuntu 16.04 includes packages for PostgreSQL 9.5. On earlier versions of Ubuntu you can use the postgresql.org repo as
+Ubuntu 18.04 includes packages for PostgreSQL 10. On earlier versions of Ubuntu you can use the postgresql.org repo as
 described on `their download page <https://www.postgresql.org/download/linux/ubuntu/>`_.
 
 
 Install postgres using ``apt``::
 
-    sudo apt install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5
+    sudo apt install postgresql-10 postgresql-client-10 postgresql-contrib-10
 
 Configure the ``postgres`` user password to `complete the postgres setup <https://help.ubuntu.com/community/PostgreSQL>`_
 
