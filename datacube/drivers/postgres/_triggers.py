@@ -9,25 +9,26 @@ from ._schema import (
 )
 
 UPDATE_TIMESTAMP_SQL = """
-CREATE OR REPLACE FUNCTION {schema}.trigger_set_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+create or replace function {schema}.set_row_update_time()
+returns trigger as $$
+begin
+  new.updated = now();
+  return new;
+end;
+$$ language plpgsql;
 """.format(schema=SCHEMA_NAME)
 
 UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE = """
-ALTER TABLE {schema}.{table} ADD COLUMN IF NOT EXISTS updated_at
-TIMESTAMPTZ NOT NULL DEFAULT NOW();
+alter table {schema}.{table} add column if not exists updated
+timestamptz not null default now();
 """
 
 INSTALL_TRIGGER_SQL_TEMPLATE = """
-CREATE TRIGGER set_timestamp
-BEFORE UPDATE ON {schema}.{table}
-FOR EACH ROW
-EXECUTE PROCEDURE {schema}.trigger_set_timestamp();
+drop trigger if exists row_update_time_{table} on {schema}.{table};
+create trigger row_update_time_{table}
+before update on {schema}.{table}
+for each row
+execute procedure {schema}.set_row_update_time();
 """
 
 TABLE_NAMES = [
