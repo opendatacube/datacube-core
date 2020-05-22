@@ -157,7 +157,15 @@ def update_schema(engine: Engine):
     # Empty, as no schema changes have been made recently.
     # -> If you need to write one, look at the Git history of this
     #    function for some examples.
-    return
+    
+    # Post 1.8 DB Federation triggers
+    from datacube.drivers.postgres._triggers import install_timestamp_trigger
+    _LOG.info("Adding Update Triggers")
+    c = engine.connect()
+    c.execute('begin')
+    install_timestamp_trigger(c)
+    c.execute('commit')
+    c.close()
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
