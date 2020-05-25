@@ -5,6 +5,11 @@
 What's New
 **********
 
+v1.8.1 (???)
+============
+
+- Added ``updated`` column for trigger based tracking of database row updates in PostgreSQL. (:pull:`951`)
+
 v1.8.0 (21 May 2020)
 ====================
 
