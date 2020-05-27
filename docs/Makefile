@@ -12,7 +12,8 @@ BUILDDIR      = _build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile livehtml clean
+
+.PHONY: help Makefile livehtml clean plantuml_files
 
 
 # Catch-all target: route all unknown targets to Sphinx using the new
