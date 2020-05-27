@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="172px" preserveAspectRatio="none" style="width:336px;height:172px;" version="1.1" viewBox="0 0 336 172" width="336px" zoomAndPan="magnify"><defs><filter height="300%" id="f18wmrply8hz2b" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><text fill="#000000" font-family="sans-serif" font-size="18" lengthAdjust="spacingAndGlyphs" textLength="151" x="99" y="16.708">Basic Data Model</text><rect fill="#FEFECE" filter="url(#f18wmrply8hz2b)" height="33.9688" style="stroke: #A80036; stroke-width: 1.5;" width="64" x="138.5" y="28.9531"/><text fill="#000000" font-family="sans-serif" font-size="12" lengthAdjust="spacingAndGlyphs" textLength="50" x="145.5" y="42.0918">Dataset</text><line style="stroke: #A80036; stroke-width: 1.5;" x1="139.5" x2="201.5" y1="46.9219" y2="46.9219"/><rect fill="#FEFECE" filter="url(#f18wmrply8hz2b)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="101" x="6" y="123.9531"/><text fill="#000000" font-family="sans-serif" font-size="12" lengthAdjust="spacingAndGlyphs" textLength="39" x="37" y="137.0918">Scene</text><line style="stroke: #A80036; stroke-width: 1.5;" x1="7" x2="106" y1="141.9219" y2="141.9219"/><text fill="#000000" font-family="sans-serif" font-size="10" lengthAdjust="spacingAndGlyphs" textLength="89" x="12" y="155.2041">Landsat Path/Row</text><rect fill="#FEFECE" filter="url(#f18wmrply8hz2b)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="56" x="142.5" y="123.9531"/><text fill="#000000" font-family="sans-serif" font-size="12" lengthAdjust="spacingAndGlyphs" textLength="21" x="160" y="137.0918">Tile</text><line style="stroke: #A80036; stroke-width: 1.5;" x1="143.5" x2="197.5" y1="141.9219" y2="141.9219"/><text fill="#000000" font-family="sans-serif" font-size="10" lengthAdjust="spacingAndGlyphs" textLength="44" x="148.5" y="155.2041">cell index</text><rect fill="#FEFECE" filter="url(#f18wmrply8hz2b)" height="33.9688" style="stroke: #A80036; stroke-width: 1.5;" width="46" x="233.5" y="125.9531"/><text fill="#000000" font-family="sans-serif" font-size="12" lengthAdjust="spacingAndGlyphs" textLength="32" x="240.5" y="139.0918">Band</text><line style="stroke: #A80036; stroke-width: 1.5;" x1="234.5" x2="278.5" y1="143.9219" y2="143.9219"/><!--link Dataset to Dataset--><path d="M215.67,37.3831 C228.05,37.8031 237.5,40.6631 237.5,45.9531 C237.5,53.0031 220.7,55.7331 202.56,54.1331 " fill="none" id="Dataset-Dataset" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#FFFFFF" points="202.56,37.7731,208.6719,41.5999,214.5551,37.43,208.4432,33.6032,202.56,37.7731" style="stroke: #A80036; stroke-width: 1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="81" x="243.5" y="50.52">derived from</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="24" x="210.4082" y="51.3358">0..n</text><!--link Dataset to Scene--><path d="M135.64,76.0031 C116.94,91.5831 94.48,110.3031 78.27,123.8131 " fill="none" id="Dataset-Scene" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="none" points="131.32,70.4931,151.16,63.0731,140.28,81.2531,131.32,70.4931" style="stroke: #A80036; stroke-width: 1.0;"/><!--link Dataset to Tile--><path d="M170.5,83.5531 C170.5,97.3431 170.5,112.4231 170.5,123.8131 " fill="none" id="Dataset-Tile" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="none" points="163.5,83.0731,170.5,63.0731,177.5,83.0731,163.5,83.0731" style="stroke: #A80036; stroke-width: 1.0;"/><!--link Dataset to Band--><path d="M193.97,72.8831 C209.26,89.7631 228.72,111.2631 241.84,125.7631 " fill="none" id="Dataset-Band" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="185.09,63.0731,186.151,70.2057,193.143,71.9697,192.082,64.8371,185.09,63.0731" style="stroke: #A80036; stroke-width: 1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="24" x="209.3421" y="114.9862">1..n</text><!--
+@startuml
+
+title Basic Data Model
+
+object Dataset
+
+object Scene
+Scene : Landsat Path/Row
+
+object Tile
+Tile : cell index
+
+object Band
+
+Dataset o- - "0..n" Dataset : derived from
+
+Dataset <|- - Scene
+Dataset <|- - Tile
+
+Dataset *- - "1..n" Band
+
+@enduml
+
+PlantUML version 1.2018.13(Tue Nov 27 04:11:51 AEDT 2018)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 11.0.7+10-post-Ubuntu-3ubuntu1
+Operating System: Linux
+OS Version: 5.4.0-1012-azure
+Default Encoding: UTF-8
+Language: en
+Country: AU
+--></g></svg>
