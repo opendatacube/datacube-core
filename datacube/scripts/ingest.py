@@ -259,17 +259,12 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     nudata = data.rename(namemap)
     file_path = get_filename(config, tile_index, tile.sources)
 
-    def mk_uri(file_path):
-        if driver.uri_scheme == "file":
-            return normalise_path(file_path).as_uri()
-        return '{}://{}'.format(driver.uri_scheme, file_path)
-
     def _make_dataset(labels, sources):
         return make_dataset(product=output_type,
                             sources=sources,
                             extent=tile.geobox.extent,
                             center_time=labels['time'],
-                            uri=mk_uri(file_path),
+                            uri=driver.mk_uri(file_path, config['storage']['driver']),
                             app_info=get_app_metadata(config['filename']),
                             valid_data=polygon_from_sources_extents(sources, tile.geobox))
 

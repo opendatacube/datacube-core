@@ -1,4 +1,5 @@
 from datacube.storage._rio import RasterDatasetDataSource
+from datacube.utils.uris import normalise_path
 from ._write import write_dataset_to_netcdf
 
 PROTOCOL = 'file'
@@ -38,6 +39,12 @@ class NetcdfWriterDriver(object):
     @property
     def uri_scheme(self):
         return PROTOCOL
+
+    def mk_uri(self, file_path, driver_alias):
+        if driver_alias in self.aliases:
+            return normalise_path(file_path).as_uri()
+        else:
+            raise ValueError(f'Unknown driver alias: {driver_alias}')
 
     def write_dataset_to_storage(self, dataset, filename,
                                  global_attributes=None,
