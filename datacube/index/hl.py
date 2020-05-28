@@ -9,7 +9,7 @@ from datacube.model import Dataset
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
-from .eo3 import prep_eo3
+from .eo3 import prep_eo3, is_doc_eo3
 
 
 class BadMatch(Exception):
@@ -152,7 +152,7 @@ def dataset_resolver(index,
         if missing_lineage and fail_on_missing_lineage:
             return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
 
-        if verify_lineage:
+        if verify_lineage and not is_doc_eo3(main_ds.doc):
             bad_lineage = []
 
             for uuid in lineage_uuids:
