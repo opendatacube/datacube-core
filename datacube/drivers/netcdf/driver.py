@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit
+
 from datacube.storage._rio import RasterDatasetDataSource
 from datacube.utils.uris import normalise_path
 from ._write import write_dataset_to_netcdf
@@ -51,7 +53,7 @@ class NetcdfWriterDriver(object):
         else:
             raise ValueError(f'Unknown driver alias: {driver_alias}')
 
-    def write_dataset_to_storage(self, dataset, filename,
+    def write_dataset_to_storage(self, dataset, file_uri,
                                  global_attributes=None,
                                  variable_params=None,
                                  storage_config=None,
@@ -59,7 +61,7 @@ class NetcdfWriterDriver(object):
         # TODO: Currently ingestor copies chunking info from storage_config to
         # variable_params, this logic should probably happen here.
 
-        write_dataset_to_netcdf(dataset, filename,
+        write_dataset_to_netcdf(dataset, urlsplit(file_uri).path,
                                 global_attributes=global_attributes,
                                 variable_params=variable_params,
                                 **kwargs)
