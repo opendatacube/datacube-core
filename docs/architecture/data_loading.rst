@@ -349,16 +349,20 @@ Supporting Diagrams
 Data Read Process
 -----------------
 
-.. uml:: /diagrams/current_data_read_process.plantuml
-   :caption: Current Data Read Process
+.. figure:: ../diagrams/current_data_read_process.svg
+   :target: /_images/current_data_read_process.svg
+
+   Current Data Read Process
 
 
 
 Storage Classes
 ---------------
 
-.. uml:: /diagrams/storage_drivers_old.plantuml
-   :caption: Classes currently implementing the DataCube Data Read Functionality
+.. figure:: ../diagrams/storage_drivers_old.svg
+   :target: /_images/storage_drivers_old.svg
+
+   Classes currently implementing the DataCube Data Read Functionality
 
 
 

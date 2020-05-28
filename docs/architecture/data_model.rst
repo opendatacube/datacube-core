@@ -55,5 +55,7 @@ The default `eo` metadata type defines fields such as 'platform', 'instrument' a
 How the Index Works
 ===================
 
-.. uml:: /diagrams/index_sequence.plantuml
-   :caption: Sequence of steps when creating an index
+.. figure:: /diagrams/index_sequence.svg
+   :target: /_images/index_sequence.svg
+
+   Sequence of steps when creating an index
