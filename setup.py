@@ -16,12 +16,10 @@ tests_require = [
 doc_require = [
     'Sphinx',
     'sphinx_rtd_theme',
-    'sphinx_autodoc_typehints', # Propagate mypy info into docs
+    'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',
-    'sphinxcontrib-plantuml',  # `apt-get install -y plantuml`
     'recommonmark',
-    # version related dependencies
-    'setuptools',
+    'setuptools',  # version related dependencies
     'setuptools_scm[toml]',
 ]
 

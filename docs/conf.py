@@ -10,14 +10,6 @@ print(sys.path)
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
-# -- RTD Debugging
-if on_rtd:
-    import subprocess
-
-    subprocess.call('which java', shell=True)
-    subprocess.call('java -version', shell=True)
-    subprocess.call('plantuml -v', shell=True)
-
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -36,7 +28,6 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.mathjax',
     'sphinx_click.ext',
-    'sphinxcontrib.plantuml',
     'click_utils',
     'sphinx.ext.napoleon',
 ]
@@ -139,9 +130,6 @@ htmlhelp_basename = 'ODCdoc'
 latex_documents = [
     ('index', 'ODC.tex', u'Open Data Cube Documentation', 'Open Data Cube', 'manual')
 ]
-
-plantuml_output_format = 'svg'
-plantuml_latex_output_format = 'pdf'
 
 numfig = True
 
