@@ -264,7 +264,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
                             sources=sources,
                             extent=tile.geobox.extent,
                             center_time=labels['time'],
-                            uri=driver.mk_uri(file_path, config['storage']['driver']),
+                            uri=driver.mk_uri(file_path, config['storage']),
                             app_info=get_app_metadata(config['filename']),
                             valid_data=polygon_from_sources_extents(sources, tile.geobox))
 

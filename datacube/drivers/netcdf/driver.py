@@ -40,7 +40,12 @@ class NetcdfWriterDriver(object):
     def uri_scheme(self):
         return PROTOCOL
 
-    def mk_uri(self, file_path, driver_alias):
+    def mk_uri(self, file_path, storage_config):
+        """
+        Constructs a uri from the file_path and storage config.
+        resource.
+        """
+        driver_alias = storage_config['driver']
         if driver_alias in self.aliases:
             return normalise_path(file_path).as_uri()
         else:
