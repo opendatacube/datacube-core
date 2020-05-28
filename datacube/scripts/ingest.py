@@ -258,13 +258,14 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
     nudata = data.rename(namemap)
     file_path = get_filename(config, tile_index, tile.sources)
+    file_uri = driver.mk_uri(file_path, config['storage'])
 
     def _make_dataset(labels, sources):
         return make_dataset(product=output_type,
                             sources=sources,
                             extent=tile.geobox.extent,
                             center_time=labels['time'],
-                            uri=driver.mk_uri(file_path, config['storage']),
+                            uri=file_uri,
                             app_info=get_app_metadata(config['filename']),
                             valid_data=polygon_from_sources_extents(sources, tile.geobox))
 
@@ -277,7 +278,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
         'complevel': 9,
     }
 
-    driver_data = driver.write_dataset_to_storage(nudata, file_path,
+    driver_data = driver.write_dataset_to_storage(nudata, file_uri,
                                                   global_attributes=global_attributes,
                                                   variable_params=variable_params,
                                                   storage_config=config['storage'])
