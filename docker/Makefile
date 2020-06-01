@@ -4,11 +4,11 @@ dkr := $(image_name):$(image_tag)
 
 all: docker
 
-dist/datacube.tar.gz: ../setup.py
-	(cd .. && python3 setup.py sdist --dist-dir ./docker/dist/)
-	(cd dist && find . -type f -exec ln -sf '{}' datacube.tar.gz ';')
+dist/datacube.whl: ../setup.py
+	(cd .. && python3 setup.py bdist_wheel --dist-dir ./docker/dist/)
+	(cd dist && find . -type f -name "datacube*whl" -exec ln -sf '{}' datacube.whl ';')
 
-docker: dist/datacube.tar.gz
+docker: dist/datacube.whl
 	@echo Building $(dkr)
 	docker build -t $(dkr) .
 

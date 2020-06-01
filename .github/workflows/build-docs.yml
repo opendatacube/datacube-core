@@ -1,0 +1,45 @@
+name: build-docs
+
+on:
+  push:
+    branches:
+      - develop
+      - dra/docs-updates
+
+env:
+  DKR: opendatacube/datacube-tests:latest
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 0
+
+    - name: Pull Docker
+      run: |
+        docker pull ${DKR}
+
+    - name: Build Docs
+      run: |
+        cat <<EOF | docker run --rm -i  \
+                  -v $(pwd):/src/datacube-core \
+                  -e SKIP_DB=yes \
+                  ${DKR} bash -
+        sudo apt-get update && sudo apt-get install -y plantuml make
+        cd docs
+        pip install -r requirements.txt
+        make html
+        EOF
+
+    - name: Deploy to Netlify
+      uses: nwtgck/actions-netlify@v1.0
+      with:
+        production-branch: 'master'
+        publish-dir: 'docs/_build/html'
+        deploy-message: "Deploy from GitHub Actions"
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

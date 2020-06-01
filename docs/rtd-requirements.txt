@@ -53,13 +53,13 @@ snowballstemmer==2.0.0
 snuggs==1.4.7
 sortedcontainers==2.1.0
 Sphinx==3.0.1
+sphinx-autodoc-typehints==1.10.3
 sphinx-click==2.3.2
 sphinx-rtd-theme==0.4.3
 sphinxcontrib-applehelp==1.0.2
 sphinxcontrib-devhelp==1.0.2
 sphinxcontrib-htmlhelp==1.0.3
 sphinxcontrib-jsmath==1.0.1
-sphinxcontrib-plantuml==0.18
 sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-serializinghtml==1.1.4
 SQLAlchemy==1.3.16

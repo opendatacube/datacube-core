@@ -9,7 +9,7 @@ from datacube.model import Dataset
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
-from .eo3 import prep_eo3
+from .eo3 import prep_eo3, is_doc_eo3
 
 
 class BadMatch(Exception):
@@ -152,7 +152,7 @@ def dataset_resolver(index,
         if missing_lineage and fail_on_missing_lineage:
             return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
 
-        if verify_lineage:
+        if verify_lineage and not is_doc_eo3(main_ds.doc):
             bad_lineage = []
 
             for uuid in lineage_uuids:
@@ -196,7 +196,7 @@ def dataset_resolver(index,
     return resolve_no_lineage if skip_lineage else resolve
 
 
-class Doc2Dataset(object):
+class Doc2Dataset:
     """Used for constructing `Dataset` objects from plain metadata documents.
 
     This requires a database connection to perform the automatic matching against
@@ -228,7 +228,7 @@ class Doc2Dataset(object):
 
     :param skip_lineage: If True ignore lineage sub-tree in the supplied
                          document and construct dataset without lineage datasets
-    :param eo3: 'auto'|True|False by default auto-detect EO3 datasets and pre-process them
+    :param eo3: 'auto'/True/False by default auto-detect EO3 datasets and pre-process them
     """
     def __init__(self,
                  index,

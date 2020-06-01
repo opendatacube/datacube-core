@@ -112,7 +112,8 @@ class DatacubeReplicator(object):
         self.tunnel = SSHTunnelForwarder(
             self.remote_host,
             ssh_username=self.remote_user,
-            remote_bind_address=(self.remote_dc_config.db_hostname, int(self.remote_dc_config.db_port)))
+            remote_bind_address=(self.remote_dc_config.get('db_hostname', '127.0.0.1'),
+                                 int(self.remote_dc_config.get('db_port', 5432))))
         self.tunnel.start()
 
         # pylint: disable=protected-access

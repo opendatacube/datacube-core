@@ -106,7 +106,6 @@ Install dependencies:
    sudo apt-get install -y \
      autoconf automake build-essential make cmake \
      graphviz \
-     plantuml \
      python3-venv \
      python3-dev \
      libpq-dev \

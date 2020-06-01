@@ -33,7 +33,6 @@ and  related data from multiple satellite and other acquisition systems.
    user/notebooks.rst
    user/code_recipes.rst
 
-..
    user/ecosystem.rst
 
 

@@ -255,7 +255,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert 'WARNING --auto-match option is deprecated' in r.output
 
     # test dataset add eo3
-    r = clirunner(['dataset', 'add', '--no-verify-lineage', p.datasets_eo3])
+    r = clirunner(['dataset', 'add', p.datasets_eo3])
     assert r.exit_code == 0
 
     ds_eo3 = load_dataset_definition(p.datasets_eo3)

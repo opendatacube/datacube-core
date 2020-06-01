@@ -779,8 +779,12 @@ def clip_lon180(geom: Geometry, tol=1e-6) -> Geometry:
 def chop_along_antimeridian(geom: Geometry,
                             precision: float = 0.1) -> Geometry:
     """
+    Chop a geometry along the antimeridian
+
     :param geom: Geometry to maybe partition
     :param precision: in degrees
+    :returns: either the same geometry if it doesn't intersect the antimeridian,
+              or multi-geometry that has been split.
     """
     if geom.crs is None:
         raise ValueError("Expect geometry with CRS defined")
@@ -1361,6 +1365,8 @@ def lonlat_bounds(geom: Geometry,
                   mode: str = "safe",
                   resolution: Optional[float] = None) -> BoundingBox:
     """
+    Return the bounding box of a geometry
+
     :param geom: Geometry in any projection
     :param mode: safe|quick
     :param resolution: If supplied will first segmentize input geometry to have no segment longer than ``resolution``,
