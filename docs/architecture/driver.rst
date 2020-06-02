@@ -115,10 +115,22 @@ Example code to implement a writer driver
 
         def mk_uri(self, file_path, storage_config):
             """
-            Constructs a uri from the file_path and storage config.
-            resource.
+            Constructs a URI from the file_path and storage config.
+
+            A typical implementation should return f'{scheme}://{file_path}'
+
+            Example:
+                file_path = '/path/to/my_file.nc'
+                storage_config = {'driver': 'NetCDF CF'}
+
+                mk_uri(file_path, storage_config) should return 'file:///path/to/my_file.nc'
+
+            :param Path file_path: The file path of the file to be converted into a URI during the ingest process.
+            :param dict storage_config: The dict holding the storage config found in the ingest definition.
+            :return: file_path as a URI that the Driver understands.
+            :rtype: str
             """
-            return ''  # uri that this writer supports
+            return f'file://{file_path}'  # URI that this writer supports
 
         def write_dataset_to_storage(self, dataset, file_uri,
                                      global_attributes=None,
