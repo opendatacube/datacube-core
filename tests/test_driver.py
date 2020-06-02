@@ -54,6 +54,31 @@ def test_netcdf_driver_import():
     assert datacube.drivers.netcdf.driver.reader_driver_init is not None
 
 
+def test_writer_driver_mk_uri():
+    from datacube.drivers.netcdf.driver import NetcdfWriterDriver
+    writer_driver = NetcdfWriterDriver()
+
+    assert writer_driver.uri_scheme == 'file'
+
+    file_path = '/path/to/my_file.nc'
+    driver_alias = 'NetCDF CF'
+    storage_config = {'driver': driver_alias}
+    file_uri = writer_driver.mk_uri(file_path=file_path, storage_config=storage_config)
+    assert file_uri == f'file://{file_path}'
+
+
+def test_writer_driver_mk_uri_error():
+    from datacube.drivers.netcdf.driver import NetcdfWriterDriver
+    writer_driver = NetcdfWriterDriver()
+
+    file_path = '/path/to/my_file.nc'
+    driver_alias = 'no driver'
+    with pytest.raises(ValueError) as excinfo:
+        storage_config = {'driver': driver_alias}
+        writer_driver.mk_uri(file_path=file_path, storage_config=storage_config)
+    assert str(excinfo.value) == f'Unknown driver alias: {driver_alias}'
+
+
 def test_metadata_type_from_doc():
     metadata_doc = yaml.safe_load('''
 name: minimal
