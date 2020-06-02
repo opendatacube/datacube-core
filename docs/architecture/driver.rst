@@ -113,7 +113,14 @@ Example code to implement a writer driver
         def format(self):
             return ''  # Format that this writer supports
 
-        def write_dataset_to_storage(self, dataset, filename,
+        def mk_uri(self, file_path, storage_config):
+            """
+            Constructs a uri from the file_path and storage config.
+            resource.
+            """
+            return ''  # uri that this writer supports
+
+        def write_dataset_to_storage(self, dataset, file_uri,
                                      global_attributes=None,
                                      variable_params=None,
                                      storage_config=None,
