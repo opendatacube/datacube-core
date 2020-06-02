@@ -9,7 +9,7 @@ v1.8.1 (???)
 ============
 
 - Added ``updated`` column for trigger based tracking of database row updates in PostgreSQL. (:pull:`951`)
-- Moved ``mk_uri`` from ``ingest.py`` into Writer Driver. (:pull:`960`)
+- Changes to writer driver API. Driver is now responsible for constructing output URIs from user configuration. (:pull:`960`)
 
 v1.8.0 (21 May 2020)
 ====================

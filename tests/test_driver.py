@@ -67,18 +67,6 @@ def test_writer_driver_mk_uri():
     assert file_uri == f'file://{file_path}'
 
 
-def test_writer_driver_mk_uri_error():
-    from datacube.drivers.netcdf.driver import NetcdfWriterDriver
-    writer_driver = NetcdfWriterDriver()
-
-    file_path = '/path/to/my_file.nc'
-    driver_alias = 'no driver'
-    with pytest.raises(ValueError) as excinfo:
-        storage_config = {'driver': driver_alias}
-        writer_driver.mk_uri(file_path=file_path, storage_config=storage_config)
-    assert str(excinfo.value) == f'Unknown driver alias: {driver_alias}'
-
-
 def test_metadata_type_from_doc():
     metadata_doc = yaml.safe_load('''
 name: minimal
