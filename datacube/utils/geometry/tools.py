@@ -1,5 +1,5 @@
 import numpy as np
-import collections
+import collections.abc
 from types import SimpleNamespace
 from typing import Tuple
 from affine import Affine
@@ -154,7 +154,7 @@ def roi_normalise(roi, shape):
         start, stop = [x if x >= 0 else n+x for x in (start, stop)]
         return slice(start, stop, s.step)
 
-    if not isinstance(shape, collections.Sequence):
+    if not isinstance(shape, collections.abc.Sequence):
         shape = (shape,)
 
     if isinstance(roi, slice):

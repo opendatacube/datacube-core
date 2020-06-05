@@ -5,14 +5,14 @@ import gzip
 import json
 import logging
 import sys
-from collections import OrderedDict, Mapping
+import collections.abc
+from collections import OrderedDict
 from contextlib import contextmanager
 from itertools import chain
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
-import typing
-from typing import Dict, Any
+from typing import Dict, Any, Mapping
 from copy import deepcopy
 
 import numpy
@@ -66,7 +66,7 @@ def load_from_yaml(handle, parse_dates=False):
     yield from yaml.load_all(handle, Loader=loader)
 
 
-def parse_yaml(doc: str) -> typing.Mapping[str, Any]:
+def parse_yaml(doc: str) -> Mapping[str, Any]:
     """ Convert a single document yaml string into a parsed document
     """
     return yaml.load(doc, Loader=SafeLoader)
@@ -328,7 +328,7 @@ class SimpleDocNav(object):
     """
 
     def __init__(self, doc):
-        if not isinstance(doc, Mapping):
+        if not isinstance(doc, collections.abc.Mapping):
             raise ValueError("")
 
         self._doc = doc

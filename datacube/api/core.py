@@ -1,5 +1,5 @@
 import uuid
-import collections
+import collections.abc
 from itertools import groupby
 from typing import Union, Optional, Dict, Tuple
 import datetime
@@ -290,7 +290,7 @@ class Datacube(object):
 
         if datasets is None:
             datasets = self.find_datasets(product=product, like=like, ensure_location=True, **query)
-        elif isinstance(datasets, collections.Iterator):
+        elif isinstance(datasets, collections.abc.Iterator):
             datasets = list(datasets)
 
         if len(datasets) == 0:
