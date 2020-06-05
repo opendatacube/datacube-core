@@ -1,6 +1,5 @@
 """ Tools for working with EO3 metadata
 """
-import collections.abc
 from types import SimpleNamespace
 from affine import Affine
 import toolz
