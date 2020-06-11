@@ -359,7 +359,7 @@ class ComplicatedNamingConventions:
         ) or self.dataset.properties.get("landsat:landsat_scene_id")
         if not landsat_id:
             raise NotImplementedError(
-                f"TODO: Can only currently abbreviate instruments from landsat references."
+                "TODO: Can only currently abbreviate instruments from Landsat references."
             )
 
         return landsat_id[1].lower()
