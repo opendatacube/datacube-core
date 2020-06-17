@@ -467,12 +467,15 @@ class DatasetType:
     def canonical_measurement(self, measurement: str) -> str:
         """ resolve measurement alias into canonical name
         """
-        for m in self.measurements:
-            if measurement == m:
-                return measurement
-            elif measurement in self.measurements[m].get('aliases', []):
-                return m
-        raise KeyError(measurement)
+        mm = self.measurements
+
+        if measurement in mm:
+            return measurement
+
+        for real_name, m in mm.items():
+            if measurement in m.get('aliases', ()):
+                return real_name
+        raise ValueError(f"No such band/alias {measurement}")
 
     def lookup_measurements(self, measurements: Optional[List[str]] = None) -> Mapping[str, Measurement]:
         """

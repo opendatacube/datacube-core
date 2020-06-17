@@ -56,6 +56,7 @@ def get_raster_info(ds: Dataset, measurements=None):
 
 
 def eo3_geobox(ds: Dataset, band: str) -> GeoBox:
+    band = ds.type.canonical_measurement(band)
     mm = ds.measurements.get(band, None)
     if mm is None:
         raise ValueError(f"No such band: {band}")
@@ -129,7 +130,7 @@ def native_load(ds, measurements=None, basis=None, **kw):
     from datacube import Datacube
     geobox = native_geobox(ds, measurements, basis)  # early exit via exception if no compatible grid exists
     if measurements is not None:
-        mm = [ds.type.measurements[n] for n in measurements]
+        mm = ds.type.lookup_measurements(measurements)
     else:
         mm = ds.type.measurements
 
