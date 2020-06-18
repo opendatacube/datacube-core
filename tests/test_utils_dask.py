@@ -38,6 +38,12 @@ def test_compute_tasks():
     del client
 
 
+def test_start_local_dask_dashboard_link(monkeypatch):
+    monkeypatch.setenv('JUPYTERHUB_SERVICE_PREFIX', 'user/test/')
+    client = start_local_dask()
+    assert client.dashboard_link.startswith('user/test/proxy/')
+
+
 def test_partition_map():
     tasks = partition_map(10, str, range(101))
     tt = [t for t in tasks]

@@ -85,6 +85,14 @@ def start_local_dask(n_workers: int = 1,
 
     NOTE: if `memory_limit` is supplied, it will be parsed and divided equally between workers.
     """
+
+    # if dashboard.link set to default value and running behind hub, make dashboard link go via proxy
+    if dask.config.get("distributed.dashboard.link") == '{scheme}://{host}:{port}/status':
+        jup_prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX')
+        if jup_prefix is not None:
+            jup_prefix = jup_prefix.rstrip('/')
+            dask.config.set({"distributed.dashboard.link": f"{jup_prefix}/proxy/{{port}}/status"})
+
     memory_limit = compute_memory_per_worker(n_workers=n_workers,
                                              memory_limit=memory_limit,
                                              mem_safety_margin=mem_safety_margin)
