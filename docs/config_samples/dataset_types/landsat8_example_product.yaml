@@ -5,9 +5,6 @@ metadata_type: eo3
 metadata:
     product:
         name: landsat8_example_product
-    properties:
-        eo:instrument: OLI_TIRS
-        eo:platform: landsat-8
 
 measurements:
     - name: 'red'
