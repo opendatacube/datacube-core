@@ -8,7 +8,7 @@ for a collection of datasets.
 
 .. highlight:: language
 
-.. literalinclude:: ../config_samples/dataset_types/dsm1sv10.yaml
+.. literalinclude:: ../config_samples/dataset_types/landsat_example_product.yaml
    :language: yaml
 
 name
@@ -29,7 +29,8 @@ license
 metadata
     Dictionary containing bits of metadata common to all the datasets in the product.
 
-    It is used during indexing to match datasets to their products.
+    It is used during indexing to match datasets to their products. That is, the keys and values defined
+    here must also be in the :ref:`dataset-metadata-doc`.
 
 storage (optional)
     Describes some of common storage attributes of all the datasets. While optional defining this will make
@@ -43,7 +44,8 @@ storage (optional)
         Use ``latitude``, ``longitude`` if the projection is geographic and ``x``, ``y`` otherwise
 
 measurements
-    List of measurements in this product
+    List of measurements in this product. The measurement names defined here need to match 1:1 with the measurement
+    key names defined in the :ref:`dataset-metadata-doc`.
 
     name
          Name of the measurement
