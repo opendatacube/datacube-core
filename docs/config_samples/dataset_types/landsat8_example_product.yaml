@@ -5,6 +5,10 @@ metadata_type: eo3
 metadata:
     product:
         name: landsat8_example_product
+    # Alternatively, include specific items to match
+    # properties:
+        # eo:instrument: OLI_TIRS
+        # eo:platform: landsat-8
 
 measurements:
     - name: 'red'
@@ -25,7 +29,7 @@ measurements:
       flags_definition:
         pixel_qa:
           bits: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-          description: Level 2 pixel quality band
+          description: Level 2 pixel quality band 
           values:
             1: Fill
             2: Clear
@@ -38,8 +42,20 @@ measurements:
             256: Cirrus Confidence Low Bit
             512: Cirrus Confidence High Bit
             1024: Terrain Occlusion
-            2048: Unused
-            4096: Unused
-            8192: Unused
-            16384: Unused
-            32786: Unused
+            2048: Unused  # Be careful of repeated names which could confuse the masking code
+        # Alternatively or additionally, use the bit on/off method
+        fill:
+          bits: 0
+          description: No data
+          values: {0: false, 1: true}
+        clear:
+          bits: 1
+          description: Clear
+          values: {0: no_clear_land, 1: clear_land}
+        # ...
+        cloud_confidence:
+          bits: [6, 7]
+          description: Cloud confidence
+          values: {0: none, 1: low, 2: medium, 3: high}
+        # ...
+            

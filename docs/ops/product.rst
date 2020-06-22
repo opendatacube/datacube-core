@@ -33,13 +33,6 @@ metadata
     here must also be in the :ref:`dataset-metadata-doc`.
 
     In the above example, ``product: name`` would match a specific product.
-    
-    Alternatively one could include specific items to match such as::
-
-        metadata:
-            properties:
-                eo:instrument: OLI_TIRS
-                eo:platform: landsat-8
 
 storage (optional)
     Describes some of common storage attributes of all the datasets. While optional defining this will make
