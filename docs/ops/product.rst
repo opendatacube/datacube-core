@@ -8,7 +8,7 @@ for a collection of datasets.
 
 .. highlight:: language
 
-.. literalinclude:: ../config_samples/dataset_types/landsat_example_product.yaml
+.. literalinclude:: ../config_samples/dataset_types/landsat8_example_product.yaml
    :language: yaml
 
 name
