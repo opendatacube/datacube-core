@@ -80,10 +80,14 @@ def start_local_dask(n_workers: int = 1,
 
     :param n_workers: number of worker processes to launch
     :param threads_per_worker: number of threads per worker, default is as many as there are CPUs
+    :param memory_limit: maximum memory to use across all workers
     :param mem_safety_margin: bytes to reserve for the rest of the system, only applicable
                               if `memory_limit=` is not supplied.
 
-    NOTE: if `memory_limit` is supplied, it will be parsed and divided equally between workers.
+    .. note::
+
+        if `memory_limit` is supplied, it will be parsed and divided equally between workers.
+
     """
 
     # if dashboard.link set to default value and running behind hub, make dashboard link go via proxy
@@ -113,10 +117,12 @@ def partition_map(n: int, func: Any, its: Iterable[Any],
                   name: str = 'compute') -> Iterable[Any]:
     """ Partition sequence into lumps of size `n`, then construct dask delayed computation evaluating to:
 
-    [func(x) for x in its[0:1n]],
-    [func(x) for x in its[n:2n]],
-    ...
-    [func(x) for x in its[]],
+    .. code-block:: python
+
+        [func(x) for x in its[0:1n]],
+        [func(x) for x in its[n:2n]],
+        ...
+        [func(x) for x in its[..]],
 
     :param n: number of elements to process in one go
     :param func: Function to apply (non-dask)
@@ -144,14 +150,19 @@ def compute_tasks(tasks: Iterable[Any], client: Client,
 
         Equivalent to:
 
-        (client.compute(task).result()
-          for task in tasks)
+
+        .. code-block:: python
+
+            (client.compute(task).result()
+              for task in tasks)
 
         but with up to `max_in_flight` tasks being processed at the same time.
         Input/Output order is preserved, so there is a possibility of head of
         line blocking.
 
-        NOTE: lower limit is 3 concurrent tasks to simplify implementation,
+        .. note::
+
+              lower limit is 3 concurrent tasks to simplify implementation,
               there is no point calling this function if you want one active
               task and supporting exactly 2 active tasks is not worth the complexity,
               for now. We might special-case `2` at some point.
@@ -192,6 +203,8 @@ def pmap(func: Any,
 
     Equivalent to this:
 
+    .. code-block:: python
+
        (func(x) for x in its)
 
     Except that ``func(x)`` runs concurrently on dask cluster.
@@ -231,8 +244,10 @@ def save_blob_to_file(data,
                       with_deps=None):
     """ Dump from memory to local filesystem as a dask delayed operation.
 
-    NOTE: dask workers better be local or have network filesystem mounted in
-    the same path as calling code.
+    .. note::
+
+       dask workers must be local or have network filesystem mounted in
+       the same path as calling code.
 
     :param data     : Data blob to save to file (have to fit into memory all at once),
                       strings will be saved in UTF8 format.
