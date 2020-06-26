@@ -120,7 +120,10 @@ def roi_is_empty(roi):
 
 def roi_is_full(roi, shape):
     """
+    Check if ROI covers the entire region.
+
     :returns: True if roi covers region from (0,..) -> shape
+              False otherwise
     """
     def slice_full(s, n):
         return s.start in (0, None) and s.stop in (n, None)

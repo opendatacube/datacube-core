@@ -324,6 +324,10 @@ class CRS:
 
 
 class CRSMismatchError(ValueError):
+    """
+    Raised when geometry operation is attempted on geometries in different
+    coordinate references.
+    """
     pass
 
 
@@ -1263,6 +1267,8 @@ def _round_to_res(value: float, res: float, acc: float = 0.1) -> int:
 
 
 def intersects(a: Geometry, b: Geometry) -> bool:
+    """ Returns True if geometries intersect, else False
+    """
     return a.intersects(b) and not a.touches(b)
 
 
