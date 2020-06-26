@@ -456,12 +456,13 @@ def mk_sample_xr_dataset(crs="EPSG:3578",
 def remove_crs(xx):
     xx = xx.reset_coords(['spatial_ref'], drop=True)
 
-    xx.attrs.pop('crs', None)
-    for x in xx.coords.values():
-        x.attrs.pop('crs', None)
+    for attribute_to_remove in ('crs', 'grid_mapping'):
+        xx.attrs.pop(attribute_to_remove, None)
+        for x in xx.coords.values():
+            x.attrs.pop(attribute_to_remove, None)
 
-    if isinstance(xx, xr.Dataset):
-        for x in xx.data_vars.values():
-            x.attrs.pop('crs', None)
+        if isinstance(xx, xr.Dataset):
+            for x in xx.data_vars.values():
+                x.attrs.pop(attribute_to_remove, None)
 
     return xx

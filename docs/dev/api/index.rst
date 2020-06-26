@@ -339,6 +339,7 @@ Tools
 .. autosummary::
    :toctree: generate/
 
+   assign_crs
    crs_units_per_degree
    geobox_union_conservative
    geobox_intersection_conservative

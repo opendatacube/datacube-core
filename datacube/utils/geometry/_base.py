@@ -1408,3 +1408,47 @@ def lonlat_bounds(geom: Geometry,
                 xx_range = xx_range_
 
     return BoundingBox.from_xy(xx_range, yy_range)
+
+
+def assign_crs(xx: Union[xr.DataArray, xr.Dataset],
+               crs: MaybeCRS = None,
+               crs_coord_name: str = 'spatial_ref') -> Union[xr.Dataset, xr.DataArray]:
+    """
+    Assign CRS for a non-georegistered array or dataset.
+
+    Returns a new object with CRS information populated.
+
+    Can also be called without ``crs`` argument on data that already has CRS
+    information but not in the format used by datacube, in this case CRS
+    metadata will be restructured into a shape used by datacube. This format
+    allows for better propagation of CRS information through various
+    computations.
+
+    .. code-block:: python
+
+        xx = datacube.utils.geometry.assign_crs(xr.open_rasterio("some-file.tif"))
+        print(xx.geobox)
+        print(xx.astype('float32').geobox)
+
+
+    :param xx:  Dataset or DataArray
+    :param crs: CRS to assign, if omitted try to guess from attributes
+    :param crs_coord_name: how to name crs corodinate (defaults to ``spatial_ref``)
+    """
+    if crs is None:
+        geobox = getattr(xx, 'geobox', None)
+        if geobox is None:
+            raise ValueError("Failed to guess CRS for this object")
+        crs = geobox.crs
+
+    crs = _norm_crs_or_error(crs)
+    crs_coord = _mk_crs_coord(crs, name=crs_coord_name)
+    xx = xx.assign_coords({crs_coord.name: crs_coord})
+
+    xx.attrs.update(grid_mapping=crs_coord_name)
+
+    if isinstance(xx, xr.Dataset):
+        for band in xx.data_vars.values():
+            band.attrs.update(grid_mapping=crs_coord_name)
+
+    return xx

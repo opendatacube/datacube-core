@@ -2,6 +2,7 @@ import pytest
 import xarray as xr
 from datacube.testutils.geom import epsg4326, epsg3857
 from datacube.testutils import mk_sample_xr_dataset, remove_crs
+from datacube.utils.geometry import assign_crs
 from datacube.utils.xarray_geoextensions import (
     _norm_crs,
     _xarray_affine,
@@ -142,3 +143,25 @@ def test_crs_from_attrs():
     xx.x.attrs['crs'] = xx_4326.attrs['crs']
     with pytest.raises(ValueError):
         _get_crs_from_attrs(xx, ('y', 'x'))
+
+
+def test_assign_crs(odc_style_xr_dataset):
+    xx = odc_style_xr_dataset
+    assert xx.geobox is not None
+
+    xx_nocrs = remove_crs(xx)
+    assert xx_nocrs.geobox is None
+    yy = assign_crs(xx_nocrs, 'epsg:4326')
+    assert xx_nocrs.geobox is None           # verify source is not modified in place
+    assert yy.geobox.crs == 'epsg:4326'
+
+    yy = assign_crs(xx_nocrs.B10, 'epsg:4326')
+    assert yy.geobox.crs == 'epsg:4326'
+
+    xx_xr_style_crs = xx_nocrs.copy()
+    xx_xr_style_crs.attrs.update(crs='epsg:3857')
+    yy = assign_crs(xx_xr_style_crs)
+    assert yy.geobox.crs == 'epsg:3857'
+
+    with pytest.raises(ValueError):
+        assign_crs(xx_nocrs)
