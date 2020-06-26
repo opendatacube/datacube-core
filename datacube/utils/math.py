@@ -65,19 +65,12 @@ def spatial_dims(xx: Union[xr.DataArray, xr.Dataset],
     return None
 
 
-def clamp(x, l, u):
+def clamp(x, lo, up):
     """
-    clamp x to be l <= x <= u
-
-    >>> clamp(5, 1, 10)
-    5
-    >>> clamp(-1, 1, 10)
-    1
-    >>> clamp(12, 1, 10)
-    10
+    clamp x to be lo <= x <= up
     """
-    assert l <= u
-    return l if x < l else u if x > u else x
+    assert lo <= up
+    return lo if x < lo else up if x > up else x
 
 
 def is_almost_int(x: float, tol: float):
