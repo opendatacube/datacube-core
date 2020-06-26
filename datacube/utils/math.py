@@ -1,4 +1,4 @@
-from typing import Tuple, Optional, Any, cast
+from typing import Tuple, Union, Optional, Any, cast
 from math import ceil, fmod
 
 import numpy
@@ -35,7 +35,8 @@ def unsqueeze_dataset(ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0) ->
     return ds
 
 
-def spatial_dims(xx: xr.DataArray, relaxed: bool = False) -> Optional[Tuple[str, str]]:
+def spatial_dims(xx: Union[xr.DataArray, xr.Dataset],
+                 relaxed: bool = False) -> Optional[Tuple[str, str]]:
     """ Find spatial dimensions of `xx`.
 
         Checks for presence of dimensions named:

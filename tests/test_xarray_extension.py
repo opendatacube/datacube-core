@@ -128,17 +128,17 @@ def test_crs_from_attrs():
     xx_3857 = mk_sample_xr_dataset(crs=epsg3857)
     xx_4326 = mk_sample_xr_dataset(crs=epsg4326)
 
-    assert _get_crs_from_attrs(xx_none) is None
-    assert _get_crs_from_attrs(xx_none.band) is None
-    assert _get_crs_from_attrs(xx_3857.band) == epsg3857
-    assert _get_crs_from_attrs(xx_3857) == epsg3857
-    assert _get_crs_from_attrs(xx_4326.band) == epsg4326
-    assert _get_crs_from_attrs(xx_4326) == epsg4326
+    assert _get_crs_from_attrs(xx_none, ('y', 'x')) is None
+    assert _get_crs_from_attrs(xx_none.band, ('y', 'x')) is None
+    assert _get_crs_from_attrs(xx_3857.band, ('y', 'x')) == epsg3857
+    assert _get_crs_from_attrs(xx_3857, ('y', 'x')) == epsg3857
+    assert _get_crs_from_attrs(xx_4326.band, ('latitude', 'longitude')) == epsg4326
+    assert _get_crs_from_attrs(xx_4326, ('latitude', 'longitude')) == epsg4326
 
-    assert _get_crs_from_attrs(xr.Dataset()) is None
+    assert _get_crs_from_attrs(xr.Dataset(), None) is None
 
     # check inconsistent CRSs
     xx = xx_3857.copy()
     xx.x.attrs['crs'] = xx_4326.attrs['crs']
     with pytest.raises(ValueError):
-        _get_crs_from_attrs(xx)
+        _get_crs_from_attrs(xx, ('y', 'x'))
