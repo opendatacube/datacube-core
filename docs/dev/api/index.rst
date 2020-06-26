@@ -401,6 +401,21 @@ Writing Image Files
    to_cog
 
 
+Dask Utilities
+==============
+
+.. currentmodule:: datacube.utils.dask
+
+.. autosummary::
+   :toctree: generate/
+
+   start_local_dask
+   partition_map
+   pmap
+   compute_tasks
+
+
+
 Query Class
 ===========
 
