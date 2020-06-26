@@ -25,7 +25,7 @@ def _norm_crs(crs):
         raise ValueError('Can not interpret {} as CRS'.format(type(crs)))
 
 
-def _get_crs_from_attrs(obj):
+def _get_crs_from_attrs(obj, sdims):
     """ Looks for attribute named `crs` containing CRS string
         1. Checks spatials coords attrs
         2. Checks data variable attrs
@@ -45,16 +45,12 @@ def _get_crs_from_attrs(obj):
     else:
         data_array = obj
 
-    sdims = spatial_dims(data_array, relaxed=True)
-    if sdims is not None:
-        crs_set = set(data_array[d].attrs.get('crs', None) for d in sdims)
-        crs = None
-        if len(crs_set) > 1:
-            raise ValueError('Spatial dimensions have different crs.')
-        elif len(crs_set) == 1:
-            crs = crs_set.pop()
-    else:
-        crs = None
+    crs_set = set(data_array[d].attrs.get('crs', None) for d in sdims)
+    crs = None
+    if len(crs_set) > 1:
+        raise ValueError('Spatial dimensions have different crs.')
+    elif len(crs_set) == 1:
+        crs = crs_set.pop()
 
     if crs is None:
         # fall back option
@@ -109,15 +105,20 @@ def _get_crs_from_coord(obj, mode='strict'):
         raise ValueError(f"Mode needs to be: strict|any|all got {mode}")
 
 
-def _xarray_affine(obj):
+def _xarray_affine_impl(obj):
     sdims = spatial_dims(obj, relaxed=True)
     if sdims is None:
-        return None
+        return None, None
 
     yy, xx = (obj[dim] for dim in sdims)
     fallback_res = (coord.attrs.get('resolution', None) for coord in (xx, yy))
 
-    return affine_from_axis(xx.values, yy.values, fallback_res)
+    return affine_from_axis(xx.values, yy.values, fallback_res), sdims
+
+
+def _xarray_affine(obj):
+    transform, _ = _xarray_affine_impl(obj)
+    return transform
 
 
 def _xarray_extent(obj):
@@ -126,6 +127,10 @@ def _xarray_extent(obj):
 
 
 def _xarray_geobox(obj):
+    transform, sdims = _xarray_affine_impl(obj)
+    if sdims is None:
+        return None
+
     crs = None
     try:
         crs = _get_crs_from_coord(obj)
@@ -134,7 +139,7 @@ def _xarray_geobox(obj):
 
     if crs is None:
         try:
-            crs = _get_crs_from_attrs(obj)
+            crs = _get_crs_from_attrs(obj, sdims)
         except ValueError:
             pass
 
@@ -146,13 +151,14 @@ def _xarray_geobox(obj):
     except ValueError:
         return None
 
-    dims = crs.dimensions
-    return geometry.GeoBox(obj[dims[1]].size, obj[dims[0]].size, obj.affine, crs)
+    h, w = (obj.coords[dim].size for dim in sdims)
+
+    return geometry.GeoBox(w, h, transform, crs)
 
 
-xarray.Dataset.geobox = property(_xarray_geobox)   # type: ignore
-xarray.Dataset.affine = property(_xarray_affine)   # type: ignore
-xarray.Dataset.extent = property(_xarray_extent)   # type: ignore
-xarray.DataArray.geobox = property(_xarray_geobox) # type: ignore
-xarray.DataArray.affine = property(_xarray_affine) # type: ignore
-xarray.DataArray.extent = property(_xarray_extent) # type: ignore
+xarray.Dataset.geobox = property(_xarray_geobox)    # type: ignore
+xarray.Dataset.affine = property(_xarray_affine)    # type: ignore
+xarray.Dataset.extent = property(_xarray_extent)    # type: ignore
+xarray.DataArray.geobox = property(_xarray_geobox)  # type: ignore
+xarray.DataArray.affine = property(_xarray_affine)  # type: ignore
+xarray.DataArray.extent = property(_xarray_extent)  # type: ignore
