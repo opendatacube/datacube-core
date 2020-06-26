@@ -127,6 +127,7 @@ class ProductResource(object):
 
         updates_allowed = {
             ('description',): changes.allow_any,
+            ('license',): changes.allow_any,
             ('metadata_type',): changes.allow_any,
 
             # You can safely make the match rules looser but not tighter.
