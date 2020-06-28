@@ -85,7 +85,7 @@ def ensure_db(engine, with_permissions=True):
             raise
         finally:
             if with_permissions:
-                c.execute('set role "{}"'.format(quoted_user))
+                c.execute('set role {}'.format(quoted_user))
 
     if with_permissions:
         _LOG.info('Adding role grants.')
