@@ -1,6 +1,7 @@
 import pytest
 import mock
 import json
+import botocore
 from botocore.credentials import ReadOnlyCredentials
 
 from datacube.testutils import write_files
@@ -206,6 +207,15 @@ def test_s3_io(monkeypatch, without_aws_env):
 
         with pytest.raises(ValueError):
             s3_fetch(url, range=s_[::2], s3=s3)
+
+
+def test_s3_unsigned(monkeypatch, without_aws_env):
+    s3 = s3_client(aws_unsigned=True)
+    assert s3._request_signer.signature_version == botocore.UNSIGNED
+
+    monkeypatch.setenv("AWS_UNSIGNED", "yes")
+    s3 = s3_client()
+    assert s3._request_signer.signature_version == botocore.UNSIGNED
 
 
 @mock.patch('datacube.utils.aws.ec2_current_region', return_value="us-west-2")
