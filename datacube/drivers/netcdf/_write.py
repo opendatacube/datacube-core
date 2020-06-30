@@ -9,6 +9,26 @@ from datacube.storage._hdf5 import HDF5_LOCK
 _LOG = logging.getLogger(__name__)
 
 
+def _get_units(coord):
+    """
+    Guess units from coordinate
+    1. Value of .units if set
+    2. 'seconds since 1970-01-01 00:00:00' if coord dtype is datetime
+    3. '1' otherwise
+    """
+    units = getattr(coord, 'units', None)
+    if units is not None:
+        return units
+    dtype = getattr(coord.values, 'dtype', None)
+    if dtype is None:
+        return '1'
+
+    if dtype.kind == 'M':
+        return 'seconds since 1970-01-01 00:00:00'
+
+    return '1'
+
+
 def create_netcdf_storage_unit(filename,
                                crs, coordinates, variables, variable_params, global_attributes=None,
                                netcdfparams=None):
@@ -40,7 +60,7 @@ def create_netcdf_storage_unit(filename,
 
     for name, coord in coordinates.items():
         if coord.values.ndim > 0:  # skip CRS coordinate
-            netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
+            netcdf_writer.create_coordinate(nco, name, coord.values, _get_units(coord))
 
     grid_mapping = netcdf_writer.DEFAULT_GRID_MAPPING
     netcdf_writer.create_grid_mapping_variable(nco, crs, name=grid_mapping)
