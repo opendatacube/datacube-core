@@ -14,7 +14,6 @@ from datacube.api.core import Datacube
 
 from datacube.executor import get_executor, mk_celery_executor
 from datacube.index import index_connect
-from pathlib import Path
 
 from datacube.ui.expression import parse_expressions
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -74,7 +73,7 @@ class ClickHandler(logging.Handler):
         try:
             msg = self.format(record)
             click.echo(msg, err=True)
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E772  pylint: disable=bare-except
             self.handleError(record)
 
 
@@ -266,7 +265,7 @@ def parse_endpoint(value):
 EXECUTOR_TYPES = {
     'serial': lambda _: get_executor(None, None),
     'multiproc': lambda workers: get_executor(None, int(workers)),
-    'distributed': lambda addr: get_executor(parse_endpoint(addr), True),
+    'distributed': lambda addr: get_executor(addr, True),
     'celery': lambda addr: mk_celery_executor(*parse_endpoint(addr))
 }
 
@@ -330,7 +329,7 @@ def parsed_search_expressions(f):
         f.__doc__ = ""
     f.__doc__ += """
     EXPRESSIONS
-    
+
     Select datasets using [EXPRESSIONS] to filter by date, product type,
     spatial extents or other searchable fields.
 
@@ -343,7 +342,7 @@ def parsed_search_expressions(f):
     DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
     START and END can be either numbers or dates
 
-    FIELD: x, y, lat, lon, time, product, ... 
+    FIELD: x, y, lat, lon, time, product, ...
 
     \b
     eg. 'time in [1996-01-01, 1996-12-31]'
