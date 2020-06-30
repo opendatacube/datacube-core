@@ -272,23 +272,15 @@ class GridWorkflow(object):
         """
         tiles = {}
         for cell_index, observation in observations.items():
-            observation['datasets'].sort(key=group_by.group_by_func)
-            groups = [(key, tuple(group)) for key, group in groupby(observation['datasets'], group_by.group_by_func)]
+            dss = observation['datasets']
+            geobox = observation['geobox']
 
-            for key, datasets in groups:
-                data = numpy.empty(1, dtype=object)
-                data[0] = datasets
-                variable = xarray.Variable((group_by.dimension,), data,
-                                           fastpath=True)
-                coord = xarray.Variable((group_by.dimension,),
-                                        numpy.array([key], dtype='datetime64[ns]'),
-                                        attrs={'units': group_by.units},
-                                        fastpath=True)
-                coords = OrderedDict([(group_by.dimension, coord)])
-                sources = xarray.DataArray(variable, coords=coords, fastpath=True)
+            sources = Datacube.group_datasets(dss, group_by)
+            coord = sources[sources.dims[0]]
+            for i in range(coord.size):
+                tile_index = cell_index + (coord.values[i],)
+                tiles[tile_index] = Tile(sources[i:i+1], geobox)
 
-                tile_index = cell_index + (coord.values[0],)
-                tiles[tile_index] = Tile(sources, observation['geobox'])
         return tiles
 
     def list_cells(self, cell_index=None, **query):

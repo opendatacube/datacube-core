@@ -3,6 +3,7 @@ import numpy
 from datacube.model import GridSpec
 from datacube.utils import geometry
 from mock import MagicMock
+import uuid
 
 
 class PickableMock(MagicMock):
@@ -30,6 +31,7 @@ def test_gridworkflow():
     fakedataset = MagicMock()
     fakedataset.extent = geometry.box(left=grid, bottom=-grid, right=2*grid, top=-2*grid, crs=fakecrs)
     fakedataset.center_time = t = datetime.datetime(2001, 2, 15)
+    fakedataset.id = uuid.uuid4()
 
     fakeindex = PickableMock()
     fakeindex._db = None
@@ -70,6 +72,7 @@ def test_gridworkflow():
     fakedataset2 = MagicMock()
     fakedataset2.extent = geometry.box(left=2*grid, bottom=-grid, right=3*grid, top=-2*grid, crs=fakecrs)
     fakedataset2.center_time = t
+    fakedataset2.id = uuid.uuid4()
 
     def search_eager(lat=None, lon=None, **kwargs):
         return [fakedataset, fakedataset2]
