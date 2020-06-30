@@ -1,6 +1,7 @@
 """
 Helper methods for working with AWS
 """
+import os
 import botocore
 import botocore.session
 from botocore.credentials import Credentials, ReadOnlyCredentials
@@ -199,9 +200,11 @@ def get_aws_settings(profile: Optional[str] = None,
 def _s3_cache_key(profile: Optional[str] = None,
                   creds: Optional[ReadOnlyCredentials] = None,
                   region_name: Optional[str] = None,
+                  aws_unsigned: bool = False,
                   prefix: str = "s3") -> str:
     parts = [prefix,
              "" if creds is None else creds.access_key,
+             "T" if aws_unsigned else "F",
              profile or "",
              region_name or ""]
     return ":".join(parts)
@@ -247,10 +250,23 @@ def _mk_s3_client(profile: Optional[str] = None,
                                  config=botocore.client.Config(**cfg))
 
 
+def _aws_unsigned_check_env() -> bool:
+    def parse_bool(v: str) -> bool:
+        return v.upper() in ('YES', 'Y', 'TRUE', 'T', '1')
+
+    for evar in ('AWS_UNSIGNED', 'AWS_NO_SIGN_REQUEST'):
+        v = os.environ.get(evar, None)
+        if v is not None:
+            return parse_bool(v)
+
+    return False
+
+
 def s3_client(profile: Optional[str] = None,
               creds: Optional[ReadOnlyCredentials] = None,
               region_name: Optional[str] = None,
               session: Optional[Session] = None,
+              aws_unsigned: Optional[bool] = None,
               use_ssl: bool = True,
               cache: Union[bool, str] = False,
               **cfg) -> botocore.client.BaseClient:
@@ -271,6 +287,12 @@ def s3_client(profile: Optional[str] = None,
        parameter_validation
        ...
     """
+    if aws_unsigned is None:
+        aws_unsigned = _aws_unsigned_check_env()
+
+    if aws_unsigned:
+        cfg.update(signature_version=botocore.UNSIGNED)
+
     if not cache:
         return _mk_s3_client(profile,
                              creds=creds,
@@ -283,7 +305,8 @@ def s3_client(profile: Optional[str] = None,
 
     key = _s3_cache_key(profile=profile,
                         region_name=region_name,
-                        creds=creds)
+                        creds=creds,
+                        aws_unsigned=aws_unsigned)
 
     if cache == "purge":
         return _cache.pop(key, None)
