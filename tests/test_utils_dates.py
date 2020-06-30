@@ -50,7 +50,7 @@ def test_normalise_dt():
 def test_mk_time_coord():
     t = mk_time_coord(['2020-01-20'])
     assert t.shape == (1,)
-    assert isinstance(t.units, str)
+    assert 'units' not in t.attrs
     assert t.name == 'time'
     assert list(t.coords) == ['time']
     assert t.dtype == np.dtype('datetime64[ns]')

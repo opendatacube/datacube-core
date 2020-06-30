@@ -1,4 +1,3 @@
-
 import netCDF4
 import numpy
 import xarray as xr
@@ -7,11 +6,13 @@ from hypothesis import given
 from hypothesis.strategies import text
 import string
 
+from datacube.drivers.netcdf._write import _get_units
 from datacube.drivers.netcdf.writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
     create_grid_mapping_variable, flag_mask_meanings, Variable
 from datacube.drivers.netcdf import write_dataset_to_netcdf
 from datacube.drivers.netcdf.writer import DEFAULT_GRID_MAPPING
 from datacube.utils import geometry, DatacubeException, read_strings_from_netcdf
+from datacube.testutils import mk_sample_xr_dataset
 
 
 crs_var = DEFAULT_GRID_MAPPING
@@ -304,3 +305,42 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
     xx = xr.open_dataset(tmpnetcdf_filename)
     assert crs_var in xx.coords
     assert crs_var not in xx.data_vars
+
+
+def test_write_dataset_with_time_dimension_to_netcdf(tmpnetcdf_filename):
+    xx = mk_sample_xr_dataset(name='B10', time='2020-01-01')
+    assert 'time' in xx.coords
+    assert 'units' not in xx.time.attrs
+
+    write_dataset_to_netcdf(xx, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
+                            variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
+
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        nco.set_auto_mask(False)
+        assert 'B10' in nco.variables
+        var = nco.variables['B10']
+        assert (var[:] == xx['B10'].values).all()
+
+        assert 'foo' in nco.ncattrs()
+        assert nco.getncattr('foo') == 'bar'
+
+        assert 'abc' in var.ncattrs()
+        assert var.getncattr('abc') == 'xyz'
+
+    with pytest.raises(RuntimeError):
+        write_dataset_to_netcdf(xx, tmpnetcdf_filename)
+
+    # Check grid_mapping is a coordinate
+    yy = xr.open_dataset(tmpnetcdf_filename)
+    assert crs_var in yy.coords
+    assert crs_var not in yy.data_vars
+
+    assert 'time' in yy.coords
+
+
+def test_get_units():
+    assert _get_units(geometry.Coordinate([], 'K', None)) == 'K'
+    assert _get_units(geometry.Coordinate([], None, None)) == '1'
+    assert _get_units(geometry.Coordinate(numpy.zeros(1, dtype='uint8'), None, None)) == '1'
+    assert _get_units(geometry.Coordinate(
+        numpy.zeros(1, dtype='datetime64[s]'), None, None)).startswith('seconds since ')

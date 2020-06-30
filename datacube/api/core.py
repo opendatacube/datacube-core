@@ -400,13 +400,16 @@ class Datacube(object):
 
         groups.sort(key=lambda x: x[0])
 
-        coords = [coord for coord, _ in groups]
+        coords = numpy.asarray([coord for coord, _ in groups])
         data = numpy.empty(len(coords), dtype=object)
         for i, (_, dss) in enumerate(groups):
             data[i] = dss
 
         sources = xarray.DataArray(data, dims=[dimension], coords=[coords])
-        sources[dimension].attrs['units'] = units
+        if coords.dtype.kind == 'M':
+            # skip units for time dimensions as it breaks .to_netcdf(..) functionality #972
+            sources[dimension].attrs['units'] = units
+
         return sources
 
     @staticmethod

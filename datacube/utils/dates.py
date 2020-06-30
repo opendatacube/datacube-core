@@ -107,9 +107,10 @@ def normalise_dt(dt: Union[str, datetime]) -> datetime:
     return dt
 
 
-def mk_time_coord(dts, name='time', units='seconds since 1970-01-01 00:00:00'):
+def mk_time_coord(dts, name='time', units=None):
     """ List[datetime] -> time coordinate for xarray
     """
+    attrs = {'units': units} if units is not None else {}
 
     dts = [normalise_dt(dt) for dt in dts]
     data = np.asarray(dts, dtype='datetime64')
@@ -117,7 +118,7 @@ def mk_time_coord(dts, name='time', units='seconds since 1970-01-01 00:00:00'):
                         name=name,
                         coords={name: data},
                         dims=(name,),
-                        attrs={'units': units})
+                        attrs=attrs)
 
 def _mk_parse_time()->Callable[[Union[str, datetime]], datetime]:
     try:
