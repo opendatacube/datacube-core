@@ -120,7 +120,7 @@ def get_creds_with_retry(session: Session,
                          max_tries: int = 10,
                          sleep: float = 0.1) -> Optional[Credentials]:
     """ Attempt to obtain credentials upto `max_tries` times with back off
-    :param session: botocore session, see get_boto_session
+    :param session: botocore session, see mk_boto_session
     :param max_tries: number of attempt before failing and returing None
     :param sleep: number of seconds to sleep after first failure (doubles on every consecutive failure)
     """
@@ -161,44 +161,6 @@ def mk_boto_session(profile: Optional[str] = None,
         session.set_config_variable("region", _region)
 
     return session
-
-
-def get_aws_settings(profile: Optional[str] = None,
-                     region_name: str = "auto",
-                     aws_unsigned: bool = False,
-                     requester_pays: bool = False) -> Tuple[Dict[str, Any], Credentials]:
-    """Compute `aws=` parameter for `set_default_rio_config`
-
-    see also `datacube.utils.rio.set_default_rio_config`
-
-    Returns a tuple of:
-      (aws: Dictionary,
-       creds: session credentials from botocore).
-
-    Note that credentials are baked in to `aws` setting dictionary,
-    however since those might be STS credentials they might require refresh
-    hence they are returned from this function separately as well.
-    """
-    session = mk_boto_session(profile=profile,
-                              region_name=region_name)
-
-    region_name = session.get_config_variable("region")
-
-    if aws_unsigned:
-        return (dict(region_name=region_name,
-                     aws_unsigned=True), None)
-
-    creds = get_creds_with_retry(session)
-    if creds is None:
-        raise ValueError("Couldn't get credentials")
-
-    cc = creds.get_frozen_credentials()
-
-    return (dict(region_name=region_name,
-                 aws_access_key_id=cc.access_key,
-                 aws_secret_access_key=cc.secret_key,
-                 aws_session_token=cc.token,
-                 requester_pays=requester_pays), creds)
 
 
 def _s3_cache_key(profile: Optional[str] = None,
@@ -385,3 +347,40 @@ def s3_dump(data: Union[bytes, str, IO],
                       **kwargs)
     code = r['ResponseMetadata']['HTTPStatusCode']
     return 200 <= code < 300
+
+
+def get_aws_settings(profile: Optional[str] = None,
+                     region_name: str = "auto",
+                     aws_unsigned: bool = False,
+                     requester_pays: bool = False) -> Tuple[Dict[str, Any], Credentials]:
+    """
+    Compute ``aws=`` parameter for ``set_default_rio_config``.
+
+    see also ``datacube.utils.rio.set_default_rio_config``
+
+    Returns a tuple of: ``(aws: Dictionary, creds: session credentials from botocore)``.
+
+    Note that credentials are baked in to ``aws`` setting dictionary,
+    however since those might be STS credentials they might require refresh
+    hence they are returned from this function separately as well.
+    """
+    session = mk_boto_session(profile=profile,
+                              region_name=region_name)
+
+    region_name = session.get_config_variable("region")
+
+    if aws_unsigned:
+        return (dict(region_name=region_name,
+                     aws_unsigned=True), None)
+
+    creds = get_creds_with_retry(session)
+    if creds is None:
+        raise ValueError("Couldn't get credentials")
+
+    cc = creds.get_frozen_credentials()
+
+    return (dict(region_name=region_name,
+                 aws_access_key_id=cc.access_key,
+                 aws_secret_access_key=cc.secret_key,
+                 aws_session_token=cc.token,
+                 requester_pays=requester_pays), creds)
