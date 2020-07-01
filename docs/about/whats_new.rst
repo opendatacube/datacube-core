@@ -12,6 +12,7 @@ v1.8.1 (???)
 - Changes to writer driver API. Driver is now responsible for constructing output URIs from user configuration. (:pull:`960`)
 - Added ``datacube.utils.geometry.assign_crs`` helper method for better interop with other libraries (:pull:`967`)
 - Better interop with ``xarray``, ``.to_netdcf`` should now work (:issue:`972`, :pull:`976`)
+- Support unsigned access to public S3 resources for cli app (:pull:`976`)
 
 v1.8.0 (21 May 2020)
 ====================
