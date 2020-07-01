@@ -410,6 +410,7 @@ AWS Utilities
    :toctree: generate/
 
    s3_client
+   s3_open
    s3_fetch
    s3_dump
    s3_url_parse
