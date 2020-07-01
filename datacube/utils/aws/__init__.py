@@ -325,11 +325,11 @@ def s3_client(profile: Optional[str] = None,
     return s3
 
 
-def s3_fetch(url: str,
-             s3: MaybeS3 = None,
-             range: Optional[ByteRange] = None,  # pylint: disable=redefined-builtin
-             **kwargs):
-    """ Read entire or part of object into memory and return as bytes
+def s3_open(url: str,
+            s3: MaybeS3 = None,
+            range: Optional[ByteRange] = None,  # pylint: disable=redefined-builtin
+            **kwargs):
+    """ Open whole or part of S3 object
 
     :param url: s3://bucket/path/to/object
     :param s3: pre-configured s3 client, see make_s3_client()
@@ -344,7 +344,20 @@ def s3_fetch(url: str,
     s3 = s3 or s3_client()
     bucket, key = s3_url_parse(url)
     oo = s3.get_object(Bucket=bucket, Key=key, **kwargs)
-    return oo['Body'].read()
+    return oo['Body']
+
+
+def s3_fetch(url: str,
+             s3: MaybeS3 = None,
+             range: Optional[ByteRange] = None,  # pylint: disable=redefined-builtin
+             **kwargs) -> bytes:
+    """ Read entire or part of object into memory and return as bytes
+
+    :param url: s3://bucket/path/to/object
+    :param s3: pre-configured s3 client, see make_s3_client()
+    :param range: Byte range to read (first_byte, one_past_last_byte), default is whole object
+    """
+    return s3_open(url, s3=s3, range=range, **kwargs).read()
 
 
 def s3_dump(data: Union[bytes, str, IO],
