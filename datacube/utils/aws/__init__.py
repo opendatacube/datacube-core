@@ -93,23 +93,27 @@ def botocore_default_region(session: Optional[Session] = None) -> Optional[str]:
     return session.get_config_variable('region')
 
 
-def auto_find_region(session: Optional[Session] = None) -> str:
+def auto_find_region(session: Optional[Session] = None, default: Optional[str] = None) -> str:
     """
     Try to figure out which region name to use
 
     1. Region as configured for this/default session
     2. Region this EC2 instance is running in
-    3. None
+    3. Value supplied in `default`
+    4. raise exception
     """
     region_name = botocore_default_region(session)
 
     if region_name is None:
         region_name = ec2_current_region()
 
-    if region_name is None:
+    if region_name is not None:
+        return region_name
+
+    if default is None:
         raise ValueError('Region name is not supplied and default can not be found')
 
-    return region_name
+    return default
 
 
 def get_creds_with_retry(session: Session,
@@ -151,7 +155,7 @@ def mk_boto_session(profile: Optional[str] = None,
     _region = session.get_config_variable("region")
     if _region is None:
         if region_name is None or region_name == "auto":
-            _region = auto_find_region(session)
+            _region = auto_find_region(session, default='us-west-2')
         else:
             _region = region_name
         session.set_config_variable("region", _region)
