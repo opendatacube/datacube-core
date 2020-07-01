@@ -37,15 +37,8 @@ def _open_from_s3(url):
     if o.scheme != 's3':
         raise RuntimeError("Abort abort I don't know how to open non s3 urls")
 
-    import boto3
-    s3 = boto3.resource("s3")
-
-    bucket = o.netloc
-    key = o.path[1:]
-    obj = s3.Object(bucket, key).get(ResponseCacheControl='no-cache')
-
-    yield obj['Body']
-    _LOG.debug("Closing %s", obj)
+    from .aws import s3_open
+    yield s3_open(url)
 
 
 def _open_with_urllib(url):
