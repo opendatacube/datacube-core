@@ -223,13 +223,12 @@ def _mk_s3_client(profile: Optional[str] = None,
     :param region_name: region_name to use, overrides session setting
     :param session    : botocore session to use
     :param use_ssl    : Whether to connect via http or https
-
-    **cfg: passed on to botocore.client.Config(..)
-       max_pool_connections
-       connect_timeout
-       read_timeout
-       parameter_validation
-       ...
+    :param cfg        : passed on to ``botocore.client.Config(..)``
+                        max_pool_connections
+                        connect_timeout
+                        read_timeout
+                        parameter_validation
+                        ...
     """
     if session is None:
         session = mk_boto_session(profile=profile,
@@ -272,20 +271,17 @@ def s3_client(profile: Optional[str] = None,
               **cfg) -> botocore.client.BaseClient:
     """ Construct s3 client with configured region_name.
 
-    :param profile    : profile name to lookup (only used if session is not supplied)
-    :param creds      : Override credentials with supplied data
+    :param profile: profile name to lookup (only used if session is not supplied)
+    :param creds: Override credentials with supplied data
     :param region_name: region_name to use, overrides session setting
-    :param session    : botocore session to use
-    :param use_ssl    : Whether to connect via http or https
-    :param cache      : True -- Store/lookup s3 client in thread local cache
-                        "purge" -- delete from cache and return what was there to begin with
+    :param aws_unsigned: Do not use any credentials when accessing S3 resources
+    :param session: botocore session to use
+    :param use_ssl: Whether to connect via http or https
+    :param cache: ``True`` - store/lookup s3 client in thread local cache.
+                  ``"purge"`` - delete from cache and return what was there to begin with
 
-    **cfg: passed on to botocore.client.Config(..)
-       max_pool_connections
-       connect_timeout
-       read_timeout
-       parameter_validation
-       ...
+    :param cfg: passed on to ``botocore.client.Config(..)``
+
     """
     if aws_unsigned is None:
         aws_unsigned = _aws_unsigned_check_env()
@@ -334,6 +330,7 @@ def s3_open(url: str,
     :param url: s3://bucket/path/to/object
     :param s3: pre-configured s3 client, see make_s3_client()
     :param range: Byte range to read (first_byte, one_past_last_byte), default is whole object
+    :param kwargs: are passed on to ``s3.get_object(..)``
     """
     if range is not None:
         try:
@@ -369,7 +366,7 @@ def s3_dump(data: Union[bytes, str, IO],
     :param data: bytes to write
     :param url: s3://bucket/path/to/object
     :param s3: pre-configured s3 client, see s3_client()
-    **kwargs -- Are passed on to `s3.put_object(..)`
+    :param kwargs: Are passed on to ``s3.put_object(..)``
 
     ContentType
     ACL
