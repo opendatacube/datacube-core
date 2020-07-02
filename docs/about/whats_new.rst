@@ -8,12 +8,15 @@ What's New
 v1.8.1 (2 July 2020)
 ====================
 
-- Added ``updated`` column for trigger based tracking of database row updates in PostgreSQL. (:pull:`951`)
-- Changes to writer driver API. Driver is now responsible for constructing output URIs from user configuration. (:pull:`960`)
-- Added ``datacube.utils.geometry.assign_crs`` helper method for better interop with other libraries (:pull:`967`)
-- Better interop with ``xarray``, ``.to_netdcf`` should now work (:issue:`972`, :pull:`976`)
-- Support unsigned access to public S3 resources for cli app (:pull:`976`)
+- Added an ``updated`` column for trigger based tracking of database row updates in PostgreSQL. (:pull:`951`)
+- Changes to the writer driver API. The driver is now responsible for constructing output URIs from user configuration. (:pull:`960`)
+- Added a :meth:`datacube.utils.geometry.assign_crs` method for better interoperability with other libraries (:pull:`967`)
+- Better interoperability with xarray_ --- the :meth:`xarray.Dataset.to_netcdf` function should work again (:issue:`972`, :pull:`976`)
+- Add support for unsigned access to public S3 resources from CLI apps (:pull:`976`)
 - Usability fixes for indexing EO3 datasets (:pull:`958`)
+- Fix CLI initialisation of the Dask Distributed Executor (:pull:`974`)
+
+.. _xarray: https://xarray.pydata.org/
 
 v1.8.0 (21 May 2020)
 ====================
@@ -40,15 +43,19 @@ v1.8.0 (21 May 2020)
 - Drop support for Python 3.5.
 - Remove S3AIO driver. (:pull:`865`)
 - Change development version numbers generation. Use ``setuptools_scm`` instead of ``versioneer``. (:issue:`871`)
-- Deprecated ``datacube.helpers.write_geotiff``, use ``datacube.utils.cog.write_cog`` for similar functionality
+- Deprecated ``datacube.helpers.write_geotiff``, use :meth:`datacube.utils.cog.write_cog` for similar functionality
 - Deprecated ``datacube.storage.masking``, moved to ``datacube.utils.masking``
 - Changed geo-registration mechanics for arrays returned by ``dc.load``. (:pull:`899`, :issue:`837`)
-- Migrate geometry and CRS backends from ``osgeo.ogr`` and ``osgeo.osr`` to ``shapely`` and ``pyproj`` respectively (:pull:`880`)
+- Migrate geometry and CRS backends from ``osgeo.ogr`` and ``osgeo.osr`` to shapely_ and pyproj_ respectively (:pull:`880`)
 - Driver metadata storage and retrieval. (:pull:`931`)
 - Support EO3 style datasets in ``datacube dataset add`` (:pull:`929`, :issue:`864`)
 - Removed migration support from datacube releases before 1.1.5.
-    If you still run a datacube before 1.1.5 (from 2016 or older), you will need to update it
-    using ODC 1.7 first, before coming to 1.8.
+
+  .. warning:: If you still run a datacube before 1.1.5 (from 2016 or older), you will need to update it
+     using ODC 1.7 first, before coming to 1.8.
+
+.. _shapely: https://pypi.org/project/pyproj/
+.. _pyproj: https://pypi.org/project/Shapely/
 
 v1.7.0 (16 May 2019)
 ====================
