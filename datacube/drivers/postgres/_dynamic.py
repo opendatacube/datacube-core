@@ -2,7 +2,6 @@
 """
 Methods for managing dynamic dataset field indexes and views.
 """
-from __future__ import absolute_import
 
 import logging
 
@@ -10,7 +9,7 @@ from sqlalchemy import Index
 from sqlalchemy import select
 
 from ._core import schema_qualified
-from ._schema import DATASET, DATASET_TYPE, METADATA_TYPE
+from ._schema import DATASET, PRODUCT, METADATA_TYPE
 from .sql import pg_exists, CreateView
 
 _LOG = logging.getLogger(__name__)
@@ -52,7 +51,7 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
                     [field.alchemy_expression.label(field.name) for field in fields.values()
                      if not field.affects_row_selection]
                 ).select_from(
-                    DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
+                    DATASET.join(PRODUCT).join(METADATA_TYPE)
                 ).where(where_expression)
             )
         )

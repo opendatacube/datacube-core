@@ -2,8 +2,6 @@
 """
 Module
 """
-from __future__ import absolute_import, print_function
-
 import logging
 import random
 import re
@@ -23,7 +21,7 @@ INVALID_MAPPING_DOCS = map(str, Path(__file__).parent.parent.joinpath('docs').gl
 
 def _dataset_type_count(db):
     with db.connect() as connection:
-        return len(list(connection.get_all_dataset_types()))
+        return len(list(connection.get_all_products()))
 
 
 def test_add_example_dataset_types(clirunner, initialised_postgres_db, default_metadata_type):
@@ -46,6 +44,38 @@ def test_add_example_dataset_types(clirunner, initialised_postgres_db, default_m
         mappings_count = _dataset_type_count(initialised_postgres_db)
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
         existing_mappings = mappings_count
+
+    result = clirunner(['-v', 'metadata', 'list'])
+    assert result.exit_code == 0
+
+    result = clirunner(['-v', 'metadata', 'show', '-f', 'json', 'eo'],
+                       expect_success=True)
+    assert result.exit_code == 0
+
+    result = clirunner(['-v', 'metadata', 'show'],
+                       expect_success=True)
+    assert result.exit_code == 0
+
+    result = clirunner(['-v', 'product', 'list'])
+    assert result.exit_code == 0
+
+    expect_result = 0 if existing_mappings > 0 else 1
+    result = clirunner(['-v', 'product', 'show'],
+                       expect_success=(expect_result == 0))
+    assert result.exit_code == expect_result
+
+    if existing_mappings > 1:
+        result = clirunner(['-v', 'product', 'show', '-f', 'json'],
+                           expect_success=False)
+        assert result.exit_code == 1
+
+        result = clirunner(['-v', 'product', 'show', '-f', 'json', 'ls8_level1_usgs'],
+                           expect_success=False)
+        assert result.exit_code == 0
+
+        result = clirunner(['-v', 'product', 'show', '-f', 'yaml', 'ls8_level1_usgs'],
+                           expect_success=False)
+        assert result.exit_code == 0
 
 
 def test_error_returned_on_invalid(clirunner, initialised_postgres_db):
@@ -113,6 +143,9 @@ def test_db_init_noop(clirunner, local_config, ls5_telem_type):
     assert 'Updated.' in result.output
     # It should not rebuild indexes by default
     assert 'Dropping index: dix_{}'.format(ls5_telem_type.name) not in result.output
+
+    result = clirunner(['metadata', 'list'])
+    assert "eo3 " in result.output
 
 
 def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):

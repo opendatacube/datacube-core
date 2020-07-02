@@ -5,6 +5,140 @@
 What's New
 **********
 
+v1.8.1 (2 July 2020)
+====================
+
+- Added an ``updated`` column for trigger based tracking of database row updates in PostgreSQL. (:pull:`951`)
+- Changes to the writer driver API. The driver is now responsible for constructing output URIs from user configuration. (:pull:`960`)
+- Added a :meth:`datacube.utils.geometry.assign_crs` method for better interoperability with other libraries (:pull:`967`)
+- Better interoperability with xarray_ --- the :meth:`xarray.Dataset.to_netcdf` function should work again (:issue:`972`, :pull:`976`)
+- Add support for unsigned access to public S3 resources from CLI apps (:pull:`976`)
+- Usability fixes for indexing EO3 datasets (:pull:`958`)
+- Fix CLI initialisation of the Dask Distributed Executor (:pull:`974`)
+
+.. _xarray: https://xarray.pydata.org/
+
+v1.8.0 (21 May 2020)
+====================
+
+- New virtual product combinator ``reproject`` for on-the-fly reprojection of rasters (:pull:`773`)
+- Enhancements to the ``expressions`` transformation in virtual products (:pull:`776`, :pull:`761`)
+- Support ``/vsi**`` style paths for dataset locations (:pull:`825`)
+- Remove old Search Expressions and replace with a simpler implementation based on Lark Parser. (:pull:`840`)
+- Remove no longer required PyPEG2 dependency. (:pull:`840`)
+- Switched from Travis-CI to Github Actions for CI testing and docker image builds (:pull:`845`)
+- Removed dependency on ``singledispatch``, it's available in the Python 3.4+ standard library.
+- Added some configuration validation to Ingestion
+- Allow configuring ODC Database connection settings entirely through environment variables. (:pull:`845`, :issue:`829`)
+
+  Uses ``DATACUBE_DB_URL`` if present, then falls back to ``DB_HOSTNAME``,
+  ``DB_USERNAME``, ``DB_PASSWORD``, ``DB_DATABASE``
+
+- New Docker images. Should be smaller, better tested, more reliable and easier to work with. (:pull:`845`).
+
+  - No longer uses an entrypoint script to write database configuration into a file.
+  - Fixes binary incompatibilities in geospatial libraries.
+  - Tested before being pushed to Docker Hub.
+
+- Drop support for Python 3.5.
+- Remove S3AIO driver. (:pull:`865`)
+- Change development version numbers generation. Use ``setuptools_scm`` instead of ``versioneer``. (:issue:`871`)
+- Deprecated ``datacube.helpers.write_geotiff``, use :meth:`datacube.utils.cog.write_cog` for similar functionality
+- Deprecated ``datacube.storage.masking``, moved to ``datacube.utils.masking``
+- Changed geo-registration mechanics for arrays returned by ``dc.load``. (:pull:`899`, :issue:`837`)
+- Migrate geometry and CRS backends from ``osgeo.ogr`` and ``osgeo.osr`` to shapely_ and pyproj_ respectively (:pull:`880`)
+- Driver metadata storage and retrieval. (:pull:`931`)
+- Support EO3 style datasets in ``datacube dataset add`` (:pull:`929`, :issue:`864`)
+- Removed migration support from datacube releases before 1.1.5.
+
+  .. warning:: If you still run a datacube before 1.1.5 (from 2016 or older), you will need to update it
+     using ODC 1.7 first, before coming to 1.8.
+
+.. _shapely: https://pypi.org/project/pyproj/
+.. _pyproj: https://pypi.org/project/Shapely/
+
+v1.7.0 (16 May 2019)
+====================
+
+Not a lot of changes since rc1.
+
+- Early exit from ``dc.load`` on `KeyboardInterrupt`, allows partial loads inside notebook.
+- Some bug fixes in geometry related code
+- Some cleanups in tests
+- Pre-commit hooks configuration for easier testing
+- Re-enable multi-threaded reads for s3aio driver. Set use_threads to True in dc.load()
+
+
+v1.7.0rc1 (18 April 2019)
+=========================
+
+Virtual Products
+~~~~~~~~~~~~~~~~
+
+Add :ref:`virtual-products` for multi-product loading.
+
+(:pull:`522`, :pull:`597`, :pull:`601`, :pull:`612`, :pull:`644`, :pull:`677`, :pull:`699`, :pull:`700`)
+
+Changes to Data Loading
+~~~~~~~~~~~~~~~~~~~~~~~
+The internal machinery used when loading and reprojecting data, has been completely rewritten. The new code has been
+tested, but this is a complicated and fundamental part of code and there is potential for breakage.
+
+When loading reprojected data, the new code will produce slightly different results. We don't believe that it is any
+less accurate than the old code, but you cannot expect exactly the same numeric results.
+
+Non-reprojected loads should be identical.
+
+This change has been made for two reasons:
+
+1. The reprojection is now core Data Cube, and is not the responsibility of the IO driver.
+
+2. When loading lower resolution data, DataCube can now take advantage of available overviews.
+
+- New futures based IO driver interface (:pull:`686`)
+
+Other Changes
+~~~~~~~~~~~~~
+
+- Allow specifying different resampling methods for different data variables of
+  the same Product. (:pull:`551`)
+- Allow all reampling methods supported by `rasterio`. (:pull:`622`)
+- Bug fix (Index out of bounds causing ingestion failures)
+- Support indexing data directly from HTTP/HTTPS/S3 URLs (:pull:`607`)
+- Renamed the command line tool `datacube metadata_type` to `datacube metadata` (:pull:`692`)
+- More useful output from the command line `datacube {product|metadata} {show|list}`
+- Add optional `progress_cbk` to `dc.load(_data)` (:pull:`702`), allows user to
+  monitor data loading progress.
+- Thread-safe netCDF access within `dc.load` (:pull:`705`)
+
+Performance Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Use single pass over datasets when computing bounds (:pull:`660`)
+- Bugfixes and improved performance of `dask`-backed arrays (:pull:`547`, :pull:`664`)
+
+Documentation Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Improve :ref:`api-reference` documentation.
+
+Deprecations
+~~~~~~~~~~~~
+
+- From the command line, the old query syntax for searching within vague time ranges, eg: ``2018-03 < time < 2018-04``
+  has been removed. It is unclear exactly what that syntax should mean, whether to include or exclude the months
+  specified. It is replaced by ``time in [2018-01, 2018-02]`` which has the same semantics as ``dc.load`` time queries.
+  (:pull:`709`)
+
+
+
+
+v1.6.1 (27 August 2018)
+=======================
+
+Correction release. By mistake, v1.6.0 was identical to v1.6rc2!
+
+
 v1.6.0 (23 August 2018)
 =======================
 
@@ -21,10 +155,10 @@ v1.6.0 (23 August 2018)
 - Updates when indexing data with `datacube dataset add` (See :pull:`485`, :issue:`451` and :issue:`480`)
 
 
-  - Allow indexing without lineage :option:`datacube dataset add --ignore-lineage`
+  - Allow indexing without lineage `datacube dataset add --ignore-lineage`
   - Removed the `--sources-policy=skip|verify|ensure`. Instead use
     `--[no-]auto-add-lineage` and `--[no-]verify-lineage`
-  - New option :option:`datacube dataset add --exclude-product` ``<name>``
+  - New option `datacube dataset add --exclude-product` ``<name>``
     allows excluding some products from auto-matching
 
 - Preliminary API for indexing datasets (:pull:`511`)
@@ -201,8 +335,8 @@ Bug Fixes
  - Allow creation of :class:`datacube.utils.geometry.Geometry` objects from 3d
    representations. The Z axis is simply thrown away.
 
- - The :option:`datacube --config_file` option has been renamed to
-   :option:`datacube --config`, which is shorter and more consistent with the
+ - The `datacube --config_file` option has been renamed to
+   `datacube --config`, which is shorter and more consistent with the
    other options. The old name can still be used for now.
 
  - Fix a severe performance regression when extracting and reprojecting a small

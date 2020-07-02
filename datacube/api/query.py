@@ -15,31 +15,27 @@
 Storage Query and Access API module
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import datetime
 import collections
 import warnings
-import calendar
-import re
 import pandas
 
 from dateutil import tz
 from pandas import to_datetime as pandas_to_datetime
-from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 import numpy as np
 
-from ..compat import string_types, integer_types
-from ..model import Range
+
+from ..model import Range, Dataset
 from ..utils import geometry, datetime_to_seconds_since_1970
+from ..utils.dates import normalise_dt
 
 _LOG = logging.getLogger(__name__)
 
 
 GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units', 'sort_key'])
 
-FLOAT_TOLERANCE = 0.0000001  # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
 OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan', 'product', 'geopolygon', 'like',
@@ -116,7 +112,7 @@ class Query(object):
         kwargs = {}
         kwargs.update(self.search)
         if self.geopolygon:
-            geo_bb = self.geopolygon.to_crs(geometry.CRS('EPSG:4326')).boundingbox
+            geo_bb = geometry.lonlat_bounds(self.geopolygon, resolution=100_000)  # TODO: pick resolution better
             if geo_bb.bottom != geo_bb.top:
                 kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
             else:
@@ -146,11 +142,11 @@ class Query(object):
 
 def query_geopolygon(geopolygon=None, **kwargs):
     spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
-    crs = {v for k, v in kwargs.items() if k in CRS_KEYS}
+    crs = [v for k, v in kwargs.items() if k in CRS_KEYS]
     if len(crs) == 1:
-        spatial_dims['crs'] = crs.pop()
+        spatial_dims['crs'] = crs[0]
     elif len(crs) > 1:
-        raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
+        raise ValueError('CRS is supplied twice')
 
     if geopolygon is not None and len(spatial_dims) > 0:
         raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS + CRS_KEYS,))
@@ -161,16 +157,23 @@ def query_geopolygon(geopolygon=None, **kwargs):
     return geopolygon
 
 
+def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
+    return normalise_dt(ds.center_time)
+
+
 def query_group_by(group_by='time', **kwargs):
+    if not isinstance(group_by, str):
+        return group_by
+
     time_grouper = GroupBy(dimension='time',
-                           group_by_func=lambda ds: ds.center_time,
+                           group_by_func=_extract_time_from_ds,
                            units='seconds since 1970-01-01 00:00:00',
-                           sort_key=lambda ds: ds.center_time)
+                           sort_key=_extract_time_from_ds)
 
     solar_day_grouper = GroupBy(dimension='time',
                                 group_by_func=solar_day,
                                 units='seconds since 1970-01-01 00:00:00',
-                                sort_key=lambda ds: ds.center_time)
+                                sort_key=_extract_time_from_ds)
 
     group_by_map = {
         None: time_grouper,
@@ -224,7 +227,7 @@ def _range_to_geopolygon(**kwargs):
 
 
 def _value_to_range(value):
-    if isinstance(value, string_types + integer_types + (float,)):
+    if isinstance(value, (str, float, int)):
         value = float(value)
         return value, value
     else:
@@ -237,7 +240,7 @@ def _values_to_search(**kwargs):
         if key.lower() in ('time', 't'):
             search['time'] = _time_to_search_dims(value)
         elif key not in ['latitude', 'lat', 'y'] + ['longitude', 'lon', 'x']:
-            if isinstance(value, collections.Sequence) and len(value) == 2:
+            if isinstance(value, collections.abc.Sequence) and len(value) == 2:
                 search[key] = Range(*value)
             else:
                 search[key] = value
@@ -251,12 +254,12 @@ def _datetime_to_timestamp(dt):
 
 
 def _to_datetime(t):
-    if isinstance(t, integer_types + (float,)):
+    if isinstance(t, (float, int)):
         t = datetime.datetime.fromtimestamp(t, tz=tz.tzutc())
 
     if isinstance(t, tuple):
         t = datetime.datetime(*t, tzinfo=tz.tzutc())
-    elif isinstance(t, string_types):
+    elif isinstance(t, str):
         try:
             t = datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%S.%fZ")
         except ValueError:
@@ -268,16 +271,16 @@ def _to_datetime(t):
 
     return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
 
+
 def _time_to_search_dims(time_range):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
 
         tr_start, tr_end = time_range, time_range
 
-        #pylint: disable=bad-whitespace
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
-            l = list(time_range)
-            tr_start, tr_end = l[0], l[-1]
+            tmp = list(time_range)
+            tr_start, tr_end = tmp[0], tmp[-1]
 
         # Attempt conversion to isoformat
         # allows pandas.Period to handle
@@ -285,19 +288,19 @@ def _time_to_search_dims(time_range):
         if hasattr(tr_start, 'isoformat'):
             tr_start = tr_start.isoformat()
         if hasattr(tr_end, 'isoformat'):
-            tr_end   = tr_end.isoformat()
+            tr_end = tr_end.isoformat()
 
         start = _to_datetime(tr_start)
-        end   = _to_datetime(pandas.Period(tr_end)
-                             .end_time
-                             .to_pydatetime()
-                            )
+        end = _to_datetime(pandas.Period(tr_end)
+                           .end_time
+                           .to_pydatetime())
 
         tr = Range(start, end)
         if start == end:
             return tr[0]
 
         return tr
+
 
 def _convert_to_solar_time(utc, longitude):
     seconds_per_degree = 240
@@ -306,10 +309,16 @@ def _convert_to_solar_time(utc, longitude):
     return utc + offset
 
 
-def solar_day(dataset):
+def solar_day(dataset, longitude=None):
     utc = dataset.center_time
-    bb = dataset.extent.to_crs(geometry.CRS('WGS84')).boundingbox
-    assert bb.left < bb.right  # TODO: Handle dateline?
-    longitude = (bb.left + bb.right) * 0.5
+
+    if longitude is None:
+        m = dataset.metadata
+        if hasattr(m, 'lon'):
+            lon = m.lon
+            longitude = (lon.begin + lon.end)*0.5
+        else:
+            raise ValueError('Cannot compute solar_day: dataset is missing spatial info')
+
     solar_time = _convert_to_solar_time(utc, longitude)
     return np.datetime64(solar_time.date(), 'D')

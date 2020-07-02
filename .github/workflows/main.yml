@@ -1,0 +1,171 @@
+name: build
+
+on:
+  pull_request:
+    paths:
+      - '**'
+
+  push:
+    paths:
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/main.yml'
+      - '!docker/**'
+      - '!examples/**'
+      - '!docs/**'
+      - '!contrib/**'
+
+env:
+  DKR: opendatacube/datacube-tests:latest
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 0
+
+    - name: Config
+      id: cfg
+      run: |
+        push_dea=no
+        push_pypi=no
+        push_test_pypi=no
+
+        case "${GITHUB_REF}" in
+        "refs/heads/develop")
+             push_dea=yes
+             ;;
+        "refs/tags/"*)
+             push_pypi=yes
+             push_test_pypi=yes
+             push_dea=yes
+             ;;
+        "refs/heads/"*)
+             ;;
+        "refs/pull/"*)
+             ;;
+        *)
+             ;;
+        esac
+
+        for x in push_pypi push_test_pypi push_dea; do
+           echo "::set-output name=${x}::${!x}"
+        done
+
+    - name: Pull Docker
+      run: |
+        docker pull ${DKR}
+
+    - name: Build Packages
+      run: |
+        cat <<EOF | docker run --rm -i  \
+                  -v $(pwd):/src/datacube-core \
+                  -e SKIP_DB=yes \
+                  ${DKR} bash -
+        python setup.py bdist_wheel sdist
+        ls -lh ./dist/
+        twine check ./dist/*
+        EOF
+
+    - name: Check Code Style
+      run: |
+        docker run --rm  \
+          -v $(pwd):/src/datacube-core \
+          -e SKIP_DB=yes \
+          ${DKR} \
+          pycodestyle tests integration_tests examples --max-line-length 120
+
+    - name: Lint Code
+      run: |
+        docker run --rm  \
+          -v $(pwd):/src/datacube-core \
+          -e SKIP_DB=yes \
+          ${DKR} \
+          pylint -j 2 --reports no datacube datacube_apps
+
+    - name: Run Tests
+      run: |
+        docker run --rm  \
+          -v $(pwd):/src/datacube-core \
+          ${DKR} \
+          pytest -r a \
+            --cov datacube \
+            --cov-report=xml \
+            --doctest-ignore-import-errors \
+            --durations=5 \
+            datacube \
+            tests \
+            datacube_apps \
+            integration_tests
+
+    - name: Publish to dea packages repo
+      if: steps.cfg.outputs.push_dea == 'yes'
+      run: |
+        if [ -n "${AWS_ACCESS_KEY_ID}" ]; then
+           echo "Using Keys: ...${AWS_ACCESS_KEY_ID:(-4)}/...${AWS_SECRET_ACCESS_KEY:(-4)}"
+           aws s3 cp ./dist/datacube-*whl "${S3_DST}/"
+           aws s3 cp ./dist/datacube-*tar.gz "${S3_DST}/"
+        else
+           echo "Skipping upload AWS_ACCESS_KEY_ID is not set"
+        fi
+      env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          S3_DST: 's3://datacube-core-deployment/datacube'
+
+    - name: Publish to Test PyPi
+      if: steps.cfg.outputs.push_test_pypi == 'yes'
+      run: |
+        if [ -n "${TWINE_PASSWORD}" ]; then
+          docker run --rm  \
+            -v $(pwd):/src/datacube-core \
+            -e SKIP_DB=yes \
+            ${DKR} \
+            twine upload \
+              --verbose \
+              --non-interactive \
+              --disable-progress-bar \
+              --username=__token__ \
+              --password=${TWINE_PASSWORD} \
+              --repository-url=${TWINE_REPOSITORY_URL} \
+              --skip-existing dist/* || true
+        else
+           echo "Skipping upload as 'TestPyPiToken' is not set"
+        fi
+
+      env:
+        TWINE_PASSWORD: ${{ secrets.TestPyPiToken }}
+        TWINE_REPOSITORY_URL: 'https://test.pypi.org/legacy/'
+
+    - name: Publish to PyPi
+      if: steps.cfg.outputs.push_pypi == 'yes'
+      run: |
+        if [ -n "${TWINE_PASSWORD}" ]; then
+          docker run --rm  \
+            -v $(pwd):/src/datacube-core \
+            -e SKIP_DB=yes \
+            ${DKR} \
+            twine upload \
+              --verbose \
+              --non-interactive \
+              --disable-progress-bar \
+              --username=__token__ \
+              --password=${TWINE_PASSWORD} \
+              --skip-existing dist/*
+        else
+           echo "Skipping upload as 'PyPiToken' is not set"
+        fi
+
+      env:
+        TWINE_PASSWORD: ${{ secrets.PyPiToken }}
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CodeCovToken }}
+        file: ./coverage.xml
+        fail_ci_if_error: false
+

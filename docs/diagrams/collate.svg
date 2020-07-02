@@ -1,0 +1,739 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0beta2 (2b71d25, 2019-12-03)"
+   sodipodi:docname="collate.svg"
+   id="svg220"
+   version="1.1"
+   viewBox="0 0 433 131.44614"
+   height="131.44614pt"
+   width="433pt">
+  <metadata
+     id="metadata226">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs224" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg220"
+     inkscape:window-maximized="0"
+     inkscape:window-y="23"
+     inkscape:window-x="0"
+     inkscape:cy="109.75438"
+     inkscape:cx="287.23476"
+     inkscape:zoom="2.0951087"
+     fit-margin-bottom="0"
+     fit-margin-right="0"
+     fit-margin-left="0"
+     fit-margin-top="0"
+     showgrid="false"
+     id="namedview222"
+     inkscape:window-height="855"
+     inkscape:window-width="1440"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     inkscape:document-rotation="0"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <g
+     transform="translate(-13.5,13.946133)"
+     id="g1798">
+    <polygon
+       fill="lightgray"
+       stroke="lightgray"
+       points="44,-112 44,-93 10,-93 10,-112 "
+       id="polygon16"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="44,-112 44,-93 10,-93 10,-112 "
+       id="polygon18"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="18"
+       y="22.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text20"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:11px;font-family:'Bookman; Helvetica';-inkscape-font-specification:'Bookman; Helvetica Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Mon</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="72,-112 72,-93 46,-93 46,-112 "
+       id="polygon22"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="72,-112 72,-93 46,-93 46,-112 "
+       id="polygon24"
+       transform="translate(4,122)"
+       style="fill:#ff8080" />
+    <text
+       text-anchor="start"
+       x="53"
+       y="22.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text26">red</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="115,-112 115,-93 74,-93 74,-112 "
+       id="polygon28"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="115,-112 115,-93 74,-93 74,-112 "
+       id="polygon30"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="81"
+       y="22.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text32">green</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="150,-112 150,-93 117,-93 117,-112 "
+       id="polygon34"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="150,-112 150,-93 117,-93 117,-112 "
+       id="polygon36"
+       transform="translate(4,122)"
+       style="fill:#55ddff" />
+    <text
+       text-anchor="start"
+       x="124"
+       y="22.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text38">blue</text>
+    <polygon
+       fill="lightgray"
+       stroke="lightgray"
+       points="44,-91 44,-73 10,-73 10,-91 "
+       id="polygon40"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="44,-91 44,-73 10,-73 10,-91 "
+       id="polygon42"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="17.5"
+       y="42.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text44"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:11px;font-family:'Bookman; Helvetica';-inkscape-font-specification:'Bookman; Helvetica Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Wed</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="72,-91 72,-73 46,-73 46,-91 "
+       id="polygon46"
+       transform="translate(4,122)"
+       style="fill:#ff8080" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="72,-91 72,-73 46,-73 46,-91 "
+       id="polygon48"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="53"
+       y="42.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text50">red</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="115,-91 115,-73 74,-73 74,-91 "
+       id="polygon52"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="115,-91 115,-73 74,-73 74,-91 "
+       id="polygon54"
+       transform="translate(4,122)"
+       style="opacity:1;fill:#8fbc8f;fill-opacity:1;stroke-width:0.99975;stroke-miterlimit:4;stroke-dasharray:none" />
+    <text
+       text-anchor="start"
+       x="81"
+       y="42.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text56">green</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="150,-91 150,-73 117,-73 117,-91 "
+       id="polygon58"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="150,-91 150,-73 117,-73 117,-91 "
+       id="polygon60"
+       transform="translate(4,122)"
+       style="fill:#55ddff" />
+    <text
+       text-anchor="start"
+       x="124"
+       y="42.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text62">blue</text>
+  </g>
+  <g
+     transform="translate(-9.5,135.94613)"
+     id="node3"
+     class="node">
+    <title
+       id="title65">collate</title>
+    <polygon
+       fill="lightgray"
+       stroke="lightgray"
+       points="255,-70.5 197,-70.5 197,-47.5 255,-47.5 "
+       id="polygon67" />
+    <text
+       text-anchor="middle"
+       x="226"
+       y="-55.700001"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text69">collate</text>
+  </g>
+  <g
+     transform="translate(-9.5,135.94613)"
+     id="edge2"
+     class="edge">
+    <title
+       id="title72">prod1-&gt;collate</title>
+    <path
+       fill="none"
+       stroke="black"
+       d="m 160.261,-74.3091 c 9.038,2.1048 17.927,4.1748 26.104,6.079"
+       id="path74"
+       inkscape:connector-curvature="0" />
+    <polygon
+       fill="black"
+       stroke="black"
+       points="185.766,-64.7759 187.354,-71.5935 196.299,-65.9166 "
+       id="polygon76" />
+  </g>
+  <g
+     transform="translate(-13.5,13.946133)"
+     id="g1772">
+    <polygon
+       fill="lightgray"
+       stroke="lightgray"
+       points="42,-44 42,-25 12,-25 12,-44 "
+       id="polygon81"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="42,-44 42,-25 12,-25 12,-44 "
+       id="polygon83"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="20"
+       y="90.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text85"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:11px;font-family:'Bookman; Helvetica';-inkscape-font-specification:'Bookman; Helvetica Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Tue</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="70,-44 70,-25 44,-25 44,-44 "
+       id="polygon87"
+       transform="translate(4,122)"
+       style="fill:#ff8080;fill-opacity:1" />
+    <text
+       text-anchor="start"
+       x="51"
+       y="90.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text89">red</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="113,-44 113,-25 72,-25 72,-44 "
+       id="polygon91"
+       transform="translate(4,122)"
+       style="fill:#8fbc8f;fill-opacity:1" />
+    <text
+       text-anchor="start"
+       x="79"
+       y="90.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text93">green</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="148,-44 148,-25 115,-25 115,-44 "
+       id="polygon95"
+       transform="translate(4,122)"
+       style="fill:#55ddff" />
+    <text
+       text-anchor="start"
+       x="122"
+       y="90.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text97">blue</text>
+    <polygon
+       fill="lightgray"
+       stroke="lightgray"
+       points="42,-23 42,-5 12,-5 12,-23 "
+       id="polygon99"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="42,-23 42,-5 12,-5 12,-23 "
+       id="polygon101"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="19.5"
+       y="110.8"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text103"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:11px;font-family:'Bookman; Helvetica';-inkscape-font-specification:'Bookman; Helvetica Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Thu</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="70,-23 70,-5 44,-5 44,-23 "
+       id="polygon105"
+       transform="translate(4,122)"
+       style="fill:#ff8080;fill-opacity:1" />
+    <text
+       text-anchor="start"
+       x="51"
+       y="110.8"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text107">red</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="113,-23 113,-5 72,-5 72,-23 "
+       id="polygon109"
+       transform="translate(4,122)"
+       style="fill:#8fbc8f;fill-opacity:1" />
+    <text
+       text-anchor="start"
+       x="79"
+       y="110.8"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text111">green</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="148,-23 148,-5 115,-5 115,-23 "
+       id="polygon113"
+       transform="translate(4,122)"
+       style="fill:#55ddff" />
+    <text
+       text-anchor="start"
+       x="122"
+       y="110.8"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text115">blue</text>
+  </g>
+  <g
+     transform="translate(-9.5,135.94613)"
+     id="edge4"
+     class="edge">
+    <title
+       id="title118">prod2-&gt;collate</title>
+    <path
+       fill="none"
+       stroke="black"
+       d="m 158.129,-43.1944 c 9.746,-2.2696 19.369,-4.5107 28.171,-6.5604"
+       id="path120"
+       inkscape:connector-curvature="0" />
+    <polygon
+       fill="black"
+       stroke="black"
+       points="187.267,-46.3863 185.679,-53.2039 196.213,-52.0632 "
+       id="polygon122" />
+  </g>
+  <g
+     transform="translate(-13.5,13.946133)"
+     id="g1752">
+    <polygon
+       fill="lightgray"
+       stroke="lightgray"
+       points="336,-98 336,-79 302,-79 302,-98 "
+       id="polygon127"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="336,-98 336,-79 302,-79 302,-98 "
+       id="polygon129"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="310"
+       y="36.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text131"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:11px;font-family:'Bookman; Helvetica';-inkscape-font-specification:'Bookman; Helvetica Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Mon</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="364,-98 364,-79 338,-79 338,-98 "
+       id="polygon133"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="364,-98 364,-79 338,-79 338,-98 "
+       id="polygon135"
+       transform="translate(4,122)"
+       style="fill:#ff8080" />
+    <text
+       text-anchor="start"
+       x="345"
+       y="36.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text137">red</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="407,-98 407,-79 366,-79 366,-98 "
+       id="polygon139"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="407,-98 407,-79 366,-79 366,-98 "
+       id="polygon141"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="373"
+       y="36.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text143">green</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="442,-98 442,-79 409,-79 409,-98 "
+       id="polygon145"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="442,-98 442,-79 409,-79 409,-98 "
+       id="polygon147"
+       transform="translate(4,122)"
+       style="fill:#55ddff" />
+    <text
+       text-anchor="start"
+       x="416"
+       y="36.300003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text149">blue</text>
+    <polygon
+       fill="lightgray"
+       stroke="lightgray"
+       points="336,-77 336,-59 302,-59 302,-77 "
+       id="polygon151"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="336,-77 336,-59 302,-59 302,-77 "
+       id="polygon153"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="312"
+       y="56.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text155"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:11px;font-family:'Bookman; Helvetica';-inkscape-font-specification:'Bookman; Helvetica Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Tue</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="364,-77 364,-59 338,-59 338,-77 "
+       id="polygon157"
+       transform="translate(4,122)"
+       style="fill:#ff8080;fill-opacity:1" />
+    <text
+       text-anchor="start"
+       x="345"
+       y="56.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text159">red</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="407,-77 407,-59 366,-59 366,-77 "
+       id="polygon161"
+       transform="translate(4,122)"
+       style="fill:#8fbc8f;fill-opacity:1" />
+    <text
+       text-anchor="start"
+       x="373"
+       y="56.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text163">green</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="442,-77 442,-59 409,-59 409,-77 "
+       id="polygon165"
+       transform="translate(4,122)"
+       style="fill:#55ddff" />
+    <text
+       text-anchor="start"
+       x="416"
+       y="56.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text167">blue</text>
+    <polygon
+       fill="lightgray"
+       stroke="lightgray"
+       points="336,-57 336,-39 302,-39 302,-57 "
+       id="polygon169"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="336,-57 336,-39 302,-39 302,-57 "
+       id="polygon171"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="309.5"
+       y="76.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text173"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:11px;font-family:'Bookman; Helvetica';-inkscape-font-specification:'Bookman; Helvetica Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Wed</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="364,-57 364,-39 338,-39 338,-57 "
+       id="polygon175"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="364,-57 364,-39 338,-39 338,-57 "
+       id="polygon177"
+       transform="translate(4,122)"
+       style="fill:#ff8080" />
+    <text
+       text-anchor="start"
+       x="345"
+       y="76.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text179">red</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="407,-57 407,-39 366,-39 366,-57 "
+       id="polygon181"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="407,-57 407,-39 366,-39 366,-57 "
+       id="polygon183"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="373"
+       y="76.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text185">green</text>
+    <polygon
+       fill="darkseagreen"
+       stroke="darkseagreen"
+       points="442,-57 442,-39 409,-39 409,-57 "
+       id="polygon187"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="442,-57 442,-39 409,-39 409,-57 "
+       id="polygon189"
+       transform="translate(4,122)"
+       style="fill:#55ddff" />
+    <text
+       text-anchor="start"
+       x="416"
+       y="76.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text191">blue</text>
+    <polygon
+       fill="lightgray"
+       stroke="lightgray"
+       points="336,-37 336,-19 302,-19 302,-37 "
+       id="polygon193"
+       transform="translate(4,122)" />
+    <polygon
+       fill="none"
+       stroke="black"
+       points="336,-37 336,-19 302,-19 302,-37 "
+       id="polygon195"
+       transform="translate(4,122)" />
+    <text
+       text-anchor="start"
+       x="311.5"
+       y="96.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text197"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:11px;font-family:'Bookman; Helvetica';-inkscape-font-specification:'Bookman; Helvetica Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Thu</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="364,-37 364,-19 338,-19 338,-37 "
+       id="polygon199"
+       transform="translate(4,122)"
+       style="fill:#ff8080;fill-opacity:1" />
+    <text
+       text-anchor="start"
+       x="345"
+       y="96.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text201">red</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="407,-37 407,-19 366,-19 366,-37 "
+       id="polygon203"
+       transform="translate(4,122)"
+       style="fill:#8fbc8f;fill-opacity:1" />
+    <text
+       text-anchor="start"
+       x="373"
+       y="96.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text205">green</text>
+    <polygon
+       fill="none"
+       stroke="black"
+       points="442,-37 442,-19 409,-19 409,-37 "
+       id="polygon207"
+       transform="translate(4,122)"
+       style="fill:#55ddff" />
+    <text
+       text-anchor="start"
+       x="416"
+       y="96.800003"
+       font-family="Bookman; Helvetica"
+       font-size="12.00"
+       id="text209">blue</text>
+  </g>
+  <g
+     transform="translate(-9.5,135.94613)"
+     id="edge6"
+     class="edge">
+    <title
+       id="title212">collate-&gt;prod12</title>
+    <path
+       fill="none"
+       stroke="black"
+       d="m 255.545,-59 c 7.833,0 16.714,0 25.996,0"
+       id="path214"
+       inkscape:connector-curvature="0" />
+    <polygon
+       fill="black"
+       stroke="black"
+       points="281.739,-55.5001 281.739,-62.5001 291.739,-59 "
+       id="polygon216" />
+  </g>
+  <text
+     id="text845"
+     y="15.15625"
+     x="28.16148"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.75"
+     xml:space="preserve"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.75"
+       y="15.15625"
+       x="28.16148"
+       id="tspan843"
+       sodipodi:role="line">Product 1</tspan></text>
+  <text
+     id="text849"
+     y="84.893608"
+     x="26.933853"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.75"
+     xml:space="preserve"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.75"
+       y="84.893608"
+       x="26.933853"
+       id="tspan847"
+       sodipodi:role="line">Product 2</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.75"
+     x="325.4949"
+     y="29.568533"
+     id="text845-0"><tspan
+       sodipodi:role="line"
+       id="tspan843-3"
+       x="325.4949"
+       y="29.568533"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.75">Output</tspan></text>
+</svg>

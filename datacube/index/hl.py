@@ -1,4 +1,5 @@
-""" High level indexing operations/utilities
+"""
+High level indexing operations/utilities
 """
 import json
 import toolz
@@ -8,6 +9,7 @@ from datacube.model import Dataset
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
+from .eo3 import prep_eo3, is_doc_eo3
 
 
 class BadMatch(Exception):
@@ -96,7 +98,10 @@ def check_dataset_consistent(dataset):
 
     # It the type expects measurements, ensure our dataset contains them all.
     if not product_measurements.issubset(dataset.measurements.keys()):
-        return False, "measurement fields don't match type specification"
+        not_measured = str(product_measurements - set(dataset.measurements.keys()))
+        msg = "The dataset is not specifying all of the measurements in this product.\n"
+        msg += "Missing fields are;\n" + not_measured
+        return False, msg
 
     return True, None
 
@@ -147,7 +152,7 @@ def dataset_resolver(index,
         if missing_lineage and fail_on_missing_lineage:
             return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
 
-        if verify_lineage:
+        if verify_lineage and not is_doc_eo3(main_ds.doc):
             bad_lineage = []
 
             for uuid in lineage_uuids:
@@ -191,12 +196,39 @@ def dataset_resolver(index,
     return resolve_no_lineage if skip_lineage else resolve
 
 
-class Doc2Dataset(object):
-    """Helper class for constructing `Dataset` objects from metadata document.
+class Doc2Dataset:
+    """Used for constructing `Dataset` objects from plain metadata documents.
 
-    User needs to supply index, which products to consider for matching and what
-    to do with lineage.
+    This requires a database connection to perform the automatic matching against
+    available products.
 
+    There are options for including and excluding the products to match against,
+    as well as how to deal with source lineage.
+
+    Once constructed, call with a dictionary object and location URI, eg::
+
+        resolver = Doc2Dataset(index)
+        dataset = resolver(dataset_dictionary, 'file:///tmp/test-dataset.json')
+        index.dataset.add(dataset)
+
+
+    :param index: an open Database connection
+
+    :param list products: List of product names against which to match datasets
+                          (including lineage datasets). If not supplied we will
+                          consider all products.
+
+    :param list exclude_products: List of products to exclude from matching
+
+    :param fail_on_missing_lineage: If True fail resolve if any lineage
+                                    datasets are missing from the DB
+
+    :param verify_lineage: If True check that lineage datasets in the
+                           supplied document are identical to DB versions
+
+    :param skip_lineage: If True ignore lineage sub-tree in the supplied
+                         document and construct dataset without lineage datasets
+    :param eo3: 'auto'/True/False by default auto-detect EO3 datasets and pre-process them
     """
     def __init__(self,
                  index,
@@ -204,32 +236,15 @@ class Doc2Dataset(object):
                  exclude_products=None,
                  fail_on_missing_lineage=False,
                  verify_lineage=True,
-                 skip_lineage=False):
-        """
-        :param index: Database
-
-        :param products: List of product names against which to match datasets
-        (including lineage datasets), if not supplied will consider all
-        products.
-
-        :param exclude_products: List of products to exclude from matching
-
-        :param fail_on_missing_lineage: If True fail resolve if any lineage
-        datasets are missing from the DB
-
-        :param verify_lineage: If True check that lineage datasets in the
-        supplied document are identical to dB versions
-
-        :param skip_lineage: If True ignore lineage sub-tree in the supplied
-        document and construct dataset without lineage datasets
-
-        """
+                 skip_lineage=False,
+                 eo3='auto'):
         rules, err_msg = load_rules_from_types(index,
                                                product_names=products,
                                                excluding=exclude_products)
         if rules is None:
             raise ValueError(err_msg)
 
+        self._eo3 = eo3
         self._ds_resolve = dataset_resolver(index,
                                             rules,
                                             fail_on_missing_lineage=fail_on_missing_lineage,
@@ -247,6 +262,10 @@ class Doc2Dataset(object):
         """
         if not isinstance(doc, SimpleDocNav):
             doc = SimpleDocNav(doc)
+
+        if self._eo3:
+            auto_skip = self._eo3 == 'auto'
+            doc = SimpleDocNav(prep_eo3(doc.doc, auto_skip=auto_skip))
 
         dataset, err = self._ds_resolve(doc, uri)
         if dataset is None:

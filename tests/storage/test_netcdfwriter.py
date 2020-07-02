@@ -1,19 +1,21 @@
-from __future__ import print_function, absolute_import
-
 import netCDF4
 import numpy
 import xarray as xr
 import pytest
 from hypothesis import given
 from hypothesis.strategies import text
-from tests.conftest import tmpnetcdf_filename as get_tmpnetcdf_filename
 import string
 
-from datacube.model import Variable
-from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
-    create_grid_mapping_variable, flag_mask_meanings
-from datacube.storage.storage import write_dataset_to_netcdf
+from datacube.drivers.netcdf._write import _get_units
+from datacube.drivers.netcdf.writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
+    create_grid_mapping_variable, flag_mask_meanings, Variable
+from datacube.drivers.netcdf import write_dataset_to_netcdf
+from datacube.drivers.netcdf.writer import DEFAULT_GRID_MAPPING
 from datacube.utils import geometry, DatacubeException, read_strings_from_netcdf
+from datacube.testutils import mk_sample_xr_dataset
+
+
+crs_var = DEFAULT_GRID_MAPPING
 
 GEO_PROJ = geometry.CRS("""GEOGCS["WGS 84",
                            DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],
@@ -63,6 +65,7 @@ LCC2_PROJ = geometry.CRS("""PROJCS["unnamed",
                                        SPHEROID["WGS84",6378137,6556752.3141]],
                                        PRIMEM["Greenwich",0],
                                        UNIT["degree",0.0174532925199433]],
+                               UNIT["metre",1, AUTHORITY["EPSG","9001"]],
                                PROJECTION["Lambert_Conformal_Conic_2SP"],
                                PARAMETER["standard_parallel_1",17.5],
                                PARAMETER["standard_parallel_2",29.5],
@@ -70,16 +73,6 @@ LCC2_PROJ = geometry.CRS("""PROJCS["unnamed",
                                PARAMETER["central_meridian",-102],
                                PARAMETER["false_easting",2500000],
                                PARAMETER["false_northing",0]]""")
-
-GLOBAL_ATTRS = {'test_attribute': 'test_value'}
-
-DATA_VARIABLES = ('B1', 'B2')
-LAT_LON_COORDINATES = ('latitude', 'longitude')
-PROJECTED_COORDINATES = ('x', 'y')
-COMMON_VARIABLES = ('crs', 'time')
-
-DATA_WIDTH = 400
-DATA_HEIGHT = 200
 
 
 def _ensure_spheroid(var):
@@ -117,13 +110,13 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'albers_conical_equal_area'
-        assert 'standard_parallel' in nco['crs'].ncattrs()
-        assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
-        assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
-        _ensure_spheroid(nco['crs'])
-        _ensure_gdal(nco['crs'])
+        assert crs_var in nco.variables
+        assert nco[crs_var].grid_mapping_name == 'albers_conical_equal_area'
+        assert 'standard_parallel' in nco[crs_var].ncattrs()
+        assert 'longitude_of_central_meridian' in nco[crs_var].ncattrs()
+        assert 'latitude_of_projection_origin' in nco[crs_var].ncattrs()
+        _ensure_spheroid(nco[crs_var])
+        _ensure_gdal(nco[crs_var])
         _ensure_geospatial(nco)
 
 
@@ -135,15 +128,15 @@ def test_create_lambert_conformal_conic_2sp_projection_netcdf(tmpnetcdf_filename
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'lambert_conformal_conic'
-        assert 'standard_parallel' in nco['crs'].ncattrs()
-        assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
-        assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
-        assert 'false_easting' in nco['crs'].ncattrs()
-        assert 'false_northing' in nco['crs'].ncattrs()
-        _ensure_spheroid(nco['crs'])
-        _ensure_gdal(nco['crs'])
+        assert crs_var in nco.variables
+        assert nco[crs_var].grid_mapping_name == 'lambert_conformal_conic'
+        assert 'standard_parallel' in nco[crs_var].ncattrs()
+        assert 'longitude_of_central_meridian' in nco[crs_var].ncattrs()
+        assert 'latitude_of_projection_origin' in nco[crs_var].ncattrs()
+        assert 'false_easting' in nco[crs_var].ncattrs()
+        assert 'false_northing' in nco[crs_var].ncattrs()
+        _ensure_spheroid(nco[crs_var])
+        _ensure_gdal(nco[crs_var])
         _ensure_geospatial(nco)
 
 
@@ -155,9 +148,9 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'latitude_longitude'
-        _ensure_spheroid(nco['crs'])
+        assert crs_var in nco.variables
+        assert nco[crs_var].grid_mapping_name == 'latitude_longitude'
+        _ensure_spheroid(nco[crs_var])
         _ensure_geospatial(nco)
 
 
@@ -169,10 +162,10 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'sinusoidal'
-        assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
-        _ensure_spheroid(nco['crs'])
+        assert crs_var in nco.variables
+        assert nco[crs_var].grid_mapping_name == 'sinusoidal'
+        assert 'longitude_of_central_meridian' in nco[crs_var].ncattrs()
+        _ensure_spheroid(nco[crs_var])
         _ensure_geospatial(nco)
 
 
@@ -183,8 +176,7 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
 @given(s1=text(alphabet=string.printable, max_size=100),
        s2=text(alphabet=string.printable, max_size=100),
        s3=text(alphabet=string.printable, max_size=100))
-def test_create_string_variable(tmpdir, s1, s2, s3):
-    tmpnetcdf_filename = get_tmpnetcdf_filename(tmpdir)
+def test_create_string_variable(tmpnetcdf_filename, s1, s2, s3):
     str_var = 'str_var'
     nco = create_netcdf(tmpnetcdf_filename)
     coord = create_coordinate(nco, 'greg', numpy.array([1.0, 3.0, 9.0]), 'cubic gregs')
@@ -287,4 +279,68 @@ def test_useful_error_on_write_empty_dataset(tmpnetcdf_filename):
     with pytest.raises(DatacubeException) as excinfo:
         ds = xr.Dataset(data_vars={'blue': (('time',), numpy.array([0, 1, 2]))})
         write_dataset_to_netcdf(ds, tmpnetcdf_filename)
-    assert 'CRS' in str(excinfo.value)
+    assert 'geobox' in str(excinfo.value)
+
+
+def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
+    write_dataset_to_netcdf(odc_style_xr_dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
+                            variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
+
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        nco.set_auto_mask(False)
+        assert 'B10' in nco.variables
+        var = nco.variables['B10']
+        assert (var[:] == odc_style_xr_dataset['B10'].values).all()
+
+        assert 'foo' in nco.ncattrs()
+        assert nco.getncattr('foo') == 'bar'
+
+        assert 'abc' in var.ncattrs()
+        assert var.getncattr('abc') == 'xyz'
+
+    with pytest.raises(RuntimeError):
+        write_dataset_to_netcdf(odc_style_xr_dataset, tmpnetcdf_filename)
+
+    # Check grid_mapping is a coordinate
+    xx = xr.open_dataset(tmpnetcdf_filename)
+    assert crs_var in xx.coords
+    assert crs_var not in xx.data_vars
+
+
+def test_write_dataset_with_time_dimension_to_netcdf(tmpnetcdf_filename):
+    xx = mk_sample_xr_dataset(name='B10', time='2020-01-01')
+    assert 'time' in xx.coords
+    assert 'units' not in xx.time.attrs
+
+    write_dataset_to_netcdf(xx, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
+                            variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
+
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        nco.set_auto_mask(False)
+        assert 'B10' in nco.variables
+        var = nco.variables['B10']
+        assert (var[:] == xx['B10'].values).all()
+
+        assert 'foo' in nco.ncattrs()
+        assert nco.getncattr('foo') == 'bar'
+
+        assert 'abc' in var.ncattrs()
+        assert var.getncattr('abc') == 'xyz'
+
+    with pytest.raises(RuntimeError):
+        write_dataset_to_netcdf(xx, tmpnetcdf_filename)
+
+    # Check grid_mapping is a coordinate
+    yy = xr.open_dataset(tmpnetcdf_filename)
+    assert crs_var in yy.coords
+    assert crs_var not in yy.data_vars
+
+    assert 'time' in yy.coords
+
+
+def test_get_units():
+    assert _get_units(geometry.Coordinate([], 'K', None)) == 'K'
+    assert _get_units(geometry.Coordinate([], None, None)) == '1'
+    assert _get_units(geometry.Coordinate(numpy.zeros(1, dtype='uint8'), None, None)) == '1'
+    assert _get_units(geometry.Coordinate(
+        numpy.zeros(1, dtype='datetime64[s]'), None, None)).startswith('seconds since ')

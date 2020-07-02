@@ -24,3 +24,43 @@ dataset:
         product_type:
             description: Product code
             offset: [product_type]
+
+---
+
+name: eo3_minimal
+description: minimal EO3 metadata definition
+dataset:
+    id: [id]
+    sources: [lineage, source_datasets]
+    grid_spatial: [grid_spatial, projection]
+    measurements: [measurements]
+    creation_dt: [properties, 'odc:processing_datetime']
+    label: [label]
+    format: [properties, 'odc:file_format']
+
+    search_fields:
+        time:
+          description: Acquisition time range
+          type: datetime-range
+          min_offset:
+            - [properties, 'dtr:start_datetime']
+            - [properties, datetime]
+          max_offset:
+            - [properties, 'dtr:end_datetime']
+            - [properties, datetime]
+
+        lon:
+          description: Longitude range
+          type: double-range
+          min_offset:
+            - [extent, lon, begin]
+          max_offset:
+            - [extent, lon, end]
+
+        lat:
+          description: Latitude range
+          type: double-range
+          min_offset:
+            - [extent, lat, begin]
+          max_offset:
+            - [extent, lat, end]

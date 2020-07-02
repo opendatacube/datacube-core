@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 import datetime
 import os
@@ -14,12 +13,13 @@ from pandas import to_datetime
 
 import datacube
 from datacube.model import Dataset
-from datacube.utils import geometry, SimpleDocNav, sorted_items, InvalidDocException
+from datacube.utils import geometry, SimpleDocNav, InvalidDocException
+from datacube.utils.py import sorted_items
 
 try:
-    from yaml import CSafeDumper as SafeDumper
+    from yaml import CSafeDumper as SafeDumper  # type: ignore
 except ImportError:
-    from yaml import SafeDumper
+    from yaml import SafeDumper  # type: ignore
 
 
 def machine_info():
@@ -99,16 +99,20 @@ def band_info(band_names, band_uris=None):
     }
 
 
-def time_info(time):
+def time_info(time, start_time=None, end_time=None, key_time=None):
     time_str = to_datetime(time).isoformat()
-    return {
+    start_time_str = to_datetime(start_time).isoformat() if start_time else time_str
+    end_time_str = to_datetime(end_time).isoformat() if end_time else time_str
+    extent = {
         'extent': {
-            'from_dt': time_str,
-            'to_dt': time_str,
+            'from_dt': start_time_str,
+            'to_dt': end_time_str,
             'center_dt': time_str,
-
         }
     }
+    if key_time is not None:
+        extent['extent']['key_time'] = to_datetime(key_time).isoformat()
+    return extent
 
 
 def source_info(source_datasets):
@@ -181,8 +185,8 @@ def xr_apply(data_array, func, dtype=None, with_numeric_index=False):
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 
 
-def make_dataset(product, sources, extent, center_time,
-                 valid_data=None, uri=None, app_info=None, band_uris=None):
+def make_dataset(product, sources, extent, center_time, valid_data=None, uri=None, app_info=None,
+                 band_uris=None, start_time=None, end_time=None):
     """
     Create :class:`datacube.model.Dataset` for the data
 
@@ -194,6 +198,8 @@ def make_dataset(product, sources, extent, center_time,
     :param str uri: The uri of the dataset
     :param dict app_info: Additional metadata to be stored about the generation of the product
     :param dict band_uris: band name to uri mapping
+    :param start_time: start time of the dataset (defaults to `center_time`)
+    :param end_time: end time of the dataset (defaults to `center_time`)
     :rtype: class:`Dataset`
     """
     document = {}
@@ -203,7 +209,7 @@ def make_dataset(product, sources, extent, center_time,
     merge(document, band_info(product.measurements.keys(), band_uris=band_uris))
     merge(document, source_info(sources))
     merge(document, geobox_info(extent, valid_data))
-    merge(document, time_info(center_time))
+    merge(document, time_info(center_time, start_time, end_time))
     merge(document, app_info or {})
 
     return Dataset(product,

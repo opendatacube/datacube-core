@@ -1,37 +1,15 @@
-from __future__ import absolute_import
 import pytest
 import yaml
 
-from collections import namedtuple
+from types import SimpleNamespace
 
 from datacube.drivers import new_datasource, reader_drivers, writer_drivers
 from datacube.drivers import index_drivers, index_driver_by_name
 from datacube.drivers.indexes import IndexDriverCache
-from datacube.storage.storage import RasterDatasetDataSource
+from datacube.storage import BandInfo
+from datacube.storage._rio import RasterDatasetDataSource
 from datacube.testutils import mk_sample_dataset
 from datacube.model import MetadataType
-
-S3_dataset = namedtuple('S3_dataset', ['macro_shape'])
-
-
-def test_new_datasource_s3():
-    pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
-
-    from datacube.drivers.s3 import driver as s3_driver
-    from datacube.drivers.s3.datasource import S3DataSource
-
-    bands = [dict(name='green',
-                  path='')]
-    dataset = mk_sample_dataset(bands, s3_driver.PROTOCOL + ':///foo', format=s3_driver.FORMAT)
-    s3_dataset_fake = S3_dataset(macro_shape=(10, 12))
-    dataset.s3_metadata = {'green': {'s3_dataset': s3_dataset_fake}}
-
-    assert dataset.format == s3_driver.FORMAT
-    assert dataset.uri_scheme == s3_driver.PROTOCOL
-
-    rdr = new_datasource(dataset, 'green')
-    assert rdr is not None
-    assert isinstance(rdr, S3DataSource)
 
 
 def test_new_datasource_fallback():
@@ -41,7 +19,7 @@ def test_new_datasource_fallback():
 
     assert dataset.uri_scheme == 'file'
 
-    rdr = new_datasource(dataset, 'green')
+    rdr = new_datasource(BandInfo(dataset, 'green'))
     assert rdr is not None
     assert isinstance(rdr, RasterDatasetDataSource)
 
@@ -49,9 +27,6 @@ def test_new_datasource_fallback():
 def test_reader_drivers():
     available_drivers = reader_drivers()
     assert isinstance(available_drivers, list)
-
-    pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
-    assert 's3aio' in available_drivers
 
 
 def test_writer_drivers():
@@ -63,7 +38,6 @@ def test_writer_drivers():
 def test_index_drivers():
     available_drivers = index_drivers()
     assert 'default' in available_drivers
-    assert 's3aio_index' in available_drivers
 
 
 def test_default_injection():
@@ -76,6 +50,21 @@ def test_netcdf_driver_import():
         import datacube.drivers.netcdf.driver
     except ImportError:
         assert False and 'Failed to load netcdf writer driver'
+
+    assert datacube.drivers.netcdf.driver.reader_driver_init is not None
+
+
+def test_writer_driver_mk_uri():
+    from datacube.drivers.netcdf.driver import NetcdfWriterDriver
+    writer_driver = NetcdfWriterDriver()
+
+    assert writer_driver.uri_scheme == 'file'
+
+    file_path = '/path/to/my_file.nc'
+    driver_alias = 'NetCDF CF'
+    storage_config = {'driver': driver_alias}
+    file_uri = writer_driver.mk_uri(file_path=file_path, storage_config=storage_config)
+    assert file_uri == f'file://{file_path}'
 
 
 def test_metadata_type_from_doc():
@@ -100,3 +89,29 @@ dataset:
         assert metadata.id is None
         assert metadata.name == 'minimal'
         assert 'some_custom_field' in metadata.dataset_fields
+
+
+def test_reader_cache_throws_on_missing_fallback():
+    from datacube.drivers.readers import rdr_cache
+
+    rdrs = rdr_cache()
+    assert rdrs is not None
+
+    with pytest.raises(KeyError):
+        rdrs('file', 'aint-such-format')
+
+
+def test_driver_singleton():
+    from datacube.drivers._tools import singleton_setup
+    from unittest.mock import MagicMock
+
+    result = object()
+    factory = MagicMock(return_value=result)
+    obj = SimpleNamespace()
+
+    assert singleton_setup(obj, 'xx', factory) is result
+    assert singleton_setup(obj, 'xx', factory) is result
+    assert singleton_setup(obj, 'xx', factory) is result
+    assert obj.xx is result
+
+    factory.assert_called_once_with()

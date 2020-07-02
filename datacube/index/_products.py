@@ -1,15 +1,15 @@
 # coding=utf-8
-from __future__ import absolute_import
 
 import logging
 
 from cachetools.func import lru_cache
 
-from datacube import compat
 from datacube.index import fields
 from datacube.model import DatasetType
 from datacube.utils import InvalidDocException, jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
+
+from typing import Iterable
 
 _LOG = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class ProductResource(object):
 
         # They either specified the name of a metadata type, or specified a metadata type.
         # Is it a name?
-        if isinstance(metadata_type, compat.string_types):
+        if isinstance(metadata_type, str):
             metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
         else:
             # Otherwise they embedded a document, add it if needed:
@@ -98,7 +98,7 @@ class ProductResource(object):
                 metadata_type = self.metadata_type_resource.add(product.metadata_type,
                                                                 allow_table_lock=allow_table_lock)
             with self._db.connect() as connection:
-                connection.insert_dataset_type(
+                connection.insert_product(
                     name=product.name,
                     metadata=product.metadata_doc,
                     metadata_type_id=metadata_type.id,
@@ -127,6 +127,7 @@ class ProductResource(object):
 
         updates_allowed = {
             ('description',): changes.allow_any,
+            ('license',): changes.allow_any,
             ('metadata_type',): changes.allow_any,
 
             # You can safely make the match rules looser but not tighter.
@@ -207,7 +208,7 @@ class ProductResource(object):
         # TODO: should we add metadata type here?
         assert metadata_type, "TODO: should we add metadata type here?"
         with self._db.connect() as conn:
-            conn.update_dataset_type(
+            conn.update_product(
                 name=product.name,
                 metadata=product.metadata_doc,
                 metadata_type_id=metadata_type.id,
@@ -277,18 +278,18 @@ class ProductResource(object):
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
-    def get_unsafe(self, id_):
+    def get_unsafe(self, id_):  # type: ignore
         with self._db.connect() as connection:
-            result = connection.get_dataset_type(id_)
+            result = connection.get_product(id_)
         if not result:
             raise KeyError('"%s" is not a valid Product id' % id_)
         return self._make(result)
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
-    def get_by_name_unsafe(self, name):
+    def get_by_name_unsafe(self, name):  # type: ignore
         with self._db.connect() as connection:
-            result = connection.get_dataset_type_by_name(name)
+            result = connection.get_product_by_name(name)
         if not result:
             raise KeyError('"%s" is not a valid Product name' % name)
         return self._make(result)
@@ -361,23 +362,17 @@ class ProductResource(object):
             else:
                 yield type_, remaining_matchable
 
-    def get_all(self):
-        # type: () -> Iterable[DatasetType]
+    def get_all(self) -> Iterable[DatasetType]:
         """
         Retrieve all Products
-
-        :rtype: iter[DatasetType]
         """
         with self._db.connect() as connection:
-            return (self._make(record) for record in connection.get_all_dataset_types())
+            return (self._make(record) for record in connection.get_all_products())
 
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)
 
-    def _make(self, query_row):
-        """
-        :rtype DatasetType
-        """
+    def _make(self, query_row) -> DatasetType:
         return DatasetType(
             definition=query_row['definition'],
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),

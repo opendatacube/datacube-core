@@ -1,0 +1,179 @@
+# contains misspelled key `srx_varname`
+source_type: ls5_ledaps_scene
+output_type: ls5_ledaps_albers
+
+description: Landsat 5 LEDAPS 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
+
+location: '/media/simonaoliver/datacube/tiles'
+file_path_template: 'LS5_TM_LEDAPS/LS5_TM_LEDAPS_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+global_attributes:
+  title: CEOS Data Cube Landsat Surface Reflectance
+  summary: Landsat 5 Thematic Mapper Analysis Ready data prepared by NASA on behalf of CEOS.
+  source: Surface reflectance from LEDAPS
+  institution: CEOS
+  instrument: TM
+  cdm_data_type: Grid
+  keywords: AU/GA,NASA/GSFC/SED/ESD/LANDSAT,REFLECTANCE,ETM+,TM,OLI,EARTH SCIENCE
+  keywords_vocabulary: GCMD
+  platform: LANDSAT-5
+  processing_level: L2
+  product_version: '2.0.0'
+  product_suite: USGS Landsat
+  project: CEOS
+  coverage_content_type: physicalMeasurement
+  references: http://dx.doi.org/10.3334/ORNLDAAC/1146
+  license: https://creativecommons.org/licenses/by/4.0/
+  naming_authority: gov.usgs
+  acknowledgment: Landsat data is provided by the United States Geological Survey (USGS).
+
+storage:
+  driver: NetCDF CF
+
+  crs: EPSG:3577
+  tile_size:
+          x: 100000.0
+          y: 100000.0
+  resolution:
+          x: 25
+          y: -25
+  chunking:
+      x: 200
+      y: 200
+      time: 1
+  dimension_order: ['time', 'y', 'x']
+
+measurements:
+    - name: blue
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      srx_varname: 'blue'
+      zlib: True
+      attrs:
+          long_name: "Surface Reflectance 0.45-0.52 microns (Blue)"
+          alias: "band_1"
+    - name: green
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      src_varname: 'green'
+      zlib: True
+      attrs:
+          long_name: "Surface Reflectance 0.52-0.60 microns (Green)"
+          alias: "band_2"
+    - name: red
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      src_varname: 'red'
+      zlib: True
+      attrs:
+          long_name: "Surface Reflectance 0.63-0.69 microns (Red)"
+          alias: "band_3"
+    - name: nir
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      src_varname: 'nir'
+      zlib: True
+      attrs:
+          long_name: "Surface Reflectance 0.76-0.90 microns (Near Infrared)"
+          alias: "band_4"
+    - name: swir1
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      src_varname: 'swir1'
+      zlib: True
+      attrs:
+          long_name: "Surface Reflectance 1.55-1.75 microns (Short-wave Infrared)"
+          alias: "band_5"
+    - name: swir2
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      src_varname: 'swir2'
+      zlib: True
+      attrs:
+          long_name: "Surface Reflectance 2.08-2.35 microns (Short-wave Infrared)"
+          alias: "band_7"
+    - name: cf_mask
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      src_varname: 'cfmask'
+      zlib: True
+      attrs:
+          long_name: "CFmask"
+    - name: cf_mask_conf
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      src_varname: 'cfmask_conf'
+      zlib: True
+      attrs:
+          long_name: "CFmask Cloud Confidence"
+    - name: adjacent_cloud_qa
+      dtype: int16
+      nodata: 0
+      resampling_method: nearest
+      src_varname: 'sr_adjacent_cloud_qa'
+      zlib: True
+      attrs:
+          long_name: "Adjacent Cloud QA"
+    - name: atmos_opacity
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      src_varname: 'sr_atmos_opacity'
+      zlib: True
+      attrs:
+          long_name: "Atmospheric Opacity"
+    - name: cloud_qa
+      dtype: int16
+      nodata: 0
+      resampling_method: nearest
+      src_varname: 'sr_cloud_qa'
+      zlib: True
+      attrs:
+          long_name: "Cloud QA"
+    - name: cloud_shadow_qa
+      dtype: int16
+      nodata: 0
+      resampling_method: nearest
+      src_varname: 'sr_cloud_shadow_qa'
+      zlib: True
+      attrs:
+          long_name: "Cloud Shadow QA"
+    - name: ddv_qa
+      dtype: int16
+      nodata: 0
+      resampling_method: nearest
+      src_varname: 'sr_ddv_qa'
+      zlib: True
+      attrs:
+          long_name: "DDV QA"
+    - name: fill_qa
+      dtype: int16
+      nodata: 0
+      resampling_method: nearest
+      src_varname: 'sr_fill_qa'
+      zlib: True
+      attrs:
+          long_name: "Fill QA"
+    - name: land_water_qa
+      dtype: int16
+      nodata: 0
+      resampling_method: nearest
+      src_varname: 'sr_land_water_qa'
+      zlib: True
+      attrs:
+          long_name: "Land Water QA"
+    - name: snow_qa
+      dtype: int16
+      nodata: 0
+      resampling_method: nearest
+      src_varname: 'sr_snow_qa'
+      zlib: True
+      attrs:
+          long_name: "Snow QA"

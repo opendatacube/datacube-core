@@ -1,9 +1,6 @@
-# coding=utf-8
 """
 Common functions for click-based cli scripts.
 """
-from __future__ import absolute_import
-
 import functools
 import logging
 import os
@@ -17,7 +14,6 @@ from datacube.api.core import Datacube
 
 from datacube.executor import get_executor, mk_celery_executor
 from datacube.index import index_connect
-from pathlib import Path
 
 from datacube.ui.expression import parse_expressions
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -77,9 +73,7 @@ class ClickHandler(logging.Handler):
         try:
             msg = self.format(record)
             click.echo(msg, err=True)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E772  pylint: disable=bare-except
             self.handleError(record)
 
 
@@ -127,12 +121,13 @@ def _log_queries(ctx, param, value):
 def _set_config(ctx, param, value):
     if value:
         if not any(os.path.exists(p) for p in value):
-            raise ValueError('No specified config paths exist: {}' % value)
+            raise ValueError('No specified config paths exist: {}'.format(value))
 
         if not ctx.obj:
             ctx.obj = {}
         paths = value
         ctx.obj['config_files'] = paths
+    return value
 
 
 def _set_environment(ctx, param, value):
@@ -153,6 +148,8 @@ logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile
 #: pylint: disable=invalid-name
 config_option = click.option('--config', '--config_file', '-C', multiple=True, default='', callback=_set_config,
                              expose_value=False)
+config_option_exposed = click.option('--config', '--config_file', '-C', multiple=True, default='', callback=_set_config)
+
 environment_option = click.option('--env', '-E', callback=_set_environment,
                                   expose_value=False)
 #: pylint: disable=invalid-name
@@ -183,11 +180,18 @@ def pass_config(f):
     def new_func(*args, **kwargs):
         obj = click.get_current_context().obj
 
-        paths = obj.get('config_files') or config.DEFAULT_CONF_PATHS
+        paths = obj.get('config_files', None)
         # If the user is overriding the defaults
         specific_environment = obj.get('config_environment')
 
-        parsed_config = config.LocalConfig.find(paths=paths, env=specific_environment)
+        try:
+            parsed_config = config.LocalConfig.find(paths=paths, env=specific_environment)
+        except ValueError:
+            if specific_environment:
+                raise click.ClickException("No datacube config found for '{}'".format(specific_environment))
+            else:
+                raise click.ClickException("No datacube config found")
+
         _LOG.debug("Loaded datacube config: %r", parsed_config)
         return f(parsed_config, *args, **kwargs)
 
@@ -207,19 +211,24 @@ def pass_index(app_name=None, expect_initialised=True):
 
     def decorate(f):
         @pass_config
-        def with_index(local_config,  # type: LocalConfig
+        def with_index(local_config: config.LocalConfig,
                        *args,
                        **kwargs):
-            ctx = click.get_current_context()
+            command_path = click.get_current_context().command_path
             try:
                 index = index_connect(local_config,
-                                      application_name=app_name or ctx.command_path,
+                                      application_name=app_name or command_path,
                                       validate_connection=expect_initialised)
-                ctx.obj['index'] = index
                 _LOG.debug("Connected to datacube index: %s", index)
-                return f(index, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
                 handle_exception('Error Connecting to database: %s', e)
+                return
+
+            try:
+                return f(index, *args, **kwargs)
+            finally:
+                index.close()
+                del index
 
         return functools.update_wrapper(with_index, f)
 
@@ -256,7 +265,7 @@ def parse_endpoint(value):
 EXECUTOR_TYPES = {
     'serial': lambda _: get_executor(None, None),
     'multiproc': lambda workers: get_executor(None, int(workers)),
-    'distributed': lambda addr: get_executor(parse_endpoint(addr), True),
+    'distributed': lambda addr: get_executor(addr, True),
     'celery': lambda addr: mk_celery_executor(*parse_endpoint(addr))
 }
 
@@ -270,7 +279,7 @@ def _setup_executor(ctx, param, value):
         ctx.fail("Failed to create '%s' executor with '%s'" % value)
 
 
-executor_cli_options = click.option('--executor',
+executor_cli_options = click.option('--executor',  # type: ignore
                                     type=(click.Choice(list(EXECUTOR_TYPES)), str),
                                     default=('serial', None),
                                     help="Run parallelized, either locally or distributed. eg:\n"
@@ -303,19 +312,12 @@ def handle_exception(msg, e):
         ctx.exit(1)
 
 
-def to_pathlib(ctx, param, value):
-    if value:
-        return Path(value)
-    else:
-        return None
-
-
 def parsed_search_expressions(f):
     """
-    Add [expression] arguments and --crs option to a click application
+    Add [EXPRESSIONs] arguments to a click application
 
     Passes a parsed dict of search expressions to the `expressions` argument
-    of the command. The dict may include a `crs`.
+    of the command.
 
     Also appends documentation on using search expressions to the command.
 
@@ -326,42 +328,32 @@ def parsed_search_expressions(f):
     if not f.__doc__:
         f.__doc__ = ""
     f.__doc__ += """
-    \b
-    Search Expressions
-    ------------------
+    EXPRESSIONS
 
-    Select data using multiple [EXPRESSIONS] to limit by date, product type,
-    spatial extent and other searchable fields.
-
-    Specify either an Equals Expression with param=value, or a Range
-    Expression with less<param<greater. Numbers or Dates are supported.
-
-    Searchable fields include: x, y, time, product and more.
-
-    NOTE: Range expressions using <,> symbols should be escaped with '', otherwise
-    the shell will try to interpret them.
+    Select datasets using [EXPRESSIONS] to filter by date, product type,
+    spatial extents or other searchable fields.
 
     \b
-    eg. '1996-01-01 < time < 1996-12-31'
-        '130<lon<140' '-30 > lat > -40'
+        FIELD = VALUE
+        FIELD in DATE-RANGE
+        FIELD in [START, END]
+
+    \b
+    DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
+    START and END can be either numbers or dates
+
+    FIELD: x, y, lat, lon, time, product, ...
+
+    \b
+    eg. 'time in [1996-01-01, 1996-12-31]'
+        'time in 1996'
+        'lon in [130, 140]' 'lat in [-40, -30]'
         product=ls5_nbar_albers
+
     """
 
     def my_parse(ctx, param, value):
-        parsed_expressions = parse_expressions(*list(value))
-        # ctx.ensure_object(dict)
-        # try:
-        #     parsed_expressions['crs'] = ctx.obj['crs']
-        # except KeyError:
-        #     pass
-        return parsed_expressions
-
-    def store_crs(ctx, param, value):
-        ctx.ensure_object(dict)
-        # if value:
-        #     ctx.obj['crs'] = value
+        return parse_expressions(*list(value))
 
     f = click.argument('expressions', callback=my_parse, nargs=-1)(f)
-    # f = click.option('--crs', expose_value=False, help='Coordinate Reference used for x,y search expressions',
-    #                  callback=store_crs)(f)
     return f

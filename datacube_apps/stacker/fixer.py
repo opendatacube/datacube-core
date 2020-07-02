@@ -4,7 +4,6 @@ Finds single timeslice files that have not been stacked (based on filename), and
 This tool is used to update NetCDF metadata for files that are not picked up by the stacker
 
 """
-from __future__ import absolute_import, print_function, division
 
 import copy
 import datetime
@@ -15,6 +14,7 @@ import re
 import socket
 from functools import partial
 from collections import Counter
+from typing import List
 
 import click
 import dask.array as da
@@ -27,10 +27,8 @@ import xarray as xr
 import datacube
 from datacube.model import Dataset
 from datacube.model.utils import xr_apply, datasets_to_doc
-from datacube.storage import netcdf_writer
-from datacube.storage.storage import create_netcdf_storage_unit
+from datacube.drivers.netcdf import create_netcdf_storage_unit, netcdf_writer
 from datacube.ui import task_app
-from datacube.ui.click import to_pathlib
 
 _LOG = logging.getLogger(__name__)
 
@@ -39,7 +37,7 @@ APP_NAME = 'datacube-fixer'
 
 def make_filename(config, cell_index, start_time):
     file_path_template = str(Path(config['location'], config['file_path_template']))
-    return file_path_template.format(tile_index=cell_index, start_time=start_time, version=config['taskfile_version'])
+    return file_path_template.format(tile_index=cell_index, start_time=start_time, version=config['taskfile_utctime'])
 
 
 def get_temp_file(final_output_path):
@@ -122,7 +120,7 @@ def make_fixer_config(index, config, export_path=None, **query):
 
     config['variable_params'] = variable_params
 
-    config['taskfile_version'] = int(datacube.utils.datetime_to_seconds_since_1970(datetime.datetime.now()))
+    config['taskfile_utctime'] = int(datacube.utils.datetime_to_seconds_since_1970(datetime.datetime.now()))
 
     return config
 
@@ -145,8 +143,7 @@ def build_history_string(config, task, keep_original=True):
         app=APP_NAME,
         ver=datacube.__version__,
         args=', '.join([config['app_config_file'],
-                        str(config['version']),
-                        str(config['taskfile_version']),
+                        str(config['taskfile_utctime']),
                         task['output_filename'],
                         str(task['start_time']),
                         str(task['cell_index'])
@@ -184,8 +181,14 @@ def do_fixer_task(config, task):
     data['dataset'] = datasets_to_doc(unwrapped_datasets)
 
     try:
+        if data.geobox is None:
+            raise DatacubeException('Dataset geobox property is None, cannot write to NetCDF file.')
+
+        if data.geobox.crs is None:
+            raise DatacubeException('Dataset geobox.crs property is None, cannot write to NetCDF file.')
+
         nco = create_netcdf_storage_unit(temp_filename,
-                                         data.crs,
+                                         data.geobox.crs,
                                          data.coords,
                                          data.data_vars,
                                          variable_params,
@@ -211,7 +214,7 @@ def do_fixer_task(config, task):
 def write_data_variables(data_vars, nco):
     for name, variable in data_vars.items():
         try:
-            with dask.set_options(get=dask.async.get_sync):
+            with dask.set_options(get=dask.local.get_sync):
                 da.store(variable.data, nco[name], lock=True)
         except ValueError:
             nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
@@ -219,7 +222,7 @@ def write_data_variables(data_vars, nco):
 
 
 def check_identical(data1, data2, output_filename):
-    with dask.set_options(get=dask.async.get_sync):
+    with dask.set_options(get=dask.local.get_sync):
         if not all((data1 == data2).all().values()):
             _LOG.error("Mismatch found for %s, not indexing", output_filename)
             raise ValueError("Mismatch found for %s, not indexing" % output_filename)
@@ -227,8 +230,7 @@ def check_identical(data1, data2, output_filename):
 
 
 def make_updated_tile(old_datasets, new_uri, geobox):
-    def update_dataset_location(labels, dataset):
-        # type: (object, Dataset) -> list
+    def update_dataset_location(labels, dataset: Dataset) -> List[Dataset]:
         new_dataset = copy.copy(dataset)
         new_dataset.uris = [new_uri]
         return [new_dataset]

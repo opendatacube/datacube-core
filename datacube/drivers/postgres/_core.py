@@ -2,11 +2,11 @@
 """
 Core SQL schema settings.
 """
-from __future__ import absolute_import
 
 import logging
 
 from sqlalchemy import MetaData
+from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 
 from datacube.drivers.postgres.sql import TYPES_INIT_SQL, pg_exists, pg_column_exists, escape_pg_identifier
@@ -85,7 +85,7 @@ def ensure_db(engine, with_permissions=True):
             raise
         finally:
             if with_permissions:
-                c.execute('set role "{}"'.format(quoted_user))
+                c.execute('set role {}'.format(quoted_user))
 
     if with_permissions:
         _LOG.info('Adding role grants.')
@@ -118,72 +118,54 @@ def database_exists(engine):
     return has_schema(engine, engine)
 
 
-def schema_is_latest(engine):
+def schema_is_latest(engine: Engine) -> bool:
     """
-    Over the lifetime of ODC there have been a couple of schema updates. For now we don't
-    version the schema, but we do need to check we're running against the latest.
+    Is the current schema up-to-date?
 
-    We may have a versioned schema in the future.
-    For now, we know updates have been applied if certain objects exist.
+    This is run when a new connection is established to see if it's compatible.
+
+    It should be runnable by unprivileged users. If it returns false, their
+    connection will be rejected and they will be told to get an administrator
+    to apply updates.
+
+    See the ``update_schema()`` function below for actually applying the updates.
     """
-    # We may have versioned schema in the future.
-    # For now, we know updates have been applied if certain objects exist,
+    # In lieu of a versioned schema, we typically check by seeing if one of the objects
+    # from the change exists.
+    #
+    # Eg.
+    #     return pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
+    #
+    # ie. Does the 'archived' column exist? If so, we know the related schema was applied.
 
-    location_first_index = 'ix_{schema}_dataset_location_dataset_ref'.format(schema=SCHEMA_NAME)
-
-    has_dataset_source_update = not pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref'))
-    has_uri_searches = pg_exists(engine, schema_qualified(location_first_index))
-    has_dataset_location = pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
-    return has_dataset_source_update and has_uri_searches and has_dataset_location
+    # No schema changes recently. Everything is perfect.
+    return True
 
 
-def update_schema(engine):
+def update_schema(engine: Engine):
     """
-    Instead of versioning our schema, this function ensures we are running against the latest
-    version of the database schema.
+    Check and apply any missing schema changes to the database.
+
+    This is run by an administrator.
+
+    See the `schema_is_latest()` function above: this should apply updates
+    that it requires.
     """
-    is_unification = pg_exists(engine, schema_qualified('dataset_type'))
-    if not is_unification:
-        raise ValueError('Pre-unification database cannot be updated.')
+    # This will typically check if something exists (like a newly added column), and
+    # run the SQL of the change inside a single transaction.
 
-    # Removal of surrogate key from dataset_source: it makes the table larger for no benefit.
-    if pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref')):
-        _LOG.info('Applying surrogate-key update')
-        engine.execute("""
-        begin;
-          alter table {schema}.dataset_source drop constraint pk_dataset_source;
-          alter table {schema}.dataset_source drop constraint uq_dataset_source_dataset_ref;
-          alter table {schema}.dataset_source add constraint pk_dataset_source primary key(dataset_ref, classifier);
-          alter table {schema}.dataset_source drop column id;
-        commit;
-        """.format(schema=SCHEMA_NAME))
-        _LOG.info('Completed surrogate-key update')
-
-    # float8range is needed if the user uses the double-range field type.
-    if not engine.execute("SELECT 1 FROM pg_type WHERE typname = 'float8range'").scalar():
-        engine.execute(TYPES_INIT_SQL)
-
-    if not pg_column_exists(engine, schema_qualified('dataset_location'), 'archived'):
-        _LOG.info('Applying dataset_location.archived update')
-        engine.execute("""
-          alter table {schema}.dataset_location add column archived TIMESTAMP WITH TIME ZONE
-          """.format(schema=SCHEMA_NAME))
-        _LOG.info('Completed dataset_location.archived update')
-
-    # Update uri indexes to allow dataset search-by-uri.
-    if not pg_exists(engine, schema_qualified('ix_{schema}_dataset_location_dataset_ref'.format(schema=SCHEMA_NAME))):
-        _LOG.info('Applying uri-search update')
-        engine.execute("""
-        begin;
-          -- Add a separate index by dataset.
-          create index ix_{schema}_dataset_location_dataset_ref on {schema}.dataset_location (dataset_ref);
-
-          -- Replace (dataset, uri) index with (uri, dataset) index.
-          alter table {schema}.dataset_location add constraint uq_dataset_location_uri_scheme unique (uri_scheme, uri_body, dataset_ref);
-          alter table {schema}.dataset_location drop constraint uq_dataset_location_dataset_ref;
-        commit;
-        """.format(schema=SCHEMA_NAME))
-        _LOG.info('Completed uri-search update')
+    # Empty, as no schema changes have been made recently.
+    # -> If you need to write one, look at the Git history of this
+    #    function for some examples.
+    
+    # Post 1.8 DB Federation triggers
+    from datacube.drivers.postgres._triggers import install_timestamp_trigger
+    _LOG.info("Adding Update Triggers")
+    c = engine.connect()
+    c.execute('begin')
+    install_timestamp_trigger(c)
+    c.execute('commit')
+    c.close()
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):

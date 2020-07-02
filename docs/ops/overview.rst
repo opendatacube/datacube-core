@@ -1,7 +1,7 @@
 Overview
 ********
 
-This section contains information on setting up and running a Data Cube.
+This section contains information on setting up and running an Open Data Cube.
 Generally, users will not be required to know most of the information contained
 here.
 

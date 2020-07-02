@@ -61,19 +61,13 @@ Example code to implement a reader driver
     class AbstractReaderDriver(object):
         def supports(self, protocol: str, fmt: str) -> bool:
             pass
-        def new_datasource(self, dataset, band_name) -> DataSource:
-            return AbstractDataSource(dataset, band_name)
+        def new_datasource(self, band: BandInfo) -> DataSource:
+            return AbstractDataSource(band)
 
     class AbstractDataSource(object):  # Same interface as before
         ...
 
-S3 Driver
----------
-
-:URI Protocol: ``s3://``
-:Dataset Format: ``aio``
-:Implementation location:
-    `datacube/drivers/s3/driver.py <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/datacube/drivers/s3/driver.py>`_
+Driver specific metadata will be present in ``BandInfo.driver_data`` if saved during ``write_dataset_to_storage``
 
 Example Pickle Based Driver
 ---------------------------
@@ -119,13 +113,34 @@ Example code to implement a writer driver
         def format(self):
             return ''  # Format that this writer supports
 
-        def write_dataset_to_storage(self, dataset, filename,
+        def mk_uri(self, file_path, storage_config):
+            """
+            Constructs a URI from the file_path and storage config.
+
+            A typical implementation should return f'{scheme}://{file_path}'
+
+            Example:
+                file_path = '/path/to/my_file.nc'
+                storage_config = {'driver': 'NetCDF CF'}
+
+                mk_uri(file_path, storage_config) should return 'file:///path/to/my_file.nc'
+
+            :param Path file_path: The file path of the file to be converted into a URI during the ingest process.
+            :param dict storage_config: The dict holding the storage config found in the ingest definition.
+            :return: file_path as a URI that the Driver understands.
+            :rtype: str
+            """
+            return f'file://{file_path}'  # URI that this writer supports
+
+        def write_dataset_to_storage(self, dataset, file_uri,
                                      global_attributes=None,
                                      variable_params=None,
                                      storage_config=None,
                                      **kwargs):
             ...
             return {}  # Can return extra metadata to be saved in the index with the dataset
+
+Extra metadata will be saved into the database and loaded into ``BandInfo`` during a load operation.
 
 NetCDF Writer Driver
 --------------------
@@ -134,16 +149,6 @@ NetCDF Writer Driver
 :Format: ``NetCDF``
 :Implementation:
    :py:class:`datacube.drivers.netcdf.driver.NetcdfWriterDriver`
-
-S3 Writer Driver
-----------------
-
-:Name: ``s3aio``
-:Protocol: ``s3``
-:Format: ``aio``
-:Implementation:
-   :py:class:`datacube.drivers.s3.driver.S3WriterDriver`
-
 
 Index Plug-ins
 ==============
@@ -178,32 +183,29 @@ Default Implementation
 The default ``Index`` uses a PostgreSQL database for all storage and
 retrieval.
 
-S3 Extensions
--------------
-
-
-The :py:class:`datacube.drivers.s3aio_index.S3AIOIndex` driver subclasses the default PostgreSQL Index with
-support for saving additional data about the size and shape of chunks
-stored in S3 objects. As such, it implements an identical interface,
-while overriding the ``dataset.add()`` method to save the additional
-data.
-
 
 Drivers Plugin Management Module
 ================================
 
-Drivers are defined in ``setup.py -> entry_points``::
+Drivers are registered in ``setup.py -> entry_points``::
 
     entry_points={
         'datacube.plugins.io.read': [
-            's3aio = datacube.drivers.s3.driver:reader_driver_init'
+            'netcdf = datacube.drivers.netcdf.driver:reader_driver_init',
         ],
         'datacube.plugins.io.write': [
             'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
-            's3aio = datacube.drivers.s3.driver:writer_driver_init',
-            's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init',
-        ]
+        ],
+        'datacube.plugins.index': [
+            'default = datacube.index.index:index_driver_init',
+            *extra_plugins['index'],
+        ],
     }
+
+These are drivers ``datacube-core`` ships with. When developing custom driver one
+does not need to add them to ``datacube-core/setup.py``, rather you have to define
+these in the ``setup.py`` of your driver package.
+
 
 Data Cube Drivers API
 =====================

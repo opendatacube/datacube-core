@@ -3,8 +3,6 @@
 """
 Query datasets.
 """
-from __future__ import absolute_import
-from __future__ import print_function
 
 import csv
 import datetime
@@ -14,7 +12,7 @@ from functools import partial
 import click
 from dateutil import tz
 from psycopg2._range import Range
-from singledispatch import singledispatch
+from functools import singledispatch
 
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS

@@ -2,12 +2,11 @@
 """
 Module
 """
-from __future__ import absolute_import
-
+import pytest
 import configparser
 from textwrap import dedent
 
-from datacube.config import LocalConfig
+from datacube.config import LocalConfig, parse_connect_url, parse_env_params, auto_config
 from datacube.testutils import write_files
 
 
@@ -70,10 +69,7 @@ db_hostname:
 ## Staging environment ##
 [staging]
 db_hostname: staging.dea.ga.gov.au
-
-[s3_test]
-db_hostname: staging.dea.ga.gov.au
-index_driver: s3aio"""
+"""
 
 
 def test_using_configparser(tmpdir):
@@ -90,3 +86,165 @@ def test_empty_configfile(tmpdir):
     sample_file.write(default_only)
     config = configparser.ConfigParser()
     config.read(str(sample_file))
+
+
+def test_parse_db_url():
+
+    assert parse_connect_url('postgresql:///db') == dict(database='db', hostname='')
+    assert parse_connect_url('postgresql://some.tld/db') == dict(database='db', hostname='some.tld')
+    assert parse_connect_url('postgresql://some.tld:3344/db') == dict(
+        database='db',
+        hostname='some.tld',
+        port='3344')
+    assert parse_connect_url('postgresql://user@some.tld:3344/db') == dict(
+        username='user',
+        database='db',
+        hostname='some.tld',
+        port='3344')
+    assert parse_connect_url('postgresql://user:pass@some.tld:3344/db') == dict(
+        password='pass',
+        username='user',
+        database='db',
+        hostname='some.tld',
+        port='3344')
+
+    # check urlencode is reversed for password field
+    assert parse_connect_url('postgresql://user:pass%40@some.tld:3344/db') == dict(
+        password='pass@',
+        username='user',
+        database='db',
+        hostname='some.tld',
+        port='3344')
+
+
+def _clear_cfg_env(monkeypatch):
+    for e in ('DATACUBE_DB_URL',
+              'DB_HOSTNAME',
+              'DB_PORT',
+              'DB_USERNAME',
+              'DB_PASSWORD'):
+        monkeypatch.delenv(e, raising=False)
+
+
+def test_parse_env(monkeypatch):
+    def set_env(**kw):
+        _clear_cfg_env(monkeypatch)
+        for e, v in kw.items():
+            monkeypatch.setenv(e, v)
+
+    def check_env(**kw):
+        set_env(**kw)
+        return parse_env_params()
+
+    assert check_env() == {}
+    assert check_env(DATACUBE_DB_URL='postgresql:///db') == dict(
+        hostname='',
+        database='db'
+    )
+    assert check_env(DATACUBE_DB_URL='postgresql://uu:%20pass%40@host.tld:3344/db') == dict(
+        username='uu',
+        password=' pass@',
+        hostname='host.tld',
+        port='3344',
+        database='db'
+    )
+    assert check_env(DB_DATABASE='db') == dict(
+        database='db'
+    )
+    assert check_env(DB_DATABASE='db', DB_HOSTNAME='host.tld') == dict(
+        database='db',
+        hostname='host.tld'
+    )
+    assert check_env(DB_DATABASE='db',
+                     DB_HOSTNAME='host.tld',
+                     DB_USERNAME='user',
+                     DB_PASSWORD='pass@') == dict(
+                         database='db',
+                         hostname='host.tld',
+                         username='user',
+                         password='pass@')
+
+    assert check_env(DB_DATABASE='db',
+                     DB_HOSTNAME='host.tld',
+                     DB_USERNAME='user',
+                     DB_PORT='',
+                     DB_PASSWORD='pass@') == dict(
+                         database='db',
+                         hostname='host.tld',
+                         username='user',
+                         password='pass@')
+
+
+def test_cfg_from_env(monkeypatch):
+    def set_env(**kw):
+        _clear_cfg_env(monkeypatch)
+        for e, v in kw.items():
+            monkeypatch.setenv(e, v)
+
+    set_env(DATACUBE_DB_URL='postgresql://uu:%20pass%40@host.tld:3344/db')
+    cfg = LocalConfig.find()
+    assert '3344' in str(cfg)
+    assert '3344' in repr(cfg)
+    assert cfg['db_username'] == 'uu'
+    assert cfg['db_password'] == ' pass@'
+    assert cfg['db_hostname'] == 'host.tld'
+    assert cfg['db_database'] == 'db'
+    assert cfg['db_port'] == '3344'
+
+    # check that password is redacted
+    assert " pass@" not in str(cfg)
+    assert "***" in str(cfg)
+    assert " pass@" not in repr(cfg)
+    assert "***" in repr(cfg)
+
+    set_env(DB_DATABASE='dc2',
+            DB_HOSTNAME='remote.db',
+            DB_PORT='4433',
+            DB_USERNAME='dcu',
+            DB_PASSWORD='gg')
+    cfg = LocalConfig.find()
+    assert cfg['db_username'] == 'dcu'
+    assert cfg['db_password'] == 'gg'
+    assert cfg['db_hostname'] == 'remote.db'
+    assert cfg['db_database'] == 'dc2'
+    assert cfg['db_port'] == '4433'
+
+
+def test_auto_config(monkeypatch, tmpdir):
+    from pathlib import Path
+
+    cfg_file = Path(str(tmpdir/"dc.cfg"))
+    assert cfg_file.exists() is False
+    cfg_file_name = str(cfg_file)
+
+    _clear_cfg_env(monkeypatch)
+    monkeypatch.setenv('DATACUBE_CONFIG_PATH', cfg_file_name)
+
+    assert auto_config() == cfg_file_name
+    assert cfg_file.exists() is True
+
+    monkeypatch.setenv('DB_HOSTNAME', 'should-not-be-used.local')
+    # second run should skip overwriting
+    assert auto_config() == cfg_file_name
+
+    config = LocalConfig.find(paths=cfg_file_name)
+    assert config['db_hostname'] == ''
+    assert config['db_database'] == 'datacube'
+
+    cfg_file.unlink()
+    assert cfg_file.exists() is False
+    _clear_cfg_env(monkeypatch)
+
+    monkeypatch.setenv('DATACUBE_CONFIG_PATH', cfg_file_name)
+    monkeypatch.setenv('DB_HOSTNAME', 'some.db')
+    monkeypatch.setenv('DB_USERNAME', 'user')
+
+    assert auto_config() == cfg_file_name
+    config = LocalConfig.find(paths=cfg_file_name)
+    assert config['db_hostname'] == 'some.db'
+    assert config['db_database'] == 'datacube'
+    assert config['db_username'] == 'user'
+
+    assert config.get('no_such_key', 10) == 10
+    with pytest.raises(configparser.NoOptionError):
+        config.get('no_such_key')

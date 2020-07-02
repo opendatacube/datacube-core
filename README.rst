@@ -1,12 +1,12 @@
 Open Data Cube Core
-==================================
+===================
 
 |Build Status| |Coverage Status| |Documentation Status|
 
 Overview
 ========
 
-Open Data Cube Core provides an integrated gridded data
+The Open Data Cube Core provides an integrated gridded data
 analysis environment for decades of analysis ready earth observation
 satellite and related data from multiple satellite and other acquisition
 systems.
@@ -15,10 +15,13 @@ Documentation
 =============
 
 See the `user guide <http://datacube-core.readthedocs.io/en/latest/>`__ for
-installation & usage of the datacube, and for documentation of the API.
+installation and usage of the datacube, and for documentation of the API.
 
 `Join our Slack <http://slack.opendatacube.org>`__ if you need help
-setting up or using Data Cube Core.
+setting up or using the Open Data Cube.
+
+Please help us to keep the Open Data Cube community open and inclusive by
+reading and following our `Code of Conduct <code-of-conduct.md>`__.
 
 Requirements
 ============
@@ -27,7 +30,7 @@ System
 ~~~~~~
 
 -  PostgreSQL 9.5+
--  Python Python 3.5+
+-  Python 3.6+
 
 Developer setup
 ===============
@@ -36,30 +39,39 @@ Developer setup
 
    -  ``git clone https://github.com/opendatacube/datacube-core.git``
 
-2. Install the native libraries for `GDAL <http://www.gdal.org/>`__ &
-   NetCDF4.
+2. Create a Python environment to use ODC within, we recommend `conda <https://docs.conda.io/en/latest/miniconda.html>`__ as the
+   easiest way to handle Python dependencies.
 
-   -  This depends on your OS.
-   -  Eg. ``yum install gdal``
+::
 
-3. Install Python dependencies:
+   conda create -n odc -c conda-forge python=3.6 datacube pre_commit
+   conda activate odc
 
-   ``python setup.py develop``
+3. Install a develop version of datacube-core.
 
-   Note that the versions must match between GDAL's Python bindings and
-   the native GDAL library. If you receive a gdal error when installing
-   dependencies, you may need to install a specific version first:
+::
 
-   eg. ``pip install gdal==2.0.1``
+   cd datacube-core
+   pip install --upgrade -e .
 
-4. Run unit tests + PyLint
+4. Install the `pre-commit <https://pre-commit.com>`__ hooks to help follow ODC coding
+   conventions when committing with git.
 
+::
+
+   pre-commit install
+
+5. Run unit tests + PyLint
    ``./check-code.sh``
 
    (this script approximates what is run by Travis. You can
-   alternatively run ``py.test`` yourself)
+   alternatively run ``pytest`` yourself). Some test dependencies may need to be installed, attempt to install these using:
+   
+   ``pip install --upgrade -e '.[test]'``
+   
+   If install for these fails please lodge them as issues.
 
-5. **(or)** Run all tests, including integration tests.
+6. **(or)** Run all tests, including integration tests.
 
    ``./check-code.sh integration_tests``
 
@@ -70,67 +82,54 @@ Developer setup
    -  Otherwise copy ``integration_tests/agdcintegration.conf`` to
       ``~/.datacube_integration.conf`` and edit to customise.
 
-Docker
-======
 
-Docker for Open Data Cube is in the early stages of development, and more documentation and examples of how 
-to use it will be forthcoming soon. For now, you can build and run this Docker image from 
-this repository as documented below.
+Alternatively one can use ``opendatacube/datacube-tests`` docker image to run
+tests. This docker includes database server pre-configured for running
+integration tests. Add ``--with-docker`` command line option as a first argument
+to ``./check-code.sh`` script.
 
-Example Usage
-~~~~~~~~~~~~~
-There are a number of environment variables in use that can be used to configure the OpenDataCube.
-Some of these are built into the application itself, and others are specific to Docker, and will 
-be used to create a configuration file when the container is launched.
+::
 
-You can build the image with a command like this: 
-
-``docker build --tag opendatacube:local .``
-
-And it can then be run with this command:
-
-``docker run --rm opendatacube:local``
-
-If you don't need to build (and you shouldn't) then you can run it from a pre-built image with:
-
-``docker run --rm opendatacube/datacube-core``
-
-An example of starting a container with environment variables is as follows:
-
-.. code-block:: bash
-   
-   docker run \
-      --rm \
-      -e DATACUBE_CONFIG_PATH=/opt/custom-config.conf \
-      -e DB_DATABASE=mycube \
-      -e DB_HOSTNAME=localhost \
-      -e DB_USERNAME=postgres \
-      -e DB_PASSWORD=secretpassword \
-      -e DB_PORT=5432 \
-      opendatacube/datacube-core
+   ./check-code.sh --with-docker integration_tests
 
 
-Additionally, you can run an Open Data Cube Docker container along with Postgres using the Docker Compose file.
-For example, you can run ``docker-compose up`` and it will start up the Postgres server and Open Data Cube next to it. 
-To run commands in ODC, you can use ``docker-compose run odc datacube -v system init`` or ``docker-compose run odc datacube --version``.
+Developer setup on Ubuntu
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Building Python virtual environment on Ubuntu suitable for development work.
+
+Install dependencies:
+
+::
+
+   sudo apt-get update
+   sudo apt-get install -y \
+     autoconf automake build-essential make cmake \
+     graphviz \
+     python3-venv \
+     python3-dev \
+     libpq-dev \
+     libyaml-dev \
+     libnetcdf-dev \
+     libudunits2-dev
 
 
-Environment Variables
-~~~~~~~~~~~~~~~~~~~~~
-Most of the below environment variables should be self explanatory, and none are required (although
-it is recommended that you set them).
+Building python virtual environment:
 
-- ``DATACUBE_CONFIG_PATH`` - the path for the config file for writing (also used by ODC for reading)
-- ``DB_DATABASE`` - the name of the postgres database
-- ``DB_HOSTNAME`` - the hostname of the postgres database
-- ``DB_USERNAME`` - the username of the postgres database
-- ``DB_PASSWORD`` - the password to used for the postgres database
-- ``DB_PORT`` - the port that the postgres database is exposed on
+::
+
+   pyenv="${HOME}/.envs/odc"  # Change to suit your needs
+   mkdir -p "${pyenv}"
+   python3 -m venv "${pyenv}"
+   source "${pyenv}/bin/activate"
+   pip install -U pip wheel cython numpy
+   pip install -e '.[dev]'
+   pip install flake8 mypy pylint autoflake black
 
 
-.. |Build Status| image:: https://travis-ci.org/opendatacube/datacube-core.svg?branch=develop
-   :target: https://travis-ci.org/opendatacube/datacube-core
-.. |Coverage Status| image:: https://coveralls.io/repos/opendatacube/datacube-core/badge.svg?branch=develop&service=github
-   :target: https://coveralls.io/github/opendatacube/datacube-core?branch=develop
+.. |Build Status| image:: https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
+   :target: https://github.com/opendatacube/datacube-core/actions
+.. |Coverage Status| image:: https://codecov.io/gh/opendatacube/datacube-core/branch/develop/graph/badge.svg
+   :target: https://codecov.io/gh/opendatacube/datacube-core
 .. |Documentation Status| image:: https://readthedocs.org/projects/datacube-core/badge/?version=latest
    :target: http://datacube-core.readthedocs.org/en/latest/

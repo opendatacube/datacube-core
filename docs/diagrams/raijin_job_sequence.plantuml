@@ -1,0 +1,59 @@
+@startuml
+title Fractional Cover with 2-stage execution on ""raijin""
+
+-> "AWS Lambda": trigger: \nTime Event or \n Upstream Data
+
+"AWS Lambda" -> "Raijin Login Node": SSH
+activate "Raijin Login Node"
+"AWS Lambda" -> "Raijin Login Node": Submit
+participant "PBS Job Scheduler" as PBS
+"Raijin Login Node" -> PBS: qsub ""fc generate""
+"Raijin Login Node" <- PBS: job ID
+deactivate "Raijin Login Node"
+note right
+Job is now queued for execution
+end note
+||60||
+
+box "Raijin Compute Nodes"
+participant "Head Node" as Head
+collections "Worker Nodes" as Workers
+end box
+
+database Database
+
+create Head
+PBS -> Head: ""fc generate""
+activate Head
+Head -> Database: query database
+Head <- Database: results
+note over Head
+Save task file
+end note
+PBS <- Head: qsub ""fc run""
+PBS <- Head: done
+deactivate Head
+'destroy Head
+...
+'create Head
+PBS -> Head: ""fc run""
+activate Head
+
+create Workers
+Head -> Workers : start worker clients
+note over Head
+Load task file
+end note
+Head -> Workers : do_fc_task
+Head <- Workers : done
+note over Head, Workers: Distribute jobs across the workers
+...
+Head -> Workers : do_fc_task
+Head <- Workers : done
+
+
+PBS <- Head: done
+destroy Head
+destroy Workers
+
+@enduml

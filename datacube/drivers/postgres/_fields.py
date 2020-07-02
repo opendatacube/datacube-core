@@ -3,8 +3,6 @@
 """
 Build and index fields within documents.
 """
-from __future__ import absolute_import
-
 from collections import namedtuple
 from datetime import datetime, date
 from decimal import Decimal
@@ -17,9 +15,8 @@ from sqlalchemy.dialects.postgresql import INT4RANGE
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.sql import ColumnElement
 
-from datacube import compat
 from datacube import utils
-from datacube.index.fields import Expression, Field
+from datacube.model.fields import Expression, Field
 from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
 from .sql import FLOAT8RANGE
@@ -146,7 +143,7 @@ class PgDocField(PgField):
         if not doc_offsets:
             raise ValueError("Value requires at least one offset")
 
-        if isinstance(doc_offsets[0], compat.string_types):
+        if isinstance(doc_offsets[0], str):
             # It's a single offset.
             doc_offsets = [doc_offsets]
 
@@ -163,7 +160,7 @@ class PgDocField(PgField):
         if not doc_offsets:
             raise ValueError("Value requires at least one offset")
 
-        if isinstance(doc_offsets[0], compat.string_types):
+        if isinstance(doc_offsets[0], str):
             # It's a single offset.
             doc_offsets = [doc_offsets]
 
@@ -264,7 +261,7 @@ class DateDocField(SimpleDocField):
         if isinstance(value, datetime):
             return _default_utc(value)
         # SQLAlchemy expression or string are parsed in pg as dates.
-        elif isinstance(value, (ColumnElement,) + compat.string_types):
+        elif isinstance(value, (ColumnElement, str)):
             return func.agdc.common_timestamp(value)
         else:
             raise ValueError("Value not readable as date: %r" % (value,))
@@ -439,7 +436,7 @@ def _number_implies_year(v):
     >>> _number_implies_year(datetime(1994, 4, 4))
     datetime.datetime(1994, 4, 4, 0, 0)
     """
-    if isinstance(v, compat.integer_types):
+    if isinstance(v, int):
         return datetime(v, 1, 1)
     # The expression module parses all number ranges as floats.
     if isinstance(v, float):
@@ -579,7 +576,7 @@ def parse_fields(doc, table_column):
         type_name = ctorargs.pop('type', 'string')
         description = ctorargs.pop('description', None)
         indexed_val = ctorargs.pop('indexed', "true")
-        indexed = indexed_val.lower() == 'true' if isinstance(indexed_val, compat.string_types) else indexed_val
+        indexed = indexed_val.lower() == 'true' if isinstance(indexed_val, str) else indexed_val
 
         field_class = type_map.get(type_name)
         if not field_class:

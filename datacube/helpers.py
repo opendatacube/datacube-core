@@ -3,10 +3,10 @@ Useful functions for Datacube users
 
 Not used internally, those should go in `utils.py`
 """
-from __future__ import absolute_import
 
 import numpy as np
 import rasterio
+import warnings
 
 DEFAULT_PROFILE = {
     'blockxsize': 256,
@@ -15,12 +15,13 @@ DEFAULT_PROFILE = {
     'driver': 'GTiff',
     'interleave': 'band',
     'nodata': 0.0,
-    'photometric': 'RGBA',
     'tiled': True}
 
 
-def write_geotiff(filename, dataset, profile_override=None, time_index=None):
+def write_geotiff(filename, dataset, profile_override=None):
     """
+    DEPRECATED: use datacube.utils.cog.write_cog instead.
+
     Write an ODC style xarray.Dataset to a GeoTIFF file.
 
     :param filename: Output filename
@@ -28,12 +29,16 @@ def write_geotiff(filename, dataset, profile_override=None, time_index=None):
     :param profile_override: option dict, overrides rasterio file creation options.
     :param time_index: DEPRECATED
     """
+    warnings.warn("""Function datacube.helpers.write_geotiff is deprecated,
+please use datacube.utils.cog.write_cog instead""",
+                  category=DeprecationWarning)
+
     profile_override = profile_override or {}
 
-    if time_index is not None:
-        raise ValueError('''The write_geotiff function no longer supports passing in `time_index`.
-        The same function can be achieved by calling `dataset.isel(time=<time_index>)` before passing
-        in your dataset. It was removed because it made the function much less useful for more advanced cases.''')
+    geobox = getattr(dataset, 'geobox', None)
+
+    if geobox is None:
+        raise ValueError('Can only write datasets with specified `crs` attribute')
 
     try:
         dtypes = {val.dtype for val in dataset.data_vars.values()}
@@ -42,11 +47,13 @@ def write_geotiff(filename, dataset, profile_override=None, time_index=None):
         dtypes = [dataset.dtype]
 
     profile = DEFAULT_PROFILE.copy()
+    height, width = geobox.shape
+
     profile.update({
-        'width': dataset.dims[dataset.crs.dimensions[1]],
-        'height': dataset.dims[dataset.crs.dimensions[0]],
-        'transform': dataset.affine,
-        'crs': dataset.crs.crs_str,
+        'width': width,
+        'height': height,
+        'transform': geobox.affine,
+        'crs': str(geobox.crs),
         'count': len(dataset.data_vars),
         'dtype': str(dtypes.pop())
     })

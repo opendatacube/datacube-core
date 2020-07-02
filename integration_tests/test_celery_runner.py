@@ -7,7 +7,7 @@ import subprocess
 import pytest
 import sys
 
-from datacube import _celery_runner as cr
+cr = pytest.importorskip("datacube._celery_runner")
 
 PORT = 29374
 PASS = 'dfhksdjh23iuervao'
@@ -83,6 +83,12 @@ def test_launch_redis_with_custom_password():
     assert is_running is False
 
 
+def _echo(x, please_fail=False):
+    if please_fail:
+        raise IOError('Fake I/O error, cause you asked')
+    return x
+
+
 @pytest.mark.timeout(30)
 @pytest.mark.skipif(sys.platform == 'win32',
                     reason="does not run on Windows")
@@ -90,14 +96,10 @@ def test_launch_redis_with_custom_password():
 def test_celery_with_worker():
     DATA = [1, 2, 3, 4]
 
-    def _echo(x, please_fail=False):
-        if please_fail:
-            raise IOError('Fake I/O error, cause you asked')
-        return x
-
     def launch_worker():
         args = ['bash', '-c',
-                'nohup python -m datacube.execution.worker --executor celery localhost:{} --nprocs 1 &'.format(PORT)]
+                'nohup {} -m datacube.execution.worker --executor celery localhost:{} --nprocs 1 &'.format(
+                    sys.executable, PORT)]
         try:
             subprocess.check_call(args)
         except subprocess.CalledProcessError:

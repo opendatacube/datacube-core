@@ -1,9 +1,7 @@
-from __future__ import absolute_import
-
 import logging
 
 from datacube.drivers.postgres import PostgresDb
-from datacube.index._datasets import DatasetResource
+from datacube.index._datasets import DatasetResource  # type: ignore
 from datacube.index._metadata_types import MetadataTypeResource, default_metadata_type_docs
 from datacube.index._products import ProductResource
 from datacube.index._users import UserResource
@@ -36,8 +34,7 @@ class Index(object):
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
 
-    def __init__(self, db):
-        # type: (PostgresDb) -> None
+    def __init__(self, db: PostgresDb) -> None:
         self._db = db
 
         self.users = UserResource(db)
@@ -46,8 +43,7 @@ class Index(object):
         self.datasets = DatasetResource(db, self.products)
 
     @property
-    def url(self):
-        # type: () -> URL
+    def url(self) -> str:
         return self._db.url
 
     @classmethod
@@ -97,12 +93,11 @@ class DefaultIndexDriver(object):
         return Index.from_config(config, application_name, validate_connection)
 
     @staticmethod
-    def metadata_type_from_doc(definition):
+    def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
-        :param dict definition:
-        :rtype: datacube.model.MetadataType
+        :param definition:
         """
-        MetadataType.validate(definition)
+        MetadataType.validate(definition)  # type: ignore
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))
 

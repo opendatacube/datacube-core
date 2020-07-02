@@ -3,64 +3,26 @@
 Release Process
 ***************
 
-Build a version
-===============
+#. Decide to do a release, and check with regular contributors on Slack that
+   they don't have anything pending.
 
-#. Pick a release name for the next version
-    Releases are versioned using the ``major.minor.bugfix`` numbering system.
+#. Update the release notes in the ``develop`` branch via a PR.
 
-#. Update the release notes on the :ref:`whats_new` page
-    Check the git log for changes since the last release.
+#. Create a new **Tag** and **Release** using the `GitHub Releases Web UI`_
 
-#. Check that Travis_ and readthedocs_ are passing for the latest commit
-    Make sure that the tests have finished running!
+#. Wait for the `GitHub Action`_ to run and publish the new release to PyPI_
 
-#. Tag the branch
-    Use the format of ``datacube-major.minor.bugfix``.
+#. Wait for the **conda-forge** bot to notice the new PyPI version and create a PR against
+   `the conda-forge datacube feedstock <odc-feedstock>`_
 
-    .. code::
+#. Merge the `PR created by the conda-forge <odc-feedstock>`_ bot to create a
+   new `conda-forge release <https://anaconda.org/conda-forge/datacube>`_.
 
-       git tag datacube-1.6.0
-       git push --tags
+#. Manually update the ``stable`` branch via a PR from ``develop``.
 
-#. Draft a new release on the `Datacube releases`_ GitHub page
-    Include the items added to the release notes in step 2.
+#. Kick back, relax, and enjoy a tasty beverage.
 
-
-Marking it stable
-=================
-
-Once a built version has been tested, found to be stable, and the team agrees, we make it the new 
-stable version.
-
-#. Merge changes leading up to the release into the `stable` branch
-    This will also update the `stable` docs.
-
-#. Upload the build to PyPi
-    You might need a PyPI_ account with appropriate authorization.
-
-    .. code-block:: bash
-
-        python setup.py sdist bdist_wheel
-        twine upload dist/*
-        
-    This should upload the project to https://pypi.python.org/pypi/datacube/.
-
-#. Update conda-forge recipe
-    Follow the instrucions under **Updating datacube-feedstock** in the `Datcube Feedstock`_ repository.
-    
-    It should involve modifying the version number in the
-    `recipe <https://github.com/conda-forge/datacube-feedstock/blob/master/recipe/meta.yaml>`_ and updating the SHA hash.    
-    The hash should be generated from the ``.tar.gz`` mentioned in the ``source`` of the recipe.
-    
-    .. code-block:: bash
-    
-        openssl sha256 <downloaded-datacube-source.tar.gz>
-        
-    
-.. _PyPI: https://pypi.python.org/pypi
-.. _Travis: https://travis-ci.org/opendatacube/datacube-core
-.. _readthedocs: http://readthedocs.org/projects/datacube-core/builds/
-.. _Datacube releases: https://github.com/opendatacube/datacube-core/releases
-.. _Datcube Feedstock: https://github.com/conda-forge/datacube-feedstock
-
+.. _GitHub Releases Web UI: https://github.com/opendatacube/datacube-core/releases
+.. _GitHub Action: https://github.com/opendatacube/datacube-core/actions
+.. _PyPI: https://pypi.org/project/datacube/
+.. _odc-feedstock: https://github.com/conda-forge/datacube-feedstock/pulls

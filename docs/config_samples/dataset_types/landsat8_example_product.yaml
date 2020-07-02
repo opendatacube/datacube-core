@@ -1,0 +1,61 @@
+name: landsat8_example_product
+description: Landsat 8 example product
+metadata_type: eo3
+
+metadata:
+    product:
+        name: landsat8_example_product
+    # Alternatively, include specific items to match
+    # properties:
+        # eo:instrument: OLI_TIRS
+        # eo:platform: landsat-8
+
+measurements:
+    - name: 'red'
+      aliases: [band_4, sr_band4]
+      dtype: int16
+      nodata: -9999
+      units: 'reflectance'
+    - name: 'blue'
+      aliases: [band_2, sr_band2]
+      dtype: int16
+      nodata: -9999
+      units: 'reflectance'
+    - name: 'pixel_qa'
+      aliases: [pixel_quality, level2_qa]
+      dtype: uint16
+      nodata: 1
+      units: 'bit_index'
+      flags_definition:
+        pixel_qa:
+          bits: [0,1,2,3,4,5,6,7,8,9,10,11]
+          description: Level 2 pixel quality band 
+          values:
+            1: Fill
+            2: Clear
+            4: Water
+            8: Cloud shadow
+            16: Snow
+            32: Cloud
+            64: Cloud Confidence Low Bit
+            128: Cloud Confidence High Bit
+            256: Cirrus Confidence Low Bit
+            512: Cirrus Confidence High Bit
+            1024: Terrain Occlusion
+            2048: Unused  # Be careful of repeated names which could confuse the masking code
+        # Alternatively or additionally, use the bit on/off method
+        fill:
+          bits: 0
+          description: No data
+          values: {0: false, 1: true}
+        clear:
+          bits: 1
+          description: Clear
+          values: {0: no_clear_land, 1: clear_land}
+        # ...
+        cloud_confidence:
+          bits: [6, 7]
+          description: Cloud confidence
+          values: {0: none, 1: low, 2: medium, 3: high}
+        # ...
+            

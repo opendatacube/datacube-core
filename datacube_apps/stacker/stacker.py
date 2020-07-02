@@ -2,7 +2,6 @@
 Create time-stacked NetCDF files
 
 """
-from __future__ import absolute_import, print_function, division
 
 import copy
 import datetime
@@ -11,6 +10,7 @@ import logging
 import os
 import socket
 from functools import partial
+from typing import List
 
 import click
 import dask.array as da
@@ -22,8 +22,7 @@ import datacube
 from datacube.model import Dataset
 from datacube.model.utils import xr_apply, datasets_to_doc
 from datacube.utils import mk_part_uri
-from datacube.storage import netcdf_writer
-from datacube.storage.storage import create_netcdf_storage_unit
+from datacube.drivers.netcdf import create_netcdf_storage_unit, netcdf_writer
 from datacube.ui import task_app
 
 _LOG = logging.getLogger(__name__)
@@ -33,16 +32,15 @@ APP_NAME = 'datacube-stacker'
 
 def get_filename(config, cell_index, year):
     file_path_template = str(Path(config['location'], config['file_path_template']))
-    return file_path_template.format(tile_index=cell_index, start_time=year, version=config['taskfile_version'])
+    return file_path_template.format(tile_index=cell_index, start_time=year, version=config['taskfile_utctime'])
 
 
-def get_temp_file(final_output_path):
+def get_temp_file(final_output_path) -> Path:
     """
     Get a temp file path
     Changes "/path/file.nc" to "/path/.tmp/file.nc.host.pid.tmp"
     :param Path final_output_path:
     :return: Path to temporarily write output
-    :rtype: Path
     """
 
     tmp_folder = final_output_path.parent / '.tmp'
@@ -107,7 +105,7 @@ def make_stacker_config(index, config, export_path=None, check_data=None, **quer
 
     config['variable_params'] = variable_params
 
-    config['taskfile_version'] = int(datacube.utils.datetime_to_seconds_since_1970(datetime.datetime.now()))
+    config['taskfile_utctime'] = int(datacube.utils.datetime_to_seconds_since_1970(datetime.datetime.now()))
 
     return config
 
@@ -119,8 +117,7 @@ def get_history_attribute(config, task):
         app=APP_NAME,
         ver=datacube.__version__,
         args=', '.join([config['app_config_file'],
-                        str(config['version']),
-                        str(config['taskfile_version']),
+                        str(config['taskfile_utctime']),
                         task['output_filename'],
                         str(task['year']),
                         str(task['cell_index'])
@@ -161,8 +158,14 @@ def do_stack_task(config, task):
     data['dataset'] = datasets_to_doc(unwrapped_datasets)
 
     try:
+        if data.geobox is None:
+            raise DatacubeException('Dataset geobox property is None, cannot write to NetCDF file.')
+
+        if data.geobox.crs is None:
+            raise DatacubeException('Dataset geobox.crs property is None, cannot write to NetCDF file.')
+
         nco = create_netcdf_storage_unit(temp_filename,
-                                         data.crs,
+                                         data.geobox.crs,
                                          data.coords,
                                          data.data_vars,
                                          variable_params,
@@ -205,8 +208,7 @@ def check_identical(data1, data2, output_filename):
 
 
 def make_updated_tile(old_datasets, new_uri, geobox):
-    def update_dataset_location(idx, labels, dataset):
-        # type: ((int,), object, Dataset) -> list
+    def update_dataset_location(idx, labels, dataset: Dataset) -> List[Dataset]:
         idx, = idx
         new_dataset = copy.copy(dataset)
         new_dataset.uris = [mk_part_uri(new_uri, idx)]

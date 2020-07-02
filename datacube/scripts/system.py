@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 
 import click
@@ -11,6 +9,7 @@ from datacube.index import index_connect
 from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
+from datacube.config import LocalConfig
 
 _LOG = logging.getLogger('datacube-system')
 
@@ -42,7 +41,6 @@ def system():
     help="Allow table to be locked (eg. while creating missing indexes)"
 )
 @ui.pass_index(expect_initialised=False)
-# TODO: Need to be able to specify the type of index. In our current case, whether to create s3aio specific tables
 def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table):
     echo('Initialising database...')
 
@@ -65,9 +63,7 @@ def database_init(index, default_types, init_users, recreate_views, rebuild, loc
 
 @system.command('check', help='Check and display current configuration')
 @ui.pass_config
-def check(
-        local_config  # type: LocalConfig
-):
+def check(local_config: LocalConfig):
     """
     Verify & view current configuration
     """

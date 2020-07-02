@@ -8,14 +8,23 @@ import shutil
 import tempfile
 import json
 import uuid
+import numpy as np
+import xarray as xr
 from datetime import datetime
-
+from collections.abc import Sequence, Mapping
 import pathlib
 
-from datacube import compat
+from affine import Affine
+from datacube import Datacube
+from datacube.model import Measurement
+from datacube.utils.dates import mk_time_coord
+from datacube.utils.documents import parse_yaml
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
+from datacube.utils.geometry import GeoBox, CRS
+
+from datacube.model.fields import parse_search_field
 
 _DEFAULT = object()
 
@@ -43,13 +52,13 @@ def assert_file_structure(folder, expected_structure, root=''):
         id_ = '%s/%s' % (root, k) if root else k
 
         f = folder.joinpath(k)
-        if isinstance(v, dict):
+        if isinstance(v, Mapping):
             assert f.is_dir(), "%s is not a dir" % (id_,)
             assert_file_structure(f, v, id_)
-        elif isinstance(v, compat.string_types):
+        elif isinstance(v, (str, Sequence)):
             assert f.is_file(), "%s is not a file" % (id_,)
         else:
-            assert False, "Only strings and dicts expected when defining a folder structure."
+            assert False, "Only strings|[strings] and dicts expected when defining a folder structure."
 
 
 def write_files(file_dict):
@@ -86,17 +95,17 @@ def _write_files_to_dir(directory_path, file_dict):
     """
     for filename, contents in file_dict.items():
         path = os.path.join(directory_path, filename)
-        if isinstance(contents, dict):
+        if isinstance(contents, Mapping):
             os.mkdir(path)
             _write_files_to_dir(path, contents)
         else:
             with open(path, 'w') as f:
-                if isinstance(contents, list):
-                    f.writelines(contents)
-                elif isinstance(contents, compat.string_types):
+                if isinstance(contents, str):
                     f.write(contents)
+                elif isinstance(contents, Sequence):
+                    f.writelines(contents)
                 else:
-                    raise Exception('Unexpected file contents: %s' % type(contents))
+                    raise ValueError('Unexpected file contents: %s' % type(contents))
 
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
@@ -107,10 +116,47 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
+def geobox_to_gridspatial(geobox):
+    if geobox is None:
+        return {}
+
+    l, b, r, t = geobox.extent.boundingbox
+    return {"grid_spatial": {
+        "projection": {
+            "geo_ref_points": {
+                "ll": {"x": l, "y": b},
+                "lr": {"x": r, "y": b},
+                "ul": {"x": l, "y": t},
+                "ur": {"x": r, "y": t}},
+            "spatial_reference": str(geobox.crs)}}}
+
+
+def mk_sample_eo(name='eo'):
+    eo_yaml = f"""
+name: {name}
+description: Sample
+dataset:
+    id: ['id']
+    label: ['ga_label']
+    creation_time: ['creation_dt']
+    measurements: ['image', 'bands']
+    sources: ['lineage', 'source_datasets']
+    format: ['format', 'name']
+    grid_spatial: ['grid_spatial', 'projection']
+    search_fields:
+       time:
+         type: 'datetime-range'
+         min_offset: [['time']]
+         max_offset: [['time']]
+    """
+    return MetadataType(parse_yaml(eo_yaml))
+
+
 def mk_sample_product(name,
                       description='Sample',
                       measurements=('red', 'green', 'blue'),
                       with_grid_spec=False,
+                      metadata_type=None,
                       storage=None):
 
     if storage is None and with_grid_spec is True:
@@ -118,46 +164,35 @@ def mk_sample_product(name,
                    'resolution': {'x': 25, 'y': -25},
                    'tile_size': {'x': 100000.0, 'y': 100000.0}}
 
-    eo_type = MetadataType({
-        'name': 'eo',
-        'description': 'Sample',
-        'dataset': dict(
-            id=['id'],
-            label=['ga_label'],
-            creation_time=['creation_dt'],
-            measurements=['image', 'bands'],
-            sources=['lineage', 'source_datasets'],
-            format=['format', 'name'],
-        )
-    }, dataset_search_fields={})
-
     common = dict(dtype='int16',
                   nodata=-999,
                   units='1',
                   aliases=[])
 
+    if metadata_type is None:
+        metadata_type = mk_sample_eo('eo')
+
     def mk_measurement(m):
         if isinstance(m, str):
             return dict(name=m, **common)
-        if isinstance(m, tuple):
+        elif isinstance(m, tuple):
             name, dtype, nodata = m
             m = common.copy()
             m.update(name=name, dtype=dtype, nodata=nodata)
             return m
-        if isinstance(m, dict):
+        elif isinstance(m, dict):
             m_merged = common.copy()
             m_merged.update(m)
             return m_merged
-
-        assert False and 'Only support str|dict|(name, dtype, nodata)'
-        return {}
+        else:
+            raise ValueError('Only support str|dict|(name, dtype, nodata)')
 
     measurements = [mk_measurement(m) for m in measurements]
 
     definition = dict(
         name=name,
         description=description,
-        metadata_type='eo',
+        metadata_type=metadata_type.name,
         metadata={},
         measurements=measurements
     )
@@ -165,14 +200,17 @@ def mk_sample_product(name,
     if storage is not None:
         definition['storage'] = storage
 
-    return DatasetType(eo_type, definition)
+    return DatasetType(metadata_type, definition)
 
 
 def mk_sample_dataset(bands,
                       uri='file:///tmp',
                       product_name='sample',
                       format='GeoTiff',
-                      id='12345678123456781234567812345678'):
+                      timestamp=None,
+                      id='3a1df9e0-8484-44fc-8102-79184eab85dd',
+                      geobox=None,
+                      product_opts=None):
     # pylint: disable=redefined-builtin
     image_bands_keys = 'path layer band'.split(' ')
     measurement_keys = 'dtype units nodata aliases name'.split(' ')
@@ -183,14 +221,29 @@ def mk_sample_dataset(bands,
     measurements = [with_keys(m, measurement_keys) for m in bands]
     image_bands = dict((m['name'], with_keys(m, image_bands_keys)) for m in bands)
 
+    if product_opts is None:
+        product_opts = {}
+
     ds_type = mk_sample_product(product_name,
-                                measurements=measurements)
+                                measurements=measurements,
+                                **product_opts)
+
+    if timestamp is None:
+        timestamp = '2018-06-29'
+    if uri is None:
+        uris = []
+    elif isinstance(uri, list):
+        uris = uri.copy()
+    else:
+        uris = [uri]
 
     return Dataset(ds_type, {
         'id': id,
         'format': {'name': format},
-        'image': {'bands': image_bands}
-    }, uris=[uri])
+        'image': {'bands': image_bands},
+        'time': timestamp,
+        **geobox_to_gridspatial(geobox),
+    }, uris=uris)
 
 
 def make_graph_abcde(node):
@@ -268,3 +321,148 @@ def load_dataset_definition(path):
     fname = get_metadata_path(path)
     for _, doc in read_documents(fname):
         return SimpleDocNav(doc)
+
+
+def mk_test_image(w, h,
+                  dtype='int16',
+                  nodata=-999,
+                  nodata_width=4):
+    """
+    Create 2d ndarray where each pixel value is formed by packing x coordinate in
+    to the upper half of the pixel value and y coordinate is in the lower part.
+
+    So for uint16: im[y, x] == (x<<8) | y IF abs(x-y) >= nodata_width
+                   im[y, x] == nodata     IF abs(x-y) < nodata_width
+
+    really it's actually: im[y, x] == ((x & 0xFF ) <<8) | (y & 0xFF)
+
+    If dtype is of floating point type:
+       im[y, x] = (x + ((y%1024)/1024))
+
+    Pixels along the diagonal are set to nodata values (to disable set nodata_width=0)
+    """
+
+    dtype = np.dtype(dtype)
+
+    xx, yy = np.meshgrid(np.arange(w),
+                         np.arange(h))
+    if dtype.kind == 'f':
+        aa = xx.astype(dtype) + (yy.astype(dtype) % 1024.0) / 1024.0
+    else:
+        nshift = dtype.itemsize*8//2
+        mask = (1 << nshift) - 1
+        aa = ((xx & mask) << nshift) | (yy & mask)
+        aa = aa.astype(dtype)
+
+    if nodata is not None:
+        aa[abs(xx-yy) < nodata_width] = nodata
+    return aa
+
+
+def split_test_image(aa):
+    """
+    Separate image created by mk_test_image into x,y components
+    """
+    if aa.dtype.kind == 'f':
+        y = np.round((aa % 1)*1024)
+        x = np.floor(aa)
+    else:
+        nshift = (aa.dtype.itemsize*8)//2
+        mask = (1 << nshift) - 1
+        y = aa & mask
+        x = aa >> nshift
+    return x, y
+
+
+def gen_tiff_dataset(bands,
+                     base_folder,
+                     prefix='',
+                     timestamp='2018-07-19',
+                     **kwargs):
+    """
+       each band:
+         .name    - string
+         .values  - ndarray
+         .nodata  - numeric|None
+
+    :returns:  (Dataset, GeoBox)
+    """
+    from .io import write_gtiff
+    from pathlib import Path
+
+    if not isinstance(bands, Sequence):
+        bands = (bands,)
+
+    # write arrays to disk and construct compatible measurement definitions
+    gbox = None
+    mm = []
+    for band in bands:
+        name = band.name
+        fname = prefix + name + '.tiff'
+        meta = write_gtiff(base_folder/fname, band.values,
+                           nodata=band.nodata,
+                           overwrite=True,
+                           **kwargs)
+
+        gbox = meta.gbox
+
+        mm.append(dict(name=name,
+                       path=fname,
+                       layer=1,
+                       dtype=meta.dtype))
+
+    uri = Path(base_folder/'metadata.yaml').absolute().as_uri()
+    ds = mk_sample_dataset(mm,
+                           uri=uri,
+                           timestamp=timestamp,
+                           geobox=gbox)
+    return ds, gbox
+
+
+def mk_sample_xr_dataset(crs="EPSG:3578",
+                         shape=(33, 74),
+                         resolution=None,
+                         xy=(0, 0),
+                         time='2020-02-13T11:12:13.1234567Z',
+                         name='band',
+                         dtype='int16',
+                         nodata=-999,
+                         units='1'):
+    """ Note that resolution is in Y,X order to match that of GeoBox.
+
+        shape (height, width)
+        resolution (y: float, x: float) - in YX, to match GeoBox/shape notation
+
+        xy (x: float, y: float) -- location of the top-left corner of the top-left pixel in CRS units
+    """
+
+    if isinstance(crs, str):
+        crs = CRS(crs)
+
+    if resolution is None:
+        resolution = (-10, 10) if crs is None or crs.projected else (-0.01, 0.01)
+
+    t_coords = {}
+    if time is not None:
+        t_coords['time'] = mk_time_coord([time])
+
+    transform = Affine.translation(*xy)*Affine.scale(*resolution[::-1])
+    h, w = shape
+    geobox = GeoBox(w, h, transform, crs)
+
+    return Datacube.create_storage(t_coords, geobox, [Measurement(name=name, dtype=dtype, nodata=nodata, units=units)])
+
+
+def remove_crs(xx):
+    xx = xx.reset_coords(['spatial_ref'], drop=True)
+
+    for attribute_to_remove in ('crs', 'grid_mapping'):
+        xx.attrs.pop(attribute_to_remove, None)
+        for x in xx.coords.values():
+            x.attrs.pop(attribute_to_remove, None)
+
+        if isinstance(xx, xr.Dataset):
+            for x in xx.data_vars.values():
+                x.attrs.pop(attribute_to_remove, None)
+
+    return xx

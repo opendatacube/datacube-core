@@ -1,0 +1,101 @@
+name: Docker (test runner)
+
+on:
+  pull_request:
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker-test-runner.yml'
+      - 'setup.py'
+      - 'setup.cfg'
+      - 'check-code.sh'
+
+  push:
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker-test-runner.yml'
+      - 'setup.py'
+      - 'setup.cfg'
+      - 'check-code.sh'
+
+env:
+  ORG: opendatacube
+  IMAGE: datacube-tests
+  BUILDER_TAG: _build_cache
+  DOCKER_USER: gadockersvc
+
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: '3.6'
+
+    # This is just to get dependencies right, we do not keep datacube in the final image
+    - name: Install packaging dependencies
+      run: |
+        # needed for version getting
+        git fetch --prune --unshallow 2> /dev/null || true
+
+        python -m pip install -U --force \
+          "setuptools>=42" \
+          "setuptools_scm[toml]>=3.4" \
+          wheel \
+          twine
+
+    # This is just to get dependencies right, we do not keep datacube in the final image
+    - name: Build datacube wheel
+      run: |
+        mkdir -p ./docker/dist/
+        find ./docker/dist/ -type f -delete
+
+        python setup.py bdist_wheel --dist-dir ./docker/dist/
+        ls -lh ./docker/dist/
+        twine check ./docker/dist/*
+
+    - name: Pull docker cache
+      run: |
+        docker pull ${ORG}/${IMAGE}:latest         || true
+        docker pull ${ORG}/${IMAGE}:${BUILDER_TAG} || true
+
+    - name: Build Test Runner Docker
+      run: |
+        # build and cache first stage (env_builder)
+        docker build \
+          --target env_builder \
+          --cache-from ${ORG}/${IMAGE}:${BUILDER_TAG} \
+          --tag        ${ORG}/${IMAGE}:${BUILDER_TAG} \
+          ./docker/
+
+        # now build second stage making sure first stage is from cache
+        docker build \
+          --cache-from ${ORG}/${IMAGE}:${BUILDER_TAG} \
+          --cache-from ${ORG}/${IMAGE}:latest \
+          --tag        ${ORG}/${IMAGE}:latest \
+          ./docker/
+
+    - name: Verify Docker Image
+      run: |
+        ./check-code.sh --with-docker integration_tests
+
+    - name: DockerHub Push
+      if: |
+        github.event_name == 'push' && (
+          github.ref == 'refs/heads/develop'
+          )
+      run: |
+        if [ -n "${{ secrets.DockerPassword }}" ]; then
+           echo "Login to DockerHub as ${DOCKER_USER}"
+           echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
+           docker push ${ORG}/${IMAGE}:${BUILDER_TAG}
+           docker push ${ORG}/${IMAGE}:latest
+        else
+           echo "Set DockerPassword secret to push to docker"
+        fi

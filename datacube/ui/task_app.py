@@ -1,32 +1,20 @@
-from __future__ import absolute_import
 
 import logging
 import os
 import time
 import click
-import cachetools
 import functools
 import itertools
 import re
 from pathlib import Path
-
 import pandas as pd
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import pickle
 
 from datacube.ui import click as dc_ui
 from datacube.utils import read_documents
 
 
 _LOG = logging.getLogger(__name__)
-
-
-@cachetools.cached(cache={}, key=lambda index, id_: id_)
-def get_full_lineage(index, id_):
-    return index.datasets.get(id_, include_sources=True)
 
 
 def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs):
@@ -73,7 +61,7 @@ def save_tasks(config, tasks, taskfile):
         os.remove(taskfile)
         return 0
     else:
-        _LOG.info('Saved config and %d tasks to %s', i, taskfile)
+        _LOG.info('Saved config and %d tasks to %s', i - 1, taskfile)
     return i - 1
 
 
@@ -251,12 +239,6 @@ def check_existing_files(paths):
     click.echo('{total} tasks files to be created ({valid} valid files, {invalid} existing paths)'.format(
         total=total, valid=total - len(existing_files), invalid=len(existing_files)
     ))
-
-
-def add_dataset_to_db(index, datasets):
-    for dataset in datasets.values:
-        index.datasets.add(dataset, with_lineage=False)
-        _LOG.info('Dataset added')
 
 
 def do_nothing(result):

@@ -1,0 +1,43 @@
+---
+$schema: https://schemas.opendatacube.org/dataset
+id: 7d41a4d0-2ab3-4da1-a010-ef48662ae8ef
+product:
+  name: eo3_test
+
+crs: "epsg:3857"
+properties:
+    datetime: 2020-04-20 00:26:43Z
+    odc:processing_datetime: 2020-05-16 10:56:18Z
+
+grids:
+    default:
+       shape: [100, 200]
+       transform: [10, 0, 100000, 0, -10, 200000, 0, 0, 1]
+lineage:
+  a: [f80c30a5-1036-5607-a62f-fde5e3fec985]
+  bc:
+    - fb077e47-f62e-5869-9bd1-03584c2d7380
+    - 13d3d75a-1d90-5ec0-8b86-e8be78275660
+
+---
+# Crossing lon=180
+$schema: https://schemas.opendatacube.org/dataset
+id: f884df9b-4458-47fd-a9d2-1a52a2db8a1a
+product:
+  name: eo3_test
+
+crs: "epsg:32660"
+properties:
+    datetime: 2020-04-20 00:26:43Z
+    odc:processing_datetime: 2020-05-16 10:56:18Z
+
+grids:
+    default:
+       shape: [7811, 7691]
+       transform: [30, 0, 618285, 0, -30, -1642485, 0, 0, 1]
+    pan:
+       shape: [15621, 15381]
+       transform: [15, 0, 618292.5, 0, -15, -1642492.5, 0, 0, 1]
+lineage: {}
+
+...

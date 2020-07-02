@@ -1,279 +1,145 @@
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-
 """
-Data Access Module
+Search expression parsing for command line applications.
+
+Three types of expressions are available:
+
+    FIELD = VALUE
+    FIELD in DATE-RANGE
+    FIELD in [START, END]
+
+Where DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
+and START, END are either numbers or dates.
 """
-from __future__ import absolute_import, print_function, division
+# flake8: noqa
 
-import calendar
-import re
-from datetime import datetime
+from lark import Lark, v_args, Transformer
 
-from dateutil import tz
-from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
-
+from datacube.api.query import _time_to_search_dims
 from datacube.model import Range
 
-FIELD_NAME = attr(u'field_name', word)
 
-NUMBER = re.compile(r"[-+]?(\d*\.\d+|\d+\.\d*|\d+)")
-# A limited string can be used without quotation marks.
-LIMITED_STRING = re.compile(r"[a-zA-Z][\w._-]*")
-# Inside string quotation marks. Kept simple. We're not supporting escapes or much else yet...
-STRING_CONTENTS = re.compile(r"[\w\s._-]*")
-# URI
-URI_CONTENTS = re.compile(r"[a-z0-9+.-]+://([:/\w._-])*")
-URI_CONTENTS_WITH_SPACE = re.compile(r"[a-z0-9+.-]+://([:/\s\w._-])*")
+search_grammar = r"""
+    start: expression*
+    ?expression: equals_expr
+               | time_in_expr
+               | field_in_expr
 
-# Either a day '2016-02-20' or a month '2016-02'
-DATE = re.compile(r"\d{4}-\d{1,2}(-\d{1,2})?")
+    equals_expr: field "=" value
+    time_in_expr: time "in" date_range
+    field_in_expr: field "in" "[" orderable "," orderable "]"
 
-# Either a whole day '2016-02-20' a whole month '2016-02' or a whole year '2014'
-VAGUE_DATE = re.compile(r"\d{4}(-\d{1,2}(-\d{1,2})?)?")
+    field: FIELD
+    time: TIME
 
+    ?orderable: INT -> integer
+              | SIGNED_NUMBER -> number
 
-class Expr(object):
-    def query_repr(self, get_field):
-        """
-        Return this as a database expression.
+    ?value: INT -> integer
+          | SIGNED_NUMBER -> number
+          | ESCAPED_STRING -> string
+          | SIMPLE_STRING -> simple_string
+          | URL_STRING -> url_string
 
-        :type get_field: (str) -> datacube.index.fields.Field
-        :rtype: datacube.index.fields.Expression
-        """
-        raise NotImplementedError('to_expr')
 
+    ?date_range: date -> single_date
+               | "[" date "," date "]" -> date_pair
 
-class StringValue(Expr):
-    def __init__(self, value=None):
-        self.value = value
+    date: YEAR ["-" MONTH ["-" DAY ]]
 
-    grammar = [
-        attr(u'value', URI_CONTENTS),
-        attr(u'value', LIMITED_STRING),
-        (u'"', attr(u'value', URI_CONTENTS_WITH_SPACE), u'"'),
-        (u'"', attr(u'value', STRING_CONTENTS), u'"'),
-    ]
+    TIME: "time"
+    FIELD: /[a-zA-Z][\w\d_]*/
+    YEAR: DIGIT ~ 4
+    MONTH: DIGIT ~ 1..2
+    DAY: DIGIT ~ 1..2
+    SIMPLE_STRING: /[a-zA-Z][\w._-]*/
+    URL_STRING: /[a-z0-9+.-]+:\/\/([:\/\w._-])*/
 
-    def __str__(self):
-        return self.value
 
-    def __repr__(self):
-        return repr(self.value)
+    %import common.ESCAPED_STRING
+    %import common.SIGNED_NUMBER
+    %import common.INT
+    %import common.DIGIT
+    %import common.CNAME
+    %import common.WS
+    %ignore WS
+"""
 
-    def query_repr(self, get_field):
-        return self.value
 
-    def as_value(self):
-        return self.value
+def identity(x):
+    return x
 
 
-class NumericValue(Expr):
-    def __init__(self, value=None):
-        self.value = value
+@v_args(inline=True)
+class TreeToSearchExprs(Transformer):
+    # Convert the expressions
+    def equals_expr(self, field, value):
+        return {str(field): value}
 
-    grammar = attr(u'value', NUMBER)
+    def field_in_expr(self, field, lower, upper):
+        return {str(field): Range(lower, upper)}
 
-    def __str__(self):
-        return self.value
+    def time_in_expr(self, time_field, date_range):
+        return {str(time_field): date_range}
 
-    def __repr__(self):
-        return self.value
+    # Convert the literals
+    def string(self, val):
+        return str(val[1:-1])
 
-    def query_repr(self, get_field):
-        return float(self.value)
+    simple_string = url_string = field = time = str
+    number = float
+    integer = int
+    value = identity
 
-    def as_value(self):
-        return float(self.value)
+    def single_date(self, date):
+        return _time_to_search_dims(date)
 
+    def date_pair(self, start, end):
+        return _time_to_search_dims((start, end))
 
-class DateValue(Expr):
-    def __init__(self, value=None):
-        self.value = value
+    def date(self, y, m=None, d=None):
+        return "-".join(x for x in [y, m, d] if x is not None)
 
-    grammar = attr(u'value', DATE)
-
-    def __str__(self):
-        return self.value
-
-    def __repr__(self):
-        return self.value
-
-    def query_repr(self, get_field):
-        return self.as_value()
-
-    def as_value(self):
-        """
-        >>> DateValue(value='2017-03-03').as_value()
-        datetime.datetime(2017, 3, 3, 0, 0, tzinfo=tzutc())
-        >>> # A missing day implies the first.
-        >>> DateValue(value='2017-03').as_value()
-        datetime.datetime(2017, 3, 1, 0, 0, tzinfo=tzutc())
-        """
-        parts = self.value.split('-')
-        parts.reverse()
-
-        year = int(parts.pop())
-        month = int(parts.pop())
-        day = int(parts.pop()) if parts else 1
-        return datetime(year, month, day, tzinfo=tz.tzutc())
-
-
-def last_day_of_month(year, month):
-    first_weekday, last_day = calendar.monthrange(year, month)
-    return last_day
-
-
-class VagueDateValue(Expr):
-    def __init__(self, value=None):
-        self.value = value
-
-    grammar = attr(u'value', VAGUE_DATE)
-
-    def __str__(self):
-        return self.value
-
-    def __repr__(self):
-        return self.value
-
-    def query_repr(self, get_field):
-        return self.as_value()
-
-    def as_value(self):
-        """
-        >>> VagueDateValue(value='2017-03-03').as_value()
-        Range(begin=datetime.datetime(2017, 3, 3, 0, 0, tzinfo=tzutc()), \
-end=datetime.datetime(2017, 3, 3, 23, 59, 59, tzinfo=tzutc()))
-        >>> VagueDateValue(value='2017-03').as_value()
-        Range(begin=datetime.datetime(2017, 3, 1, 0, 0, tzinfo=tzutc()), \
-end=datetime.datetime(2017, 3, 31, 23, 59, 59, tzinfo=tzutc()))
-        >>> VagueDateValue(value='2017').as_value()
-        Range(begin=datetime.datetime(2017, 1, 1, 0, 0, tzinfo=tzutc()), \
-end=datetime.datetime(2017, 12, 31, 23, 59, 59, tzinfo=tzutc()))
-        """
-        parts = self.value.split('-')
-        parts.reverse()
-
-        year = int(parts.pop())
-        month = int(parts.pop()) if parts else None
-        day = int(parts.pop()) if parts else None
-
-        if parts:
-            raise RuntimeError("More than three components in date expression? %r" % self.value)
-
-        month_range = (month, month) if month else (1, 12)
-        day_range = (day, day) if day else (1, last_day_of_month(year, month_range[1]))
-
-        return Range(
-            datetime(year, month_range[0], day_range[0], 0, 0, tzinfo=tz.tzutc()),
-            datetime(year, month_range[1], day_range[1], 23, 59, 59, tzinfo=tz.tzutc())
-        )
-
-
-class InExpression(Expr):
-    def __init__(self, field_name=None, value=None, year=None):
-        self.field_name = field_name
-        self.value = value
-        self.year = year
-
-    grammar = [
-        (FIELD_NAME, u'in', attr(u'value', [VagueDateValue]))
-    ]
-
-    def __str__(self):
-        return '{} = {!r}'.format(self.field_name, self.value)
-
-    def query_repr(self, get_field):
-        return get_field(self.field_name) == self.value.query_repr(get_field)
-
-    def as_query(self):
-        return {self.field_name: self.value.as_value()}
-
-
-class EqualsExpression(Expr):
-    def __init__(self, field_name=None, value=None):
-        self.field_name = field_name
-        self.value = value
-
-    grammar = FIELD_NAME, u'=', attr(u'value', [DateValue, NumericValue, StringValue])
-
-    def __str__(self):
-        return '{} = {!r}'.format(self.field_name, self.value)
-
-    def query_repr(self, get_field):
-        return get_field(self.field_name) == self.value.query_repr(get_field)
-
-    def as_query(self):
-        return {self.field_name: self.value.as_value()}
-
-
-class BetweenExpression(Expr):
-    def __init__(self, field_name=None, low_value=None, high_value=None):
-        self.field_name = field_name
-        self.low_value = low_value
-        self.high_value = high_value
-
-    range_values = [DateValue, NumericValue]
-    grammar = [
-        # low < field < high
-        (attr(u'low_value', range_values), u'<', FIELD_NAME, u'<', attr(u'high_value', range_values)),
-        # high > field > low
-        (attr(u'high_value', range_values), u'>', FIELD_NAME, u'>', attr(u'low_value', range_values)),
-        # field in range(low, high)
-        (FIELD_NAME, u'in', u'range',
-         u'(',
-         attr(u'low_value', range_values), u',', attr(u'high_value', range_values),
-         u')'),
-    ]
-
-    def __str__(self):
-        return '{!r} < {} < {!r}'.format(self.low_value, self.field_name, self.high_value)
-
-    def query_repr(self, get_field):
-        return get_field(self.field_name).between(
-            self.low_value.query_repr(get_field),
-            self.high_value.query_repr(get_field)
-        )
-
-    def as_query(self):
-        return {self.field_name: Range(self.low_value.as_value(), self.high_value.as_value())}
-
-
-class ExpressionList(List):
-    grammar = maybe_some([EqualsExpression, BetweenExpression, InExpression])
-
-    def __str__(self):
-        return ' and '.join(map(str, self))
-
-
-def _parse_raw_expressions(*expression_text):
-    """
-    :rtype: ExpressionList
-    :type expression_text: str
-    """
-    return peg_parse(' '.join(expression_text), ExpressionList)
+    # Merge everything into a single dict
+    def start(self, *search_exprs):
+        combined = {}
+        for expr in search_exprs:
+            combined.update(expr)
+        return combined
 
 
 def parse_expressions(*expression_text):
-    """
-    Parse an expression string into a dictionary suitable for .search() methods.
+    expr_parser = Lark(search_grammar)
+    tree = expr_parser.parse(' '.join(expression_text))
+    return TreeToSearchExprs().transform(tree)
 
-    :type expression_text: str
-    :rtype: dict[str, object]
-    """
-    raw_expr = _parse_raw_expressions(' '.join(expression_text))
-    out = {}
-    for expr in raw_expr:
-        out.update(expr.as_query())
 
-    return out
+def main():
+    expr_parser = Lark(search_grammar)
+
+    sample_inputs = """platform = "LANDSAT_8"
+    platform = "LAND SAT_8"
+    platform = 4
+    lat in [4, 6]
+    time in [2014, 2014]
+    time in [2014-03-01, 2014-04-01]
+    time in 2014-03-02
+    time in 2014-3-2
+    time in 2014-3
+    time in 2014
+    platform = LANDSAT_8
+    lat in [4, 6] time in 2014-03-02
+    platform=LS8 lat in [-14, -23.5] instrument="OTHER"
+    """.strip().split('\n')
+
+    for sample in sample_inputs:
+        transformer = TreeToSearchExprs()
+        tree = expr_parser.parse(sample)
+
+        print(sample)
+        print(tree)
+        print(transformer.transform(tree))
+        print()
+
+
+if __name__ == '__main__':
+    main()

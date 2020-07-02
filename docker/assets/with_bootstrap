@@ -1,0 +1,87 @@
+#!/bin/bash
+
+launch_db () {
+    local pgdata="${1:-/srv/postgresql}"
+    local dbuser="${2:-odc}"
+    local bin=/usr/lib/postgresql/10/bin
+
+    [ -e "${pgdata}/PG_VERSION" ] || {
+        sudo -u postgres "${bin}/initdb" -D "${pgdata}" --auth-host=md5 --encoding=UTF8
+    }
+
+    sudo -u postgres "${bin}/pg_ctl" -D "${pgdata}" -l "${pgdata}/pg.log" start
+
+    sudo -u postgres createuser --superuser "${dbuser}"
+    sudo -u postgres createdb "${dbuser}"
+    sudo -u postgres createdb datacube
+    sudo -u postgres createdb agdcintegration
+}
+
+# Become `odc` user with UID/GID compatible to datacube-core volume
+#  If Running As root
+#    launch db server
+#    If outside volume not owned by root
+#       change `odc` to have compatible UID/GID
+#       re-exec this script as odc user
+
+[[ $UID -ne 0 ]] || {
+    [[ "${SKIP_DB:-no}" == "yes" ]] || {
+        launch_db /srv/postgresql odc > /dev/null 2> /dev/null || {
+            echo "WARNING: Failed to launch db, integration tests might not run"
+        }
+    }
+
+    target_uid=$(stat -c '%u' .)
+    target_gid=$(stat -c '%g' .)
+
+    [[ $target_uid -eq 0 ]] || {
+        groupmod --gid "${target_gid}" odc
+        usermod --gid "${target_gid}" --uid "${target_uid}" odc
+        chown -R odc:odc /home/odc/
+        exec sudo -u odc -E -H bash "$0" "$@"
+    }
+}
+
+[[ $UID -ne 0 ]] || echo "WARNING: Running as root"
+
+cat <<EOL > $HOME/.datacube_integration.conf
+[datacube]
+db_hostname:
+db_database: agdcintegration
+index_driver: default
+
+[no_such_driver_env]
+db_hostname:
+index_driver: no_such_driver
+EOL
+
+env="${PYENV:-/env}"
+
+if [ -e "${env}/bin/activate" ]; then
+    [ -n "${VIRTUAL_ENV:-}" ] || {
+        source "${env}/bin/activate"
+
+        if [ -e "./setup.py" ]; then
+            pip install -e '.[test,cf,celery,s3,performance,distributed]'
+        fi
+
+        if [ -e "./tests/drivers/fail_drivers" ]; then
+            pip install -e "./tests/drivers/fail_drivers"
+        fi
+
+        [ -n "${GDAL_DATA:-}" ] || {
+            # if binary version of rasterio was used, set GDAL_DATA to that
+            RIO_GDAL_DATA=$(dirname $(python -c 'import rasterio; print(rasterio.__file__)'))"/gdal_data"
+
+            if [ -d "${RIO_GDAL_DATA}" ]; then
+                export GDAL_DATA="${RIO_GDAL_DATA}"
+            else
+                export GDAL_DATA=$(gdal-config --datadir)
+            fi
+        }
+    }
+fi
+
+[ -z "${1:-}" ] || {
+    exec "$@"
+}

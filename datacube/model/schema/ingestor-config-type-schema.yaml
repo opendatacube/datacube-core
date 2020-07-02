@@ -1,0 +1,173 @@
+"$schema": "http://json-schema.org/draft-04/schema#"
+description: Schema for ingestor configuration.
+type: object
+properties:
+    source_type:
+        type: string
+    output_type:
+        type: string
+    description:
+        type: string
+    location:
+        type: string
+    file_path_template:
+        type: string
+    global_attributes:
+        type: object
+        properties:
+            title:
+                type: string
+            summary:
+                type: string
+            source:
+                type: string
+            history:
+                type: string
+            institution:
+                type: string
+            instrument:
+                type: string
+            cdm_data_type:
+                type: string
+            keywords:
+                type: string
+            keywords_vocabulary:
+                type: string
+            platform:
+                type: string
+            product_version:
+                type: [number, string]
+            publisher_email:
+                type: string
+            publisher_name:
+                type: string
+            publisher_url:
+                type: string
+            product_suite:
+                type: string
+            project:
+                type: string
+            coverage_content_type:
+                type: string
+            references:
+                type: string
+            license:
+                type: string
+            naming_authority:
+                type: string
+            acknowkledgment:
+                type: string
+            references:
+                type: string
+    ingestion_bounds:
+        type: object
+        properties:
+            left:
+                type: number
+            bottom:
+                type: number
+            right:
+                type: number
+            top:
+                type: number
+    storage:
+        "$ref": "#/definitions/storage"
+    measurements:
+        type: array
+        additionalProperties: true
+        items:
+            "$ref": "#/definitions/measurement"
+required:
+    - output_type
+    - location
+    - file_path_template
+    - global_attributes
+    - storage
+    - measurements
+additionalProperties: true
+
+definitions:
+    dtype:
+        enum: ["float16", "float32", "float64", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
+    measurement:
+        type: object
+        properties:
+            name:
+                type: string
+                pattern: '^\w+$'
+            dtype:
+                "$ref": "#/definitions/dtype"
+            nodata:
+                oneOf:
+                    - type: number
+                    - enum: [NaN, Inf, -Inf]
+            resampling_method:
+                type: string
+            src_varname:
+                type: string
+            zlib:
+                type: boolean
+            units:
+                type: string
+            aliases:
+                type: array
+                items:
+                    type: string
+            spectral_definition:
+                type: object
+                properties:
+                    wavelength:
+                        type: array
+                        items:
+                            type: number
+                    response:
+                        type: array
+                        items:
+                            type: number
+                flags_definition:
+                    type: object
+                    patternProperties:
+                        ".*":
+                        required: [bits, values]
+                    properties:
+                        bits:
+                            type: [number, array]
+                            values:
+                                type: object
+                                properties:
+                                    description:
+                                        type: string
+            attrs:
+                type: object
+                properties:
+                    long_name:
+                        type: string
+                    alias:
+                        type: string
+        required:
+            - name
+            - dtype
+            - nodata
+            - src_varname
+        additionalProperties: true
+
+    storage:
+        type: object
+        properties:
+            chunking:
+                type: object
+            crs:
+                type: string
+            dimension_order:
+                type: array
+            resolution:
+                type: object
+            tile_size:
+                type: object
+            origin:
+                type: object
+            driver:
+                type: string
+            bucket:
+                type: string
+        additionalProperties: true

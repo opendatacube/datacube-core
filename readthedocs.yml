@@ -1,6 +1,10 @@
+version: 2
 build:
   image: latest
 python:
   version: 3.6
-conda:
-  file: rtd-environment.yml
+  install:
+    - requirements: docs/rtd-requirements.txt
+  system_packages: true
+#conda:
+#  environment: docs/conda-requirements.yml

@@ -2,9 +2,7 @@
 """
 Validation of document/dictionary changes.
 """
-from __future__ import absolute_import, division, print_function
-
-from datacube import compat
+from itertools import zip_longest
 
 
 def contains(v1, v2, case_sensitive=False):
@@ -15,48 +13,10 @@ def contains(v1, v2, case_sensitive=False):
     For other types v1 == v2
     v2 None is interpreted as {}
 
-    >>> contains("bob", "BOB")
-    True
-    >>> contains("bob", "BOB", case_sensitive=True)
-    False
-    >>> contains(1, 1)
-    True
-    >>> contains(1, {})
-    False
-    >>> # same as above, but with None interpreted as {}
-    >>> contains(1, None)
-    False
-    >>> contains({}, 1)
-    False
-    >>> contains(None, 1)
-    False
-    >>> contains({}, {})
-    True
-    >>> contains({}, None)
-    True
-    >>> # this one is arguable...
-    >>> contains(None, {})
-    False
-    >>> contains(None, None)
-    True
-    >>> contains({'a':1, 'b': 2}, {'a':1})
-    True
-    >>> contains({'a':{'b': 'BOB'}}, {'a':{'b': 'bob'}})
-    True
-    >>> contains({'a':{'b': 'BOB'}}, {'a':{'b': 'bob'}}, case_sensitive=True)
-    False
-    >>> contains("bob", "alice")
-    False
-    >>> contains({'a':1}, {'a':1, 'b': 2})
-    False
-    >>> contains({'a': {'b': 1}}, {'a': {}})
-    True
-    >>> contains({'a': {'b': 1}}, {'a': None})
-    True
     """
     if not case_sensitive:
-        if isinstance(v1, compat.string_types):
-            return isinstance(v2, compat.string_types) and v1.lower() == v2.lower()
+        if isinstance(v1, str):
+            return isinstance(v2, str) and v1.lower() == v2.lower()
 
     if isinstance(v1, dict):
         return v2 is None or (isinstance(v2, dict) and
@@ -72,6 +32,8 @@ class MissingSentinel(object):
 
     def __repr__(self):
         return "missing"
+
+
 MISSING = MissingSentinel()
 
 
@@ -103,7 +65,7 @@ def get_doc_changes(original, new, base_prefix=()):
                                                   new.get(key, MISSING),
                                                   base_prefix + (key,)))
     elif isinstance(original, list) and isinstance(new, list):
-        for idx, (orig_item, new_item) in enumerate(compat.zip_longest(original, new)):
+        for idx, (orig_item, new_item) in enumerate(zip_longest(original, new)):
             changed_fields.extend(get_doc_changes(orig_item, new_item, base_prefix + (idx, )))
     else:
         changed_fields.append((base_prefix, original, new))
@@ -161,51 +123,6 @@ def classify_changes(changes, allowed_changes):
     :param list[(tuple,object,object)] changes: result of get_doc_changes
     :param allowed_changes: mapping from key to change policy (subset, superset, any)
     :return: good_changes, bad_chages
-
-
-    >>> classify_changes([], {})
-    ([], [])
-    >>> classify_changes([(('a',), 1, 2)], {})
-    ([], [(('a',), 1, 2)])
-    >>> classify_changes([(('a',), 1, 2)], {('a',): allow_any})
-    ([(('a',), 1, 2)], [])
-
-    >>> changes = [(('a2',), {'b1': 1}, MISSING)]  # {'a1': 1, 'a2': {'b1': 1}} → {'a1': 1}
-    >>> good_change = (changes, [])
-    >>> bad_change = ([], changes)
-    >>> classify_changes(changes, {}) == bad_change
-    True
-    >>> classify_changes(changes, {tuple(): allow_any}) == good_change
-    True
-    >>> classify_changes(changes, {tuple(): allow_removal}) == bad_change
-    True
-    >>> classify_changes(changes, {tuple(): allow_addition}) == bad_change
-    True
-    >>> classify_changes(changes, {tuple(): allow_truncation}) == good_change
-    True
-    >>> classify_changes(changes, {tuple(): allow_extension}) == bad_change
-    True
-    >>> classify_changes(changes, {('a1', ): allow_any}) == bad_change
-    True
-    >>> classify_changes(changes, {('a1', ): allow_removal}) == bad_change
-    True
-    >>> classify_changes(changes, {('a1', ): allow_addition}) == bad_change
-    True
-    >>> classify_changes(changes, {('a1', ): allow_truncation}) == bad_change
-    True
-    >>> classify_changes(changes, {('a1', ): allow_extension}) == bad_change
-    True
-    >>> classify_changes(changes, {('a2', ): allow_any}) == good_change
-    True
-    >>> classify_changes(changes, {('a2', ): allow_removal}) == good_change
-    True
-    >>> classify_changes(changes, {('a2', ): allow_addition}) == bad_change
-    True
-    >>> classify_changes(changes, {('a2', ): allow_truncation}) == bad_change
-    True
-    >>> classify_changes(changes, {('a2', ): allow_extension}) == bad_change
-    True
-
     """
     allowed_changes_index = dict(allowed_changes)
 

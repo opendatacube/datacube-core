@@ -1,0 +1,71 @@
+acquisition:
+  aos: '1992-03-23 23:09:13'
+  groundstation:
+    code: ASN
+  los: '1992-03-23 23:17:56'
+creation_dt: '1992-03-23 23:09:13'
+extent:
+  center_dt: '1992-03-23 23:14:25.500000'
+  coord:
+    ll:
+      lat: -35.352314346412065
+      lon: 149.0799983939353
+    lr:
+      lat: -35.350090690355785
+      lon: 149.2053780849311
+    ul:
+      lat: -35.261302923157785
+      lon: 149.07766919012454
+    ur:
+      lat: -35.25908669868749
+      lon: 149.20290874873768
+  from_dt: '1992-03-23 23:14:13'
+  to_dt: '1992-03-23 23:14:38'
+format:
+  name: GeoTiff
+grid_spatial:
+  projection:
+    geo_ref_points:
+      ll:
+        x: 689000.0
+        y: 6085900.0
+      lr:
+        x: 700400.0
+        y: 6085900.0
+      ul:
+        x: 689000.0
+        y: 6096000.0
+      ur:
+        x: 700400.0
+        y: 6096000.0
+    spatial_reference: PROJCS["GDA94 / MGA zone 55",GEOGCS["GDA94",DATUM["Geocentric_Datum_of_Australia_1994",SPHEROID["GRS
+      1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6283"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4283"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",147],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",10000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","28355"]]
+id: 6d4894ed-3368-47cb-a8f4-a8ea497ffcb1
+image:
+  bands:
+    '1':
+      path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323_B10.tif
+    '2':
+      path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323_B20.tif
+    '3':
+      path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323_B30.tif
+    '4':
+      path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323_B40.tif
+    '5':
+      path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323_B50.tif
+    '7':
+      path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323_B70.tif
+  satellite_ref_point_end:
+    x: 90
+    y: 84
+  satellite_ref_point_start:
+    x: 90
+    y: 84
+instrument:
+  name: TM
+lineage:
+  source_datasets: {}
+platform:
+  code: LANDSAT_5
+processing_level: P54
+product_type: nbar

@@ -1,16 +1,14 @@
-from __future__ import absolute_import, division, print_function
 
 import logging
 import numpy
 import xarray
 from itertools import groupby
 from collections import OrderedDict
-import warnings
 import pandas as pd
 
-from ..utils import intersects
+from datacube.utils.geometry import intersects
 from .query import Query, query_group_by
-from .core import Datacube, set_resampling_method, apply_aliases
+from .core import Datacube
 
 _LOG = logging.getLogger(__name__)
 
@@ -111,8 +109,9 @@ class Tile(object):
         :param kwargs: other keyword arguments passed to ``pandas.period_range``
         :return: Generator[tuple(str, Tile)] generator of the key string (eg '1994') and the slice of Tile
         """
-        start_range = self.sources[time_dim][0].data
-        end_range = self.sources[time_dim][-1].data
+        # extract first and last timestamps from the time axis, note this will
+        # work with 1 element arrays as well
+        start_range, end_range = self.sources[time_dim].data[[0, -1]]
 
         for p in pd.period_range(start=start_range,
                                  end=end_range,
@@ -155,7 +154,7 @@ class GridWorkflow(object):
             grid_spec = product and product.grid_spec
         self.grid_spec = grid_spec
 
-    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=(0, 0), **indexers):
+    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=None, **indexers):
         """
         List datasets, grouped by cell.
 
@@ -175,7 +174,10 @@ class GridWorkflow(object):
 
             :class:`datacube.api.query.Query`
         """
-        if tile_buffer != (0, 0) and geopolygon is not None:
+        # pylint: disable=too-many-locals
+        # TODO: split this method into 3: cell/polygon/unconstrained querying
+
+        if tile_buffer is not None and geopolygon is not None:
             raise ValueError('Cannot process tile_buffering and geopolygon together.')
         cells = {}
 
@@ -195,26 +197,30 @@ class GridWorkflow(object):
             return cells
         else:
             datasets, query = self._find_datasets(geopolygon, indexers)
+            geobox_cache = {}
 
             if query.geopolygon:
                 # Get a rough region of tiles
                 query_tiles = set(
                     tile_index for tile_index, tile_geobox in
-                    self.grid_spec.tiles_inside_geopolygon(query.geopolygon))
+                    self.grid_spec.tiles_from_geopolygon(query.geopolygon, geobox_cache=geobox_cache))
 
                 for dataset in datasets:
                     # Go through our datasets and see which tiles each dataset produces, and whether they intersect
                     # our query geopolygon.
                     dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
-                    for tile_index, tile_geobox in self.grid_spec.tiles(
-                            dataset_extent.boundingbox.buffered(*tile_buffer)):
+                    bbox = dataset_extent.boundingbox
+                    bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
+
+                    for tile_index, tile_geobox in self.grid_spec.tiles(bbox, geobox_cache=geobox_cache):
                         if tile_index in query_tiles and intersects(tile_geobox.extent, dataset_extent):
                             add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             else:
                 for dataset in datasets:
-                    for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent,
-                                                                                          tile_buffer=tile_buffer):
+                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(dataset.extent,
+                                                                                        tile_buffer=tile_buffer,
+                                                                                        geobox_cache=geobox_cache):
                         add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             return cells
@@ -225,12 +231,6 @@ class GridWorkflow(object):
             raise RuntimeError('must specify a product')
         datasets = self.index.datasets.search_eager(**query.search_terms)
         return datasets, query
-
-    @staticmethod
-    def cell_sources(observations, group_by):
-        warnings.warn("cell_sources() has been renamed to group_into_cells() and will eventually be removed",
-                      DeprecationWarning)
-        return GridWorkflow.group_into_cells(observations, group_by)
 
     @staticmethod
     def group_into_cells(observations, group_by):
@@ -272,23 +272,15 @@ class GridWorkflow(object):
         """
         tiles = {}
         for cell_index, observation in observations.items():
-            observation['datasets'].sort(key=group_by.group_by_func)
-            groups = [(key, tuple(group)) for key, group in groupby(observation['datasets'], group_by.group_by_func)]
+            dss = observation['datasets']
+            geobox = observation['geobox']
 
-            for key, datasets in groups:
-                data = numpy.empty(1, dtype=object)
-                data[0] = datasets
-                variable = xarray.Variable((group_by.dimension,), data,
-                                           fastpath=True)
-                coord = xarray.Variable((group_by.dimension,),
-                                        numpy.array([key], dtype='datetime64[ns]'),
-                                        attrs={'units': group_by.units},
-                                        fastpath=True)
-                coords = OrderedDict([(group_by.dimension, coord)])
-                sources = xarray.DataArray(variable, coords=coords, fastpath=True)
+            sources = Datacube.group_datasets(dss, group_by)
+            coord = sources[sources.dims[0]]
+            for i in range(coord.size):
+                tile_index = cell_index + (coord.values[i],)
+                tiles[tile_index] = Tile(sources[i:i+1], geobox)
 
-                tile_index = cell_index + (coord.values[0],)
-                tiles[tile_index] = Tile(sources, observation['geobox'])
         return tiles
 
     def list_cells(self, cell_index=None, **query):
@@ -357,7 +349,10 @@ class GridWorkflow(object):
         :param fuse_func: Function to fuse together a tile that has been pre-grouped by calling
             :meth:`list_cells` with a ``group_by`` parameter.
 
-        :param str resampling: The resampling method to use if re-projection is required.
+        :param str|dict resampling:
+
+            The resampling method to use if re-projection is required, could be
+            configured per band using a dictionary (:meth: `load_data`)
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
 
@@ -371,14 +366,14 @@ class GridWorkflow(object):
         .. seealso::
             :meth:`list_tiles` :meth:`list_cells`
         """
-        measurement_dicts = set_resampling_method(tile.product.lookup_measurements(measurements),
-                                                  resampling)
+        measurement_dicts = tile.product.lookup_measurements(measurements)
 
-        dataset = Datacube.load_data(tile.sources, tile.geobox, list(measurement_dicts.values()),
+        dataset = Datacube.load_data(tile.sources, tile.geobox,
+                                     measurement_dicts, resampling=resampling,
                                      dask_chunks=dask_chunks, fuse_func=fuse_func,
                                      skip_broken_datasets=skip_broken_datasets)
 
-        return apply_aliases(dataset, tile.product, measurements)
+        return dataset
 
     def update_tile_lineage(self, tile):
         for i in range(tile.sources.size):

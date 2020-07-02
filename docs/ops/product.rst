@@ -3,12 +3,12 @@
 Product Definition
 ******************
 
-Product description document defines some of the metadata common to all the datasets belonging to the products.
-It also describes the measurements that product has and some of the properties of the measurements.
+A product definition document describes the measurements and common metadata
+for a collection of datasets.
 
 .. highlight:: language
 
-.. literalinclude:: ../config_samples/dataset_types/dsm1sv10.yaml
+.. literalinclude:: ../config_samples/dataset_types/landsat8_example_product.yaml
    :language: yaml
 
 name
@@ -20,10 +20,19 @@ description
 metadata_type
     Name of the :ref:`metadata-type-definition`
 
+license
+    The license of the data.
+
+    This is either a SPDX License identifier (eg 'CC-BY-SA-4.0') or
+    'various' or 'proprietary'
+
 metadata
     Dictionary containing bits of metadata common to all the datasets in the product.
 
-    It is used during indexing to match datasets to their products.
+    It is used during indexing to match datasets to their products. That is, the keys and values defined
+    here must also be in the :ref:`dataset-metadata-doc`.
+
+    In the above example, ``product: name`` would match a specific product.
 
 storage (optional)
     Describes some of common storage attributes of all the datasets. While optional defining this will make
@@ -37,7 +46,8 @@ storage (optional)
         Use ``latitude``, ``longitude`` if the projection is geographic and ``x``, ``y`` otherwise
 
 measurements
-    List of measurements in this product
+    List of measurements in this product. The measurement names defined here need to match 1:1 with the measurement
+    key names defined in the :ref:`dataset-metadata-doc`.
 
     name
          Name of the measurement

@@ -1,43 +1,32 @@
-from __future__ import absolute_import, division, print_function
-
-import logging
-import os
-import sys
 import uuid
-import warnings
-from collections import namedtuple, OrderedDict
-from itertools import groupby, repeat
-from math import ceil
+import collections.abc
+from itertools import groupby
+from typing import Union, Optional, Dict, Tuple
+import datetime
 
 import numpy
-import pandas
 import xarray
-
-try:
-    import SharedArray as sa
-except ImportError:
-    pass
-from affine import Affine
 from dask import array as da
 
-try:
-    from pathos.threading import ThreadPool
-except ImportError:
-    pass
-from six.moves import zip
-
 from datacube.config import LocalConfig
-from datacube.compat import string_types
-from datacube.storage.storage import reproject_and_fuse
-from datacube.utils import geometry, intersects, data_resolution_and_offset
+from datacube.storage import reproject_and_fuse, BandInfo
+from datacube.utils import ignore_exceptions_if
+from datacube.utils import geometry
+from datacube.utils.dates import normalise_dt
+from datacube.utils.geometry import intersects, GeoBox
+from datacube.utils.geometry.gbox import GeoboxTiles
+from datacube.model.utils import xr_apply
+
 from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource
 
-_LOG = logging.getLogger(__name__)
-THREADING_REQS_AVAILABLE = ('SharedArray' in sys.modules and 'pathos.threading' in sys.modules)
 
-Group = namedtuple('Group', ['key', 'datasets'])
+class TerminateCurrentLoad(Exception):
+    """ This exception is raised by user code from `progress_cbk`
+        to terminate currently running `.load`
+    """
+    pass
 
 
 class Datacube(object):
@@ -81,10 +70,11 @@ class Datacube(object):
         :return: Datacube object
 
         """
+
         def normalise_config(config):
             if config is None:
                 return LocalConfig.find(env=env)
-            if isinstance(config, string_types):
+            if isinstance(config, str):
                 return LocalConfig.find([config], env=env)
             return config
 
@@ -103,10 +93,11 @@ class Datacube(object):
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
         :rtype: pandas.DataFrame or list(dict)
         """
-        rows = [dataset_type_to_row(dataset_type) for dataset_type in self.index.products.get_all()]
+        rows = [product.to_dict() for product in self.index.products.get_all()]
         if not with_pandas:
             return rows
 
+        import pandas
         keys = set(k for r in rows for k in r)
         main_cols = ['id', 'name', 'description']
         grid_cols = ['crs', 'resolution', 'tile_size', 'spatial_dimensions']
@@ -125,6 +116,8 @@ class Datacube(object):
         measurements = self._list_measurements()
         if not with_pandas:
             return measurements
+
+        import pandas
         return pandas.DataFrame.from_dict(measurements).set_index(['product', 'measurement'])
 
     def _list_measurements(self):
@@ -145,7 +138,9 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
-             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, use_threads=False, **query):
+             skip_broken_datasets=False,
+             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, progress_cbk=None,
+             **query):
         """
         Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -235,12 +230,17 @@ class Datacube(object):
 
             Typically when using most CRSs, the first number would be negative.
 
-        :param str resampling:
-            The resampling method to use if re-projection is required.
+        :param str|dict resampling:
+            The resampling method to use if re-projection is required. This could be a string or
+            a dictionary mapping band name to resampling mode. When using a dict use ``'*'`` to
+            indicate "apply to all other bands", for example ``{'*': 'cubic', 'fmask': 'nearest'}`` would
+            use `cubic` for all bands except ``fmask`` for which `nearest` will be used.
 
-            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
+            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average',
+            'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'``
 
-            Defaults to ``'nearest'``.
+            Default is to use ``nearest`` for all bands.
+            .. seealso:: :meth:`load_data`
 
         :param (float,float) align:
             Load data such that point 'align' lies on the pixel boundary.
@@ -267,55 +267,56 @@ class Datacube(object):
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
             data is simply copied over the top of each other, in a relatively undefined manner. This function can
-            perform a specific combining step, eg. for combining GA PQ data.
+            perform a specific combining step, eg. for combining GA PQ data. This can be a dictionary if different
+            fusers are needed per band.
 
         :param datasets:
             Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects, these will be loaded
             instead of performing a database lookup.
 
-        :param bool use_threads:
-            Optional. If this is set to True, IO will be multi-thread.
-            May not work for all drivers due to locking/GIL.
-
-            Default is False.
-
         :param int limit:
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
 
+        :param progress_cbk: Int, Int -> None
+            if supplied will be called for every file read with `files_processed_so_far, total_files`. This is
+            only applicable to non-lazy loads, ignored when using dask.
+
         :return: Requested data in a :class:`xarray.Dataset`
         :rtype: :class:`xarray.Dataset`
         """
-        if 'stack' in query:
-            raise DeprecationWarning("the `stack` keyword argument is not supported anymore, "
-                                     "please apply `xarray.Dataset.to_array()` to the result instead")
+        if product is None and datasets is None:
+            raise ValueError("Must specify a product or supply datasets")
 
-        observations = datasets or self.find_datasets(product=product, like=like, **query)
-        if not observations:
+        if datasets is None:
+            datasets = self.find_datasets(product=product, like=like, ensure_location=True, **query)
+        elif isinstance(datasets, collections.abc.Iterator):
+            datasets = list(datasets)
+
+        if len(datasets) == 0:
             return xarray.Dataset()
 
+        ds, *_ = datasets
+        datacube_product = ds.type
+
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
-                               grid_spec=self.index.products.get_by_name(product).grid_spec,
-                               datasets=observations, **query)
+                               grid_spec=datacube_product.grid_spec,
+                               datasets=datasets, **query)
 
         group_by = query_group_by(**query)
-        grouped = self.group_datasets(observations, group_by)
+        grouped = self.group_datasets(datasets, group_by)
 
-        datacube_product = self.index.products.get_by_name(product)
-        measurement_dicts = set_resampling_method(datacube_product.lookup_measurements(measurements),
-                                                  resampling)
+        measurement_dicts = datacube_product.lookup_measurements(measurements)
 
-        result = self.load_data(grouped, geobox, list(measurement_dicts.values()),
+        result = self.load_data(grouped, geobox,
+                                measurement_dicts,
+                                resampling=resampling,
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
-                                use_threads=use_threads)
+                                skip_broken_datasets=skip_broken_datasets,
+                                progress_cbk=progress_cbk)
 
-        return apply_aliases(result, datacube_product, measurements)
-
-    def product_observations(self, **kwargs):
-        warnings.warn("product_observations() has been renamed to find_datasets() and will eventually be removed",
-                      DeprecationWarning)
-        return self.find_datasets(**kwargs)
+        return result
 
     def find_datasets(self, **search_terms):
         """
@@ -329,11 +330,12 @@ class Datacube(object):
         """
         return list(self.find_datasets_lazy(**search_terms))
 
-    def find_datasets_lazy(self, limit=None, **kwargs):
+    def find_datasets_lazy(self, limit=None, ensure_location=False, **kwargs):
         """
         Find datasets matching query.
 
         :param kwargs: see :class:`datacube.api.query.Query`
+        :param ensure_location: only return datasets that have locations
         :param limit: if provided, limit the maximum number of datasets returned
         :return: iterator of datasets
         :rtype: __generator[:class:`datacube.model.Dataset`]
@@ -347,14 +349,13 @@ class Datacube(object):
         datasets = self.index.datasets.search(limit=limit,
                                               **query.search_terms)
 
-        for dataset in select_datasets_inside_polygon(datasets, query.geopolygon):
-            yield dataset
+        if query.geopolygon is not None:
+            datasets = select_datasets_inside_polygon(datasets, query.geopolygon)
 
-    @staticmethod
-    def product_sources(datasets, group_by):
-        warnings.warn("product_sources() has been renamed to group_datasets() and will eventually be removed",
-                      DeprecationWarning)
-        return Datacube.group_datasets(datasets, group_by)
+        if ensure_location:
+            datasets = (dataset for dataset in datasets if dataset.uris)
+
+        return datasets
 
     @staticmethod
     def group_datasets(datasets, group_by):
@@ -371,25 +372,52 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets`, :meth:`load_data`, :meth:`query_group_by`
         """
-        dimension, group_func, units, sort_key = group_by
-        datasets.sort(key=sort_key)
-        groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]
+        if isinstance(group_by, str):
+            group_by = query_group_by(group_by=group_by)
 
-        data = numpy.empty(len(groups), dtype=object)
-        for index, group in enumerate(groups):
-            data[index] = group.datasets
-        coords = [sort_key(v.datasets[0]) for v in groups]
+        dimension, group_func, units, sort_key = group_by
+
+        def ds_sorter(ds):
+            return sort_key(ds), getattr(ds, 'id', 0)
+
+        def norm_axis_value(x):
+            if isinstance(x, datetime.datetime):
+                # For datetime we convert to UTC, then strip timezone info
+                # to avoid numpy/pandas warning about timezones
+                return numpy.datetime64(normalise_dt(x), 'ns')
+            return x
+
+        def mk_group(group):
+            dss = tuple(sorted(group, key=ds_sorter))
+            # TODO: decouple axis_value from group sorted order
+            axis_value = sort_key(dss[0])
+            return (norm_axis_value(axis_value), dss)
+
+        datasets = sorted(datasets, key=group_func)
+
+        groups = [mk_group(group)
+                  for _, group in groupby(datasets, group_func)]
+
+        groups.sort(key=lambda x: x[0])
+
+        coords = numpy.asarray([coord for coord, _ in groups])
+        data = numpy.empty(len(coords), dtype=object)
+        for i, (_, dss) in enumerate(groups):
+            data[i] = dss
+
         sources = xarray.DataArray(data, dims=[dimension], coords=[coords])
-        sources[dimension].attrs['units'] = units
+        if coords.dtype.kind == 'M':
+            # skip units for time dimensions as it breaks .to_netcdf(..) functionality #972
+            sources[dimension].attrs['units'] = units
+
         return sources
 
     @staticmethod
-    def create_storage(coords, geobox, measurements, data_func=None, use_threads=False):
+    def create_storage(coords, geobox, measurements, data_func=None):
         """
         Create a :class:`xarray.Dataset` and (optionally) fill it with data.
 
-        This function makes the in memory storage structure to hold datacube data, loading data from datasets that have
-         been grouped appropriately by :meth:`group_datasets`.
+        This function makes the in memory storage structure to hold datacube data.
 
         :param dict coords:
             OrderedDict holding `DataArray` objects defining the dimensions not specified by `geobox`
@@ -398,65 +426,115 @@ class Datacube(object):
             A GeoBox defining the output spatial projection and resolution
 
         :param measurements:
-            list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
+            list of :class:`datacube.model.Measurement`
 
-        :param data_func:
+        :param data_func: Callable `Measurement -> np.ndarray`
             function to fill the storage with data. It is called once for each measurement, with the measurement
-            as an argument. It should return an appropriately shaped numpy array. If not provided, an empty
-            :class:`xarray.Dataset` is returned.
-
-        :param bool use_threads:
-            Optional. If this is set to True, IO will be multi-thread.
-            May not work for all drivers due to locking/GIL.
-
-            Default is False.
+            as an argument. It should return an appropriately shaped numpy array. If not provided memory is
+            allocated an filled with `nodata` value defined on a given Measurement.
 
         :rtype: :class:`xarray.Dataset`
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
+        from collections import OrderedDict
+        spatial_ref = 'spatial_ref'
 
-        def empty_func(measurement_):
-            coord_shape = tuple(coord_.size for coord_ in coords.values())
-            return numpy.full(coord_shape + geobox.shape, measurement_['nodata'], dtype=measurement_['dtype'])
+        def empty_func(m, shape):
+            return numpy.full(shape, m.nodata, dtype=m.dtype)
 
-        data_func = data_func or empty_func
+        crs_attrs = {}
+        if geobox.crs is not None:
+            crs_attrs['crs'] = str(geobox.crs)
+            crs_attrs['grid_mapping'] = spatial_ref
 
-        result = xarray.Dataset(attrs={'crs': geobox.crs})
-        for name, coord in coords.items():
-            result[name] = coord
-        for name, coord in geobox.coordinates.items():
-            result[name] = (name, coord.values, {'units': coord.units})
+        dims = tuple(coords) + geobox.dimensions
+        shape = tuple(c.size for c in coords.values()) + geobox.shape
+        coords = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
 
-        def work_measurements(measurement, data_func):
-            return data_func(measurement)
+        data_func = data_func or (lambda m: empty_func(m, shape))
 
-        use_threads = use_threads and THREADING_REQS_AVAILABLE
+        def mk_data_var(m, data_func):
+            data = data_func(m)
+            attrs = dict(**m.dataarray_attrs(),
+                         **crs_attrs)
+            return xarray.DataArray(data,
+                                    name=m.name,
+                                    coords=coords,
+                                    dims=dims,
+                                    attrs=attrs)
 
-        if use_threads:
-            pool = ThreadPool(32)
-            results = pool.map(work_measurements, measurements, repeat(data_func))
-        else:
-            results = [data_func(a) for a in measurements]
-
-        for measurement in measurements:
-            data = results.pop(0)
-            attrs = measurement.dataarray_attrs()
-            attrs['crs'] = geobox.crs
-            dims = tuple(coords.keys()) + tuple(geobox.dimensions)
-            result[measurement['name']] = (dims, data, attrs)
-
-        return result
-
-    @staticmethod
-    def product_data(*args, **kwargs):
-        warnings.warn("product_data() has been renamed to load_data() and will eventually be removed",
-                      DeprecationWarning)
-        return Datacube.load_data(*args, **kwargs)
+        return xarray.Dataset({m.name: mk_data_var(m, data_func)
+                               for m in measurements},
+                              coords=coords,
+                              attrs=crs_attrs)
 
     @staticmethod
-    def load_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
-                  use_threads=False):
+    def _dask_load(sources, geobox, measurements, dask_chunks,
+                   skip_broken_datasets=False):
+        needed_irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
+        gbt = GeoboxTiles(geobox, grid_chunks)
+        dsk = {}
+
+        def chunk_datasets(dss, gbt):
+            out = {}
+            for ds in dss:
+                dsk[_tokenize_dataset(ds)] = ds
+                for idx in gbt.tiles(ds.extent):
+                    out.setdefault(idx, []).append(ds)
+            return out
+
+        chunked_srcs = xr_apply(sources,
+                                lambda _, dss: chunk_datasets(dss, gbt),
+                                dtype=object)
+
+        def data_func(measurement):
+            return _make_dask_array(chunked_srcs, dsk, gbt,
+                                    measurement,
+                                    chunks=needed_irr_chunks+grid_chunks,
+                                    skip_broken_datasets=skip_broken_datasets)
+
+        return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
+
+    @staticmethod
+    def _xr_load(sources, geobox, measurements,
+                 skip_broken_datasets=False,
+                 progress_cbk=None):
+
+        def mk_cbk(cbk):
+            if cbk is None:
+                return None
+            n = 0
+            n_total = sum(len(x) for x in sources.values.ravel())*len(measurements)
+
+            def _cbk(*ignored):
+                nonlocal n
+                n += 1
+                return cbk(n, n_total)
+            return _cbk
+
+        data = Datacube.create_storage(sources.coords, geobox, measurements)
+        _cbk = mk_cbk(progress_cbk)
+
+        for index, datasets in numpy.ndenumerate(sources.values):
+            for m in measurements:
+                t_slice = data[m.name].values[index]
+
+                try:
+                    _fuse_measurement(t_slice, datasets, geobox, m,
+                                      skip_broken_datasets=skip_broken_datasets,
+                                      progress_cbk=_cbk)
+                except (TerminateCurrentLoad, KeyboardInterrupt):
+                    data.attrs['dc_partial_load'] = True
+                    return data
+
+        return data
+
+    @staticmethod
+    def load_data(sources, geobox, measurements, resampling=None,
+                  fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
+                  progress_cbk=None,
+                  **extra):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
 
@@ -467,90 +545,48 @@ class Datacube(object):
             A GeoBox defining the output spatial projection and resolution
 
         :param measurements:
-            list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
+            list of `Measurement` objects
+
+        :param str|dict resampling:
+            The resampling method to use if re-projection is required. This could be a string or
+            a dictionary mapping band name to resampling mode. When using a dict use ``'*'`` to
+            indicate "apply to all other bands", for example ``{'*': 'cubic', 'fmask': 'nearest'}`` would
+            use `cubic` for all bands except ``fmask`` for which `nearest` will be used.
+
+            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average',
+            'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'``
+
+            Default is to use ``nearest`` for all bands.
 
         :param fuse_func:
-            function to merge successive arrays as an output
+            function to merge successive arrays as an output. Can be a dictionary just like resampling.
 
         :param dict dask_chunks:
             If provided, the data will be loaded on demand using using :class:`dask.array.Array`.
             Should be a dictionary specifying the chunking size for each output dimension.
+            Unspecified dimensions will be auto-guessed, currently this means use chunk size of 1 for non-spatial
+            dimensions and use whole dimension (no chunking unless specified) for spatial dimensions.
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
-        :param bool use_threads:
-            Optional. If this is set to True, IO will be multi-thread.
-            May not work for all drivers due to locking/GIL.
-
-            Default is False.
+        :param progress_cbk: Int, Int -> None
+            if supplied will be called for every file read with `files_processed_so_far, total_files`. This is
+            only applicable to non-lazy loads, ignored when using dask.
 
         :rtype: xarray.Dataset
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
-        if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
-            use_threads = False
+        measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
 
-        if dask_chunks is None:
-            def data_func(measurement):
-                if not use_threads:
-                    data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
-                    for index, datasets in numpy.ndenumerate(sources.values):
-                        _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                          skip_broken_datasets=skip_broken_datasets)
-                else:
-                    def work_load_data(array_name, index, datasets):
-                        data = sa.attach(array_name)
-                        _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                          skip_broken_datasets=skip_broken_datasets)
-
-                    array_name = '_'.join(['DCCORE', str(uuid.uuid4()), str(os.getpid())])
-                    sa.create(array_name, shape=sources.shape + geobox.shape, dtype=measurement['dtype'])
-                    data = sa.attach(array_name)
-                    data[:] = measurement['nodata']
-
-                    pool = ThreadPool(32)
-                    pool.map(work_load_data, repeat(array_name), *zip(*numpy.ndenumerate(sources.values)))
-                    sa.delete(array_name)
-                return data
+        if dask_chunks is not None:
+            return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
+                                       skip_broken_datasets=skip_broken_datasets)
         else:
-            def data_func(measurement):
-                return _make_dask_array(sources, geobox, measurement,
-                                        skip_broken_datasets=skip_broken_datasets,
-                                        fuse_func=fuse_func,
-                                        dask_chunks=dask_chunks)
-
-        return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                       geobox, measurements, data_func, use_threads)
-
-    @staticmethod
-    def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
-        """
-        Retrieve a single measurement variable as a :class:`xarray.DataArray`.
-
-        .. note:
-
-             This method appears to only be used by the deprecated `get_data()/get_descriptor()`
-              :class:`~datacube.api.API`, so is a prime candidate for future removal.
-
-        .. seealso:: :meth:`load_data`
-
-
-        :param xarray.DataArray sources: DataArray holding a list of :class:`datacube.model.Dataset` objects
-        :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
-        :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
-        :param fuse_func: function to merge successive arrays as an output
-        :param dict dask_chunks: If the data should be loaded as needed using :class:`dask.array.Array`,
-            specify the chunk size in each output direction.
-            See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
-            for more information.
-        :rtype: :class:`xarray.DataArray`
-        """
-        dataset = Datacube.load_data(sources, geobox, [measurement], fuse_func=fuse_func, dask_chunks=dask_chunks)
-        dataarray = dataset[measurement['name']]
-        dataarray.attrs['crs'] = dataset.crs
-        return dataarray
+            return Datacube._xr_load(sources, geobox, measurements,
+                                     skip_broken_datasets=skip_broken_datasets,
+                                     progress_cbk=progress_cbk)
 
     def __str__(self):
         return "Datacube<index={!r}>".format(self.index)
@@ -571,25 +607,48 @@ class Datacube(object):
         self.close()
 
 
-def apply_aliases(data, product, measurements):
-    """
-    If measurements are referred to by their aliases,
-    rename data arrays to reflect that.
-    """
-    if measurements is None:
-        return data
+def per_band_load_data_settings(measurements, resampling=None, fuse_func=None):
+    def with_resampling(m, resampling, default=None):
+        m = m.copy()
+        m['resampling_method'] = resampling.get(m.name, default)
+        return m
 
-    return data.rename({product.canonical_measurement(provided_name): provided_name
-                        for provided_name in measurements})
+    def with_fuser(m, fuser, default=None):
+        m = m.copy()
+        m['fuser'] = fuser.get(m.name, default)
+        return m
+
+    if isinstance(resampling, str):
+        resampling = {'*': resampling}
+
+    if not isinstance(fuse_func, dict):
+        fuse_func = {'*': fuse_func}
+
+    if isinstance(measurements, dict):
+        measurements = list(measurements.values())
+
+    if resampling is not None:
+        measurements = [with_resampling(m, resampling, default=resampling.get('*'))
+                        for m in measurements]
+
+    if fuse_func is not None:
+        measurements = [with_fuser(m, fuse_func, default=fuse_func.get('*'))
+                        for m in measurements]
+
+    return measurements
+
 
 def output_geobox(like=None, output_crs=None, resolution=None, align=None,
-                  grid_spec=None, datasets=None, **query):
+                  grid_spec=None, datasets=None, geopolygon=None, **query):
     """ Configure output geobox from user provided output specs. """
 
     if like is not None:
         assert output_crs is None, "'like' and 'output_crs' are not supported together"
         assert resolution is None, "'like' and 'resolution' are not supported together"
         assert align is None, "'like' and 'align' are not supported together"
+        if isinstance(like, GeoBox):
+            return like
+
         return like.geobox
 
     if output_crs is not None:
@@ -608,131 +667,157 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
             resolution = grid_spec.resolution
         align = align or grid_spec.alignment
 
-    return geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(datasets, crs),
-                                           resolution, crs, align)
+    if geopolygon is None:
+        geopolygon = query_geopolygon(**query)
+
+        if geopolygon is None:
+            geopolygon = get_bounds(datasets, crs)
+
+    return geometry.GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
 
 
 def select_datasets_inside_polygon(datasets, polygon):
     # Check against the bounding box of the original scene, can throw away some portions
+    assert polygon is not None
+    query_crs = polygon.crs
     for dataset in datasets:
-        if polygon is None or intersects(polygon.to_crs(dataset.crs), dataset.extent):
+        if intersects(polygon, dataset.extent.to_crs(query_crs)):
             yield dataset
 
 
-def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_func=None, prepend_dims=0):
+def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend_dims=0):
     prepend_shape = (1,) * prepend_dims
-    data = numpy.full(geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+    data = numpy.full(geobox.shape, measurement.nodata, dtype=measurement.dtype)
     _fuse_measurement(data, datasets, geobox, measurement,
-                      skip_broken_datasets=skip_broken_datasets,
-                      fuse_func=fuse_func)
+                      skip_broken_datasets=skip_broken_datasets)
     return data.reshape(prepend_shape + geobox.shape)
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
-                      fuse_func=None):
-    reproject_and_fuse([new_datasource(dataset, measurement['name']) for dataset in datasets],
+                      progress_cbk=None):
+    srcs = []
+    for ds in datasets:
+        src = None
+        with ignore_exceptions_if(skip_broken_datasets):
+            src = new_datasource(BandInfo(ds, measurement.name))
+
+        if src is None:
+            if not skip_broken_datasets:
+                raise ValueError(f"Failed to load dataset: {ds.id}")
+        else:
+            srcs.append(src)
+
+    reproject_and_fuse(srcs,
                        dest,
-                       geobox.affine,
-                       geobox.crs,
-                       dest.dtype.type(measurement['nodata']),
+                       geobox,
+                       dest.dtype.type(measurement.nodata),
                        resampling=measurement.get('resampling_method', 'nearest'),
-                       fuse_func=fuse_func,
-                       skip_broken_datasets=skip_broken_datasets)
+                       fuse_func=measurement.get('fuser', None),
+                       skip_broken_datasets=skip_broken_datasets,
+                       progress_cbk=progress_cbk)
 
 
 def get_bounds(datasets, crs):
-    left = min([d.extent.to_crs(crs).boundingbox.left for d in datasets])
-    right = max([d.extent.to_crs(crs).boundingbox.right for d in datasets])
-    top = max([d.extent.to_crs(crs).boundingbox.top for d in datasets])
-    bottom = min([d.extent.to_crs(crs).boundingbox.bottom for d in datasets])
-    return geometry.box(left, bottom, right, top, crs=crs)
+    bbox = geometry.bbox_union(ds.extent.to_crs(crs).boundingbox for ds in datasets)
+    return geometry.box(*bbox, crs=crs)
 
 
-def set_resampling_method(measurements, resampling=None):
-    if resampling is None:
-        return measurements
-
-    def make_resampled_measurement(measurement):
-        measurement = measurement.copy()
-        measurement['resampling_method'] = resampling
-        return measurement
-
-    measurements = OrderedDict((name, make_resampled_measurement(measurement))
-                               for name, measurement in measurements.items())
-    return measurements
-
-
-def dataset_type_to_row(dt):
-    row = {
-        'id': dt.id,
-        'name': dt.name,
-        'description': dt.definition['description'],
-    }
-    row.update(dt.fields)
-    if dt.grid_spec is not None:
-        row.update({
-            'crs': str(dt.grid_spec.crs),
-            'spatial_dimensions': dt.grid_spec.dimensions,
-            'tile_size': dt.grid_spec.tile_size,
-            'resolution': dt.grid_spec.resolution,
-        })
-    return row
-
-
-def _chunk_geobox(geobox, chunk_size):
-    num_grid_chunks = [int(ceil(s / float(c))) for s, c in zip(geobox.shape, chunk_size)]
-    geobox_subsets = {}
-    for grid_index in numpy.ndindex(*num_grid_chunks):
-        slices = [slice(min(d * c, stop), min((d + 1) * c, stop))
-                  for d, c, stop in zip(grid_index, chunk_size, geobox.shape)]
-        geobox_subsets[grid_index] = geobox[slices]
-    return geobox_subsets
-
-
-def _calculate_chunk_sizes(sources, geobox, dask_chunks):
+def _calculate_chunk_sizes(sources: xarray.DataArray,
+                           geobox: GeoBox,
+                           dask_chunks: Dict[str, Union[str, int]]):
     valid_keys = sources.dims + geobox.dimensions
     bad_keys = set(dask_chunks) - set(valid_keys)
     if bad_keys:
         raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 
-    # If chunk size is not specified, the entire dimension length is used, as in xarray
-    chunks = {dim: size for dim, size in zip(sources.dims, sources.shape)}
-    chunks.update({dim: size for dim, size in zip(geobox.dimensions, geobox.shape)})
+    chunk_maxsz = dict((dim, sz) for dim, sz in zip(sources.dims + geobox.dimensions,
+                                                    sources.shape + geobox.shape))
 
-    chunks.update(dask_chunks)
+    # defaults: 1 for non-spatial, whole dimension for Y/X
+    chunk_defaults = dict([(dim, 1) for dim in sources.dims] + [(dim, -1) for dim in geobox.dimensions])
 
-    irr_chunks = tuple(chunks[dim] for dim in sources.dims)
-    grid_chunks = tuple(chunks[dim] for dim in geobox.dimensions)
+    def _resolve(k, v: Optional[Union[str, int]]) -> int:
+        if v is None or v == "auto":
+            v = _resolve(k, chunk_defaults[k])
+
+        if isinstance(v, int):
+            if v < 0:
+                return chunk_maxsz[k]
+            return v
+        raise ValueError("Chunk should be one of int|'auto'")
+
+    irr_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in sources.dims)
+    grid_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in geobox.dimensions)
 
     return irr_chunks, grid_chunks
 
 
+def _tokenize_dataset(dataset):
+    return 'dataset-{}'.format(dataset.id.hex)
+
+
 # pylint: disable=too-many-locals
-def _make_dask_array(sources, geobox, measurement,
-                     skip_broken_datasets=False,
-                     fuse_func=None,
-                     dask_chunks=None):
-    dsk_name = 'datacube_' + measurement['name']
+def _make_dask_array(chunked_srcs,
+                     dsk,
+                     gbt,
+                     measurement,
+                     chunks,
+                     skip_broken_datasets=False):
+    dsk = dsk.copy()  # this contains mapping from dataset id to dataset object
 
-    irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
-    sliced_irr_chunks = (1,) * sources.ndim
+    token = uuid.uuid4().hex
+    dsk_name = 'dc_load_{name}-{token}'.format(name=measurement.name, token=token)
 
-    dsk = {}
-    geobox_subsets = _chunk_geobox(geobox, grid_chunks)
+    needed_irr_chunks, grid_chunks = chunks[:-2], chunks[-2:]
+    actual_irr_chunks = (1,) * len(needed_irr_chunks)
 
-    for irr_index, datasets in numpy.ndenumerate(sources.values):
-        for grid_index, subset_geobox in geobox_subsets.items():
-            dsk[(dsk_name,) + irr_index + grid_index] = (fuse_lazy,
-                                                         datasets, subset_geobox, measurement,
-                                                         skip_broken_datasets, fuse_func,
-                                                         sources.ndim)
+    # we can have up to 4 empty chunk shapes: whole, right edge, bottom edge and
+    # bottom right corner
+    #  W R
+    #  B BR
+    empties = {}  # type Dict[Tuple[int,int], str]
+
+    def _mk_empty(shape: Tuple[int, int]) -> str:
+        name = empties.get(shape, None)
+        if name is not None:
+            return name
+
+        name = 'empty_{}x{}-{token}'.format(*shape, token=token)
+        dsk[name] = (numpy.full, actual_irr_chunks + shape, measurement.nodata, measurement.dtype)
+        empties[shape] = name
+
+        return name
+
+    for irr_index, tiled_dss in numpy.ndenumerate(chunked_srcs.values):
+        key_prefix = (dsk_name, *irr_index)
+
+        # all spatial chunks
+        for idx in numpy.ndindex(gbt.shape):
+            dss = tiled_dss.get(idx, None)
+
+            if dss is None:
+                val = _mk_empty(gbt.chunk_shape(idx))
+            else:
+                val = (fuse_lazy,
+                       [_tokenize_dataset(ds) for ds in dss],
+                       gbt[idx],
+                       measurement,
+                       skip_broken_datasets,
+                       chunked_srcs.ndim)
+
+            dsk[key_prefix + idx] = val
+
+    y_shapes = [grid_chunks[0]]*gbt.shape[0]
+    x_shapes = [grid_chunks[1]]*gbt.shape[1]
+
+    y_shapes[-1], x_shapes[-1] = gbt.chunk_shape(tuple(n-1 for n in gbt.shape))
 
     data = da.Array(dsk, dsk_name,
-                    chunks=(sliced_irr_chunks + grid_chunks),
-                    dtype=measurement['dtype'],
-                    shape=(sources.shape + geobox.shape))
+                    chunks=actual_irr_chunks + (tuple(y_shapes), tuple(x_shapes)),
+                    dtype=measurement.dtype,
+                    shape=(chunked_srcs.shape + gbt.base.shape))
 
-    if irr_chunks != sliced_irr_chunks:
-        data = data.rechunk(chunks=(irr_chunks + grid_chunks))
+    if needed_irr_chunks != actual_irr_chunks:
+        data = data.rechunk(chunks=chunks)
     return data

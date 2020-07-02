@@ -1,12 +1,20 @@
 """
-Date sequence generation functions to be used by statistics apps
+Date and time utility functions
 
+Includes sequence generation functions to be used by statistics apps
 
 """
-from __future__ import absolute_import
+from typing import Union, Optional, Callable
+from datetime import datetime
 
-from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
+import dateutil
+import dateutil.parser
 from dateutil.relativedelta import relativedelta
+from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
+from dateutil.tz import tzutc
+import numpy as np
+import xarray as xr
+
 
 FREQS = {'y': YEARLY, 'm': MONTHLY, 'd': DAILY}
 DURATIONS = {'y': 'years', 'm': 'months', 'd': 'days'}
@@ -53,3 +61,70 @@ def parse_duration(duration):
 
 def split_duration(duration):
     return int(duration[:-1]), duration[-1:]
+
+
+def datetime_to_seconds_since_1970(dt):
+    epoch = datetime(1970, 1, 1, 0, 0, 0, tzinfo=tzutc() if dt.tzinfo else None)
+    return (dt - epoch).total_seconds()
+
+
+def _parse_time_generic(time: Union[str, datetime]) -> datetime:
+    """Convert string to datetime object
+
+    Calling this on datetime object is a no-op.
+    """
+    if isinstance(time, str):
+        return dateutil.parser.parse(time)
+    return time
+
+
+def _parse_time_ciso8601(time: Union[str, datetime]) -> datetime:
+    """Convert string to datetime object
+
+    This function deals with ISO8601 dates fast, and fallbacks to python for
+    other formats.
+
+    Calling this on datetime object is a no-op.
+    """
+    from ciso8601 import parse_datetime
+
+    if isinstance(time, datetime):
+        return time
+
+    try:
+        return parse_datetime(time)
+    except Exception:  # pylint: disable=broad-except
+        return _parse_time_generic(time)
+
+
+def normalise_dt(dt: Union[str, datetime]) -> datetime:
+    """ Turn strings into dates, turn timestamps with timezone info into UTC and remove timezone info.
+    """
+    if isinstance(dt, str):
+        dt = parse_time(dt)
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(tzutc()).replace(tzinfo=None)
+    return dt
+
+
+def mk_time_coord(dts, name='time', units=None):
+    """ List[datetime] -> time coordinate for xarray
+    """
+    attrs = {'units': units} if units is not None else {}
+
+    dts = [normalise_dt(dt) for dt in dts]
+    data = np.asarray(dts, dtype='datetime64')
+    return xr.DataArray(data,
+                        name=name,
+                        coords={name: data},
+                        dims=(name,),
+                        attrs=attrs)
+
+def _mk_parse_time()->Callable[[Union[str, datetime]], datetime]:
+    try:
+        import ciso8601             # pylint: disable=wrong-import-position
+        return _parse_time_ciso8601
+    except ImportError:             # pragma: no cover
+        return _parse_time_generic  # pragma: no cover
+
+parse_time = _mk_parse_time()  # pylint: disable=invalid-name

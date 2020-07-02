@@ -4,7 +4,7 @@ import decimal
 from textwrap import dedent
 import pytest
 
-from datacube.model.fields import get_dataset_fields, parse_search_field
+from datacube.model.fields import get_dataset_fields, parse_search_field, Expression
 from datacube.model import Range, metadata_from_doc
 
 METADATA_DOC = yaml.safe_load('''---
@@ -190,3 +190,8 @@ def test_bad_field_definition():
         description: missing max_offset
         min_offset: [[a]]
         '''))
+
+
+def test_expression():
+    assert Expression() == Expression()
+    assert (Expression() == object()) is False

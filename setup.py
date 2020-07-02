@@ -1,55 +1,57 @@
 #!/usr/bin/env python
 
-import versioneer
 from setuptools import setup, find_packages
-import os
 
 tests_require = [
-    'compliance-checker',
     'hypothesis',
     'mock',
-    'objgraph',
     'pycodestyle',
     'pylint',
     'pytest',
     'pytest-cov',
     'pytest-timeout',
+    'pytest-httpserver',
+    'moto',
+]
+doc_require = [
+    'Sphinx',
+    'sphinx_rtd_theme',
+    'sphinx_autodoc_typehints',  # Propagate mypy info into docs
+    'sphinx-click',
+    'recommonmark',
+    'setuptools',  # version related dependencies
+    'setuptools_scm[toml]',
 ]
 
 extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
     'interactive': ['matplotlib', 'fiona'],
     'distributed': ['distributed', 'dask[distributed]'],
-    'doc': ['Sphinx', 'setuptools'],
+    'doc': doc_require,
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'celery': ['celery>=4', 'redis'],
-    's3': ['boto3', 'SharedArray', 'pathos', 'zstandard'],
+    's3': ['boto3'],
     'test': tests_require,
+    'cf': ['compliance-checker>=4.0.0'],
 }
+
+extras_require['dev'] = sorted(set(sum([extras_require[k] for k in [
+    'test',
+    'doc',
+    'replicas',
+    'performance',
+    's3',
+    'distributed',
+]], [])))
+
 # An 'all' option, following ipython naming conventions.
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
 
 extra_plugins = dict(read=[], write=[], index=[])
 
-if os.name != 'nt':
-    extra_plugins['read'].extend([
-        's3aio = datacube.drivers.s3.driver:reader_driver_init [s3]',
-        's3aio_test = datacube.drivers.s3.driver:reader_test_driver_init [s3]',
-    ])
-    extra_plugins['write'].extend([
-        's3aio = datacube.drivers.s3.driver:writer_driver_init [s3]',
-        's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init [s3]',
-    ])
-
-    extra_plugins['index'].extend([
-        's3aio_index = datacube.drivers.s3aio_index:index_driver_init [s3]',
-    ])
-
 setup(
     name='datacube',
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
-    python_requires='>=3.5.2',
+    python_requires='>=3.6.0',
 
     url='https://github.com/opendatacube/datacube-core',
     author='Open Data Cube',
@@ -57,6 +59,7 @@ setup(
     maintainer_email='',
     description='An analysis environment for satellite and other earth observation data',
     long_description=open('README.rst').read(),
+    long_description_content_type='text/x-rst',
     license='Apache License 2.0',
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -71,8 +74,8 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Scientific/Engineering :: GIS",
         "Topic :: Scientific/Engineering :: Information Analysis",
     ],
@@ -87,25 +90,23 @@ setup(
     scripts=[
         'datacube_apps/scripts/pbs_helpers.sh'
     ],
-    setup_requires=[
-        'pytest-runner'
-    ],
     install_requires=[
         'affine',
+        'pyproj>=2.5',
+        'shapely>=1.6.4',
         'cachetools',
         'click>=5.0',
         'cloudpickle>=0.4',
         'dask[array]',
-        'gdal>=1.9',
+        'distributed',
         'jsonschema',
         'netcdf4',
         'numpy',
         'psycopg2',
-        'pypeg2',
+        'lark-parser>=0.6.7',
         'python-dateutil',
         'pyyaml',
         'rasterio>=1.0.2',  # Multi-band re-project fixed in that version
-        'singledispatch',
         'sqlalchemy',
         'toolz',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost

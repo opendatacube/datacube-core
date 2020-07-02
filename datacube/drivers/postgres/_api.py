@@ -1,7 +1,7 @@
 # coding=utf-8
 
 # We often have one-arg-per column, so these checks aren't so useful.
-# pylint: disable=too-many-arguments,too-many-public-methods
+# pylint: disable=too-many-arguments,too-many-public-methods,too-many-lines
 
 # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
 # pylint: disable=singleton-comparison
@@ -9,33 +9,26 @@
 """
 Persistence API implementation for postgres.
 """
-from __future__ import absolute_import
 
 import logging
-import uuid
-
+import uuid  # noqa: F401
 from sqlalchemy import cast
 from sqlalchemy import delete
 from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.exc import IntegrityError
+from typing import Iterable, Tuple
 
-from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
+from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from . import _core
 from . import _dynamic as dynamic
-from ._fields import (
-    parse_fields, Expression, PgField, PgExpression,
-    NativeField, DateDocField, SimpleDocField
-)
+from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
+from ._fields import NativeField, DateDocField, SimpleDocField
+from ._schema import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, PRODUCT
 from .sql import escape_pg_identifier
-from ._schema import (
-    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
-)
-
-from typing import Iterable, Tuple
 
 
 def _dataset_uri_field(table):
@@ -73,19 +66,12 @@ def _split_uri(uri):
     """
     Split the scheme and the remainder of the URI.
 
-    >>> _split_uri('http://test.com/something.txt')
-    ('http', '//test.com/something.txt')
-    >>> _split_uri('eods:LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127')
-    ('eods', 'LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127')
-    >>> _split_uri('file://rhe-test-dev.prod.lan/data/fromASA/LANDSAT-7.89274.S4A2C1D3R3')
-    ('file', '//rhe-test-dev.prod.lan/data/fromASA/LANDSAT-7.89274.S4A2C1D3R3')
-    >>> _split_uri('file:///C:/tmp/first/something.yaml')
-    ('file', '///C:/tmp/first/something.yaml')
     """
-    comp = uri.split(':')
-    scheme = comp[0]
-    body = ':'.join(comp[1:])
-    return scheme, body
+    idx = uri.find(':')
+    if idx < 0:
+        raise ValueError("Not a URI")
+
+    return uri[:idx], uri[idx+1:]
 
 
 def get_native_fields():
@@ -109,7 +95,7 @@ def get_native_fields():
         'product': NativeField(
             'product',
             'Product name',
-            DATASET_TYPE.c.name
+            PRODUCT.c.name
         ),
         'dataset_type_id': NativeField(
             'dataset_type_id',
@@ -199,12 +185,12 @@ class PostgresDbAPI(object):
     def execute(self, command):
         return self._connection.execute(command)
 
-    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
+    def insert_dataset(self, metadata_doc, dataset_id, product_id):
         """
         Insert dataset if not already indexed.
         :type metadata_doc: dict
         :type dataset_id: str or uuid.UUID
-        :type dataset_type_id: int
+        :type product_id: int
         :return: whether it was inserted
         :rtype: bool
         """
@@ -215,9 +201,9 @@ class PostgresDbAPI(object):
                 select([
                     bindparam('id'), dataset_type_ref,
                     select([
-                        DATASET_TYPE.c.metadata_type_ref
+                        PRODUCT.c.metadata_type_ref
                     ]).where(
-                        DATASET_TYPE.c.id == dataset_type_ref
+                        PRODUCT.c.id == dataset_type_ref
                     ).label('metadata_type_ref'),
                     bindparam('metadata', type_=JSONB)
                 ])
@@ -225,23 +211,23 @@ class PostgresDbAPI(object):
                 index_elements=['id']
             ),
             id=dataset_id,
-            dataset_type_ref=dataset_type_id,
+            dataset_type_ref=product_id,
             metadata=metadata_doc
         )
         return ret.rowcount > 0
 
-    def update_dataset(self, metadata_doc, dataset_id, dataset_type_id):
+    def update_dataset(self, metadata_doc, dataset_id, product_id):
         """
         Update dataset
         :type metadata_doc: dict
         :type dataset_id: str or uuid.UUID
-        :type dataset_type_id: int
+        :type product_id: int
         """
         res = self._connection.execute(
             DATASET.update().returning(DATASET.c.id).where(
                 and_(
                     DATASET.c.id == dataset_id,
-                    DATASET.c.dataset_type_ref == dataset_type_id
+                    DATASET.c.dataset_type_ref == product_id
                 )
             ).values(
                 metadata=metadata_doc
@@ -353,6 +339,13 @@ class PostgresDbAPI(object):
             )
         )
 
+    def delete_dataset(self, dataset_id):
+        self._connection.execute(
+            DATASET.delete().where(
+                DATASET.c.id == dataset_id
+            )
+        )
+
     def get_dataset(self, dataset_id):
         return self._connection.execute(
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
@@ -447,6 +440,7 @@ class PostgresDbAPI(object):
         :type limit: int
         :rtype: sqlalchemy.Expression
         """
+
         if select_fields:
             select_columns = tuple(
                 f.alchemy_expression.label(f.name)
@@ -499,10 +493,13 @@ class PostgresDbAPI(object):
 
         recursive_query = base_query.union_all(
             select(
-                [col for col in base_query.columns if col.name not in ['source_dataset_ref', 'distance', 'path']] +
-                [DATASET_SOURCE.c.source_dataset_ref,
-                 (base_query.c.distance + 1).label('distance'),
-                 (base_query.c.path + '.' + DATASET_SOURCE.c.classifier).label('path')]
+                [col for col in base_query.columns
+                 if col.name not in ['source_dataset_ref', 'distance', 'path']
+                 ] + [
+                    DATASET_SOURCE.c.source_dataset_ref,
+                    (base_query.c.distance + 1).label('distance'),
+                    (base_query.c.path + '.' + DATASET_SOURCE.c.classifier).label('path')
+                ]
             ).select_from(
                 base_query.join(
                     DATASET_SOURCE, base_query.c.source_dataset_ref == DATASET_SOURCE.c.dataset_ref
@@ -512,9 +509,10 @@ class PostgresDbAPI(object):
 
         return (
             select(
-                [distinct(recursive_query.c.id)] +
-                [col for col in recursive_query.columns
-                 if col.name not in ['id', 'source_dataset_ref', 'distance', 'path']]
+                [distinct(recursive_query.c.id)
+                 ] + [
+                    col for col in recursive_query.columns
+                    if col.name not in ['id', 'source_dataset_ref', 'distance', 'path']]
             ).select_from(
                 recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
             ).where(
@@ -534,6 +532,85 @@ class PostgresDbAPI(object):
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids, limit)
+        return self._connection.execute(select_query)
+
+    @staticmethod
+    def search_unique_datasets_query(expressions, select_fields, limit):
+        """
+        'unique' here refer to that the query results do not contain datasets
+        having the same 'id' more than once.
+
+        We are not dealing with dataset_source table here and we are not joining
+        dataset table with dataset_location table. We are aggregating stuff
+        in dataset_location per dataset basis if required. It returns the construted
+        query.
+        """
+
+        # expressions involving DATASET_SOURCE cannot not done for now
+        for expression in expressions:
+            assert expression.field.required_alchemy_table != DATASET_SOURCE, \
+                'Joins with dataset_source cannot be done for this query'
+
+        # expressions involving 'uri' and 'uris' will be handled different
+        expressions = [expression for expression in expressions
+                       if expression.field.required_alchemy_table != DATASET_LOCATION]
+
+        if select_fields:
+            select_columns = []
+            for field in select_fields:
+                if field.name in {'uri', 'uris'}:
+                    # All active URIs, from newest to oldest
+                    uris_field = func.array(
+                        select([
+                            _dataset_uri_field(SELECTED_DATASET_LOCATION)
+                        ]).where(
+                            and_(
+                                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+                                SELECTED_DATASET_LOCATION.c.archived == None
+                            )
+                        ).order_by(
+                            SELECTED_DATASET_LOCATION.c.added.desc(),
+                            SELECTED_DATASET_LOCATION.c.id.desc()
+                        ).label('uris')
+                    ).label('uris')
+                    select_columns.append(uris_field)
+                else:
+                    select_columns.append(field.alchemy_expression.label(field.name))
+        else:
+            select_columns = _DATASET_SELECT_FIELDS
+
+        raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
+
+        # We don't need 'DATASET_LOCATION table in the from expression
+        select_fields_ = [field for field in select_fields if field.name not in {'uri', 'uris'}]
+
+        from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields_)
+        where_expr = and_(DATASET.c.archived == None, *raw_expressions)
+
+        return (
+            select(
+                select_columns
+            ).select_from(
+                from_expression
+            ).where(
+                where_expr
+            ).limit(
+                limit
+            )
+        )
+
+    def search_unique_datasets(self, expressions, select_fields=None, limit=None):
+        """
+        Processes a search query without duplicating datasets.
+
+        'unique' here refer to that the results do not contain datasets having the same 'id'
+        more than once. we achieve this by not allowing dataset table to join with
+        dataset_location or dataset_source tables. Joining with other tables would not
+        result in multiple records per dataset due to the direction of cardinality.
+        """
+
+        select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
+
         return self._connection.execute(select_query)
 
     def get_duplicates(self, match_fields, expressions):
@@ -640,7 +717,7 @@ class PostgresDbAPI(object):
             join_tables.update(field.required_alchemy_table for field in fields)
         join_tables.discard(source_table)
 
-        table_order_hack = [DATASET_SOURCE, DATASET_LOCATION, DATASET, DATASET_TYPE, METADATA_TYPE]
+        table_order_hack = [DATASET_SOURCE, DATASET_LOCATION, DATASET, PRODUCT, METADATA_TYPE]
 
         from_expression = source_table
         for table in table_order_hack:
@@ -648,9 +725,9 @@ class PostgresDbAPI(object):
                 from_expression = from_expression.join(table)
         return from_expression
 
-    def get_dataset_type(self, id_):
+    def get_product(self, id_):
         return self._connection.execute(
-            DATASET_TYPE.select().where(DATASET_TYPE.c.id == id_)
+            PRODUCT.select().where(PRODUCT.c.id == id_)
         ).first()
 
     def get_metadata_type(self, id_):
@@ -658,9 +735,9 @@ class PostgresDbAPI(object):
             METADATA_TYPE.select().where(METADATA_TYPE.c.id == id_)
         ).first()
 
-    def get_dataset_type_by_name(self, name):
+    def get_product_by_name(self, name):
         return self._connection.execute(
-            DATASET_TYPE.select().where(DATASET_TYPE.c.name == name)
+            PRODUCT.select().where(PRODUCT.c.name == name)
         ).first()
 
     def get_metadata_type_by_name(self, name):
@@ -668,16 +745,16 @@ class PostgresDbAPI(object):
             METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
         ).first()
 
-    def insert_dataset_type(self,
-                            name,
-                            metadata,
-                            metadata_type_id,
-                            search_fields,
-                            definition,
-                            concurrently=True):
+    def insert_product(self,
+                       name,
+                       metadata,
+                       metadata_type_id,
+                       search_fields,
+                       definition,
+                       concurrently=True):
 
         res = self._connection.execute(
-            DATASET_TYPE.insert().values(
+            PRODUCT.insert().values(
                 name=name,
                 metadata=metadata,
                 metadata_type_ref=metadata_type_id,
@@ -688,19 +765,19 @@ class PostgresDbAPI(object):
         type_id = res.inserted_primary_key[0]
 
         # Initialise search fields.
-        self._setup_dataset_type_fields(type_id, name, search_fields, definition['metadata'],
-                                        concurrently=concurrently)
+        self._setup_product_fields(type_id, name, search_fields, definition['metadata'],
+                                   concurrently=concurrently)
         return type_id
 
-    def update_dataset_type(self,
-                            name,
-                            metadata,
-                            metadata_type_id,
-                            search_fields,
-                            definition, update_metadata_type=False, concurrently=False):
+    def update_product(self,
+                       name,
+                       metadata,
+                       metadata_type_id,
+                       search_fields,
+                       definition, update_metadata_type=False, concurrently=False):
         res = self._connection.execute(
-            DATASET_TYPE.update().returning(DATASET_TYPE.c.id).where(
-                DATASET_TYPE.c.name == name
+            PRODUCT.update().returning(PRODUCT.c.id).where(
+                PRODUCT.c.name == name
             ).values(
                 metadata=metadata,
                 metadata_type_ref=metadata_type_id,
@@ -722,9 +799,9 @@ class PostgresDbAPI(object):
             )
 
         # Initialise search fields.
-        self._setup_dataset_type_fields(type_id, name, search_fields, definition['metadata'],
-                                        concurrently=concurrently,
-                                        rebuild_view=True)
+        self._setup_product_fields(type_id, name, search_fields, definition['metadata'],
+                                   concurrently=concurrently,
+                                   rebuild_view=True)
         return type_id
 
     def insert_metadata_type(self, name, definition, concurrently=False):
@@ -789,19 +866,19 @@ class PostgresDbAPI(object):
                                      exclude_fields, fields, name,
                                      rebuild_indexes=rebuild_indexes, rebuild_view=rebuild_views)
 
-        for dataset_type in self._get_dataset_types_for_metadata_type(id_):
-            self._setup_dataset_type_fields(
-                dataset_type['id'],
-                dataset_type['name'],
+        for product in self._get_products_for_metadata_type(id_):
+            self._setup_product_fields(
+                product['id'],
+                product['name'],
                 fields,
-                dataset_type['definition']['metadata'],
+                product['definition']['metadata'],
                 rebuild_view=rebuild_views,
                 rebuild_indexes=rebuild_indexes,
                 concurrently=concurrently
             )
 
-    def _setup_dataset_type_fields(self, id_, name, fields, metadata_doc,
-                                   rebuild_indexes=False, rebuild_view=False, concurrently=True):
+    def _setup_product_fields(self, id_, name, fields, metadata_doc,
+                              rebuild_indexes=False, rebuild_view=False, concurrently=True):
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_)
         excluded_field_names = tuple(self._get_active_field_names(fields, metadata_doc))
 
@@ -820,16 +897,18 @@ class PostgresDbAPI(object):
                 except (AttributeError, KeyError, ValueError):
                     continue
 
-    def get_all_dataset_types(self):
-        return self._connection.execute(DATASET_TYPE.select().order_by(DATASET_TYPE.c.name.asc())).fetchall()
-
-    def _get_dataset_types_for_metadata_type(self, id_):
+    def get_all_products(self):
         return self._connection.execute(
-            DATASET_TYPE.select(
+            PRODUCT.select().order_by(PRODUCT.c.name.asc())
+        ).fetchall()
+
+    def _get_products_for_metadata_type(self, id_):
+        return self._connection.execute(
+            PRODUCT.select(
             ).where(
-                DATASET_TYPE.c.metadata_type_ref == id_
+                PRODUCT.c.metadata_type_ref == id_
             ).order_by(
-                DATASET_TYPE.c.name.asc()
+                PRODUCT.c.name.asc()
             )).fetchall()
 
     def get_all_metadata_types(self):
@@ -922,15 +1001,15 @@ class PostgresDbAPI(object):
 
     def list_users(self):
         result = self._connection.execute("""
-            SELECT
-                group_role.rolname AS role_name,
-                user_role.rolname AS user_name,
-                pg_catalog.shobj_description(user_role.oid, 'pg_authid') AS description
-            FROM pg_roles group_role
-            INNER JOIN pg_auth_members am ON am.roleid = group_role.oid
-            INNER JOIN pg_roles user_role ON am.member = user_role.oid
-            WHERE (group_role.rolname LIKE 'agdc_%%') AND NOT (user_role.rolname LIKE 'agdc_%%')
-            ORDER BY group_role.oid ASC, user_role.oid ASC;
+            select
+                group_role.rolname as role_name,
+                user_role.rolname as user_name,
+                pg_catalog.shobj_description(user_role.oid, 'pg_authid') as description
+            from pg_roles group_role
+            inner join pg_auth_members am on am.roleid = group_role.oid
+            inner join pg_roles user_role on am.member = user_role.oid
+            where (group_role.rolname like 'agdc_%%') and not (user_role.rolname like 'agdc_%%')
+            order by group_role.oid asc, user_role.oid asc;
         """)
         for row in result:
             yield _core.from_pg_role(row['role_name']), row['user_name'], row['description']
@@ -938,20 +1017,19 @@ class PostgresDbAPI(object):
     def create_user(self, username, password, role, description=None):
         pg_role = _core.to_pg_role(role)
         username = escape_pg_identifier(self._connection, username)
-        self._connection.execute(
-            'create user {username} password %s in role {role}'.format(username=username, role=pg_role),
-            password
-        )
+        sql = text('create user {username} password :password in role {role}'.format(username=username, role=pg_role))
+        self._connection.execute(sql,
+                                 password=password)
         if description:
-            self._connection.execute(
-                'comment on role {username} is %s'.format(username=username), description
-            )
+            sql = text('comment on role {username} is :description'.format(username=username))
+            self._connection.execute(sql,
+                                     description=description)
 
     def drop_users(self, users):
         # type: (Iterable[str]) -> None
         for username in users:
-            self._connection.execute('drop role {username}'.format(
-                username=escape_pg_identifier(self._connection, username)))
+            sql = text('drop role {username}'.format(username=escape_pg_identifier(self._connection, username)))
+            self._connection.execute(sql)
 
     def grant_role(self, role, users):
         # type: (str, Iterable[str]) -> None

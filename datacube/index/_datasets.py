@@ -1,27 +1,53 @@
-# coding=utf-8
+# type: ignore
 """
 API for dataset indexing, access and search.
 """
-from __future__ import absolute_import
-
 import logging
 import warnings
 from collections import namedtuple
+from typing import Any, Iterable, Set, Tuple, Union, List
 from uuid import UUID
-from typing import Any, Iterable, Mapping, Set, Tuple, Union
 
-from datacube import compat
 from datacube.model import Dataset, DatasetType
 from datacube.model.utils import flatten_datasets
-from datacube.utils import jsonify_document, changes
-from datacube.utils.changes import get_doc_changes, check_doc_unchanged
+from datacube.utils import jsonify_document, changes, cached_property
+from datacube.utils.changes import get_doc_changes
 from . import fields
-from .exceptions import DuplicateRecordError
+
+import json
+from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
+from datacube.drivers.postgres._schema import DATASET
+from sqlalchemy import select, func
+from datacube.model.fields import Field
 
 _LOG = logging.getLogger(__name__)
 
+
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
+
+class DatasetSpatialMixin(object):
+    __slots__ = ()
+
+    @property
+    def _gs(self):
+        return self.grid_spatial
+
+    @property
+    def crs(self):
+        return Dataset.crs.__get__(self)
+
+    @cached_property
+    def extent(self):
+        return Dataset.extent.func(self)
+
+    @property
+    def transform(self):
+        return Dataset.transform.__get__(self)
+
+    @property
+    def bounds(self):
+        return Dataset.bounds.__get__(self)
 
 
 class DatasetResource(object):
@@ -46,7 +72,7 @@ class DatasetResource(object):
         :param bool include_sources: get the full provenance graph?
         :rtype: Dataset
         """
-        if isinstance(id_, compat.string_types):
+        if isinstance(id_, str):
             id_ = UUID(id_)
 
         with self._db.connect() as connection:
@@ -183,8 +209,7 @@ class DatasetResource(object):
 
         return dataset
 
-    def search_product_duplicates(self, product, *group_fields):
-        # type: (DatasetType, Iterable[Union[str, fields.Field]]) -> Iterable[tuple, Set[UUID]]
+    def search_product_duplicates(self, product: DatasetType, *args):
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -193,15 +218,14 @@ class DatasetResource(object):
         Returns each set of those field values and the datasets that have them.
         """
 
-        def load_field(f):
-            # type: (Union[str, fields.Field]) -> fields.Field
-            if isinstance(f, compat.string_types):
+        def load_field(f: Union[str, fields.Field]) -> fields.Field:
+            if isinstance(f, str):
                 return product.metadata_type.dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
 
-        group_fields = [load_field(f) for f in group_fields]
-        result_type = namedtuple('search_result', (f.name for f in group_fields))
+        group_fields = [load_field(f) for f in args]  # type: List[fields.Field]
+        result_type = namedtuple('search_result', list(f.name for f in group_fields))  # type: ignore
 
         expressions = [product.metadata_type.dataset_fields.get('product') == product.name]
 
@@ -307,21 +331,23 @@ class DatasetResource(object):
         """
         Mark datasets as not archived
 
-        :param list[UUID] ids: list of dataset ids to restore
+        :param Iterable[UUID] ids: list of dataset ids to restore
         """
         with self._db.begin() as transaction:
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
-    def get_field_names(self, type_name=None):
+    def get_field_names(self, product_name=None):
         """
-        :param str type_name:
+        Get the list of possible search fields for a Product
+
+        :param str product_name:
         :rtype: set[str]
         """
-        if type_name is None:
+        if product_name is None:
             types = self.types.get_all()
         else:
-            types = [self.types.get_by_name(type_name)]
+            types = [self.types.get_by_name(product_name)]
 
         out = set()
         for type_ in types:
@@ -330,25 +356,21 @@ class DatasetResource(object):
 
     def get_locations(self, id_):
         """
+        Get the list of storage locations for the given dataset id
+
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             return connection.get_locations(id_)
 
     def get_archived_locations(self, id_):
         """
+        Find locations which have been archived for a dataset
+
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             return [uri for uri, archived_dt in connection.get_archived_locations(id_)]
 
@@ -359,10 +381,6 @@ class DatasetResource(object):
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: List[Tuple[str, datetime.datetime]]
         """
-        if isinstance(id_, Dataset):
-            raise RuntimeError("Passing a dataset has been deprecated for all index apis, and "
-                               "is not supported in new apis. Pass the id of your dataset.")
-
         with self._db.connect() as connection:
             return list(connection.get_archived_locations(id_))
 
@@ -374,10 +392,6 @@ class DatasetResource(object):
         :param str uri: fully qualified uri
         :returns bool: Was one added?
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         if not uri:
             warnings.warn("Cannot add empty uri. (dataset %s)" % id_)
             return False
@@ -386,6 +400,13 @@ class DatasetResource(object):
             return connection.insert_dataset_location(id_, uri)
 
     def get_datasets_for_location(self, uri, mode=None):
+        """
+        Find datasets that exist at the given URI
+
+        :param uri: search uri
+        :param str mode: 'exact' or 'prefix'
+        :return:
+        """
         with self._db.connect() as connection:
             return (self._make(row) for row in connection.get_datasets_for_location(uri, mode=mode))
 
@@ -397,10 +418,6 @@ class DatasetResource(object):
         :param str uri: fully qualified uri
         :returns bool: Was one removed?
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             was_removed = connection.remove_location(id_, uri)
             return was_removed
@@ -413,10 +430,6 @@ class DatasetResource(object):
         :param str uri: fully qualified uri
         :return bool: location was able to be archived
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             was_archived = connection.archive_location(id_, uri)
             return was_archived
@@ -429,15 +442,11 @@ class DatasetResource(object):
         :param str uri: fully qualified uri
         :return bool: location was able to be restored
         """
-        if isinstance(id_, Dataset):
-            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
-            id_ = id_.id
-
         with self._db.connect() as connection:
             was_restored = connection.restore_location(id_, uri)
             return was_restored
 
-    def _make(self, dataset_res, full_info=False):
+    def _make(self, dataset_res, full_info=False, product=None):
         """
         :rtype Dataset
 
@@ -448,8 +457,10 @@ class DatasetResource(object):
         else:
             uris = []
 
+        product = product or self.types.get(dataset_res.dataset_type_ref)
+
         return Dataset(
-            type_=self.types.get(dataset_res.dataset_type_ref),
+            type_=product,
             metadata_doc=dataset_res.metadata,
             uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,
@@ -457,11 +468,11 @@ class DatasetResource(object):
             archived_time=dataset_res.archived
         )
 
-    def _make_many(self, query_result):
+    def _make_many(self, query_result, product=None):
         """
         :rtype list[Dataset]
         """
-        return (self._make(dataset) for dataset in query_result)
+        return (self._make(dataset, product=product) for dataset in query_result)
 
     def search_by_metadata(self, metadata):
         """
@@ -485,11 +496,10 @@ class DatasetResource(object):
         :rtype: __generator[Dataset]
         """
         source_filter = query.pop('source_filter', None)
-        for _, datasets in self._do_search_by_product(query,
-                                                      source_filter=source_filter,
-                                                      limit=limit):
-            for dataset in self._make_many(datasets):
-                yield dataset
+        for product, datasets in self._do_search_by_product(query,
+                                                            source_filter=source_filter,
+                                                            limit=limit):
+            yield from self._make_many(datasets, product)
 
     def search_by_product(self, **query):
         """
@@ -499,7 +509,7 @@ class DatasetResource(object):
         :rtype: __generator[(DatasetType,  __generator[Dataset])]]
         """
         for product, datasets in self._do_search_by_product(query):
-            yield product, self._make_many(datasets)
+            yield product, self._make_many(datasets, product)
 
     def search_returning(self, field_names, limit=None, **query):
         """
@@ -694,3 +704,180 @@ class DatasetResource(object):
         :rtype: list[Dataset]
         """
         return list(self.search(**query))
+
+    def get_product_time_bounds(self, product: str):
+        """
+        Returns the minimum and maximum acquisition time of the product.
+        """
+
+        # Get the offsets from dataset doc
+        product = self.types.get_by_name(product)
+        dataset_section = product.metadata_type.definition['dataset']
+        min_offset = dataset_section['search_fields']['time']['min_offset']
+        max_offset = dataset_section['search_fields']['time']['max_offset']
+
+        time_min = DateDocField('aquisition_time_min',
+                                'Min of time when dataset was acquired',
+                                DATASET.c.metadata,
+                                False,  # is it indexed
+                                offset=min_offset,
+                                selection='least')
+
+        time_max = DateDocField('aquisition_time_max',
+                                'Max of time when dataset was acquired',
+                                DATASET.c.metadata,
+                                False,  # is it indexed
+                                offset=max_offset,
+                                selection='greatest')
+
+        with self._db.connect() as connection:
+            result = connection.execute(
+                select(
+                    [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
+                ).where(
+                    DATASET.c.dataset_type_ref == product.id
+                )
+            ).first()
+
+        return result
+
+    # pylint: disable=redefined-outer-name
+    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
+        """
+        This is a dataset search function that returns the results as objects of a dynamically
+        generated Dataset class that is a subclass of tuple.
+
+        Only the requested fields will be returned together with related derived attributes as property functions
+        similer to the datacube.model.Dataset class. For example, if 'extent'is requested all of
+        'crs', 'extent', 'transform', and 'bounds' are available as property functions.
+
+        The field_names can be custom fields in addition to those specified in metadata_type, fixed fields, or
+        native fields. The field_names can also be derived fields like 'extent', 'crs', 'transform',
+        and 'bounds'. The custom fields require custom offsets of the metadata doc be provided.
+
+        The datasets can be selected based on values of custom fields as long as relevant custom
+        offsets are provided. However custom field values are not transformed so must match what is
+        stored in the database.
+
+        :param field_names: A tuple of field names that would be returned including derived fields
+                            such as extent, crs
+        :param custom_offsets: A dictionary of offsets in the metadata doc for custom fields
+        :param limit: Number of datasets returned per product.
+        :param query: key, value mappings of query that will be processed against metadata_types,
+                      product definitions and/or dataset table.
+        :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
+        property functions).
+        """
+
+        assert field_names
+
+        for product, query_exprs in self.make_query_expr(query, custom_offsets):
+
+            select_fields = self.make_select_fields(product, field_names, custom_offsets)
+            select_field_names = tuple(field.name for field in select_fields)
+            result_type = namedtuple('DatasetLight', select_field_names)  # type: ignore
+
+            if 'grid_spatial' in select_field_names:
+                class DatasetLight(result_type, DatasetSpatialMixin):
+                    pass
+            else:
+                class DatasetLight(result_type):  # type: ignore
+                    __slots__ = ()
+
+            with self._db.connect() as connection:
+                results = connection.search_unique_datasets(
+                    query_exprs,
+                    select_fields=select_fields,
+                    limit=limit
+                )
+
+            for result in results:
+                field_values = dict()
+                for i_, field in enumerate(select_fields):
+                    # We need to load the simple doc fields
+                    if isinstance(field, SimpleDocField):
+                        field_values[field.name] = json.loads(result[i_])
+                    else:
+                        field_values[field.name] = result[i_]
+
+                yield DatasetLight(**field_values)  # type: ignore
+
+    def make_select_fields(self, product, field_names, custom_offsets):
+        """
+        Parse and generate the list of select fields to be passed to the database API.
+        """
+
+        assert product and field_names
+
+        dataset_fields = product.metadata_type.dataset_fields
+        dataset_section = product.metadata_type.definition['dataset']
+
+        select_fields = []
+        for field_name in field_names:
+            if dataset_fields.get(field_name):
+                select_fields.append(dataset_fields[field_name])
+            else:
+                # try to construct the field
+                if field_name in {'transform', 'extent', 'crs', 'bounds'}:
+                    grid_spatial = dataset_section.get('grid_spatial')
+                    if grid_spatial:
+                        select_fields.append(SimpleDocField(
+                            'grid_spatial', 'grid_spatial', DATASET.c.metadata,
+                            False,
+                            offset=grid_spatial
+                        ))
+                elif custom_offsets and field_name in custom_offsets:
+                    select_fields.append(SimpleDocField(
+                        field_name, field_name, DATASET.c.metadata,
+                        False,
+                        offset=custom_offsets[field_name]
+                    ))
+                elif field_name == 'uris':
+                    select_fields.append(Field('uris', 'uris'))
+
+        return select_fields
+
+    def make_query_expr(self, query, custom_offsets):
+        """
+        Generate query expressions including queries based on custom fields
+        """
+
+        product_queries = list(self._get_product_queries(query))
+        custom_query = dict()
+        if not product_queries:
+            # The key, values in query that are un-machable with info
+            # in metadata types and product definitions, perhaps there are custom
+            # fields, will need to handle custom fields separately
+
+            canonical_query = query.copy()
+            custom_query = {key: canonical_query.pop(key) for key in custom_offsets
+                            if key in canonical_query}
+            product_queries = list(self._get_product_queries(canonical_query))
+
+            if not product_queries:
+                raise ValueError('No products match search terms: %r' % query)
+
+        for q, product in product_queries:
+            dataset_fields = product.metadata_type.dataset_fields
+            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+            custom_query_exprs = tuple(self.get_custom_query_expressions(custom_query, custom_offsets))
+
+            yield product, query_exprs + custom_query_exprs
+
+    def get_custom_query_expressions(self, custom_query, custom_offsets):
+        """
+        Generate query expressions for custom fields. it is assumed that custom fields are to be found
+        in metadata doc and their offsets are provided. custom_query is a dict of key fields involving
+        custom fields.
+        """
+
+        custom_exprs = []
+        for key in custom_query:
+            # for now we assume all custom query fields are SimpleDocFields
+            custom_field = SimpleDocField(
+                custom_query[key], custom_query[key], DATASET.c.metadata,
+                False, offset=custom_offsets[key]
+            )
+            custom_exprs.append(fields.as_expression(custom_field, custom_query[key]))
+
+        return custom_exprs

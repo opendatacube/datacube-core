@@ -10,17 +10,17 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-
-
-from __future__ import absolute_import, division, print_function
-
 import datetime
 import pandas
+import numpy as np
+from types import SimpleNamespace
 
 import pytest
 
-from datacube.api.query import Query, _datetime_to_timestamp, query_group_by
+from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day, GroupBy
 from datacube.model import Range
+from datacube.utils import parse_time
+from datacube.utils.geometry import CRS
 
 
 def test_datetime_to_timestamp():
@@ -68,6 +68,11 @@ def test_query_kwargs():
     assert 'lat' in query.search_terms
     assert 'lon' in query.search_terms
 
+    query = Query(index=mock_index, y=-4174726, x=1515184, crs=CRS('EPSG:3577'))
+    assert query.geopolygon
+    assert 'lat' in query.search_terms
+    assert 'lon' in query.search_terms
+
     query = Query(index=mock_index, time='2001')
     assert 'time' in query.search
 
@@ -84,6 +89,10 @@ def test_query_kwargs():
 
     with pytest.raises(LookupError):
         query_group_by(group_by='magic')
+
+    gb = query_group_by('time')
+    assert isinstance(gb, GroupBy)
+    assert query_group_by(group_by=gb) is gb
 
 
 def format_test(start_out, end_out):
@@ -146,3 +155,28 @@ def test_time_handling(time_param, expected):
     query = Query(time=time_param)
     assert 'time' in query.search_terms
     assert query.search_terms['time'] == expected
+
+
+def test_solar_day():
+    _s = SimpleNamespace
+    ds = _s(center_time=parse_time('1987-05-22 23:07:44.2270250Z'),
+            metadata=_s(lon=Range(begin=150.415,
+                                  end=152.975)))
+
+    assert solar_day(ds) == np.datetime64('1987-05-23', 'D')
+    assert solar_day(ds, longitude=0) == np.datetime64('1987-05-22', 'D')
+
+    ds.metadata = _s()
+
+    with pytest.raises(ValueError) as e:
+        solar_day(ds)
+
+    assert 'Cannot compute solar_day: dataset is missing spatial info' in str(e.value)
+
+
+def test_dateline_query_building():
+    lon = Query(x=(618300, 849000),
+                y=(-1876800, -1642500),
+                crs='EPSG:32660').search_terms['lon']
+
+    assert lon.begin < 180 < lon.end

@@ -1,10 +1,11 @@
-from __future__ import absolute_import
+from typing import List
 
+from ._tools import singleton_setup
 from .driver_cache import load_drivers
 
 
 class IndexDriverCache(object):
-    def __init__(self, group):
+    def __init__(self, group: str):
         self._drivers = load_drivers(group)
 
         if len(self._drivers) == 0:
@@ -16,28 +17,27 @@ class IndexDriverCache(object):
                 for alias in driver.aliases:
                     self._drivers[alias] = driver
 
-    def __call__(self, name):
+    def __call__(self, name: str):
         """
         :returns: None if driver with a given name is not found
 
-        :param str name: Driver name
+        :param name: Driver name
         :return: Returns IndexDriver
         """
         return self._drivers.get(name, None)
 
-    def drivers(self):
+    def drivers(self) -> List[str]:
         """ Returns list of driver names
         """
         return list(self._drivers.keys())
 
 
-def index_cache():
+def index_cache() -> IndexDriverCache:
     """ Singleton for IndexDriverCache
     """
-    # pylint: disable=protected-access
-    if not hasattr(index_cache, '_instance'):
-        index_cache._instance = IndexDriverCache('datacube.plugins.index')
-    return index_cache._instance
+    return singleton_setup(index_cache, '_instance',
+                           IndexDriverCache,
+                           'datacube.plugins.index')
 
 
 def index_drivers():

@@ -2,11 +2,15 @@
 """
 User configuration.
 """
-from __future__ import absolute_import
 
 import os
+from pathlib import Path
+import configparser
+from urllib.parse import unquote_plus, urlparse
+from typing import Optional, Iterable, Union, Any, Tuple, Dict
 
-from . import compat
+PathLike = Union[str, 'os.PathLike[Any]']
+
 
 ENVIRONMENT_VARNAME = 'DATACUBE_CONFIG_PATH'
 #: Config locations in order. Properties found in latter locations override
@@ -16,17 +20,15 @@ ENVIRONMENT_VARNAME = 'DATACUBE_CONFIG_PATH'
 #: - file at `$DATACUBE_CONFIG_PATH` environment variable
 #: - `~/.datacube.conf`
 #: - `datacube.conf`
-DEFAULT_CONF_PATHS = (
-    '/etc/datacube.conf',
-    os.environ.get(ENVIRONMENT_VARNAME),
-    os.path.expanduser("~/.datacube.conf"),
-    'datacube.conf'
-)
+DEFAULT_CONF_PATHS = tuple(p for p in ['/etc/datacube.conf',
+                                       os.environ.get(ENVIRONMENT_VARNAME, ''),
+                                       str(os.path.expanduser("~/.datacube.conf")),
+                                       'datacube.conf'] if len(p) > 0)
 
 DEFAULT_ENV = 'default'
 
 # Default configuration options.
-_DEFAULT_CONF = u"""
+_DEFAULT_CONF = """
 [DEFAULT]
 # Blank implies localhost
 db_hostname:
@@ -45,6 +47,13 @@ db_connection_timeout: 60
 _UNSET = object()
 
 
+def read_config(default_text: Optional[str] = None) -> configparser.ConfigParser:
+    config = configparser.ConfigParser()
+    if default_text is not None:
+        config.read_string(default_text)
+    return config
+
+
 class LocalConfig(object):
     """
     System configuration for the user.
@@ -55,7 +64,9 @@ class LocalConfig(object):
 
     """
 
-    def __init__(self, config, files_loaded=None, env=None):
+    def __init__(self, config: configparser.ConfigParser,
+                 files_loaded: Optional[Iterable[str]] = None,
+                 env: Optional[str] = None):
         """
         Datacube environment resolution precedence is:
           1. Supplied as a function argument `env`
@@ -66,15 +77,12 @@ class LocalConfig(object):
         If environment is supplied by any of the first 3 methods is not present
         in the config, then throw an exception.
         """
-        self._config = config  # type: configparser.ConfigParser
-        self.files_loaded = []
-        if files_loaded:
-            self.files_loaded = files_loaded  # type: list[str]
+        self._config = config
+        self.files_loaded = [] if files_loaded is None else list(iter(files_loaded))
 
         if env is None:
             env = os.environ.get('DATACUBE_ENVIRONMENT',
-                                 (config.get('user', 'default_environment')
-                                  if config.has_option('user', 'default_environment') else None))
+                                 config.get('user', 'default_environment', fallback=None))
 
         # If the user specifies a particular env, we either want to use it or Fail
         if env:
@@ -94,20 +102,28 @@ class LocalConfig(object):
             raise ValueError('No ODC environment, checked configurations for %s' % fallbacks)
 
     @classmethod
-    def find(cls, paths=DEFAULT_CONF_PATHS, env=None):
+    def find(cls,
+             paths: Optional[Union[str, Iterable[PathLike]]] = None,
+             env: Optional[str] = None) -> 'LocalConfig':
         """
-        Find config from possible filesystem locations.
+        Find config from environment variables or possible filesystem locations.
 
         'env' is which environment to use from the config: it corresponds to the name of a
         config section
-
-        :type paths: str|list[str]
-        :type env: str
-        :rtype: LocalConfig
         """
+        config = read_config(_DEFAULT_CONF)
+
+        if paths is None:
+            if env is None:
+                env_opts = parse_env_params()
+                if env_opts:
+                    return _cfg_from_env_opts(env_opts, config)
+
+            paths = DEFAULT_CONF_PATHS
+
         if isinstance(paths, str) or hasattr(paths, '__fspath__'):  # Use os.PathLike in 3.6+
-            paths = [paths]
-        config = compat.read_config(_DEFAULT_CONF)
+            paths = [str(paths)]
+
         files_loaded = config.read(str(p) for p in paths if p)
 
         return LocalConfig(
@@ -116,57 +132,126 @@ class LocalConfig(object):
             env=env,
         )
 
-    def get(self, item, fallback=_UNSET):
-        if fallback == _UNSET:
+    def get(self, item: str, fallback=_UNSET):
+        if fallback is _UNSET:
             return self._config.get(self._env, item)
         else:
-            if self._config.has_option(self._env, item):
-                # TODO: simplify when dropping python 2 support
-                return self._config.get(self._env, item)
-            else:
-                return fallback
+            return self._config.get(self._env, item, fallback=fallback)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str):
         return self.get(item, fallback=None)
 
-    def __str__(self):
+    def __str__(self) -> str:
+        cfg = dict(self._config[self._env])
+        if 'db_password' in cfg:
+            cfg['db_password'] = '***'
+
         return "LocalConfig<loaded_from={}, environment={!r}, config={}>".format(
             self.files_loaded or 'defaults',
             self._env,
-            dict(self._config[self._env]),
-        )
+            cfg)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
-OPTIONS = {'reproject_threads': 4}
+DB_KEYS = ('hostname', 'port', 'database', 'username', 'password')
 
 
-#: pylint: disable=invalid-name
-class set_options(object):
-    """Set global state within a controlled context
+def parse_connect_url(url: str) -> Dict[str, str]:
+    """ Extract database,hostname,port,username,password from db URL.
 
-    Currently, the only supported options are:
-    * reproject_threads: The number of threads to use when reprojecting
+    Example: postgresql://username:password@hostname:port/database
 
-    You can use ``set_options`` either as a context manager::
+    For local password-less db use `postgresql:///<your db>`
+    """
+    def split2(s: str, separator: str) -> Tuple[str, str]:
+        i = s.find(separator)
+        return (s, '') if i < 0 else (s[:i], s[i+1:])
 
-        with datacube.set_options(reproject_threads=16):
-            ...
+    _, netloc, path, *_ = urlparse(url)
 
-    Or to set global options::
+    db = path[1:] if path else ''
+    if '@' in netloc:
+        (user, password), (host, port) = (split2(p, ':') for p in split2(netloc, '@'))
+    else:
+        user, password = '', ''
+        host, port = split2(netloc, ':')
 
-        datacube.set_options(reproject_threads=16)
+    oo = dict(hostname=host, database=db)
+
+    if port:
+        oo['port'] = port
+    if password:
+        oo['password'] = unquote_plus(password)
+    if user:
+        oo['username'] = user
+    return oo
+
+
+def parse_env_params() -> Dict[str, str]:
+    """
+    - Extract parameters from DATACUBE_DB_URL if present
+    - Else look for DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE
+    - Return {} otherwise
     """
 
-    def __init__(self, **kwargs):
-        self.old = OPTIONS.copy()
-        OPTIONS.update(kwargs)
+    db_url = os.environ.get('DATACUBE_DB_URL', None)
+    if db_url is not None:
+        return parse_connect_url(db_url)
 
-    def __enter__(self):
-        return
+    params = {k: os.environ.get('DB_{}'.format(k.upper()), None)
+              for k in DB_KEYS}
+    return {k: v
+            for k, v in params.items()
+            if v is not None and v != ""}
 
-    def __exit__(self, exc_type, value, traceback):
-        OPTIONS.clear()
-        OPTIONS.update(self.old)
+
+def _cfg_from_env_opts(opts: Dict[str, str],
+                       base: configparser.ConfigParser) -> LocalConfig:
+    base['default'] = {'db_'+k: v for k, v in opts.items()}
+    return LocalConfig(base, files_loaded=[], env='default')
+
+
+def render_dc_config(params: Dict[str, Any],
+                     section_name: str = 'default') -> str:
+    """ Render output of parse_env_params to a string that can be written to config file.
+    """
+    oo = '[{}]\n'.format(section_name)
+    for k in DB_KEYS:
+        v = params.get(k, None)
+        if v is not None:
+            oo += 'db_{k}: {v}\n'.format(k=k, v=v)
+    return oo
+
+
+def auto_config() -> str:
+    """
+    Render config to $DATACUBE_CONFIG_PATH or ~/.datacube.conf, but only if doesn't exist.
+
+    option1:
+      DATACUBE_DB_URL  postgresql://user:password@host:port/database
+
+    option2:
+      DB_{HOSTNAME|PORT|USERNAME|PASSWORD|DATABASE}
+
+    option3:
+       default config
+    """
+    cfg_path = os.environ.get('DATACUBE_CONFIG_PATH', None)
+    cfg_path = Path(cfg_path) if cfg_path else Path.home()/'.datacube.conf'
+
+    if cfg_path.exists():
+        return str(cfg_path)
+
+    opts = parse_env_params()
+
+    if len(opts) == 0:
+        opts['hostname'] = ''
+        opts['database'] = 'datacube'
+
+    cfg_text = render_dc_config(opts)
+    with open(str(cfg_path), 'wt') as f:
+        f.write(cfg_text)
+
+    return str(cfg_path)

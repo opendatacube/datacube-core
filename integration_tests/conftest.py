@@ -2,8 +2,6 @@
 """
 Common methods for index integration tests.
 """
-from __future__ import absolute_import
-
 import itertools
 import os
 from copy import copy, deepcopy
@@ -15,6 +13,7 @@ from uuid import uuid4
 import pytest
 import yaml
 from click.testing import CliRunner
+from hypothesis import HealthCheck, settings
 
 import datacube.scripts.cli_app
 import datacube.utils
@@ -24,13 +23,7 @@ from datacube.index._metadata_types import default_metadata_type_docs
 from integration_tests.utils import _make_geotiffs, _make_ls5_scene_datasets, load_yaml_file, \
     GEOTIFF, load_test_products
 
-try:
-    from yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from yaml import SafeLoader
-
 from datacube.config import LocalConfig
-from datacube.index.index import Index
 from datacube.drivers.postgres import PostgresDb
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
@@ -47,12 +40,16 @@ NUM_TIME_SLICES = 3
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
 
-LS5_SAMPLES = CONFIG_SAMPLES / 'storage_types' / 'ga_landsat_5'
-LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
-LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
-
 CONFIG_FILE_PATHS = [str(INTEGRATION_TESTS_DIR / 'agdcintegration.conf'),
                      os.path.expanduser('~/.datacube_integration.conf')]
+
+# Configure Hypothesis to allow slower tests, because we're testing datasets
+# and disk IO rather than scalar values in memory.  Ask @Zac-HD for details.
+settings.register_profile(
+    'opendatacube', deadline=5000, max_examples=10,
+    suppress_health_check=[HealthCheck.too_slow]
+)
+settings.load_profile('opendatacube')
 
 
 @pytest.fixture
@@ -87,12 +84,6 @@ def local_config(datacube_env_name):
 def ingest_configs(datacube_env_name):
     """ Provides dictionary product_name => config file name
     """
-    if datacube_env_name == "s3aio_env":
-        return {
-            'ls5_nbar_albers': 'ls5_nbar_albers_s3test.yaml',
-            'ls5_pq_albers': 'ls5_pq_albers_s3test.yaml',
-        }
-
     return {
         'ls5_nbar_albers': 'ls5_nbar_albers.yaml',
         'ls5_pq_albers': 'ls5_pq_albers.yaml',
@@ -126,23 +117,20 @@ def uninitialised_postgres_db(local_config, request):
 
 
 @pytest.fixture
-def index(local_config, uninitialised_postgres_db):
-    """
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
-    """
+def index(local_config,
+          uninitialised_postgres_db: PostgresDb):
     index = index_connect(local_config, validate_connection=False)
     index.init_db()
-    return index
+    yield index
+    del index
 
 
 @pytest.fixture
-def index_empty(local_config, uninitialised_postgres_db):
-    """
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
-    """
+def index_empty(local_config, uninitialised_postgres_db: PostgresDb):
     index = index_connect(local_config, validate_connection=False)
     index.init_db(with_default_types=False)
-    return index
+    yield index
+    del index
 
 
 @pytest.fixture
@@ -168,6 +156,7 @@ def ls5_telem_doc(ga_metadata_type):
     return {
         "name": "ls5_telem_test",
         "description": 'LS5 Test',
+        "license": "CC-BY-4.0",
         "metadata": {
             "platform": {
                 "code": "LANDSAT_5"
@@ -332,7 +321,6 @@ def ga_metadata_type_doc():
 @pytest.fixture
 def default_metadata_types(index):
     """Inserts the default metadata types into the Index"""
-    # type: (Index, list) -> list
     for d in default_metadata_type_docs():
         index.metadata_types.add(index.metadata_types.from_doc(d))
     return index.metadata_types.get_all()
@@ -399,9 +387,35 @@ def clirunner(global_integration_cli_args, datacube_env_name):
 
 
 @pytest.fixture
+def clirunner_raw():
+    def _run_cli(opts,
+                 catch_exceptions=False,
+                 expect_success=True,
+                 cli_method=datacube.scripts.cli_app.cli,
+                 verbose_flag='-v'):
+        exe_opts = []
+        if verbose_flag:
+            exe_opts.append(verbose_flag)
+        exe_opts.extend(opts)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli_method,
+            exe_opts,
+            catch_exceptions=catch_exceptions
+        )
+        if expect_success:
+            assert 0 == result.exit_code, "Error for %r. output: %r" % (opts, result.output)
+        return result
+
+    return _run_cli
+
+
+@pytest.fixture
 def dataset_add_configs():
     B = INTEGRATION_TESTS_DIR / 'data' / 'dataset_add'
     return SimpleNamespace(metadata=str(B / 'metadata.yml'),
                            products=str(B / 'products.yml'),
                            datasets_bad1=str(B / 'datasets_bad1.yml'),
+                           datasets_eo3=str(B / 'datasets_eo3.yml'),
                            datasets=str(B / 'datasets.yml'))

@@ -16,13 +16,21 @@ To initialise this class, you will need a config pointing to a database, such as
     db_username: cube_user
 
 """
-from __future__ import absolute_import
-from .version import __version__
+
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = 'Unknown/Not Installed'
+
 from .api import Datacube
-from .config import set_options
 import warnings
 from .utils import xarray_geoextensions
 
-
 # Ensure deprecation warnings from datacube modules are shown
 warnings.filterwarnings('always', category=DeprecationWarning, module=r'^datacube\.')
+
+__all__ = (
+    "Datacube",
+    "__version__",
+    "xarray_geoextensions",
+)

@@ -1,13 +1,10 @@
-from __future__ import absolute_import, print_function
-
 import logging
-
-from pkg_resources import iter_entry_points, DistributionNotFound
+from typing import Dict, Any, Tuple, Iterable
 
 _LOG = logging.getLogger(__name__)
 
 
-def load_drivers(group):
+def load_drivers(group: str) -> Dict[str, Any]:
     """
     Load available drivers for a given group name.
 
@@ -19,12 +16,13 @@ def load_drivers(group):
      By having driver entry_points pointing to a function, we defer loading the driver
      module or running any code until required.
 
-    :param str group: Name of the entry point group e.g. "datacube.plugins.io.read"
+    :param group: Name of the entry point group e.g. "datacube.plugins.io.read"
 
     :returns: Dictionary String -> Driver Object
     """
 
     def safe_load(ep):
+        from pkg_resources import DistributionNotFound
         # pylint: disable=broad-except,bare-except
         try:
             driver_init = ep.load()
@@ -39,7 +37,7 @@ def load_drivers(group):
 
         try:
             driver = driver_init()
-        except:
+        except Exception:
             _LOG.warning('Exception during driver init, driver name: %s::%s', group, ep.name)
             return None
 
@@ -48,7 +46,8 @@ def load_drivers(group):
 
         return driver
 
-    def resolve_all(group):
+    def resolve_all(group: str) -> Iterable[Tuple[str, Any]]:
+        from pkg_resources import iter_entry_points
         for ep in iter_entry_points(group=group, name=None):
             driver = safe_load(ep)
             if driver is not None:
