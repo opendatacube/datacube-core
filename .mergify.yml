@@ -13,6 +13,7 @@ pull_request_rules:
       method: rebase
       rebase_fallback: merge
 - name: delete head branch after merge
-  conditions: []
+  conditions:
+    - merged
   actions:
     delete_head_branch: {}
