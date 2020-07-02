@@ -79,7 +79,7 @@ autosummary_generate = True
 extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
             'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/', None),
+    'python': ('https://docs.python.org/3', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'xarray': ('https://xarray.pydata.org/en/stable/', None),
