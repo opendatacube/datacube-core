@@ -75,10 +75,15 @@ def test_xr_geobox_unhappy():
     xx.y.attrs.update(crs='EPSG:3857')
     assert xx.band.geobox is None
 
-    # test _norm_crs exception is caught
+    # test crs not being a string
     xx = mk_sample_xr_dataset(crs=None)
     xx.attrs['crs'] = ['this will not parse']
-    assert xx.geobox is None
+    with pytest.warns(UserWarning):
+        assert xx.geobox is None
+
+    xx.attrs['crs'] = 'this will fail CRS() constructor'
+    with pytest.warns(UserWarning):
+        assert xx.geobox is None
 
 
 def test_crs_from_coord():
@@ -165,3 +170,8 @@ def test_assign_crs(odc_style_xr_dataset):
 
     with pytest.raises(ValueError):
         assign_crs(xx_nocrs)
+
+
+def test_xr_opendataset(example_netcdf_path):
+    xx = xr.open_dataset(example_netcdf_path)
+    assert xx.geobox is None
