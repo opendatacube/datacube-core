@@ -115,7 +115,7 @@ class MetadataTypeResource(object):
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
-    def update(self, metadata_type, allow_unsafe_updates=False, allow_table_lock=False):
+    def update(self, metadata_type: MetadataType, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -137,7 +137,7 @@ class MetadataTypeResource(object):
             return self.get_by_name(metadata_type.name)
 
         if not can_update:
-            raise ValueError("Unsafe changes at " + (
+            raise ValueError(f"Unsafe changes in {metadata_type.name}: " + (
                 ", ".join(
                     _readable_offset(offset)
                     for offset, _, _ in unsafe_changes

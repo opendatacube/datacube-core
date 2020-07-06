@@ -265,7 +265,7 @@ class DatasetResource(object):
 
         return not bad_changes, good_changes, bad_changes
 
-    def update(self, dataset, updates_allowed=None):
+    def update(self, dataset: Dataset, updates_allowed=None):
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset to update
@@ -287,7 +287,7 @@ class DatasetResource(object):
             _LOG.warning("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
 
         if not can_update:
-            raise ValueError("Unsafe changes at " + (
+            raise ValueError(f"Unsafe changes in {dataset.id}: " + (
                 ", ".join(
                     _readable_offset(offset)
                     for offset, _, _ in unsafe_changes

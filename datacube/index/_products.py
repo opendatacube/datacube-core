@@ -152,7 +152,7 @@ class ProductResource(object):
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
-    def update(self, product, allow_unsafe_updates=False, allow_table_lock=False):
+    def update(self, product: DatasetType, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a product. Unsafe changes will throw a ValueError by default.
 
@@ -176,7 +176,7 @@ class ProductResource(object):
             return self.get_by_name(product.name)
 
         if not can_update:
-            raise ValueError("Unsafe changes at " + (
+            raise ValueError(f"Unsafe changes in {product.name}: " + (
                 ", ".join(
                     _readable_offset(offset)
                     for offset, _, _ in unsafe_changes
