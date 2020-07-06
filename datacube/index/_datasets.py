@@ -10,7 +10,7 @@ from uuid import UUID
 
 from datacube.model import Dataset, DatasetType
 from datacube.model.utils import flatten_datasets
-from datacube.utils import jsonify_document, changes, cached_property
+from datacube.utils import jsonify_document, _readable_offset, changes, cached_property
 from datacube.utils.changes import get_doc_changes
 from . import fields
 
@@ -280,17 +280,21 @@ class DatasetResource(object):
             _LOG.info("No changes detected for dataset %s", dataset.id)
             return dataset
 
-        if not can_update:
-            full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
-            raise ValueError(full_message)
-
-        _LOG.info("Updating dataset %s", dataset.id)
-
         for offset, old_val, new_val in safe_changes:
-            _LOG.info("Safe change from %r to %r", old_val, new_val)
+            _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
 
         for offset, old_val, new_val in unsafe_changes:
-            _LOG.info("Unsafe change from %r to %r", old_val, new_val)
+            _LOG.warning("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+
+        if not can_update:
+            raise ValueError("Unsafe changes at " + (
+                ", ".join(
+                    _readable_offset(offset)
+                    for offset, _, _ in unsafe_changes
+                )
+            ))
+
+        _LOG.info("Updating dataset %s", dataset.id)
 
         product = self.types.get_by_name(dataset.type.name)
         with self._db.begin() as transaction:

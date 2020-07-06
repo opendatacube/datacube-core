@@ -148,7 +148,7 @@ class ProductResource(object):
             _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
 
         for offset, old_val, new_val in bad_changes:
-            _LOG.info("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+            _LOG.warning("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
@@ -176,13 +176,12 @@ class ProductResource(object):
             return self.get_by_name(product.name)
 
         if not can_update:
-            full_message = "Unsafe changes at " + (
+            raise ValueError("Unsafe changes at " + (
                 ", ".join(
                     _readable_offset(offset)
                     for offset, _, _ in unsafe_changes
                 )
-            )
-            raise ValueError(full_message)
+            ))
 
         _LOG.info("Updating product %s", product.name)
 

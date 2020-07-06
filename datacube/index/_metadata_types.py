@@ -111,7 +111,7 @@ class MetadataTypeResource(object):
             _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
 
         for offset, old_val, new_val in bad_changes:
-            _LOG.info("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+            _LOG.warning("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
@@ -137,9 +137,12 @@ class MetadataTypeResource(object):
             return self.get_by_name(metadata_type.name)
 
         if not can_update:
-            full_message = "Unsafe changes at " + ", ".join(".".join(map(str, offset))
-                                                            for offset, _, _ in unsafe_changes)
-            raise ValueError(full_message)
+            raise ValueError("Unsafe changes at " + (
+                ", ".join(
+                    _readable_offset(offset)
+                    for offset, _, _ in unsafe_changes
+                )
+            ))
 
         _LOG.info("Updating metadata type %s", metadata_type.name)
 
