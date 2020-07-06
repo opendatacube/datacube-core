@@ -111,11 +111,11 @@ class MetadataTypeResource(object):
             _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
 
         for offset, old_val, new_val in bad_changes:
-            _LOG.info("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+            _LOG.warning("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
-    def update(self, metadata_type, allow_unsafe_updates=False, allow_table_lock=False):
+    def update(self, metadata_type: MetadataType, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -137,9 +137,12 @@ class MetadataTypeResource(object):
             return self.get_by_name(metadata_type.name)
 
         if not can_update:
-            full_message = "Unsafe changes at " + ", ".join(".".join(map(str, offset))
-                                                            for offset, _, _ in unsafe_changes)
-            raise ValueError(full_message)
+            raise ValueError(f"Unsafe changes in {metadata_type.name}: " + (
+                ", ".join(
+                    _readable_offset(offset)
+                    for offset, _, _ in unsafe_changes
+                )
+            ))
 
         _LOG.info("Updating metadata type %s", metadata_type.name)
 
