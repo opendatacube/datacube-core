@@ -41,6 +41,13 @@ def _get_crs_from_attrs(obj, sdims):
         if crs is None:
             return
         if isinstance(crs, str):
+            try:
+                crs_set.add(geometry.CRS(crs))
+            except geometry.CRSError:
+                warnings.warn(f"Failed to parse CRS: {crs}")
+        elif isinstance(crs, geometry.CRS):
+            # support current bad behaviour of injecting CRS directly into
+            # attributes in example notebooks
             crs_set.add(crs)
         else:
             warnings.warn(f"Ignoring crs attribute of type: {type(crs)}")
@@ -64,8 +71,9 @@ def _get_crs_from_attrs(obj, sdims):
 
     crs = None
     if len(crs_set) > 1:
-        raise ValueError('Spatial dimensions have different crs.')
-    elif len(crs_set) == 1:
+        warnings.warn("Have several candidates for a CRS")
+
+    if len(crs_set) >= 1:
         crs = crs_set.pop()
 
     return crs
@@ -151,10 +159,7 @@ def _xarray_geobox(obj):
         pass
 
     if crs is None:
-        try:
-            crs = _get_crs_from_attrs(obj, sdims)
-        except ValueError:
-            pass
+        crs = _get_crs_from_attrs(obj, sdims)
 
     if crs is None:
         return None

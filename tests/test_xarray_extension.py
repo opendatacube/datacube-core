@@ -69,11 +69,12 @@ def test_xr_geobox():
 def test_xr_geobox_unhappy():
     xx = mk_sample_xr_dataset(crs=None)
 
-    # test that exceptions from get_crs_from_{coord,attrs} are caught
+    # test duplicates behaviour in get_crs_from_{coord,attrs} are caught
     xx.band.attrs.update(grid_mapping='x')  # force exception in coord
     xx.x.attrs.update(crs='EPSG:4326')      # force exception in attr
     xx.y.attrs.update(crs='EPSG:3857')
-    assert xx.band.geobox is None
+    with pytest.warns(UserWarning):
+        assert xx.band.geobox is not None
 
     # test crs not being a string
     xx = mk_sample_xr_dataset(crs=None)
@@ -82,6 +83,13 @@ def test_xr_geobox_unhappy():
         assert xx.geobox is None
 
     xx.attrs['crs'] = 'this will fail CRS() constructor'
+    with pytest.warns(UserWarning):
+        assert xx.geobox is None
+
+    xx = mk_sample_xr_dataset(crs=epsg3857)
+    xx.attrs.pop('crs', None)
+    xx.band.attrs.pop('crs', None)
+    xx.spatial_ref.attrs['spatial_ref'] = 'this will fail CRS() constructor'
     with pytest.warns(UserWarning):
         assert xx.geobox is None
 
@@ -146,8 +154,13 @@ def test_crs_from_attrs():
     # check inconsistent CRSs
     xx = xx_3857.copy()
     xx.x.attrs['crs'] = xx_4326.attrs['crs']
-    with pytest.raises(ValueError):
+    with pytest.warns(UserWarning):
         _get_crs_from_attrs(xx, ('y', 'x'))
+
+    xx = xx_none.copy()
+    xx.attrs['crs'] = epsg3857
+    assert xx.geobox is not None
+    assert xx.geobox.crs is epsg3857
 
 
 def test_assign_crs(odc_style_xr_dataset):
