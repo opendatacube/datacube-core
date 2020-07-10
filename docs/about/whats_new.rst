@@ -8,7 +8,10 @@ What's New
 v1.8.2 (??)
 ===========
 
+- Fix regressions in ``.geobox`` (:pull:`982`)
+- Expand list of supported ``dtype``s to include complex values (:pull:`989`)
 - Can now specify dataset location directly in the yaml document (:issue:`990`, :pull:`989`)
+- Better error reporting in ``datacube dataset update`` (:pull:`983`)
 
 v1.8.1 (2 July 2020)
 ====================
