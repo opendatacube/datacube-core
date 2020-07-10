@@ -333,8 +333,8 @@ Multi-geometry ops
    clip_lon180
    chop_along_antimeridian
 
-Tools
------
+Other Utilities
+---------------
 
 .. autosummary::
    :toctree: generate/
