@@ -82,6 +82,9 @@ EO3 is an intermediate format before we move to something more standard like `ST
         path: some.nc
         layer: some_var  # str: netcdf variable to read
 
+   # optional dataset location (useful for public datasets)
+   location: https://landsatonaws.com/L8/099/072/LC08_L1GT_099072_20200523_20200523_01_RT/metadata.yaml
+
    # Dataset properties, prefer STAC standard names here
    # Timestamp is the only compulsory field here
    properties:

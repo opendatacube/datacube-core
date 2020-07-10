@@ -355,6 +355,15 @@ class SimpleDocNav(object):
     def sources_path(self):
         return self._sources_path
 
+    @property
+    def location(self):
+        return self._doc.get('location', None)
+
+    def without_location(self):
+        if self.location is None:
+            return self
+        return SimpleDocNav(toolz.dissoc(self._doc, 'location'))
+
 
 def _set_doc_offset(offset, document, value):
     """

@@ -5,6 +5,11 @@
 What's New
 **********
 
+v1.8.2 (??)
+===========
+
+- Can now specify dataset location directly in the yaml document (:issue:`990`, :pull:`989`)
+
 v1.8.1 (2 July 2020)
 ====================
 
