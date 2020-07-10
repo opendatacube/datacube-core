@@ -5,8 +5,8 @@
 What's New
 **********
 
-v1.8.2 (??)
-===========
+v1.8.2 (10 July 2020)
+=====================
 
 - Fix regressions in ``.geobox`` (:pull:`982`)
 - Expand list of supported ``dtype``s to include complex values (:pull:`989`)
