@@ -300,6 +300,8 @@ def test_sorted_items():
     remap = dict(c=0, a=1, b=2)
     assert ''.join(k for k, _ in sorted_items(aa, key=lambda x: remap[x])) == 'cab'
 
+    assert sorted_items(None) == []
+
 
 def test_default_base_dir(monkeypatch):
     def set_pwd(p):

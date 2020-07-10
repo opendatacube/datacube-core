@@ -284,6 +284,11 @@ A:..:0
     assert len(fv['E']) == 1
     assert set(fv.keys()) == set('ABCDE')
 
+    leaf = SimpleNamespace(id='N', sources=None)
+    out = []
+    traverse_datasets(leaf, visitor, out=out)
+    assert out == ["N:..:0"]
+
 
 def test_simple_doc_nav():
     """

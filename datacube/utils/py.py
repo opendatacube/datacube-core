@@ -68,5 +68,7 @@ def sorted_items(d, key=None, reverse=False):
     :param bool reverse: If True return in descending order instead of default ascending
 
     """
+    if d is None:
+        return []
     key = toolz.first if key is None else toolz.comp(key, toolz.first)
     return sorted(d.items(), key=key, reverse=reverse)
