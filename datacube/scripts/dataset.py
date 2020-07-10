@@ -35,6 +35,32 @@ def report_old_options(mapping):
     return maybe_remap
 
 
+def _resolve_uri(uri, doc):
+    loc = doc.location
+    if loc is None:
+        return uri
+
+    if isinstance(loc, str):
+        return loc
+
+    if isinstance(loc, (list, tuple)):
+        if len(loc) > 0:
+            return loc[0]
+        else:
+            return uri
+
+    return uri
+
+
+def remap_uri_from_doc(doc_stream):
+    """
+    Given a stream of `uri: str, doc: dict` tuples, replace `uri` with `doc.location` if it is set.
+    """
+    for uri, doc in doc_stream:
+        real_uri = _resolve_uri(uri, doc)
+        yield real_uri, doc.without_location()
+
+
 @cli.group(name='dataset', help='Dataset management commands')
 def dataset_cmd():
     pass
@@ -166,6 +192,7 @@ def index_cmd(index, product_names,
 
     def run_it(dataset_paths):
         doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
+        doc_stream = remap_uri_from_doc(doc_stream)
         dss = dataset_stream(doc_stream, ds_resolve)
         index_datasets(dss,
                        index,
@@ -249,9 +276,10 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
     updates_allowed = parse_update_rules(keys_that_can_change)
 
     success, fail = 0, 0
+    doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
+    doc_stream = remap_uri_from_doc(doc_stream)
 
-    for dataset, existing_ds in load_datasets_for_update(
-            ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True), index):
+    for dataset, existing_ds in load_datasets_for_update(doc_stream, index):
         _LOG.info('Matched %s', dataset)
 
         if location_policy != 'keep':

@@ -8,6 +8,7 @@ from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
 from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files, dataset_maker
 from datacube.utils import SimpleDocNav
+from datacube.scripts.dataset import _resolve_uri
 
 
 def check_skip_lineage_test(clirunner, index):
@@ -259,11 +260,15 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert r.exit_code == 0
 
     ds_eo3 = load_dataset_definition(p.datasets_eo3)
+    assert ds_eo3.location is not None
+
     _ds = index.datasets.get(ds_eo3.id, include_sources=True)
     assert sorted(_ds.sources) == ['a', 'bc1', 'bc2']
     assert _ds.crs == 'EPSG:3857'
     assert _ds.extent is not None
     assert _ds.extent.crs == _ds.crs
+    assert _ds.uris == [ds_eo3.location]
+    assert 'location' not in _ds.metadata_doc
 
 
 def test_dataset_add_ambgious_products(dataset_add_configs, index_empty, clirunner):
@@ -504,3 +509,19 @@ def test_dataset_add_http(dataset_add_configs, index: Index, default_metadata_ty
 def xtest_dataset_add_fails(clirunner, index):
     result = clirunner(['dataset', 'add', 'bad_path.yaml'], expect_success=False)
     assert result.exit_code != 0, "Surely not being able to add a dataset when requested should return an error."
+
+
+def test_resolve_uri():
+    def doc(loc=None):
+        return SimpleDocNav(dict(location=loc, id='4d9fd75c-1309-4712-93b5-f0d9c6fdd8ab'))
+
+    uri = "file:///a"
+    override = 'https://a.com/b.yaml'
+    assert _resolve_uri(uri, doc()) is uri
+    assert _resolve_uri(uri, doc([])) is uri
+    assert _resolve_uri(uri, doc({})) is uri
+    assert _resolve_uri(uri, doc(object())) is uri
+    assert _resolve_uri(uri, doc(override)) is override
+    assert _resolve_uri(uri, doc([override])) is override
+    assert _resolve_uri(uri, doc([override, "something"])) is override
+    assert _resolve_uri(uri, doc((override, "something"))) is override
