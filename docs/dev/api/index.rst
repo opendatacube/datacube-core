@@ -420,6 +420,7 @@ AWS Utilities
    mk_boto_session
    ec2_current_region
    ec2_metadata
+   configure_s3_access
 
 
 

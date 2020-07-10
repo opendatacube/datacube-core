@@ -11,9 +11,27 @@ from urllib.request import urlopen
 from urllib.parse import urlparse
 from typing import Optional, Dict, Tuple, Any, Union, IO
 from datacube.utils.generic import thread_local_cache
+from ..rio import configure_s3_access
 
 ByteRange = Union[slice, Tuple[int, int]]       # pylint: disable=invalid-name
 MaybeS3 = Optional[botocore.client.BaseClient]  # pylint: disable=invalid-name
+
+__all__ = (
+    "s3_url_parse",
+    "s3_fmt_range",
+    "s3_client",
+    "s3_open",
+    "s3_fetch",
+    "s3_dump",
+    "ec2_metadata",
+    "ec2_current_region",
+    "botocore_default_region",
+    "auto_find_region",
+    "get_creds_with_retry",
+    "mk_boto_session",
+    "get_aws_settings",
+    "configure_s3_access",
+)
 
 
 def _fetch_text(url: str, timeout: float = 0.1) -> Optional[str]:
