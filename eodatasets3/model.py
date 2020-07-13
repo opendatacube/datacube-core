@@ -19,6 +19,7 @@ ODC_DATASET_SCHEMA_URL = "https://schemas.opendatacube.org/dataset"
 class FileFormat(Enum):
     GeoTIFF = 1
     NetCDF = 2
+    Zarr = 3
 
 
 # Either a local filesystem path or a string URI.
