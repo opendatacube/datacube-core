@@ -5,7 +5,7 @@ API for dataset indexing, access and search.
 import logging
 import warnings
 from collections import namedtuple
-from typing import Any, Iterable, Set, Tuple, Union, List
+from typing import Any, Iterable, Set, Tuple, Union, List, Optional
 from uuid import UUID
 
 from datacube.model import Dataset, DatasetType
@@ -147,12 +147,18 @@ class DatasetResource(object):
         return [x in existing for x in
                 map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
-    def add(self, dataset, with_lineage=None, **kwargs):
+    def add(self, dataset: Dataset,
+            with_lineage: Optional[bool] = None,
+            **kwargs) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
-        :param Dataset dataset: dataset to add
-        :param bool with_lineage: True -- attempt adding lineage if it's missing, False don't
+        :param dataset: dataset to add
+        :param with_lineage:
+          ``True|None`` -- attempt adding lineage datasets if missing
+          ``False``     -- record lineage relations, but do not attempt adding
+                           lineage datasets to the db
+        :param kwargs: only used to support deprecated behaviour
         :rtype: Dataset
         """
 
@@ -162,9 +168,10 @@ class DatasetResource(object):
             # First insert all new datasets
             for ds in dss:
                 is_new = transaction.insert_dataset(ds.metadata_doc_without_lineage(), ds.id, ds.type.id)
-                if is_new:
+                sources = ds.sources
+                if is_new and sources is not None:
                     edges.extend((name, ds.id, src.id)
-                                 for name, src in ds.sources.items())
+                                 for name, src in sources.items())
 
             # Second insert lineage graph edges
             for ee in edges:
