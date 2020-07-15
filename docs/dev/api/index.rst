@@ -436,6 +436,8 @@ Dask Utilities
    partition_map
    pmap
    compute_tasks
+   save_blob_to_file
+   save_blob_to_s3
 
 
 
