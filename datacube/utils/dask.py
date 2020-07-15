@@ -46,7 +46,7 @@ def compute_memory_per_worker(n_workers: int = 1,
                               memory_limit: Optional[Union[str, int]] = None) -> int:
     """ Figure out how much memory to assign per worker.
 
-        result can be passed into `memory_limit=` parameter of dask worker/cluster/client
+        result can be passed into ``memory_limit=`` parameter of dask worker/cluster/client
     """
     from dask.utils import parse_bytes
 
@@ -76,17 +76,21 @@ def start_local_dask(n_workers: int = 1,
                      mem_safety_margin: Optional[Union[str, int]] = None,
                      memory_limit: Optional[Union[str, int]] = None,
                      **kw):
-    """Wrapper around `distributed.Client(..)` constructor that deals with memory better.
+    """
+    Wrapper around ``distributed.Client(..)`` constructor that deals with memory better.
+
+    It also configures ``distributed.dashboard.link`` to go over proxy when operating
+    from behind jupyterhub.
 
     :param n_workers: number of worker processes to launch
     :param threads_per_worker: number of threads per worker, default is as many as there are CPUs
     :param memory_limit: maximum memory to use across all workers
     :param mem_safety_margin: bytes to reserve for the rest of the system, only applicable
-                              if `memory_limit=` is not supplied.
+                              if ``memory_limit=`` is not supplied.
 
     .. note::
 
-        if `memory_limit` is supplied, it will be parsed and divided equally between workers.
+        if ``memory_limit=`` is supplied, it will be parsed and divided equally between workers.
 
     """
 
@@ -115,7 +119,10 @@ def _randomize(prefix):
 
 def partition_map(n: int, func: Any, its: Iterable[Any],
                   name: str = 'compute') -> Iterable[Any]:
-    """ Partition sequence into lumps of size `n`, then construct dask delayed computation evaluating to:
+    """
+    Parallel map in lumps.
+
+    Partition sequence into lumps of size ``n``, then construct dask delayed computation evaluating to:
 
     .. code-block:: python
 
@@ -124,10 +131,17 @@ def partition_map(n: int, func: Any, its: Iterable[Any],
         ...
         [func(x) for x in its[..]],
 
+    This is useful when you need to process a large number of small (quick) tasks (pixel drill for example).
+
     :param n: number of elements to process in one go
     :param func: Function to apply (non-dask)
     :param its:  Values to feed to fun
     :param name: How the computation should be named in dask visualizations
+
+    Returns
+    -------
+
+    Iterator of ``dask.Delayed`` objects.
     """
     def lump_proc(dd):
         return [func(d) for d in dd]
@@ -156,7 +170,7 @@ def compute_tasks(tasks: Iterable[Any], client: Client,
             (client.compute(task).result()
               for task in tasks)
 
-        but with up to `max_in_flight` tasks being processed at the same time.
+        but with up to ``max_in_flight`` tasks being processed at the same time.
         Input/Output order is preserved, so there is a possibility of head of
         line blocking.
 
@@ -165,7 +179,7 @@ def compute_tasks(tasks: Iterable[Any], client: Client,
               lower limit is 3 concurrent tasks to simplify implementation,
               there is no point calling this function if you want one active
               task and supporting exactly 2 active tasks is not worth the complexity,
-              for now. We might special-case `2` at some point.
+              for now. We might special-case 2 at some point.
 
     """
     # New thread:
@@ -238,51 +252,12 @@ def _save_blob_to_file(data: Union[bytes, str],
     return (fname, True)
 
 
-@dask.delayed(name='save-to-disk', pure=False)
-def save_blob_to_file(data,
-                      fname,
-                      with_deps=None):
-    """ Dump from memory to local filesystem as a dask delayed operation.
-
-    .. note::
-
-       dask workers must be local or have network filesystem mounted in
-       the same path as calling code.
-
-    :param data     : Data blob to save to file (have to fit into memory all at once),
-                      strings will be saved in UTF8 format.
-    :param fname    : Path to file
-    :param with_deps: Useful for introducing dependencies into dask graph,
-                      for example save yaml file after saving all tiff files.
-
-    Returns
-    -------
-    (File Path, True) tuple on success
-    (File Path, False) on any error
-    """
-    return _save_blob_to_file(data, fname)
-
-
 def _save_blob_to_s3(data: Union[bytes, str],
                      url: str,
                      profile: Optional[str] = None,
                      creds: Optional[ReadOnlyCredentials] = None,
                      region_name: Optional[str] = None,
                      **kw) -> Tuple[str, bool]:
-    """ Dump from memory to S3 as a dask delayed operation.
-
-    :param data       : Data blob to save to file (have to fit into memory all at once)
-    :param url        : Url in a form s3://bucket/path/to/file
-
-    :param profile    : Profile name to lookup (only used if session is not supplied)
-    :param creds      : Override credentials with supplied data
-    :param region_name: Region name to use, overrides session setting
-
-    Returns
-    -------
-    (url, True) tuple on success
-    (url, False) on any error
-    """
     from botocore.errorfactory import ClientError
     try:
         s3 = s3_client(profile=profile,
@@ -297,7 +272,39 @@ def _save_blob_to_s3(data: Union[bytes, str],
     return url, result
 
 
-@dask.delayed(name='save-to-s3', pure=False)
+_save_blob_to_file_delayed = dask.delayed(_save_blob_to_file, name='save-to-disk', pure=False)
+_save_blob_to_s3_delayed = dask.delayed(_save_blob_to_s3, name='save-to-s3', pure=False)
+
+
+def save_blob_to_file(data,
+                      fname,
+                      with_deps=None):
+    """
+    Dump from memory to local filesystem as a dask delayed operation.
+
+    :param data: Data blob to save to file (have to fit into memory all at once),
+                 strings will be saved in UTF8 format.
+
+    :param fname: Path to file
+
+    :param with_deps: Useful for introducing dependencies into dask graph,
+                      for example save yaml file after saving all tiff files.
+
+    Returns
+    -------
+    ``(FilePath, True)`` tuple on success
+    ``(FilePath, False)`` on any error
+
+
+    .. note::
+
+       Dask workers must be local or have network filesystem mounted in
+       the same path as calling code.
+
+    """
+    return _save_blob_to_file_delayed(data, fname)
+
+
 def save_blob_to_s3(data,
                     url,
                     profile=None,
@@ -305,25 +312,27 @@ def save_blob_to_s3(data,
                     region_name=None,
                     with_deps=None,
                     **kw):
-    """ Dump from memory to S3 as a dask delayed operation.
+    """
+    Dump from memory to S3 as a dask delayed operation.
 
-    :param data       : Data blob to save to file (have to fit into memory all at once)
-    :param url        : Url in a form s3://bucket/path/to/file
-
-    :param profile    : Profile name to lookup (only used if session is not supplied)
-    :param creds      : Override credentials with supplied data
+    :param data:        Data blob to save to file (have to fit into memory all at once)
+    :param url:         Url in a form s3://bucket/path/to/file
+    :param profile:     Profile name to lookup (only used if session is not supplied)
+    :param creds:       Override credentials with supplied data
     :param region_name: Region name to use, overrides session setting
 
-    :param with_deps  : Useful for introducing dependencies into dask graph,
+    :param with_deps:   Useful for introducing dependencies into dask graph,
                         for example save yaml file after saving all tiff files.
+    :param kw:          Passed on to ``s3.put_object(..)``, useful for things like ContentType/ACL
 
     Returns
     -------
-    (url, True) tuple on success
-    (url, False) on any error
+
+    ``(url, True)`` tuple on success
+    ``(url, False)`` on any error
     """
-    return _save_blob_to_s3(data, url,
-                            profile=profile,
-                            creds=creds,
-                            region_name=region_name,
-                            **kw)
+    return _save_blob_to_s3_delayed(data, url,
+                                    profile=profile,
+                                    creds=creds,
+                                    region_name=region_name,
+                                    **kw)
