@@ -321,7 +321,7 @@ class Measurement(dict):
     """
     REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
     OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
-    ATTR_BLACKLIST = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser'])
+    ATTR_SKIP = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser'])
 
     def __init__(self, **kwargs):
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
@@ -347,7 +347,7 @@ class Measurement(dict):
 
     def dataarray_attrs(self) -> Dict[str, Any]:
         """This returns attributes filtered for display in a dataarray."""
-        return {key: value for key, value in self.items() if key not in self.ATTR_BLACKLIST}
+        return {key: value for key, value in self.items() if key not in self.ATTR_SKIP}
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
