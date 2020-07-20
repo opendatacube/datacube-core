@@ -323,11 +323,12 @@ class Measurement(dict):
     OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
     ATTR_SKIP = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser'])
 
-    def __init__(self, **kwargs):
+    def __init__(self, canonical_name=None, **kwargs):
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
         if missing_keys:
             raise ValueError("Measurement required keys missing: {}".format(missing_keys))
 
+        self.canonical_name = canonical_name or kwargs.get('name')
         super().__init__(**kwargs)
 
     def __getattr__(self, key: str) -> Any:
@@ -400,6 +401,26 @@ class DatasetType:
         self.metadata_type = metadata_type
         #: product definition document
         self.definition = definition
+        self._canonical_measurements: Optional[Mapping[str, Measurement]] = None
+        self._all_measurements: Optional[Dict[str, Measurement]] = None
+
+    def _resolve_aliases(self):
+        if self._all_measurements is not None:
+            return self._all_measurements
+        mm = self.measurements
+        oo = {}
+
+        for m in mm.values():
+            oo[m.name] = m
+            for alias in m.get('aliases', []):
+                # TODO: check for duplicates
+                # if alias is in oo already -- bad
+                m_alias = dict(**m)
+                m_alias.update(name=alias, canonical_name=m.name)
+                oo[alias] = Measurement(**m_alias)
+
+        self._all_measurements = oo
+        return self._all_measurements
 
     @property
     def name(self) -> str:
@@ -426,7 +447,10 @@ class DatasetType:
         """
         Dictionary of measurements in this product
         """
-        return OrderedDict((m['name'], Measurement(**m)) for m in self.definition.get('measurements', []))
+        if self._canonical_measurements is None:
+            self._canonical_measurements = OrderedDict((m['name'], Measurement(**m))
+                                                       for m in self.definition.get('measurements', []))
+        return self._canonical_measurements
 
     @property
     def dimensions(self) -> Tuple[str, str, str]:
@@ -467,15 +491,11 @@ class DatasetType:
     def canonical_measurement(self, measurement: str) -> str:
         """ resolve measurement alias into canonical name
         """
-        mm = self.measurements
+        m = self._resolve_aliases().get(measurement, None)
+        if m is None:
+            raise ValueError(f"No such band/alias {measurement}")
 
-        if measurement in mm:
-            return measurement
-
-        for real_name, m in mm.items():
-            if measurement in m.get('aliases', ()):
-                return real_name
-        raise ValueError(f"No such band/alias {measurement}")
+        return m.canonical_name
 
     def lookup_measurements(self, measurements: Optional[List[str]] = None) -> Mapping[str, Measurement]:
         """
@@ -483,17 +503,11 @@ class DatasetType:
 
         :param measurements: list of measurement names
         """
-        my_measurements = self.measurements
         if measurements is None:
-            return my_measurements
+            return self.measurements
 
-        def fix_alias(measurement):
-            result = my_measurements[self.canonical_measurement(measurement)].copy()
-            result['name'] = measurement
-            return result
-
-        return OrderedDict((measurement, fix_alias(measurement))
-                           for measurement in measurements)
+        mm = self._resolve_aliases()
+        return OrderedDict((m, mm[m]) for m in measurements)
 
     def dataset_reader(self, dataset_doc):
         return self.metadata_type.dataset_reader(dataset_doc)
