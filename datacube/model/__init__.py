@@ -121,9 +121,10 @@ class Dataset:
     def measurements(self) -> Dict[str, Any]:
         # It's an optional field in documents.
         # Dictionary of key -> measurement descriptor
-        if not hasattr(self.metadata, 'measurements'):
+        metadata = self.metadata
+        if not hasattr(metadata, 'measurements'):
             return {}
-        return self.metadata.measurements
+        return metadata.measurements
 
     @cached_property
     def center_time(self) -> Optional[datetime]:
