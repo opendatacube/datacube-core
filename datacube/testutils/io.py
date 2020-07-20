@@ -56,8 +56,8 @@ def get_raster_info(ds: Dataset, measurements=None):
 
 
 def eo3_geobox(ds: Dataset, band: str) -> GeoBox:
-    band = ds.type.canonical_measurement(band)
-    mm = ds.measurements.get(band, None)
+    mm = ds.measurements.get(ds.type.canonical_measurement(band),
+                             None)
     if mm is None:
         raise ValueError(f"No such band: {band}")
 
