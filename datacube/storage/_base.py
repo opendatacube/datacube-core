@@ -44,6 +44,7 @@ def _get_band_and_layer(b: Dict[str, Any]) -> Tuple[Optional[int], Optional[str]
 def _extract_driver_data(ds: Dataset) -> Optional[Any]:
     return ds.metadata_doc.get('driver_data', None)
 
+
 def measurement_paths(ds: Dataset) -> Dict[str, str]:
     """
     Returns a dictionary mapping from band name to url pointing to band storage
@@ -78,14 +79,13 @@ class BandInfo:
                  band: str,
                  uri_scheme: Optional[str] = None):
         try:
-            canonical_name = ds.type.canonical_measurement(band)
+            mp, = ds.type.lookup_measurements([band]).values()
         except KeyError:
             raise ValueError('No such band: {}'.format(band))
 
-        mm = ds.measurements.get(canonical_name)
-        mp = ds.type.measurements.get(canonical_name)
+        mm = ds.measurements.get(mp.canonical_name)
 
-        if mm is None or mp is None:
+        if mm is None:
             raise ValueError('No such band: {}'.format(band))
 
         if ds.uris is None:
