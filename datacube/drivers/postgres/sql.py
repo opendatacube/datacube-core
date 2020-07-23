@@ -27,6 +27,29 @@ def visit_create_view(element, compiler, **kw):
     )
 
 
+UPDATE_TIMESTAMP_SQL = """
+create or replace function {schema}.set_row_update_time()
+returns trigger as $$
+begin
+  new.updated = now();
+  return new;
+end;
+$$ language plpgsql;
+""".format(schema=SCHEMA_NAME)
+
+UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE = """
+alter table {schema}.{table} add column if not exists updated
+timestamptz not null default now();
+"""
+
+INSTALL_TRIGGER_SQL_TEMPLATE = """
+drop trigger if exists row_update_time_{table} on {schema}.{table};
+create trigger row_update_time_{table}
+before update on {schema}.{table}
+for each row
+execute procedure {schema}.set_row_update_time();
+"""
+
 TYPES_INIT_SQL = """
 create or replace function {schema}.common_timestamp(text)
 returns timestamp with time zone as $$
