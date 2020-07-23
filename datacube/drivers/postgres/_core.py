@@ -35,6 +35,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def install_timestamp_trigger(connection):
+    from . import _schema 
     TABLE_NAMES = [
         _schema.METADATA_TYPE.name,
         _schema.PRODUCT.name,
