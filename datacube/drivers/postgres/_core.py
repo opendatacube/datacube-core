@@ -15,8 +15,6 @@ from sqlalchemy import MetaData
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 
-from ._schema import (DATASET, DATASET_LOCATION, DATASET_SOURCE, METADATA_TYPE,
-                      PRODUCT)
 
 USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
 
@@ -38,11 +36,11 @@ _LOG = logging.getLogger(__name__)
 
 def install_timestamp_trigger(connection):
     TABLE_NAMES = [
-        METADATA_TYPE.name,
-        PRODUCT.name,
-        DATASET_SOURCE.name,
-        DATASET.name,
-        DATASET_LOCATION.name
+        _schema.METADATA_TYPE.name,
+        _schema.PRODUCT.name,
+        _schema.DATASET_SOURCE.name,
+        _schema.DATASET.name,
+        _schema.DATASET_LOCATION.name
     ]
     # Create trigger capture function
     connection.execute(UPDATE_TIMESTAMP_SQL)
