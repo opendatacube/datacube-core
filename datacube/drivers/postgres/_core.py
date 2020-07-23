@@ -164,14 +164,14 @@ def update_schema(engine: Engine):
     
     # Post 1.8 DB Federation triggers
     if not pg_column_exists(engine, schema_qualified('dataset'), 'updated'):
-        _LOG.info("Adding 'updated' fields and triggers to schema")
+        _LOG.info("Adding 'updated' fields and triggers to schema.")
         c = engine.connect()
         c.execute('begin')
         install_timestamp_trigger(c)
         c.execute('commit')
         c.close()
     else:
-        _LOG.info("No schema updates required")
+        _LOG.info("No schema updates required.")
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
