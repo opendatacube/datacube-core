@@ -268,7 +268,10 @@ def s3_client(profile: Optional[str] = None,
 
     """
     if aws_unsigned is None:
-        aws_unsigned = _aws_unsigned_check_env()
+        if creds is None:
+            aws_unsigned = _aws_unsigned_check_env()
+        else:
+            aws_unsigned = False
 
     if aws_unsigned:
         cfg.update(signature_version=botocore.UNSIGNED)
