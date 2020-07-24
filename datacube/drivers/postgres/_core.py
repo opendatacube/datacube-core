@@ -5,11 +5,16 @@ Core SQL schema settings.
 
 import logging
 
+from datacube.drivers.postgres.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
+                                           SCHEMA_NAME, TYPES_INIT_SQL,
+                                           UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
+                                           UPDATE_TIMESTAMP_SQL,
+                                           escape_pg_identifier,
+                                           pg_column_exists, pg_exists)
 from sqlalchemy import MetaData
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 
-from datacube.drivers.postgres.sql import TYPES_INIT_SQL, pg_exists, pg_column_exists, escape_pg_identifier
 
 USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
 
@@ -23,11 +28,29 @@ SQL_NAMING_CONVENTIONS = {
     # dix: dynamic-index, those indexes created automatically based on search field configuration.
     # tix: test-index, created by hand for testing, particularly in dev.
 }
-SCHEMA_NAME = 'agdc'
 
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
 _LOG = logging.getLogger(__name__)
+
+
+def install_timestamp_trigger(connection):
+    from . import _schema 
+    TABLE_NAMES = [
+        _schema.METADATA_TYPE.name,
+        _schema.PRODUCT.name,
+        _schema.DATASET_SOURCE.name,
+        _schema.DATASET.name,
+        _schema.DATASET_LOCATION.name
+    ]
+    # Create trigger capture function
+    connection.execute(UPDATE_TIMESTAMP_SQL)
+
+    for name in TABLE_NAMES:
+        # Add update_at columns
+        # HACK: Make this more SQLAlchemy with add_column on Table objects
+        connection.execute(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
+        connection.execute(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
 
 
 def schema_qualified(name):
@@ -79,6 +102,8 @@ def ensure_db(engine, with_permissions=True):
             _LOG.info('Creating tables.')
             c.execute(TYPES_INIT_SQL)
             METADATA.create_all(c)
+            _LOG.info("Creating triggers.")
+            install_timestamp_trigger(c)
             c.execute('commit')
         except:
             c.execute('rollback')
@@ -159,13 +184,15 @@ def update_schema(engine: Engine):
     #    function for some examples.
     
     # Post 1.8 DB Federation triggers
-    from datacube.drivers.postgres._triggers import install_timestamp_trigger
-    _LOG.info("Adding Update Triggers")
-    c = engine.connect()
-    c.execute('begin')
-    install_timestamp_trigger(c)
-    c.execute('commit')
-    c.close()
+    if not pg_column_exists(engine, schema_qualified('dataset'), 'updated'):
+        _LOG.info("Adding 'updated' fields and triggers to schema.")
+        c = engine.connect()
+        c.execute('begin')
+        install_timestamp_trigger(c)
+        c.execute('commit')
+        c.close()
+    else:
+        _LOG.info("No schema updates required.")
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
