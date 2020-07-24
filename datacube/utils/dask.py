@@ -239,7 +239,8 @@ def pmap(func: Any,
 
 
 def _save_blob_to_file(data: Union[bytes, str],
-                       fname: str) -> Tuple[str, bool]:
+                       fname: str,
+                       with_deps=None) -> Tuple[str, bool]:
     if isinstance(data, str):
         data = data.encode('utf8')
 
@@ -257,8 +258,10 @@ def _save_blob_to_s3(data: Union[bytes, str],
                      profile: Optional[str] = None,
                      creds: Optional[ReadOnlyCredentials] = None,
                      region_name: Optional[str] = None,
+                     with_deps=None,
                      **kw) -> Tuple[str, bool]:
     from botocore.errorfactory import ClientError
+
     try:
         s3 = s3_client(profile=profile,
                        creds=creds,
@@ -302,7 +305,7 @@ def save_blob_to_file(data,
        the same path as calling code.
 
     """
-    return _save_blob_to_file_delayed(data, fname)
+    return _save_blob_to_file_delayed(data, fname, with_deps=with_deps)
 
 
 def save_blob_to_s3(data,
@@ -335,4 +338,5 @@ def save_blob_to_s3(data,
                                     profile=profile,
                                     creds=creds,
                                     region_name=region_name,
+                                    with_deps=with_deps,
                                     **kw)
