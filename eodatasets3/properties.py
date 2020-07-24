@@ -3,12 +3,19 @@ import warnings
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from datetime import datetime
-from enum import Enum
+from enum import Enum, EnumMeta
 from typing import Tuple, Dict, Optional, Any, Mapping, Callable, Union
 
 import ciso8601
 from eodatasets3.utils import default_utc
+
 from ruamel.yaml.timestamp import TimeStamp as RuamelTimeStamp
+
+
+class FileFormat(Enum):
+    GeoTIFF = 1
+    NetCDF = 2
+    Zarr = 3
 
 
 def nest_properties(d: Mapping[str, Any], separator=":") -> Dict[str, Any]:
@@ -52,7 +59,12 @@ def datetime_type(value):
     return default_utc(value)
 
 
-def of_enum_type(vals: Tuple[str, ...] = None, lower=False, upper=False, strict=True):
+def of_enum_type(
+    vals: Union[EnumMeta, Tuple[str, ...]] = None, lower=False, upper=False, strict=True
+) -> Callable[[str], str]:
+    if isinstance(vals, EnumMeta):
+        vals = tuple(vals.__members__.keys())
+
     def normalise(v: str):
         if isinstance(v, Enum):
             v = v.name
@@ -215,7 +227,7 @@ class StacPropertyView(collections.abc.Mapping):
         "landsat:wrs_row": int,
         "odc:dataset_version": None,
         # Not strict as there may be more added in ODC...
-        "odc:file_format": of_enum_type(("GeoTIFF", "NetCDF"), strict=False),
+        "odc:file_format": of_enum_type(FileFormat, strict=False),
         "odc:processing_datetime": datetime_type,
         "odc:producer": producer_check,
         "odc:product_family": None,
