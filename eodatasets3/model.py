@@ -1,5 +1,4 @@
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 from typing import Tuple, Dict, Optional, List, Sequence, Union
 from uuid import UUID
@@ -7,9 +6,10 @@ from uuid import UUID
 import affine
 import attr
 from eodatasets3 import utils
-from eodatasets3.properties import StacPropertyView, EoFields, FileFormat
+from eodatasets3.properties import StacPropertyView, EoFields
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry.base import BaseGeometry
+
 
 # TODO: these need discussion.
 DEA_URI_PREFIX = "https://collections.dea.ga.gov.au"
