@@ -23,6 +23,12 @@ def test_new_datasource_fallback():
     assert rdr is not None
     assert isinstance(rdr, RasterDatasetDataSource)
 
+    # check that None format works
+    band = BandInfo(mk_sample_dataset(bands, 'file:///file', format=None), 'green')
+    rdr = new_datasource(band)
+    assert rdr is not None
+    assert isinstance(rdr, RasterDatasetDataSource)
+
 
 def test_reader_drivers():
     available_drivers = reader_drivers()

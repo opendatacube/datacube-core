@@ -64,3 +64,13 @@ def test_band_info():
     ds.uris = None
     with pytest.raises(ValueError):
         BandInfo(ds, 'a')
+
+    ds_none_fmt = mk_sample_dataset(bands,
+                                    uri='file:///tmp/datataset.yml',
+                                    format=None)
+    assert ds_none_fmt.format is None
+    assert BandInfo(ds_none_fmt, 'a').format == ''
+
+    ds = mk_sample_dataset(bands, uri='/not/a/uri')
+    band = BandInfo(ds, 'a')
+    assert(band.uri_scheme is '')

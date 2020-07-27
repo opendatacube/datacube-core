@@ -104,9 +104,9 @@ class BandInfo:
         self.units = mp.units
         self.crs = ds.crs
         self.transform = ds.transform
-        self.format = ds.format
+        self.format = ds.format or ''
         self.driver_data = _extract_driver_data(ds)
 
     @property
     def uri_scheme(self) -> str:
-        return urlparse(self.uri).scheme
+        return urlparse(self.uri).scheme or ''
