@@ -62,7 +62,7 @@ def reader_drivers() -> List[str]:
     return rdr_cache().drivers()
 
 
-def choose_datasource(band: 'BandInfo') -> DatasourceFactory:
+def choose_datasource(band: BandInfo) -> DatasourceFactory:
     """Returns appropriate `DataSource` class (or a constructor method) for loading
     given `dataset`.
 
