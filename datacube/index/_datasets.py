@@ -64,7 +64,7 @@ class DatasetResource(object):
         self._db = db
         self.types = dataset_type_resource
 
-    def get(self, id_, include_sources=False):
+    def get(self, id_: Union[str, UUID], include_sources=False):
         """
         Get dataset by id
 
@@ -332,7 +332,7 @@ class DatasetResource(object):
         """
         Mark datasets as archived
 
-        :param list[UUID] ids: list of dataset ids to archive
+        :param Iterable[UUID] ids: list of dataset ids to archive
         """
         with self._db.begin() as transaction:
             for id_ in ids:

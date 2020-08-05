@@ -3,7 +3,7 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
-from typing import Iterable, Mapping, MutableMapping, Any
+from typing import Iterable, Mapping, MutableMapping, Any, List, Set
 
 import click
 import yaml
@@ -444,7 +444,7 @@ def search_cmd(index, limit, f, expressions):
     )
 
 
-def _get_derived_set(index, id_):
+def _get_derived_set(index: Index, id_: str) -> Set[Dataset]:
     """
     Get a single flat set of all derived datasets.
     (children, grandchildren, great-grandchildren...)
@@ -464,9 +464,14 @@ def _get_derived_set(index, id_):
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def archive_cmd(index, archive_derived, dry_run, ids):
+def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[str]):
     for id_ in ids:
-        to_process = _get_derived_set(index, id_) if archive_derived else [index.datasets.get(id_)]
+        target_dataset = index.datasets.get(id_)
+        if target_dataset is None:
+            echo(f'No dataset found with id {id_}')
+            sys.exit(-1)
+
+        to_process = _get_derived_set(index, id_) if archive_derived else [target_dataset]
         for d in to_process:
             click.echo('archiving %s %s %s' % (d.type.name, d.id,
                                                d.local_uri if d.local_uri is not None else "<no location>"))
@@ -484,38 +489,34 @@ def archive_cmd(index, archive_derived, dry_run, ids):
               default=10 * 60)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def restore_cmd(index, restore_derived, derived_tolerance_seconds, dry_run, ids):
+def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int, dry_run: bool, ids: List[str]):
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
 
     for id_ in ids:
-        _restore_one(dry_run, id_, index, restore_derived, tolerance)
+        target_dataset = index.datasets.get(id_)
+        if target_dataset is None:
+            echo(f'No dataset found with id {id_}')
+            sys.exit(-1)
 
+        to_process = _get_derived_set(index, id_) if restore_derived else {target_dataset}
+        _LOG.debug("%s selected", len(to_process))
 
-def _restore_one(dry_run: bool,
-                 id_: str,
-                 index: Index,
-                 restore_derived: bool,
-                 tolerance: datetime.timedelta) -> None:
-    target_dataset = index.datasets.get(id_)
-    to_process = _get_derived_set(index, id_) if restore_derived else {target_dataset}
-    _LOG.debug("%s selected", len(to_process))
+        # Only the already-archived ones.
+        to_process = {d for d in to_process if d.is_archived}
+        _LOG.debug("%s selected are archived", len(to_process))
 
-    # Only the already-archived ones.
-    to_process = {d for d in to_process if d.is_archived}
-    _LOG.debug("%s selected are archived", len(to_process))
+        def within_tolerance(dataset):
+            if not dataset.is_archived:
+                return False
+            t = target_dataset.archived_time
+            return (t - tolerance) <= dataset.archived_time <= (t + tolerance)
 
-    def within_tolerance(dataset):
-        if not dataset.is_archived:
-            return False
-        t = target_dataset.archived_time
-        return (t - tolerance) <= dataset.archived_time <= (t + tolerance)
+        # Only those archived around the same time as the target.
+        if restore_derived and target_dataset.is_archived:
+            to_process = set(filter(within_tolerance, to_process))
+            _LOG.debug("%s selected were archived within the tolerance", len(to_process))
 
-    # Only those archived around the same time as the target.
-    if restore_derived and target_dataset.is_archived:
-        to_process = set(filter(within_tolerance, to_process))
-        _LOG.debug("%s selected were archived within the tolerance", len(to_process))
-
-    for d in to_process:
-        click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
-    if not dry_run:
-        index.datasets.restore(d.id for d in to_process)
+        for d in to_process:
+            click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
+        if not dry_run:
+            index.datasets.restore(d.id for d in to_process)
