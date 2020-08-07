@@ -8,6 +8,7 @@ import logging
 from datacube.drivers.postgres.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                            SCHEMA_NAME, TYPES_INIT_SQL,
                                            UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
+                                           ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
                                            UPDATE_TIMESTAMP_SQL,
                                            escape_pg_identifier,
                                            pg_column_exists, pg_exists)
@@ -39,18 +40,20 @@ def install_timestamp_trigger(connection):
     TABLE_NAMES = [
         _schema.METADATA_TYPE.name,
         _schema.PRODUCT.name,
-        _schema.DATASET_SOURCE.name,
         _schema.DATASET.name,
-        _schema.DATASET_LOCATION.name
     ]
     # Create trigger capture function
     connection.execute(UPDATE_TIMESTAMP_SQL)
 
     for name in TABLE_NAMES:
-        # Add update_at columns
-        # HACK: Make this more SQLAlchemy with add_column on Table objects
+        # Add update columns
         connection.execute(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
         connection.execute(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
+
+def install_added_column(connection):
+    from . import _schema
+    TABLE_NAME = _schema.DATASET_LOCATION.name
+    connection.execute(ADDED_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=TABLE_NAME))
 
 
 def schema_qualified(name):
@@ -104,6 +107,8 @@ def ensure_db(engine, with_permissions=True):
             METADATA.create_all(c)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
+            _LOG.info("Creating added column")
+            install_added_column(c)
             c.execute('commit')
         except:
             c.execute('rollback')
@@ -183,12 +188,13 @@ def update_schema(engine: Engine):
     # -> If you need to write one, look at the Git history of this
     #    function for some examples.
     
-    # Post 1.8 DB Federation triggers
+    # Post 1.8 DB Incremental Sync triggers
     if not pg_column_exists(engine, schema_qualified('dataset'), 'updated'):
-        _LOG.info("Adding 'updated' fields and triggers to schema.")
+        _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
         c = engine.connect()
         c.execute('begin')
         install_timestamp_trigger(c)
+        install_added_column(c)
         c.execute('commit')
         c.close()
     else:
