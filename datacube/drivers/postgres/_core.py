@@ -107,7 +107,7 @@ def ensure_db(engine, with_permissions=True):
             METADATA.create_all(c)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
-            _LOG.info("Creating added column")
+            _LOG.info("Creating added column.")
             install_added_column(c)
             c.execute('commit')
         except:
