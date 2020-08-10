@@ -17,7 +17,6 @@ def test_added_column(clirunner, uninitialised_postgres_db):
     assert "Created." in result.output
 
     with uninitialised_postgres_db.connect() as connection:
-        assert has_schema(uninitialised_postgres_db._engine, connection._connection)
         assert connection.execute(
             COLUMN_PRESENCE.format(
                 schema=SCHEMA_NAME, table=_schema.METADATA_TYPE.name, column="updated"
