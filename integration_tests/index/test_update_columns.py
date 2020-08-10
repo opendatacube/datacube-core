@@ -2,7 +2,7 @@
 Test creation of added/updated columns during
 `datacube system init`
 """
-from datacube.drivers.postgres.sql import SCHEMA_NAME, pg_column_exists
+from datacube.drivers.postgres.sql import pg_column_exists
 from datacube.drivers.postgres import _schema
 
 COLUMN_PRESENCE = """
@@ -17,7 +17,7 @@ def test_added_column(clirunner, uninitialised_postgres_db):
     assert "Created." in result.output
 
     with uninitialised_postgres_db.connect() as connection:
-        assert pg_column_exists(_schema.METADATA_TYPE, "updated")
-        assert pg_column_exists(_schema.PRODUCT, "updated")
-        assert pg_column_exists(_schema.DATASET, "updated")
-        assert pg_column_exists(_schema.DATASET_LOCATION, "added")
+        assert pg_column_exists(connection, _schema.METADATA_TYPE, "updated")
+        assert pg_column_exists(connection, _schema.PRODUCT, "updated")
+        assert pg_column_exists(connection, _schema.DATASET, "updated")
+        assert pg_column_exists(connection, _schema.DATASET_LOCATION, "added")
