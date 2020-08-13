@@ -627,7 +627,7 @@ class GridSpec:
 
     def tile_coords(self, tile_index: Tuple[int, int]) -> Tuple[float, float]:
         """
-        Tile coordinates in (Y,X) order
+        Coordinate of the top-left corner of the tile in (Y,X) order
 
         :param tile_index: in X,Y order
         """
