@@ -125,4 +125,7 @@ DATASET_SOURCE = Table(
 
     # Note that the `updated` column is not included here to maintain backwards-compatibility
     # with pre-1.8.3 datacubes (and it is not used by any internal ODC functionality yet anyway)
+
+    # This table is immutable and uses a migrations based `added` column to keep track of new
+    # dataset locations being added. The added column defaults to `now()`
 )

@@ -39,7 +39,12 @@ $$ language plpgsql;
 
 UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE = """
 alter table {schema}.{table} add column if not exists updated
-timestamptz not null default now();
+timestamptz default null;
+"""
+
+ADDED_COLUMN_MIGRATE_SQL_TEMPLATE = """
+alter table {schema}.{table} add column if not exists added
+timestamptz default now();
 """
 
 INSTALL_TRIGGER_SQL_TEMPLATE = """
