@@ -17,6 +17,7 @@ from datacube.utils.aws import (
     s3_client,
     s3_dump,
     s3_fetch,
+    s3_head_object,
     _s3_cache_key,
 )
 
@@ -200,6 +201,15 @@ def test_s3_io(monkeypatch, without_aws_env):
         s3.create_bucket(Bucket=bucket)
         assert s3_dump(b"33", url, s3=s3) is True
         assert s3_fetch(url, s3=s3) == b"33"
+
+        meta = s3_head_object(url, s3=s3)
+        assert meta is not None
+        assert 'LastModified' in meta
+        assert 'ContentLength' in meta
+        assert 'ETag' in meta
+        assert meta['ContentLength'] == 2
+
+        assert s3_head_object(url+'-nosuch', s3=s3) is None
 
         assert s3_dump(b"0123456789ABCDEF", url, s3=s3) is True
         assert s3_fetch(url, range=s_[:4], s3=s3) == b"0123"

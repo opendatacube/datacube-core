@@ -331,6 +331,35 @@ def s3_open(url: str,
     return oo['Body']
 
 
+def s3_head_object(url: str,
+                   s3: MaybeS3 = None,
+                   **kwargs) -> Optional[Dict[str, Any]]:
+    """
+    Head object, return object metadata.
+
+    :param url: s3://bucket/path/to/object
+    :param s3: pre-configured s3 client, see make_s3_client()
+    :param kwargs: are passed on to ``s3.head_object(..)``
+    """
+    from botocore.exceptions import ClientError
+
+    s3 = s3 or s3_client()
+    bucket, key = s3_url_parse(url)
+
+    try:
+        oo = s3.head_object(Bucket=bucket, Key=key, **kwargs)
+    except ClientError:
+        return None
+
+    meta = oo.pop('ResponseMetadata', {})
+    code = meta.get('HTTPStatusCode', 0)
+    if 200 <= code < 300:
+        return oo
+
+    # it actually raises exceptions when http code is in the "fail" range
+    return None  # pragma: no cover
+
+
 def s3_fetch(url: str,
              s3: MaybeS3 = None,
              range: Optional[ByteRange] = None,  # pylint: disable=redefined-builtin
