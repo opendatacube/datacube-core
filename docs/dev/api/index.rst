@@ -411,6 +411,7 @@ AWS Utilities
 
    s3_client
    s3_open
+   s3_head_object
    s3_fetch
    s3_dump
    s3_url_parse
