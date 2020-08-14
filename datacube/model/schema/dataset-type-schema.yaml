@@ -58,6 +58,12 @@ definitions:
               oneOf:
                 - type: number
                 - enum: [NaN, Inf, -Inf]
+            scale_factor:
+              description: 'Defines mapping to some "real" space like so: real_value = pixel_value*scale_factor + add_offset'
+              type: number
+            add_offset:
+              description: 'Defines mapping to some "real" space like so: real_value = pixel*scale_factor + add_offset'
+              type: number
             units:
                 type: string
             aliases:
