@@ -321,7 +321,7 @@ class Measurement(dict):
 
     """
     REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
-    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
+    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition', 'scale_factor', 'add_offset')
     ATTR_SKIP = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser'])
 
     def __init__(self, canonical_name=None, **kwargs):
