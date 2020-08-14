@@ -37,6 +37,7 @@ from ._base import (
     projected_lon,
     clip_lon180,
     chop_along_antimeridian,
+    mid_longitude,
 )
 
 from .tools import (
@@ -104,6 +105,7 @@ __all__ = [
     "projected_lon",
     "clip_lon180",
     "chop_along_antimeridian",
+    "mid_longitude",
     "is_affine_st",
     "apply_affine",
     "compute_axis_overlap",

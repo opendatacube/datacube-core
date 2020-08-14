@@ -1458,3 +1458,11 @@ def assign_crs(xx: Union[xr.DataArray, xr.Dataset],
             band.attrs.update(grid_mapping=crs_coord_name)
 
     return xx
+
+
+def mid_longitude(geom: Geometry) -> float:
+    """
+    Compute longitude of the center point of a geometry
+    """
+    ((lon,), _) = geom.centroid.to_crs('epsg:4326').xy
+    return lon

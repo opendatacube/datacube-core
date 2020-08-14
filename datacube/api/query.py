@@ -20,6 +20,7 @@ import logging
 import datetime
 import collections
 import warnings
+from typing import Optional, Union
 import pandas
 
 from dateutil import tz
@@ -309,16 +310,54 @@ def _convert_to_solar_time(utc, longitude):
     return utc + offset
 
 
-def solar_day(dataset, longitude=None):
+def _ds_mid_longitude(dataset: Dataset) -> Optional[float]:
+    m = dataset.metadata
+    if hasattr(m, 'lon'):
+        lon = m.lon
+        return (lon.begin + lon.end)*0.5
+    return None
+
+
+def solar_day(dataset: Dataset, longitude: Optional[float] = None) -> np.datetime64:
+    """
+    Adjust Dataset timestamp for "local time" given location and convert to numpy.
+
+    :param dataset: Dataset object from which to read time and location
+    :param longitude: If supplied correct timestamp for this longitude,
+                      rather than mid-point of the Dataset's footprint
+    """
     utc = dataset.center_time
 
     if longitude is None:
-        m = dataset.metadata
-        if hasattr(m, 'lon'):
-            lon = m.lon
-            longitude = (lon.begin + lon.end)*0.5
-        else:
+        _lon = _ds_mid_longitude(dataset)
+        if _lon is None:
             raise ValueError('Cannot compute solar_day: dataset is missing spatial info')
+        longitude = _lon
 
     solar_time = _convert_to_solar_time(utc, longitude)
     return np.datetime64(solar_time.date(), 'D')
+
+
+def solar_offset(geom: Union[geometry.Geometry, Dataset],
+                 precision: str = 'h') -> datetime.timedelta:
+    """
+    Given a geometry or a Dataset compute offset to add to UTC timestamp to get solar day right.
+
+    This only work when geometry is "local enough".
+
+    :param geom: Geometry with defined CRS
+    :param precision: one of ``'h'`` or ``'s'``, defaults to hour precision
+    """
+    if isinstance(geom, geometry.Geometry):
+        lon = geometry.mid_longitude(geom)
+    else:
+        _lon = _ds_mid_longitude(geom)
+        if _lon is None:
+            raise ValueError('Cannot compute solar offset, dataset is missing spatial info')
+        lon = _lon
+
+    if precision == 'h':
+        return datetime.timedelta(hours=int(round(lon*24/360)))
+
+    # 240 == (24*60*60)/360 (seconds of a day per degree of longitude)
+    return datetime.timedelta(seconds=int(lon*240))
