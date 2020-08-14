@@ -8,8 +8,11 @@ What's New
 v1.8.3 (???)
 ============
 
-- Fix issue where new `updated` columns aren't created on a fresh database (:pull:`994`, :issue:`993`)
-- Fix bug around adding `updated` columns locking up active databases (:pull:`1001`, :issue:`997`)
+- More efficient band alias handling
+- More documentation cleanups
+- Bug fixes in ``datacube.utils.aws``, credentials handling when ``AWS_UNSIGNED`` is set
+- Fix issue where new ``updated`` columns aren't created on a fresh database (:pull:`994`, :issue:`993`)
+- Fix bug around adding ``updated`` columns locking up active databases (:pull:`1001`, :issue:`997`)
 
 v1.8.2 (10 July 2020)
 =====================
