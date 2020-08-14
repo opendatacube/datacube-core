@@ -18,8 +18,8 @@ def test_gridspec():
     # check geobox_cache
     cache = {}
     poly = gs.tile_geobox((3, 4)).extent
-    (c1, gbox1),  = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
-    (c2, gbox2),  = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
+    (c1, gbox1), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
+    (c2, gbox2), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
 
     assert c1 == (3, 4) and c2 == c1
     assert gbox1 is gbox2
@@ -110,6 +110,18 @@ def test_product_dimensions():
     product = mk_sample_product('test_product', with_grid_spec=True)
     assert product.grid_spec is not None
     assert product.dimensions == ('time', 'y', 'x')
+
+
+def test_product_scale_factor():
+    product = mk_sample_product('test', measurements=[dict(name='red',
+                                                           scale_factor=33,
+                                                           add_offset=-5)])
+    assert product.validate(product.definition) is None
+    assert product.measurements['red'].scale_factor == 33
+    assert product.measurements['red'].add_offset == -5
+    attrs = product.measurements['red'].dataarray_attrs()
+    assert attrs['scale_factor'] == 33
+    assert attrs['add_offset'] == -5
 
 
 def test_measurement():
