@@ -17,7 +17,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day, GroupBy
+from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day, GroupBy, solar_offset
 from datacube.model import Range
 from datacube.utils import parse_time
 from datacube.utils.geometry import CRS
@@ -172,6 +172,36 @@ def test_solar_day():
         solar_day(ds)
 
     assert 'Cannot compute solar_day: dataset is missing spatial info' in str(e.value)
+
+
+def test_solar_offset():
+    from datacube.utils.geometry import point
+    from datetime import timedelta
+
+    def _hr(t):
+        return t.days*24 + t.seconds/3600
+
+    def p(lon):
+        return point(lon, 0, 'epsg:4326')
+
+    assert solar_offset(p(0)) == timedelta(seconds=0)
+    assert solar_offset(p(0).to_crs('epsg:3857')) == timedelta(seconds=0)
+
+    assert solar_offset(p(179.9)) == timedelta(hours=12)
+    assert _hr(solar_offset(p(-179.9))) == -12.0
+
+    assert solar_offset(p(20), 's') != solar_offset(p(20), 'h')
+    assert solar_offset(p(20), 's') < solar_offset(p(21), 's')
+
+    _s = SimpleNamespace
+    ds = _s(center_time=parse_time('1987-05-22 23:07:44.2270250Z'),
+            metadata=_s(lon=Range(begin=150.415,
+                                  end=152.975)))
+    assert solar_offset(ds) == timedelta(hours=10)
+    ds.metadata = _s()
+
+    with pytest.raises(ValueError):
+        solar_offset(ds)
 
 
 def test_dateline_query_building():

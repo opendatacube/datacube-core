@@ -451,6 +451,8 @@ Query Class
    :toctree: generate/
 
    Query
+   solar_day
+   solar_offset
 
 
 User Configuration
