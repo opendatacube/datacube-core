@@ -4,7 +4,7 @@ Date and time utility functions
 Includes sequence generation functions to be used by statistics apps
 
 """
-from typing import Union, Optional, Callable
+from typing import Union, Callable
 from datetime import datetime
 
 import dateutil
@@ -120,11 +120,13 @@ def mk_time_coord(dts, name='time', units=None):
                         dims=(name,),
                         attrs=attrs)
 
-def _mk_parse_time()->Callable[[Union[str, datetime]], datetime]:
+
+def _mk_parse_time() -> Callable[[Union[str, datetime]], datetime]:
     try:
         import ciso8601             # pylint: disable=wrong-import-position
         return _parse_time_ciso8601
     except ImportError:             # pragma: no cover
         return _parse_time_generic  # pragma: no cover
+
 
 parse_time = _mk_parse_time()  # pylint: disable=invalid-name
