@@ -11,6 +11,7 @@ v1.8.3 (???)
 - More efficient band alias handling
 - More documentation cleanups
 - Bug fixes in ``datacube.utils.aws``, credentials handling when ``AWS_UNSIGNED`` is set
+- Product definition can now optionally include per-band scaling factors (:pull:`1002`, :issue:`1003`)
 - Fix issue where new ``updated`` columns aren't created on a fresh database (:pull:`994`, :issue:`993`)
 - Fix bug around adding ``updated`` columns locking up active databases (:pull:`1001`, :issue:`997`)
 
