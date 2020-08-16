@@ -61,6 +61,9 @@ measurements
     nodata
          No data value
 
+    scale_factor,add_offset (optional)
+         Mapping from pixel value to real value ``real = scale_factor*pixel_value + add_offset``.
+
     spectral_definition (optional)
          Spectral response of the reflectance measurement.
 
