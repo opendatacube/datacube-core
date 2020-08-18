@@ -5,8 +5,8 @@
 What's New
 **********
 
-v1.8.3 (???)
-============
+v1.8.3 (18 August 2020)
+=======================
 
 - More efficient band alias handling
 - More documentation cleanups
