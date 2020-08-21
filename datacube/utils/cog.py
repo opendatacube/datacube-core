@@ -202,6 +202,8 @@ def write_cog(geo_im: xr.DataArray,
     :param overview_resampling: Use this resampling when computing overviews
     :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32],
                             to disable overviews supply empty list ``[]``
+    :param nodata: Set ``nodata`` flag to this value if supplied, by default ``nodata`` is
+                   read from the attributes of the input array (``geo_im.attrs['nodata']``).
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``
 
     :returns: Path to which output was written
@@ -271,6 +273,8 @@ def to_cog(geo_im: xr.DataArray,
     :param ovr_blocksize: Size of internal tiles in overview images (defaults to blocksize)
     :param overview_resampling: Use this resampling when computing overviews
     :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32]
+    :param nodata: Set ``nodata`` flag to this value if supplied, by default ``nodata`` is
+                   read from the attributes of the input array (``geo_im.attrs['nodata']``).
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``
 
     :returns: In-memory GeoTiff file as bytes
