@@ -273,7 +273,7 @@ class ComplicatedNamingConventions:
     def _dataset_label(self, sub_name: str = None):
         p = self.dataset
 
-        version = p.dataset_version.replace(".", "-") if p.dataset_version else None
+        version = p.dataset_version.split(".")[0] if p.dataset_version else None
         maturity: str = p.properties.get("dea:dataset_maturity")
         return "_".join(
             [
