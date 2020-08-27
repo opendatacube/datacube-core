@@ -196,7 +196,7 @@ class ComplicatedNamingConventions:
         platform = self.platform_abbreviated
         inst = self.instrument_abbreviated
         if platform and inst:
-            parts.append(f"{platform}{inst}")
+            parts.append(platform)
 
         if not subname:
             raise ValueError(
@@ -326,7 +326,8 @@ class ComplicatedNamingConventions:
                 f"TODO: implement non-landsat platform abbreviation " f"(got {p!r})"
             )
 
-        return f"ls{p[-1]}"
+        return "ls"
+
 
     @property
     def instrument_abbreviated(self) -> Optional[str]:
