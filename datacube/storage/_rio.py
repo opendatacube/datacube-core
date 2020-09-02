@@ -10,6 +10,7 @@ from threading import RLock
 import numpy as np
 from affine import Affine
 import rasterio
+import rasterio.path
 from urllib.parse import urlparse
 from typing import Optional, Iterator
 
@@ -160,7 +161,8 @@ class RasterioDataSource(DataSource):
 
         try:
             _LOG.debug("opening %s", self.filename)
-            with rasterio.open(self.filename, sharing=False) as src:
+            with rasterio.DatasetReader(rasterio.path.parse_path(str(self.filename)),
+                                        sharing=False) as src:
                 override = False
 
                 transform = src.transform
