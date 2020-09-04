@@ -487,6 +487,10 @@ class DatasetType:
         gs_params = {name: extract_point(name)
                      for name in ('tile_size', 'resolution', 'origin')}
 
+        complete = all(gs_params[k] is not None for k in ('tile_size', 'resolution'))
+        if not complete:
+            return None
+
         return GridSpec(crs=crs, **gs_params)
 
     def canonical_measurement(self, measurement: str) -> str:

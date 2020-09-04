@@ -111,6 +111,11 @@ def test_product_dimensions():
     assert product.grid_spec is not None
     assert product.dimensions == ('time', 'y', 'x')
 
+    partial_storage = product.definition['storage']
+    partial_storage.pop('tile_size')
+    product = mk_sample_product('tt', storage=partial_storage)
+    assert product.grid_spec is None
+
 
 def test_product_scale_factor():
     product = mk_sample_product('test', measurements=[dict(name='red',
