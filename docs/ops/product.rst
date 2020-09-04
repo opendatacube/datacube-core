@@ -36,14 +36,26 @@ metadata
 
 storage (optional)
     Describes some of common storage attributes of all the datasets. While optional defining this will make
-    product data easier to access and use.
+    product data easier to access and use. This only applies to products that have data arranged on a regular
+    grid, for example ingested products are like that.
 
     crs
-        Coordinate reference system common to all the datasets in the product. 'EPSG:<code>' or WKT string.
+        Coordinate reference system common to all the datasets in the product. ``'EPSG:<code>'`` or WKT string.
 
     resolution
         Resolution of the data of all the datasets in the product specified in projection units.
-        Use ``latitude``, ``longitude`` if the projection is geographic and ``x``, ``y`` otherwise
+        Use ``latitude``, ``longitude`` if the projection is geographic and ``x``, ``y`` otherwise.
+
+    tile_size
+        Size of the tiles for the data to be stored in specified in projection units. Use ``latitude`` and ``longitude``
+        if the projection is geographic, otherwise use ``x`` and ``y``.
+
+    origin
+        Coordinates of the bottom-left or top-left corner of the ``(0,0)`` tile specified in projection units. If
+        coordinates are for top-left corner, ensure that the ``latitude`` or ``y`` dimension of ``tile_size`` is
+        negative so tile indexes count downward. Use ``latitude`` and ``longitude`` if the projection is geographic,
+        otherwise use ``x`` and ``y``.
+
 
 measurements
     List of measurements in this product. The measurement names defined here need to match 1:1 with the measurement
