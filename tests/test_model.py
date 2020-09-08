@@ -196,6 +196,19 @@ def test_product_load_hints():
     assert product.default_resolution == (-10, 10)
     assert product.default_crs == geometry.CRS('EPSG:3857')
 
+    # check for fallback into partially defined `storage:`
+    # no resolution -- no hints
+    product = mk_sample_product('test', storage=dict(
+        crs='EPSG:3857'))
+    assert product.grid_spec is None
+    assert product.load_hints() == {}
+
+    # check misspelled load hints
+    product = mk_sample_product('test_product',
+                                load=dict(crs='epsg:4326',
+                                          resolution={'longtude': 1.2, 'latitude': -1.1}))
+    assert product.load_hints() == {}
+
 
 def test_measurement():
     # Can create a measurement
