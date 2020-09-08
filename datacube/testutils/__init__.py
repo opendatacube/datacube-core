@@ -157,7 +157,8 @@ def mk_sample_product(name,
                       measurements=('red', 'green', 'blue'),
                       with_grid_spec=False,
                       metadata_type=None,
-                      storage=None):
+                      storage=None,
+                      load=None):
 
     if storage is None and with_grid_spec is True:
         storage = {'crs': 'EPSG:3577',
@@ -199,6 +200,9 @@ def mk_sample_product(name,
 
     if storage is not None:
         definition['storage'] = storage
+
+    if load is not None:
+        definition['load'] = load
 
     return DatasetType(metadata_type, definition)
 

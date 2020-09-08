@@ -21,6 +21,8 @@ properties:
         type: object
     storage:
         "$ref": "#/definitions/storage"
+    load:
+        "$ref": "#/definitions/load"
     measurements:
         type: array
         additionalProperties: false
@@ -128,4 +130,17 @@ definitions:
                 type: object
             driver:
                 type: string
+        additionalProperties: false
+    load:
+        type: object
+        properties:
+            crs:
+                type: string
+            resolution:
+                type: object
+            align:
+                type: object
+        required:
+          - crs
+          - resolution
         additionalProperties: false

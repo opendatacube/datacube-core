@@ -34,6 +34,25 @@ metadata
 
     In the above example, ``product: name`` would match a specific product.
 
+load (optional)
+    Define default projections and resolution to use when loading data from this
+    product. User supplied load options take precedence over settings configured
+    here.
+
+    crs
+        Coordinate reference system to use as a fallback when loading data from this product. ``'EPSG:<code>'`` or WKT string.
+
+    resolution.{x,y}
+        Default resolution to use during ``dc.load(..)`` specified in projection units.
+        Use ``latitude``, ``longitude`` if the projection is geographic and ``x``, ``y`` otherwise.
+
+    align.{x,y} (optional)
+        By default pixel grid is aligned such that pixel boundaries fall on
+        ``x,y`` axis. This option allows to translate pixel grid. For example,
+        to ensure that pixel center of a 30m pixel grid is coincidental with
+        ``0,0`` use ``align:{x:15,y:15}``.
+
+
 storage (optional)
     Describes some of common storage attributes of all the datasets. While optional defining this will make
     product data easier to access and use. This only applies to products that have data arranged on a regular
