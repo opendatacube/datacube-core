@@ -301,6 +301,7 @@ class Datacube(object):
 
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
                                grid_spec=datacube_product.grid_spec,
+                               load_hints=datacube_product.load_hints(),
                                datasets=datasets, **query)
 
         group_by = query_group_by(**query)
@@ -639,7 +640,7 @@ def per_band_load_data_settings(measurements, resampling=None, fuse_func=None):
 
 
 def output_geobox(like=None, output_crs=None, resolution=None, align=None,
-                  grid_spec=None, datasets=None, geopolygon=None, **query):
+                  grid_spec=None, load_hints=None, datasets=None, geopolygon=None, **query):
     """ Configure output geobox from user provided output specs. """
 
     if like is not None:
@@ -651,26 +652,41 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
         return like.geobox
 
+    if load_hints:
+        if output_crs is None:
+            output_crs = load_hints.get('output_crs', None)
+
+        if resolution is None:
+            resolution = load_hints.get('resolution', None)
+
+        if align is None:
+            align = load_hints.get('align', None)
+
     if output_crs is not None:
-        # user provided specifications
         if resolution is None:
             raise ValueError("Must specify 'resolution' when specifying 'output_crs'")
         crs = geometry.CRS(output_crs)
-    else:
+    elif grid_spec is not None:
         # specification from grid_spec
-        if grid_spec is None or grid_spec.crs is None:
-            raise ValueError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
         crs = grid_spec.crs
         if resolution is None:
-            if grid_spec.resolution is None:
-                raise ValueError("Product has no default resolution. Must specify 'resolution'")
             resolution = grid_spec.resolution
         align = align or grid_spec.alignment
+    else:
+        raise ValueError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
 
+    # Try figuring out bounds
+    #  1. Explicitly defined with geopolygon
+    #  2. Extracted from x=,y=
+    #  3. Computed from dataset footprints
+    #  4. fail with ValueError
     if geopolygon is None:
         geopolygon = query_geopolygon(**query)
 
         if geopolygon is None:
+            if datasets is None:
+                raise ValueError("Bounds are not specified")
+
             geopolygon = get_bounds(datasets, crs)
 
     return geometry.GeoBox.from_geopolygon(geopolygon, resolution, crs, align)

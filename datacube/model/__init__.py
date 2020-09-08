@@ -404,6 +404,7 @@ class DatasetType:
         self.definition = definition
         self._canonical_measurements: Optional[Mapping[str, Measurement]] = None
         self._all_measurements: Optional[Dict[str, Measurement]] = None
+        self._load_hints: Optional[Dict[str, Any]] = None
 
     def _resolve_aliases(self):
         if self._all_measurements is not None:
@@ -513,6 +514,64 @@ class DatasetType:
 
         mm = self._resolve_aliases()
         return OrderedDict((m, mm[m]) for m in measurements)
+
+    def _extract_load_hints(self) -> Optional[Dict[str, Any]]:
+        _load = self.definition.get('load')
+        if _load is None:
+            # TODO: support partial "storage" definition with a warning
+            #       if storage object exists but gridspec is None
+            #           take crs and resolution from storage
+            #           warn user that this is no longer supported mode
+            return None
+
+        crs = geometry.CRS(_load['crs'])
+
+        def extract_point(name):
+            xx = _load.get(name, None)
+            return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
+
+        params = {name: extract_point(name) for name in ('resolution', 'align')}
+        params = {name: v for name, v in params.items() if v is not None}
+        return dict(crs=crs, **params)
+
+    @property
+    def default_crs(self) -> Optional[geometry.CRS]:
+        return self.load_hints().get('output_crs', None)
+
+    @property
+    def default_resolution(self) -> Optional[Tuple[float, float]]:
+        return self.load_hints().get('resolution', None)
+
+    @property
+    def default_align(self) -> Optional[Tuple[float, float]]:
+        return self.load_hints().get('align', None)
+
+    def load_hints(self) -> Dict[str, Any]:
+        """
+        Returns dictionary with keys compatible with ``dc.load(..)`` named arguments:
+
+          output_crs - CRS
+          resolution - Tuple[float, float]
+          align      - Tuple[float, float] (if defined)
+
+        Returns {} if load hints are not defined on this product, or defined with errors.
+        """
+        if self._load_hints is not None:
+            return self._load_hints
+
+        hints = None
+        try:
+            hints = self._extract_load_hints()
+        except Exception:
+            pass
+
+        if hints is None:
+            self._load_hints = {}
+        else:
+            crs = hints.pop('crs')
+            self._load_hints = dict(output_crs=crs, **hints)
+
+        return self._load_hints
 
     def dataset_reader(self, dataset_doc):
         return self.metadata_type.dataset_reader(dataset_doc)

@@ -1,10 +1,14 @@
 # coding=utf-8
 import pytest
 import numpy
+from copy import deepcopy
 from datacube.testutils import mk_sample_dataset, mk_sample_product
-from datacube.model import GridSpec, Measurement, MetadataType
+from datacube.model import GridSpec, Measurement, MetadataType, DatasetType
 from datacube.utils import geometry
+from datacube.utils.documents import InvalidDocException
 from datacube.storage import measurement_paths
+from datacube.testutils.geom import AlbersGS
+from datacube.api.core import output_geobox
 
 
 def test_gridspec():
@@ -129,6 +133,57 @@ def test_product_scale_factor():
     assert attrs['add_offset'] == -5
 
 
+def test_product_load_hints():
+    product = mk_sample_product('test_product',
+                                load=dict(crs='epsg:3857',
+                                          resolution={'x': 10, 'y': -10}))
+
+    assert 'load' in product.definition
+    assert DatasetType.validate(product.definition) is None
+
+    hints = product._extract_load_hints()
+    assert hints['crs'] == geometry.CRS('epsg:3857')
+    assert hints['resolution'] == (-10, 10)
+    assert 'align' not in hints
+
+    product = mk_sample_product('test_product',
+                                load=dict(crs='epsg:3857',
+                                          align={'x': 5, 'y': 6},
+                                          resolution={'x': 10, 'y': -10}))
+
+    hints = product.load_hints()
+    assert hints['output_crs'] == geometry.CRS('epsg:3857')
+    assert hints['resolution'] == (-10, 10)
+    assert hints['align'] == (6, 5)
+    assert product.default_crs == geometry.CRS('epsg:3857')
+    assert product.default_resolution == (-10, 10)
+    assert product.default_align == (6, 5)
+
+    product = mk_sample_product('test_product',
+                                load=dict(crs='epsg:4326',
+                                          align={'longitude': 0.5, 'latitude': 0.6},
+                                          resolution={'longitude': 1.2, 'latitude': -1.1}))
+
+    hints = product.load_hints()
+    assert hints['output_crs'] == geometry.CRS('epsg:4326')
+    assert hints['resolution'] == (-1.1, 1.2)
+    assert hints['align'] == (0.6, 0.5)
+
+    # check it's cached
+    assert product.load_hints() is product.load_hints()
+
+    # check schema: crs and resolution are compulsory
+    for k in ('resolution', 'crs'):
+        doc = deepcopy(product.definition)
+        assert DatasetType.validate(doc) is None
+
+        doc['load'].pop(k)
+        assert k not in doc['load']
+
+        with pytest.raises(InvalidDocException):
+            DatasetType.validate(doc)
+
+
 def test_measurement():
     # Can create a measurement
     m = Measurement(name='t', dtype='uint8', nodata=255, units='1')
@@ -169,19 +224,21 @@ def test_measurement():
     assert 'dtype' in str(e.value)
 
 
-def test_like_geobox():
-    from datacube.testutils.geom import AlbersGS
-    from datacube.api.core import output_geobox
+def test_output_geobox_load_hints():
+    geobox0 = AlbersGS.tile_geobox((15, -40))
 
+    geobox = output_geobox(load_hints={'output_crs': geobox0.crs,
+                                       'resolution': geobox0.resolution},
+                           geopolygon=geobox0.extent)
+    assert geobox == geobox0
+
+
+def test_like_geobox():
     geobox = AlbersGS.tile_geobox((15, -40))
     assert output_geobox(like=geobox) is geobox
 
 
 def test_output_geobox_fail_paths():
-    from datacube.api.core import output_geobox
-    gs_nores = GridSpec(crs=geometry.CRS('EPSG:4326'),
-                        tile_size=None,
-                        resolution=None)
 
     with pytest.raises(ValueError):
         output_geobox()
@@ -189,8 +246,9 @@ def test_output_geobox_fail_paths():
     with pytest.raises(ValueError):
         output_geobox(output_crs='EPSG:4326')  # need resolution as well
 
+    # need bounds
     with pytest.raises(ValueError):
-        output_geobox(grid_spec=gs_nores)  # GridSpec with missing resolution
+        output_geobox(output_crs='EPSG:4326', resolution=(1, 1))
 
 
 def test_metadata_type():
