@@ -518,11 +518,18 @@ class DatasetType:
     def _extract_load_hints(self) -> Optional[Dict[str, Any]]:
         _load = self.definition.get('load')
         if _load is None:
-            # TODO: support partial "storage" definition with a warning
-            #       if storage object exists but gridspec is None
-            #           take crs and resolution from storage
-            #           warn user that this is no longer supported mode
-            return None
+            # Check for partial "storage" definition
+            storage = self.definition.get('storage', {})
+
+            if 'crs' in storage and 'resolution' in storage:
+                if 'tile_size' in storage:
+                    # Fully defined GridSpec, ignore it
+                    return None
+
+                # TODO: warn user to use `load:` instead of `storage:`??
+                _load = storage
+            else:
+                return None
 
         crs = geometry.CRS(_load['crs'])
 
