@@ -183,6 +183,19 @@ def test_product_load_hints():
         with pytest.raises(InvalidDocException):
             DatasetType.validate(doc)
 
+    # check GridSpec leakage doesn't happen for fully defined gridspec
+    product = mk_sample_product('test', with_grid_spec=True)
+    assert product.grid_spec is not None
+    assert product.load_hints() == {}
+
+    # check for fallback into partially defined `storage:`
+    product = mk_sample_product('test', storage=dict(
+        crs='EPSG:3857',
+        resolution={'x': 10, 'y': -10}))
+    assert product.grid_spec is None
+    assert product.default_resolution == (-10, 10)
+    assert product.default_crs == geometry.CRS('EPSG:3857')
+
 
 def test_measurement():
     # Can create a measurement
