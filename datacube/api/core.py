@@ -203,6 +203,9 @@ class Datacube(object):
             To reproject or resample the data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
             fields.
 
+            By default, the resampling method is 'nearest'. However, any stored overview layers may be used
+            when down-sampling, which may (completely or partially) override the choice of resampling method.
+
             To reproject data to 25m resolution for EPSG:3577::
 
                 dc.load(product='ls5_nbar_albers', x=(148.15, 148.2), y=(-35.15, -35.2), time=('1990', '1991'),
