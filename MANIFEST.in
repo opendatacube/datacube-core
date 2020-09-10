@@ -1,6 +1,4 @@
 include datacube/_version.py
-prune examples/notebooks/
-prune contrib/
 prune docs/
 prune docker/
 prune .github/

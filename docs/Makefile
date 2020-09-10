@@ -34,7 +34,7 @@ plantuml_diags: $(SVG_FILES)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 livehtml:
-	sphinx-autobuild -b html -p 8123 --ignore "*_tmp_*" --ignore "*_old_*" --watch "../datacube" --ignore "_build/*" --ignore "notebooks/*" --ignore "dev/api/generate/*" $(SPHINXOPTS) . $(BUILDDIR)/html
+	sphinx-autobuild -b html -p 8123 --ignore "*_tmp_*" --ignore "*_old_*" --watch "../datacube" --ignore "_build/*" --ignore "dev/api/generate/*" $(SPHINXOPTS) . $(BUILDDIR)/html
 
 clean:
 	rm -rf _build/
