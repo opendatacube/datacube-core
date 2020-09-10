@@ -5,6 +5,14 @@
 What's New
 **********
 
+v1.8.4 (???)
+=======================
+
+- Removed example and contributed notebooks from the repository. Better notebook_ examples exist.
+
+.. _notebooks: https://github.com/GeoscienceAustralia/dea-notebooks/
+
+
 v1.8.3 (18 August 2020)
 =======================
 
