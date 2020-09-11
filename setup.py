@@ -115,7 +115,7 @@ setup(
     entry_points={
         'console_scripts': [
             'datacube = datacube.scripts.cli_app:cli',
-            'datacube-search = datacube.scripts.search_tool:cli',=
+            'datacube-search = datacube.scripts.search_tool:cli',
             'datacube-worker = datacube.execution.worker:main',
         ],
         'datacube.plugins.io.read': [
