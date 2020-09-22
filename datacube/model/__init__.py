@@ -587,12 +587,11 @@ class DatasetType:
         """
         Convert to a dictionary representation of the available fields
         """
-        row = {
-            'id': self.id,
-            'name': self.name,
-            'description': self.definition['description'],
-        }
-        row.update(self.fields)
+        row = dict(**self.fields)
+        row.update(id=self.id,
+                   name=self.name,
+                   description=self.definition['description'])
+
         if self.grid_spec is not None:
             row.update({
                 'crs': str(self.grid_spec.crs),
