@@ -11,6 +11,7 @@ from ruamel.yaml.timestamp import TimeStamp as RuamelTimeStamp
 
 from eodatasets3.utils import default_utc
 
+
 class FileFormat(Enum):
     GeoTIFF = 1
     NetCDF = 2

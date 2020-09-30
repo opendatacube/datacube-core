@@ -164,7 +164,6 @@ class ComplicatedNamingConventions:
                     hint = f" ({hint})"
                 examples.append(f"\n- {p!r}{hint}")
 
-
             raise ValueError(
                 f"Need more properties to fulfill naming conventions."
                 f"{''.join(examples)}"
@@ -274,7 +273,9 @@ class ComplicatedNamingConventions:
 
     def _dataset_label(self, sub_name: str = None):
         p = self.dataset
-        version = p.collection_number if p.collection_number else p.dataset_version.split(".")[0] if p.dataset_version else None
+        version = p.collection_number if p.collection_number \
+            else p.dataset_version.split(".")[0] if p.dataset_version \
+            else None
         maturity: str = p.properties.get("dea:dataset_maturity")
         return "_".join(
             [
@@ -328,7 +329,6 @@ class ComplicatedNamingConventions:
             )
 
         return "ls"
-
 
     @property
     def instrument_abbreviated(self) -> Optional[str]:
