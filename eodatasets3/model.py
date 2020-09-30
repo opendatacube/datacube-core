@@ -164,6 +164,7 @@ class ComplicatedNamingConventions:
                     hint = f" ({hint})"
                 examples.append(f"\n- {p!r}{hint}")
 
+
             raise ValueError(
                 f"Need more properties to fulfill naming conventions."
                 f"{''.join(examples)}"
@@ -172,7 +173,6 @@ class ComplicatedNamingConventions:
     @property
     def product_name(self) -> str:
         self._check_enough_properties_to_name()
-
         org_number = self._org_collection_number
         if org_number:
             return f"{self._product_group()}_{org_number}"
@@ -180,6 +180,8 @@ class ComplicatedNamingConventions:
 
     @property
     def _org_collection_number(self) -> Optional[int]:
+        if self.dataset.collection_number:
+            return int(self.dataset.collection_number)
         if not self.dataset.dataset_version:
             return None
         return int(self.dataset.dataset_version.split(".")[0])
@@ -225,10 +227,10 @@ class ComplicatedNamingConventions:
 
     def destination_folder(self, base: Path):
         self._check_enough_properties_to_name()
-        # DEA naming conventions folder hierarchy.
-        # Example: "ga_ls8c_ard_3/092/084/2016/06/28"
 
-        parts = [self.product_name]
+        # DEA naming conventions folder hierarchy.
+        # Example: "ga_ls_wo_3/1-6-0/090/081/1998/07/30"
+        parts = [self.product_name, self.dataset.dataset_version.replace(".", "-")]
 
         # Cut the region code in subfolders
         region_code = self.dataset.region_code
@@ -272,8 +274,7 @@ class ComplicatedNamingConventions:
 
     def _dataset_label(self, sub_name: str = None):
         p = self.dataset
-
-        version = p.dataset_version.split(".")[0] if p.dataset_version else None
+        version = p.collection_number if p.collection_number else p.dataset_version.split(".")[0] if p.dataset_version else None
         maturity: str = p.properties.get("dea:dataset_maturity")
         return "_".join(
             [

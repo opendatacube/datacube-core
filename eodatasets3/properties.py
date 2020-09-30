@@ -7,10 +7,9 @@ from enum import Enum, EnumMeta
 from typing import Tuple, Dict, Optional, Any, Mapping, Callable, Union
 
 import ciso8601
-from eodatasets3.utils import default_utc
-
 from ruamel.yaml.timestamp import TimeStamp as RuamelTimeStamp
 
+from eodatasets3.utils import default_utc
 
 class FileFormat(Enum):
     GeoTIFF = 1
@@ -226,6 +225,7 @@ class StacPropertyView(collections.abc.Mapping):
         "landsat:wrs_path": int,
         "landsat:wrs_row": int,
         "odc:dataset_version": None,
+        "odc:collection_number": None,
         # Not strict as there may be more added in ODC...
         "odc:file_format": of_enum_type(FileFormat, strict=False),
         "odc:processing_datetime": datetime_type,
@@ -413,9 +413,25 @@ class EoFields(metaclass=ABCMeta):
         """
         return self.properties.get("odc:dataset_version")
 
+    @property
+    def collection_number(self) -> str:
+        """
+        The version of the collection.
+        Eg:
+          metadata:
+            product_family: wofs
+            dataset_version: 1.6.0
+            collection_number: 3
+        """
+        return self.properties.get("odc:collection_number", "0")
+
     @dataset_version.setter
     def dataset_version(self, value):
         self.properties["odc:dataset_version"] = value
+
+    @collection_number.setter
+    def collection_number(self, value):
+        self.properties["odc:collection_number"] = value
 
     @property
     def product_family(self) -> str:
