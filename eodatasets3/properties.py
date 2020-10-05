@@ -227,6 +227,7 @@ class StacPropertyView(collections.abc.Mapping):
         "landsat:wrs_row": int,
         "odc:dataset_version": None,
         "odc:collection_number": None,
+        "odc:naming_conventions": None,
         # Not strict as there may be more added in ODC...
         "odc:file_format": of_enum_type(FileFormat, strict=False),
         "odc:processing_datetime": datetime_type,
@@ -433,6 +434,14 @@ class EoFields(metaclass=ABCMeta):
     @collection_number.setter
     def collection_number(self, value):
         self.properties["odc:collection_number"] = value
+
+    @property
+    def naming_conventions(self) -> str:
+        return self.properties.get("odc:naming_conventions")
+
+    @naming_conventions.setter
+    def naming_conventions(self, value):
+        self.properties["odc:naming_conventions"] = value
 
     @property
     def product_family(self) -> str:

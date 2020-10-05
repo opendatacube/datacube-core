@@ -5,16 +5,15 @@ from uuid import UUID
 
 import affine
 import attr
-from eodatasets3 import utils
-from eodatasets3.properties import StacPropertyView, EoFields
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry.base import BaseGeometry
 
+from eodatasets3 import utils
+from eodatasets3.properties import StacPropertyView, EoFields
 
 # TODO: these need discussion.
 DEA_URI_PREFIX = "https://collections.dea.ga.gov.au"
 ODC_DATASET_SCHEMA_URL = "https://schemas.opendatacube.org/dataset"
-
 
 # Either a local filesystem path or a string URI.
 # (the URI can use any scheme supported by rasterio, such as tar:// or https:// or ...)
@@ -172,6 +171,7 @@ class ComplicatedNamingConventions:
     @property
     def product_name(self) -> str:
         self._check_enough_properties_to_name()
+
         org_number = self._org_collection_number
         if org_number:
             return f"{self._product_group()}_{org_number}"
@@ -179,8 +179,6 @@ class ComplicatedNamingConventions:
 
     @property
     def _org_collection_number(self) -> Optional[int]:
-        if self.dataset.collection_number:
-            return int(self.dataset.collection_number)
         if not self.dataset.dataset_version:
             return None
         return int(self.dataset.dataset_version.split(".")[0])
@@ -197,7 +195,7 @@ class ComplicatedNamingConventions:
         platform = self.platform_abbreviated
         inst = self.instrument_abbreviated
         if platform and inst:
-            parts.append(platform)
+            parts.append(f"{platform}{inst}")
 
         if not subname:
             raise ValueError(
@@ -226,10 +224,10 @@ class ComplicatedNamingConventions:
 
     def destination_folder(self, base: Path):
         self._check_enough_properties_to_name()
-
         # DEA naming conventions folder hierarchy.
-        # Example: "ga_ls_wo_3/1-6-0/090/081/1998/07/30"
-        parts = [self.product_name, self.dataset.dataset_version.replace(".", "-")]
+        # Example: "ga_ls8c_ard_3/092/084/2016/06/28"
+
+        parts = [self.product_name]
 
         # Cut the region code in subfolders
         region_code = self.dataset.region_code
@@ -273,9 +271,8 @@ class ComplicatedNamingConventions:
 
     def _dataset_label(self, sub_name: str = None):
         p = self.dataset
-        version = p.collection_number if p.collection_number \
-            else p.dataset_version.split(".")[0] if p.dataset_version \
-            else None
+
+        version = p.dataset_version.replace(".", "-") if p.dataset_version else None
         maturity: str = p.properties.get("dea:dataset_maturity")
         return "_".join(
             [
@@ -328,7 +325,7 @@ class ComplicatedNamingConventions:
                 f"TODO: implement non-landsat platform abbreviation " f"(got {p!r})"
             )
 
-        return "ls"
+        return f"ls{p[-1]}"
 
     @property
     def instrument_abbreviated(self) -> Optional[str]:
@@ -373,6 +370,77 @@ class ComplicatedNamingConventions:
             raise NotImplementedError(
                 f"TODO: cannot yet abbreviate organisation domain name {self.dataset.producer!r}"
             )
+
+
+class ComplicatedNamingConventionsAlchemist(ComplicatedNamingConventions):
+    """
+    This class is inherited from ComplicatedNamingConventions
+    and overrides few attributes specific to C3 dataprocessing at the Alchemist end.
+    """
+
+    @property
+    def _org_collection_number(self) -> Optional[int]:
+
+        # Deliberately fail if collection_number is not defined in the config yaml
+        return int(self.dataset.collection_number)
+
+    def _product_group(self, subname=None) -> str:
+        # Computues product group, e.g "ga_ls_wo_3"
+        # Deliberately fail if any of these attributes not found.
+        parts = [
+            self.producer_abbreviated,
+            self.platform_abbreviated,
+            self.dataset.product_family,
+        ]
+        return "_".join(parts)
+
+    def destination_folder(self, base: Path):
+
+        # Copycat of the parent method, except dataset_version to be included in the parts.
+        self._check_enough_properties_to_name()
+
+        # DEA naming conventions folder hierarchy.
+        # Example: "ga_ls_wo_3/1-6-0/090/081/1998/07/30"
+        parts = [self.product_name, self.dataset.dataset_version.replace(".", "-")]
+
+        # Cut the region code in subfolders
+        region_code = self.dataset.region_code
+        if region_code:
+            parts.extend(utils.subfolderise(region_code))
+
+        parts.extend(f"{self.dataset.datetime:%Y/%m/%d}".split("/"))
+
+        if self.dataset_separator_field is not None:
+            val = self.dataset.properties[self.dataset_separator_field]
+            # TODO: choosable formatter?
+            if isinstance(val, datetime):
+                val = f"{val:%Y%m%dT%H%M%S}"
+            parts.append(val)
+        return base.joinpath(*parts)
+
+    def _dataset_label(self, sub_name: str = None):
+        # Copycat of the parent method except version is simply collection number
+        p = self.dataset
+        version = p.collection_number
+        maturity: str = p.properties.get("dea:dataset_maturity")
+        return "_".join(
+            [
+                p
+                for p in (
+                    self._product_group(sub_name),
+                    version,
+                    self._displayable_region_code,
+                    f"{p.datetime:%Y-%m-%d}",
+                    maturity,
+                )
+                if p
+            ]
+        )
+
+    @property
+    def platform_abbreviated(self) -> Optional[str]:
+        # For now from Alchemist the platform is always landsat for C3 processing
+        return "ls"
 
 
 @attr.s(auto_attribs=True, slots=True)
