@@ -84,7 +84,7 @@ jobs:
           -v $(pwd):/src/datacube-core \
           -e SKIP_DB=yes \
           ${DKR} \
-          pylint -j 2 --reports no datacube datacube_apps
+          pylint -j 2 --reports no datacube
 
     - name: Run Tests
       run: |
@@ -98,7 +98,6 @@ jobs:
             --durations=5 \
             datacube \
             tests \
-            datacube_apps \
             integration_tests
 
     - name: Publish to dea packages repo

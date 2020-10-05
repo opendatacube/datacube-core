@@ -9,6 +9,7 @@ v1.8.4 (???)
 =======================
 
 - Removed example and contributed notebooks from the repository. Better notebook_ examples exist.
+- Removed datacube_apps, as these are not used and not maintained.
 
 .. _notebooks: https://github.com/GeoscienceAustralia/dea-notebooks/
 

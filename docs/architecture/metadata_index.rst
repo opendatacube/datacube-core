@@ -61,7 +61,7 @@ To calculate this in the database requires scanning the entire dataset table to 
 More commonly, to do this in Python, every dataset record is retrieved which is a very memory and CPU intensive
 operation.
 
-This is an important feature for apps such as `datacube-wms` and `cubedash` that need to know the entire bounds for
+This is an important feature for apps such as `datacube-ows` and `cubedash` that need to know the entire bounds for
 sensibly displaying the user interface.
 
 Replication
