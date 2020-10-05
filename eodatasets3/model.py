@@ -373,10 +373,31 @@ class ComplicatedNamingConventions:
 
 
 class ComplicatedNamingConventionsAlchemist(ComplicatedNamingConventions):
+
     """
     This class is inherited from ComplicatedNamingConventions
     and overrides few attributes specific to C3 dataprocessing at the Alchemist end.
     """
+
+    @classmethod
+    def for_c3_processing(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
+        """
+        The required fields for the c3 data processing are controlled here.
+        """
+        return cls(
+            dataset=dataset,
+            base_product_uri=uri,
+            required_fields=(
+                "eo:platform",
+                "odc:dataset_version",
+                "odc:collection_number",
+                "odc:processing_datetime",
+                "odc:producer",
+                "odc:product_family",
+                "odc:region_code",
+                "dea:dataset_maturity",
+            ),
+        )
 
     @property
     def _org_collection_number(self) -> Optional[int]:
@@ -395,27 +416,10 @@ class ComplicatedNamingConventionsAlchemist(ComplicatedNamingConventions):
         return "_".join(parts)
 
     def destination_folder(self, base: Path):
-
-        # Copycat of the parent method, except dataset_version to be included in the parts.
         self._check_enough_properties_to_name()
-
-        # DEA naming conventions folder hierarchy.
-        # Example: "ga_ls_wo_3/1-6-0/090/081/1998/07/30"
         parts = [self.product_name, self.dataset.dataset_version.replace(".", "-")]
-
-        # Cut the region code in subfolders
-        region_code = self.dataset.region_code
-        if region_code:
-            parts.extend(utils.subfolderise(region_code))
-
+        parts.extend(utils.subfolderise(self.dataset.region_code))
         parts.extend(f"{self.dataset.datetime:%Y/%m/%d}".split("/"))
-
-        if self.dataset_separator_field is not None:
-            val = self.dataset.properties[self.dataset_separator_field]
-            # TODO: choosable formatter?
-            if isinstance(val, datetime):
-                val = f"{val:%Y%m%dT%H%M%S}"
-            parts.append(val)
         return base.joinpath(*parts)
 
     def _dataset_label(self, sub_name: str = None):
