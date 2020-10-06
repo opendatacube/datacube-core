@@ -372,7 +372,7 @@ class ComplicatedNamingConventions:
             )
 
 
-class ComplicatedNamingConventionsAlchemist(ComplicatedNamingConventions):
+class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
 
     """
     This class is inherited from ComplicatedNamingConventions
@@ -380,7 +380,7 @@ class ComplicatedNamingConventionsAlchemist(ComplicatedNamingConventions):
     """
 
     @classmethod
-    def for_c3_processing(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
+    def for_c3_derivatives(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
         """
         The required fields for the c3 data processing are controlled here.
         """
