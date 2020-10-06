@@ -376,7 +376,7 @@ class ComplicatedNamingConventionsAlchemist(ComplicatedNamingConventions):
 
     """
     This class is inherited from ComplicatedNamingConventions
-    and overrides few attributes specific to C3 dataprocessing at the Alchemist end.
+    and overrides few attributes specific to C3 data processing for data other than ARD.
     """
 
     @classmethod
