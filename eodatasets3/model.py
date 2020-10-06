@@ -373,7 +373,6 @@ class ComplicatedNamingConventions:
 
 
 class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
-
     """
     This class is inherited from ComplicatedNamingConventions
     and overrides few attributes specific to C3 data processing for data other than ARD.
@@ -401,7 +400,6 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
 
     @property
     def _org_collection_number(self) -> Optional[int]:
-
         # Deliberately fail if collection_number is not defined in the config yaml
         return int(self.dataset.collection_number)
 
@@ -423,23 +421,19 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
         return base.joinpath(*parts)
 
     def _dataset_label(self, sub_name: str = None):
-        # Copycat of the parent method except version is simply collection number
-        p = self.dataset
-        version = p.collection_number
-        maturity: str = p.properties.get("dea:dataset_maturity")
-        return "_".join(
-            [
-                p
-                for p in (
-                    self._product_group(sub_name),
-                    version,
-                    self._displayable_region_code,
-                    f"{p.datetime:%Y-%m-%d}",
-                    maturity,
-                )
-                if p
-            ]
-        )
+        """
+        Responsible for producing the string of product name, regioncode, datetime and maturity
+        ex: 'ga_ls_wo_3_090081_1998-07-30_interim'
+
+        Redundant parameter sub_name is required, since the parent class and other invocations wants it so.
+        """
+        parts = [
+            self.product_name,
+            self._displayable_region_code,
+            f"{self.dataset.datetime:%Y-%m-%d}",
+            self.dataset.maturity,
+        ]
+        return "_".join(parts)
 
     @property
     def platform_abbreviated(self) -> Optional[str]:
