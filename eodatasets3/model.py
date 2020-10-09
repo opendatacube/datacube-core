@@ -438,6 +438,10 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
     @property
     def platform_abbreviated(self) -> Optional[str]:
         # For now from Alchemist the platform is always landsat for C3 processing
+        if "ls" not in self.dataset.platform:
+            raise ValueError(
+                "ComplicatedNamingConventionsDerivatives assumes lansat as platform"
+            )
         return "ls"
 
 

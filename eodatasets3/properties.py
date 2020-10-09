@@ -226,7 +226,7 @@ class StacPropertyView(collections.abc.Mapping):
         "landsat:wrs_path": int,
         "landsat:wrs_row": int,
         "odc:dataset_version": None,
-        "odc:collection_number": None,
+        "odc:collection_number": int,
         "odc:naming_conventions": None,
         # Not strict as there may be more added in ODC...
         "odc:file_format": of_enum_type(FileFormat, strict=False),
