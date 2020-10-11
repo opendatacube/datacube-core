@@ -416,7 +416,7 @@ class EoFields(metaclass=ABCMeta):
         return self.properties.get("odc:dataset_version")
 
     @property
-    def collection_number(self) -> str:
+    def collection_number(self) -> int:
         """
         The version of the collection.
         Eg:
@@ -425,7 +425,7 @@ class EoFields(metaclass=ABCMeta):
             dataset_version: 1.6.0
             collection_number: 3
         """
-        return self.properties.get("odc:collection_number", "0")
+        return self.properties.get("odc:collection_number")
 
     @dataset_version.setter
     def dataset_version(self, value):
