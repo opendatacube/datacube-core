@@ -438,9 +438,10 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
     @property
     def platform_abbreviated(self) -> Optional[str]:
         # For now from Alchemist the platform is always landsat for C3 processing
-        if "ls" not in self.dataset.platform:
-            raise ValueError(
-                "ComplicatedNamingConventionsDerivatives assumes lansat as platform"
+        if "landsat" not in self.dataset.platform:
+            raise NotImplementedError(
+                f"Only Landsat platforms currently implemented for dea_c3 naming schemes "
+                f"(got {self.dataset.platform!r})"
             )
         return "ls"
 
