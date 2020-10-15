@@ -236,6 +236,11 @@ class ComplicatedNamingConventions:
 
         parts.extend(f"{self.dataset.datetime:%Y/%m/%d}".split("/"))
 
+        # If it's not a final product, append the maturity to the folder.
+        maturity: str = self.dataset.properties.get("dea:dataset_maturity")
+        if maturity and maturity != "final":
+            parts[-1] = f"{parts[-1]}_{maturity}"
+
         if self.dataset_separator_field is not None:
             val = self.dataset.properties[self.dataset_separator_field]
             # TODO: choosable formatter?
