@@ -1,4 +1,5 @@
 import lark
+import numpy
 
 from datacube.utils.masking import valid_data_mask
 
@@ -65,7 +66,7 @@ def formula_parser():
 
 
 @lark.v_args(inline=True)
-class EvaluateFormula(lark.Transformer):
+class FormulaEvaluator(lark.Transformer):
     from operator import not_, or_, and_, xor
     from operator import eq, ne, le, ge, lt, gt
     from operator import add, sub, mul, truediv, floordiv, neg, pos, inv, mod, pow, lshift, rshift
@@ -75,7 +76,7 @@ class EvaluateFormula(lark.Transformer):
 
 
 @lark.v_args(inline=True)
-class EvaluateMask(lark.Transformer):
+class MaskEvaluator(lark.Transformer):
     # the result of an expression is nodata whenever any of its subexpressions is nodata
     from operator import or_
 
@@ -98,17 +99,30 @@ class EvaluateMask(lark.Transformer):
         return False
 
 
+def evaluate_type(formula, env, parser, evaluator):
+    """
+    Evaluates the type of the output of a formula given a parser,
+    a corresponding evaluator class, and an environment.
+    The environment is a dict-like object (such as an `xarray.Dataset`) that maps variable names to values.
+    """
+    @lark.v_args(inline=True)
+    class TypeEvaluator(evaluator):
+        def var_name(self, key):
+            return numpy.array([], dtype=env[key.value].dtype)
+
+    return TypeEvaluator().transform(parser.parse(formula))
+
 def evaluate_data(formula, env, parser, evaluator):
     """
     Evaluates a formula given a parser, a corresponding evaluator class, and an environment.
     The environment is a dict-like object (such as an `xarray.Dataset`) that maps variable names to values.
     """
     @lark.v_args(inline=True)
-    class EvaluateData(evaluator):
+    class DataEvaluator(evaluator):
         def var_name(self, key):
             return env[key.value]
 
-    return EvaluateData().transform(parser.parse(formula))
+    return DataEvaluator().transform(parser.parse(formula))
 
 
 def evaluate_nodata_mask(formula, env, parser, evaluator):
@@ -117,9 +131,9 @@ def evaluate_nodata_mask(formula, env, parser, evaluator):
     The environment is a dict-like object (such as an `xarray.Dataset`) that maps variable names to values.
     """
     @lark.v_args(inline=True)
-    class EvaluateNodataMask(evaluator):
+    class NodataMaskEvaluator(evaluator):
         def var_name(self, key):
             # pylint: disable=invalid-unary-operand-type
             return ~valid_data_mask(env[key.value])
 
-    return EvaluateNodataMask().transform(parser.parse(formula))
+    return NodataMaskEvaluator().transform(parser.parse(formula))

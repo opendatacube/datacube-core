@@ -16,7 +16,7 @@ from datacube.utils import geometry
 from datacube.virtual import construct_from_yaml, catalog_from_yaml, VirtualProductException
 from datacube.virtual import DEFAULT_RESOLVER, Transformation
 from datacube.virtual.impl import Datacube
-from datacube.virtual.expr import EvaluateFormula, evaluate_data, formula_parser
+from datacube.virtual.expr import formula_parser, FormulaEvaluator, evaluate_data
 
 
 ##########################################
@@ -25,7 +25,7 @@ from datacube.virtual.expr import EvaluateFormula, evaluate_data, formula_parser
 
 def test_formula_parsing():
     parser = formula_parser()
-    evaluator = EvaluateFormula
+    evaluator = FormulaEvaluator
     env = dict(x=4, y=2, true=True, false=False)
 
     assert evaluate_data('x', env, parser, evaluator) == 4
