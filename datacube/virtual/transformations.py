@@ -10,11 +10,12 @@ import lark
 
 from datacube.utils.masking import make_mask as make_mask_prim
 from datacube.utils.masking import mask_invalid_data as mask_invalid_data_prim
-from datacube.utils.masking import valid_data_mask
 
 from datacube.utils.math import dtype_is_float
 
 from .impl import VirtualProductException, Transformation, Measurement
+from .expr import EvaluateFormula, EvaluateMask
+from .expr import formula_parser, evaluate_data, evaluate_nodata_mask
 
 
 def selective_apply_dict(dictionary, apply_to=None, key_map=None, value_map=None):
@@ -225,77 +226,6 @@ class Select(Transformation):
                           if measurement not in self.measurement_names])
 
 
-def formula_parser():
-    return lark.Lark("""
-                ?expr: num_expr | bool_expr
-
-                ?bool_expr: or_clause | comparison_clause
-
-                ?or_clause: or_clause "|" and_clause -> or_
-                          | or_clause "^" and_clause -> xor
-                          | and_clause
-                ?and_clause: and_clause "&" term -> and_
-                           | term
-                ?term: "not" term -> not_
-                     | "(" bool_expr ")"
-
-                ?comparison_clause: eq | ne | le | ge | lt | gt
-
-                eq: num_expr "==" num_expr
-                ne: num_expr "!=" num_expr
-                le: num_expr "<=" num_expr
-                ge: num_expr ">=" num_expr
-                lt: num_expr "<" num_expr
-                gt: num_expr ">" num_expr
-
-
-                ?num_expr: shift
-
-                ?shift: shift "<<" sum -> lshift
-                      | shift ">>" sum -> rshift
-                      | sum
-
-                ?sum: sum "+" product -> add
-                    | sum "-" product -> sub
-                    | product
-
-                ?product: product "*" atom -> mul
-                        | product "/" atom -> truediv
-                        | product "//" atom -> floordiv
-                        | product "%" atom -> mod
-                        | atom
-
-                ?atom: "-" subatom -> neg
-                     | "+" subatom -> pos
-                     | "~" subatom -> inv
-                     | subatom "**" atom -> pow
-                     | subatom
-
-                ?subatom: NAME -> var_name
-                        | FLOAT -> float_literal
-                        | INT -> int_literal
-                        | "(" num_expr ")"
-
-
-                %import common.FLOAT
-                %import common.INT
-                %import common.WS_INLINE
-                %import common.CNAME -> NAME
-
-                %ignore WS_INLINE
-                """, start='expr')
-
-
-@lark.v_args(inline=True)
-class EvaluateTree(lark.Transformer):
-    from operator import not_, or_, and_, xor
-    from operator import eq, ne, le, ge, lt, gt
-    from operator import add, sub, mul, truediv, floordiv, neg, pos, inv, mod, pow, lshift, rshift
-
-    float_literal = float
-    int_literal = int
-
-
 class Expressions(Transformation):
     """
     Calculate measurements on-the-fly using arithmetic expressions.
@@ -336,7 +266,7 @@ class Expressions(Transformation):
         parser = formula_parser()
 
         @lark.v_args(inline=True)
-        class EvaluateType(EvaluateTree):
+        class EvaluateType(EvaluateFormula):
             def var_name(self, key):
                 return numpy.array([], dtype=input_measurements[key.value].dtype)
 
@@ -367,41 +297,6 @@ class Expressions(Transformation):
     def compute(self, data):
         parser = formula_parser()
 
-        @lark.v_args(inline=True)
-        class EvaluateData(EvaluateTree):
-            def var_name(self, key):
-                return data[key.value]
-
-        @lark.v_args(inline=True)
-        class EvaluateNodataMask(lark.Transformer):
-            # the result of an expression is nodata whenever any of its subexpressions is nodata
-            from operator import or_
-
-            # pylint: disable=invalid-name
-            and_ = _xor = or_
-            eq = ne = le = ge = lt = gt = or_
-            add = sub = mul = truediv = floordiv = mod = pow = lshift = rshift = or_
-
-            def not_(self, value):
-                return value
-
-            neg = pos = inv = not_
-
-            @staticmethod
-            def float_literal(value):
-                return False
-
-            @staticmethod
-            def int_literal(value):
-                return False
-
-            def var_name(self, key):
-                # pylint: disable=invalid-unary-operand-type
-                return ~valid_data_mask(data[key.value])
-
-        ev_data = EvaluateData()
-        ev_mask = EvaluateNodataMask()
-
         def result(output_var, output_desc):
             # pylint: disable=invalid-unary-operand-type
 
@@ -413,8 +308,7 @@ class Expressions(Transformation):
             dtype = output_desc.get('dtype')
 
             formula = output_desc['formula']
-            tree = parser.parse(formula)
-            result = ev_data.transform(tree)
+            result = evaluate_data(formula, data, parser, EvaluateFormula)
             result.attrs['crs'] = data.attrs['crs']
             if nodata is not None:
                 result.attrs['nodata'] = nodata
@@ -435,7 +329,7 @@ class Expressions(Transformation):
                 result = result.astype(dtype)
 
             dtype = result.dtype
-            mask = ev_mask.transform(tree)
+            mask = evaluate_nodata_mask(formula, data, parser, EvaluateMask)
 
             if numpy.dtype(dtype) == numpy.bool:
                 # any operation on nodata should evaluate to False
