@@ -6,7 +6,6 @@ from typing import Optional, Collection
 
 import numpy
 import xarray
-import lark
 
 from datacube.utils.masking import make_mask as make_mask_prim
 from datacube.utils.masking import mask_invalid_data as mask_invalid_data_prim
@@ -14,8 +13,8 @@ from datacube.utils.masking import mask_invalid_data as mask_invalid_data_prim
 from datacube.utils.math import dtype_is_float
 
 from .impl import VirtualProductException, Transformation, Measurement
-from .expr import EvaluateFormula, EvaluateMask
-from .expr import formula_parser, evaluate_data, evaluate_nodata_mask
+from .expr import FormulaEvaluator, MaskEvaluator
+from .expr import formula_parser, evaluate_data, evaluate_nodata_mask, evaluate_type
 
 
 def selective_apply_dict(dictionary, apply_to=None, key_map=None, value_map=None):
@@ -265,21 +264,13 @@ class Expressions(Transformation):
     def measurements(self, input_measurements):
         parser = formula_parser()
 
-        @lark.v_args(inline=True)
-        class EvaluateType(EvaluateFormula):
-            def var_name(self, key):
-                return numpy.array([], dtype=input_measurements[key.value].dtype)
-
-        ev = EvaluateType()
-
         def deduce_type(output_var, output_desc):
             if 'dtype' in output_desc:
                 return numpy.dtype(output_desc['dtype'])
 
             formula = output_desc['formula']
-            tree = parser.parse(formula)
+            result = evaluate_type(formula, input_measurements, parser, FormulaEvaluator)
 
-            result = ev.transform(tree)
             return result.dtype
 
         def measurement(output_var, output_desc):
@@ -308,7 +299,7 @@ class Expressions(Transformation):
             dtype = output_desc.get('dtype')
 
             formula = output_desc['formula']
-            result = evaluate_data(formula, data, parser, EvaluateFormula)
+            result = evaluate_data(formula, data, parser, FormulaEvaluator)
             result.attrs['crs'] = data.attrs['crs']
             if nodata is not None:
                 result.attrs['nodata'] = nodata
@@ -329,7 +320,7 @@ class Expressions(Transformation):
                 result = result.astype(dtype)
 
             dtype = result.dtype
-            mask = evaluate_nodata_mask(formula, data, parser, EvaluateMask)
+            mask = evaluate_nodata_mask(formula, data, parser, MaskEvaluator)
 
             if numpy.dtype(dtype) == numpy.bool:
                 # any operation on nodata should evaluate to False
