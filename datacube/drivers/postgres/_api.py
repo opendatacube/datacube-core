@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 
 # We often have one-arg-per column, so these checks aren't so useful.
 # pylint: disable=too-many-arguments,too-many-public-methods,too-many-lines
