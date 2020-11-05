@@ -26,3 +26,6 @@ twine
 psycopg2 --no-binary=psycopg2
 
 datacube[all]
+
+# celery is failing tests, so pinning to known working
+celery==4.4.7
