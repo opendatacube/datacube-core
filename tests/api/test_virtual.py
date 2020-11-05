@@ -16,10 +16,28 @@ from datacube.utils import geometry
 from datacube.virtual import construct_from_yaml, catalog_from_yaml, VirtualProductException
 from datacube.virtual import DEFAULT_RESOLVER, Transformation
 from datacube.virtual.impl import Datacube
+from datacube.virtual.expr import EvaluateFormula, evaluate_data, formula_parser
 
 
 ##########################################
 # Set up some common test data and fixtures
+
+
+def test_formula_parsing():
+    parser = formula_parser()
+    evaluator = EvaluateFormula
+    env = dict(x=4, y=2, true=True, false=False)
+
+    assert evaluate_data('x', env, parser, evaluator) == 4
+    assert evaluate_data('-y', env, parser, evaluator) == -2
+    assert evaluate_data('x / y', env, parser, evaluator) == 2
+    assert evaluate_data('(x + y) * 3', env, parser, evaluator) == 18
+    assert not evaluate_data('x == y', env, parser, evaluator)
+    assert not evaluate_data('true == false', env, parser, evaluator)
+    assert evaluate_data('not (true == false)', env, parser, evaluator)
+    assert evaluate_data('x > y', env, parser, evaluator)
+    assert not evaluate_data('(x > y) & (x < y)', env, parser, evaluator)
+
 
 PRODUCT_LIST = ['ls7_pq_albers', 'ls8_pq_albers', 'ls7_nbar_albers', 'ls8_nbar_albers']
 
