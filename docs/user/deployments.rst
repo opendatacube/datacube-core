@@ -10,14 +10,14 @@ Digital Earth Australia
 If you are using `Digital Earth Australia`_ at the :term:`NCI`, see the
 `Digital Earth Australia User Guide`_.
 
-.. _`Digital Earth Australia`: http://www.ga.gov.au/dea
-.. _`Digital Earth Australia User Guide`: http://geoscienceaustralia.github.io/digitalearthau/
+.. _`Digital Earth Australia`: https://www.ga.gov.au/dea
+.. _`Digital Earth Australia User Guide`: https://docs.dea.ga.gov.au/
 
 
 
 Digital Earth Africa
 --------------------
-http://www.ga.gov.au/digitalearthafrica
+https://www.digitalearthafrica.org/
 
 Swiss Data Cube
 ---------------
