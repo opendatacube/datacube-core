@@ -192,10 +192,10 @@ looking.
     * `MCD43A4 - Nadir BRDF-Adjusted Reflectance 16-Day L3 Global 500m`__
 
 __ https://espa.cr.usgs.gov/
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1_v006
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2_v006
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3_v006
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a4_v006
+__ https://lpdaac.usgs.gov/products/mcd43a1v006/
+__ https://lpdaac.usgs.gov/products/mcd43a2v006/
+__ https://lpdaac.usgs.gov/products/mcd43a3v006/
+__ https://lpdaac.usgs.gov/products/mcd43a4v006/
 
 Once you have downloaded some data, it will need :ref:`metadata preparation
 <prepare-scripts>` before use in the Data Cube.

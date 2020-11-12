@@ -1,10 +1,11 @@
-======
-Ubuntu
-======
+========
+ Ubuntu
+========
 
 Miniconda
-~~~~~~~~~
-1.  Download and install Miniconda using the following instructions https://conda.io/docs/user-guide/install/linux.html
+=========
+1. Download and install Miniconda using the following instructions
+   https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html
 
 2. Open your favourite terminal to execute the following commands.
 
@@ -13,7 +14,7 @@ Miniconda
 Datacube is now installed and can be used in a terminal by activating the `cubeenv` environment.
 
 Manual Installation (Fallback)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+==============================
 Only follow these steps if the Miniconda installation does not suit your needs.
 
 
@@ -21,6 +22,7 @@ Required software
 -----------------
 
 HDF5, and netCDF4::
+-------------------
 
    apt-get install libhdf5-serial-dev libnetcdf-dev
 

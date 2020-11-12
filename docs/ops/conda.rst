@@ -1,14 +1,14 @@
-=======================
-Miniconda (recommended)
-=======================
+=========================
+ Miniconda (recommended)
+=========================
 
 Install Miniconda
------------------
+=================
 
-Follow conda installation guide for your platform: https://conda.io/docs/install/quick.html
+Follow conda installation guide for your platform: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
 
 Configure Miniconda
--------------------
+===================
 
 Add conda-forge channel
 
@@ -20,7 +20,7 @@ conda-forge channel provides multitude of community maintained packages.
 Find out more about it here https://conda-forge.org/
 
 Create the environment
-----------------------
+======================
 
 .. code::
 
@@ -42,7 +42,7 @@ Find out more about managing virtual environments here https://conda.io/docs/usi
 
 
 Install other packages
-----------------------
+======================
 
 .. code::
 

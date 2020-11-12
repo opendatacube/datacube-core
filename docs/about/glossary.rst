@@ -74,7 +74,7 @@ This page lists definitions for terms used in the Open Data Cube and this manual
 
    OGC
    Open Geospatial Consortium
-      `Open Geospatial Consortium <http://www.opengeospatial.org>`_. An organisation which
+      `Open Geospatial Consortium <https://www.ogc.org>`_. An organisation which
       makes geospatial standards, especially relating to web services.
 
    PostgreSQL
@@ -109,5 +109,4 @@ This page lists definitions for terms used in the Open Data Cube and this manual
       languages. It is used for all on disk metadata files and product
       definitions in the Data Cube.
 
-      For more information on the YAML standard see http://yaml.org/.
-
+      For more information on the YAML standard see https://yaml.org/.

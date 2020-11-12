@@ -520,7 +520,7 @@ v1.4.0 (17 May 2017)
 
 - Adds more convenient year/date range search expressions (see :pull:`226`)
 
-- Adds a :ref:`simple replication utility <replication>` (see :pull:`223`)
+- Adds a **simple replication utility** (see :pull:`223`)
 
 - Fixed issue reading products without embedded CRS info, such as ``bom_rainfall_grid`` (see :issue:`224`)
 
