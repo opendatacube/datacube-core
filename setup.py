@@ -29,7 +29,7 @@ extras_require = {
     'distributed': ['distributed', 'dask[distributed]'],
     'doc': doc_require,
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
-    'celery': ['celery>=4', 'redis'],
+    'celery': ['celery>=4,<5', 'redis'],
     's3': ['boto3'],
     'test': tests_require,
     'cf': ['compliance-checker>=4.0.0'],
