@@ -54,7 +54,7 @@ FROM ${ORG}/geobase:runner${V_BASE}
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 RUN apt-get update \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-missing --no-install-recommends \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-missing --no-install-recommends --allow-change-held-packages \
   # datacube tests need redis
   redis-server \
   # include db for running tests
