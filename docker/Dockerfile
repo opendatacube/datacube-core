@@ -48,7 +48,7 @@ RUN find /wheels -type f -name '*whl' > /tmp/constraints.txt \
 #################################################################################
 # Runner stage
 #################################################################################
-FROM opendatacube/geobase:runner${V_BASE}
+FROM ${ORG}/geobase:runner${V_BASE}
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
