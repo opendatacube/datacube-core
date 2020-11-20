@@ -67,8 +67,6 @@ def _write_cog(pix: np.ndarray,
         blocksize = 512
     if ovr_blocksize is None:
         ovr_blocksize = blocksize
-    if overview_levels is None:
-        overview_levels = [2 ** i for i in range(1, 6)]
     if overview_resampling is None:
         overview_resampling = "nearest"
 
@@ -89,6 +87,12 @@ def _write_cog(pix: np.ndarray,
 
     assert geobox.shape == (h, w)
 
+    if overview_levels is None:
+        if min(w, h) < 512:
+            overview_levels = []
+        else:
+            overview_levels = [2 ** i for i in range(1, 6)]
+
     if fname != ":mem:":
         path = check_write_path(
             fname, overwrite
@@ -97,7 +101,7 @@ def _write_cog(pix: np.ndarray,
     resampling = rasterio.enums.Resampling[overview_resampling]
 
     if (blocksize % 16) != 0:
-        warnings.warn(f"Block size must be a multiple of 16, will be adjusted")
+        warnings.warn("Block size must be a multiple of 16, will be adjusted")
 
     rio_opts = dict(
         width=w,
