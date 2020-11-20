@@ -62,14 +62,15 @@ jobs:
     - name: Build Test Runner Docker
       run: |
         docker build \
-          --tag        ${ORG}/${IMAGE}:latest \
+          --tag ${ORG}/${IMAGE}:latest \
           ./docker/
 
     - name: Verify Docker Image
       run: |
         ./check-code.sh --with-docker integration_tests
 
-    - name: DockerHub Push
+    - name: DockerHub Login
+      id: dkr
       if: |
         github.event_name == 'push' && (
           github.ref == 'refs/heads/develop'
@@ -78,7 +79,36 @@ jobs:
         if [ -n "${{ secrets.DockerPassword }}" ]; then
            echo "Login to DockerHub as ${DOCKER_USER}"
            echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
-           docker push ${ORG}/${IMAGE}:latest
+           echo "::set-output name=logged_in::yes"
         else
            echo "Set DockerPassword secret to push to docker"
         fi
+
+    - name: DockerHub Push
+      if: |
+        github.event_name == 'push' && (
+          github.ref == 'refs/heads/develop'
+          ) && steps.dkr.outputs.logged_in == 'yes'
+      run: |
+        if [ -n "${{ secrets.DockerPassword }}" ]; then
+           docker push ${ORG}/${IMAGE}:latest
+        fi
+
+    - name: Build Test Runner Docker (20.04 with python 3.8)
+      run: |
+        docker build \
+          --build-arg V_BASE=-3.1.3 \
+          --build-arg V_PG=12 \
+          --tag ${ORG}/${IMAGE}:py38 \
+          ./docker/
+
+    - name: DockerHub Push
+      if: |
+        github.event_name == 'push' && (
+          github.ref == 'refs/heads/develop'
+          ) && steps.dkr.outputs.logged_in == 'yes'
+      run: |
+        if [ -n "${{ secrets.DockerPassword }}" ]; then
+           docker push ${ORG}/${IMAGE}:py38
+        fi
+
