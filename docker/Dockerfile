@@ -6,6 +6,7 @@
 ##
 ARG ORG=opendatacube
 ARG V_BASE=-3.0.4
+ARG V_PG=10
 FROM ${ORG}/geobase:wheels${V_BASE} as env_builder
 
 # Set the locale, this is required for some of the Python packages
@@ -58,8 +59,8 @@ RUN apt-get update \
   redis-server \
   # include db for running tests
   postgresql \
-  postgresql-client-10 \
-  postgresql-10 \
+  postgresql-client-${V_PG} \
+  postgresql-${V_PG} \
   # to become test user
   sudo \
   # git is needed for sdist|bdist_wheel
@@ -75,7 +76,7 @@ RUN mkdir -p /etc/pki/tls/certs \
 
 # prep db
 RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/postgresql \
-  && sudo -u postgres "/usr/lib/postgresql/10/bin/initdb" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
+  && sudo -u postgres "$(find /usr/lib/postgresql/ -type f -name initdb)" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
 
 RUN groupadd --gid 1000 odc \
   && useradd --gid 1000 \
