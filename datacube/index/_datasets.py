@@ -157,10 +157,12 @@ class DatasetResource(object):
         Add ``dataset`` to the index. No-op if it is already present.
 
         :param dataset: dataset to add
+
         :param with_lineage:
-          ``True|None`` -- attempt adding lineage datasets if missing
-          ``False``     -- record lineage relations, but do not attempt adding
-                           lineage datasets to the db
+           - ``True|None`` attempt adding lineage datasets if missing
+           - ``False`` record lineage relations, but do not attempt
+             adding lineage datasets to the db
+
         :param kwargs: only used to support deprecated behaviour
         :rtype: Dataset
         """
