@@ -89,7 +89,7 @@ def test_cog_file_dask(tmpdir):
     assert dask.is_dask_collection(xx)
 
     path = pp / "cog.tif"
-    ff = write_cog(xx, path)
+    ff = write_cog(xx, path, overview_levels=[2, 4])
     assert isinstance(ff, Delayed)
     assert path.exists() is False
     assert ff.compute() == path
