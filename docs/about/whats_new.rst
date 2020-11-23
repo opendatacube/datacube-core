@@ -8,11 +8,11 @@ What's New
 v1.8.4 (???)
 =======================
 
-- Removed example and contributed notebooks from the repository. Better notebook_ examples exist.
+- Removed example and contributed notebooks from the repository. Better `notebook examples`_ exist.
 - Removed datacube_apps, as these are not used and not maintained.
-- Add `cloud_cover` to EO3 metadata
+- Add ``cloud_cover`` to EO3 metadata
 
-.. _notebooks: https://github.com/GeoscienceAustralia/dea-notebooks/
+.. _`notebook examples`: https://github.com/GeoscienceAustralia/dea-notebooks/
 
 
 v1.8.3 (18 August 2020)
@@ -29,7 +29,7 @@ v1.8.2 (10 July 2020)
 =====================
 
 - Fix regressions in ``.geobox`` (:pull:`982`)
-- Expand list of supported ``dtype``s to include complex values (:pull:`989`)
+- Expand list of supported ``dtype`` values to include complex values (:pull:`989`)
 - Can now specify dataset location directly in the yaml document (:issue:`990`, :pull:`989`)
 - Better error reporting in ``datacube dataset update`` (:pull:`983`)
 
