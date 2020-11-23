@@ -20,7 +20,7 @@ Other methods to build and install the Data Cube are maintained by the community
 .. toctree::
    :maxdepth: 2
 
+   ubuntu
    conda
    windows
-   ubuntu
    macosx

@@ -16,6 +16,11 @@ Datacube is now installed and can be used in the Anaconda Prompt by activating t
 Manual Installation (Fallback)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+   Instructions given in this section have not been updated or tested recently.
+   We strongly recommend using Conda based installation on Windows platforms.
+
 Only follow these steps if the Miniconda installation does not suit your needs.
 
 Python 3 environment
