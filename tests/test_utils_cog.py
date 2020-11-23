@@ -19,8 +19,10 @@ from datacube.testutils.io import native_load, rio_slurp_xarray, rio_slurp
 from datacube.utils.cog import write_cog, to_cog, _write_cog
 
 
-def gen_test_data(prefix, dask=False):
+def gen_test_data(prefix, dask=False, shape=None):
     w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
+    if shape is not None:
+        h, w = shape
 
     aa = mk_test_image(w, h, dtype, nodata, nodata_width=ndw)
 
@@ -101,9 +103,13 @@ def test_cog_file_dask(tmpdir):
     assert yy.nodata == xx.nodata
 
 
-def test_cog_mem(tmpdir):
+@pytest.mark.parametrize("shape", [
+    None,
+    (1024, 512)
+])
+def test_cog_mem(tmpdir, shape):
     pp = Path(str(tmpdir))
-    xx, ds = gen_test_data(pp)
+    xx, ds = gen_test_data(pp, shape=shape)
 
     # write to memory 1
     bb = write_cog(xx, ":mem:")
