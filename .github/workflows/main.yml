@@ -15,12 +15,16 @@ on:
       - '!docs/**'
       - '!contrib/**'
 
-env:
-  DKR: opendatacube/datacube-tests:latest
-
 jobs:
   main:
     runs-on: ubuntu-latest
+
+    strategy:
+      max-parallel: 2
+      matrix:
+        docker_image:
+          - opendatacube/datacube-tests:latest
+          - opendatacube/datacube-tests:py38
 
     steps:
     - uses: actions/checkout@v1
@@ -33,15 +37,20 @@ jobs:
         push_dea=no
         push_pypi=no
         push_test_pypi=no
+        primary=no
+
+        if [ "${{ matrix.docker_image }}" == "opendatacube/datacube-tests:latest" ]; then
+           primary=yes
+        fi
 
         case "${GITHUB_REF}" in
         "refs/heads/develop")
-             push_dea=yes
+             push_dea=${primary}
              ;;
         "refs/tags/"*)
-             push_pypi=yes
-             push_test_pypi=yes
-             push_dea=yes
+             push_pypi=${primary}
+             push_test_pypi=${primary}
+             push_dea=${primary}
              ;;
         "refs/heads/"*)
              ;;
@@ -51,20 +60,20 @@ jobs:
              ;;
         esac
 
-        for x in push_pypi push_test_pypi push_dea; do
+        for x in primary push_pypi push_test_pypi push_dea; do
            echo "::set-output name=${x}::${!x}"
         done
 
     - name: Pull Docker
       run: |
-        docker pull ${DKR}
+        docker pull "${{ matrix.docker_image }}"
 
     - name: Build Packages
       run: |
         cat <<EOF | docker run --rm -i  \
                   -v $(pwd):/src/datacube-core \
                   -e SKIP_DB=yes \
-                  ${DKR} bash -
+                  ${{ matrix.docker_image }} bash -
         python setup.py bdist_wheel sdist
         ls -lh ./dist/
         twine check ./dist/*
@@ -75,7 +84,7 @@ jobs:
         docker run --rm  \
           -v $(pwd):/src/datacube-core \
           -e SKIP_DB=yes \
-          ${DKR} \
+          ${{ matrix.docker_image }} \
           pycodestyle tests integration_tests examples --max-line-length 120
 
     - name: Lint Code
@@ -83,14 +92,14 @@ jobs:
         docker run --rm  \
           -v $(pwd):/src/datacube-core \
           -e SKIP_DB=yes \
-          ${DKR} \
+          ${{ matrix.docker_image }} \
           pylint -j 2 --reports no datacube
 
     - name: Run Tests
       run: |
         docker run --rm  \
           -v $(pwd):/src/datacube-core \
-          ${DKR} \
+          ${{ matrix.docker_image }} \
           pytest -r a \
             --cov datacube \
             --cov-report=xml \
@@ -122,7 +131,7 @@ jobs:
           docker run --rm  \
             -v $(pwd):/src/datacube-core \
             -e SKIP_DB=yes \
-            ${DKR} \
+            ${{ matrix.docker_image }} \
             twine upload \
               --verbose \
               --non-interactive \
@@ -146,7 +155,7 @@ jobs:
           docker run --rm  \
             -v $(pwd):/src/datacube-core \
             -e SKIP_DB=yes \
-            ${DKR} \
+            ${{ matrix.docker_image }} \
             twine upload \
               --verbose \
               --non-interactive \
@@ -162,6 +171,7 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PyPiToken }}
 
     - name: Upload coverage to Codecov
+      if: steps.cfg.outputs.primary == 'yes'
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CodeCovToken }}
