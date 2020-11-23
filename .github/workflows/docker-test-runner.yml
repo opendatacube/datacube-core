@@ -27,6 +27,12 @@ jobs:
   docker:
     runs-on: ubuntu-latest
 
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [3.6, 3.8]
+
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -35,7 +41,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v1
       with:
-        python-version: '3.6'
+        python-version: ${{ matrix.python-version }}
 
     # This is just to get dependencies right, we do not keep datacube in the final image
     - name: Install packaging dependencies
@@ -60,10 +66,21 @@ jobs:
         twine check ./docker/dist/*
 
     - name: Build Test Runner Docker
+      id: build
       run: |
-        docker build \
-          --tag ${ORG}/${IMAGE}:latest \
-          ./docker/
+        if [ "${{ matrix.python-version }}" == "3.8" ]; then
+          echo ::set-output name=docker_image::${ORG}/${IMAGE}:py38
+          docker build \
+            --build-arg V_BASE=-3.1.3 \
+            --build-arg V_PG=12 \
+            --tag ${ORG}/${IMAGE}:py38 \
+            ./docker/
+        else
+          echo ::set-output name=docker_image::${ORG}/${IMAGE}:latest
+          docker build \
+              --tag ${ORG}/${IMAGE}:latest \
+              ./docker/
+        fi
 
     - name: Verify Docker Image
       run: |
@@ -91,24 +108,5 @@ jobs:
           ) && steps.dkr.outputs.logged_in == 'yes'
       run: |
         if [ -n "${{ secrets.DockerPassword }}" ]; then
-           docker push ${ORG}/${IMAGE}:latest
+           docker push "${{ steps.build.outputs.docker_image }}"
         fi
-
-    - name: Build Test Runner Docker (20.04 with python 3.8)
-      run: |
-        docker build \
-          --build-arg V_BASE=-3.1.3 \
-          --build-arg V_PG=12 \
-          --tag ${ORG}/${IMAGE}:py38 \
-          ./docker/
-
-    - name: DockerHub Push
-      if: |
-        github.event_name == 'push' && (
-          github.ref == 'refs/heads/develop'
-          ) && steps.dkr.outputs.logged_in == 'yes'
-      run: |
-        if [ -n "${{ secrets.DockerPassword }}" ]; then
-           docker push ${ORG}/${IMAGE}:py38
-        fi
-
