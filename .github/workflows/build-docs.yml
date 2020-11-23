@@ -1,6 +1,7 @@
 name: build-docs
 
 on:
+  pull_request:
   push:
     branches:
       - develop
