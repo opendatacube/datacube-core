@@ -33,6 +33,7 @@ def vsi_join(base: str, path: str) -> str:
 
         Basically just base/path, but taking care of trailing `/` in base
     """
+
     return base.rstrip('/') + '/' + path
 
 
@@ -229,5 +230,6 @@ register_scheme(
     's3',         # `s3://...`      -- AWS S3 Object Store
     'gs',         # `gs://...`      -- Google Cloud Storage
     'wasb',       # `wasb[s]://...` -- Windows Azure Storage Blob
-    'wasbs'
+    'wasbs',
+    'az',
 )
