@@ -33,7 +33,6 @@ def vsi_join(base: str, path: str) -> str:
 
         Basically just base/path, but taking care of trailing `/` in base
     """
-
     return base.rstrip('/') + '/' + path
 
 
