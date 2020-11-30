@@ -11,6 +11,7 @@ v1.8.4 (???)
 - Removed example and contributed notebooks from the repository. Better `notebook examples`_ exist.
 - Removed datacube_apps, as these are not used and not maintained.
 - Add ``cloud_cover`` to EO3 metadata
+- Add ``erosion`` functionality to Virtual products' ``ApplyMask`` to supplement existing ``dilation`` functionality (:pull:`1049`)
 
 .. _`notebook examples`: https://github.com/GeoscienceAustralia/dea-notebooks/
 
