@@ -88,14 +88,16 @@ class ApplyMask(Transformation):
     :param apply_to: list of names of measurements to apply the mask to
     :param preserve_dtype: whether to cast back to original ``dtype`` after masking
     :param fallback_dtype: default ``dtype`` for masked measurements
+    :param erosion: the erosion to apply to mask in pixels
     :param dilation: the dilation to apply to mask in pixels
     """
     def __init__(self, mask_measurement_name, apply_to: Optional[Collection[str]] = None,
-                 preserve_dtype=True, fallback_dtype='float32', dilation: int = 0):
+                 preserve_dtype=True, fallback_dtype='float32', erosion: int = 0, dilation: int = 0):
         self.mask_measurement_name = mask_measurement_name
         self.apply_to = apply_to
         self.preserve_dtype = preserve_dtype
         self.fallback_dtype = fallback_dtype
+        self.erosion = int(erosion)
         self.dilation = int(dilation)
 
     def measurements(self, input_measurements):
@@ -118,19 +120,25 @@ class ApplyMask(Transformation):
         mask = data[self.mask_measurement_name]
         rest = data.drop(self.mask_measurement_name)
 
-        def dilate(array):
-            """Dilation e.g. for the mask"""
-            # e.g. kernel = [[1] * 7] * 7 # blocky 3-pixel dilation
-            # pylint: disable=invalid-unary-operand-type
-            y, x = numpy.ogrid[-self.dilation:(self.dilation+1), -self.dilation:(self.dilation+1)]
-            kernel = ((x * x) + (y * y) <= (self.dilation + 0.5) ** 2)  # disk-like `self.dilation` radial dilation
-            return ~scipy.ndimage.binary_dilation(~array.astype(numpy.bool),
-                                                  structure=kernel.reshape((1, )+kernel.shape))
-
+        if self.erosion > 0:
+            from skimage.morphology import binary_erosion, disk
+            kernel = disk(self.erosion)
+            mask = ~xarray.apply_ufunc(binary_erosion, 
+                                       ~mask, 
+                                       kernel.reshape((1, ) + kernel.shape),
+                                       output_dtypes=[numpy.bool], 
+                                       dask='parallelized',
+                                       keep_attrs=True)
+            
         if self.dilation > 0:
-            import scipy.ndimage
-            mask = xarray.apply_ufunc(dilate, mask, output_dtypes=[numpy.bool], dask='parallelized',
-                                      keep_attrs=True)
+            from skimage.morphology import binary_dilation, disk
+            kernel = disk(self.dilation)
+            mask = ~xarray.apply_ufunc(binary_dilation, 
+                                       ~mask, 
+                                       kernel.reshape((1, ) + kernel.shape),
+                                       output_dtypes=[numpy.bool], 
+                                       dask='parallelized',
+                                       keep_attrs=True)
 
         def worker(key, value):
             if self.preserve_dtype:
