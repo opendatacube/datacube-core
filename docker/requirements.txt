@@ -6,6 +6,7 @@ twine
 
 #no binary flags
 --no-binary=pyproj,\
- shapely,\
- rasterio,\
- netcdf4
+shapely,\
+rasterio,\
+fiona,\
+netcdf4
