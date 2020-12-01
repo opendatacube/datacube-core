@@ -458,8 +458,8 @@ def box_overlap(src_shape, dst_shape, ST, tol):
             x = round(x)
         return x
 
-    ty = _round_to_near_int(ty, tol[0])
-    tx = _round_to_near_int(tx, tol[1])
+    ty = _round_to_near_int(ty, tol)
+    tx = _round_to_near_int(tx, tol)
 
     s0, d0 = compute_axis_overlap(src_shape[0], dst_shape[0], sy, ty)
     s1, d1 = compute_axis_overlap(src_shape[1], dst_shape[1], sx, tx)
@@ -635,9 +635,7 @@ def compute_reproject_roi(src, dst, tol=0.05, padding=None, align=None):
         is_st = is_affine_st(tr.linear)
 
         if tight_ok and is_st:
-            # Calculate tolerance in source space scaled by resolution
-            tolerance = tuple(abs(tol*res) for res in src.resolution)
-            roi_src, roi_dst = box_overlap(src.shape, dst.shape, tr.back.linear, tolerance)
+            roi_src, roi_dst = box_overlap(src.shape, dst.shape, tr.back.linear, tol)
         else:
             padding = 1 if padding is None else padding
             roi_src, roi_dst = compute_roi(src, dst, tr, 2, padding, align)
