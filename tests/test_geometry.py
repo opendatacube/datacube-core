@@ -263,13 +263,13 @@ def test_ops():
 
     # test sides
     box = geometry.box(1, 2, 11, 22, epsg4326)
-    ll = list(geometry.sides(box))
-    assert all(l.crs is epsg4326 for l in ll)
-    assert len(ll) == 4
-    assert ll[0] == geometry.line([(1, 2), (1, 22)], epsg4326)
-    assert ll[1] == geometry.line([(1, 22), (11, 22)], epsg4326)
-    assert ll[2] == geometry.line([(11, 22), (11, 2)], epsg4326)
-    assert ll[3] == geometry.line([(11, 2), (1, 2)], epsg4326)
+    lines = list(geometry.sides(box))
+    assert all(line.crs is epsg4326 for line in lines)
+    assert len(lines) == 4
+    assert lines[0] == geometry.line([(1, 2), (1, 22)], epsg4326)
+    assert lines[1] == geometry.line([(1, 22), (11, 22)], epsg4326)
+    assert lines[2] == geometry.line([(11, 22), (11, 2)], epsg4326)
+    assert lines[3] == geometry.line([(11, 2), (1, 2)], epsg4326)
 
 
 def test_geom_split():
@@ -739,7 +739,7 @@ def test_geobox_xr_coords():
 
     cc = gbox.xr_coords(with_crs=True)
     assert list(cc) == ['y', 'x', 'spatial_ref']
-    assert cc['spatial_ref'].shape is ()
+    assert cc['spatial_ref'].shape == ()
     assert cc['spatial_ref'].attrs['spatial_ref'] == gbox.crs.wkt
     assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
 
@@ -751,7 +751,7 @@ def test_geobox_xr_coords():
     gbox = GeoBox(w, h, A, 'epsg:4326')
     cc = gbox.xr_coords(with_crs=True)
     assert list(cc) == ['latitude', 'longitude', 'spatial_ref']
-    assert cc['spatial_ref'].shape is ()
+    assert cc['spatial_ref'].shape == ()
     assert cc['spatial_ref'].attrs['spatial_ref'] == gbox.crs.wkt
     assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
 
@@ -1356,6 +1356,24 @@ def test_compute_reproject_roi_issue647():
 
     assert roi_is_empty(rr.roi_src)
     assert roi_is_empty(rr.roi_dst)
+
+
+def test_compute_reproject_roi_issue1047():
+    """ `compute_reproject_roi(geobox, geobox[roi])` sometimes returns
+    `src_roi != roi`, when `geobox` has (1) tiny pixels and (2) oddly
+    sized `alignment`.
+
+    Test this issue is resolved.
+    """
+    geobox = GeoBox(3000, 3000,
+                    Affine(0.00027778, 0.0, 148.72673054908861,
+                           0.0, -0.00027778, -34.98825802556622), "EPSG:4326")
+    src_roi = np.s_[2800:2810, 10:30]
+    rr = compute_reproject_roi(geobox, geobox[src_roi])
+
+    assert rr.is_st is True
+    assert rr.roi_src == src_roi
+    assert rr.roi_dst == np.s_[0:10, 0:20]
 
 
 def test_window_from_slice():
