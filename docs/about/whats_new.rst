@@ -12,6 +12,7 @@ v1.8.4 (???)
 - Removed datacube_apps, as these are not used and not maintained.
 - Add ``cloud_cover`` to EO3 metadata
 - Add ``erosion`` functionality to Virtual products' ``ApplyMask`` to supplement existing ``dilation`` functionality (:pull:`1049`)
+- Fix numeric precision issues in ``compute_reproject_roi`` when pixel size is small. (:issue:`1047`)
 
 .. _`notebook examples`: https://github.com/GeoscienceAustralia/dea-notebooks/
 

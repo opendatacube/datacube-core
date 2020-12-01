@@ -435,7 +435,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> Tuple[slice, s
     return (src, dst)
 
 
-def box_overlap(src_shape, dst_shape, ST):
+def box_overlap(src_shape, dst_shape, ST, tol):
     """
     Given two image planes whose coordinate systems are related via scale and
     translation only, find overlapping regions within both.
@@ -444,10 +444,22 @@ def box_overlap(src_shape, dst_shape, ST):
     :param dst_shape: Shape of destination image plane
     :param        ST: Affine transform with only scale/translation,
                       direction is: Xsrc = ST*Xdst
+    :param       tol: Sub-pixel translation tolerance that's scaled by resolution.
     """
+    from datacube.utils.math import is_almost_int
+
     (sx, _, tx,
      _, sy, ty,
      *_) = ST
+
+    def _round_to_near_int(x, tol):
+        tol = min(0.5, tol)
+        if is_almost_int(x, tol):
+            x = round(x)
+        return x
+
+    ty = _round_to_near_int(ty, tol[0])
+    tx = _round_to_near_int(tx, tol[1])
 
     s0, d0 = compute_axis_overlap(src_shape[0], dst_shape[0], sy, ty)
     s1, d1 = compute_axis_overlap(src_shape[1], dst_shape[1], sx, tx)
@@ -557,7 +569,7 @@ def roi_from_points(xy, shape, padding=0, align=None):
     return to_roi(yy, xx)
 
 
-def compute_reproject_roi(src, dst, padding=None, align=None):
+def compute_reproject_roi(src, dst, tol=0.05, padding=None, align=None):
     """Given two GeoBoxes find the region within the source GeoBox that overlaps
     with the destination GeoBox, and also compute the scale factor (>1 means
     shrink). Scale is chosen such that if you apply it to the source image
@@ -588,6 +600,8 @@ def compute_reproject_roi(src, dst, padding=None, align=None):
 
     - No padding beyond sub-pixel alignment if Scale+Translation
     - 1 pixel source padding in all other cases
+
+    :param tol: Sub-pixel translation tolerance as a percentage of resolution.
 
     :returns: SimpleNamespace with following fields:
      .roi_src    : (slice, slice)
@@ -621,7 +635,9 @@ def compute_reproject_roi(src, dst, padding=None, align=None):
         is_st = is_affine_st(tr.linear)
 
         if tight_ok and is_st:
-            roi_src, roi_dst = box_overlap(src.shape, dst.shape, tr.back.linear)
+            # Calculate tolerance in source space scaled by resolution
+            tolerance = tuple(abs(tol*res) for res in src.resolution)
+            roi_src, roi_dst = box_overlap(src.shape, dst.shape, tr.back.linear, tolerance)
         else:
             padding = 1 if padding is None else padding
             roi_src, roi_dst = compute_roi(src, dst, tr, 2, padding, align)
