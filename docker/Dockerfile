@@ -7,44 +7,20 @@
 ARG ORG=opendatacube
 ARG V_BASE=-3.0.4
 ARG V_PG=10
-FROM ${ORG}/geobase:wheels${V_BASE} as env_builder
+FROM ${ORG}/geobase:builder${V_BASE} as env_builder
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 
+COPY assets/mkenv /usr/bin/
+COPY constraints.txt /conf/constraints.txt
 COPY requirements.txt /conf/requirements.txt
 COPY ./dist/datacube-*.whl /conf/
 
-RUN find /wheels -type f -name '*whl' > /tmp/constraints.txt \
-  && find /conf -type f -name 'datacube-*.whl' | head -1 >> /tmp/constraints.txt \
-  && mkdir -p /wheels-tmp \
-  && echo "Constraints:" \
-  && cat /tmp/constraints.txt \
-  && echo "..." \
-  && pip3 wheel \
-     --no-cache \
-     --no-cache-dir \
-     --wheel-dir=/wheels-tmp \
-     --find-links=/wheels/ \
-     --find-links=/conf/ \
-     --constraint=/tmp/constraints.txt \
-     --requirement=/conf/requirements.txt \
-  && rm /tmp/constraints.txt \
-  && find /wheels-tmp/ -type f -name "datacube-*whl" -delete \
-  && ls -lh /wheels-tmp/ \
-  && rm -rf /root/.cache/pip \
-  && echo "================================================================================" \
-  && find /wheels-tmp/ -type f -name "*whl" > /tmp/reqs.txt \
-# make env root:users with write permissions for group
-  && (umask 002 \
-  && mkdir -p /env \
-  && chgrp users /env \
-  && chmod g+s /env \
-  && env-build-tool new_no_index /tmp/reqs.txt /env /wheels-tmp ) \
+RUN mkenv \
   && rm -rf /wheels-tmp \
   && rm -rf /root/.cache/pip \
   && echo done
-
 
 #################################################################################
 # Runner stage
