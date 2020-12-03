@@ -558,15 +558,16 @@ def test_maybe_int():
     assert maybe_int(2 - 0.001, .1) == 2
     assert maybe_int(-1.001, .1) == -1
     assert maybe_int(1.1, .1) == 1.1
+    for x in [3/7, 7/3, -13.7878]:
+        assert maybe_int(x, 1e-10) is x
 
 
 def test_snap_scale():
     assert snap_scale(0.9999999) == 1
     assert snap_scale(-0.9999999) == -1
-    s = 0.999
-    assert snap_scale(0.999) is s
-    s = 0.621612621868
-    assert snap_scale(s) is s
+    for x in [0.999, 0.621612621868, 1/12]:
+        assert snap_scale(x) is x
+    assert snap_scale(0.33333331) == 1/3
 
 
 def test_valid_mask():
