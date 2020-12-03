@@ -69,6 +69,46 @@ def spatial_dims(xx: Union[xr.DataArray, xr.Dataset],
     return None
 
 
+def maybe_zero(x: float, tol: float) -> float:
+    """ Turn almost zeros to actual zeros
+    """
+    if abs(x) < tol:
+        return 0
+    return x
+
+
+def maybe_int(x: float, tol: float) -> Union[int, float]:
+    """ Turn almost ints to actual ints, pass through other values unmodified
+    """
+    def split(x):
+        x_part = fmod(x, 1.0)
+        x_whole = x - x_part
+        if x_part > 0.5:
+            x_part -= 1
+            x_whole += 1
+        elif x_part < -0.5:
+            x_part += 1
+            x_whole -= 1
+        return (x_whole, x_part)
+
+    x_whole, x_part = split(x)
+
+    if abs(x_part) < tol:  # almost int
+        return int(x_whole)
+    else:
+        return x
+
+
+def snap_scale(s, tol=1e-6):
+    """ Snap scale to to nearest integer.
+    """
+    maybe_int_s = maybe_int(s, tol)
+    if maybe_int_s == s:
+        return s
+    else:
+        return maybe_int_s
+
+
 def clamp(x, lo, up):
     """
     clamp x to be lo <= x <= up

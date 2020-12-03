@@ -446,20 +446,17 @@ def box_overlap(src_shape, dst_shape, ST, tol):
                       direction is: Xsrc = ST*Xdst
     :param       tol: Sub-pixel translation tolerance that's scaled by resolution.
     """
-    from datacube.utils.math import is_almost_int
+    from datacube.utils.math import maybe_int, snap_scale
 
     (sx, _, tx,
      _, sy, ty,
      *_) = ST
 
-    def _round_to_near_int(x, tol):
-        tol = min(0.5, tol)
-        if is_almost_int(x, tol):
-            x = round(x)
-        return x
+    sy = snap_scale(sy)
+    sx = snap_scale(sx)
 
-    ty = _round_to_near_int(ty, tol)
-    tx = _round_to_near_int(tx, tol)
+    ty = maybe_int(ty, tol)
+    tx = maybe_int(tx, tol)
 
     s0, d0 = compute_axis_overlap(src_shape[0], dst_shape[0], sy, ty)
     s1, d1 = compute_axis_overlap(src_shape[1], dst_shape[1], sx, tx)
