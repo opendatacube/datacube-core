@@ -102,11 +102,17 @@ def maybe_int(x: float, tol: float) -> Union[int, float]:
 def snap_scale(s, tol=1e-6):
     """ Snap scale to to nearest integer.
     """
-    maybe_int_s = maybe_int(s, tol)
-    if maybe_int_s == s:
+    # Check s for being nearly an integer
+    if is_almost_int(s, tol):
+        return maybe_int(s, tol)
+
+    # Check for simple fractions
+    inv_s = 1.0/s
+    snapped_inv_s = maybe_int(inv_s, tol)
+    if snapped_inv_s == inv_s:
         return s
     else:
-        return maybe_int_s
+        return 1.0/maybe_int(1.0/s, tol)
 
 
 def clamp(x, lo, up):
