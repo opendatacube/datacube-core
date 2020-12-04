@@ -100,13 +100,13 @@ def maybe_int(x: float, tol: float) -> Union[int, float]:
 
 
 def snap_scale(s, tol=1e-6):
-    """ Snap scale to the nearest integer and simple fractions in the from 1/s
+    """ Snap scale to the nearest integer and simple fractions in the form 1/<int>
     """
     if abs(s) >= 1 - tol:
         return maybe_int(s, tol)
     else:
         # Check of s is 0
-        if s == 0:
+        if abs(s) < tol:
             return s
 
         # Check for simple fractions
