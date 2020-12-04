@@ -8,7 +8,7 @@ from copy import deepcopy
 import warnings
 
 import pytest
-import mock
+from unittest import mock
 import numpy
 
 from datacube.model import DatasetType, MetadataType, Dataset, GridSpec

@@ -6,7 +6,7 @@ import pytest
 import numpy
 from datacube.model import GridSpec
 from datacube.utils import geometry
-from mock import MagicMock
+from unittest.mock import MagicMock
 import uuid
 
 
@@ -17,7 +17,7 @@ class PickableMock(MagicMock):
 
 def test_gridworkflow():
     """ Test GridWorkflow with padding option. """
-    from mock import MagicMock
+    from unittest.mock import MagicMock
     import datetime
 
     # ----- fake a datacube -----
@@ -123,7 +123,7 @@ def test_gridworkflow():
     fakedataset.type.lookup_measurements.return_value = {'dummy': measurement}
     fakedataset2.type = fakedataset.type
 
-    from mock import patch
+    from unittest.mock import patch
     with patch('datacube.api.core.Datacube.load_data') as loader:
 
         data = GridWorkflow.load(tile)
@@ -157,7 +157,7 @@ def test_gridworkflow_with_time_depth():
     """Test GridWorkflow with time series.
     Also test `Tile` methods `split` and `split_by_time`
     """
-    from mock import MagicMock
+    from unittest.mock import MagicMock
     import datetime
 
     fakecrs = geometry.CRS('EPSG:4326')

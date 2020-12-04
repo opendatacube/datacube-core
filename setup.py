@@ -4,7 +4,6 @@ from setuptools import setup, find_packages
 
 tests_require = [
     'hypothesis',
-    'mock',
     'pycodestyle',
     'pylint',
     'pytest',

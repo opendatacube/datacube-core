@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import math
 import numpy as np
-from mock import MagicMock
+from unittest.mock import MagicMock
 from affine import Affine
 import pytest
 from pytest import approx
