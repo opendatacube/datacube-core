@@ -565,7 +565,7 @@ def test_maybe_int():
 def test_snap_scale():
     assert snap_scale(0.9999999) == 1
     assert snap_scale(-0.9999999) == -1
-    for x in [0.0, 0.00000001, 0.999, 0.621612621868, 3/7, 7/3]:
+    for x in [0.0, 0.999, 0.621612621868, 3/7, 7/3]:
         assert snap_scale(x) is x
         x = -x
         assert snap_scale(x) is x
