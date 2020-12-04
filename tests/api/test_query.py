@@ -23,7 +23,7 @@ def test_datetime_to_timestamp():
 
 
 def test_query_kwargs():
-    from mock import MagicMock
+    from unittest.mock import MagicMock
 
     mock_index = MagicMock()
     mock_index.datasets.get_field_names = lambda: {u'product', u'lat', u'sat_path', 'type_id', u'time', u'lon',

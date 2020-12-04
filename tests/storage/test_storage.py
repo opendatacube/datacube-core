@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from contextlib import contextmanager
 
-import mock
+from unittest import mock
 import numpy as np
 import pytest
 import rasterio.warp

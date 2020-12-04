@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
-import mock
+from unittest import mock
 import os
 
 from datacube.testutils import write_files
