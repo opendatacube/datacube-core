@@ -81,13 +81,19 @@ class BandInfo:
     def __init__(self,
                  ds: Dataset,
                  band: str,
-                 uri_scheme: Optional[str] = None):
+                 uri_scheme: Optional[str] = None,
+                 extra_dim_index: Optional[int] = None):
         try:
             mp, = ds.type.lookup_measurements([band]).values()
         except KeyError:
             raise ValueError('No such band: {}'.format(band))
 
-        mm = ds.measurements.get(mp.canonical_name)
+        if 'extra_dim' in mp:
+            # 3D case
+            mm = ds.measurements.get(mp.extra_dim.get('measurement_map')[extra_dim_index])
+        else:
+            # 2D case
+            mm = ds.measurements.get(mp.canonical_name)
 
         if mm is None:
             raise ValueError('No such band: {}'.format(band))
