@@ -72,6 +72,18 @@ class Query(object):
 
         remaining_keys = set(search_terms.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
+            print('aaa')
+            # Retrieve known keys for extra dimensions
+            known_dim_keys = set()
+            if product is not None:
+                datacube_product = index.products.get_by_name(product)
+                known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
+            else:
+                for datacube_product in index.products.get_all():
+                    known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
+
+            remaining_keys -= known_dim_keys
+
             unknown_keys = remaining_keys - set(index.datasets.get_field_names())
             # TODO: What about keys source filters, and what if the keys don't match up with this product...
             if unknown_keys:
