@@ -102,10 +102,17 @@ def check_dataset_consistent(dataset):
 
     # It the type expects measurements, ensure our dataset contains them all.
     if not product_measurements.issubset(dataset.measurements.keys()):
-        not_measured = str(product_measurements - set(dataset.measurements.keys()))
-        msg = "The dataset is not specifying all of the measurements in this product.\n"
-        msg += "Missing fields are;\n" + not_measured
-        return False, msg
+        # Exclude 3D measurements since it's just a mapping to 2D measurements
+        not_measured = {
+            m
+            for m in product_measurements - set(dataset.measurements.keys())
+            if "extra_dim" not in dataset.type.measurements.get(m, [])
+        }
+
+        if not_measured:
+            msg = "The dataset is not specifying all of the measurements in this product.\n"
+            msg += "Missing fields are;\n" + str(not_measured)
+            return False, msg
 
     return True, None
 

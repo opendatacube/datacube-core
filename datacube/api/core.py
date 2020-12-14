@@ -19,6 +19,7 @@ from datacube.utils import geometry
 from datacube.utils.dates import normalise_dt
 from datacube.utils.geometry import intersects, GeoBox
 from datacube.utils.geometry.gbox import GeoboxTiles
+from datacube.model import ExtraDimensions
 from datacube.model.utils import xr_apply
 
 from .query import Query, query_group_by, query_geopolygon
@@ -306,23 +307,34 @@ class Datacube(object):
         ds, *_ = datasets
         datacube_product = ds.type
 
+        # Retrieve extra_dimension from product definition
+        extra_dims = None
+        if datacube_product:
+            extra_dims = datacube_product.extra_dimensions
+
+            # Extract extra_dims slice information
+            extra_dims_slice = {k: query.pop(k, None) for k in list(query.keys()) if k in extra_dims.dims}
+            extra_dims = extra_dims[extra_dims_slice]
+
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
                                grid_spec=datacube_product.grid_spec,
                                load_hints=datacube_product.load_hints(),
                                datasets=datasets, **query)
-
         group_by = query_group_by(**query)
         grouped = self.group_datasets(datasets, group_by)
 
         measurement_dicts = datacube_product.lookup_measurements(measurements)
 
+        # `extra_dims` put last for backwards compability, but should really be the second position
+        # betwween `grouped` and `geobox`
         result = self.load_data(grouped, geobox,
                                 measurement_dicts,
                                 resampling=resampling,
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
                                 skip_broken_datasets=skip_broken_datasets,
-                                progress_cbk=progress_cbk)
+                                progress_cbk=progress_cbk,
+                                extra_dims=extra_dims)
 
         return result
 
@@ -421,7 +433,7 @@ class Datacube(object):
         return sources
 
     @staticmethod
-    def create_storage(coords, geobox, measurements, data_func=None):
+    def create_storage(coords, geobox, measurements, data_func=None, extra_dims=None):
         """
         Create a :class:`xarray.Dataset` and (optionally) fill it with data.
 
@@ -441,11 +453,15 @@ class Datacube(object):
             as an argument. It should return an appropriately shaped numpy array. If not provided memory is
             allocated an filled with `nodata` value defined on a given Measurement.
 
+        :param ExtraDimensions extra_dims:
+            A ExtraDimensions describing the any additional dimensions on top of (t, y, x)
+
         :rtype: :class:`xarray.Dataset`
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
         from collections import OrderedDict
+        from copy import deepcopy
         spatial_ref = 'spatial_ref'
 
         def empty_func(m, shape):
@@ -456,14 +472,37 @@ class Datacube(object):
             crs_attrs['crs'] = str(geobox.crs)
             crs_attrs['grid_mapping'] = spatial_ref
 
-        dims = tuple(coords) + geobox.dimensions
-        shape = tuple(c.size for c in coords.values()) + geobox.shape
-        coords = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
+        # Assumptions
+        #  - 3D dims must fit between (t) and (y, x) or (lat, lon)
 
-        data_func = data_func or (lambda m: empty_func(m, shape))
+        # 2D defaults
+        dims_default = tuple(coords) + geobox.dimensions
+        shape_default = tuple(c.size for c in coords.values()) + geobox.shape
+        coords_default = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
 
-        def mk_data_var(m, data_func):
-            data = data_func(m)
+        arrays = []
+        ds_coords = deepcopy(coords_default)
+
+        for m in measurements:
+            if 'extra_dim' not in m:
+                # 2D default case
+                arrays.append((m, shape_default, coords_default, dims_default))
+            elif extra_dims:
+                # 3D case
+                name = m.extra_dim['dimension']
+                new_dims = dims_default[:1] + (name,) + dims_default[1:]
+                new_coords = deepcopy(coords_default)
+                new_coords[name] = extra_dims._coords[name].copy()
+                new_coords[name].attrs.update(crs_attrs)
+                ds_coords.update(new_coords)
+
+                new_shape = shape_default[:1] + (len(new_coords[name].values),) + shape_default[1:]
+                arrays.append((m, new_shape, new_coords, new_dims))
+
+        data_func = data_func or (lambda m, shape: empty_func(m, shape))
+
+        def mk_data_var(m, shape, coords, dims, data_func):
+            data = data_func(m, shape)
             attrs = dict(**m.dataarray_attrs(),
                          **crs_attrs)
             return xarray.DataArray(data,
@@ -472,15 +511,19 @@ class Datacube(object):
                                     dims=dims,
                                     attrs=attrs)
 
-        return xarray.Dataset({m.name: mk_data_var(m, data_func)
-                               for m in measurements},
-                              coords=coords,
+        return xarray.Dataset({m.name: mk_data_var(m, shape, coords, dims, data_func)
+                               for m, shape, coords, dims in arrays},
+                              coords=ds_coords,
                               attrs=crs_attrs)
 
     @staticmethod
     def _dask_load(sources, geobox, measurements, dask_chunks,
-                   skip_broken_datasets=False):
-        needed_irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
+                   skip_broken_datasets=False, extra_dims=None):
+        chunk_sizes = _calculate_chunk_sizes(sources, geobox, dask_chunks, extra_dims)
+        needed_irr_chunks = chunk_sizes[0]
+        if extra_dims:
+            extra_dim_chunks = chunk_sizes[1]
+        grid_chunks = chunk_sizes[-1]
         gbt = GeoboxTiles(geobox, grid_chunks)
         dsk = {}
 
@@ -496,24 +539,36 @@ class Datacube(object):
                                 lambda _, dss: chunk_datasets(dss, gbt),
                                 dtype=object)
 
-        def data_func(measurement):
+        def data_func(measurement, shape):
+            if 'extra_dim' in measurement:
+                chunks = needed_irr_chunks + extra_dim_chunks + grid_chunks
+            else:
+                chunks = needed_irr_chunks + grid_chunks
             return _make_dask_array(chunked_srcs, dsk, gbt,
                                     measurement,
-                                    chunks=needed_irr_chunks+grid_chunks,
-                                    skip_broken_datasets=skip_broken_datasets)
+                                    chunks=chunks,
+                                    skip_broken_datasets=skip_broken_datasets,
+                                    extra_dims=extra_dims)
 
-        return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
+        return Datacube.create_storage(sources.coords, geobox, measurements, data_func, extra_dims)
 
     @staticmethod
     def _xr_load(sources, geobox, measurements,
                  skip_broken_datasets=False,
-                 progress_cbk=None):
+                 progress_cbk=None, extra_dims=None):
 
         def mk_cbk(cbk):
             if cbk is None:
                 return None
             n = 0
-            n_total = sum(len(x) for x in sources.values.ravel())*len(measurements)
+            t_size = sum(len(x) for x in sources.values.ravel())
+            n_total = 0
+            for m in measurements:
+                if 'extra_dim' in m:
+                    index_subset = extra_dims.measurements_slice(m.extra_dim['dimension'])
+                    n_total += t_size*len(m.extra_dim.get('measurement_map')[index_subset])
+                else:
+                    n_total += t_size
 
             def _cbk(*ignored):
                 nonlocal n
@@ -521,27 +576,42 @@ class Datacube(object):
                 return cbk(n, n_total)
             return _cbk
 
-        data = Datacube.create_storage(sources.coords, geobox, measurements)
+        data = Datacube.create_storage(sources.coords, geobox, measurements, extra_dims=extra_dims)
         _cbk = mk_cbk(progress_cbk)
 
+        # Create a list of read IO operations
+        read_ios = []
         for index, datasets in numpy.ndenumerate(sources.values):
             for m in measurements:
-                t_slice = data[m.name].values[index]
+                if 'extra_dim' in m:
+                    # When we want to support 3D native reads, we can start by replacing the for loop with
+                    # read_ios.append(((index + extra_dim_index), (datasets, m, index_subset)))
+                    index_subset = extra_dims.measurements_slice(m.extra_dim['dimension'])
+                    measurements_subset = m.extra_dim.get('measurement_map')[index_subset]
+                    for extra_dim_index, extra_dim_name in numpy.ndenumerate(measurements_subset):
+                        read_ios.append(((index + extra_dim_index), (datasets, m, extra_dim_index[0])))
+                else:
+                    # Get extra_dim index if available
+                    extra_dim_index = m.get('extra_dim_index', None)
+                    read_ios.append((index, (datasets, m, extra_dim_index)))
 
-                try:
-                    _fuse_measurement(t_slice, datasets, geobox, m,
-                                      skip_broken_datasets=skip_broken_datasets,
-                                      progress_cbk=_cbk)
-                except (TerminateCurrentLoad, KeyboardInterrupt):
-                    data.attrs['dc_partial_load'] = True
-                    return data
+        # Perform the read IO operations
+        for index, (datasets, m, extra_dim_index) in read_ios:
+            data_slice = data[m.name].values[index]
+            try:
+                _fuse_measurement(data_slice, datasets, geobox, m,
+                                  skip_broken_datasets=skip_broken_datasets,
+                                  progress_cbk=_cbk, extra_dim_index=extra_dim_index)
+            except (TerminateCurrentLoad, KeyboardInterrupt):
+                data.attrs['dc_partial_load'] = True
+                return data
 
         return data
 
     @staticmethod
     def load_data(sources, geobox, measurements, resampling=None,
                   fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
-                  progress_cbk=None,
+                  progress_cbk=None, extra_dims=None,
                   **extra):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
@@ -582,6 +652,9 @@ class Datacube(object):
             if supplied will be called for every file read with `files_processed_so_far, total_files`. This is
             only applicable to non-lazy loads, ignored when using dask.
 
+        :param ExtraDimensions extra_dims:
+            A ExtraDimensions describing the any additional dimensions on top of (t, y, x)
+
         :rtype: xarray.Dataset
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
@@ -590,11 +663,13 @@ class Datacube(object):
 
         if dask_chunks is not None:
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
-                                       skip_broken_datasets=skip_broken_datasets)
+                                       skip_broken_datasets=skip_broken_datasets,
+                                       extra_dims=extra_dims)
         else:
             return Datacube._xr_load(sources, geobox, measurements,
                                      skip_broken_datasets=skip_broken_datasets,
-                                     progress_cbk=progress_cbk)
+                                     progress_cbk=progress_cbk,
+                                     extra_dims=extra_dims)
 
     def __str__(self):
         return "Datacube<index={!r}>".format(self.index)
@@ -708,22 +783,24 @@ def select_datasets_inside_polygon(datasets, polygon):
             yield dataset
 
 
-def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend_dims=0):
+def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend_dims=0, extra_dim_index=None):
     prepend_shape = (1,) * prepend_dims
     data = numpy.full(geobox.shape, measurement.nodata, dtype=measurement.dtype)
     _fuse_measurement(data, datasets, geobox, measurement,
-                      skip_broken_datasets=skip_broken_datasets)
+                      skip_broken_datasets=skip_broken_datasets,
+                      extra_dim_index=extra_dim_index)
     return data.reshape(prepend_shape + geobox.shape)
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
-                      progress_cbk=None):
+                      progress_cbk=None,
+                      extra_dim_index=None):
     srcs = []
     for ds in datasets:
         src = None
         with ignore_exceptions_if(skip_broken_datasets):
-            src = new_datasource(BandInfo(ds, measurement.name))
+            src = new_datasource(BandInfo(ds, measurement.name, extra_dim_index=extra_dim_index))
 
         if src is None:
             if not skip_broken_datasets:
@@ -738,7 +815,8 @@ def _fuse_measurement(dest, datasets, geobox, measurement,
                        resampling=measurement.get('resampling_method', 'nearest'),
                        fuse_func=measurement.get('fuser', None),
                        skip_broken_datasets=skip_broken_datasets,
-                       progress_cbk=progress_cbk)
+                       progress_cbk=progress_cbk,
+                       extra_dim_index=extra_dim_index)
 
 
 def get_bounds(datasets, crs):
@@ -748,17 +826,24 @@ def get_bounds(datasets, crs):
 
 def _calculate_chunk_sizes(sources: xarray.DataArray,
                            geobox: GeoBox,
-                           dask_chunks: Dict[str, Union[str, int]]):
-    valid_keys = sources.dims + geobox.dimensions
+                           dask_chunks: Dict[str, Union[str, int]],
+                           extra_dims: Optional[ExtraDimensions] = None):
+    extra_dim_names = ()
+    extra_dim_shapes = ()
+    if extra_dims is not None:
+        extra_dim_names, extra_dim_shapes = extra_dims.chunk_size()
+
+    valid_keys = sources.dims + extra_dim_names + geobox.dimensions
     bad_keys = set(dask_chunks) - set(valid_keys)
     if bad_keys:
         raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 
-    chunk_maxsz = dict((dim, sz) for dim, sz in zip(sources.dims + geobox.dimensions,
-                                                    sources.shape + geobox.shape))
+    chunk_maxsz = dict((dim, sz) for dim, sz in zip(sources.dims + extra_dim_names + geobox.dimensions,
+                                                    sources.shape + extra_dim_shapes + geobox.shape))
 
     # defaults: 1 for non-spatial, whole dimension for Y/X
-    chunk_defaults = dict([(dim, 1) for dim in sources.dims] + [(dim, -1) for dim in geobox.dimensions])
+    chunk_defaults = dict([(dim, 1) for dim in sources.dims] + [(dim, 1) for dim in extra_dim_names]
+                          + [(dim, -1) for dim in geobox.dimensions])
 
     def _resolve(k, v: Optional[Union[str, int]]) -> int:
         if v is None or v == "auto":
@@ -771,9 +856,13 @@ def _calculate_chunk_sizes(sources: xarray.DataArray,
         raise ValueError("Chunk should be one of int|'auto'")
 
     irr_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in sources.dims)
+    extra_dim_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in extra_dim_names)
     grid_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in geobox.dimensions)
 
-    return irr_chunks, grid_chunks
+    if extra_dim_chunks:
+        return irr_chunks, extra_dim_chunks, grid_chunks
+    else:
+        return irr_chunks, grid_chunks
 
 
 def _tokenize_dataset(dataset):
@@ -786,7 +875,8 @@ def _make_dask_array(chunked_srcs,
                      gbt,
                      measurement,
                      chunks,
-                     skip_broken_datasets=False):
+                     skip_broken_datasets=False,
+                     extra_dims=None):
     dsk = dsk.copy()  # this contains mapping from dataset id to dataset object
 
     token = uuid.uuid4().hex
@@ -801,7 +891,7 @@ def _make_dask_array(chunked_srcs,
     #  B BR
     empties = {}  # type Dict[Tuple[int,int], str]
 
-    def _mk_empty(shape: Tuple[int, int]) -> str:
+    def _mk_empty(shape: Tuple[int, ...]) -> str:
         name = empties.get(shape, None)
         if name is not None:
             return name
@@ -821,25 +911,50 @@ def _make_dask_array(chunked_srcs,
 
             if dss is None:
                 val = _mk_empty(gbt.chunk_shape(idx))
+                # 3D case
+                if 'extra_dim' in measurement:
+                    index_subset = extra_dims.measurements_slice(measurement.extra_dim['dimension'])
+                    for extra_dim_index, extra_dim_name in numpy.ndenumerate(
+                        measurement.extra_dim.get('measurement_map')[index_subset]
+                    ):
+                        dsk[key_prefix + extra_dim_index + idx] = val
+                else:
+                    dsk[key_prefix + idx] = val
             else:
                 val = (fuse_lazy,
                        [_tokenize_dataset(ds) for ds in dss],
                        gbt[idx],
                        measurement,
                        skip_broken_datasets,
-                       chunked_srcs.ndim)
+                       len(needed_irr_chunks))
 
-            dsk[key_prefix + idx] = val
+                # 3D case
+                if 'extra_dim' in measurement:
+                    # Do extra_dim subsetting here
+                    index_subset = extra_dims.measurements_slice(measurement.extra_dim['dimension'])
+                    for extra_dim_index, extra_dim_name in numpy.ndenumerate(
+                        measurement.extra_dim.get('measurement_map')[index_subset]
+                    ):
+                        dsk[key_prefix + extra_dim_index + idx] = val + (extra_dim_index[0],)
+                else:
+                    # Get extra_dim index if available
+                    extra_dim_index = measurement.get('extra_dim_index', None)
+                    dsk[key_prefix + idx] = val + (extra_dim_index,)
 
     y_shapes = [grid_chunks[0]]*gbt.shape[0]
     x_shapes = [grid_chunks[1]]*gbt.shape[1]
 
     y_shapes[-1], x_shapes[-1] = gbt.chunk_shape(tuple(n-1 for n in gbt.shape))
 
+    extra_dim_shape = ()
+    if 'extra_dim' in measurement:
+        dim_name = measurement.extra_dim.get('dimension')
+        extra_dim_shape += (len(extra_dims.measurements_values(dim_name)),)
+
     data = da.Array(dsk, dsk_name,
                     chunks=actual_irr_chunks + (tuple(y_shapes), tuple(x_shapes)),
                     dtype=measurement.dtype,
-                    shape=(chunked_srcs.shape + gbt.base.shape))
+                    shape=(chunked_srcs.shape + extra_dim_shape + gbt.base.shape))
 
     if needed_irr_chunks != actual_irr_chunks:
         data = data.rechunk(chunks=chunks)
