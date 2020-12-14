@@ -202,7 +202,7 @@ def test_s3_io(monkeypatch, without_aws_env):
 
     with moto.mock_s3():
         s3 = s3_client(region_name='kk')
-        s3.create_bucket(Bucket=bucket)
+        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': "fake-region"})
         assert s3_dump(b"33", url, s3=s3) is True
         assert s3_fetch(url, s3=s3) == b"33"
 
