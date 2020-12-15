@@ -532,7 +532,6 @@ class DatasetType:
         :param definition: Dimension definition dict, typically retrieved from the product definition's
             `extra_dimensions` field.
         """
-        print("validate_extra_dims")
         # List of measurement names in the product definition
         measurement_names = [m.get('name') for m in definition.get('measurements', {})]
         # Dict of names: extra_dim values

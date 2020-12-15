@@ -72,7 +72,6 @@ class Query(object):
 
         remaining_keys = set(search_terms.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
-            print('aaa')
             # Retrieve known keys for extra dimensions
             known_dim_keys = set()
             if product is not None:
