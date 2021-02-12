@@ -54,6 +54,8 @@ class ProductResource(object):
         """
         # This column duplication is getting out of hand:
         DatasetType.validate(definition)
+        # Validate extra dimension metadata
+        DatasetType.validate_extra_dims(definition)
 
         metadata_type = definition['metadata_type']
 

@@ -67,39 +67,10 @@ definitions:
                     type: number
             dtype:
                 "$ref": "#/definitions/dtype"
-            measurements:
-                type: array
-                items:
-                    type: object
-                    properties:
-                        name:
-                            type: string
-                            description: Name of the measurement
-                        mapping:
-                            type: array
-                            description: Mapping to the measurement names
-                            items:
-                                type: string
-                        dtype:
-                            "$ref": "#/definitions/dtype"
-                        nodata:
-                            oneOf:
-                                - type: number
-                                - enum: [NaN, Inf, -Inf]
-                        units:
-                            type: string
-                    required:
-                    - name
-                    - mapping
-                    - dtype
-                    - nodata
-                    - units
-                    additionalProperties: false
         required:
         - name
         - values
         - dtype
-        # - measurements
         additionalProperties: false
     measurement:
         type: object
@@ -175,6 +146,11 @@ definitions:
                         type: array
                         items:
                             type: array
+                    spectral_definition_map:
+                        description: Spectral definition mapping
+                        type: array
+                        items:
+                            "$ref": "#/definitions/measurement/properties/spectral_definition"
                 required:
                   - dimension
                   - measurement_map

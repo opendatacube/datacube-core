@@ -565,7 +565,7 @@ class Datacube(object):
             n_total = 0
             for m in measurements:
                 if 'extra_dim' in m:
-                    index_subset = extra_dims.measurements_slice(m.extra_dim['dimension'])
+                    index_subset = extra_dims.measurements_slice(m.extra_dim.get('dimension'))
                     n_total += t_size*len(m.extra_dim.get('measurement_map')[index_subset])
                 else:
                     n_total += t_size
@@ -586,7 +586,7 @@ class Datacube(object):
                 if 'extra_dim' in m:
                     # When we want to support 3D native reads, we can start by replacing the for loop with
                     # read_ios.append(((index + extra_dim_index), (datasets, m, index_subset)))
-                    index_subset = extra_dims.measurements_slice(m.extra_dim['dimension'])
+                    index_subset = extra_dims.measurements_slice(m.extra_dim.get('dimension'))
                     measurements_subset = m.extra_dim.get('measurement_map')[index_subset]
                     for extra_dim_index, extra_dim_name in numpy.ndenumerate(measurements_subset):
                         read_ios.append(((index + extra_dim_index), (datasets, m, extra_dim_index[0])))
@@ -913,7 +913,7 @@ def _make_dask_array(chunked_srcs,
                 val = _mk_empty(gbt.chunk_shape(idx))
                 # 3D case
                 if 'extra_dim' in measurement:
-                    index_subset = extra_dims.measurements_slice(measurement.extra_dim['dimension'])
+                    index_subset = extra_dims.measurements_slice(measurement.extra_dim.get('dimension'))
                     for extra_dim_index, extra_dim_name in numpy.ndenumerate(
                         measurement.extra_dim.get('measurement_map')[index_subset]
                     ):
@@ -931,7 +931,7 @@ def _make_dask_array(chunked_srcs,
                 # 3D case
                 if 'extra_dim' in measurement:
                     # Do extra_dim subsetting here
-                    index_subset = extra_dims.measurements_slice(measurement.extra_dim['dimension'])
+                    index_subset = extra_dims.measurements_slice(measurement.extra_dim.get('dimension'))
                     for extra_dim_index, extra_dim_name in numpy.ndenumerate(
                         measurement.extra_dim.get('measurement_map')[index_subset]
                     ):
