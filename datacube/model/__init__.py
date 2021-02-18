@@ -986,7 +986,7 @@ class ExtraDimensions:
             for name, dim in extra_dim.items()
         }
 
-    def __getitem__(self, dim_slices: Dict[str, Tuple[Any, Any]]) -> "ExtraDimensions":
+    def __getitem__(self, dim_slices: Dict[str, Union[float, Tuple[float, float]]]) -> "ExtraDimensions":
         """Return a ExtraDimensions subsetted by dim_slices
 
         :param dim_slices: Optional cache to re-use geoboxes instead of creating new one each time
@@ -1074,13 +1074,17 @@ class ExtraDimensions:
             raise ValueError(f"Dimension {dim} not found")
         return self._coords[dim].searchsorted(value)
 
-    def coord_slice(self, dim: str, coord_range: Tuple[float, float]) -> Tuple[int, int]:
+    def coord_slice(self, dim: str, coord_range: Union[float, Tuple[float, float]]) -> Tuple[int, int]:
         """Returns the Integer index for a coordinate (min, max) range.
 
         :param dim: The name of the dimension
         :param coord_range: The coordinate range.
         :return: A tuple containing the integer indexes of `coord_range.
         """
+        # Convert to Tuple if it's an int or float
+        if isinstance(coord_range, int) or isinstance(coord_range, float):
+            coord_range = (coord_range, coord_range)
+
         start_index = self.index_of(dim, coord_range[0])
         stop_index = self.index_of(dim, coord_range[1] + 1)
         return start_index, stop_index
