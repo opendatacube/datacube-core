@@ -468,7 +468,7 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
         # For now from Alchemist the platform is always landsat for C3 processing
         if "landsat" in self.dataset.platform:
             return "ls"
-        
+
         if "sentinel-2" in self.dataset.platform:
             return "s2"
 
