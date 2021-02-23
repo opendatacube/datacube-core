@@ -403,6 +403,29 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
             ),
         )
 
+    @classmethod
+    def for_s2_derivatives(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
+        """
+        The required fields for the S2 data processing are controlled here.
+        """
+        return cls(
+            dataset=dataset,
+            base_product_uri=uri,
+            # These fields are needed to fulfill official DEA naming conventions.
+            required_fields=(
+                "eo:platform",
+                "odc:dataset_version",
+                "odc:collection_number",
+                "odc:processing_datetime",
+                "odc:producer",
+                "odc:product_family",
+                "odc:region_code",
+                "sentinel:sentinel_tile_id",
+                "dea:dataset_maturity",
+            ),
+            dataset_separator_field="sentinel:datatake_start_datetime",
+        )
+
     @property
     def _org_collection_number(self) -> Optional[int]:
         # Deliberately fail if collection_number is not defined in the config yaml
@@ -443,12 +466,17 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
     @property
     def platform_abbreviated(self) -> Optional[str]:
         # For now from Alchemist the platform is always landsat for C3 processing
-        if "landsat" not in self.dataset.platform:
-            raise NotImplementedError(
-                f"Only Landsat platforms currently implemented for dea_c3 naming schemes "
-                f"(got {self.dataset.platform!r})"
-            )
-        return "ls"
+        if "landsat" in self.dataset.platform:
+            return "ls"
+        
+        if "sentinel-2" in self.dataset.platform:
+            return "s2"
+
+        raise NotImplementedError(
+            f"Only Landsat and Sentinel 2 platforms currently implemented for dea_c3 "
+            f"and dea_s2_derivative naming schemes "
+            f"(got {self.dataset.platform!r})"
+        )
 
 
 @attr.s(auto_attribs=True, slots=True)
