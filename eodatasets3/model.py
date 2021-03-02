@@ -365,7 +365,7 @@ class ComplicatedNamingConventions:
 
     @property
     def producer_abbreviated(self) -> Optional[str]:
-        """Abbreviated form of a satellite, as used in dea product names. eg. 'ls7'."""
+        """Abbreviated form of a producer, as used in dea product names. eg. 'ga', 'usgs'."""
         if not self.dataset.producer:
             return None
         producer_domains = {"ga.gov.au": "ga", "usgs.gov": "usgs", "sinergise.com": "sin"}
