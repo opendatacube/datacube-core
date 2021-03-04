@@ -83,6 +83,14 @@ class ComplicatedNamingConventions:
         "odc:dataset_version": "eg. 1.0.0",
     }
 
+    KNOWN_PRODUCER_ABBREVIATIONS = {
+        "ga.gov.au": "ga",
+        "usgs.gov": "usgs",
+        "sinergise.com": "sinergise",
+        "digitalearthafrica.org": "deafrica",
+        # Is there another organisation you want to use? Pull requests very welcome!
+    }
+
     def __init__(
         self,
         dataset: EoFields,
@@ -368,12 +376,14 @@ class ComplicatedNamingConventions:
         """Abbreviated form of a producer, as used in dea product names. eg. 'ga', 'usgs'."""
         if not self.dataset.producer:
             return None
-        producer_domains = {"ga.gov.au": "ga", "usgs.gov": "usgs", "sinergise.com": "sin"}
+
         try:
-            return producer_domains[self.dataset.producer]
+            return self.KNOWN_PRODUCER_ABBREVIATIONS[self.dataset.producer]
         except KeyError:
             raise NotImplementedError(
-                f"TODO: cannot yet abbreviate organisation domain name {self.dataset.producer!r}"
+                f"We don't know how to abbreviate organisation domain name {self.dataset.producer!r}. "
+                f"We'd love to add more orgs! Raise an issue on Github: "
+                f"https://github.com/GeoscienceAustralia/eo-datasets/issues/new' "
             )
 
 
