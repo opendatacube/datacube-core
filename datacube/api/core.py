@@ -317,7 +317,11 @@ class Datacube(object):
             extra_dims = datacube_product.extra_dimensions
 
             # Extract extra_dims slice information
-            extra_dims_slice = {k: query.pop(k, None) for k in list(query.keys()) if k in extra_dims.dims}
+            extra_dims_slice = {
+                k: query.pop(k, None)
+                for k in list(query.keys())
+                if k in extra_dims.dims and query.get(k, None) is not None
+            }
             extra_dims = extra_dims[extra_dims_slice]
 
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
