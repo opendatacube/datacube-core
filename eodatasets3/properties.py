@@ -279,13 +279,20 @@ class StacPropertyView(collections.abc.MutableMapping):
         del self._props[name]
 
     def __setitem__(self, key, value):
-        if key in self._props and value != self[key]:
-            warnings.warn(
-                f"Overriding property {key!r} " f"(from {self[key]!r} to {value!r})"
-            )
+        self.normalise_and_set(
+            key,
+            value,
+            # They can override properties but will receive a warning.
+            allow_override=True,
+        )
 
+    def normalise_and_set(self, key, value, allow_override=True):
+        """
+        Normalise the given value if it's a known key (eg. dates should be dates),
+        and set it on the given dictionary.
+        """
         if key not in self.KNOWN_STAC_PROPERTIES:
-            warnings.warn(f"Unknown stac property {key!r}")
+            warnings.warn(f"Unknown Stac property {key!r}.")
 
         if value is not None:
             normalise = self.KNOWN_STAC_PROPERTIES.get(key)
@@ -299,7 +306,16 @@ class StacPropertyView(collections.abc.MutableMapping):
                             raise RuntimeError(
                                 f"Infinite loop: writing key {k!r} from itself"
                             )
-                        self[k] = v
+                        self.normalise_and_set(k, v, allow_override=allow_override)
+
+        if key in self._props and value != self[key]:
+            message = (
+                f"Overriding property {key!r} " f"(from {self[key]!r} to {value!r})"
+            )
+            if allow_override:
+                warnings.warn(message)
+            else:
+                raise KeyError(message)
 
         self._props[key] = value
 
