@@ -4,7 +4,9 @@ from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum, EnumMeta
+from textwrap import dedent
 from typing import Tuple, Dict, Optional, Any, Mapping, Callable, Union
+from urllib.parse import urlencode
 
 import ciso8601
 from ruamel.yaml.timestamp import TimeStamp as RuamelTimeStamp
@@ -292,7 +294,11 @@ class StacPropertyView(collections.abc.MutableMapping):
         and set it on the given dictionary.
         """
         if key not in self.KNOWN_STAC_PROPERTIES:
-            warnings.warn(f"Unknown Stac property {key!r}.")
+            warnings.warn(
+                f"Unknown Stac property {key!r}. "
+                f"If this is valid property, please tell us on Github here so we can add it: "
+                f"\n\t{_github_suggest_new_property_url(key, value)}"
+            )
 
         if value is not None:
             normalise = self.KNOWN_STAC_PROPERTIES.get(key)
@@ -525,3 +531,24 @@ class EoFields(metaclass=ABCMeta):
     @maturity.setter
     def maturity(self, value):
         self.properties["dea:dataset_maturity"] = value
+
+
+def _github_suggest_new_property_url(key: str, value: object) -> str:
+    """Get a URL to create a Github issue suggesting new properties to be added."""
+    issue_parameters = urlencode(
+        dict(
+            title=f"Include property {key!r}",
+            labels="known-properties",
+            body=dedent(
+                f"""\
+                   Hello! The property {key!r} does not appear to be in the KNOWN_STAC_PROPERTIES list,
+                   but I believe it to be valid.
+
+                   An example value of this property is: {value!r}
+
+                   Thank you!
+                   """
+            ),
+        )
+    )
+    return f"https://github.com/GeoscienceAustralia/eo-datasets/issues/new?{issue_parameters}"
