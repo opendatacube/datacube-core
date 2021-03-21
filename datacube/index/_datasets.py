@@ -8,7 +8,7 @@ API for dataset indexing, access and search.
 import logging
 import warnings
 from collections import namedtuple
-from typing import Any, Iterable, Set, Tuple, Union, List, Optional
+from typing import Iterable, Tuple, Union, List, Optional
 from uuid import UUID
 
 from datacube.model import Dataset, DatasetType
