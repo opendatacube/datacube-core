@@ -958,7 +958,7 @@ def test_cli_info(index: Index,
     assert len(yaml_docs) == 1
 
     # We output properties in order for readability:
-    output_lines = [l for l in output.splitlines() if not l.startswith('indexed:')]
+    output_lines = [line for line in output.splitlines() if not line.startswith('indexed:')]
     assert output_lines == [
         "id: " + str(pseudo_ls8_dataset.id),
         'product: ls8_telemetry',
