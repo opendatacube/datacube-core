@@ -469,18 +469,29 @@ def _get_derived_set(index: Index, id_: str) -> Set[Dataset]:
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[str]):
-    for id_ in ids:
-        target_dataset = index.datasets.get(id_)
-        if target_dataset is None:
-            echo(f'No dataset found with id {id_}')
-            sys.exit(-1)
+    datasets_for_archive = index.datasets.exists(ids)
 
-        to_process = _get_derived_set(index, id_) if archive_derived else [target_dataset]
-        for d in to_process:
-            click.echo('archiving %s %s %s' % (d.type.name, d.id,
-                                               d.local_uri if d.local_uri is not None else "<no location>"))
-        if not dry_run:
-            index.datasets.archive(d.id for d in to_process)
+    non_existent_datasets = list(set(ids) - set(datasets_for_archive))
+    if non_existent_datasets:
+        for dataset in non_existent_datasets:
+            click.echo(f'No dataset found with id: {dataset}')
+        sys.exit(-1)
+
+    derived_datasets = []
+    if archive_derived:
+        derived_datasets = [_get_derived_set(index, dataset) for dataset in datasets_for_archive]
+        # Get the UUID of our found derived datasets
+        derived_datasets = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
+
+    all_datasets = derived_datasets + datasets_for_archive
+
+    for dataset in all_datasets:
+        click.echo(f'Archiving dataset: {dataset}')
+
+    if not dry_run:
+        index.datasets.archive(all_datasets)
+
+    click.echo('Completed dataset archival.')
 
 
 @dataset_cmd.command('restore', help="Restore datasets")
