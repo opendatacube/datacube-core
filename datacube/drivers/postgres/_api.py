@@ -335,11 +335,7 @@ class PostgresDbAPI(object):
 
     def exists_dataset(self, dataset_ids):
         return self._connection.execute(
-            DATASET.select(
-                [DATASET.c.id.label('id')]
-            ).where(
-                DATASET.c.id.in_(dataset_ids)
-            )
+            select([DATASET.c.id]).where(DATASET.c.id.in_(dataset_ids))
         ).fetchall()
 
     def restore_dataset(self, dataset_id):

@@ -471,7 +471,7 @@ def _get_derived_set(index: Index, id_: str) -> Set[Dataset]:
 def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[str]):
     datasets_for_archive = index.datasets.exists(ids)
 
-    non_existent_datasets = list(set(ids) - set(datasets_for_archive))
+    non_existent_datasets = list(set(datasets_for_archive) - set(ids))
     if non_existent_datasets:
         for dataset in non_existent_datasets:
             click.echo(f'No dataset found with id: {dataset}')

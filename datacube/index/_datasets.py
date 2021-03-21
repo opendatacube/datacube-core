@@ -348,10 +348,10 @@ class DatasetResource(object):
         Check if a dataset exists by UUID
 
         :param List[str] ids: list of dataset ids to check existence
-        :rtype set[Union[str, UUID]]
+        :rtype set[str]
         """
         with self._db.begin() as transaction:
-            return transaction.exists_dataset(ids)
+            return [str(row.id) for row in transaction.exists_dataset(ids)]
 
     def restore(self, ids):
         """
