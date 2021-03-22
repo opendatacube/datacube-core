@@ -469,13 +469,13 @@ def _get_derived_set(index: Index, id_: str) -> Set[Dataset]:
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[str]):
-    datasets_for_archive = index.datasets.exists(ids)
+    datasets_for_archive = {dataset_id: exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
 
-    non_existent_datasets = list(set(datasets_for_archive) - set(ids))
-    if non_existent_datasets:
-        for dataset in non_existent_datasets:
-            click.echo(f'No dataset found with id: {dataset}')
-        sys.exit(-1)
+    if False in datasets_for_archive.values():
+        for dataset_id, exists in datasets_for_archive.items():
+            if not exists:
+                click.echo(f'No dataset found with id: {dataset_id}')
+        sys.exit(0)
 
     derived_datasets = []
     if archive_derived:
@@ -483,7 +483,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[st
         # Get the UUID of our found derived datasets
         derived_datasets = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
 
-    all_datasets = derived_datasets + datasets_for_archive
+    all_datasets = derived_datasets + [uuid for uuid in datasets_for_archive.keys()]
 
     for dataset in all_datasets:
         click.echo(f'Archiving dataset: {dataset}')

@@ -38,7 +38,7 @@ pytest -r a \
 
 set +x
 
-# Optinally validate example yaml docs.
+# Optionally validate example yaml docs.
 if which yamllint;
 then
     set -x
