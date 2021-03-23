@@ -475,7 +475,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[st
         for dataset_id, exists in datasets_for_archive.items():
             if not exists:
                 click.echo(f'No dataset found with id: {dataset_id}')
-        sys.exit(0)
+        sys.exit(-1)
 
     derived_datasets = []
     if archive_derived:
