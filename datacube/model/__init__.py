@@ -1048,11 +1048,20 @@ class ExtraDimensions:
         :param dim: The name of the dimension
         :return: A slice for the the requested dimension.
         """
+        dim_slice = self.measurements_index(dim)
+        return slice(*dim_slice)
+
+    def measurements_index(self, dim: str) -> Tuple[int, int]:
+        """Returns the index for slicing on a dimension as a tuple.
+
+        :param dim: The name of the dimension
+        :return: A tuple for the the requested dimension.
+        """
         if dim not in self._dim_slice:
             raise ValueError(f"Dimension {dim} not found.")
 
         dim_slice = self._dim_slice[dim]
-        return slice(*dim_slice)
+        return dim_slice
 
     def index_of(self, dim: str, value: Any) -> int:
         """Find index for value in the dimension dim
