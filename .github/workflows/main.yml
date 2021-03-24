@@ -120,6 +120,8 @@ jobs:
            echo "Skipping upload AWS_ACCESS_KEY_ID is not set"
         fi
       env:
+          AWS_DEFAULT_REGION: 'ap-southeast-2'
+          AWS_REGION: 'ap-southeast-2'
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           S3_DST: 's3://datacube-core-deployment/datacube'
