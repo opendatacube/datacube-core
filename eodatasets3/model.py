@@ -88,6 +88,7 @@ class ComplicatedNamingConventions:
         "usgs.gov": "usgs",
         "sinergise.com": "sinergise",
         "digitalearthafrica.org": "deafrica",
+        "esa.int": "esa",
         # Is there another organisation you want to use? Pull requests very welcome!
     }
 
