@@ -594,10 +594,12 @@ class Datacube(object):
                 if 'extra_dim' in m:
                     # When we want to support 3D native reads, we can start by replacing the for loop with
                     # read_ios.append(((index + extra_dim_index), (datasets, m, index_subset)))
-                    index_subset = extra_dims.measurements_slice(m.extra_dim.get('dimension'))
-                    measurements_subset = m.extra_dim.get('measurement_map')[index_subset]
-                    for extra_dim_index, extra_dim_name in numpy.ndenumerate(measurements_subset):
-                        read_ios.append(((index + extra_dim_index), (datasets, m, extra_dim_index[0])))
+                    index_subset = extra_dims.measurements_index(m.extra_dim.get('dimension'))
+                    measurements_subset = m.extra_dim.get('measurement_map')[slice(*index_subset)]
+                    for result_index, (extra_dim_index, extra_dim_name) in enumerate(
+                        zip(range(*index_subset), measurements_subset)
+                    ):
+                        read_ios.append(((index + (result_index,)), (datasets, m, extra_dim_index)))
                 else:
                     # Get extra_dim index if available
                     extra_dim_index = m.get('extra_dim_index', None)
@@ -939,11 +941,12 @@ def _make_dask_array(chunked_srcs,
                 # 3D case
                 if 'extra_dim' in measurement:
                     # Do extra_dim subsetting here
-                    index_subset = extra_dims.measurements_slice(measurement.extra_dim.get('dimension'))
-                    for extra_dim_index, extra_dim_name in numpy.ndenumerate(
-                        measurement.extra_dim.get('measurement_map')[index_subset]
+                    index_subset = extra_dims.measurements_index(measurement.extra_dim.get('dimension'))
+                    measurements_subset = measurement.extra_dim.get('measurement_map')[slice(*index_subset)]
+                    for result_index, (extra_dim_index, extra_dim_name) in enumerate(
+                        zip(range(*index_subset), measurements_subset)
                     ):
-                        dsk[key_prefix + extra_dim_index + idx] = val + (extra_dim_index[0],)
+                        dsk[key_prefix + (result_index,) + idx] = val + (extra_dim_index,)
                 else:
                     # Get extra_dim index if available
                     extra_dim_index = measurement.get('extra_dim_index', None)
