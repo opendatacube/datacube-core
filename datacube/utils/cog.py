@@ -44,7 +44,7 @@ def _write_cog(pix: np.ndarray,
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
     :param ovr_blocksize: Size of internal tiles in overview images (defaults to blocksize)
     :param overview_resampling: Use this resampling when computing overviews
-    :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32]
+    :param overview_levels: List of shrink factors to compute overviews for: [2,4,8,16,32]
                             to disable overviews supply empty list ``[]``
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``
 
