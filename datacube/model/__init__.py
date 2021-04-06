@@ -573,7 +573,7 @@ class DatasetType:
                 dim_name = extra_dim.get('dimension')
                 if len(extra_dimension_values.get(dim_name)) != len(extra_dim.get('alias_map')):
                     raise ValueError(
-                        f"alias_map should be the same length as extra_dimention "
+                        f"alias_map should be the same length as extra_dimensions "
                         f"{dim_name} values in the product definition"
                     )
 
@@ -584,7 +584,7 @@ class DatasetType:
                 spectral_definition_map = extra_dim.get('spectral_definition_map')
                 if len(extra_dimension_values.get(dim_name)) != len(spectral_definition_map):
                     raise ValueError(
-                        f"spectral_definition_map should be the same length as extra_dimention "
+                        f"spectral_definition_map should be the same length as extra_dimensions "
                         f"{dim_name} values in the product definition"
                     )
 
@@ -602,7 +602,7 @@ class DatasetType:
                 if m_name in measurement_names:
                     raise ValueError(
                         f"Trying to generate measurement {m_name} from 3D measurement "
-                        f"{m.get('name')}, but it already defined in the product definition"
+                        f"{m.get('name')}, but it is already defined in the product definition"
                     )
                 if m_name in duplicates_names:
                     raise ValueError(f"Found duplicate measurement name {m_name} in 3D measurement {m.get('name')}")
@@ -613,7 +613,7 @@ class DatasetType:
                 for alias in aliases:
                     if alias in duplicates_aliases:
                         raise ValueError(f"Found duplicate alias {alias} in 3D measurement {m.get('name')}")
-                    duplicates_names.add(alias)
+                    duplicates_aliases.add(alias)
 
     def canonical_measurement(self, measurement: str) -> str:
         """ resolve measurement alias into canonical name
