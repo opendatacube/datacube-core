@@ -32,7 +32,12 @@ from datacube.utils.geometry import compute_reproject_roi
 from datacube.utils.geometry.gbox import GeoboxTiles
 from datacube.utils.geometry._warp import resampling_s2rio
 from datacube.api.core import per_band_load_data_settings
-from odc.algo import xr_reproject
+try:
+    from odc.algo import xr_reproject
+except ImportError as e:
+    no_reproject = True
+else:
+    no_reproject = False
 
 from .utils import qualified_name, merge_dicts
 from .utils import select_unique, select_keys, reject_keys, merge_search_terms
@@ -803,6 +808,8 @@ class Reproject(VirtualProduct):
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         """ Convert grouped datasets to `xarray.Dataset`. """
+        if no_reproject:
+            raise VirtualProductException("Reproject not available without package odc-algo")
         geobox = grouped.geobox
 
         measurements = self.output_measurements(grouped.product_definitions)
