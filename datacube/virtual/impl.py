@@ -32,6 +32,7 @@ from datacube.utils.geometry import compute_reproject_roi
 from datacube.utils.geometry.gbox import GeoboxTiles
 from datacube.utils.geometry._warp import resampling_s2rio
 from datacube.api.core import per_band_load_data_settings
+from odc.algo import xr_reproject
 
 from .utils import qualified_name, merge_dicts
 from .utils import select_unique, select_keys, reject_keys, merge_search_terms
@@ -805,10 +806,15 @@ class Reproject(VirtualProduct):
         geobox = grouped.geobox
 
         measurements = self.output_measurements(grouped.product_definitions)
-
+        # it looks an overkill to resample differently among bands
+        # keep as it was there
         band_settings = dict(zip(list(measurements),
                                  per_band_load_data_settings(measurements,
                                                              resampling=self.get('resampling', 'nearest'))))
+        resamplings = set([s.get('resampling_method') for s in band_settings.values()])
+        resampling_group = dict()
+        for resampling in resamplings:
+            resampling_group[resampling] = [key for key, value in band_settings.items() if value.get('resampling_method') == resampling]
 
         boxes = [VirtualDatasetBox(box_slice.box, None, True, box_slice.product_definitions, geopolygon=geobox.extent)
                  for box_slice in grouped.split()]
@@ -820,97 +826,15 @@ class Reproject(VirtualProduct):
             rasters = [self._input.fetch(box, dask_chunks={key: 1 for key in dask_chunks if key not in geobox.dims},
                                          **reject_keys(load_settings, ['dask_chunks']))
                        for box in boxes]
-
+        dask_chunks = [dask_chunks.get(k) for k in ['y', 'x']]
+        if None in dask_chunks:
+            dask_chunks = None
         result = xarray.Dataset()
-        result.coords['time'] = grouped.box.coords['time']
-
-        for name, coord in grouped.geobox.coordinates.items():
-            result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
-
-        for measurement in measurements:
-            result[measurement] = xarray.concat([reproject_band(raster[measurement],
-                                                                geobox,
-                                                                band_settings[measurement]['resampling_method'],
-                                                                grouped.box.dims + geobox.dims,
-                                                                dask_chunks)
-                                                 for raster in rasters], dim='time')
-
+        for resampling, bands in resampling_group.items():
+            result = result.merge(xarray.concat([xr_reproject(raster[bands], geobox, resampling, dask_chunks)
+                                 for raster in rasters], dim='time'))
         result.attrs['crs'] = geobox.crs
         return result
-
-
-def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
-    """ Reproject a single measurement to the geobox. """
-    if not hasattr(band.data, 'dask') or dask_chunks is None:
-        data = reproject_array(band.data, band.nodata, band.geobox, geobox, resampling)
-        return wrap_in_dataarray(data, band, geobox, dims)
-
-    dask_name = 'warp_{name}-{token}'.format(name=band.name, token=uuid.uuid4().hex)
-    dependencies = [band.data]
-
-    spatial_chunks = tuple(dask_chunks.get(k, geobox.shape[i])
-                           for i, k in enumerate(geobox.dims))
-
-    gt = GeoboxTiles(geobox, spatial_chunks)
-    new_layer = {}
-
-    for tile_index in numpy.ndindex(gt.shape):
-        sub_geobox = gt[tile_index]
-        # find the input array slice from the output geobox
-        reproject_roi = compute_reproject_roi(band.geobox, sub_geobox, padding=1)
-
-        # find the chunk from the input array with the slice index
-        subset_band = band[(...,) + reproject_roi.roi_src].chunk(-1)
-
-        if min(subset_band.shape) == 0:
-            # pad the empty chunk
-            new_layer[(dask_name,) + tile_index] = (numpy.full, sub_geobox.shape, band.nodata, band.dtype)
-        else:
-            # next 3 lines to generate the new graph
-            dependencies.append(subset_band.data)
-            # get the input dask array for the function `reproject_array`
-            band_key = list(flatten(subset_band.data.__dask_keys__()))[0]
-            # generate a new layer of dask graph with reroject
-            new_layer[(dask_name,) + tile_index] = (reproject_array,
-                                                    band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)
-
-    # create a new graph with the additional layer and pack the graph into dask.array
-    # since only regular chunking is allowed at the higher level dask.array interface,
-    # to manipulate the graph seems to be the easiest way to obtain a dask.array with irregular chunks after reproject
-    data = dask.array.Array(band.data.dask.from_collections(dask_name, new_layer, dependencies=dependencies),
-                            dask_name,
-                            chunks=spatial_chunks,
-                            dtype=band.dtype,
-                            shape=gt.base.shape)
-
-    return wrap_in_dataarray(data, band, geobox, dims)
-
-
-def reproject_array(src, nodata, s_geobox, d_geobox, resampling):
-    """ Reproject a numpy array. """
-    dst = numpy.full(d_geobox.shape, fill_value=nodata, dtype=src.dtype)
-    rio_reproject(src=src, dst=dst,
-                  s_gbox=s_geobox, d_gbox=d_geobox,
-                  resampling=resampling_s2rio(resampling),
-                  src_nodata=nodata,
-                  dst_nodata=nodata)
-    return dst
-
-
-def wrap_in_dataarray(reprojected_data, src_band, dst_geobox, dims):
-    """ Wrap the reproject numpy array in a `xarray.DataArray` with relevant metadata. """
-    non_spatial_shape = src_band.shape[:-2]
-    assert all(x == 1 for x in non_spatial_shape)
-
-    result = xarray.DataArray(data=reprojected_data.reshape(non_spatial_shape + dst_geobox.shape),
-                              dims=dims, attrs=src_band.attrs)
-    result.coords['time'] = src_band.coords['time']
-
-    for name, coord in dst_geobox.coordinates.items():
-        result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
-
-    result.attrs['crs'] = dst_geobox.crs
-    return result
 
 
 def virtual_product_kind(recipe):
