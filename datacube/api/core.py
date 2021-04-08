@@ -323,6 +323,9 @@ class Datacube(object):
                 if k in extra_dims.dims and query.get(k, None) is not None
             }
             extra_dims = extra_dims[extra_dims_slice]
+            # Check if empty
+            if extra_dims.has_empty_dim():
+                return xarray.Dataset()
 
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
                                grid_spec=datacube_product.grid_spec,

@@ -986,6 +986,16 @@ class ExtraDimensions:
             for name, dim in extra_dim.items()
         }
 
+    def has_empty_dim(self) -> bool:
+        """Return True if ExtraDimensions has an empty dimension, otherwise False.
+
+        :return: A boolean if ExtraDimensions has an empty dimension, otherwise False.
+        """
+        for value in self._coords.values():
+            if value.shape[0] == 0:
+                return True
+        return False
+
     def __getitem__(self, dim_slices: Dict[str, Union[float, Tuple[float, float]]]) -> "ExtraDimensions":
         """Return a ExtraDimensions subsetted by dim_slices
 
