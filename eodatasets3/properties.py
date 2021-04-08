@@ -199,6 +199,18 @@ _LANDSAT_EXTENDED_PROPS = {
 _SENTINEL_EXTENDED_PROPS = {
     "sentinel:sentinel_tile_id": parsed_sentinel_tile_id,
     "sentinel:datatake_start_datetime": datetime_type,
+    "sentinel:data_type": None,
+    "sentinel:datastrip_id": None,
+    "sentinel:datatake_type": None,
+    "sentinel:downlink_orbit_number": None,
+    "sentinel:orbit": None,
+    "sentinel:orbit_direction": None,
+    "sentinel:processing_baseline": None,
+    "sentinel:processing_center": None,
+    "sentinel:product_type": None,
+    "sentinel:reception_station": None,
+    "sentinel:software_version": None,
+    "sentinel:source_system": None,
 }
 
 
