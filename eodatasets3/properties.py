@@ -234,6 +234,7 @@ class StacPropertyView(collections.abc.Mapping):
         "odc:producer": producer_check,
         "odc:product_family": None,
         "odc:region_code": None,
+        "odc:dataset_maturity": None,
         **_LANDSAT_EXTENDED_PROPS,
         **_GQA_FMASK_PROPS,
         **_SENTINEL_EXTENDED_PROPS,
