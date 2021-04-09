@@ -16,6 +16,7 @@ class FileFormat(Enum):
     GeoTIFF = 1
     NetCDF = 2
     Zarr = 3
+    JPEG2000 = 4
 
 
 def nest_properties(d: Mapping[str, Any], separator=":") -> Dict[str, Any]:
@@ -199,18 +200,13 @@ _LANDSAT_EXTENDED_PROPS = {
 _SENTINEL_EXTENDED_PROPS = {
     "sentinel:sentinel_tile_id": parsed_sentinel_tile_id,
     "sentinel:datatake_start_datetime": datetime_type,
-    "sentinel:data_type": None,
     "sentinel:datastrip_id": None,
     "sentinel:datatake_type": None,
-    "sentinel:downlink_orbit_number": None,
-    "sentinel:orbit": None,
-    "sentinel:orbit_direction": None,
-    "sentinel:processing_baseline": None,
     "sentinel:processing_center": None,
-    "sentinel:product_type": None,
     "sentinel:reception_station": None,
-    "sentinel:software_version": None,
-    "sentinel:source_system": None,
+    "sentinel:utm_zone": int,
+    "sentinel:latitude_band": None,
+    "sentinel:grid_square": None,
 }
 
 
@@ -233,6 +229,9 @@ class StacPropertyView(collections.abc.MutableMapping):
         "eo:constellation": None,
         "eo:sun_azimuth": degrees_type,
         "eo:sun_elevation": degrees_type,
+        "sat:orbit_state": None,
+        "sat:relative_orbit": int,
+        "sat:absolute_orbit": int,
         "landsat:landsat_product_id": None,
         "landsat:landsat_scene_id": None,
         "landsat:wrs_path": int,
