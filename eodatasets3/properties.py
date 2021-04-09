@@ -214,7 +214,7 @@ _SENTINEL_EXTENDED_PROPS = {
 }
 
 
-class StacPropertyView(collections.abc.Mapping):
+class StacPropertyView(collections.abc.MutableMapping):
     # Every property we've seen or dealt with so far. Feel free to expand with abandon...
     # This is to minimise minor typos, case differences, etc, which plagued previous systems.
     # Keep sorted.
