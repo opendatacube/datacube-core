@@ -178,6 +178,18 @@ def catalog():
                                 measurements: [blue]
                               - product: ls8_nbar_albers
                                 measurements: [blue]
+
+            reproject_utm:
+                recipe:
+                    reproject:
+                        output_crs: EPSG:32755
+                        resolution: [30, -30]
+                    input:
+                        collate:
+                          - product: ls7_nbar_albers
+                            measurements: [blue]
+                          - product: ls8_nbar_albers
+                            measurements: [blue]
     """)
 
 
@@ -509,3 +521,16 @@ def test_register(dc, query):
         data = bluegreen.load(dc, **query)
 
     assert 'bluegreen' in data
+
+
+def test_reproject(dc, query, catalog):
+    reproject_utm = catalog['reproject_utm']
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = reproject_utm.load(dc, **query)
+
+    assert data.crs == geometry.CRS('EPSG:32755')
+    assert data.coords['x'].attrs['resolution'] == -30
+    assert data.coords['y'].attrs['resolution'] == 30
