@@ -532,5 +532,6 @@ def test_reproject(dc, query, catalog):
         data = reproject_utm.load(dc, **query)
 
     assert data.crs == geometry.CRS('EPSG:32755')
+    assert data.geobox.crs == geometry.CRS('EPSG:32755')
     assert data.coords['x'].attrs['resolution'] == -30
     assert data.coords['y'].attrs['resolution'] == 30
