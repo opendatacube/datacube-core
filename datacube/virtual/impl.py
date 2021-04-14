@@ -802,6 +802,9 @@ class Reproject(VirtualProduct):
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         """ Convert grouped datasets to `xarray.Dataset`. """
+        from collections import OrderedDict
+        spatial_ref = 'spatial_ref'
+
         geobox = grouped.geobox
 
         measurements = self.output_measurements(grouped.product_definitions)
@@ -824,8 +827,8 @@ class Reproject(VirtualProduct):
         result = xarray.Dataset()
         result.coords['time'] = grouped.box.coords['time']
 
-        for name, coord in grouped.geobox.coordinates.items():
-            result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
+        coords = OrderedDict(**geobox.xr_coords(with_crs=spatial_ref))
+        result.coords.update(coords)
 
         for measurement in measurements:
             result[measurement] = xarray.concat([reproject_band(raster[measurement],
