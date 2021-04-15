@@ -39,13 +39,29 @@ def gen_test_data(prefix, dask=False, shape=None):
     return xx.aa.isel(time=0), ds
 
 
-@pytest.mark.parametrize("use_windowed_writes", [False, True])
-def test_cog_file(tmpdir, use_windowed_writes):
+@pytest.mark.parametrize(
+    "opts",
+    [
+        {},
+        dict(use_windowed_writes=True),
+        dict(
+            intermediate_compression={"compress": "deflate", "zlevel": 1},
+            use_windowed_writes=True,
+        ),
+        dict(intermediate_compression=True),
+        dict(intermediate_compression="deflate"),
+    ],
+)
+def test_cog_file(tmpdir, opts):
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp)
 
     # write to file
-    ff = write_cog(xx, pp / "cog.tif", use_windowed_writes=use_windowed_writes)
+    ff = write_cog(
+        xx,
+        pp / "cog.tif",
+        **opts
+    )
     assert isinstance(ff, Path)
     assert ff == pp / "cog.tif"
     assert ff.exists()
@@ -60,7 +76,7 @@ def test_cog_file(tmpdir, use_windowed_writes):
         xx.geobox,
         pp / "cog-2-bands.tif",
         overview_levels=[],
-        use_windowed_writes=use_windowed_writes,
+        **opts
     )
 
     yy, mm = rio_slurp(pp / "cog-2-bands.tif")
@@ -79,7 +95,7 @@ def test_cog_file(tmpdir, use_windowed_writes):
         xx_odd,
         pp / "cog_odd.tif",
         nodata=xx_odd.attrs["nodata"],
-        use_windowed_writes=use_windowed_writes,
+        **opts
     )
     assert isinstance(ff, Path)
     assert ff == pp / "cog_odd.tif"
@@ -202,7 +218,8 @@ def test_cog_no_crs(tmpdir, with_dask):
         to_cog(xx)
 
 
-def test_cog_rgba(tmpdir):
+@pytest.mark.parametrize("use_windowed_writes", [False, True])
+def test_cog_rgba(tmpdir, use_windowed_writes):
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp)
     pix = np.dstack([xx.values] * 4)
@@ -210,7 +227,7 @@ def test_cog_rgba(tmpdir):
     assert rgba.geobox == xx.geobox
     assert rgba.shape[:2] == rgba.geobox.shape
 
-    ff = write_cog(rgba, pp / "cog.tif")
+    ff = write_cog(rgba, pp / "cog.tif", use_windowed_writes=use_windowed_writes)
     yy = rio_slurp_xarray(ff)
 
     assert yy.geobox == rgba.geobox
@@ -218,4 +235,9 @@ def test_cog_rgba(tmpdir):
     np.testing.assert_array_equal(yy.values, rgba.values)
 
     with pytest.raises(ValueError):
-        _write_cog(rgba.values[1:, :, :], rgba.geobox, ":mem:")
+        _write_cog(
+            rgba.values[1:, :, :],
+            rgba.geobox,
+            ":mem:",
+            use_windowed_writes=use_windowed_writes,
+        )
