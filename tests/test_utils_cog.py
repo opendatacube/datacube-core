@@ -20,30 +20,32 @@ from datacube.utils.cog import write_cog, to_cog, _write_cog
 
 
 def gen_test_data(prefix, dask=False, shape=None):
-    w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
+    w, h, dtype, nodata, ndw = 96, 64, "int16", -999, 7
     if shape is not None:
         h, w = shape
 
     aa = mk_test_image(w, h, dtype, nodata, nodata_width=ndw)
 
     ds, gbox = gen_tiff_dataset(
-        SimpleNamespace(name='aa', values=aa, nodata=nodata), prefix)
+        SimpleNamespace(name="aa", values=aa, nodata=nodata), prefix
+    )
     extras = {}
 
     if dask:
-        extras.update(dask_chunks={'time': 1})
+        extras.update(dask_chunks={"time": 1})
 
     xx = native_load(ds, **extras)
 
     return xx.aa.isel(time=0), ds
 
 
-def test_cog_file(tmpdir):
+@pytest.mark.parametrize("use_windowed_writes", [False, True])
+def test_cog_file(tmpdir, use_windowed_writes):
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp)
 
     # write to file
-    ff = write_cog(xx, pp / "cog.tif")
+    ff = write_cog(xx, pp / "cog.tif", use_windowed_writes=use_windowed_writes)
     assert isinstance(ff, Path)
     assert ff == pp / "cog.tif"
     assert ff.exists()
@@ -53,10 +55,13 @@ def test_cog_file(tmpdir):
     assert yy.geobox == xx.geobox
     assert yy.nodata == xx.nodata
 
-    _write_cog(np.stack([xx.values, xx.values]),
-               xx.geobox,
-               pp / "cog-2-bands.tif",
-               overview_levels=[])
+    _write_cog(
+        np.stack([xx.values, xx.values]),
+        xx.geobox,
+        pp / "cog-2-bands.tif",
+        overview_levels=[],
+        use_windowed_writes=use_windowed_writes,
+    )
 
     yy, mm = rio_slurp(pp / "cog-2-bands.tif")
     assert mm.gbox == xx.geobox
@@ -70,8 +75,12 @@ def test_cog_file(tmpdir):
     # sizes that are not multiples of 16
     # also check that supplying `nodata=` doesn't break things
     xx_odd = xx[:23, :63]
-    ff = write_cog(xx_odd, pp / "cog_odd.tif",
-                   nodata=xx_odd.attrs["nodata"])
+    ff = write_cog(
+        xx_odd,
+        pp / "cog_odd.tif",
+        nodata=xx_odd.attrs["nodata"],
+        use_windowed_writes=use_windowed_writes,
+    )
     assert isinstance(ff, Path)
     assert ff == pp / "cog_odd.tif"
     assert ff.exists()
@@ -103,10 +112,7 @@ def test_cog_file_dask(tmpdir):
     assert yy.nodata == xx.nodata
 
 
-@pytest.mark.parametrize("shape", [
-    None,
-    (1024, 512)
-])
+@pytest.mark.parametrize("shape", [None, (1024, 512)])
 def test_cog_mem(tmpdir, shape):
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp, shape=shape)
@@ -200,19 +206,16 @@ def test_cog_rgba(tmpdir):
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp)
     pix = np.dstack([xx.values] * 4)
-    rgba = xr.DataArray(pix,
-                        attrs=xx.attrs,
-                        dims=('y', 'x', 'band'),
-                        coords=xx.coords)
-    assert(rgba.geobox == xx.geobox)
-    assert(rgba.shape[:2] == rgba.geobox.shape)
+    rgba = xr.DataArray(pix, attrs=xx.attrs, dims=("y", "x", "band"), coords=xx.coords)
+    assert rgba.geobox == xx.geobox
+    assert rgba.shape[:2] == rgba.geobox.shape
 
     ff = write_cog(rgba, pp / "cog.tif")
     yy = rio_slurp_xarray(ff)
 
-    assert(yy.geobox == rgba.geobox)
-    assert(yy.shape == rgba.shape)
+    assert yy.geobox == rgba.geobox
+    assert yy.shape == rgba.shape
     np.testing.assert_array_equal(yy.values, rgba.values)
 
     with pytest.raises(ValueError):
-        _write_cog(rgba.values[1:, :, :], rgba.geobox, ':mem:')
+        _write_cog(rgba.values[1:, :, :], rgba.geobox, ":mem:")

@@ -34,6 +34,7 @@ def _write_cog(pix: np.ndarray,
                overview_resampling: Optional[str] = None,
                overview_levels: Optional[List[int]] = None,
                ovr_blocksize: Optional[int] = None,
+               use_windowed_writes: bool = False,
                **extra_rio_opts) -> Union[Path, bytes]:
     """Write geo-registered ndarray to GeoTiff file or RAM.
 
@@ -46,6 +47,7 @@ def _write_cog(pix: np.ndarray,
     :param overview_resampling: Use this resampling when computing overviews
     :param overview_levels: List of shrink factors to compute overviews for: [2,4,8,16,32]
                             to disable overviews supply empty list ``[]``
+    :param use_windowed_writes: Write image block by block (might need this for large images)
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``
 
     When fname=":mem:" write COG to memory rather than to a file and return it
@@ -123,16 +125,29 @@ def _write_cog(pix: np.ndarray,
 
     rio_opts.update(extra_rio_opts)
 
+    def _write(pix, band, dst):
+        if not use_windowed_writes:
+            dst.write(pix, band)
+            return
+
+        for _, win in dst.block_windows():
+            if pix.ndim == 2:
+                block = pix[win.toslices()]
+            else:
+                block = pix[(slice(None),) + win.toslices()]
+
+            dst.write(block, indexes=band, window=win)
+
     # Deal efficiently with "no overviews needed case"
     if len(overview_levels) == 0:
         if fname == ":mem:":
             with rasterio.MemoryFile() as mem:
                 with mem.open(driver="GTiff", **rio_opts) as dst:
-                    dst.write(pix, band)
+                    _write(pix, band, dst)
                 return bytes(mem.getbuffer())
         else:
             with rasterio.open(path, mode='w', driver='GTiff', **rio_opts) as dst:
-                dst.write(pix, band)
+                _write(pix, band, dst)
             return path
 
     # copy re-compresses anyway so skip compression for temp image
@@ -144,7 +159,7 @@ def _write_cog(pix: np.ndarray,
     with rasterio.Env(GDAL_TIFF_OVR_BLOCKSIZE=ovr_blocksize):
         with rasterio.MemoryFile() as mem:
             with mem.open(driver="GTiff", **tmp_opts) as tmp:
-                tmp.write(pix, band)
+                _write(pix, band, tmp)
                 tmp.build_overviews(overview_levels, resampling)
 
                 if fname == ":mem:":
@@ -183,6 +198,7 @@ def write_cog(geo_im: xr.DataArray,
               ovr_blocksize: Optional[int] = None,
               overview_resampling: Optional[str] = None,
               overview_levels: Optional[List[int]] = None,
+              use_windowed_writes: bool = False,
               **extra_rio_opts) -> Union[Path, bytes, Delayed]:
     """
     Save ``xarray.DataArray`` to a file in Cloud Optimized GeoTiff format.
@@ -214,6 +230,7 @@ def write_cog(geo_im: xr.DataArray,
                             to disable overviews supply empty list ``[]``
     :param nodata: Set ``nodata`` flag to this value if supplied, by default ``nodata`` is
                    read from the attributes of the input array (``geo_im.attrs['nodata']``).
+    :param use_windowed_writes: Write image block by block (might need this for large images)
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``
 
     :returns: Path to which output was written
@@ -257,6 +274,7 @@ def write_cog(geo_im: xr.DataArray,
         ovr_blocksize=ovr_blocksize,
         overview_resampling=overview_resampling,
         overview_levels=overview_levels,
+        use_windowed_writes=use_windowed_writes,
         **extra_rio_opts)
 
 
@@ -265,6 +283,7 @@ def to_cog(geo_im: xr.DataArray,
            ovr_blocksize: Optional[int] = None,
            overview_resampling: Optional[str] = None,
            overview_levels: Optional[List[int]] = None,
+           use_windowed_writes: bool = False,
            **extra_rio_opts) -> Union[bytes, Delayed]:
     """
     Compress ``xarray.DataArray`` into Cloud Optimized GeoTiff bytes in memory.
@@ -286,6 +305,7 @@ def to_cog(geo_im: xr.DataArray,
     :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32]
     :param nodata: Set ``nodata`` flag to this value if supplied, by default ``nodata`` is
                    read from the attributes of the input array (``geo_im.attrs['nodata']``).
+    :param use_windowed_writes: Write image block by block (might need this for large images)
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``
 
     :returns: In-memory GeoTiff file as bytes
@@ -300,6 +320,7 @@ def to_cog(geo_im: xr.DataArray,
                    ovr_blocksize=ovr_blocksize,
                    overview_resampling=overview_resampling,
                    overview_levels=overview_levels,
+                   use_windowed_writes=use_windowed_writes,
                    **extra_rio_opts)
 
     assert isinstance(bb, (bytes, Delayed))  # for mypy sake for :mem: output it bytes or delayed bytes
