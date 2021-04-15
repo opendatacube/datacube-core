@@ -178,6 +178,7 @@ _delayed_write_cog_to_file = dask.delayed(   # pylint: disable=invalid-name
 
 def write_cog(geo_im: xr.DataArray,
               fname: Union[str, Path],
+              overwrite: bool = False,
               blocksize: Optional[int] = None,
               ovr_blocksize: Optional[int] = None,
               overview_resampling: Optional[str] = None,
@@ -205,6 +206,7 @@ def write_cog(geo_im: xr.DataArray,
 
     :param geo_im: ``xarray.DataArray`` with crs
     :param fname: Output path or ``":mem:"`` in which case compress to RAM and return bytes
+    :param overwrite: True -- replace existing file, False -- abort with IOError exception
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
     :param ovr_blocksize: Size of internal tiles in overview images (defaults to blocksize)
     :param overview_resampling: Use this resampling when computing overviews
@@ -250,6 +252,7 @@ def write_cog(geo_im: xr.DataArray,
         geobox,
         fname,
         nodata=nodata,
+        overwrite=overwrite,
         blocksize=blocksize,
         ovr_blocksize=ovr_blocksize,
         overview_resampling=overview_resampling,
