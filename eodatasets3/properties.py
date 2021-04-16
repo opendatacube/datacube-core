@@ -108,7 +108,7 @@ def degrees_type(value):
     value = float(value)
 
     if not (-360.0 <= value <= 360.0):
-        raise ValueError("Expected percent between 0,100")
+        raise ValueError("Expected degrees between -360,+360")
 
     return value
 
