@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import warnings
+import toolz
 import rasterio
 from rasterio.shutil import copy as rio_copy
 import numpy as np
@@ -163,10 +164,7 @@ def _write_cog(
             return path
 
     # copy re-compresses anyway so skip compression for temp image
-    tmp_opts = rio_opts.copy()
-    tmp_opts.pop("compress")
-    tmp_opts.pop("predictor")
-    tmp_opts.pop("zlevel")
+    tmp_opts = toolz.dicttoolz.dissoc(rio_opts, "compress", "predictor", "zlevel")
     tmp_opts.update(intermediate_compression)
 
     with rasterio.Env(GDAL_TIFF_OVR_BLOCKSIZE=ovr_blocksize):
@@ -182,7 +180,15 @@ def _write_cog(
                             mem2.name,
                             driver="GTiff",
                             copy_src_overviews=True,
-                            **rio_opts
+                            **toolz.dicttoolz.dissoc(
+                                rio_opts,
+                                "width",
+                                "height",
+                                "count",
+                                "dtype",
+                                "crs",
+                                "transform",
+                            )
                         )
                         return bytes(mem2.getbuffer())
 
