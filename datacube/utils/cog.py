@@ -188,6 +188,7 @@ def _write_cog(
                                 "dtype",
                                 "crs",
                                 "transform",
+                                "nodata",
                             )
                         )
                         return bytes(mem2.getbuffer())
