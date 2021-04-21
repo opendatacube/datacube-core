@@ -233,6 +233,7 @@ _SENTINEL_EXTENDED_PROPS = {
     "sentinel:datatake_start_datetime": datetime_type,
     "sentinel:datastrip_id": parsed_sentinel_datastrip_id,
     "sentinel:datatake_type": None,
+    "sentinel:processing_baseline": None,
     "sentinel:processing_center": None,
     "sentinel:reception_station": None,
     "sentinel:utm_zone": int,
