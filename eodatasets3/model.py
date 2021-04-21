@@ -151,7 +151,6 @@ class ComplicatedNamingConventions:
                 "odc:producer",
                 "odc:product_family",
                 "odc:region_code",
-                "sentinel:sentinel_tile_id",
             ),
             dataset_separator_field="sentinel:datatake_start_datetime",
         )
@@ -431,7 +430,6 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
                 "odc:producer",
                 "odc:product_family",
                 "odc:region_code",
-                "sentinel:sentinel_tile_id",
                 "dea:dataset_maturity",
             ),
             dataset_separator_field="sentinel:datatake_start_datetime",
@@ -443,7 +441,7 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
         return int(self.dataset.collection_number)
 
     def _product_group(self, subname=None) -> str:
-        # Computues product group, e.g "ga_ls_wo_3"
+        # Computes product group, e.g "ga_ls_wo_3"
         # Deliberately fail if any of these attributes not found.
         parts = [
             self.producer_abbreviated,

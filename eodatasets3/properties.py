@@ -123,11 +123,40 @@ def producer_check(value):
 
 
 def parsed_sentinel_tile_id(tile_id) -> Tuple[str, Dict]:
-    """Extract useful extra fields from a sentinel tile id"""
+    """Extract useful extra fields from a sentinel tile id
+
+    >>> val, props = parsed_sentinel_tile_id("S2B_OPER_MSI_L1C_TL_EPAE_20201011T011446_A018789_T55HFA_N02.09")
+    >>> val
+    'S2B_OPER_MSI_L1C_TL_EPAE_20201011T011446_A018789_T55HFA_N02.09'
+    >>> props
+    {'sentinel:datatake_start_datetime': datetime.datetime(2020, 10, 11, 1, 14, 46, tzinfo=datetime.timezone.utc)}
+    """
     extras = {}
     split_tile_id = tile_id.split("_")
     try:
         datatake_sensing_time = datetime_type(split_tile_id[-4])
+        extras["sentinel:datatake_start_datetime"] = datatake_sensing_time
+    except IndexError:
+        pass
+
+    # TODO: we could extract other useful fields?
+
+    return tile_id, extras
+
+
+def parsed_sentinel_datastrip_id(tile_id) -> Tuple[str, Dict]:
+    """Extract useful extra fields from a sentinel datastrip id
+
+    >>> val, props = parsed_sentinel_datastrip_id("S2B_OPER_MSI_L1C_DS_EPAE_20201011T011446_S20201011T000244_N02.09")
+    >>> val
+    'S2B_OPER_MSI_L1C_DS_EPAE_20201011T011446_S20201011T000244_N02.09'
+    >>> props
+    {'sentinel:datatake_start_datetime': datetime.datetime(2020, 10, 11, 1, 14, 46, tzinfo=datetime.timezone.utc)}
+    """
+    extras = {}
+    split_tile_id = tile_id.split("_")
+    try:
+        datatake_sensing_time = datetime_type(split_tile_id[-3])
         extras["sentinel:datatake_start_datetime"] = datatake_sensing_time
     except IndexError:
         pass
@@ -202,7 +231,7 @@ _LANDSAT_EXTENDED_PROPS = {
 _SENTINEL_EXTENDED_PROPS = {
     "sentinel:sentinel_tile_id": parsed_sentinel_tile_id,
     "sentinel:datatake_start_datetime": datetime_type,
-    "sentinel:datastrip_id": None,
+    "sentinel:datastrip_id": parsed_sentinel_datastrip_id,
     "sentinel:datatake_type": None,
     "sentinel:processing_center": None,
     "sentinel:reception_station": None,
