@@ -452,33 +452,6 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
 
     def destination_folder(self, base: Path):
         self._check_enough_properties_to_name()
-        # DEA naming conventions folder hierarchy.
-        # Example: "ga_ls8c_ard_3/092/084/2016/06/28"
-
-        parts = [self.product_name]
-
-        # Cut the region code in subfolders
-        region_code = self.dataset.region_code
-        if region_code:
-            parts.extend(utils.subfolderise(region_code))
-
-        parts.extend(f"{self.dataset.datetime:%Y/%m/%d}".split("/"))
-
-        # If it's not a final product, append the maturity to the folder.
-        maturity: str = self.dataset.properties.get("dea:dataset_maturity")
-        if maturity and maturity != "final":
-            parts[-1] = f"{parts[-1]}_{maturity}"
-
-        if self.dataset_separator_field is not None:
-            val = self.dataset.properties[self.dataset_separator_field]
-            # TODO: choosable formatter?
-            if isinstance(val, datetime):
-                val = f"{val:%Y%m%dT%H%M%S}"
-            parts.append(val)
-        return base.joinpath(*parts)
-
-    def destination_folder(self, base: Path):
-        self._check_enough_properties_to_name()
         parts = [self.product_name, self.dataset.dataset_version.replace(".", "-")]
         parts.extend(utils.subfolderise(self.dataset.region_code))
         parts.extend(f"{self.dataset.datetime:%Y/%m/%d}".split("/"))
