@@ -26,6 +26,14 @@ def _dea_uri(product_name, base_uri):
 
 @attr.s(auto_attribs=True, slots=True)
 class ProductDoc:
+    """
+    The product that this dataset belongs to.
+
+    "name" is the local name in ODC.
+
+    href is intended as a more global unique "identifier" uri for the product.
+    """
+
     name: str = None
     href: str = None
 
@@ -36,6 +44,8 @@ class ProductDoc:
 
 @attr.s(auto_attribs=True, slots=True, hash=True)
 class GridDoc:
+    """The grid describing a measurement/band's pixels"""
+
     shape: Tuple[int, int]
     transform: affine.Affine
 
@@ -57,6 +67,13 @@ class MeasurementDoc:
 
 @attr.s(auto_attribs=True, slots=True)
 class AccessoryDoc:
+    """
+    An accessory is an extra file included in the dataset that is not
+    a measurement/band.
+
+    For example: thumbnails, alternative metadata documents, or checksum files.
+    """
+
     path: str
     type: str = None
     name: str = attr.ib(metadata=dict(doc_exclude=True), default=None)
