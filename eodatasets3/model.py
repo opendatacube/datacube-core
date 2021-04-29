@@ -247,7 +247,7 @@ class ComplicatedNamingConventions:
         self._check_enough_properties_to_name()
         return self._dataset_label()
 
-    def destination_folder(self, base: Path):
+    def destination_folder(self, base: Path) -> Path:
         self._check_enough_properties_to_name()
         # DEA naming conventions folder hierarchy.
         # Example: "ga_ls8c_ard_3/092/084/2016/06/28"
@@ -467,7 +467,7 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
         ]
         return "_".join(parts)
 
-    def destination_folder(self, base: Path):
+    def destination_folder(self, base: Path) -> Path:
         self._check_enough_properties_to_name()
         parts = [self.product_name, self.dataset.dataset_version.replace(".", "-")]
         parts.extend(utils.subfolderise(self.dataset.region_code))
