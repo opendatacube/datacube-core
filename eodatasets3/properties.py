@@ -239,6 +239,8 @@ _SENTINEL_EXTENDED_PROPS = {
     "sentinel:utm_zone": int,
     "sentinel:latitude_band": None,
     "sentinel:grid_square": None,
+    "sinergise_product_id": None,
+    "sinergise_product_name": None,
 }
 
 
