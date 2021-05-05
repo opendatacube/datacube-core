@@ -235,12 +235,12 @@ _SENTINEL_EXTENDED_PROPS = {
     "sentinel:datatake_type": None,
     "sentinel:processing_baseline": None,
     "sentinel:processing_center": None,
+    "sentinel:product_name": None,
     "sentinel:reception_station": None,
     "sentinel:utm_zone": int,
     "sentinel:latitude_band": None,
     "sentinel:grid_square": None,
     "sinergise_product_id": None,
-    "sinergise_product_name": None,
 }
 
 
