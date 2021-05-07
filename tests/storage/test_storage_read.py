@@ -243,8 +243,10 @@ def test_read_paste_v2(tmpdir):
 
         yy = np.full(gbox.shape, dst_nodata, dtype=rdr.dtype)
         yy_, roi = read_time_slice_v2(rdr, gbox, resampling, dst_nodata)
-        assert yy_ is not None
-        yy[roi] = yy_
+        if yy_ is None:
+            print(f"Got None out of read_time_slice_v2: {roi} must be empty")
+        else:
+            yy[roi] = yy_
         return yy, roi
 
     # read native whole
