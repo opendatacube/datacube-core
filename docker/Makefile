@@ -12,10 +12,6 @@ docker: dist/datacube.whl
 	@echo Building $(dkr)
 	docker build -t $(dkr) .
 
-docker-next: dist/datacube.whl
-	@echo Building $(dkr) '(next)'
-	docker build -t $(dkr) --build-arg V_BASE=-3.1.3 --build-arg V_PG=12  .
-
 check:
 	@docker run --rm -ti \
   -v "$$(dirname $$(pwd))":/src/datacube-core \

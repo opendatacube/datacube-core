@@ -1452,6 +1452,7 @@ def test_crs_compat():
     with pytest.raises(geometry.CRSError):
         CRS(("random", "tuple"))
 
+    crs = CRS("epsg:3857")
     with pytest.warns(UserWarning):
         crs_dict = crs.proj.to_dict()
 

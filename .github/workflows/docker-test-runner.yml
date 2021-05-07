@@ -30,7 +30,7 @@ jobs:
     strategy:
       max-parallel: 2
       matrix:
-        python-version: [3.6, 3.8]
+        python-version: [3.8]
 
 
     steps:
@@ -71,7 +71,7 @@ jobs:
         if [ "${{ matrix.python-version }}" == "3.8" ]; then
           echo ::set-output name=docker_image::${ORG}/${IMAGE}:py38
           docker build \
-            --build-arg V_BASE=-3.1.3 \
+            --build-arg V_BASE=3.3.0 \
             --build-arg V_PG=12 \
             --tag ${ORG}/${IMAGE}:py38 \
             ./docker/

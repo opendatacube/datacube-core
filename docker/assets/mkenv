@@ -5,33 +5,28 @@ set -o noclobber
 set -o pipefail
 set -o nounset
 
-# Download all the wheels needed to install datacube[all]
-mkdir -p /wheels-tmp
+# Download/compile all the wheels needed to install datacube[all]
+mkdir -p /tmp/wheels
 find /conf -type f -name 'datacube-*.whl' | head -1 | awk '{print $1"[all]"}' > /tmp/requirements-dc.txt
-echo "GDAL==$(gdal-config --version)" > /tmp/constraints-gdal.txt
+cat <<EOF >> /tmp/requirements-dc.txt
+--no-binary=rasterio
+--no-binary=fiona
+--no-binary=shapely
+--no-binary=pyproj
+--no-binary=netcdf4
+--no-binary=h5py
+EOF
+
 cat /tmp/requirements-dc.txt
-pip3 wheel \
-  --no-cache \
-  --no-cache-dir \
-  --wheel-dir=/wheels-tmp \
-  --requirement=/conf/requirements.txt \
-  --constraint=/conf/constraints.txt \
-  --requirement=/tmp/requirements-dc.txt \
-  --constraint=/tmp/constraints-gdal.txt
+env-build-tool wheels /tmp/requirements-dc.txt /conf/constraints.txt /tmp/wheels
 # remove datacube wheel itself as we don't want it to be installed, only requirements of datacube
-find /wheels-tmp/ -type f -name "datacube-*whl" -delete
+find /tmp/wheels/ -type f -name "datacube-*whl" -delete
+
+# generate requirement.txt from wheels directory
+find /tmp/wheels/ -type f -name '*whl' | \
+    awk -F - '{gsub("^.*/", ""); print $1}' | \
+    tee /tmp/requirements-test-env.txt
 
 # make env root:users with write permissions for group
 umask 002
-mkdir -p /env
-chgrp users /env
-chmod g+s /env
-
-python3 -m venv /env
-/env/bin/pip install --upgrade pip setuptools wheel
-# install all downloaded wheels
-/env/bin/pip install \
-             --no-cache-dir \
-             --no-index \
-             --find-links=/wheels-tmp/ \
-             /wheels-tmp/*whl
+env-build-tool new_no_index /tmp/requirements-test-env.txt /env /tmp/wheels
