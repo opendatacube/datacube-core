@@ -5,9 +5,9 @@
 ## SPDX-License-Identifier: Apache-2.0
 ##
 ARG ORG=opendatacube
-ARG V_BASE=-3.0.4
-ARG V_PG=10
-FROM ${ORG}/geobase:builder${V_BASE} as env_builder
+ARG V_BASE=3.3.0
+ARG V_PG=12
+FROM ${ORG}/geobase-builder:${V_BASE} as env_builder
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
@@ -18,14 +18,14 @@ COPY requirements.txt /conf/requirements.txt
 COPY ./dist/datacube-*.whl /conf/
 
 RUN mkenv \
-  && rm -rf /wheels-tmp \
+  && rm -rf /tmp/wheels \
   && rm -rf /root/.cache/pip \
   && echo done
 
 #################################################################################
 # Runner stage
 #################################################################################
-FROM ${ORG}/geobase:runner${V_BASE}
+FROM ${ORG}/geobase-runner:${V_BASE}
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
