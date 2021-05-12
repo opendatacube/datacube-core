@@ -225,6 +225,7 @@ _GQA_FMASK_PROPS = {
 
 # Typically only from LPGS (ie. Level 1 products)
 _LANDSAT_EXTENDED_PROPS = {
+    "landsat:algorithm_source_surface_reflectance": None,
     "landsat:collection_category": None,
     "landsat:collection_number": int,
     "landsat:data_type": None,
