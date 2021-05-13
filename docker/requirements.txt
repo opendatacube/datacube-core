@@ -3,10 +3,3 @@ wheel
 setuptools>=42
 setuptools_scm[toml]>=3.4
 twine
-
-#no binary flags
---no-binary=pyproj,\
-shapely,\
-rasterio,\
-fiona,\
-netcdf4
