@@ -84,7 +84,15 @@ jobs:
 
     - name: Verify Docker Image
       run: |
+        # Make sure we test docker image we built
+        if [[ "${{ steps.build.outputs.docker_image }}" != "opendatacube/datacube-tests:latest" ]]; then
+            docker tag "${{ steps.build.outputs.docker_image }}" opendatacube/datacube-tests:latest
+        fi
+
         ./check-code.sh --with-docker integration_tests
+
+        echo "Verify that twine is installed"
+        docker run --rm opendatacube/datacube-tests:latest twine --version
 
     - name: DockerHub Login
       id: dkr
