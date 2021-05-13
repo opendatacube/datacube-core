@@ -76,7 +76,11 @@ jobs:
                   ${{ matrix.docker_image }} bash -
         python setup.py bdist_wheel sdist
         ls -lh ./dist/
-        twine check ./dist/*
+        if hash twine 2> /dev/null ; then
+           twine check ./dist/*
+        else
+           echo "WARNING: twine is missing from the docker!"
+        fi
         EOF
 
     - name: Check Code Style
