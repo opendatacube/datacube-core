@@ -182,5 +182,9 @@ def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client):
     assert 'AWS_REGION' in ee
     assert 'AWS_SESSION_TOKEN' not in ee
 
-    ee = client.submit(get_rio_env, sanitize=False).result()
+    def _activate_and_get(sanitize=True):
+        activate_from_config()
+        return get_rio_env(sanitize=sanitize)
+
+    ee = client.submit(_activate_and_get, sanitize=False).result()
     assert ee == ee_local
