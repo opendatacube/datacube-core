@@ -124,6 +124,27 @@ def test_product_dimensions():
     assert product.grid_spec is None
 
 
+def test_product_nodata_nan():
+    # When storing .nan to JSON in DB it becomes a string with value "NaN"
+    # Make sure it is converted back to real NaN
+    product = mk_sample_product('test', measurements=[dict(name='_nan',
+                                                           dtype='float32',
+                                                           nodata='NaN'),
+                                                      dict(name='_inf',
+                                                           dtype='float32',
+                                                           nodata='Infinity'),
+                                                      dict(name='_neg_inf',
+                                                           dtype='float32',
+                                                           nodata='-Infinity'),
+                                                      ])
+    for m in product.measurements.values():
+        assert isinstance(m.nodata, float)
+
+    assert numpy.isnan(product.measurements['_nan'].nodata)
+    assert product.measurements['_inf'].nodata == numpy.inf
+    assert product.measurements['_neg_inf'].nodata == -numpy.inf
+
+
 def test_product_scale_factor():
     product = mk_sample_product('test', measurements=[dict(name='red',
                                                            scale_factor=33,

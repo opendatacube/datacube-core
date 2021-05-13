@@ -453,7 +453,14 @@ class DatasetType:
         Dictionary of measurements in this product
         """
         if self._canonical_measurements is None:
-            self._canonical_measurements = OrderedDict((m['name'], Measurement(**m))
+            def fix_nodata(m):
+                nodata = m.get('nodata', None)
+                if isinstance(nodata, str):
+                    m = dict(**m)
+                    m['nodata'] = float(nodata)
+                return m
+
+            self._canonical_measurements = OrderedDict((m['name'], Measurement(**fix_nodata(m)))
                                                        for m in self.definition.get('measurements', []))
         return self._canonical_measurements
 
