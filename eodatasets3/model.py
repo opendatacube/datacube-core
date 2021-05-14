@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple, Dict, Optional, List, Sequence, Union
@@ -109,12 +110,33 @@ class ComplicatedNamingConventions:
         # Is there another organisation you want to use? Pull requests very welcome!
     }
 
+    KNOWN_PLATFORM_ABBREVIATIONS = {
+        "landsat-5": "ls5",
+        "landsat-7": "ls7",
+        "landsat-8": "ls8",
+        "landsat-9": "ls9",
+        "sentinel-1a": "s1a",
+        "sentinel-1b": "s1b",
+        "sentinel-2a": "s2a",
+        "sentinel-2b": "s2b",
+        "aqua": "aqu",
+        "terra": "ter",
+    }
+
+    # If all platforms match a pattern, return this group name instead.
+    KNOWN_PLATFORM_GROUPINGS = {
+        "ls": re.compile(r"ls\d+"),
+        "s1": re.compile(r"s1[a-z]+"),
+        "s2": re.compile(r"s2[a-z]+"),
+    }
+
     def __init__(
         self,
         dataset: EoFields,
         base_product_uri: str = None,
         required_fields: Sequence[str] = (),
         dataset_separator_field: Optional[str] = None,
+        allow_unknown_abbreviations: bool = True,
     ) -> None:
         self.dataset = dataset
         self.base_product_uri = base_product_uri
@@ -125,6 +147,8 @@ class ComplicatedNamingConventions:
 
         if self.dataset_separator_field is not None:
             self.required_fields.add(dataset_separator_field)
+
+        self.allow_unknown_abbreviations = allow_unknown_abbreviations
 
     @classmethod
     def for_standard_dea(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
@@ -147,6 +171,8 @@ class ComplicatedNamingConventions:
                 "odc:product_family",
                 "odc:region_code",
             ),
+            # DEA wants consistency via the naming-conventions doc.
+            allow_unknown_abbreviations=False,
         )
 
     @classmethod
@@ -170,6 +196,8 @@ class ComplicatedNamingConventions:
                 "odc:region_code",
             ),
             dataset_separator_field="sentinel:datatake_start_datetime",
+            # DEA wants consistency via the naming-conventions doc.
+            allow_unknown_abbreviations=False,
         )
 
     def _check_enough_properties_to_name(self):
@@ -218,13 +246,13 @@ class ComplicatedNamingConventions:
             parts.append(self.producer_abbreviated)
 
         platform = self.platform_abbreviated
-        inst = self.instrument_abbreviated
-        if platform and inst:
+        inst = self.instrument_abbreviated or ""
+        if platform:
             parts.append(f"{platform}{inst}")
 
         if not subname:
             raise ValueError(
-                "Not even metadata to create a useful filename! "
+                "Not enough metadata to create a useful filename! "
                 'Set the `product_family` (eg. "wofs") or a subname'
             )
         parts.append(subname)
@@ -340,34 +368,53 @@ class ComplicatedNamingConventions:
     @property
     def platform_abbreviated(self) -> Optional[str]:
         """Abbreviated form of a satellite, as used in dea product names. eg. 'ls7'."""
-        p = self.dataset.platform
+
+        p = self.dataset.platforms
         if not p:
             return None
 
-        if p.startswith("sentinel-2"):
-            return f"s2{p[-1]}"
+        if not self.allow_unknown_abbreviations:
+            unknowns = p.difference(self.KNOWN_PLATFORM_ABBREVIATIONS)
+            if unknowns:
+                raise ValueError(
+                    f"We don't know the DEA abbreviation for platforms {unknowns!r}. "
+                    f"We'd love to add more! Raise an issue on Github: "
+                    f"https://github.com/GeoscienceAustralia/eo-datasets/issues/new' "
+                )
 
-        if p.startswith("sentinel-1"):
-            return f"s1{p[-1]}"
+        abbreviations = sorted(
+            self.KNOWN_PLATFORM_ABBREVIATIONS.get(s, s.replace("-", "")) for s in p
+        )
 
-        if not p.startswith("landsat"):
-            raise NotImplementedError(
-                f"TODO: implement non-landsat platform abbreviation " f"(got {p!r})"
-            )
+        if len(abbreviations) == 1:
+            return abbreviations[0]
 
-        return f"ls{p[-1]}"
+        # If all abbreviations are in a group, name it using that group.
+        # (eg. "ls" instead of "ls5-ls7-ls8")
+        for group_name, pattern in self.KNOWN_PLATFORM_GROUPINGS.items():
+            if all(pattern.match(a) for a in abbreviations):
+                return group_name
+
+        # Otherwise, there's a mix of platforms.
+
+        # Is there a common constellation?
+        constellation = self.dataset.properties.get("constellation")
+        if constellation:
+            return constellation
+
+        # Don't bother to show anything for un-groupable mixes of platforms.
+        return None
 
     @property
     def instrument_abbreviated(self) -> Optional[str]:
         """Abbreviated form of an instrument name, as used in dea product names. eg. 'c'."""
-        p = self.dataset.platform
-        if not p:
+        platforms = self.dataset.platforms
+        if not platforms or len(platforms) > 1:
             return None
 
-        if p.startswith("sentinel-2"):
-            return self.dataset.instrument[0].lower()
+        [p] = platforms
 
-        if p.startswith("sentinel-1"):
+        if p.startswith("sentinel-1") or p.startswith("sentinel-2"):
             return self.dataset.instrument[0].lower()
 
         if not p.startswith("landsat"):
