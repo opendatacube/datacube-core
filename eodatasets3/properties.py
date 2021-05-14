@@ -1,11 +1,11 @@
 import collections.abc
 import warnings
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum, EnumMeta
 from textwrap import dedent
-from typing import Tuple, Dict, Optional, Any, Mapping, Callable, Union
+from typing import Tuple, Dict, Optional, Any, Mapping, Callable, Union, Set
 from urllib.parse import urlencode
 
 import ciso8601
@@ -96,12 +96,28 @@ def percent_type(value):
     return value
 
 
-def normalise_platform(s: str):
+def normalise_platforms(value: Union[str, list, set]):
     """
-    >>> normalise_platform('LANDSAT_8')
+    >>> normalise_platforms('LANDSAT_8')
     'landsat-8'
+    >>> # Multiple can be comma-separated. They're normalised independently and sorted.
+    >>> normalise_platforms('LANDSAT_8,Landsat-5,landsat-7')
+    'landsat-5,landsat-7,landsat-8'
+    >>> # Can be given as a list.
+    >>> normalise_platforms(['sentinel-2b','SENTINEL-2a'])
+    'sentinel-2a,sentinel-2b'
+    >>> # Deduplicated too
+    >>> normalise_platforms('landsat-5,landsat-5,LANDSAT-5')
+    'landsat-5'
     """
-    return s.lower().replace("_", "-")
+    if not isinstance(value, (list, set, tuple)):
+        value = value.split(",")
+
+    platforms = sorted(set(s.strip().lower().replace("_", "-") for s in value if s))
+    if not platforms:
+        return None
+
+    return ",".join(platforms)
 
 
 def degrees_type(value):
@@ -259,7 +275,7 @@ class StacPropertyView(collections.abc.MutableMapping):
         "eo:gsd": None,
         "eo:instrument": None,
         "eo:off_nadir": float,
-        "eo:platform": normalise_platform,
+        "eo:platform": normalise_platforms,
         "eo:constellation": None,
         "eo:sun_azimuth": degrees_type,
         "eo:sun_elevation": degrees_type,
@@ -361,7 +377,7 @@ class StacPropertyView(collections.abc.MutableMapping):
         return nest_properties(self._props)
 
 
-class EoFields(metaclass=ABCMeta):
+class EoFields:
     """
     Convenient access fields for the most common/essential properties in datasets
     """
@@ -379,12 +395,30 @@ class EoFields(metaclass=ABCMeta):
         For satellites this would be the name of the satellite (e.g., landsat-8, sentinel-2A),
         whereas for drones this would be a unique name for the drone.
 
+        In derivative products, multiple platforms can be specified with a comma "landsat5,landsat7".
+
         Shorthand for 'eo:platform' property
         """
         return self.properties.get("eo:platform")
 
     @platform.setter
     def platform(self, value: str):
+        self.properties["eo:platform"] = value
+
+    @property
+    def platforms(self) -> Set[str]:
+        """
+        Get platform as a set (containing zero or more items).
+
+        In EO3, multiple platforms are specified by comma-separating them.
+        """
+        if not self.platform:
+            return set()
+        return set(self.properties.get("eo:platform", "").split(","))
+
+    @platforms.setter
+    def platforms(self, value: Set[str]):
+        # The normaliser supports sets/lists
         self.properties["eo:platform"] = value
 
     @property
