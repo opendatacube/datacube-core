@@ -76,7 +76,8 @@ class Query(object):
             known_dim_keys = set()
             if product is not None:
                 datacube_product = index.products.get_by_name(product)
-                known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
+                if datacube_product is not None:
+                    known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
             else:
                 for datacube_product in index.products.get_all():
                     known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
