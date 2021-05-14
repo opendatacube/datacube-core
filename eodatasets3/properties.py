@@ -293,6 +293,7 @@ class StacPropertyView(collections.abc.MutableMapping):
         "odc:file_format": of_enum_type(FileFormat, strict=False),
         "odc:processing_datetime": datetime_type,
         "odc:producer": producer_check,
+        "odc:product": None,
         "odc:product_family": None,
         "odc:region_code": None,
         **_LANDSAT_EXTENDED_PROPS,
@@ -433,6 +434,17 @@ class EoFields:
     @instrument.setter
     def instrument(self, value: str):
         self.properties["eo:instrument"] = value
+
+    @property
+    def product_name(self) -> Optional[str]:
+        """
+        The ODC product
+        """
+        return self.properties.get("odc:product")
+
+    @product_name.setter
+    def product_name(self, value: str):
+        self.properties["odc:product"] = value
 
     @property
     def producer(self) -> str:

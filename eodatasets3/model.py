@@ -223,6 +223,9 @@ class ComplicatedNamingConventions:
 
     @property
     def product_name(self) -> str:
+        if self.dataset.product_name:
+            return self.dataset.product_name
+
         self._check_enough_properties_to_name()
 
         org_number = self._org_collection_number
@@ -237,31 +240,39 @@ class ComplicatedNamingConventions:
         return int(self.dataset.dataset_version.split(".")[0])
 
     def _product_group(self, subname=None) -> str:
-        # Fallback to the whole product's name
-        if not subname:
-            subname = self.dataset.product_family
-
         parts = []
-        if self.producer_abbreviated:
-            parts.append(self.producer_abbreviated)
 
-        platform = self.platform_abbreviated
-        inst = self.instrument_abbreviated or ""
-        if platform:
-            parts.append(f"{platform}{inst}")
+        # If they've given a product name, just use it.
+        if self.dataset.product_name:
+            parts.append(self.dataset.product_name)
+            if subname:
+                parts.append(subname)
+        else:
+            self._check_enough_properties_to_name()
 
-        if not subname:
-            raise ValueError(
-                "Not enough metadata to create a useful filename! "
-                'Set the `product_family` (eg. "wofs") or a subname'
-            )
-        parts.append(subname)
+            # They're not specifying a sub-file. Fallback to the whole product's category.
+            if not subname:
+                subname = self.dataset.product_family
+
+            if self.producer_abbreviated:
+                parts.append(self.producer_abbreviated)
+
+            platform = self.platform_abbreviated
+            inst = self.instrument_abbreviated or ""
+            if platform:
+                parts.append(f"{platform}{inst}")
+
+            if not subname:
+                raise ValueError(
+                    "Not enough metadata to create a useful filename! "
+                    'Set the `product_family` (eg. "wofs") or a subname'
+                )
+            parts.append(subname)
 
         return "_".join(parts)
 
     @property
     def product_uri(self) -> Optional[str]:
-        self._check_enough_properties_to_name()
         if not self.base_product_uri:
             return None
 
@@ -272,11 +283,9 @@ class ComplicatedNamingConventions:
         """
         Label for a dataset
         """
-        self._check_enough_properties_to_name()
         return self._dataset_label()
 
     def destination_folder(self, base: Path) -> Path:
-        self._check_enough_properties_to_name()
         # DEA naming conventions folder hierarchy.
         # Example: "ga_ls8c_ard_3/092/084/2016/06/28"
 
@@ -303,17 +312,14 @@ class ComplicatedNamingConventions:
         return base.joinpath(*parts)
 
     def metadata_path(self, work_dir: Path, kind: str = "", suffix: str = "yaml"):
-        self._check_enough_properties_to_name()
         return self._file(work_dir, kind, suffix)
 
     def checksum_path(self, work_dir: Path, suffix: str = "sha1"):
-        self._check_enough_properties_to_name()
         return self._file(work_dir, "", suffix)
 
     def measurement_file_path(
         self, work_dir: Path, measurement_name: str, suffix: str, file_id: str = None
     ) -> Path:
-        self._check_enough_properties_to_name()
         if ":" in measurement_name:
             subgroup, name = measurement_name.split(":")
         else:
