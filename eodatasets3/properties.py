@@ -436,6 +436,17 @@ class EoFields:
         self.properties["eo:instrument"] = value
 
     @property
+    def constellation(self) -> str:
+        """
+        Constellation. Eg 'sentinel-2".
+        """
+        return self.properties.get("eo:constellation")
+
+    @constellation.setter
+    def constellation(self, value: str):
+        self.properties["eo:constellation"] = value
+
+    @property
     def product_name(self) -> Optional[str]:
         """
         The ODC product
