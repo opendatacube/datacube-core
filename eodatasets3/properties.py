@@ -368,7 +368,7 @@ class StacPropertyView(collections.abc.MutableMapping):
                 f"Overriding property {key!r} " f"(from {self[key]!r} to {value!r})"
             )
             if allow_override:
-                warnings.warn(message)
+                warnings.warn(message, category=PropertyOverrideWarning)
             else:
                 raise KeyError(message)
 
@@ -376,6 +376,12 @@ class StacPropertyView(collections.abc.MutableMapping):
 
     def nested(self):
         return nest_properties(self._props)
+
+
+class PropertyOverrideWarning(UserWarning):
+    """A warning that a property was set twice with different values."""
+
+    ...
 
 
 class EoFields:
