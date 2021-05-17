@@ -110,6 +110,7 @@ class ComplicatedNamingConventions:
         # Is there another organisation you want to use? Pull requests very welcome!
     }
 
+    # The abbreviations mentioned in DEA naming conventions doc.
     KNOWN_PLATFORM_ABBREVIATIONS = {
         "landsat-5": "ls5",
         "landsat-7": "ls7",
@@ -156,20 +157,24 @@ class ComplicatedNamingConventions:
         Strict mode to follow the full DEA naming conventions.
 
         Only use the (default) DEA URI if you're making DEA products.
+
+        Example file structure (note version number in file):
+            ga_ls8c_ones_3/090/084/2016/01/21/ga_ls8c_ones_3-0-0_090084_2016-01-21_final.odc-metadata.yaml
+
+
         """
         return cls(
             dataset=dataset,
             base_product_uri=uri,
             # These fields are needed to fulfill official DEA naming conventions.
             required_fields=(
-                # TODO: Add conventions for multi-platform/composite products?
-                "eo:instrument",
                 "eo:platform",
-                "odc:dataset_version",
+                "eo:instrument",
                 "odc:processing_datetime",
                 "odc:producer",
                 "odc:product_family",
                 "odc:region_code",
+                "odc:dataset_version",
             ),
             # DEA wants consistency via the naming-conventions doc.
             allow_unknown_abbreviations=False,
@@ -180,7 +185,7 @@ class ComplicatedNamingConventions:
         """
         DEA naming conventions, but with an extra subfolder for each unique datatake.
 
-        It will figure out the datatake if you set a sentinel_tile_id.
+        It will figure out the datatake if you set a sentinel_tile_id or datastrip_id.
         """
         return cls(
             dataset=dataset,
@@ -235,6 +240,11 @@ class ComplicatedNamingConventions:
 
     @property
     def _org_collection_number(self) -> Optional[int]:
+        # An explicit collection number trumps all.
+        if self.dataset.collection_number:
+            return int(self.dataset.collection_number)
+
+        # Otherwise it's the first digit of the dataset version.
         if not self.dataset.dataset_version:
             return None
         return int(self.dataset.dataset_version.split(".")[0])
@@ -408,7 +418,7 @@ class ComplicatedNamingConventions:
         if constellation:
             return constellation
 
-        # Don't bother to show anything for un-groupable mixes of platforms.
+        # Don't bother to include platform in name for un-groupable mixes of them.
         return None
 
     @property
@@ -423,23 +433,26 @@ class ComplicatedNamingConventions:
         if p.startswith("sentinel-1") or p.startswith("sentinel-2"):
             return self.dataset.instrument[0].lower()
 
-        if not p.startswith("landsat"):
-            raise NotImplementedError(
-                f"TODO: implement non-landsat instrument abbreviation " f"(got {p!r})"
-            )
+        if p.startswith("landsat"):
+            # Extract from usgs standard:
+            # landsat:landsat_product_id: LC08_L1TP_091075_20161213_20170316_01_T2
+            # landsat:landsat_scene_id: LC80910752016348LGN01
+            landsat_id: str = self.dataset.properties.get(
+                "landsat:landsat_product_id"
+            ) or self.dataset.properties.get("landsat:landsat_scene_id")
+            if not landsat_id:
+                raise NotImplementedError(
+                    "TODO: Can only currently abbreviate instruments from Landsat references."
+                )
 
-        # Extract from usgs standard:
-        # landsat:landsat_product_id: LC08_L1TP_091075_20161213_20170316_01_T2
-        # landsat:landsat_scene_id: LC80910752016348LGN01
-        landsat_id: str = self.dataset.properties.get(
-            "landsat:landsat_product_id"
-        ) or self.dataset.properties.get("landsat:landsat_scene_id")
-        if not landsat_id:
-            raise NotImplementedError(
-                "TODO: Can only currently abbreviate instruments from Landsat references."
-            )
+            return landsat_id[1].lower()
 
-        return landsat_id[1].lower()
+        # Otherwise, it's unknown.
+        raise NotImplementedError(
+            f"Instrument abbreviations aren't supported for platform {p!r}. "
+            f"We'd love to add more support! Raise an issue on Github: "
+            f"https://github.com/GeoscienceAustralia/eo-datasets/issues/new' "
+        )
 
     @property
     def producer_abbreviated(self) -> Optional[str]:
@@ -459,14 +472,31 @@ class ComplicatedNamingConventions:
 
 class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
     """
-    This class is inherited from ComplicatedNamingConventions
-    and overrides few attributes specific to C3 data processing for data other than ARD.
+    Derivatives have a slightly different folder structure.
+
+    And they only show constellations (eg. "ls_" or "s2_") rather than the specific
+    satellites in their names (eg. "ls8_").
+
+    They have a version-number folder instead of putting it in each filename.
+
+    And version numbers may not match the collection number (`odc:collection_number` is
+    mandatory).
     """
 
     @classmethod
     def for_c3_derivatives(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
         """
-        The required fields for the c3 data processing are controlled here.
+        Create naming conventions for common derived products.
+
+        Unlike plain 'DEA', they use an explicit collection number (odc:collection_number)
+        in the product name which may differ from the software's dataset version
+        (odc:dataset_version)
+
+        Example file structure (note version number in folder):
+
+            ga_ls_wo_3/1-6-0/090/081/1998/07/30/ga_ls_wo_3_090081_1998-07-30_interim.odc-metadata.yaml
+
+
         """
         return cls(
             dataset=dataset,
@@ -479,6 +509,7 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
                 "odc:producer",
                 "odc:product_family",
                 "odc:region_code",
+                "odc:dataset_version",
                 "dea:dataset_maturity",
             ),
         )
@@ -486,7 +517,11 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
     @classmethod
     def for_s2_derivatives(cls, dataset: EoFields, uri=DEA_URI_PREFIX):
         """
-        The required fields for the S2 data processing are controlled here.
+        DEA derivative naming conventions, but with an extra subfolder for
+        each unique datatake.
+
+        It will figure out the datatake if you set a sentinel_tile_id
+        or datastrip_id.
         """
         return cls(
             dataset=dataset,
@@ -500,15 +535,11 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
                 "odc:producer",
                 "odc:product_family",
                 "odc:region_code",
+                "odc:dataset_version",
                 "dea:dataset_maturity",
             ),
             dataset_separator_field="sentinel:datatake_start_datetime",
         )
-
-    @property
-    def _org_collection_number(self) -> Optional[int]:
-        # Deliberately fail if collection_number is not defined in the config yaml
-        return int(self.dataset.collection_number)
 
     def _product_group(self, subname=None) -> str:
         # Computes product group, e.g "ga_ls_wo_3"
@@ -519,6 +550,20 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
             self.dataset.product_family,
         ]
         return "_".join(parts)
+
+    @property
+    def platform_abbreviated(self) -> Optional[str]:
+        if "landsat" in self.dataset.platform:
+            return "ls"
+
+        if "sentinel-2" in self.dataset.platform:
+            return "s2"
+
+        raise NotImplementedError(
+            f"Only Landsat and Sentinel 2 platforms currently implemented for dea_c3 "
+            f"and dea_s2_derivative naming schemes "
+            f"(got {self.dataset.platform!r})"
+        )
 
     def destination_folder(self, base: Path) -> Path:
         self._check_enough_properties_to_name()
@@ -549,21 +594,6 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
             self.dataset.maturity,
         ]
         return "_".join(parts)
-
-    @property
-    def platform_abbreviated(self) -> Optional[str]:
-        # For now from Alchemist the platform is always landsat for C3 processing
-        if "landsat" in self.dataset.platform:
-            return "ls"
-
-        if "sentinel-2" in self.dataset.platform:
-            return "s2"
-
-        raise NotImplementedError(
-            f"Only Landsat and Sentinel 2 platforms currently implemented for dea_c3 "
-            f"and dea_s2_derivative naming schemes "
-            f"(got {self.dataset.platform!r})"
-        )
 
 
 @attr.s(auto_attribs=True, slots=True)
