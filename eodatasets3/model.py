@@ -551,20 +551,6 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
         ]
         return "_".join(parts)
 
-    @property
-    def platform_abbreviated(self) -> Optional[str]:
-        if "landsat" in self.dataset.platform:
-            return "ls"
-
-        if "sentinel-2" in self.dataset.platform:
-            return "s2"
-
-        raise NotImplementedError(
-            f"Only Landsat and Sentinel 2 platforms currently implemented for dea_c3 "
-            f"and dea_s2_derivative naming schemes "
-            f"(got {self.dataset.platform!r})"
-        )
-
     def destination_folder(self, base: Path) -> Path:
         self._check_enough_properties_to_name()
         parts = [self.product_name, self.dataset.dataset_version.replace(".", "-")]
@@ -594,6 +580,31 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
             self.dataset.maturity,
         ]
         return "_".join(parts)
+
+    @property
+    def platform_abbreviated(self) -> Optional[str]:
+        """
+        Derivatives only show group/constellation names ("ls" or "s2". Not "ls8".)
+
+        (Because individual datasets come from different platforms, a specific abbreviation
+        would be inconsistent across a product [presumably])
+        """
+        abbreviations = sorted(
+            self.KNOWN_PLATFORM_ABBREVIATIONS.get(s, s.replace("-", ""))
+            for s in self.dataset.platforms
+        )
+        # If all abbreviations are in a group, name it using that group.
+        # (eg. "ls" instead of "ls5-ls7-ls8")
+        for group_name, pattern in self.KNOWN_PLATFORM_GROUPINGS.items():
+            if all(pattern.match(a) for a in abbreviations):
+                return group_name
+
+        raise NotImplementedError(
+            f"Satellite constellation abbreviation is not known for platforms {self.dataset.platforms}. "
+            f"(for DEA derivative naming conventions.)"
+            f"    Is this a mistake? We'd love to add more! Raise an issue on Github: "
+            f"https://github.com/GeoscienceAustralia/eo-datasets/issues/new' "
+        )
 
 
 @attr.s(auto_attribs=True, slots=True)
