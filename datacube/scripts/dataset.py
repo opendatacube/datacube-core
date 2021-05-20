@@ -24,6 +24,7 @@ from datacube.ui.click import cli
 from datacube.ui.common import ui_path_doc_stream
 from datacube.utils import changes, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
+from datacube.utils.uris import uri_resolve
 
 _LOG = logging.getLogger('datacube-dataset')
 
@@ -460,6 +461,28 @@ def _get_derived_set(index: Index, id_: str) -> Set[Dataset]:
         to_process.update(d.id for d in derived)
         derived_set.update(derived)
     return derived_set
+
+
+@dataset_cmd.command('uri-search')
+@click.option('--search-mode', help='Exact, prefix or guess based searching',
+              type=click.Choice(['exact', 'prefix', 'guess']), default='prefix')
+@click.argument('paths', nargs=-1)
+@ui.pass_index()
+def uri_search_cmd(index: Index, paths: List[str], search_mode):
+    """
+    Search by dataset locations
+
+    PATHS may be either file paths or URIs
+    """
+    if search_mode == 'guess':
+        # This is what the API expects. I think it should be changed.
+        search_mode = None
+    for path in paths:
+        dss = list(index.datasets.get_datasets_for_location(uri_resolve(base=path), mode=search_mode))
+        if not dss:
+            print(f"Not found in index: {path}")
+        for ds in dss:
+            print(ds)
 
 
 @dataset_cmd.command('archive', help="Archive datasets")
