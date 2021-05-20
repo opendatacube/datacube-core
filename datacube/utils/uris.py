@@ -167,7 +167,7 @@ def normalise_path(p: Union[str, pathlib.Path],
     return norm(base / p)
 
 
-def uri_resolve(base: str, path: Optional[str]) -> str:
+def uri_resolve(base: str, path: Optional[str] = None) -> str:
     """
     path                  -- if path is a uri or /vsi.* style path
     Path(path).as_uri()   -- if path is absolute filename
