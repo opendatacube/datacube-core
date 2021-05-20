@@ -117,6 +117,7 @@ def test_uri_to_local_path():
     "wasb://foo",
     "wasbs://foo",
     "/vsizip//vsicurl/https://host.tld/some/path",
+    "/absolute/path",
 ])
 def test_uri_resolve(base):
     abs_path = '/abs/path/to/something'
@@ -132,6 +133,11 @@ def test_uri_resolve(base):
 
     if not is_vsipath(base):
         assert uri_resolve(base + '/some/dir/file.txt', 'relative/path') == base + '/some/dir/relative/path'
+
+def test_uri_resolve_more():
+    base_path = ''
+
+
 
 
 def test_pick_uri():
