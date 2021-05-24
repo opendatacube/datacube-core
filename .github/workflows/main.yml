@@ -71,6 +71,7 @@ jobs:
       run: |
         cat <<EOF | docker run --rm -i  \
                   -v $(pwd):/code \
+                  -v $(pwd):/src/datacube-core \
                   -e SKIP_DB=yes \
                   ${{ matrix.docker_image }} bash -
         python setup.py bdist_wheel sdist
@@ -86,6 +87,7 @@ jobs:
       run: |
         docker run --rm  \
           -v $(pwd):/code \
+          -v $(pwd):/src/datacube-core \
           -e SKIP_DB=yes \
           ${{ matrix.docker_image }} \
           pycodestyle tests integration_tests examples --max-line-length 120
@@ -94,6 +96,7 @@ jobs:
       run: |
         docker run --rm  \
           -v $(pwd):/code \
+          -v $(pwd):/src/datacube-core \
           -e SKIP_DB=yes \
           ${{ matrix.docker_image }} \
           pylint -j 2 --reports no datacube
@@ -102,6 +105,7 @@ jobs:
       run: |
         docker run --rm  \
           -v $(pwd):/code \
+          -v $(pwd):/src/datacube-core \
           ${{ matrix.docker_image }} \
           pytest -r a \
             --cov datacube \
@@ -135,6 +139,7 @@ jobs:
         if [ -n "${TWINE_PASSWORD}" ]; then
           docker run --rm  \
             -v $(pwd):/code \
+            -v $(pwd):/src/datacube-core \
             -e SKIP_DB=yes \
             ${{ matrix.docker_image }} \
             twine upload \
@@ -159,6 +164,7 @@ jobs:
         if [ -n "${TWINE_PASSWORD}" ]; then
           docker run --rm  \
             -v $(pwd):/code \
+            -v $(pwd):/src/datacube-core \
             -e SKIP_DB=yes \
             ${{ matrix.docker_image }} \
             twine upload \
