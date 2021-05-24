@@ -123,7 +123,9 @@ class PostgresDb(object):
 
     @property
     def url(self) -> str:
-        return self._engine.url.create()
+        if hasattr(self._engine.url, 'create'):
+            return self._engine.url.create()
+        return str(self._engine.url)
 
     @staticmethod
     def get_db_username(config):
