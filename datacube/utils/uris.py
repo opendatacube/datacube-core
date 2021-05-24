@@ -233,5 +233,6 @@ register_scheme(
     's3',         # `s3://...`      -- AWS S3 Object Store
     'gs',         # `gs://...`      -- Google Cloud Storage
     'wasb',       # `wasb[s]://...` -- Windows Azure Storage Blob
-    'wasbs'
+    'wasbs',
+    'az',
 )
