@@ -123,7 +123,7 @@ class PostgresDb(object):
         )
 
     @property
-    def url(self) -> str:
+    def url(self) -> EngineUrl:
         return self._engine.url
 
     @staticmethod
