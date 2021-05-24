@@ -281,6 +281,10 @@ class Datacube(object):
             Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects, these will be loaded
             instead of performing a database lookup.
 
+        :param bool skip_broken_datasets:
+            Optional. If this is True, then don't break when failing to load a broken dataset.
+            Default is False.
+
         :param int limit:
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
