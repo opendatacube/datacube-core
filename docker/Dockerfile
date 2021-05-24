@@ -12,15 +12,12 @@ FROM ${ORG}/geobase-builder:${V_BASE} as env_builder
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 
-COPY assets/mkenv /usr/bin/
-COPY constraints.txt /conf/constraints.txt
-COPY requirements.txt /conf/requirements.txt
-COPY ./dist/datacube-*.whl /conf/
+COPY docker/constraints.txt docker/nobinary.txt docker/requirements.txt /conf/
 
-RUN mkenv \
-  && rm -rf /tmp/wheels \
-  && rm -rf /root/.cache/pip \
-  && echo done
+RUN --mount=type=cache,target=/root/.cache/pip \
+    mkdir /wheels \
+    && NOBINARY=/conf/nobinary.txt env-build-tool wheels /conf/requirements.txt /conf/constraints.txt /wheels
+
 
 #################################################################################
 # Runner stage
@@ -62,14 +59,29 @@ RUN groupadd --gid 1000 odc \
   && adduser odc users \
   && adduser odc sudo \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+  && install -d -o odc -g odc /env \
+  && install -d -o odc -g odc /code \
   && true
 
-COPY --from=env_builder --chown=odc:users /env /env
 COPY --from=env_builder /bin/tini /bin/tini
+USER odc
+RUN --mount=type=bind,from=env_builder,target=/b \
+    --mount=type=cache,target=/home/odc/.cache/pip,uid=1000,gid=1000 \
+    env-build-tool new_no_index /b/conf/requirements.txt /b/conf/constraints.txt /env /b/wheels
 
-COPY assets/with_bootstrap /usr/local/bin/
+# All steps from above should cache well
+# from here down things depend on entire content of code
+RUN --mount=type=bind,from=env_builder,target=/b \
+    --mount=type=bind,target=/src \
+    --mount=type=cache,target=/home/odc/.cache/pip,uid=1000,gid=1000 \
+    (cd /src && tar c . ) | (cd /code && tar x) \
+    && /env/bin/python -m pip install -e '/code/[all]' --no-index --find-links=/b/wheels \
+    && /env/bin/python -m pip install -e /code/tests/drivers/fail_drivers --no-index --find-links=/b/wheels
 
-VOLUME /src/datacube-core
-WORKDIR /src/datacube-core
+USER root
+COPY docker/assets/with_bootstrap /usr/local/bin/
+
+VOLUME /code
+WORKDIR /code
 
 ENTRYPOINT ["/bin/tini", "-s", "--", "/usr/local/bin/with_bootstrap"]

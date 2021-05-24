@@ -29,58 +29,17 @@ jobs:
 
     strategy:
       max-parallel: 2
-      matrix:
-        python-version: [3.8]
-
 
     steps:
     - uses: actions/checkout@v1
       with:
         fetch-depth: 0
 
-    - name: Set up Python
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    # This is just to get dependencies right, we do not keep datacube in the final image
-    - name: Install packaging dependencies
-      run: |
-        # needed for version getting
-        git fetch --prune --unshallow 2> /dev/null || true
-
-        python -m pip install -U --force \
-          "setuptools>=42" \
-          "setuptools_scm[toml]>=3.4" \
-          wheel \
-          twine
-
-    # This is just to get dependencies right, we do not keep datacube in the final image
-    - name: Build datacube wheel
-      run: |
-        mkdir -p ./docker/dist/
-        find ./docker/dist/ -type f -delete
-
-        python setup.py bdist_wheel --dist-dir ./docker/dist/
-        ls -lh ./docker/dist/
-        twine check ./docker/dist/*
-
     - name: Build Test Runner Docker
       id: build
       run: |
-        if [ "${{ matrix.python-version }}" == "3.8" ]; then
-          echo ::set-output name=docker_image::${ORG}/${IMAGE}:py38
-          docker build \
-            --build-arg V_BASE=3.3.0 \
-            --build-arg V_PG=12 \
-            --tag ${ORG}/${IMAGE}:py38 \
-            ./docker/
-        else
-          echo ::set-output name=docker_image::${ORG}/${IMAGE}:latest
-          docker build \
-              --tag ${ORG}/${IMAGE}:latest \
-              ./docker/
-        fi
+        echo ::set-output name=docker_image::${ORG}/${IMAGE}:latest
+        make -C docker
 
     - name: Verify Docker Image
       run: |
