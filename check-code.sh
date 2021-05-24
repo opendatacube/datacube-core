@@ -16,7 +16,7 @@ if [ "${1:-}" == "--with-docker" ]; then
 
     exec docker run $ti \
          -e SKIP_STYLE_CHECK="${SKIP_STYLE_CHECK:-no}" \
-         -v $(pwd):/src/datacube-core \
+         -v $(pwd):/code \
          opendatacube/datacube-tests:latest \
          $0 $@
 fi

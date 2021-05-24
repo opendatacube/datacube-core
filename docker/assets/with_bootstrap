@@ -61,14 +61,6 @@ if [ -e "${env}/bin/activate" ]; then
     [ -n "${VIRTUAL_ENV:-}" ] || {
         source "${env}/bin/activate"
 
-        if [ -e "./setup.py" ]; then
-            pip install -e '.[test,cf,celery,s3,performance,distributed]'
-        fi
-
-        if [ -e "./tests/drivers/fail_drivers" ]; then
-            pip install -e "./tests/drivers/fail_drivers"
-        fi
-
         [ -n "${GDAL_DATA:-}" ] || {
             # if binary version of rasterio was used, set GDAL_DATA to that
             RIO_GDAL_DATA=$(dirname $(python -c 'import rasterio; print(rasterio.__file__)'))"/gdal_data"
