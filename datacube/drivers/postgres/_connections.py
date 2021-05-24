@@ -80,8 +80,9 @@ class PostgresDb(object):
     @classmethod
     def create(cls, hostname, database, username=None, password=None, port=None,
                application_name=None, validate=True, pool_timeout=60):
+        mk_url = getattr(EngineUrl, 'create', EngineUrl)
         engine = cls._create_engine(
-            EngineUrl(
+            mk_url(
                 'postgresql',
                 host=hostname, database=database, port=port,
                 username=username, password=password,
