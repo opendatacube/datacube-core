@@ -14,7 +14,7 @@ from pathlib import Path
 from uuid import UUID
 
 from affine import Affine
-from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator
+from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union
 
 from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
@@ -513,14 +513,16 @@ class DatasetType:
 
         return m.canonical_name
 
-    def lookup_measurements(self, measurements: Optional[List[str]] = None) -> Mapping[str, Measurement]:
+    def lookup_measurements(self, measurements: Optional[Union[Iterable[str], str]] = None) -> Mapping[str, Measurement]:
         """
         Find measurements by name
 
-        :param measurements: list of measurement names
+        :param measurements: list of measurement names or a single measurement name, or None to get all
         """
         if measurements is None:
             return self.measurements
+        if isinstance(measurements, str):
+            measurements = [measurements]
 
         mm = self._resolve_aliases()
         return OrderedDict((m, mm[m]) for m in measurements)
