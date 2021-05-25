@@ -108,6 +108,9 @@ def test_product_basics():
     assert hash(product) == hash(mk_sample_product('test_product'))
     assert 'time' in dir(product.metadata)
 
+    assert product.measurements == product.lookup_measurements()
+    assert product.lookup_measurements(['red']) == product.lookup_measurements('red')
+
 
 def test_product_dimensions():
     product = mk_sample_product('test_product')
