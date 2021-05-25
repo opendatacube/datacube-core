@@ -61,6 +61,13 @@ if [ -e "${env}/bin/activate" ]; then
     [ -n "${VIRTUAL_ENV:-}" ] || {
         source "${env}/bin/activate"
 
+        # if there is no .egg-info then we need to install in
+        # edit mode again to generate it, needed for plugin registration
+        [[ -e /code/datacube.egg-info ]] || {
+            python -m pip install -e /code --no-deps
+            python -m pip install -e /code/tests/drivers/fail_drivers --no-deps
+        }
+
         [ -n "${GDAL_DATA:-}" ] || {
             # if binary version of rasterio was used, set GDAL_DATA to that
             RIO_GDAL_DATA=$(dirname $(python -c 'import rasterio; print(rasterio.__file__)'))"/gdal_data"
