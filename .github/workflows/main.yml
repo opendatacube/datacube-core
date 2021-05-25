@@ -100,9 +100,9 @@ jobs:
 
     - name: Run Tests
       run: |
-        docker run --rm  \
-          -v $(pwd):/code \
-          ${{ matrix.docker_image }} \
+        cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ matrix.docker_image }} bash -
+          pip install -e /code/tests/drivers/fail_drivers --no-deps
+
           pytest -r a \
             --cov datacube \
             --cov-report=xml \
@@ -111,6 +111,7 @@ jobs:
             datacube \
             tests \
             integration_tests
+        EOF
 
     - name: Publish to dea packages repo
       if: steps.cfg.outputs.push_dea == 'yes'
