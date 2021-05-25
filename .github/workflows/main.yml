@@ -102,6 +102,7 @@ jobs:
       run: |
         cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ matrix.docker_image }} bash -
           pip install -e /code/tests/drivers/fail_drivers --no-deps
+          pip install -e /code/examples/io_plugin --no-deps
 
           pytest -r a \
             --cov datacube \
