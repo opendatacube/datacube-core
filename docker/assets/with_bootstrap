@@ -35,9 +35,19 @@ launch_db () {
     target_gid=$(stat -c '%g' .)
 
     [[ $target_uid -eq 0 ]] || {
-        groupmod --gid "${target_gid}" odc
-        usermod --gid "${target_gid}" --uid "${target_uid}" odc
-        chown -R odc:odc /home/odc/
+
+        # unless gid already matches update gid
+        [[ $(id -g odc) -eq ${target_gid} ]] || {
+            groupmod --gid ${target_gid} odc
+            usermod --gid ${target_gid} odc
+        }
+
+        # unless uid already matches: change it and update HOME and /env
+        [[ $(id -u odc) -eq ${target_uid} ]] || {
+            usermod --uid ${target_uid} odc
+            chown -R odc:odc /home/odc/ /env
+        }
+
         exec sudo -u odc -E -H bash "$0" "$@"
     }
 }
