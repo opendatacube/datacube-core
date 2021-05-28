@@ -40,7 +40,7 @@ def _write_cog(
     intermediate_compression: Union[bool, str, Dict[str, Any]] = False,
     **extra_rio_opts
 ) -> Union[Path, bytes]:
-    """Write geo-registered ndarray to GeoTiff file or RAM.
+    """Write geo-registered ndarray to a GeoTiff file or RAM.
 
     :param pix: ``xarray.DataArray`` with crs or (ndarray, geobox, nodata) triple
     :param fname:  Output file or ":mem:"
@@ -56,15 +56,15 @@ def _write_cog(
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``
 
     When fname=":mem:" write COG to memory rather than to a file and return it
-    as memoryview object.
+    as a memoryview object.
 
     NOTE: about memory requirements
 
-    This function generates temporary in memory tiff file without compression
+    This function generates a temporary in memory tiff file without compression
     to speed things up. It then adds overviews to this file and only then
     copies it to the final destination with requested compression settings.
-    This is necessary to produce compliant COG, since COG standard demands
-    overviews to be placed before native resolution data and double pass is the
+    This is necessary to produce a compliant COG, since the COG standard demands
+    overviews to be placed before native resolution data and a double pass is the
     only way to achieve this currently.
 
     This means that this function will use about 1.5 to 2 times memory taken by `pix`.
@@ -225,11 +225,11 @@ def write_cog(
     This function is "Dask aware". If ``geo_im`` is a Dask array, then the
     output of this function is also a Dask Delayed object. This allows us to
     save multiple images concurrently across a Dask cluster. If you are not
-    familiar with Dask this can be confusing, as no operation is performed until
+    familiar with Dask this can be confusing, as no operation is performed until the 
     ``.compute()`` method is called, so if you call this function with Dask
     array it will return immediately without writing anything to disk.
 
-    If you are using Dask to speed up data loading, follow example below:
+    If you are using Dask to speed up data loading, follow the example below:
 
     .. code-block:: python
 
@@ -261,10 +261,10 @@ def write_cog(
 
        **memory requirements**
 
-       This function generates temporary in memory tiff file without
+       This function generates a temporary in memory tiff file without
        compression to speed things up. It then adds overviews to this file and
        only then copies it to the final destination with requested compression
-       settings. This is necessary to produce compliant COG, since COG standard
+       settings. This is necessary to produce a compliant COG, since the COG standard
        demands overviews to be placed before native resolution data and double
        pass is the only way to achieve this currently.
 
@@ -317,13 +317,13 @@ def to_cog(
     """
     Compress ``xarray.DataArray`` into Cloud Optimized GeoTiff bytes in memory.
 
-    This function doesn't write to disk, it compresses in RAM, this is useful
+    This function doesn't write to disk, it compresses in RAM, which is useful
     for saving data to S3 or other cloud object stores.
 
     This function is "Dask aware". If ``geo_im`` is a Dask array, then the
     output of this function is also a Dask Delayed object. This allows us to
     compress multiple images concurrently across a Dask cluster. If you are not
-    familiar with Dask this can be confusing, as no operation is performed until
+    familiar with Dask this can be confusing, as no operation is performed until the 
     ``.compute()`` method is called, so if you call this function with Dask
     array it will return immediately without compressing any data.
 
