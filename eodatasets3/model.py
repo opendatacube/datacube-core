@@ -14,6 +14,7 @@ from eodatasets3.properties import StacPropertyView, EoFields
 
 # TODO: these need discussion.
 DEA_URI_PREFIX = "https://collections.dea.ga.gov.au"
+DEAFRICA_URI_PREFIX = "https://digitalearthafrica.org"
 ODC_DATASET_SCHEMA_URL = "https://schemas.opendatacube.org/dataset"
 
 # Either a local filesystem path or a string URI.
@@ -160,8 +161,6 @@ class ComplicatedNamingConventions:
 
         Example file structure (note version number in file):
             ga_ls8c_ones_3/090/084/2016/01/21/ga_ls8c_ones_3-0-0_090084_2016-01-21_final.odc-metadata.yaml
-
-
         """
         return cls(
             dataset=dataset,
@@ -541,10 +540,25 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
                 "odc:producer",
                 "odc:product_family",
                 "odc:region_code",
-                "odc:dataset_version",
                 "dea:dataset_maturity",
             ),
             dataset_separator_field="sentinel:datatake_start_datetime",
+        )
+
+    @classmethod
+    def for_deafrica_usgs_c2_derivatives(
+        cls, dataset: EoFields, uri=DEAFRICA_URI_PREFIX
+    ):
+        """
+        DEAFRICA USGS C2 Naming Convention
+        """
+        return cls(
+            dataset=dataset,
+            base_product_uri=uri,
+            required_fields=(
+                "eo:platform",
+                "odc:region_code",
+            ),
         )
 
     def _product_group(self, subname=None) -> str:
@@ -555,6 +569,12 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
             self.platform_abbreviated,
             self.dataset.product_family,
         ]
+
+        # Exceptional case for DE Africa. There must be a more elegant
+        # way to do this...
+        if self.producer_abbreviated == "deafrica":
+            parts = [self.dataset.product_family, self.platform_abbreviated]
+
         return "_".join(parts)
 
     def destination_folder(self, base: Path) -> Path:
@@ -585,6 +605,7 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
             f"{self.dataset.datetime:%Y-%m-%d}",
             self.dataset.maturity,
         ]
+        parts = [x for x in parts if x is not None]
         return "_".join(parts)
 
     @property
