@@ -437,9 +437,15 @@ class ComplicatedNamingConventions:
             # Extract from usgs standard:
             # landsat:landsat_product_id: LC08_L1TP_091075_20161213_20170316_01_T2
             # landsat:landsat_scene_id: LC80910752016348LGN01
-            landsat_id: str = self.dataset.properties.get(
-                "landsat:landsat_product_id"
-            ) or self.dataset.properties.get("landsat:landsat_scene_id")
+            landsat_id = self.dataset.properties.get("landsat:landsat_product_id")
+            if landsat_id is None:
+                landsat_id = self.dataset.properties.get("landsat:landsat_scene_id")
+
+            # from USGS STAC, label is LC08_L2SP_178079_20210417_20210424_02_T1_SR and
+            # landsat:scene_id: LC81780792021107LGN00
+            if landsat_id is None:
+                landsat_id = self.dataset.properties.get("landsat:scene_id")
+
             if not landsat_id:
                 raise NotImplementedError(
                     "TODO: Can only currently abbreviate instruments from Landsat references."
