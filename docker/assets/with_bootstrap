@@ -76,6 +76,7 @@ if [ -e "${env}/bin/activate" ]; then
         [[ -e /code/datacube.egg-info ]] || {
             python -m pip install -e /code --no-deps
             python -m pip install -e /code/tests/drivers/fail_drivers --no-deps
+            python -m pip install -e /code/examples/io_plugin --no-deps
         }
 
         [ -n "${GDAL_DATA:-}" ] || {

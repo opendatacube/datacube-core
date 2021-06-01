@@ -76,6 +76,7 @@ RUN --mount=type=bind,from=env_builder,target=/b \
     --mount=type=cache,target=/home/odc/.cache/pip,uid=1000,gid=1000 \
     (cd /src && tar c . ) | (cd /code && tar x) \
     && /env/bin/python -m pip install -e '/code/[all]' --no-index --find-links=/b/wheels \
+    && /env/bin/python -m pip install -e /code/examples/io_plugin --no-index --find-links=/b/wheels \
     && /env/bin/python -m pip install -e /code/tests/drivers/fail_drivers --no-index --find-links=/b/wheels
 
 USER root
