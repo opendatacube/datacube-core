@@ -554,8 +554,10 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
             dataset=dataset,
             base_product_uri=uri,
             required_fields=(
-                "eo:platform",
+                "odc:producer",
                 "odc:region_code",
+                "odc:product_family",
+                "odc:dataset_version",
             ),
         )
 
