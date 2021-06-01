@@ -2,7 +2,6 @@
 .circleci
 .github
 .travis
-examples
 integration_tests
 
 # Byte-compiled / optimized / DLL files
