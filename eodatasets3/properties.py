@@ -283,6 +283,7 @@ class StacPropertyView(collections.abc.MutableMapping):
         "sat:relative_orbit": int,
         "sat:absolute_orbit": int,
         "landsat:landsat_product_id": None,
+        "landsat:scene_id": None,
         "landsat:landsat_scene_id": None,
         "landsat:wrs_path": int,
         "landsat:wrs_row": int,
