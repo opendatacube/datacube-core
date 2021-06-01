@@ -546,9 +546,7 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
         )
 
     @classmethod
-    def for_deafrica_usgs_c2_derivatives(
-        cls, dataset: EoFields, uri=DEAFRICA_URI_PREFIX
-    ):
+    def for_deafrica_derivatives(cls, dataset: EoFields, uri=DEAFRICA_URI_PREFIX):
         """
         DEAFRICA USGS C2 Naming Convention
         """
