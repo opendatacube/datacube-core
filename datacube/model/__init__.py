@@ -1090,7 +1090,7 @@ class ExtraDimensions:
         :return: The integer index of `value`
         """
         if dim not in self._coords:
-            raise ValueError(f"Dimension {dim} not found")
+            raise ValueError(f"Dimension {dim} not found.")
         return self._coords[dim].searchsorted(value)
 
     def coord_slice(self, dim: str, coord_range: Union[float, Tuple[float, float]]) -> Tuple[int, int]:
