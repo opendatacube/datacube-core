@@ -1,0 +1,120 @@
+id: 28de4ad6-e0c7-4443-b0c9-1f6e99d86086
+$schema: https://schemas.opendatacube.org/dataset
+product:
+  name: gedi_l2b_cover_z
+crs: epsg:4326
+grids:
+  default:
+    shape:
+      - 415
+      - 548
+    transform:
+      - 0.00027778
+      - 0.0
+      - 149.04036673536626
+      - 0.0
+      - -0.00027778
+      - -35.30377268593081
+      - 0.0
+      - 0.0
+      - 1.0
+measurements:
+  "5":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "10":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "15":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "20":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "25":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "30":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "35":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "40":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "45":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "50":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "55":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "60":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "65":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "70":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "75":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "80":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "85":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "90":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "95":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "100":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "105":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "110":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "115":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "120":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "125":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "130":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "135":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "140":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "145":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+  "150":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+properties:
+  datetime: 2019-08-16 09:28:51+00:00
+  dtr:end_datetime: 2019-08-16 09:28:51+00:00
+  dtr:start_datetime: 2019-08-16 09:28:51+00:00
+  eo:instrument: GEDI
+  eo:platform: ISS
+  odc:file_format: xarray_3d
+  odc:processing_datetime: 2021-04-15 04:44:47.439923
+lineage: {}
