@@ -125,7 +125,7 @@ class ComplicatedNamingConventions:
         "terra": "ter",
     }
 
-    # If all platforms match a pattern, return this group name instead.
+    # If all platform (abbreviations) match a pattern, return this group name instead.
     KNOWN_PLATFORM_GROUPINGS = {
         "ls": re.compile(r"ls\d+"),
         "s1": re.compile(r"s1[a-z]+"),
