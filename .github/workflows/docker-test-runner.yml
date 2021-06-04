@@ -35,17 +35,52 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Build Test Runner Docker
-      id: build
+    - name: Config
+      id: cfg
       run: |
         echo ::set-output name=docker_image::${ORG}/${IMAGE}:latest
-        make -C docker
+
+    # This is the a separate action that sets up buildx runner
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Cache Docker layers
+      uses: pat-s/always-upload-cache@v2.1.5
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Build Docker
+      uses: docker/build-push-action@v2
+      with:
+        file: docker/Dockerfile
+        context: .
+        tags: ${{ steps.cfg.outputs.docker_image }}
+        outputs: type=docker
+        build-args: |
+          V_BASE=3.3.0
+          V_PG=12
+        cache-from: |
+          type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+    # This ugly bit is necessary if you don't want your cache to grow forever
+    # till it hits GitHub's limit of 5GB.
+    # Temp fix
+    # https://github.com/docker/build-push-action/issues/252
+    # https://github.com/moby/buildkit/issues/1896
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
     - name: Verify Docker Image
       run: |
         # Make sure we test docker image we built
-        if [[ "${{ steps.build.outputs.docker_image }}" != "opendatacube/datacube-tests:latest" ]]; then
-            docker tag "${{ steps.build.outputs.docker_image }}" opendatacube/datacube-tests:latest
+        if [[ "${{ steps.cfg.outputs.docker_image }}" != "opendatacube/datacube-tests:latest" ]]; then
+            docker tag "${{ steps.cfg.outputs.docker_image }}" opendatacube/datacube-tests:latest
         fi
 
         ./check-code.sh --with-docker integration_tests
@@ -75,5 +110,5 @@ jobs:
           ) && steps.dkr.outputs.logged_in == 'yes'
       run: |
         if [ -n "${{ secrets.DockerPassword }}" ]; then
-           docker push "${{ steps.build.outputs.docker_image }}"
+           docker push "${{ steps.cfg.outputs.docker_image }}"
         fi

@@ -1,0 +1,57 @@
+# datacube dependencies
+Sphinx
+affine
+# boto is too huge, need to set lower bound
+boto3>1.17.0
+bottleneck
+cachetools
+celery>=4,<5
+ciso8601
+click>=8.0
+cloudpickle>=0.4
+compliance-checker>=4.0.0
+dask[array,distributed]>=2021.5.1
+distributed>=2021.5.1
+fiona
+jsonschema
+lark-parser>=0.6.7
+matplotlib
+moto
+netcdf4
+numpy
+paramiko
+psycopg2
+pycodestyle
+pylint
+pyproj>=2.5
+python-dateutil
+pyyaml
+rasterio>=1.2.4
+recommonmark
+redis
+setuptools
+setuptools_scm[toml]
+shapely>=1.7.1
+sphinx-click
+sphinx_autodoc_typehints
+sphinx_rtd_theme
+sqlalchemy
+sshtunnel
+toolz
+tqdm
+xarray>=0.18
+
+# pytest
+pytest==6.1.2
+pytest-cov==2.10.1
+hypothesis==5.41.4
+pytest-httpserver
+pytest-timeout
+
+# every new version finds new errors, so we pin it
+pylint==2.4.4
+pycodestyle==2.5.0
+
+# for packaging
+setuptools>=42
+setuptools_scm[toml]>=3.4

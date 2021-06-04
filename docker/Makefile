@@ -16,7 +16,6 @@ dkr := docker run --rm -i $(TTY) \
         -v $(CODE):/code \
         -v $(WK):/wk \
         -e TZ=Australia/Sydney \
-        -e NOBINARY=/wk/nobinary.txt \
         $(BUILDER_IMG)
 
 all: dkr
@@ -35,10 +34,12 @@ dbg:
 	@$(dkr) python3 --version
 
 dkr: Dockerfile
-	DOCKER_BUILDKIT=1 docker build --build-arg V_BASE=$(V_BASE) -t $(DKR_IMG) --cache-from $(DKR_IMG) -f Dockerfile ..
-
-dkr-no-deps:
-	DOCKER_BUILDKIT=1 docker build --build-arg V_BASE=$(V_BASE) -t $(DKR_IMG) --cache-from $(DKR_IMG) -f Dockerfile ..
+	DOCKER_BUILDKIT=1 docker build \
+   --build-arg V_BASE=$(V_BASE) \
+   --build-arg BUILDKIT_INLINE_CACHE=1 \
+   --cache-from $(DKR_IMG) \
+   -t $(DKR_IMG) \
+   -f Dockerfile ..
 
 run-test:
 	@docker run --rm \
@@ -49,4 +50,4 @@ clean:
 	rm -f .build/download.info.txt .build/compile.info.txt
 	@echo "Keeping wheels and pip cache"
 
-.PHONY: dbg all clean download compile dkr run-test dkr dkr-no-deps bash bash-runner
+.PHONY: dbg all clean download compile dkr run-test dkr bash bash-runner
