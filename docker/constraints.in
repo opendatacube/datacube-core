@@ -29,8 +29,6 @@ pyyaml
 rasterio>=1.2.4
 recommonmark
 redis
-setuptools
-setuptools_scm[toml]
 shapely>=1.7.1
 sphinx-click
 sphinx_autodoc_typehints
