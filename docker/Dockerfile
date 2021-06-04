@@ -12,7 +12,8 @@ FROM ${ORG}/geobase-builder:${V_BASE} as env_builder
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 
-COPY docker/constraints.txt docker/nobinary.txt docker/requirements.txt /conf/
+COPY docker/constraints.in /conf/requirements.txt
+COPY docker/constraints.txt docker/nobinary.txt /conf/
 
 # build wheels in cached directory to allow re-use even when requirements.txt is changed
 # then copy to final location
