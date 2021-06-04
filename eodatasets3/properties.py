@@ -261,11 +261,16 @@ _SENTINEL_EXTENDED_PROPS = {
 }
 
 
-class StacPropertyView(collections.abc.MutableMapping):
+class Eo3Properties(collections.abc.MutableMapping):
+    """
+    This acts like a dictionary, but will normalise known properties (consistent
+    case, types etc) and warn about common mistakes.
+    """
+
     # Every property we've seen or dealt with so far. Feel free to expand with abandon...
     # This is to minimise minor typos, case differences, etc, which plagued previous systems.
     # Keep sorted.
-    KNOWN_STAC_PROPERTIES: Mapping[str, Optional[NormaliseValueFn]] = {
+    KNOWN_PROPERTIES: Mapping[str, Optional[NormaliseValueFn]] = {
         "datetime": datetime_type,
         "dea:dataset_maturity": of_enum_type(("final", "interim", "nrt"), lower=True),
         "dtr:end_datetime": datetime_type,
@@ -302,6 +307,9 @@ class StacPropertyView(collections.abc.MutableMapping):
         **_GQA_FMASK_PROPS,
         **_SENTINEL_EXTENDED_PROPS,
     }
+
+    # For backwards compatibility, in case users are extending at runtime.
+    KNOWN_STAC_PROPERTIES = KNOWN_PROPERTIES
 
     def __init__(self, properties=None) -> None:
         self._props = properties or {}
@@ -344,7 +352,7 @@ class StacPropertyView(collections.abc.MutableMapping):
         Normalise the given value if it's a known key (eg. dates should be dates),
         and set it on the given dictionary.
         """
-        if key not in self.KNOWN_STAC_PROPERTIES:
+        if key not in self.KNOWN_PROPERTIES:
             warnings.warn(
                 f"Unknown Stac property {key!r}. "
                 f"If this is valid property, please tell us on Github here so we can add it: "
@@ -352,7 +360,7 @@ class StacPropertyView(collections.abc.MutableMapping):
             )
 
         if value is not None:
-            normalise = self.KNOWN_STAC_PROPERTIES.get(key)
+            normalise = self.KNOWN_PROPERTIES.get(key)
             if normalise:
                 value = normalise(value)
                 # If the normaliser has extracted extra properties, we'll get two return values.
@@ -393,7 +401,7 @@ class EoFields:
 
     @property
     @abstractmethod
-    def properties(self) -> StacPropertyView:
+    def properties(self) -> Eo3Properties:
         raise NotImplementedError
 
     @property
