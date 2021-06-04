@@ -14,15 +14,28 @@ ENV LC_ALL C.UTF-8
 
 COPY docker/constraints.txt docker/nobinary.txt docker/requirements.txt /conf/
 
+# build wheels in cached directory to allow re-use even when requirements.txt is changed
+# then copy to final location
+#   /root/.cache/pip  <-- pip cache
+#   /var/cache/wheels <-- downloaded sources and compiled wheels
+#   /wheels           <-- final destination copied from /var/cache/wheels cache
 RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/var/cache/wheels \
     mkdir /wheels \
-    && NOBINARY=/conf/nobinary.txt env-build-tool wheels /conf/requirements.txt /conf/constraints.txt /wheels
+    && env-build-tool wheels /conf/requirements.txt /conf/constraints.txt /var/cache/wheels \
+    && python3 -m pip wheel \
+       -r /conf/requirements.txt \
+       --find-links /var/cache/wheels \
+       --no-index \
+       --only-binary=:all: \
+       --wheel-dir /wheels
 
 
 #################################################################################
 # Runner stage
 #################################################################################
 FROM ${ORG}/geobase-runner:${V_BASE}
+ARG V_PG
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
