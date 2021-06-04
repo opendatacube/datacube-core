@@ -14,7 +14,6 @@ from eodatasets3.properties import StacPropertyView, EoFields
 
 # TODO: these need discussion.
 DEA_URI_PREFIX = "https://collections.dea.ga.gov.au"
-DEAFRICA_URI_PREFIX = "https://digitalearthafrica.org"
 ODC_DATASET_SCHEMA_URL = "https://schemas.opendatacube.org/dataset"
 
 # Either a local filesystem path or a string URI.
@@ -248,20 +247,20 @@ class ComplicatedNamingConventions:
             return None
         return int(self.dataset.dataset_version.split(".")[0])
 
-    def _product_group(self, subname=None) -> str:
+    def _product_group(self, sub_name=None) -> str:
         parts = []
 
         # If they've given a product name, just use it.
         if self.dataset.product_name:
             parts.append(self.dataset.product_name)
-            if subname:
-                parts.append(subname)
+            if sub_name:
+                parts.append(sub_name)
         else:
             self._check_enough_properties_to_name()
 
             # They're not specifying a sub-file. Fallback to the whole product's category.
-            if not subname:
-                subname = self.dataset.product_family
+            if not sub_name:
+                sub_name = self.dataset.product_family
 
             if self.producer_abbreviated:
                 parts.append(self.producer_abbreviated)
@@ -271,12 +270,12 @@ class ComplicatedNamingConventions:
             if platform:
                 parts.append(f"{platform}{inst}")
 
-            if not subname:
+            if not sub_name:
                 raise ValueError(
                     "Not enough metadata to create a useful filename! "
                     'Set the `product_family` (eg. "wofs") or a subname'
                 )
-            parts.append(subname)
+            parts.append(sub_name)
 
         return "_".join(parts)
 
@@ -294,10 +293,13 @@ class ComplicatedNamingConventions:
         """
         return self._dataset_label()
 
-    def destination_folder(self, base: Path) -> Path:
-        # DEA naming conventions folder hierarchy.
-        # Example: "ga_ls8c_ard_3/092/084/2016/06/28"
+    def destination_folder(self) -> Path:
+        """The folder hierarchy the datasets files go into.
 
+        This is returned as a relative path.
+
+        Example: Path("ga_ls8c_ard_3/092/084/2016/06/28")
+        """
         parts = [self.product_name]
 
         # Cut the region code in subfolders
@@ -318,12 +320,14 @@ class ComplicatedNamingConventions:
             if isinstance(val, datetime):
                 val = f"{val:%Y%m%dT%H%M%S}"
             parts.append(val)
-        return base.joinpath(*parts)
+        return Path(*parts)
 
-    def metadata_path(self, work_dir: Path, kind: str = "", suffix: str = "yaml"):
+    def metadata_path(
+        self, work_dir: Path, kind: str = "", suffix: str = "yaml"
+    ) -> Path:
         return self._file(work_dir, kind, suffix)
 
-    def checksum_path(self, work_dir: Path, suffix: str = "sha1"):
+    def checksum_path(self, work_dir: Path, suffix: str = "sha1") -> Path:
         return self._file(work_dir, "", suffix)
 
     def measurement_file_path(
@@ -342,7 +346,7 @@ class ComplicatedNamingConventions:
             sub_name=subgroup,
         )
 
-    def _dataset_label(self, sub_name: str = None):
+    def _dataset_label(self, sub_name: str = None) -> str:
         p = self.dataset
 
         version = p.dataset_version.replace(".", "-") if p.dataset_version else None
@@ -353,7 +357,7 @@ class ComplicatedNamingConventions:
                 for p in (
                     self._product_group(sub_name),
                     version,
-                    self._displayable_region_code,
+                    self.dataset.region_code,
                     f"{p.datetime:%Y-%m-%d}",
                     maturity,
                 )
@@ -361,16 +365,14 @@ class ComplicatedNamingConventions:
             ]
         )
 
-    def _file(self, work_dir: Path, file_id: str, suffix: str, sub_name: str = None):
+    def _file(
+        self, work_dir: Path, file_id: str, suffix: str, sub_name: str = None
+    ) -> Path:
         file_id = "_" + file_id.replace("_", "-") if file_id else ""
 
         return work_dir / (
             f"{self._dataset_label(sub_name=sub_name)}{file_id}.{suffix}"
         )
-
-    @property
-    def _displayable_region_code(self):
-        return self.dataset.region_code
 
     def thumbnail_name(self, work_dir: Path, kind: str = None, suffix: str = "jpg"):
         self._check_enough_properties_to_name()
@@ -475,7 +477,7 @@ class ComplicatedNamingConventions:
             )
 
 
-class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
+class DerivativesNamingConventions(ComplicatedNamingConventions):
     """
     Derivatives have a slightly different folder structure.
 
@@ -545,40 +547,19 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
             dataset_separator_field="sentinel:datatake_start_datetime",
         )
 
-    @classmethod
-    def for_deafrica_derivatives(cls, dataset: EoFields, uri=DEAFRICA_URI_PREFIX):
-        """
-        DEAFRICA USGS C2 Naming Convention
-        """
-        return cls(
-            dataset=dataset,
-            base_product_uri=uri,
-            required_fields=(
-                "eo:platform",
-                "odc:producer",
-                "odc:region_code",
-                "odc:product_family",
-                "odc:dataset_version",
-            ),
-        )
-
-    def _product_group(self, subname=None) -> str:
+    def _product_group(self, sub_name=None) -> str:
         # Computes product group, e.g "ga_ls_wo_3"
         # Deliberately fail if any of these attributes not found.
+        assert sub_name is None, "Sub name is unsupported by derivates"
         parts = [
             self.producer_abbreviated,
             self.platform_abbreviated,
             self.dataset.product_family,
         ]
 
-        # Exceptional case for DE Africa. There must be a more elegant
-        # way to do this...
-        if self.producer_abbreviated == "deafrica":
-            parts = [self.dataset.product_family, self.platform_abbreviated]
-
         return "_".join(parts)
 
-    def destination_folder(self, base: Path) -> Path:
+    def destination_folder(self) -> Path:
         self._check_enough_properties_to_name()
         parts = [self.product_name, self.dataset.dataset_version.replace(".", "-")]
         parts.extend(utils.subfolderise(self.dataset.region_code))
@@ -591,7 +572,7 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
                 val = f"{val:%Y%m%dT%H%M%S}"
             parts.append(val)
 
-        return base.joinpath(*parts)
+        return Path(*parts)
 
     def _dataset_label(self, sub_name: str = None):
         """
@@ -602,7 +583,7 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
         """
         parts = [
             self.product_name,
-            self._displayable_region_code,
+            self.dataset.region_code,
             f"{self.dataset.datetime:%Y-%m-%d}",
             self.dataset.maturity,
         ]
@@ -633,6 +614,38 @@ class ComplicatedNamingConventionsDerivatives(ComplicatedNamingConventions):
             f"    Is this a mistake? We'd love to add more! Raise an issue on Github: "
             f"https://github.com/GeoscienceAustralia/eo-datasets/issues/new' "
         )
+
+
+class DEAfricaNamingConventions(DerivativesNamingConventions):
+    """
+    DEAfrica avoids org names and uses simpler "{family}_{platform}" product names.
+
+    Eg. "wo_ls" (water observations of landsat)
+
+    """
+
+    @classmethod
+    def create(
+        cls,
+        dataset: EoFields,
+    ):
+        """
+        DEAFRICA USGS C2 Naming Convention
+        """
+        return cls(
+            dataset=dataset,
+            base_product_uri="https://digitalearthafrica.org",
+            required_fields=(
+                "eo:platform",
+                "odc:producer",
+                "odc:region_code",
+                "odc:product_family",
+                "odc:dataset_version",
+            ),
+        )
+
+    def _product_group(self, sub_name=None) -> str:
+        return f"{self.dataset.product_family}_{self.platform_abbreviated}"
 
 
 @attr.s(auto_attribs=True, slots=True)

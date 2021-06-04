@@ -457,7 +457,7 @@ class EoFields:
     @property
     def product_name(self) -> Optional[str]:
         """
-        The ODC product
+        The ODC product name
         """
         return self.properties.get("odc:product")
 
