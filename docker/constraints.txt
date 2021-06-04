@@ -15,6 +15,7 @@ aws-xray-sdk==2.8.0       # via moto
 babel==2.9.1              # via sphinx
 bcrypt==3.2.0             # via paramiko
 billiard==3.6.4.0         # via celery
+bleach==3.3.0             # via readme-renderer
 boto3==1.17.87            # via -r constraints.in, aws-sam-translator, moto
 boto==2.49.0              # via moto
 botocore==1.20.87         # via aws-xray-sdk, boto3, moto, s3transfer
@@ -32,16 +33,17 @@ click-plugins==1.1.1      # via fiona, rasterio
 click==8.0.1              # via -r constraints.in, click-plugins, cligj, distributed, fiona, rasterio, sphinx-click
 cligj==0.7.2              # via fiona, rasterio
 cloudpickle==1.6.0        # via -r constraints.in, dask, distributed
+colorama==0.4.4           # via twine
 commonmark==0.9.1         # via recommonmark
 compliance-checker==4.3.3  # via -r constraints.in
 coverage==5.5             # via pytest-cov
-cryptography==3.4.7       # via moto, paramiko, sshpubkeys
+cryptography==3.4.7       # via moto, paramiko, secretstorage, sshpubkeys
 cycler==0.10.0            # via matplotlib
-dask==2021.5.1  # via -r constraints.in, distributed
+dask==2021.5.1            # via -r constraints.in, distributed
 decorator==4.4.2          # via networkx, validators
-distributed==2021.5.1     # via -r constraints.in, dask
+distributed==2021.5.1     # via -r constraints.in
 docker==5.0.0             # via moto
-docutils==0.16            # via recommonmark, sphinx, sphinx-click, sphinx-rtd-theme
+docutils==0.16            # via readme-renderer, recommonmark, sphinx, sphinx-click, sphinx-rtd-theme
 ecdsa==0.14.1             # via python-jose, sshpubkeys
 fiona==1.8.20             # via -r constraints.in
 fsspec==2021.5.0          # via dask
@@ -51,9 +53,11 @@ heapdict==1.0.1           # via zict
 hypothesis==5.41.4        # via -r constraints.in
 idna==2.8                 # via moto, requests
 imagesize==1.2.0          # via sphinx
+importlib-metadata==4.5.0  # via keyring, twine
 iniconfig==1.1.1          # via pytest
 isodate==0.6.0            # via compliance-checker
 isort==4.3.21             # via pylint
+jeepney==0.6.0            # via keyring, secretstorage
 jinja2==3.0.1             # via compliance-checker, moto, sphinx
 jmespath==0.10.0          # via boto3, botocore
 jsondiff==1.1.2           # via moto
@@ -61,6 +65,7 @@ jsonpatch==1.32           # via cfn-lint
 jsonpointer==2.1          # via jsonpatch
 jsonschema==3.2.0         # via -r constraints.in, aws-sam-translator, cfn-lint
 junit-xml==1.9            # via cfn-lint
+keyring==23.0.1           # via twine
 kiwisolver==1.3.1         # via matplotlib
 kombu==4.6.11             # via celery
 lark-parser==0.11.3       # via -r constraints.in
@@ -76,14 +81,15 @@ msgpack==1.0.2            # via distributed
 munch==2.5.0              # via fiona
 netcdf4==1.5.6            # via -r constraints.in, compliance-checker
 networkx==2.5.1           # via cfn-lint
-numpy==1.20.3             # via -r constraints.in, bottleneck, cf-units, cftime, dask, matplotlib, netcdf4, pandas, rasterio, snuggs, xarray
+numpy==1.20.3             # via -r constraints.in, bottleneck, cf-units, cftime, matplotlib, netcdf4, pandas, rasterio, snuggs, xarray
 owslib==0.24.1            # via compliance-checker
-packaging==20.9           # via pytest, sphinx
+packaging==20.9           # via bleach, pytest, sphinx
 pandas==1.2.4             # via xarray
 paramiko==2.7.2           # via -r constraints.in, sshtunnel
 partd==1.2.0              # via dask
 pendulum==2.1.2           # via compliance-checker
 pillow==8.2.0             # via matplotlib
+pkginfo==1.7.0            # via twine
 pluggy==0.13.1            # via pytest
 psutil==5.8.0             # via distributed
 psycopg2==2.8.6           # via -r constraints.in
@@ -92,7 +98,7 @@ pyasn1==0.4.8             # via python-jose, rsa
 pycodestyle==2.5.0        # via -r constraints.in
 pycparser==2.20           # via cffi
 pygeoif==0.7              # via compliance-checker
-pygments==2.9.0           # via sphinx
+pygments==2.9.0           # via readme-renderer, sphinx
 pylint==2.4.4             # via -r constraints.in
 pynacl==1.4.0             # via paramiko
 pyparsing==2.4.7          # via matplotlib, packaging, snuggs
@@ -108,16 +114,20 @@ pytz==2021.1              # via babel, celery, moto, owslib, pandas
 pytzdata==2020.1          # via pendulum
 pyyaml==5.4.1             # via -r constraints.in, cfn-lint, dask, distributed, moto, owslib
 rasterio==1.2.4           # via -r constraints.in
+readme-renderer==29.0     # via twine
 recommonmark==0.7.1       # via -r constraints.in
 redis==3.5.3              # via -r constraints.in
 regex==2021.4.4           # via compliance-checker
-requests==2.25.1          # via compliance-checker, docker, moto, owslib, responses, sphinx
+requests-toolbelt==0.9.1  # via twine
+requests==2.25.1          # via compliance-checker, docker, moto, owslib, requests-toolbelt, responses, sphinx, twine
 responses==0.13.3         # via moto
+rfc3986==1.5.0            # via twine
 rsa==4.7.2                # via python-jose
 s3transfer==0.4.2         # via boto3
-setuptools-scm==6.0.1  # via -r constraints.in
+secretstorage==3.3.1      # via keyring
+setuptools-scm==6.0.1     # via -r constraints.in
 shapely==1.7.1            # via -r constraints.in
-six==1.16.0               # via astroid, aws-sam-translator, bcrypt, cf-units, cfn-lint, cycler, ecdsa, fiona, isodate, jsonschema, junit-xml, moto, munch, pynacl, python-dateutil, python-jose, responses, validators
+six==1.16.0               # via astroid, aws-sam-translator, bcrypt, bleach, cf-units, cfn-lint, cycler, ecdsa, fiona, isodate, jsonschema, junit-xml, moto, munch, pynacl, python-dateutil, python-jose, readme-renderer, responses, validators
 snowballstemmer==2.1.0    # via sphinx
 snuggs==1.4.7             # via rasterio
 sortedcontainers==2.4.0   # via distributed, hypothesis
@@ -135,19 +145,23 @@ sqlalchemy==1.4.17        # via -r constraints.in
 sshpubkeys==3.3.1         # via moto
 sshtunnel==0.4.0          # via -r constraints.in
 tblib==1.7.0              # via distributed
-toml==0.10.2              # via pytest, setuptools-scm
+toml==0.10.2              # via -r constraints.in, pytest
 toolz==0.11.1             # via -r constraints.in, dask, distributed, partd
 tornado==6.1              # via distributed
-tqdm==4.61.0              # via -r constraints.in
+tqdm==4.61.0              # via -r constraints.in, twine
+twine==3.4.1              # via -r constraints.in
 urllib3==1.26.5           # via botocore, requests, responses
 validators==0.18.2        # via compliance-checker
 vine==1.3.0               # via amqp, celery
+webencodings==0.5.1       # via bleach
 websocket-client==1.0.1   # via docker
 werkzeug==2.0.1           # via moto, pytest-httpserver
+wheel==0.36.2             # via -r constraints.in
 wrapt==1.11.2             # via astroid, aws-xray-sdk
 xarray==0.18.2            # via -r constraints.in
 xmltodict==0.12.0         # via moto
 zict==2.0.0               # via distributed
+zipp==3.4.1               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

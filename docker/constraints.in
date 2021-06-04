@@ -10,7 +10,7 @@ ciso8601
 click>=8.0
 cloudpickle>=0.4
 compliance-checker>=4.0.0
-dask[array,distributed]>=2021.5.1
+dask>=2021.5.1
 distributed>=2021.5.1
 fiona
 jsonschema
@@ -52,4 +52,7 @@ pycodestyle==2.5.0
 
 # for packaging
 setuptools>=42
-setuptools_scm[toml]>=3.4
+setuptools_scm>=3.4
+toml
+wheel
+twine
