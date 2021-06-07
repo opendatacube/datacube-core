@@ -139,8 +139,9 @@ Development on Colab
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 Execute on cell
 
-:: 
-                         import os
+::
+
+                        import os
                         !git clone https://github.com/opendatacube/datacube-core.git
                         % cd datacube-core
                         ! pip install --upgrade -e .
