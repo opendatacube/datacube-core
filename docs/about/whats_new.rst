@@ -14,6 +14,7 @@ v1.8.4 (???)
 - Add ``erosion`` functionality to Virtual products' ``ApplyMask`` to supplement existing ``dilation`` functionality (:pull:`1049`)
 - Fix numeric precision issues in ``compute_reproject_roi`` when pixel size is small. (:issue:`1047`)
 - Follow up fix to (:issue:`1047`) to round scale to nearest integer if very close.
+- Add support for 3D Datasets.
 
 .. _`notebook examples`: https://github.com/GeoscienceAustralia/dea-notebooks/
 
