@@ -148,25 +148,25 @@ Execute on cell
                         os.system('/content/datacube-core/check-code.sh')
                         !pip install --upgrade -e '.[test]'
                         os.system("./check-code.sh integration_tests")
-                        !sudo apt-get install -y
-                        autoconf automake build-essential make cmake
-                        graphviz
-                        python3-venv
-                        python3-dev
-                        libpq-dev
-                        libyaml-dev
-                        libnetcdf-dev
-                        libudunits2-dev
-                        !pip install --extra-index-url="https://packages.dea.ga.gov.au"
-                        odc-ui
-                        odc-index
-                        odc-geom
-                        odc-algo
-                        odc-io
-                        odc-aws
-                        odc-aio
-                        odc-dscache
-                        odc-dtools
+                        !sudo apt-get install -y \
+                          autoconf automake build-essential make cmake \
+                          graphviz \
+                          python3-venv \
+                          python3-dev \
+                          libpq-dev \
+                          libyaml-dev \
+                          libnetcdf-dev \
+                          libudunits2-dev
+                        !pip install --extra-index-url="https://packages.dea.ga.gov.au" \
+                          odc-ui \
+                          odc-index \
+                          odc-geom \
+                          odc-algo \
+                          odc-io \
+                          odc-aws \
+                          odc-aio \
+                          odc-dscache \
+                          odc-dtools
                         !git clone https://github.com/ceos-seo/odc-gee.git
                         !pip install -e odc-gee
                         !wget -nc https://raw.githubusercontent.com/ceos-seo/odc-colab/master/odc_colab.py
