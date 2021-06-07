@@ -121,3 +121,46 @@ measurements
                   bits: 8
                   description: All bands for this pixel contain non-null values
                   values: {0: false, 1: true}
+
+    extra_dim (Required for 3D datasets)
+         Extra dimensional definitions for 3D datasets.
+         
+         A 2D measurement will be automatically created from each ``measurement_map`` with
+         its corresponding ``alias_map`` and ``spectral_definition_map``
+
+         dimension
+              Name of the dimension.
+
+              Name must match a defined Dimension in ``extra_dimensions.name``
+
+         measurement_map
+              Mapping to the measurement names.
+
+              A 2D measurement will be automatically created for each entry.
+
+              Length must match ``extra_dimensions.values``
+
+         alias_map  (optional)
+              Aliases mapping.
+
+              Length must match ``extra_dimensions.values``
+
+         spectral_definition_map (optional)
+              Spectral definition mapping.
+
+              Length must match ``extra_dimensions.values``
+
+extra_dimensions (required for 3D datasets)
+    Definition of the extra dimensions.
+
+    name
+         Name of the dimension.
+
+    values
+         Coordinate values of the dimension.
+
+    dtype
+         Data type. One of ``(u)int(8,16,32,64), float32, float64``
+
+
+Example 3D product definition: ``tests/data/lbg/gedi/GEDI02_B_3d_format.yaml``
