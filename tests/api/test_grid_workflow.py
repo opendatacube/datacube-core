@@ -230,6 +230,10 @@ def test_gridworkflow():
     assert padded_tile[1, -2, ti].shape == (1, 14, 14)
     assert len(padded_tile[1, -2, ti].sources.values[0]) == 2
 
+    # query without product is not allowed
+    with pytest.raises(RuntimeError):
+        gw.list_cells(cell_index=(1, -2), time=query["time"])
+
 
 def test_gridworkflow_with_time_depth():
     """Test GridWorkflow with time series.
