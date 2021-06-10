@@ -55,7 +55,7 @@ search_grammar = r"""
     YEAR: DIGIT ~ 4
     MONTH: DIGIT ~ 1..2
     DAY: DIGIT ~ 1..2
-    SIMPLE_STRING: /[a-zA-Z][\w._-]*/
+    SIMPLE_STRING: /[a-zA-Z][\w._-]*/ | /[0-9]+[\w_-][\w._-]*/
     URL_STRING: /[a-z0-9+.-]+:\/\/([:\/\w._-])*/
     UUID: HEXDIGIT~8 "-" HEXDIGIT~4 "-" HEXDIGIT~4 "-" HEXDIGIT~4 "-" HEXDIGIT~12
 

@@ -22,6 +22,13 @@ def test_id_search():
     assert q['id'] == "26931d17-7a4e-4b55-98e7-d6777fb61df6"
 
 
+def test_simple_string():
+    q = parse_expressions("region_code = 56KKD", "i=10", "f=10.3")
+    assert q['region_code'] == '56KKD'
+    assert q['i'] == 10
+    assert q['f'] == 10.3
+
+
 def test_between_expression():
     q = parse_expressions('time in [2014, 2015]')
     assert 'time' in q
