@@ -98,6 +98,11 @@ def test_gridworkflow():
     # ------ test without padding ----
 
     gw = GridWorkflow(fakeindex, gridspec)
+
+    # smoke test str/repr
+    assert len(str(gw)) > 0
+    assert len(repr(gw)) > 0
+
     # Need to force the fake index otherwise the driver manager will
     # only take its _db
     gw.index = fakeindex
@@ -164,6 +169,10 @@ def test_gridworkflow():
     tile = gw.list_tiles(**query)[1, -2, ti]  # unpadded example
     assert grid / pixel == 10
     assert tile.shape == (1, 10, 10)
+
+    # smoke test str/repr
+    assert len(str(tile)) > 0
+    assert len(repr(tile)) > 0
 
     padded_tile = gw.list_tiles(tile_buffer=(20, 20), **query)[
         1, -2, ti
