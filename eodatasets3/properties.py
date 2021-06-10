@@ -312,7 +312,9 @@ class Eo3Properties(collections.abc.MutableMapping):
     KNOWN_STAC_PROPERTIES = KNOWN_PROPERTIES
 
     def __init__(self, properties=None) -> None:
-        self._props = properties or {}
+        if properties is None:
+            properties = {}
+        self._props = properties
 
         self._finished_init_ = True
 
@@ -601,6 +603,10 @@ class EoFields:
     @product_family.setter
     def product_family(self, value):
         self.properties["odc:product_family"] = value
+
+    @product_family.deleter
+    def product_family(self):
+        del self.properties["odc:product_family"]
 
     @property
     def region_code(self) -> Optional[str]:
