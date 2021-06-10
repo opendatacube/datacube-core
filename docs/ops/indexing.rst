@@ -65,16 +65,13 @@ A product definition example:
 
      name: ls8_level1_scene
      description: Landsat 8 Level 1 Collection-1
-     metadata_type: eo
+     metadata_type: eo3
 
      metadata:
-         platform:
-             code: LANDSAT_8
-         instrument:
-             name: OLI_TIRS
-         product_type: level1
-         format:
-             name: GeoTIFF
+         # only match datasets with sub-tree `{"product": {"name": "ls8_level1_scene"}}` present
+         product:
+            name: ls8_level1_scene
+
      measurements:
          - name: 'coastal_aerosol'
            aliases: [band_1, coastal_aerosol]
@@ -204,7 +201,7 @@ Once you have downloaded some data, it will need :ref:`metadata preparation
 Indexing Data on Amazon(AWS S3)
 ===============================
 
-Cloud storage is a sought after feature for most storage platforms. Options currently exist that allow for a users to store, index, and retrieve data from Amazon S3 buckets using the open data cube. The following sections outline this process.  
+Cloud storage is a sought after feature for most storage platforms. Options currently exist that allow for a users to store, index, and retrieve data from Amazon S3 buckets using the open data cube. The following sections outline this process.
 
 Configuring AWS CLI Credentials
 -------------------------------
@@ -217,7 +214,7 @@ not be able to view it again and you will have to request a new one.
 
 .. code-block:: bash
 
-    pip install boto3 ruamel.yaml 
+    pip install boto3 ruamel.yaml
     sudo apt-get install awscli -y
     aws configure
 
@@ -262,7 +259,7 @@ not be able to view it again and you will have to request a new one.
 
 .. code-block:: bash
 
-    pip install boto3 ruamel.yaml 
+    pip install boto3 ruamel.yaml
     sudo apt-get install awscli -y
     aws configure
 
