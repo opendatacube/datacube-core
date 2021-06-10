@@ -171,6 +171,10 @@ def odc_style_xr_dataset():
 
     return Datacube.create_storage({}, geobox, [Measurement(name='B10', dtype='int16', nodata=0, units='1')])
 
+@pytest.fixture(scope='session')
+def workdir(tmpdir_factory):
+    return tmpdir_factory.mktemp('workdir')
+
 
 @pytest.fixture
 def without_aws_env(monkeypatch):
