@@ -9,6 +9,7 @@ import pytest
 from hypothesis import given
 from hypothesis.strategies import text
 import string
+from uuid import uuid4
 
 from datacube.drivers.netcdf._write import _get_units
 from datacube.drivers.netcdf.writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
@@ -180,7 +181,8 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
 @given(s1=text(alphabet=string.printable, max_size=100),
        s2=text(alphabet=string.printable, max_size=100),
        s3=text(alphabet=string.printable, max_size=100))
-def test_create_string_variable(tmpnetcdf_filename, s1, s2, s3):
+def test_create_string_variable(workdir, s1, s2, s3):
+    tmpnetcdf_filename = workdir.join(f"testfile_np_{uuid4()}.nc")
     str_var = 'str_var'
     nco = create_netcdf(tmpnetcdf_filename)
     coord = create_coordinate(nco, 'greg', numpy.array([1.0, 3.0, 9.0]), 'cubic gregs')
