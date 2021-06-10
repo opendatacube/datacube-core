@@ -7,11 +7,20 @@ from dateutil.tz import tzutc
 
 from datacube.model import Range
 from datacube.ui import parse_expressions
+import pytest
 
 
 def test_parse_empty_str():
     q = parse_expressions('')
     assert q == {}
+
+
+@pytest.mark.xfail(
+    True,
+    reason="Parsing UUIDs without string quotes doesn't work when uuid starts with a digit",
+)
+def test_id_search():
+    q = parse_expressions("id = 26931d17-7a4e-4b55-98e7-d6777fb61df6")
 
 
 def test_between_expression():
