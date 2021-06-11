@@ -141,7 +141,7 @@ testdata = [
      format_test('2008-11-10T11:00', '2008-11-16T14:01:59.999999')),
     ((datetime.date(1995, 1, 1), datetime.date(1999, 1, 1)),
      format_test('1995-01-01T00:00:00', '1999-01-01T23:59:59.999999')),
-    ((datetime.datetime(2008, 1, 1), datetime.date(2008, 1, 4), datetime.datetime(2008, 1, 10, 23, 59, 40)),
+    ((datetime.datetime(2008, 1, 1), datetime.datetime(2008, 1, 10, 23, 59, 40)),
      format_test('2008-01-01T00:00:00', '2008-01-10T23:59:40.999999')),
     ((datetime.date(2008, 1, 1)),
      format_test('2008-01-01T00:00:00', '2008-01-01T23:59:59.999999'))
