@@ -390,6 +390,28 @@ class Eo3Properties(collections.abc.MutableMapping):
         return nest_properties(self._props)
 
 
+class StacPropertyView(Eo3Properties):
+    """
+    Backwards compatibility class name. Deprecated.
+
+    Use the identical 'Eo3Properties' instead.
+
+    These were called  "StacProperties" in Stac 0.6, but many of them have
+    changed in newer versions and we're sticking to the old names for consistency
+    and backwards-compatibility. So they're now EO3 Properties.
+
+    (The eo3-to-stac tool to convert EO3 properties to real Stac properties.)
+    """
+
+    def __init__(self, properties=None) -> None:
+        super().__init__(properties)
+        warnings.warn(
+            "The class name 'StacPropertyView' is deprecated as it's misleading. "
+            "Please change your import to the (identical) 'Eo3Properties'.",
+            category=DeprecationWarning,
+        )
+
+
 class PropertyOverrideWarning(UserWarning):
     """A warning that a property was set twice with different values."""
 
