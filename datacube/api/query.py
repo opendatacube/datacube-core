@@ -272,6 +272,9 @@ def _time_to_search_dims(time_range):
 
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
             tmp = list(time_range)
+            if len(tmp) > 2:
+                raise ValueError(f"Please supply start and end date only for time query")
+
             tr_start, tr_end = tmp[0], tmp[-1]
 
         # Attempt conversion to isoformat

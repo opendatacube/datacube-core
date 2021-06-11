@@ -72,6 +72,12 @@ def test_query_kwargs():
     assert 'time' in query.search
 
     with pytest.raises(ValueError):
+        query = Query(index=mock_index, time=('2001', '2002', '2003'))
+
+    with pytest.raises(ValueError):
+        query = Query(index=mock_index, time=['2001', '2002', '2003'])
+
+    with pytest.raises(ValueError):
         Query(index=mock_index,
               y=-4174726, coordinate_reference_system='WGS84',
               x=1515184, crs='EPSG:3577')
