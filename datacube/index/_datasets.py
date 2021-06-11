@@ -637,7 +637,11 @@ class DatasetResource(object):
 
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
-            raise ValueError('No products match search terms: %r' % query)
+            product = query.get('product', None)
+            if product is None:
+                raise ValueError('No products match search terms: %r' % query)
+            else:
+                raise ValueError(f"No such product: {product}")
 
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields
