@@ -109,6 +109,10 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs, datacube_env
     with pytest.raises(ValueError):
         dc.find_datasets(time='2019')  # no product supplied, raises exception
 
+    with pytest.raises(ValueError) as err:
+        dc.find_datasets(product='no-such-product')  # bad product name is supplied
+    assert "No such product" in str(err)
+
     check_open_with_dc(index)
     check_open_with_grid_workflow(index)
     check_load_via_dss(index)
