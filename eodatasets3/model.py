@@ -7,7 +7,7 @@ import attr
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry.base import BaseGeometry
 
-from eodatasets3.properties import Eo3Properties, EoFields
+from eodatasets3.properties import Eo3Dict, Eo3Fields
 
 DEA_URI_PREFIX = "https://collections.dea.ga.gov.au"
 ODC_DATASET_SCHEMA_URL = "https://schemas.opendatacube.org/dataset"
@@ -69,7 +69,7 @@ class AccessoryDoc:
 
 
 @attr.s(auto_attribs=True, slots=True)
-class DatasetDoc(EoFields):
+class DatasetDoc(Eo3Fields):
     id: UUID = None
     label: str = None
     product: ProductDoc = None
@@ -79,7 +79,7 @@ class DatasetDoc(EoFields):
     geometry: BaseGeometry = None
     grids: Dict[str, GridDoc] = None
 
-    properties: Eo3Properties = attr.ib(factory=Eo3Properties)
+    properties: Eo3Dict = attr.ib(factory=Eo3Dict)
 
     measurements: Dict[str, MeasurementDoc] = None
 

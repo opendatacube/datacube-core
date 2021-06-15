@@ -261,7 +261,7 @@ _SENTINEL_EXTENDED_PROPS = {
 }
 
 
-class Eo3Properties(collections.abc.MutableMapping):
+class Eo3Dict(collections.abc.MutableMapping):
     """
     This acts like a dictionary, but will normalise known properties (consistent
     case, types etc) and warn about common mistakes.
@@ -390,11 +390,11 @@ class Eo3Properties(collections.abc.MutableMapping):
         return nest_properties(self._props)
 
 
-class StacPropertyView(Eo3Properties):
+class StacPropertyView(Eo3Dict):
     """
     Backwards compatibility class name. Deprecated.
 
-    Use the identical 'Eo3Properties' instead.
+    Use the identical 'Eo3Dict' instead.
 
     These were called  "StacProperties" in Stac 0.6, but many of them have
     changed in newer versions and we're sticking to the old names for consistency
@@ -418,14 +418,14 @@ class PropertyOverrideWarning(UserWarning):
     ...
 
 
-class EoFields:
+class Eo3Fields:
     """
     Convenient access fields for the most common/essential properties in datasets
     """
 
     @property
     @abstractmethod
-    def properties(self) -> Eo3Properties:
+    def properties(self) -> Eo3Dict:
         raise NotImplementedError
 
     @property
@@ -664,6 +664,19 @@ class EoFields:
     @maturity.setter
     def maturity(self, value):
         self.properties["dea:dataset_maturity"] = value
+
+
+class Eo3Properties(Eo3Fields):
+    """A simple instance of EO3 properties and fields."""
+
+    def __init__(self, properties: Eo3Dict = None) -> None:
+        if properties is None:
+            properties = Eo3Dict()
+        self._props = properties
+
+    @property
+    def properties(self) -> Eo3Dict:
+        return self._props
 
 
 def _github_suggest_new_property_url(key: str, value: object) -> str:
