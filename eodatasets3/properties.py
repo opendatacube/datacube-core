@@ -311,11 +311,14 @@ class Eo3Dict(collections.abc.MutableMapping):
     # For backwards compatibility, in case users are extending at runtime.
     KNOWN_STAC_PROPERTIES = KNOWN_PROPERTIES
 
-    def __init__(self, properties=None) -> None:
+    def __init__(self, properties: Mapping = None, normalise_input=True) -> None:
         if properties is None:
             properties = {}
         self._props = properties
-
+        # We normalise the properties they gave us.
+        if normalise_input:
+            for key in self._props:
+                self.normalise_and_set(key, self._props[key], expect_override=True)
         self._finished_init_ = True
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -349,7 +352,7 @@ class Eo3Dict(collections.abc.MutableMapping):
             allow_override=True,
         )
 
-    def normalise_and_set(self, key, value, allow_override=True):
+    def normalise_and_set(self, key, value, allow_override=True, expect_override=False):
         """
         Normalise the given value if it's a known key (eg. dates should be dates),
         and set it on the given dictionary.
@@ -375,7 +378,7 @@ class Eo3Dict(collections.abc.MutableMapping):
                             )
                         self.normalise_and_set(k, v, allow_override=allow_override)
 
-        if key in self._props and value != self[key]:
+        if key in self._props and value != self[key] and (not expect_override):
             message = (
                 f"Overriding property {key!r} " f"(from {self[key]!r} to {value!r})"
             )
