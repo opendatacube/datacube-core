@@ -137,7 +137,7 @@ Building python virtual environment:
    
 Development on Colab
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-Execute on cell
+The following script allows to reproduce  ``datacube `` library on Google Colaboratory, since this is currently working on a conda environment, individual libraries and correspondent dependencies must be installed independently. For reproducibility on Colab, execute the following commands on a single cell. 
 
 ::
 
