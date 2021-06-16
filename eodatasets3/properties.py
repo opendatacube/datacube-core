@@ -265,6 +265,9 @@ class Eo3Dict(collections.abc.MutableMapping):
     """
     This acts like a dictionary, but will normalise known properties (consistent
     case, types etc) and warn about common mistakes.
+
+    It wraps an inner dictionary. By default it will normalise the fields in
+    the input dictionary on creation, but you can disable this with `normalise_input=False`.
     """
 
     # Every property we've seen or dealt with so far. Feel free to expand with abandon...
