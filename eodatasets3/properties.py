@@ -357,8 +357,16 @@ class Eo3Dict(collections.abc.MutableMapping):
 
     def normalise_and_set(self, key, value, allow_override=True, expect_override=False):
         """
-        Normalise the given value if it's a known key (eg. dates should be dates),
-        and set it on the given dictionary.
+        Set a property with the usual normalisation.
+
+        This has some options that are not available on normal dictionary item
+        setting (``self[key] = val``)
+
+        The default behaviour of this class is very conservative in order to catch common errors
+        of users. You can loosen the settings here.
+
+        :argument allow_override: Is it okay to overwrite an existing value? (if not, error will be thrown)
+        :argument expect_override: We expect to overwrite a property, so don't produce a warning or error.
         """
         if key not in self.KNOWN_PROPERTIES:
             warnings.warn(
@@ -473,7 +481,7 @@ class Eo3Fields:
         """
         Name of instrument or sensor used (e.g., MODIS, ASTER, OLI, Canon F-1).
 
-        Shorthand for 'eo:instrument' property
+        Shorthand for ``eo:instrument`` property
         """
         return self.properties.get("eo:instrument")
 
@@ -526,7 +534,7 @@ class Eo3Fields:
         The `datetime` is still mandatory when this is set.
 
         This field is a shorthand for reading/setting the datetime-range
-        stac extension properties: 'dtr:start_datetime' and 'dtr:end_datetime'
+        stac 0.6 extension properties: 'dtr:start_datetime' and 'dtr:end_datetime'
         """
         return (
             self.properties.get("dtr:start_datetime"),
@@ -587,11 +595,14 @@ class Eo3Fields:
     def collection_number(self) -> int:
         """
         The version of the collection.
-        Eg:
-          metadata:
-            product_family: wofs
-            dataset_version: 1.6.0
-            collection_number: 3
+
+        Eg.::
+
+           metadata:
+             product_family: wofs
+             dataset_version: 1.6.0
+             collection_number: 3
+
         """
         return self.properties.get("odc:collection_number")
 
@@ -645,7 +656,7 @@ class Eo3Fields:
 
         It's generally treated as an opaque string to group datasets and process as stacks.
 
-        For Landsat products it's the concatenated '{path}{row}' (both numbers formatted to three digits).
+        For Landsat products it's the concatenated ``{path}{row}`` (both numbers formatted to three digits).
 
         For Sentinel 2, it's the MGRS grid (TODO presumably?).
 
@@ -673,7 +684,9 @@ class Eo3Fields:
 
 
 class Eo3Properties(Eo3Fields):
-    """A simple instance of EO3 properties and fields."""
+    """
+    A simple instance of :class:`eodatasets3.names.EoFields`
+    """
 
     def __init__(self, properties: Eo3Dict = None) -> None:
         if properties is None:
