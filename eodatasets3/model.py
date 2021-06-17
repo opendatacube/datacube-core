@@ -70,20 +70,41 @@ class AccessoryDoc:
 
 @attr.s(auto_attribs=True, slots=True)
 class DatasetDoc(Eo3Fields):
+    """A parsed EO3 dataset document"""
+
+    #: Dataset UUID
     id: UUID = None
+    #: Human-readable identifier for the dataset
     label: str = None
+    #: The product name (local) and/or url (global)
     product: ProductDoc = None
+    #: Location(s) where this dataset is stored.
+    #:
+    #: (ODC supports multiple locations when the same dataset is stored in multiple places)
+    #:
+    #: They are fully qualified URIs (``file://...`, ``https://...``, ``s3://...``)
+    #:
+    #: All other paths in the document (measurements, accessories) are relative to the
+    #: chosen location.
     locations: List[str] = None
 
+    #: CRS string. Eg. ``epsg:3577``
     crs: str = None
+    #: Shapely geometry of the valid data coverage
+    #:
+    #: (it must contain all non-empty pixels of the image)
     geometry: BaseGeometry = None
+    #: Grid specifications for measurements
     grids: Dict[str, GridDoc] = None
-
+    #: Raw properties
     properties: Eo3Dict = attr.ib(factory=Eo3Dict)
-
+    #: Loadable measurements of the dataset
     measurements: Dict[str, MeasurementDoc] = None
-
-    # Paths to accessory files, such as thumbnails.
+    #: References to accessory files
+    #:
+    #: Such as thumbnails, checksums, other kinds of metadata files.
+    #:
+    #: (any files included in the dataset that are not measurements)
     accessories: Dict[str, AccessoryDoc] = attr.ib(factory=CommentedMap)
-
+    #: Links to source dataset uuids
     lineage: Dict[str, Sequence[UUID]] = attr.ib(factory=CommentedMap)

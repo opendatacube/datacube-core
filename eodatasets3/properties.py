@@ -347,6 +347,9 @@ class Eo3Dict(collections.abc.MutableMapping):
     def __delitem__(self, name: str) -> None:
         del self._props[name]
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._props!r})"
+
     def __setitem__(self, key, value):
         self.normalise_and_set(
             key,
@@ -447,12 +450,12 @@ class Eo3Fields:
         """
         Unique name of the specific platform the instrument is attached to.
 
-        For satellites this would be the name of the satellite (e.g., landsat-8, sentinel-2A),
+        For satellites this would be the name of the satellite (e.g., ``landsat-8``, ``sentinel-2a``),
         whereas for drones this would be a unique name for the drone.
 
-        In derivative products, multiple platforms can be specified with a comma "landsat5,landsat7".
+        In derivative products, multiple platforms can be specified with a comma: ``landsat-5,landsat-7``.
 
-        Shorthand for 'eo:platform' property
+        Shorthand for ``eo:platform`` property
         """
         return self.properties.get("eo:platform")
 
@@ -492,7 +495,7 @@ class Eo3Fields:
     @property
     def constellation(self) -> str:
         """
-        Constellation. Eg 'sentinel-2".
+        Constellation. Eg ``sentinel-2``.
         """
         return self.properties.get("eo:constellation")
 
@@ -516,9 +519,9 @@ class Eo3Fields:
         """
         Organisation that produced the data.
 
-        eg. usgs.gov or ga.gov.au
+        eg. ``usgs.gov`` or ``ga.gov.au``
 
-        Shorthand for 'odc:producer' property
+        Shorthand for ``odc:producer`` property
         """
         return self.properties.get("odc:producer")
 
@@ -531,10 +534,10 @@ class Eo3Fields:
         """
         An optional date range for the dataset.
 
-        The `datetime` is still mandatory when this is set.
+        The ``datetime`` is still mandatory when this is set.
 
         This field is a shorthand for reading/setting the datetime-range
-        stac 0.6 extension properties: 'dtr:start_datetime' and 'dtr:end_datetime'
+        stac 0.6 extension properties: ``dtr:start_datetime`` and ``dtr:end_datetime``
         """
         return (
             self.properties.get("dtr:start_datetime"),
@@ -549,27 +552,15 @@ class Eo3Fields:
         self.properties["dtr:end_datetime"] = end
 
     @property
-    def datetime(self) -> datetime:
-        """
-        The searchable date and time of the assets. (Default to UTC if not specified)
-        """
-        return self.properties.get("datetime")
-
-    @datetime.setter
-    def datetime(self, val: datetime) -> datetime:
-        self.properties["datetime"] = val
-
-    @property
     def processed(self) -> datetime:
-        """
-        When the dataset was processed (Default to UTC if not specified)
+        """When the dataset was created (Defaults to UTC if not specified)
 
-        Shorthand for the 'odc:processing_datetime' field
+        Shorthand for the ``odc:processing_datetime`` field
         """
         return self.properties.get("odc:processing_datetime")
 
     @processed.setter
-    def processed(self, value):
+    def processed(self, value: Union[str, datetime]):
         self.properties["odc:processing_datetime"] = value
 
     def processed_now(self):
@@ -583,7 +574,7 @@ class Eo3Fields:
         """
         The version of the dataset.
 
-        Typically digits separated by a dot. Eg. '1.0.0'
+        Typically digits separated by a dot. Eg. `1.0.0`
 
         The first digit is usually the collection number for
         this 'producer' organisation, such as USGS Collection 1 or
@@ -625,17 +616,17 @@ class Eo3Fields:
     @property
     def product_family(self) -> str:
         """
-        The identifier for this "family" of products, such as 'ard', 'level1` or 'fc'.
+        The identifier for this "family" of products, such as ``ard``, ``level1`` or ``fc``.
         It's used for grouping similar products together.
 
         They products in a family are usually produced the same way but have small variations:
         they come from different sensors, or are written in different projections, etc.
 
-        'ard' family of products: 'ls7_ard', 'ls5_ard' ....
+        ``ard`` family of products: ``ls7_ard``, ``ls5_ard`` ....
 
-        On older versions of opendatacube this was called "product_type".
+        On older versions of Open Data Cube this was called ``product_type``.
 
-        Shorthand for 'odc:product_family' property.
+        Shorthand for ``odc:product_family`` property.
         """
         return self.properties.get("odc:product_family")
 
@@ -660,7 +651,7 @@ class Eo3Fields:
 
         For Sentinel 2, it's the MGRS grid (TODO presumably?).
 
-        Shorthand for 'odc:region_code' property.
+        Shorthand for ``odc:region_code`` property.
         """
         return self.properties.get("odc:region_code")
 
@@ -674,7 +665,7 @@ class Eo3Fields:
         The dataset maturity. The same data may be processed multiple times -- becoming more
         mature -- as new ancillary data becomes available.
 
-        Typical values (from least to most mature): "nrt", "interim", "final"
+        Typical values (from least to most mature): ``nrt`` (near real time), ``interim``, ``final``
         """
         return self.properties.get("dea:dataset_maturity")
 
@@ -682,10 +673,33 @@ class Eo3Fields:
     def maturity(self, value):
         self.properties["dea:dataset_maturity"] = value
 
+    # Note that giving a method the name 'datetime' will override the 'datetime' type
+    # for class-level declarations (ie, for any types on functions!)
+    # So we make an alias:
+    from datetime import datetime as datetime_
+
+    @property
+    def datetime(self) -> datetime_:
+        """
+        The searchable date and time of the assets. (Default to UTC if not specified)
+        """
+        return self.properties.get("datetime")
+
+    @datetime.setter
+    def datetime(self, val: datetime_):
+        self.properties["datetime"] = val
+
 
 class Eo3Properties(Eo3Fields):
     """
-    A simple instance of :class:`eodatasets3.names.EoFields`
+    A simple instance of :class:`.Eo3Fields`::
+
+        >>> p = Eo3Properties()
+        >>> p.platform = 'LANDSAT_8'
+        >>> p.processed = '2018-04-03'
+        >>> p.properties
+        Eo3Dict({'eo:platform': 'landsat-8', 'odc:processing_datetime': \
+datetime.datetime(2018, 4, 3, 0, 0, tzinfo=datetime.timezone.utc)})
     """
 
     def __init__(self, properties: Eo3Dict = None) -> None:
@@ -696,6 +710,9 @@ class Eo3Properties(Eo3Fields):
     @property
     def properties(self) -> Eo3Dict:
         return self._props
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._props!r})"
 
 
 def _github_suggest_new_property_url(key: str, value: object) -> str:
