@@ -435,7 +435,7 @@ class PropertyOverrideWarning(UserWarning):
     ...
 
 
-class Eo3Fields:
+class Eo3Interface:
     """
     Convenient access fields for the most common/essential properties in datasets
     """
@@ -690,9 +690,9 @@ class Eo3Fields:
         self.properties["datetime"] = val
 
 
-class Eo3Properties(Eo3Fields):
+class Eo3Properties(Eo3Interface):
     """
-    A simple instance of :class:`.Eo3Fields`::
+    A simple instance of :class:`.Eo3Interface`::
 
         >>> p = Eo3Properties()
         >>> p.platform = 'LANDSAT_8'
