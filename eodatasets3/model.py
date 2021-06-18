@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple, Dict, Optional, List, Sequence, Union
+from typing import Tuple, Dict, Optional, List, Union
 from uuid import UUID
 
 import affine
@@ -117,4 +117,4 @@ class DatasetDoc(Eo3Interface):
     #: (any files included in the dataset that are not measurements)
     accessories: Dict[str, AccessoryDoc] = attr.ib(factory=CommentedMap)
     #: Links to source dataset uuids
-    lineage: Dict[str, Sequence[UUID]] = attr.ib(factory=CommentedMap)
+    lineage: Dict[str, List[UUID]] = attr.ib(factory=CommentedMap)
