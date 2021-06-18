@@ -60,6 +60,8 @@ class Query(object):
         :param search_terms:
          * `measurements` - list of measurements to retrieve
          * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
+         * 'extra_dimension_name' (e.g. `z`) - tuples (min, max) bounding extra \
+            dimensions specified by name for 3D datasets. E.g. z=(10, 30).
          * `crs` - spatial coordinate reference system to interpret the spatial bounds
          * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
         """
@@ -285,7 +287,7 @@ def _time_to_search_dims(time_range):
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
             tmp = list(time_range)
             if len(tmp) > 2:
-                raise ValueError(f"Please supply start and end date only for time query")
+                raise ValueError("Please supply start and end date only for time query")
 
             tr_start, tr_end = tmp[0], tmp[-1]
 

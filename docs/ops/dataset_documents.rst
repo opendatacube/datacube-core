@@ -133,6 +133,60 @@ as well as optional tools to write these files more easily.
 
 
 
+.. _dataset-metadata-doc-3d:
+
+3D dataset metadata
+-------------------
+
+Dataset metadata documents for 3D measurements conform to the same EO3 schema as above.
+The example below is for a GEDI L2B cover_z dataset.
+
+.. code-block:: yaml
+
+    id: 9361f681-6e92-4b82-a3ca-3ed799df1116
+    $schema: https://schemas.opendatacube.org/dataset
+    product:
+      name: gedi_l2b_cover_z
+    crs: epsg:4326
+    grids:
+      default:
+        shape:
+          - 420
+          - 551
+        transform:
+          - 0.00027778
+          - 0.0
+          - 149.03966950632497
+          - 0.0
+          - -0.00027778
+          - -35.30265746130061
+          - 0.0
+          - 0.0
+          - 1.0
+    measurements:
+      "cover_z":
+        layer: array
+        path: ./GEDI02_B_2019294155401_O04856_T03859_02_001_01_cover_z.xarray_3d
+    properties:
+      datetime: 2019-10-21 15:54:01+00:00
+      dtr:end_datetime: 2019-10-21 15:54:01+00:00
+      dtr:start_datetime: 2019-10-21 15:54:01+00:00
+      eo:instrument: GEDI
+      eo:platform: ISS
+      odc:file_format: xarray_3d
+      odc:processing_datetime: 2021-04-15 04:43:01.926659
+    lineage: {}
+
+
+Note that this dataset metadata document:
+  - references a 3D product definition which includes an `extra_dimensions` specification
+    and an `extra_dim` name for the `cover_z` measurement (see: :ref:`product-doc-extra-dim`)
+  - specifies a `file_format` which supports 3D data and for which there is a 3D enabled
+    driver (see :ref:`extending-datacube-3d-reads`).
+  - describes storage properties specific to that format/driver. E.g. `layer` indicates the
+    xarray variable for the driver to load (similar to the netcdf example above).
+
+
 .. _dataset-metadata-doc-eo:
 
 EO (deprecated)

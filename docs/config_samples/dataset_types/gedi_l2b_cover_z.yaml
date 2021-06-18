@@ -1,0 +1,18 @@
+name: gedi_l2b_cover_z
+description:
+  GEDI - Cumulative canopy cover from height (z) to ground (z=0) with a
+  vertical step size of dZ, where cover(z > z_max) = 0
+metadata_type: eo3
+metadata:
+  product:
+    name: gedi_l2b_cover_z
+extra_dimensions:
+  - name: z
+    values: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
+    dtype: float64
+measurements:
+  - name: cover_z
+    extra_dim: z
+    dtype: float32
+    nodata: -9999.0
+    units: na

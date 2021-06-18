@@ -192,6 +192,19 @@ class Datacube(object):
 
                 time=('2001-04', '2001-07')
 
+            For 3D datasets, where the product definition contains an ``extra_dimension`` specification,
+            these dimensions can be queried using that dimension's name. E.g.::
+
+                z=(10, 30)
+
+            or ::
+
+                z=5
+
+            or ::
+
+                wvl=(560.3, 820.5)
+
             For EO-specific datasets that are based around scenes, the time dimension can be reduced to the day level,
             using solar day to keep scenes together.
             ::

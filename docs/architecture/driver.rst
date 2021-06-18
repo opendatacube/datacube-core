@@ -78,6 +78,8 @@ Example Pickle Based Driver
 Available in ``/examples/io_plugin``. Includes an example ``setup.py``
 as well as example **Read** and **Write** Drivers.
 
+.. _extending-datacube-3d-reads:
+
 3D Data Read Plug-ins
 =====================
 
