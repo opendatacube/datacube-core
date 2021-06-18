@@ -88,12 +88,7 @@ class BandInfo:
         except KeyError:
             raise ValueError('No such band: {}'.format(band))
 
-        if 'extra_dim' in mp:
-            # 3D case
-            mm = ds.measurements.get(mp.extra_dim.get('measurement_map')[extra_dim_index])
-        else:
-            # 2D case
-            mm = ds.measurements.get(mp.canonical_name)
+        mm = ds.measurements.get(mp.canonical_name)
 
         if mm is None:
             raise ValueError('No such band: {}'.format(band))

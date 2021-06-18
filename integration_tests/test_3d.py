@@ -151,25 +151,23 @@ def invalid_dataset_type_paths(tmpdir):
     doc["extra_dimensions"][0]["name"] = "invalid"  # Spurious name
     invalid_docs["Dimension z is not defined in extra_dimension"] = doc
 
-    # Error: extra_dimensions.values length mismatch extra_dim.alias_map
-    doc = deepcopy(documents[0])
-    doc["extra_dimensions"][0]["values"].append(-9999)  # Spurious trailing item
-    invalid_docs["alias_map should be the same length as extra_dimensions"] = doc
-
     # Error: extra_dimensions.values length mismatch extra_dim.spectral_definition_map
     doc = deepcopy(documents[0])
-    doc["measurements"][0]["extra_dim"]["spectral_definition_map"] = [
-        {"wavelength": [w, w + 1], "response": [w / 10, (w + 1) / 10]}
+    doc["measurements"][0]["spectral_definition"] = [
+        {
+            "wavelength": [w, w + 1],
+            "response": [w / 10, (w + 1) / 10],
+        }
         for w in doc["extra_dimensions"][0]["values"]
         + [-9999]  # Spurious trailing item
     ]
     invalid_docs[
-        "spectral_definition_map should be the same length as extra_dimensions"
+        "spectral_definition should be the same length as values for extra_dim z"
     ] = doc
 
     # Error: mismatching spectral wavelength and response
     doc = deepcopy(documents[0])
-    doc["measurements"][0]["extra_dim"]["spectral_definition_map"] = [
+    doc["measurements"][0]["spectral_definition"] = [
         {
             "wavelength": [w, w + 1, w + 2],  # Wavelength longer than response
             "response": [w / 10, (w + 1) / 10],
@@ -179,27 +177,6 @@ def invalid_dataset_type_paths(tmpdir):
     invalid_docs[
         "spectral_definition_map: wavelength should be the same length as response"
     ] = doc
-
-    # Error: duplicate measurement map name
-    doc = deepcopy(documents[0])
-    doc["measurements"][0]["extra_dim"]["measurement_map"].append("cover_z")
-    invalid_docs["Trying to generate measurement cover_z from 3D measurement"] = doc
-
-    # Error: duplicate measurement name
-    doc = deepcopy(documents[0])
-    y = deepcopy(doc["measurements"][0])
-    doc["measurements"].append(y)
-    invalid_docs["Found duplicate measurement name"] = doc
-
-    # Error: duplicate alias name
-    doc = deepcopy(documents[0])
-    y = deepcopy(doc["measurements"][0])
-    y["name"] = "cover_y"
-    y["extra_dim"]["measurement_map"] = [
-        f"y_{m}" for m in y["extra_dim"]["measurement_map"]
-    ]
-    doc["measurements"].append(y)
-    invalid_docs["Found duplicate alias"] = doc
 
     invalid_paths = {}
     for name, invalid_doc in invalid_docs.items():
@@ -226,7 +203,7 @@ def product_with_spectral_map(tmpdir):
         ]
     assert len(documents) == 1, "Test cannot alter product definition"
     doc = deepcopy(documents[0])
-    doc["measurements"][0]["extra_dim"]["spectral_definition_map"] = [
+    doc["measurements"][0]["spectral_definition"] = [
         {
             "wavelength": [w, w + 1],
             "response": [w / 10, (w + 1) / 10],

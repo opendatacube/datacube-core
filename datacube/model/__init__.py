@@ -454,7 +454,7 @@ class DatasetType:
         """
         Dictionary of measurements in this product
         """
-        from copy import deepcopy
+        # from copy import deepcopy
         if self._canonical_measurements is None:
             def fix_nodata(m):
                 nodata = m.get('nodata', None)
@@ -469,6 +469,7 @@ class DatasetType:
                 # in the product definition
                 # Note: Might be a good idea to natively support 3D measurements
                 # Todo: See if we can make a sister change to eo3 to describe a 3D datasource
+                '''
                 if 'extra_dim' in m:
                     for idx, mm in enumerate(m['extra_dim'].get('measurement_map', [])):
                         new_m = deepcopy(m)
@@ -480,7 +481,7 @@ class DatasetType:
                             new_m.update({'spectral_definition': m['extra_dim']['spectral_definition_map'][idx]})
                         new_m.pop('extra_dim', None)
                         self._canonical_measurements.update({new_m['name']: Measurement(**fix_nodata(new_m))})
-
+                '''
                 self._canonical_measurements.update({m['name']: Measurement(**fix_nodata(m))})
 
         return self._canonical_measurements
@@ -541,79 +542,45 @@ class DatasetType:
         :param definition: Dimension definition dict, typically retrieved from the product definition's
             `extra_dimensions` field.
         """
-        # List of measurement names in the product definition
-        measurement_names = [m.get('name') for m in definition.get('measurements', {})]
-        # Dict of names: extra_dim values
-        extra_dimension_values = OrderedDict(
+        # Dict of extra dimensions names and values in the product definition
+        defined_extra_dimensions = OrderedDict(
             (d.get("name"), d.get("values")) for d in definition.get("extra_dimensions", [])
         )
 
-        duplicates_names = set()
-        duplicates_aliases = set()
         for m in definition.get('measurements', []):
             # Skip if not a 3D measurement
             if 'extra_dim' not in m:
                 continue
 
             # Found 3D measurement, check if extra_dimension is defined.
-            if (len(extra_dimension_values) == 0):
+            if (len(defined_extra_dimensions) == 0):
                 raise ValueError(
                     "extra_dimensions is not defined. 3D measurements require extra_dimensions "
                     "to be defined for the dimension"
                 )
 
-            extra_dim = m.get('extra_dim')
+            dim_name = m.get('extra_dim')
 
             # Check extra dimension is defined
-            if extra_dim.get('dimension') not in extra_dimension_values:
-                raise ValueError(f"Dimension {extra_dim.get('dimension')} is not defined in extra_dimensions")
+            if dim_name not in defined_extra_dimensions:
+                raise ValueError(f"Dimension {dim_name} is not defined in extra_dimensions")
 
-            # Check alias_map of expected length
-            if 'alias_map' in extra_dim and 'extra_dimensions' in definition:
-                dim_name = extra_dim.get('dimension')
-                if len(extra_dimension_values.get(dim_name)) != len(extra_dim.get('alias_map')):
+            if 'spectral_definition' in m:
+                spectral_definitions = m.get('spectral_definition', [])
+                # Check spectral_definition of expected length
+                if len(defined_extra_dimensions.get(dim_name)) != len(spectral_definitions):
                     raise ValueError(
-                        f"alias_map should be the same length as extra_dimensions "
-                        f"{dim_name} values in the product definition"
-                    )
-
-            # Check spectral_definition_map of expected length
-            # Each spectral definitions could be different lengths
-            if 'spectral_definition_map' in extra_dim and 'extra_dimensions' in definition:
-                dim_name = extra_dim.get('dimension')
-                spectral_definition_map = extra_dim.get('spectral_definition_map')
-                if len(extra_dimension_values.get(dim_name)) != len(spectral_definition_map):
-                    raise ValueError(
-                        f"spectral_definition_map should be the same length as extra_dimensions "
-                        f"{dim_name} values in the product definition"
+                        f"spectral_definition should be the same length as values for extra_dim {m.get('extra_dim')}"
                     )
 
                 # Check each spectral_definition has the same length for wavelength and response if both exists
-                for idx, spectral_definition in enumerate(spectral_definition_map):
+                for idx, spectral_definition in enumerate(spectral_definitions):
                     if 'wavelength' in spectral_definition and 'response' in spectral_definition:
                         if len(spectral_definition.get('wavelength')) != len(spectral_definition.get('response')):
                             raise ValueError(
                                 f"spectral_definition_map: wavelength should be the same length as response "
                                 f"in the product definition for spectral definition at index {idx}."
                             )
-
-            # Check for duplicates measurement names
-            for m_name in m['extra_dim'].get('measurement_map', []):
-                if m_name in measurement_names:
-                    raise ValueError(
-                        f"Trying to generate measurement {m_name} from 3D measurement "
-                        f"{m.get('name')}, but it is already defined in the product definition"
-                    )
-                if m_name in duplicates_names:
-                    raise ValueError(f"Found duplicate measurement name {m_name} in 3D measurement {m.get('name')}")
-                duplicates_names.add(m_name)
-
-            # Check for duplicates alias names
-            for aliases in extra_dim.get('alias_map', []):
-                for alias in aliases:
-                    if alias in duplicates_aliases:
-                        raise ValueError(f"Found duplicate alias {alias} in 3D measurement {m.get('name')}")
-                    duplicates_aliases.add(alias)
 
     def canonical_measurement(self, measurement: str) -> str:
         """ resolve measurement alias into canonical name
@@ -624,7 +591,9 @@ class DatasetType:
 
         return m.canonical_name
 
-    def lookup_measurements(self, measurements: Optional[Union[Iterable[str], str]] = None) -> Mapping[str, Measurement]:
+    def lookup_measurements(
+        self, measurements: Optional[Union[Iterable[str], str]] = None
+    ) -> Mapping[str, Measurement]:
         """
         Find measurements by name
 
