@@ -59,6 +59,8 @@ for example, to pre-filter the available datasets before loading.
    Datacube.group_datasets
    Datacube.load_data
 
+.. include:: load_3d_dataset.rst
+
 .. _grid-workflow-class:
 
 .. py:module:: datacube.api
