@@ -424,7 +424,7 @@ class StacPropertyView(Eo3Dict):
         super().__init__(properties)
         warnings.warn(
             "The class name 'StacPropertyView' is deprecated as it's misleading. "
-            "Please change your import to the (identical) 'Eo3Properties'.",
+            "Please change your import to the (identical) 'Eo3Dict'.",
             category=DeprecationWarning,
         )
 
@@ -688,31 +688,6 @@ class Eo3Interface:
     @datetime.setter
     def datetime(self, val: datetime_):
         self.properties["datetime"] = val
-
-
-class Eo3Properties(Eo3Interface):
-    """
-    A simple instance of :class:`.Eo3Interface`::
-
-        >>> p = Eo3Properties()
-        >>> p.platform = 'LANDSAT_8'
-        >>> p.processed = '2018-04-03'
-        >>> p.properties
-        Eo3Dict({'eo:platform': 'landsat-8', 'odc:processing_datetime': \
-datetime.datetime(2018, 4, 3, 0, 0, tzinfo=datetime.timezone.utc)})
-    """
-
-    def __init__(self, properties: Eo3Dict = None) -> None:
-        if properties is None:
-            properties = Eo3Dict()
-        self._props = properties
-
-    @property
-    def properties(self) -> Eo3Dict:
-        return self._props
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._props!r})"
 
 
 def _github_suggest_new_property_url(key: str, value: object) -> str:

@@ -70,7 +70,17 @@ class AccessoryDoc:
 
 @attr.s(auto_attribs=True, slots=True)
 class DatasetDoc(Eo3Interface):
-    """A parsed EO3 dataset document"""
+    """
+    An EO3 dataset document
+
+    Includes :class:`.Eo3Interface` methods for metadata access::
+
+    >>> p = DatasetDoc()
+    >>> p.platform = 'LANDSAT_8'
+    >>> p.processed = '2018-04-03'
+    >>> p.properties['odc:processing_datetime']
+    datetime.datetime(2018, 4, 3, 0, 0, tzinfo=datetime.timezone.utc)
+    """
 
     #: Dataset UUID
     id: UUID = None
