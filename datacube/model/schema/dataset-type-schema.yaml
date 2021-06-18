@@ -72,6 +72,20 @@ definitions:
         - values
         - dtype
         additionalProperties: false
+    spectral_definition:
+        description: A structured measured relative spectral response with sample intervals
+        type: object
+        properties:
+            wavelength:
+                description: List of comma delimited wavelength values
+                type: array
+                items:
+                    type: number
+            response:
+                description: The relative spectral response of the sensor band at a given wavelength
+                type: array
+                items:
+                    type: number
     measurement:
         type: object
         properties:
@@ -98,20 +112,12 @@ definitions:
                 items:
                     type: string
             spectral_definition:
-                description: A structured measured relative spectral response with sample intervals
-                type: object
-                properties:
-                  wavelength:
-                    description: List of comma delimited wavelength values
-                    type: array
-                    items:
-                      type: number
-                  response:
-                    description: The relative spectral response of the sensor band at a given wavelength
-                    type: array
-                    items:
-                      type: number
-
+                oneOf:
+                    - "$ref": "#/definitions/spectral_definition"
+                    - description: List of spectral definitions, one per coordinate.
+                      type: array
+                      items:
+                        "$ref": "#/definitions/spectral_definition"
             flags_definition:
                 description: A structured definition of bit flags and meanings
                 type: object
@@ -131,33 +137,7 @@ definitions:
                         description: A string describing this flag
                         type: string
             extra_dim:
-                description: A structured definition of extra dimentions between time and 2D space
-                properties:
-                    dimension:
-                        description: dimension label
-                        type: string
-                    measurement_map:
-                        type: array
-                        description: Mapping to the measurement names
-                        items:
-                            type: string
-                    alias_map:
-                        description: A list of string aliases mapping
-                        type: array
-                        items:
-                            type: array
-                    spectral_definition_map:
-                        description: Spectral definition mapping
-                        type: array
-                        items:
-                            "$ref": "#/definitions/measurement/properties/spectral_definition"
-                required:
-                  - dimension
-                  - measurement_map
-                additionalProperties: false
-            extra_dim_index:
-                description: Integer index of measurement of 3D dataset
-                type: number
+                type: string
         required:
           - name
           - dtype

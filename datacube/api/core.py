@@ -500,7 +500,7 @@ class Datacube(object):
                 arrays.append((m, shape_default, coords_default, dims_default))
             elif extra_dims:
                 # 3D case
-                name = m.extra_dim['dimension']
+                name = m.extra_dim
                 new_dims = dims_default[:1] + (name,) + dims_default[1:]
                 new_coords = deepcopy(coords_default)
                 new_coords[name] = extra_dims._coords[name].copy()
@@ -576,7 +576,7 @@ class Datacube(object):
             n_total = 0
             for m in measurements:
                 if 'extra_dim' in m:
-                    index_subset = extra_dims.measurements_slice(m.extra_dim.get('dimension'))
+                    index_subset = extra_dims.measurements_slice(m.extra_dim)
                     n_total += t_size*len(m.extra_dim.get('measurement_map')[index_subset])
                 else:
                     n_total += t_size
@@ -597,11 +597,8 @@ class Datacube(object):
                 if 'extra_dim' in m:
                     # When we want to support 3D native reads, we can start by replacing the for loop with
                     # read_ios.append(((index + extra_dim_index), (datasets, m, index_subset)))
-                    index_subset = extra_dims.measurements_index(m.extra_dim.get('dimension'))
-                    measurements_subset = m.extra_dim.get('measurement_map')[slice(*index_subset)]
-                    for result_index, (extra_dim_index, extra_dim_name) in enumerate(
-                        zip(range(*index_subset), measurements_subset)
-                    ):
+                    index_subset = extra_dims.measurements_index(m.extra_dim)
+                    for result_index, extra_dim_index in enumerate(range(*index_subset)):
                         read_ios.append(((index + (result_index,)), (datasets, m, extra_dim_index)))
                 else:
                     # Get extra_dim index if available
@@ -926,11 +923,9 @@ def _make_dask_array(chunked_srcs,
                 val = _mk_empty(gbt.chunk_shape(idx))
                 # 3D case
                 if 'extra_dim' in measurement:
-                    index_subset = extra_dims.measurements_slice(measurement.extra_dim.get('dimension'))
-                    for extra_dim_index, extra_dim_name in numpy.ndenumerate(
-                        measurement.extra_dim.get('measurement_map')[index_subset]
-                    ):
-                        dsk[key_prefix + extra_dim_index + idx] = val
+                    index_subset = extra_dims.measurements_index(measurement.extra_dim)
+                    for result_index, extra_dim_index in numpy.ndenumerate(range(*index_subset)):
+                        dsk[key_prefix + result_index + idx] = val
                 else:
                     dsk[key_prefix + idx] = val
             else:
@@ -944,11 +939,8 @@ def _make_dask_array(chunked_srcs,
                 # 3D case
                 if 'extra_dim' in measurement:
                     # Do extra_dim subsetting here
-                    index_subset = extra_dims.measurements_index(measurement.extra_dim.get('dimension'))
-                    measurements_subset = measurement.extra_dim.get('measurement_map')[slice(*index_subset)]
-                    for result_index, (extra_dim_index, extra_dim_name) in enumerate(
-                        zip(range(*index_subset), measurements_subset)
-                    ):
+                    index_subset = extra_dims.measurements_index(measurement.extra_dim)
+                    for result_index, extra_dim_index in enumerate(range(*index_subset)):
                         dsk[key_prefix + (result_index,) + idx] = val + (extra_dim_index,)
                 else:
                     # Get extra_dim index if available
@@ -962,7 +954,7 @@ def _make_dask_array(chunked_srcs,
 
     extra_dim_shape = ()
     if 'extra_dim' in measurement:
-        dim_name = measurement.extra_dim.get('dimension')
+        dim_name = measurement.extra_dim
         extra_dim_shape += (len(extra_dims.measurements_values(dim_name)),)
 
     data = da.Array(dsk, dsk_name,
