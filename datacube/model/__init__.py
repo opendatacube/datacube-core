@@ -463,26 +463,8 @@ class DatasetType:
                     m['nodata'] = float(nodata)
                 return m
 
-            self._canonical_measurements = OrderedDict()
-            for m in self.definition.get('measurements', []):
-                # Generate 2D measurements from a 3D measurement so we dont have to fully enumerate them
-                # in the product definition
-                # Note: Might be a good idea to natively support 3D measurements
-                # Todo: See if we can make a sister change to eo3 to describe a 3D datasource
-                '''
-                if 'extra_dim' in m:
-                    for idx, mm in enumerate(m['extra_dim'].get('measurement_map', [])):
-                        new_m = deepcopy(m)
-                        new_m.update({'name': mm})
-                        new_m.update({'extra_dim_index': idx})
-                        if 'alias_map' in m['extra_dim']:
-                            new_m.update({'alias': m['extra_dim']['alias_map'][idx]})
-                        if 'spectral_definition_map' in m['extra_dim']:
-                            new_m.update({'spectral_definition': m['extra_dim']['spectral_definition_map'][idx]})
-                        new_m.pop('extra_dim', None)
-                        self._canonical_measurements.update({new_m['name']: Measurement(**fix_nodata(new_m))})
-                '''
-                self._canonical_measurements.update({m['name']: Measurement(**fix_nodata(m))})
+            self._canonical_measurements = OrderedDict((m['name'], Measurement(**fix_nodata(m)))
+                                                       for m in self.definition.get('measurements', []))
 
         return self._canonical_measurements
 
@@ -975,7 +957,7 @@ class ExtraDimensions:
     def __getitem__(self, dim_slices: Dict[str, Union[float, Tuple[float, float]]]) -> "ExtraDimensions":
         """Return a ExtraDimensions subsetted by dim_slices
 
-        :param dim_slices: Optional cache to re-use geoboxes instead of creating new one each time
+        :param dim_slices: Dict of dimension slices to subset by.
         :return: An ExtraDimensions object subsetted by `dim_slices`
         """
         # Check all dimensions specified in dim_slices exists
