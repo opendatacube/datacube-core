@@ -537,7 +537,14 @@ class DatasetType:
         return GridSpec(crs=crs, **gs_params)
 
     def validate_extra_dims(definition: dict):
-        """Validate extra_dimension metadata in the product definition.
+        """Validate 3D metadata in the product definition.
+
+        Perform some basic checks for validity of the 3D dataset product definition:
+          - Checks extra_dimensions section exists
+          - For each 3D measurement, check if the required dimension is defined
+          - If the 3D spectral_definition is defined:
+            - Check there's one entry per coordinate.
+            - Check that wavelength and response are the same length.
 
         :param definition: Dimension definition dict, typically retrieved from the product definition's
             `extra_dimensions` field.
