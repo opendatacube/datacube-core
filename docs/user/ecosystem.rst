@@ -41,16 +41,6 @@ See the `Digital Earth Australia Explorer`_ for an example deployment showing th
 .. _`Digital Earth Australia Explorer`: https://explorer.sandbox.dea.ga.gov.au
 
 
-Data Cube UI
-------------
-
-The `Data Cube UI`_ is a full stack Python web application used to perform analysis on raster datasets using the Data
-Cube. Using common and widely accepted frameworks and libraries, our UI is a good tool for demonstrating the Data Cube
-capabilities and some possible applications and architectures.
-
-.. _`Data Cube UI`: https://github.com/ceos-seo/data_cube_ui
-
-
 Data Cube Stats
 ---------------
 
