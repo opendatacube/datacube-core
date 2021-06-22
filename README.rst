@@ -39,7 +39,7 @@ Developer setup
 
    -  ``git clone https://github.com/opendatacube/datacube-core.git``
 
-2. Create a Python environment to use ODC within, we recommend `conda <https://docs.conda.io/en/latest/miniconda.html>`__ as the
+2. Create a Python environment for using the ODC.  We recommend `conda <https://docs.conda.io/en/latest/miniconda.html>`__ as the
    easiest way to handle Python dependencies.
 
 ::
@@ -83,7 +83,7 @@ Developer setup
       ``~/.datacube_integration.conf`` and edit to customise.
 
 
-Alternatively one can use ``opendatacube/datacube-tests`` docker image to run
+Alternatively one can use the ``opendatacube/datacube-tests`` docker image to run
 tests. This docker includes database server pre-configured for running
 integration tests. Add ``--with-docker`` command line option as a first argument
 to ``./check-code.sh`` script.
@@ -96,7 +96,7 @@ to ``./check-code.sh`` script.
 Developer setup on Ubuntu
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Building Python virtual environment on Ubuntu suitable for development work.
+Building a Python virtual environment on Ubuntu suitable for development work.
 
 Install dependencies:
 
@@ -114,7 +114,7 @@ Install dependencies:
      libudunits2-dev
 
 
-Building python virtual environment:
+Build the python virtual environment:
 
 ::
 
