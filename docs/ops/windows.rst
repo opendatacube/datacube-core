@@ -27,7 +27,7 @@ Python 3 environment
 --------------------
 
 1. Download and install a standard python release from http://www.python.org/
-. The :term:`AGDC` supports 3.5 or newer.
+. The :term:`Open Data Cube` supports 3.5 or newer.
 
 .. note::
     If in a restricted environment with no local administrator access, python can be installed by running::
