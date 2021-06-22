@@ -37,7 +37,7 @@ Allows interactive analysis of data, such as through a Jupyter Notebook.
 Cloud-based Services
 --------------------
 Using :abbr:`ODC (Open Data Cube)` to serve :abbr:`WMS (Web Map Service)`, :abbr:`WCS (Web Coverage Service)`, or custom
-tools (such as polygon drill time series analysis.
+tools (such as polygon drill time series analysis).
 
 Standalone Applications
 -----------------------
