@@ -68,7 +68,7 @@ Cube in a Box
 `Cube in a Box`  provides everything needed to get up and running quickly with Open Data Cube inside
 an Amazon Web Services Environment.
 
-.. _`Cube in a Box`: https://github.com/crc-si/cube-in-a-box
+.. _`Cube in a Box`: https://github.com/opendatacube/cube-in-a-box
 
 
 Command Line Interface
