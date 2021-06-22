@@ -10,7 +10,8 @@ Miniconda
 
 .. include:: conda_base.rst 
 
-Datacube is now installed and can be used in the Anaconda Prompt by activating the `cubeenv` environment. 
+The Datacube package and associated requirement packages are now installed and can be used in the Anaconda Prompt by activating the `cubeenv` environment. 
+e.g. `conda activate cubeenv`
 
 
 Manual Installation (Fallback)
