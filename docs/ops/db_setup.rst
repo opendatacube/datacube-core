@@ -9,7 +9,7 @@ Database Setup
 Install PostgreSQL
 ==================
 
-Data Cube is using `PostgreSQL <https://www.postgresql.org>`_
+The Open Data Cube is using `PostgreSQL <https://www.postgresql.org>`_
 
 
 Ubuntu
