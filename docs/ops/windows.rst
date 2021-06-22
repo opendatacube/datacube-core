@@ -12,9 +12,8 @@ Miniconda
 
 The Datacube package and associated requirement packages are now installed and can be used in the Anaconda Prompt by activating the `cubeenv` environment. 
 e.g. 
-    conda activate cubeenv
-
-
+    conda activate cubenv
+   
 Manual Installation (Fallback)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
