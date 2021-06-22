@@ -17,7 +17,7 @@ OGC Web Services
 ----------------
 
 The datacube-ows_ server allows users to interact with
-an Open Data Cube using client software (such QGIS, or the OpenLayers web mapping library), 
+an Open Data Cube instance using client software (such QGIS, or the OpenLayers web mapping library), 
 through the use of Web Map Service (WMS) and Web Coverage Service (WCS) standards from the Open Goespatial Consortium.
 
 
