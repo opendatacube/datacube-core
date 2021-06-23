@@ -616,7 +616,7 @@ v1.1.17 Happy Festivus Continues (12 January 2017)
 
  - Added more operations to the geometry utils
 
- - Updated :ref:`recipes` to use geometry utils
+ - Updated `recipes` to use geometry utils
 
  - Enabled Windows CI (python 3 only)
 
@@ -667,7 +667,7 @@ v1.1.13 Black Goat (15 November 2016)
 
   - Merged several bug-fixes from CEOS-SEO branch
 
-  - Added Polygon Drill recipe to :ref:`recipes`
+  - Added Polygon Drill recipe to `recipes`
 
 v1.1.12 Unnamed Unknown (1 November 2016)
 =========================================

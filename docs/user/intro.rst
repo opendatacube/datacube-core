@@ -50,6 +50,6 @@ See the following sections for more introductory information:
 
 .. toctree::
 
-   user/deployments.rst
-   user/ecosystem.rst
-   user/notebooks.rst
+   deployments.rst
+   ecosystem.rst
+   notebooks.rst

@@ -4,14 +4,18 @@ Microsoft Windows
 
 Miniconda
 ~~~~~~~~~
+
 1. Download and install Miniconda using the following instructions https://conda.io/projects/conda/en/latest/user-guide/install/windows.html
 
 2. Open the Anaconda Prompt from the Start Menu to execute the following commands.
 
 .. include:: conda_base.rst 
 
-The Datacube package and associated requirement packages are now installed and can be used in the Anaconda Prompt by activating the `cubeenv` environment. 
-e.g. 
+The Open Datacube package and it's requirements are now installed. Use them by
+activating the `cubeenv` environment from the Anaconda Prompt.
+
+.. code:: bash
+
     conda activate cubenv
    
 Manual Installation (Fallback)
