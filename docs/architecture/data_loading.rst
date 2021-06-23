@@ -270,7 +270,7 @@ On a plus side this maps nicely to the way things work in
 allows for greatest variety of storage regimes
 
 -  bands/time slices split across multiple files
--  bands stored in one fil, one file per time slice
+-  bands stored in one file, one file per time slice
 -  stacked files that store multiple time slices and all the bands
 
 On the other hand this way of partitioning code leads to less than
