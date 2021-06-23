@@ -47,16 +47,16 @@ load (optional)
         Use ``latitude``, ``longitude`` if the projection is geographic and ``x``, ``y`` otherwise.
 
     align.{x,y} (optional)
-        By default pixel grid is aligned such that pixel boundaries fall on
-        ``x,y`` axis. This option allows to translate pixel grid. For example,
-        to ensure that pixel center of a 30m pixel grid is coincidental with
+        By default the pixel grid is aligned such that pixel boundaries fall on
+        ``x,y`` axis. This option allows us to translate the pixel grid. For example,
+        to ensure that the pixel center of a 30m pixel grid is coincident with
         ``0,0`` use ``align:{x:15,y:15}``.
 
 
 storage (optional)
-    Describes some of common storage attributes of all the datasets. While optional defining this will make
+    Describes some of common storage attributes of all the datasets. While optional, defining this will make
     product data easier to access and use. This only applies to products that have data arranged on a regular
-    grid, for example ingested products are like that.
+    grid, for example ingested products are arranged like that.
 
     crs
         Coordinate reference system common to all the datasets in the product. ``'EPSG:<code>'`` or WKT string.
