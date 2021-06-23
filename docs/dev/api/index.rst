@@ -181,10 +181,7 @@ discovering information about Products::
    :nosignatures:
    :toctree: generate/
 
-   from_doc
-   add
    can_update
-   add_document
    get
    get_by_name
    get_unsafe
