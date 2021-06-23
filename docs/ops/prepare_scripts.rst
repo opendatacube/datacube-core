@@ -15,7 +15,7 @@ has been supplied with the data, and either writes out ODC compatible files, or 
 records directly to an ODC database.
 
 For common distribution formats there is likely to be a script already, but
-other formats will require one to be modified.
+other formats will require an existing example script to be modified.
 
 Examples of prepare scripts are found in the `datacube-dataset-config repository
 on Github <https://github.com/opendatacube/datacube-dataset-config>`_.
@@ -143,7 +143,7 @@ About the data:
 
 Each scene's directory includes:
 
-* a .TIF GeoTIFF for each of the scenes up to 12 bands (note that the GeoTIFFs include 512x512 internal tiling)
+* a .TIF GeoTIFF for each of the scenes up to 12 bands (note that the GeoTIFFs include 512x512 internal tiling)
 * .TIF.ovr overview file for each .TIF (useful in GDAL based applications)
 * a _MTL.txt metadata file
 * a small rgb preview jpeg, 3 percent of the original size
@@ -188,8 +188,8 @@ Usage of the script::
      $ python index_from_s3_bucket.py --help
      Usage: index_from_s3_bucket.py [OPTIONS] BUCKET_NAME
 
-        Enter Bucket name. Optional to enter configuration file to access a
-        different database
+        Enter Bucket name. It is optional to enter a configuration file to access a
+        different database.
 
      Options:
         -c, --config PATH  Pass the configuration file to access the database
@@ -199,7 +199,7 @@ Usage of the script::
 
      $ python index_from_s3_bucket.py landsat-pds -p c1/139/045/`
 
-where `landsat-pds` is the amazon public bucket name, `c1` refers to collection 1 and the numbers after represents the
+where `landsat-pds` is the AWS public bucket name, `c1` refers to collection 1 and the numbers after represents the
 WRS path and row.
 
 Index any path and row by changing the prefix in the above command
