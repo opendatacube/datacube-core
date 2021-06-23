@@ -20,13 +20,13 @@ such examples.
 
 .. code:: bash
 
-   apt-get install -y \
-     build-essential \
-     python3-dev \
-     python3-pip \
-     python3-venv \
-     libyaml-dev \
-     libpq-dev
+  apt-get install -y \
+    build-essential \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    libyaml-dev \
+    libpq-dev
 
 The Datacube uses the ``rasterio``, ``shapely`` and ``pyproj`` geospatial libraries.
 Those can be installed in binary form, however it is possible that binary

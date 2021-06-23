@@ -23,8 +23,8 @@ Manual Installation (Fallback)
 
 .. warning::
 
-   Instructions given in this section have not been updated or tested recently.
-   We strongly recommend using Conda based installation on Windows platforms.
+  Instructions given in this section have not been updated or tested recently.
+  We strongly recommend using Conda based installation on Windows platforms.
 
 Only follow these steps if the Miniconda installation does not suit your needs.
 
@@ -32,7 +32,7 @@ Python 3 environment
 --------------------
 
 1. Download and install a standard python release from http://www.python.org/
-. The :term:`Open Data Cube` supports 3.5 or newer.
+. The :term:`Open Data Cube` supports 3.6 or newer.
 
 .. note::
     If in a restricted environment with no local administrator access, python can be installed by running::

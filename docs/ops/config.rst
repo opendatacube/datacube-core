@@ -3,7 +3,6 @@
 Environment Configuration
 *************************
 
-
 It is possible to connect to multiple Data Cube indexes from within the one
 python process.  When creating a :class:`~.Datacube` instance, it will load
 configuration options from files or environment variables. This determine which
