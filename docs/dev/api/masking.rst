@@ -17,7 +17,7 @@ One of the common types of data used with the Data Cube contains discrete
 values stored within a numeric value. These values are often classifications
 and outputs from tests, and need to be interpreted in specific ways, not as
 simple scalar values. They are often used as a mask to exclude observations
-which deemed unsuitable for a given analysis. For example, we want to exclude
+which are deemed unsuitable for a given analysis. For example, we want to exclude
 observations of clouds when we are interested in what is on the ground.
 
 Several methods are used when encoding these types of variables:
