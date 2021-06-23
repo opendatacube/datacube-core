@@ -115,7 +115,7 @@ EO3 is an intermediate format before we move to something more standard like `ST
 
 Elements ``shape`` and ``transform`` can be obtained from the output of ``rio
 info <image-file>``. ``shape`` is basically ``height, width`` tuple and
-``transform`` capturing a linear mapping from pixel space to projected space
+``transform`` captures a linear mapping from pixel space to projected space
 encoded in a row-major order:
 
 A command-line tool to validate eo3 documents called ``eo3-validate`` is available
