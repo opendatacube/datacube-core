@@ -437,7 +437,12 @@ class PropertyOverrideWarning(UserWarning):
 
 class Eo3Interface:
     """
-    Convenient access fields for the most common/essential properties in datasets
+    These are convenience properties for common metadata fields. They are available
+    on DatasetAssemblers and within other naming APIs.
+
+    (This is abstract. If you want one of these of your own, you probably want to create
+    an :class:`eodatasets3.DatasetDoc`)
+
     """
 
     @property
