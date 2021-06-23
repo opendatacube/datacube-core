@@ -28,11 +28,11 @@ Steps to Adding Data
 
  * Create a new product
      Before the data itself can be added, a product describing the data must be created.
-     Requires creation of a :ref:`product-definitions` document (yaml)
+     Requires the creation of a :ref:`product-definitions` document (yaml)
 
  * Index the data
      After this step the data is accessible through the datacube.
-     Requires datacube friendly :ref:`dataset-documents` for data which is to be indexed
+     Requires datacube friendly :ref:`dataset-documents` for the data to be indexed
 
  * :ref:`Ingest <ingestion>` the data(optional)
      After indexing the data you can choose to ingest. This provides the ability to tile the original data into a faster storage format or a new projection system.
@@ -201,7 +201,7 @@ Once you have downloaded some data, it will need :ref:`metadata preparation
 Indexing Data on Amazon(AWS S3)
 ===============================
 
-Cloud storage is a sought after feature for most storage platforms. Options currently exist that allow for a users to store, index, and retrieve data from Amazon S3 buckets using the open data cube. The following sections outline this process.
+Cloud storage is a sought after feature for most storage platforms. Options currently exist that allow for users to store, index, and retrieve data from Amazon S3 buckets using the Open Data Cube. The following sections outline this process.
 
 Configuring AWS CLI Credentials
 -------------------------------
@@ -219,7 +219,7 @@ not be able to view it again and you will have to request a new one.
     aws configure
 
 Add the ca-certificates requisite for S3 indexing and export them to the
-environment variable the data cube will look for. If you forget this
+environment variable the Data Cube will look for. If you forget this
 step you will see an error upon attempting to load the indexed dataset.
 
 .. code-block:: bash
@@ -264,7 +264,7 @@ not be able to view it again and you will have to request a new one.
     aws configure
 
 Add the ca-certificates requisite for S3 indexing and export them to the
-environment variable the data cube will look for. If you forget this
+environment variable the Data Cube will look for. If you forget this
 step you will see an error upon attempting to load the indexed dataset.
 
 .. code-block:: bash
