@@ -125,12 +125,12 @@ the connection URL. The recognised environment variables are
 Types of Indexes
 ================
 
-It is possible to implement custom index driver and hook it into the datacube
-via plugin mechanism. This is an experimental feature that was used to
-investigate ``S3 AIO`` format. The index driver interface however is not
+It is possible to implement a custom index driver and hook it into the datacube
+via the plugin mechanism. This is an experimental feature that was used to
+investigate the ``S3 AIO`` format. The index driver interface however is not
 well defined and it is unrealistic to implement a completely new backend. One
-could however extend existing PostgreSQL backend, and this was the strategy used
-by ``S3 AIO`` driver before it got decommissioned.
+could however extend the existing PostgreSQL backend, and this was the strategy used
+by the ``S3 AIO`` driver before it got decommissioned.
 
 The type of index driver to use is defined by the ``index_driver`` option in
 each section of the user config file.
