@@ -76,7 +76,7 @@ Example Pickle Based Driver
 ---------------------------
 
 Available in ``/examples/io_plugin``. Includes an example ``setup.py``
-as well as an example **Read** and **Write** Drivers.
+as well as example **Read** and **Write** Drivers.
 
 .. _write_plugin:
 
@@ -205,7 +205,7 @@ Drivers are registered in ``setup.py -> entry_points``::
         ],
     }
 
-These are drivers ``datacube-core`` ships with. When developing custom driver one
+These are drivers ``datacube-core`` ships with. When developing a custom driver one
 does not need to add them to ``datacube-core/setup.py``, rather you have to define
 these in the ``setup.py`` of your driver package.
 
