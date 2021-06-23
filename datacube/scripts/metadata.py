@@ -67,7 +67,7 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
     An error will be thrown if a change is potentially unsafe.
 
     (An unsafe change is anything that may potentially make the metadata type
-    incompatible with existing ones of the same name)
+    incompatible with existing types of the same name)
     """
     for descriptor_path, parsed_doc in read_documents(*files):
         try:
