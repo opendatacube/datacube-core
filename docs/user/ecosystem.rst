@@ -14,7 +14,7 @@ See :ref:`jupyter-notebooks` for some examples.
 
 
 Open Web Services
-----------------
+-----------------
 
 The datacube-ows_ server allows users to interact with
 an Open Data Cube instance using client software
