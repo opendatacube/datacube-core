@@ -198,7 +198,7 @@ Product Addition/Modification
 -----------------------------
 
 When connected to an ODC Database, these methods are available for
-discovering information about Products::
+altering information about Products::
 
    dc = Datacube()
    dc.index.products.{method}
