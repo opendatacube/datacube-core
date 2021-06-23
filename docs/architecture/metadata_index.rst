@@ -5,10 +5,14 @@ Metadata Index
 
 Dataset Interface
 =================
-Add/update/archive datasets​
-Search for datasets​
-Manage locations (i.e. file path)​
+Add/update/archive datasets
+
+Search for datasets
+
+Manage locations (i.e. file path)
+
 Basic stats (Count of datasets)
+
 
 Implementations
 ===============
