@@ -6,6 +6,8 @@ API reference
 
 .. currentmodule:: datacube
 
+.. py:module:: datacube
+
 .. highlight:: python
 
 For examples on how to use the API, check out the `example Jupyter notebooks
@@ -59,6 +61,8 @@ for example, to pre-filter the available datasets before loading.
 
 .. _grid-workflow-class:
 
+.. py:module:: datacube.api
+
 Grid Processing API
 ===================
 
@@ -85,6 +89,8 @@ Grid Processing API Internals
    GridWorkflow.group_into_cells
    GridWorkflow.tile_sources
 
+.. py:module:: datacube.model
+
 Internal Data Model
 ===================
 
@@ -101,6 +107,7 @@ Internal Data Model
    Range
 
 
+.. py:module:: datacube.index
 
 Database Index API
 ==================
@@ -230,6 +237,8 @@ Database Index Connections
 Dataset to Product Matching
 ---------------------------
 
+.. py:module:: datacube.index.hl
+
 .. currentmodule:: datacube.index.hl
 
 .. autosummary::
@@ -237,6 +246,9 @@ Dataset to Product Matching
    :toctree: generate/
 
    Doc2Dataset
+
+
+.. py:module:: datacube.utils.geometry
 
 Geometry Utilities
 ==================
@@ -372,6 +384,9 @@ Other Utilities
    rio_reproject
 
 
+
+.. py:module:: datacube.utils
+
 Masking
 =======
 
@@ -389,6 +404,8 @@ Masking
    masking.make_mask
 
 
+.. py:module:: datacube.utils.cog
+
 Writing Image Files
 ===================
 
@@ -400,6 +417,8 @@ Writing Image Files
    write_cog
    to_cog
 
+
+.. py:module:: datacube.utils.aws
 
 AWS Utilities
 =============
@@ -424,6 +443,7 @@ AWS Utilities
    configure_s3_access
 
 
+.. py:module:: datacube.utils.dask
 
 Dask Utilities
 ==============
@@ -441,6 +461,7 @@ Dask Utilities
    save_blob_to_s3
 
 
+.. currentmodule:: datacube.api.query
 
 Query Class
 ===========
@@ -454,6 +475,7 @@ Query Class
    solar_day
    solar_offset
 
+.. currentmodule:: datacube.api.config
 
 User Configuration
 ==================

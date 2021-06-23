@@ -1,5 +1,7 @@
 .. _bit-masking:
 
+.. py:module:: datacube.utils.masking
+
 Bit Masking
 ===========
 
@@ -45,7 +47,6 @@ How to Define Meanings on Measurements
 How to Create Masks within code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: datacube.utils
 
 .. automethod:: masking.describe_variable_flags
 .. automethod:: masking.make_mask
