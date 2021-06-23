@@ -38,6 +38,6 @@ https://github.com/brazil-data-cube
 
 .. note::
 
-  If you'd like your project to be on this list, please raise an issue or creat a pull request.
+  If you'd like your project to be on this list, please raise an issue or create a pull request.
 
 ..
