@@ -58,7 +58,7 @@ Several international space agencies provide data and make provisions to supply
 this data in an Analysis Ready Data (ARD) format for immediate application.
 
 :numref:`high-level-overview` illustrates a diverse set of data being managed by
-an ODC core system. The ODC core system is then used as a simplified basis on
+an ODC core system. The ODC core system is then used as a simplified base on
 which end users conduct analysis using ODC compatible analysis tools.
 
 
@@ -88,7 +88,7 @@ utilizes the ODC Core as its basis:
 * Jupyter Notebooks: Research documents centered around techniques in EO
   sciences. A notebook contains executable code detailing examples of how the
   data cube is used in a research setting, and therefore is an invaluable
-  reference material for new users.
+  reference resource for new users.
  
 * Open Geospatial Consortium (OGC) Web Services: Adapters that can connect non-ODC applications to the ODC.
 
