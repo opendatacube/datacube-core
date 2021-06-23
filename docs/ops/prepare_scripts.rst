@@ -5,6 +5,11 @@
 Dataset Preparation Scripts
 ***************************
 
+.. note::
+  
+  Much of the below content is not updated and has not been tested recently.
+
+
 Sometimes data to load into an Open Data Cube will come packaged with
 compatible :ref:`dataset-metadata-doc` and be ready to :ref:`index <indexing>`
 immediately.
@@ -121,119 +126,14 @@ For Landsat Surface reflectance LEDAPS add:
 
 Then :ref:`index the data <indexing>`.
 
-3. Prepare script and indexing Landsat data on AWS
-==================================================
+3. Indexing data on AWS, an example using Sentinel-2
+====================================================
 
-Landsat 8 data is available to use directly from Amazon S3 without needing to download any scenes in advance.
+To view an example of how to `index Sentinel-2 data from S3`_ check out the documentation
+available in the datacube-dataset-config_ repository.
 
-Landsat on AWS stores each band of each Landsat scene in separate GeoTIFF files and
-the scenes metadata in a side-care text file.
-
-About the data:
-
-.. csv-table::
-   :delim: |
-
-   **Source** | USGS and NASA
-   **Category** | GIS, Sensor Data, Satellite Imagery, Natural Resource
-   **Format** | GeoTIFF, txt, jpg
-   **Storage Service** | Amazon S3
-   **Location** | s3://landsat-pds in US West (Oregon) Region
-   **Update Frequency** | New Landsat 8 scenes are added regularly as soon as they are available
-
-Each scene's directory includes:
-
-* a .TIF GeoTIFF for each of the scenes up to 12 bands (note that the GeoTIFFs include 512x512 internal tiling)
-* .TIF.ovr overview file for each .TIF (useful in GDAL based applications)
-* a _MTL.txt metadata file
-* a small rgb preview jpeg, 3 percent of the original size
-* a larger rgb preview jpeg, 15 percent of the original size
-* an index.html file that can be viewed in a browser to see the RGB preview and links to the GeoTIFFs and metadata files
-
-Accessing data on AWS
----------------------
-
-The data are organized using a directory structure based on each scene's path and row.
-For instance, the files for Landsat scene LC08_L1TP_139045_20170304_20170316_01_T1 are available in the following location:
-
-..
-
-s3://landsat-pds/c1/L8/139/045/LC08_L1TP_139045_20170304_20170316_01_T1/
-
-> The `c1` refers to Collection 1, the `L8` refers to Landsat 8, `139` refers to the scene's path,
-`045` refers to the scene's row, and the final directory matches the product's identifier,
-which uses the following naming convention: LXSS_LLLL_PPPRRR_YYYYMMDD_yyymmdd_CC_TX, in which:
-
-| L = Landsat
-| X = Sensor
-| SS = Satellite
-| PPP = WRS path
-| RRR = WRS row
-| YYYYMMDD = Acquisition date
-| yyyymmdd = Processing date
-| CC = Collection number
-| TX = Collection category
-| In this case, the scene corresponds to WRS path 139, WRS row 045, and was taken on March 4th, 2017.The full scene list is available here_.
-
-.. _here: https://landsat-pds.s3.amazonaws.com/c1/L8/scene_list.gz
-
-
-Instead of downloading scenes, use the `index_from_s3_bucket.py
-<https://github.com/opendatacube/datacube-dataset-config/blob/master/scripts/index_from_s3_bucket.py>`_
-to scrape and record metadata into an ODC Database.
-
-Usage of the script::
-
-     $ wget https://github.com/opendatacube/datacube-dataset-config/raw/master/scripts/index_from_s3_bucket.py
-     $ python index_from_s3_bucket.py --help
-     Usage: index_from_s3_bucket.py [OPTIONS] BUCKET_NAME
-
-        Enter Bucket name. Optional to enter configuration file to access a
-        different database
-
-     Options:
-        -c, --config PATH  Pass the configuration file to access the database
-        -p TEXT            Pass the prefix of the object to the bucket
-        --help             Show this message and exit.
-
-
-     $ python index_from_s3_bucket.py landsat-pds -p c1/139/045/`
-
-where `landsat-pds` is the amazon public bucket name, `c1` refers to collection 1 and the numbers after represents the
-WRS path and row.
-
-Index any path and row by changing the prefix in the above command
-
-Before indexing:
-----------------
-
-
-1. You will need an AWS account and configure AWS credentials to access the data on S3 bucket
-
-   For more detailed information refer to the `Working with AWS Credentials <amazon-docs>`_ Documentation.
-
-.. _amazon-docs: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html
-
-.. code-block:: ini
-   :caption: Example ``~/.aws/credentials`` file
-
-        [default]
-        aws_access_key_id = <Access key ID>
-        aws_secret_access_key = <Secret access key>
-
-
-2. Add the product definition to datacube
-
-   Sample product definition for LANDSAT_8 Colletcion 1 Level1 data is
-   available at :file:`docs/config_samples/dataset_types/ls_sample_product.yaml`
-
-
-   .. code-block::
-
-        $ datacube product add ls_sample_product.yaml
-
-          Added "ls8_level1_scene"
-
+.. _`index Sentinel-2 data from S3`: https://github.com/opendatacube/datacube-dataset-config/blob/master/sentinel-2-l2a-cogs.md
+.. _datacube-datset-config: https://github.com/opendatacube/datacube-dataset-config/
 
 Custom Prepare Scripts
 ======================

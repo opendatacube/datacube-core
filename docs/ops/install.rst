@@ -3,24 +3,26 @@
 Installation
 ************
 
-These installation instructions build a Data Cube environment that can be used to index and ingest data (with config files from github) and run analytics processes.
+These installation instructions build an Open Data Cube (ODC) environment that can be used to index and run analyses
 
-The Data Cube is a set of python code with dependencies including:
+The ODC is a Python library with dependencies including:
 
 * Python 3.6+
-* GDAL
-* PostgreSQL database
+* GDAL and other geospatial libraries
+* A range of Python dependencies, such as Rasterio and XArray
+* A PostgreSQL database.
 
-Before installing the Data Cube, these dependencies along with the target operating system environment and scale of the workloads you will be running should be considered.
+These dependencies along with the target operating system environment should be considered when deciding
+how to install the ODC.
 
-The recommended method for installing the Data Cube is to use a container and a package manager. The instructions below are for Miniconda and PostgreSQL.
-
-Other methods to build and install the Data Cube are maintained by the community and are available at https://github.com/opendatacube/documentation. These may include docker recipes and operating system specific deployments.
+The recommended method for installing the ODC is to use Docker. Other options include using
+a native installation on Windows, or Miniconda. PostgreSQL can be run as a container or
+installed on a host computer server, but production installations often use a managed service.
 
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 2
 
-   ubuntu
-   conda
-   windows
-   macosx
+  conda
+  ubuntu
+  windows
+  macosx

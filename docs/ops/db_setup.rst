@@ -9,44 +9,7 @@ Database Setup
 Install PostgreSQL
 ==================
 
-The Open Data Cube is using `PostgreSQL <https://www.postgresql.org>`_
-
-
-Ubuntu
-------
-
-Ubuntu 18.04 includes packages for PostgreSQL 10. On earlier versions of Ubuntu you can use the postgresql.org repo as
-described on `their download page <https://www.postgresql.org/download/linux/ubuntu/>`_.
-
-
-Install postgres using ``apt``::
-
-    sudo apt install postgresql-10 postgresql-client-10 postgresql-contrib-10
-
-Configure the ``postgres`` user password to `complete the postgres setup <https://help.ubuntu.com/community/PostgreSQL>`_
-
-
-Windows
--------
-
-An easy to install version of PostgreSQL can be downloaded from
-https://sourceforge.net/projects/postgresqlportable/. It can install and run as
-an unprivileged windows user.
-
-After installing, launch ``PostgreSQLPortable.exe`` (and place a shortcut in the windows Startup menu).
-
-To prepare the database for first use, enter the following commands in the PostgreSQL Portable window,
-substituting "u12345" with your windows login user-ID::
-
-    create role u12345 superuser login;
-    create database datacube;
-
-
-MacOS
------
-
-Install Postgres.app from http://postgresapp.com/
-
+Please refer to the `PostgreSQL <https://www.postgresql.org>`_ documentation on how to install and configure it.
 
 Create Database
 ===============
@@ -84,6 +47,13 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
     # db_password:
 
 Uncomment and fill in lines as required.
+
+Alternately, you can configure the ODC connection to Postgres using environment variables:
+
+  DB_HOSTNAME
+  DB_USERNAME
+  DB_PASSWORD
+  DB_DATABASE
 
 See also :ref:`runtime-config-doc`
 

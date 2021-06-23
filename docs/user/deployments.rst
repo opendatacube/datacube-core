@@ -4,7 +4,6 @@ Existing Deployments
 
 Digital Earth Australia
 -----------------------
-
 If you are using `Digital Earth Australia`_ at the :term:`NCI`, see the
 `Digital Earth Australia User Guide`_.
 
@@ -19,18 +18,26 @@ https://www.digitalearthafrica.org/
 
 Swiss Data Cube
 ---------------
-
 https://www.swissdatacube.org/
 
 
 Vietnam Open Data Cube
 ----------------------
-
 http://datacube.vn/
+
+
+INEGI - Mexico Open Data Cube
+-----------------------------
+http://en.www.inegi.org.mx/default.html
+
+
+Brazil Data Cube
+----------------
+https://github.com/brazil-data-cube
 
 
 .. note::
 
-   This is not a comprehensive list.
+  If you'd like your project to be on this list, please raise an issue or creat a pull request.
 
 ..
