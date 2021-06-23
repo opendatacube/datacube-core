@@ -276,7 +276,7 @@ allows for greatest variety of storage regimes
 On the other hand this way of partitioning code leads to less than
 optimal I/O access patterns. This is particularly noticeable when using
 “stacked files” (a common use case on the NCI installation of the
-dacube) while doing “pixel drill” type of access.
+datacube) while doing “pixel drill” type of access.
 
 Problems are:
 
