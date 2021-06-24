@@ -22,6 +22,11 @@ Congratulations, you're ready to ingest some data. If you've made it this far
 you should already have some data :ref:`indexed <indexing>`, and want to
 tile it up into a faster storage format or projection system.
 
+.. figure:: ../diagrams/f4.png
+  :name: ingest-data
+
+  Ingest Data 
+
 .. _ingest-config:
 
 Ingestion Configuration

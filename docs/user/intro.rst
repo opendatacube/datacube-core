@@ -24,6 +24,12 @@ further capabilities, such as open web services or metadata exploration.
 All software in the Open Data Cube project family is released under the `Apache 2.0
 <https://github.com/opendatacube/datacube-core/blob/develop/LICENSE>`_ license.
 
+
+.. figure:: ../diagrams/f1.png
+   :name: high-level-overview
+
+   High-Level ODC Overview
+
 .. _datacube-core: https://github.com/opendatacube/datacube-core
 
 Use Cases

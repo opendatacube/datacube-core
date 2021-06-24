@@ -11,9 +11,9 @@ There are two major use-cases for loading data from the Datacube: *Ad hoc access
 1. Ad hoc access
 
 -  A small spatial region and time segment are chosen by the user
--  Data is expected to fit into RAM
+-  Data is expected to fit into RAM.
 
-2. Large scale processing (:class:`~datacube.api.GridWorkflow`)
+2. Large scale processing
 
 -  Continental scale processing
 -  Used to compute new products or to perform statistics on existing data
