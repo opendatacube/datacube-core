@@ -147,7 +147,7 @@ class Datacube(object):
              dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, progress_cbk=None,
              **query):
         """
-        Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
+        Load data as an ``xarray.Dataset`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
         See the `xarray documentation <http://xarray.pydata.org/en/stable/data-structures.html>`_ for usage of the
         :class:`xarray.Dataset` and :class:`xarray.DataArray` objects.
@@ -188,9 +188,11 @@ class Datacube(object):
                 x=(1516200, 1541300), y=(-3867375, -3867350), crs='EPSG:3577'
 
             The ``time`` dimension can be specified using a tuple of datetime objects or strings with
-            `YYYY-MM-DD hh:mm:ss` format. E.g::
+            `YYYY-MM-DD hh:mm:ss` format. Data will be loaded inclusive of the start and finish times. E.g::
 
-                time=('2001-04', '2001-07')
+                time=('2000-01-01', '2001-12-31')
+                time=('2000-01', '2001-12')
+                time=('2000', '2001')
 
             For 3D datasets, where the product definition contains an ``extra_dimension`` specification,
             these dimensions can be queried using that dimension's name. E.g.::
@@ -212,44 +214,54 @@ class Datacube(object):
                 group_by='solar_day'
 
             For data that has different values for the scene overlap the requires more complex rules for combining data,
-            such as GA's Pixel Quality dataset, a function can be provided to the merging into a single time slice.
+            a function can be provided to the merging into a single time slice.
 
             See :func:`datacube.helpers.ga_pq_fuser` for an example implementation.
 
 
         **Output**
-            To reproject or resample the data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
+            To reproject or resample data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
             fields.
 
-            By default, the resampling method is 'nearest'. However any stored overview layers may be used
+            By default, the resampling method is 'nearest'. However, any stored overview layers may be used
             when down-sampling, which may override (or hybridise) the choice of resampling method.
 
-            To reproject data to 25m resolution for EPSG:3577::
+            To reproject data to 30 m resolution for EPSG:3577::
 
-                dc.load(product='ls5_nbar_albers', x=(148.15, 148.2), y=(-35.15, -35.2), time=('1990', '1991'),
-                        output_crs='EPSG:3577`, resolution=(-25, 25), resampling='cubic')
+                dc.load(product='ls5_nbar_albers',
+                        x=(148.15, 148.2),
+                        y=(-35.15, -35.2),
+                        time=('1990', '1991'),
+                        output_crs='EPSG:3577`,
+                        resolution=(-30, 30),
+                        resampling='cubic')
 
-        :param str product: the product to be included.
+        :param str product: 
+            The product to be loaded.
 
         :param measurements:
             Measurements name or list of names to be included, as listed in :meth:`list_measurements`.
+            These will be loaded as individual ``xr.DataArray`` variables in the output 
 
             If a list is specified, the measurements will be returned in the order requested.
             By default all available measurements are included.
 
         :type measurements: list(str), optional
 
-        :param query:
-            Search parameters for products and dimension ranges as described above.
+        :param **query:
+            Search parameters for products and dimension ranges as described above. 
+            For example: ``'x', 'y', 'time'``.
 
         :param str output_crs:
-            The CRS of the returned data.  If no CRS is supplied, the CRS of the stored data is used.
+            The CRS of the returned data. If no CRS is supplied, the CRS of the stored data is used
+            if available.
 
-        :param (float,float) resolution:
-            A tuple of the spatial resolution of the returned data.
+        :param (float, float) resolution:
+            A tuple of the spatial resolution of the returned data. Units are in the coordinate
+            space of ``output_crs``.
+            
             This includes the direction (as indicated by a positive or negative number).
-
-            Typically when using most CRSs, the first number would be negative.
+            For most CRSs, the first number will be negative, e.g. ``(-30, 30)``.
 
         :param str|dict resampling:
             The resampling method to use if re-projection is required. This could be a string or
@@ -263,11 +275,11 @@ class Datacube(object):
             Default is to use ``nearest`` for all bands.
             .. seealso:: :meth:`load_data`
 
-        :param (float,float) align:
+        :param (float, float) align:
             Load data such that point 'align' lies on the pixel boundary.
-            Units are in the co-ordinate space of the output CRS.
+            Units are in the coordinate space of ``output_crs``.
 
-            Default is (0,0)
+            Default is ``(0, 0)``
 
         :param dict dask_chunks:
             If the data should be lazily loaded using :class:`dask.array.Array`,
@@ -277,18 +289,20 @@ class Datacube(object):
             for more information.
 
         :param xarray.Dataset like:
-            Uses the output of a previous ``load()`` to form the basis of a request for another product.
+            Use the output of a previous ``datacube.load()`` to load data into the same spatial grid and 
+            resolution (i.e. ``.GeoBox``).
             E.g.::
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
 
         :param str group_by:
-            When specified, perform basic combining/reducing of the data.
+            When specified, perform basic combining/reducing of the data. For example, ``group_by='solar_day'``
+            can be used to combine consecutive observations along a single satellite overpass.
 
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
             data is simply copied over the top of each other, in a relatively undefined manner. This function can
-            perform a specific combining step, eg. for combining GA PQ data. This can be a dictionary if different
+            perform a specific combining step. This can be a dictionary if different
             fusers are needed per band.
 
         :param datasets:
