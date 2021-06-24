@@ -234,7 +234,8 @@ class Datacube(object):
                         time=('1990', '1991'),
                         output_crs='EPSG:3577`,
                         resolution=(-30, 30),
-                        resampling='cubic')
+                        resampling='cubic'
+                )
 
         :param str product: 
             The product to be loaded.
