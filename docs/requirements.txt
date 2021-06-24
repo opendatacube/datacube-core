@@ -3,4 +3,5 @@ Sphinx==3.0.1
 sphinx-autodoc-typehints==1.10.3
 sphinx-click==2.3.2
 sphinx-rtd-theme==0.4.3
+pydata-sphinx-theme==0.6.3
 sshtunnel==0.1.5

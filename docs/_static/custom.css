@@ -1,11 +1,129 @@
-div.wy-side-nav-search {
-    background-color: #FCFCFC;
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+:root {
+    --pst-font-family-base: Roboto, var(--pst-font-family-base-system);
+    --pst-font-family-heading: Roboto, Georgia, Times, var(--pst-font-family-base-system);
+    --pst-color-text-base: #3B3B3B;
+    --pst-color-paragraph: #3B3B3B;
+    --pst-color-navbar-link: #3B3B3B;
+    --pst-color-navbar-link-active: #3B3B3B;
+    --pst-color-sidebar-link-active: #2155a1;
+    --pst-header-height: 30px;
+    --pst-font-size-h1: 1.8rem;
+    --pst-font-size-h2: 1.4rem;
+    --pst-font-size-h3: 1.3rem;
+    --pst-font-size-base: 14px;
+    --pst-color-headerlink: #1c375a;    
 }
 
-.wy-side-nav-search > div.version {
 
-    color: rgb(64, 64, 64);
-
+/* PAGE LAYOUT */
+.container-xl {
+    max-width: 100%;
+    background-color: #F8F8F8;
 }
 
 
+/* TOP NAV */
+.navbar-light {
+    box-shadow: none;
+}
+
+.navbar-light > .container-xl {
+    background-color: white;
+}
+
+.navbar-brand {
+    width: 140px;
+    padding-left: 20px;
+}
+
+.navbar-brand img {
+    width: 140px;
+    height: auto;
+}
+
+#navbar-main-elements > .nav-item {
+    text-transform: uppercase;
+    line-height: 50px;
+    margin: 0px 20px;
+}
+
+#navbar-main-elements .nav-link {
+    font-weight: 500;
+    font-size: 0.8rem;
+}
+
+#navbar-main-elements > .active {
+    border-bottom: 3px solid #1C54A1;
+}
+
+
+/* LEFT SIDEBAR */
+.bd-sidebar {
+    border-right: 3px solid rgb(28 55 90 / 10%);
+}
+
+.bd-sidenav li {
+    padding-left: 10px;
+    font-weight: 400;
+}
+
+.bd-sidebar .nav .active > a {
+    font-weight: 500;
+    color: var(--pst-color-sidebar-link-active);
+}
+
+
+/* MAIN CONTENT */
+.bd-content > div {
+    background-color: white;
+    padding: 40px;
+}
+
+.section p {
+    line-height: 1.8rem;
+}
+
+.bd-content h1, h2, h3, h4, h5 {
+    font-weight: 300;
+}
+
+.bd-content h2 {
+    margin-top: 30px;
+    margin-bottom: 8px;
+}
+
+.bd-content .section:not(:first-child) h1 {
+    margin-top: 30px;
+}
+
+/* Hide the in-content nav */
+.bd-content .toctree-wrapper {
+    display: none;
+}
+
+
+/* RIGHT NAV COLUMN */
+.section-nav .toc-h1 {
+    margin-bottom: 20px;
+}
+
+
+/* SEARCH BOX */
+.form-control {
+    font-size: 0.9rem;
+    font-weight: 300;
+}
+
+.bd-search input { 
+    border-bottom: none;
+}
+
+.bd-search .icon {
+    top: 23px;
+}
+
+.fas {
+    font-weight: 600;
+}

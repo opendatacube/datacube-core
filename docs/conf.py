@@ -99,18 +99,16 @@ graphviz_output_format = 'svg'
 if on_rtd:
     html_theme = 'default'
 else:
-    import sphinx_rtd_theme
-
-    html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+    html_theme = 'pydata_sphinx_theme'
 
 html_theme_options = {
-    'collapse_navigation': False,
-    'logo_only': True,
+    "show_prev_next": False,
+    "collapse_navigation": True,
+    "footer_items": []
 }
 
 
-html_logo = '_static/odc-logo-central-blue.svg'
+html_logo = '_static/odc-logo-horizontal.svg'
 html_static_path = ['_static']
 
 # The name of an image file (within the static path) to use as favicon of the
