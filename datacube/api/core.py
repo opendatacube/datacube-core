@@ -241,7 +241,7 @@ class Datacube(object):
 
         :param measurements:
             Measurements name or list of names to be included, as listed in :meth:`list_measurements`.
-            These will be loaded as individual ``xr.DataArray`` variables in the output 
+            These will be loaded as individual ``xr.DataArray`` variables in the output ``xarray.Dataset`` object.
 
             If a list is specified, the measurements will be returned in the order requested.
             By default all available measurements are included.
@@ -297,7 +297,7 @@ class Datacube(object):
 
         :param str group_by:
             When specified, perform basic combining/reducing of the data. For example, ``group_by='solar_day'``
-            can be used to combine consecutive observations along a single satellite overpass.
+            can be used to combine consecutive observations along a single satellite overpass into a single time slice.
 
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
