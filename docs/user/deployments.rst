@@ -35,6 +35,10 @@ Brazil Data Cube
 ----------------
 https://github.com/brazil-data-cube
 
+Armenian Data Cube
+------------------
+http://datacube.sci.am/
+
 
 .. note::
 
