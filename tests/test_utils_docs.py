@@ -363,7 +363,7 @@ A:..:0
     assert set(fv.keys()) == set('ABCDE')
     assert isinstance(dg, list)
     assert len(dg) == 4
-    assert [len(l) for l in dg] == [1, 3, 2, 1]
+    assert [len(dss) for dss in dg] == [1, 3, 2, 1]
 
     def to_set(xx):
         return set(x.id for x in xx)

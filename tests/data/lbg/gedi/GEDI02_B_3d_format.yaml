@@ -1,0 +1,163 @@
+name: gedi_l2b
+description: Global Ecosystem Dynamics Investigation (GEDI)
+metadata_type: eo3
+metadata:
+  product:
+    name: gedi_l2b
+measurements:
+  - name: "beam"
+    aliases: [band_1]
+    dtype: uint16
+    nodata: 65535
+    units: na
+  - name: "channel"
+    aliases: [band_2]
+    dtype: uint8
+    nodata: 255
+    units: na
+  - name: "shot_number"
+    aliases: [band_3]
+    dtype: float64
+    nodata: -9999.0
+    units: na
+  - name: "delta_time"
+    aliases: [band_4]
+    dtype: float64
+    nodata: -9999.0
+    units: s # Time delta since Jan 1 00:00 2018.
+  - name: "cover"
+    aliases: [band_5]
+    dtype: float32
+    nodata: -9999.0
+    units: na # Total canopy cover, defined as the percent of the ground covered by the vertical projection of canopy material
+  - name: "pai"
+    aliases: [band_6]
+    dtype: float32
+    nodata: -9999.0
+    units: m2/m2 # Total plant area index
+  - name: "rh100"
+    aliases: [band_7]
+    dtype: float32
+    nodata: -9999.0
+    units: na # Foli
+  - name: "fhd_normal"
+    aliases: [band_8]
+    dtype: float32
+    nodata: -9999.0
+    units: na # Foliage height diversity index calculated by vertical foliage profile normalized by total plant area index
+  - name: "rhov"
+    aliases: [band_9]
+    dtype: float32
+    nodata: -9999.0
+    units: m2/m2 # Volumetric scattering coefficient of the canopy (reflectance x phase function)
+  - name: "rhog"
+    aliases: [band_10]
+    dtype: float32
+    nodata: -9999.0
+    units: m2/m2 # Volumetric scattering coefficient of the ground (reflectance x phase function)
+  - name: "omega"
+    aliases: [band_11]
+    dtype: float32
+    nodata: -9999.0
+    units: na # Foliage clumping index
+  - name: "sensitivity"
+    aliases: [band_12]
+    dtype: float32
+    nodata: 0
+    units: na # Maxmimum canopy cover that can be penetrated considering the SNR of the waveform
+  - name: "surface_flag"
+    aliases: [band_13]
+    dtype: uint8
+    nodata: 255
+    units: na # indicates elev_lowestmode is within 300m of DEM or MSS
+  - name: "digital_elevation_model"
+    aliases: [band_14]
+    dtype: float32
+    nodata: -999999.0 # need to check if this set in h5 file
+    units: m # TanDEM-X elevation at GEDI footprint location
+  - name: "elev_lowestmode"
+    aliases: [band_15]
+    dtype: float32
+    nodata: -9999.0
+    units: m # elevation of center of lowest mode relative to reference ellipsoid
+  - name: "degrade_flag"
+    aliases: [band_16]
+    dtype: uint8
+    nodata: 127 # Greater than zero if the shot occurs during a degrade period, zero otherwise.
+    units: na
+  - name: "stale_return_flag"
+    aliases: [band_17]
+    dtype: uint8
+    nodata: 255
+    units: na # ndicates that a "stale" cue point from the coarse search algorithm is being used.
+  - name: "l2a_quality_flag"
+    aliases: [band_18]
+    dtype: uint8
+    nodata: 255
+    units: na # Flag simpilfying selection of most useful data
+  - name: "l2b_quality_flag"
+    aliases: [band_19]
+    dtype: uint8
+    nodata: 255
+    units: na # Flag simpilfying selection of most useful data
+
+---
+
+name: gedi_l2b_cover_z
+description:
+  GEDI - Cumulative canopy cover from height (z) to ground (z=0) with a
+  vertical step size of dZ, where cover(z > z_max) = 0
+metadata_type: eo3
+metadata:
+  product:
+    name: gedi_l2b_cover_z
+extra_dimensions:
+  - name: z
+    values: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
+    dtype: float64
+measurements:
+  - name: cover_z
+    extra_dim: z
+    dtype: float32
+    nodata: -9999.0
+    units: na
+
+---
+
+name: gedi_l2b_pai_z
+description: GEDI PAI - Plant Area Index profile with a vertical step size of dZ
+metadata_type: eo3
+metadata:
+  product:
+    name: gedi_l2b_pai_z
+extra_dimensions:
+  - name: z
+    values: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
+    dtype: float64
+measurements:
+  - name: pai_z
+    extra_dim: z
+    dtype: float32
+    nodata: -9999.0
+    units: m2/m2
+
+---
+
+name: gedi_l2b_pavd_z
+description:
+  GEDI PAVD_Z - Vertical Plant Area Volume Density profile with a vertical
+  step size of dZ
+metadata_type: eo3
+metadata:
+  product:
+    name: gedi_l2b_pavd_z
+extra_dimensions:
+  - name: z
+    values: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
+    dtype: float64
+measurements:
+  - name: pavd_z
+    extra_dim: z
+    dtype: float32
+    nodata: -9999.0
+    units: m2/m3

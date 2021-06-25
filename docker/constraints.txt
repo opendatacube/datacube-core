@@ -50,7 +50,7 @@ fsspec==2021.5.0          # via dask
 future==0.18.2            # via aws-xray-sdk
 greenlet==1.1.0           # via sqlalchemy
 heapdict==1.0.1           # via zict
-hypothesis==5.41.4        # via -r constraints.in
+hypothesis==6.14.0        # via -r constraints.in
 idna==2.8                 # via moto, requests
 imagesize==1.2.0          # via sphinx
 importlib-metadata==4.5.0  # via keyring, twine

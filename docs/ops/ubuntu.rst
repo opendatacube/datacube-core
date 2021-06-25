@@ -14,21 +14,21 @@ Required Software
 -----------------
 
 Many Python modules are now shipped with pre-compiled binaries, but some still
-require compilation during installation. Library for parsing YAML documents
-(``libyaml-dev``), and library for to talking to PostgreSQL database (``libpq-dev``) are
+require compilation during installation. The library for parsing YAML documents
+(``libyaml-dev``), and the library for to talking to a PostgreSQL database (``libpq-dev``) are
 such examples.
 
 .. code:: bash
 
-   apt-get install -y \
-     build-essential \
-     python3-dev \
-     python3-pip \
-     python3-venv \
-     libyaml-dev \
-     libpq-dev
+  apt-get install -y \
+    build-essential \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    libyaml-dev \
+    libpq-dev
 
-Datacube uses ``rasterio``, ``shapely`` and ``pyproj`` geospatial libraries.
+The Datacube uses the ``rasterio``, ``shapely`` and ``pyproj`` geospatial libraries.
 Those can be installed in binary form, however it is possible that binary
 versions of those libraries are incompatible with each other as they might ship
 slightly different versions of ``GDAL`` or other libraries. It is safest to
@@ -62,7 +62,7 @@ Optional packages (useful utilities, docs)
 Creating Python Virtual Environment
 -----------------------------------
 
-This example uses `virtual environment`_, installation into system python is not
+This example uses a `virtual environment`_, as installation into system python is definitely not
 recommended. First we create a new virtual environment called ``odc`` and update
 some foundational packages.
 
@@ -74,8 +74,8 @@ some foundational packages.
 
 
 Install ``datacube``, making sure that important dependencies are compiled
-locally to ensure binary compatibility. Version 3 of ``pyproj`` requires more
-recent version of ``PROJ`` C library than what is available in Ubuntu
+locally to ensure binary compatibility. Version 3 of ``pyproj`` requires a more
+recent version of the ``PROJ`` C library than what is available in Ubuntu
 repositories, so we limit ``pyproj`` to 2.x.x series.
 
 .. code:: bash
@@ -85,8 +85,8 @@ repositories, so we limit ``pyproj`` to 2.x.x series.
      'datacube[all]' \
      --no-binary=rasterio,pyproj,shapely,fiona,psycopg2,netCDF4,h5py
 
-I you omit ``--no-binary=...`` flag you will get pre-compiled version of
-geospatial libs. Installation will be quicker, but Python environment will be
+If you omit the ``--no-binary=...`` flag you will get a pre-compiled version of
+geospatial libs. Installation will be quicker, but the Python environment will be
 somewhat larger due to duplicate copies of some C libraries. More importantly
 you might get random segfaults if ``rasterio`` and ``pyproj`` include
 incompatible binary dependencies.
@@ -97,7 +97,6 @@ Run some basic checks:
 
    ./odc/bin/datacube --help
    ./odc/bin/rio --help
-
 
 Datacube no longer depends on GDAL Python bindings, but if your code needs them,
 they can be easily installed like so
@@ -114,9 +113,9 @@ match the version of the system GDAL, hence ``GDAL==$(gdal-config --version)``.
 Miniconda
 =========
 
-Datacube is also available via ``conda-forge`` channel for installation in a
+Datacube is also available via the ``conda-forge`` channel for installation in a
 Conda environment. So if you prefer or need to use Conda rather than system
-Python, follow instructions below:
+Python, follow the instructions below:
 
 1. Download and install Miniconda using the following instructions
    https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html

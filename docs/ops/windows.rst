@@ -4,22 +4,27 @@ Microsoft Windows
 
 Miniconda
 ~~~~~~~~~
+
 1. Download and install Miniconda using the following instructions https://conda.io/projects/conda/en/latest/user-guide/install/windows.html
 
 2. Open the Anaconda Prompt from the Start Menu to execute the following commands.
 
 .. include:: conda_base.rst 
 
-Datacube is now installed and can be used in the Anaconda Prompt by activating the `cubeenv` environment. 
+The Open Datacube package and it's requirements are now installed. Use them by
+activating the `cubeenv` environment from the Anaconda Prompt.
 
+.. code:: bash
 
+    conda activate cubenv
+   
 Manual Installation (Fallback)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
 
-   Instructions given in this section have not been updated or tested recently.
-   We strongly recommend using Conda based installation on Windows platforms.
+  Instructions given in this section have not been updated or tested recently.
+  We strongly recommend using Conda based installation on Windows platforms.
 
 Only follow these steps if the Miniconda installation does not suit your needs.
 
@@ -27,7 +32,7 @@ Python 3 environment
 --------------------
 
 1. Download and install a standard python release from http://www.python.org/
-. The :term:`AGDC` supports 3.5 or newer.
+. The :term:`Open Data Cube` supports 3.6 or newer.
 
 .. note::
     If in a restricted environment with no local administrator access, python can be installed by running::
@@ -45,10 +50,10 @@ Python 3 environment
 
     python -m pip install --upgrade pip setuptools virtualenv
 
-4. Create an AGDC virtualenv::
+4. Create an Open Data Cube virtualenv::
 
     mkdir C:\envs
-    Scripts\virtualenv C:\envs\agdcv2
+    Scripts\virtualenv C:\envs\open_data_cube
 
 .. note::
 
@@ -57,7 +62,7 @@ Python 3 environment
 
 5. Activate virtualenv::
 
-    C:\envs\agdcv2\Scripts\activate
+    C:\envs\open_data_cube\Scripts\activate
     
 The python virtual environment isolates this python installation from other python
 installations (which may be in use for other application software) to prevent

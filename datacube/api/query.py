@@ -60,6 +60,8 @@ class Query(object):
         :param search_terms:
          * `measurements` - list of measurements to retrieve
          * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
+         * 'extra_dimension_name' (e.g. `z`) - tuples (min, max) bounding extra \
+            dimensions specified by name for 3D datasets. E.g. z=(10, 30).
          * `crs` - spatial coordinate reference system to interpret the spatial bounds
          * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
         """
@@ -72,6 +74,18 @@ class Query(object):
 
         remaining_keys = set(search_terms.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
+            # Retrieve known keys for extra dimensions
+            known_dim_keys = set()
+            if product is not None:
+                datacube_product = index.products.get_by_name(product)
+                if datacube_product is not None:
+                    known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
+            else:
+                for datacube_product in index.products.get_all():
+                    known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
+
+            remaining_keys -= known_dim_keys
+
             unknown_keys = remaining_keys - set(index.datasets.get_field_names())
             # TODO: What about keys source filters, and what if the keys don't match up with this product...
             if unknown_keys:
@@ -272,6 +286,9 @@ def _time_to_search_dims(time_range):
 
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
             tmp = list(time_range)
+            if len(tmp) > 2:
+                raise ValueError("Please supply start and end date only for time query")
+
             tr_start, tr_end = tmp[0], tmp[-1]
 
         # Attempt conversion to isoformat

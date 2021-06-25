@@ -6,8 +6,7 @@ Data Loading
 Types of Data Loading
 =====================
 
-There are two major use-cases for loading data from the Datacube
-*Ad hoc access*, and *Large scale processing*. These are described below.
+There are two major use-cases for loading data from the Datacube: *Ad hoc access*, and *Large scale processing*. These are described below.
 
 1. Ad hoc access
 
@@ -19,9 +18,9 @@ There are two major use-cases for loading data from the Datacube
 -  Continental scale processing
 -  Used to compute new products or to perform statistics on existing data
 -  Often unconstrained spatially
--  Often unconstrained along time dimension
--  Data is accessed using regular grid in *small enough* chunks
--  The specific access pattern is algorithm/compute environment dependent
+-  Often unconstrained along the time dimension
+-  Data is accessed using a regular grid in *small enough* chunks
+-  The specific access pattern is algorithm/compute/environment dependent
    and is supplied by the user and requires manual tuning
 
 Ad hoc data access
@@ -77,7 +76,7 @@ Virtual Storage Resource
 ------------------------
 
 -  *Virtual* as opposite of Real/Physical, meaning constructed on the fly
-   as opposed to read from database or file. Logical is another name
+   as opposed to read from a database or file. Logical is another name
    often used for this kind of thing
 -  *Storage* as in just container of data, no possibility for compute
    beyond maybe projection changes, not specific to raster data
@@ -108,7 +107,7 @@ observations for one timeslice only.
 
     **TODO**: describe issues with timestamps, each pixel has it’s own
     actual capture time, which we do not store or track, but it does
-    mean that single time slice is not just a point in time, but rather
+    mean that a single time slice is not just a point in time, but rather
     an interval)
 
 The relationship between :class:`datacube.model.Dataset` and *storage units* is
@@ -117,7 +116,7 @@ listed below
 
 1. :class:`datacube.model.Dataset` refers to several GeoTiff files, one for
    each band. Each GeoTiff file is referenced by exactly one dataset.
-2. :class:`datacube.model.Dataset` refers to one netCDF4 file containing
+2. :class:`datacube.model.Dataset` refers to one netCDF4 file containing a 
    single timeslice, all bands are stored in that one file. NetCDF4 file
    is referenced by one dataset.
 3. :class:`datacube.model.Dataset` refers to one time slice within a
@@ -138,7 +137,7 @@ Data load in detail
   \text{VSR}, \text{GeoBox}, [\text{bands of interest}, \text{ opts}] \rightarrow \text{pixel data}
 
   
-Once you have VSR constructed you can load all or part of it into memory
+Once you have the VSR constructed you can load all or part of it into memory
 using :meth:`~datacube.Datacube.load_data`. At this point users can customise which bands they
 want, how to deal with overlapping data, and other options like a per band
 re-sampling strategy can also be supplied.
@@ -196,7 +195,7 @@ the same shape and data type, the first contains *fused result so far*,
 and the second one is the *new data*. The ``fuse`` function is expected to
 update *fused result so far* with the *new data* in place.
 
-Below is a pseudo-code of the load code that uses a ``fuse`` function
+Below is pseudo-code of the load code that uses a ``fuse`` function
 (:func:`~datacube.storage.storage.reproject_and_fuse` is the actual implementation).
 
 .. code:: python
@@ -218,7 +217,7 @@ One major limitation is that the ``fuse`` function is customised per
 product, but should really be customised per band. It is completely
 reasonable for different bands of the same product to be sufficiently
 different as to require a different fusing strategy. And since a ``fuse``
-function doesn’t know which band it is processing it can not dispatch to
+function doesn’t know which band it is processing it can't dispatch to
 different implementations internally.
 
 The types of computation a ``fuse`` function can perform is limited by the
@@ -260,7 +259,7 @@ the max, but often it is necessary to balance one at the expense of the
 other. Efficiency in particular often has significant complexity costs,
 it is also harder to achieve when striving to be as generic as possible.
 
-Internal interfaces for reading data is per time slice per band.
+Internal interfaces for reading data are per time slice per band.
 Description of a storage unit for a given band for a given time slice
 (:class:`datacube.model.Dataset`) is passed from the database to storage
 specific loading code one by one, and the results are assembled into a
@@ -271,7 +270,7 @@ On a plus side this maps nicely to the way things work in
 allows for greatest variety of storage regimes
 
 -  bands/time slices split across multiple files
--  bands stored in one files, one file per time slice
+-  bands stored in one file, one file per time slice
 -  stacked files that store multiple time slices and all the bands
 
 On the other hand this way of partitioning code leads to less than
@@ -281,7 +280,7 @@ datacube) while doing “pixel drill” type of access.
 
 Problems are:
 
--  Same netCDF file is opened/closed multiple times – no netCDF chunk
+-  The same netCDF file is opened/closed multiple times – no netCDF chunk
    cache sharing between reads
 -  Larger more complex (many bands) files might have slightly larger
    “open overhead” to begin with, not a problem if you share the same
@@ -290,7 +289,7 @@ Problems are:
    needlessly.
 -  File open overhead increases as we move towards cloud storage
    solutions like Amazon S3.
--  Chunking along time dimension makes depth reads even more costly when
+-  Chunking along the time dimension makes depth reads even more costly when
    using this access pattern since data is read and decompressed just to
    be thrown away (in the case of NCI install, chunking along time
    dimension is 5 time slices per chunk, so 80% of decoded data is

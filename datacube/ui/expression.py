@@ -43,7 +43,7 @@ search_grammar = r"""
           | ESCAPED_STRING -> string
           | SIMPLE_STRING -> simple_string
           | URL_STRING -> url_string
-
+          | UUID -> simple_string
 
     ?date_range: date -> single_date
                | "[" date "," date "]" -> date_pair
@@ -55,14 +55,16 @@ search_grammar = r"""
     YEAR: DIGIT ~ 4
     MONTH: DIGIT ~ 1..2
     DAY: DIGIT ~ 1..2
-    SIMPLE_STRING: /[a-zA-Z][\w._-]*/
+    SIMPLE_STRING: /[a-zA-Z][\w._-]*/ | /[0-9]+[\w_-][\w._-]*/
     URL_STRING: /[a-z0-9+.-]+:\/\/([:\/\w._-])*/
+    UUID: HEXDIGIT~8 "-" HEXDIGIT~4 "-" HEXDIGIT~4 "-" HEXDIGIT~4 "-" HEXDIGIT~12
 
 
     %import common.ESCAPED_STRING
     %import common.SIGNED_NUMBER
     %import common.INT
     %import common.DIGIT
+    %import common.HEXDIGIT
     %import common.CNAME
     %import common.WS
     %ignore WS

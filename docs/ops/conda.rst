@@ -10,13 +10,13 @@ Follow conda installation guide for your platform: https://docs.conda.io/project
 Configure Miniconda
 ===================
 
-Add conda-forge channel
+Add the conda-forge channel
 
 .. code::
 
     conda config --add channels conda-forge
 
-conda-forge channel provides multitude of community maintained packages.
+The conda-forge channel provides a multitude of community maintained packages.
 Find out more about it here https://conda-forge.org/
 
 Create the environment

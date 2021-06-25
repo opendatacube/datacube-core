@@ -10,8 +10,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The Open Data Cube provides an integrated gridded data
-analysis environment for decades of analysis ready earth observation satellite
-and  related data from multiple satellite and other acquisition systems.
+analysis environment for decades of analysis ready Earth observation satellite
+and related data from multiple sources.
 
 ..
     The ReadTheDocs theme has a problem where it's seemingly impossible to have
@@ -31,8 +31,6 @@ and  related data from multiple satellite and other acquisition systems.
    user/intro.rst
    user/deployments.rst
    user/notebooks.rst
-   user/code_recipes.rst
-
    user/ecosystem.rst
 
 
@@ -78,13 +76,14 @@ Support
 =======
 
 The best way to get help with the Data Cube is to open an issue on Github_.
+You can also talk to us on Slack_ or ask a question on `GIS Stack Exchange`_.
 
 .. _Github: https://github.com/opendatacube/datacube-core/issues
-
+.. _Slack: http://slack.opendatacube.org
+.. _`GIS Stack Exchange`: https://gis.stackexchange.com/questions/tagged/open-data-cube
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`

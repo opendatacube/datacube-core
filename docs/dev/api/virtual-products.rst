@@ -18,7 +18,10 @@ reflectance product and a pixel quality (PQ) product that classifies cloud. Virt
 when the datasets from the different products have the same spatio-temporal extent and the operations are to be applied
 pixel-by-pixel.
 
-Code for virtual products is in the :mod:`datacube.virtual` module.
+The source code for virtual products is in the :mod:`datacube.virtual` module.
+An example notebook using virtual products can be found in the `DEA`_ notebooks collection.
+
+.. _DEA: https://docs.dea.ga.gov.au/notebooks/Frequently_used_code/Virtual_products.html
 
 
 Using virtual products
@@ -39,7 +42,7 @@ Virtual products provide an interface to query and load data. The methods are:
 
 .. note::
 
-   Virtual products does provide a ``load(dc, **query)`` method similar to ``dc.load``.
+   Virtual products do provide a ``load(dc, **query)`` method similar to ``dc.load``.
    However, this method is only to facilitate code migration, and its use is not recommended. It implements
    the pipeline:
 
@@ -188,8 +191,8 @@ Observations without corresponding entries in the other products will get droppe
 
 .. image:: ../../diagrams/juxtapose.svg
 
-Reproject (Combining)
----------------------
+Reproject (Data modifying)
+--------------------------
 
 Reproject performs an on-the-fly reprojection of raster data to a given CRS and resolution.
 
@@ -210,7 +213,7 @@ Here ``align`` and ``resampling`` are optional (defaults to edge-aligned and nea
 This combinator enables performing transformations to raster data in their native grids before aligning different
 rasters to a common grid.
 
-Transform (Data Modifing)
+Transform (Data modifing)
 -------------------------
 
 This node applies an on-the-fly data transformation on the loaded data. The recipe
@@ -335,5 +338,5 @@ for the required geo-spatial ``search_terms``. Note that the ``measurement`` met
 the ``compute`` method.
 
 .. note::
-    We assume that the user-defined transformations are dask-friendly, otherwise loading data using dask may
+    The user-defined transformations should be dask-friendly, otherwise loading data using dask may
     be broken. Also, method names starting with ``_transform_`` are reserved for internal use.

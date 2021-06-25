@@ -28,6 +28,10 @@ Example:
 Ingested Datasets
 ~~~~~~~~~~~~~~~~~
 
+.. note::
+
+  Ingestion is an optional step.
+
 Data has been created by/and is managed by the Data Cube. The data has typically been
 been copied, compressed, tiled and possibly re-projected into a shape suitable
 for analysis, and stored in NetCDF4 files.

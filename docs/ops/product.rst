@@ -47,16 +47,16 @@ load (optional)
         Use ``latitude``, ``longitude`` if the projection is geographic and ``x``, ``y`` otherwise.
 
     align.{x,y} (optional)
-        By default pixel grid is aligned such that pixel boundaries fall on
-        ``x,y`` axis. This option allows to translate pixel grid. For example,
-        to ensure that pixel center of a 30m pixel grid is coincidental with
+        By default the pixel grid is aligned such that pixel boundaries fall on
+        ``x,y`` axis. This option allows us to translate the pixel grid. For example,
+        to ensure that the pixel center of a 30m pixel grid is coincident with
         ``0,0`` use ``align:{x:15,y:15}``.
 
 
 storage (optional)
-    Describes some of common storage attributes of all the datasets. While optional defining this will make
+    Describes some of common storage attributes of all the datasets. While optional, defining this will make
     product data easier to access and use. This only applies to products that have data arranged on a regular
-    grid, for example ingested products are like that.
+    grid, for example ingested products are arranged like that.
 
     crs
         Coordinate reference system common to all the datasets in the product. ``'EPSG:<code>'`` or WKT string.
@@ -101,8 +101,20 @@ measurements
          .. code-block:: yaml
 
              spectral_definition:
-                  wavelength: [410, 411, 412]
+                wavelength: [410, 411, 412]
+                response: [0.0261, 0.029, 0.0318]
+
+        For 3D datasets spectral_definition should be a list of the same length as the
+        `extra_dimensions` coordinate it applies to.
+
+         .. code-block:: yaml
+
+             spectral_definition:
+                - wavelength: [410, 411, 412]
                   response: [0.0261, 0.029, 0.0318]
+                - wavelength: [410, 411, 412]
+                  response: [0.0261, 0.029, 0.0318]
+                ...
 
     flags_definition (optional)
         Bit flag meanings of the bitset 'measurement'
@@ -121,3 +133,43 @@ measurements
                   bits: 8
                   description: All bands for this pixel contain non-null values
                   values: {0: false, 1: true}
+
+    extra_dim (required for 3D datasets)
+        Name of the extra dimension supported by this measurement.
+        Must match a name from the `extra_dimensions` definition (see below).
+
+        .. code-block:: yaml
+
+            extra_dim: z
+
+
+extra_dimensions (required for 3D datasets)
+    Definition of the extra dimensions.
+
+    name
+        Name of the dimension.
+
+    values
+        List of coordinate values of the dimension.
+
+    dtype
+        Data type. One of ``(u)int(8,16,32,64), float32, float64``
+
+    .. code-block:: yaml
+
+        extra_dimensions:
+          - name: z
+            values: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85,
+                     90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
+            dtype: float64
+
+
+.. _product-doc-extra-dim:
+
+3D product definition
+---------------------
+
+Example 3D product definition for GEDI L2B cover_z:
+
+.. literalinclude:: ../config_samples/dataset_types/gedi_l2b_cover_z.yaml
+   :language: yaml

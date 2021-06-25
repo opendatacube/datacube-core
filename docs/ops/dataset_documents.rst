@@ -11,12 +11,12 @@ Dataset metadata documents define critical metadata about a dataset including:
    - acquisition time
    - provenance information
 
-Traditionally :ref:`dataset-metadata-doc-eo` format was used to capture
+Traditionally the :ref:`dataset-metadata-doc-eo` format was used to capture
 information about individual datasets. However there are a number of issues with
 this format, so it is now deprecated and we recommend everyone move to using
-:ref:`dataset-metadata-doc-eo3`.
+the :ref:`dataset-metadata-doc-eo3`.
 
-The format is determined by ODC using the ``$schema`` field in the document.
+The format is determined by the Open Data Cube using the ``$schema`` field in the document.
 Include an eo3 ``$schema`` for eo3 documents. If no schema field exists, it
 is treated as the older ``eo`` format.
 
@@ -26,7 +26,7 @@ is treated as the older ``eo`` format.
 EO3 Format
 ==========
 
-EO3 is an intermediate format before we move to something more standard like `STAC <https://stacspec.org/>`_. Primary driver for the development
+EO3 is an intermediate format before we move to something more standard like `STAC <https://stacspec.org/>`_. Primary drivers for the development:
 
 #. Avoid duplication of spatial information, by storing only native projection information
 #. Capture geo-registration information per band, not per entire dataset
@@ -48,7 +48,7 @@ EO3 is an intermediate format before we move to something more standard like `ST
    crs: "epsg:32660"
 
    # Optional GeoJSON object in the units of native CRS.
-   # Defines a polygon such that, all valid pixels across all bands
+   # Defines a polygon such that all valid pixels across all bands
    # are inside this polygon.
    geometry:
      type: Polygon
@@ -66,7 +66,7 @@ EO3 is an intermediate format before we move to something more standard like `ST
           transform: [15, 0, 618292.5, 0, -15, -1642492.5, 0, 0, 1]
 
    # Per band storage information and references into `grids`
-   # Bands using "default" grid should not need to reference it
+   # Bands using the "default" grid should not need to reference it
    measurements:
       pan:               # Band using non-default "pan" grid
         grid: "pan"      # should match the name used in `grids` mapping above
@@ -115,7 +115,7 @@ EO3 is an intermediate format before we move to something more standard like `ST
 
 Elements ``shape`` and ``transform`` can be obtained from the output of ``rio
 info <image-file>``. ``shape`` is basically ``height, width`` tuple and
-``transform`` captures a linear mapping from pixel space to projected space
+``transform`` capturing a linear mapping from pixel space to projected space
 encoded in a row-major order:
 
 A command-line tool to validate eo3 documents called ``eo3-validate`` is available
@@ -133,12 +133,66 @@ as well as optional tools to write these files more easily.
 
 
 
+.. _dataset-metadata-doc-3d:
+
+3D dataset metadata
+-------------------
+
+Dataset metadata documents for 3D measurements conform to the same EO3 schema as above.
+The example below is for a GEDI L2B cover_z dataset.
+
+.. code-block:: yaml
+
+    id: 9361f681-6e92-4b82-a3ca-3ed799df1116
+    $schema: https://schemas.opendatacube.org/dataset
+    product:
+      name: gedi_l2b_cover_z
+    crs: epsg:4326
+    grids:
+      default:
+        shape:
+          - 420
+          - 551
+        transform:
+          - 0.00027778
+          - 0.0
+          - 149.03966950632497
+          - 0.0
+          - -0.00027778
+          - -35.30265746130061
+          - 0.0
+          - 0.0
+          - 1.0
+    measurements:
+      "cover_z":
+        layer: array
+        path: ./GEDI02_B_2019294155401_O04856_T03859_02_001_01_cover_z.xarray_3d
+    properties:
+      datetime: 2019-10-21 15:54:01+00:00
+      dtr:end_datetime: 2019-10-21 15:54:01+00:00
+      dtr:start_datetime: 2019-10-21 15:54:01+00:00
+      eo:instrument: GEDI
+      eo:platform: ISS
+      odc:file_format: xarray_3d
+      odc:processing_datetime: 2021-04-15 04:43:01.926659
+    lineage: {}
+
+
+Note that this dataset metadata document:
+  - references a 3D product definition which includes an `extra_dimensions` specification
+    and an `extra_dim` name for the `cover_z` measurement (see: :ref:`product-doc-extra-dim`)
+  - specifies a `file_format` which supports 3D data and for which there is a 3D enabled
+    driver (see :ref:`extending-datacube-3d-reads`).
+  - describes storage properties specific to that format/driver. E.g. `layer` indicates the
+    xarray variable for the driver to load (similar to the netcdf example above).
+
+
 .. _dataset-metadata-doc-eo:
 
 EO (deprecated)
 ===============
 
-Majority of prepare scripts still generate this format, so this section is
+The majority of prepare scripts still generate this format, so this section is
 maintained for historical context.
 
 
@@ -180,10 +234,10 @@ creation_dt
     Creation datetime
 
 product_type, platform/code, instrument/name
-    Metadata fields supported by default
+    Metadata fields supported by default.
 
 format
-    Format the data is stored in. For NetCDF and HDF formats it **must** be 'NetCDF' and 'HDF'
+    Format the data is stored in. For NetCDF and HDF formats it **must** be 'NetCDF' and 'HDF'.
 
 extent
     Spatio-temporal extents of the data in EPSG:4326 (lat/lon) coordinates. Used for search in the database.
@@ -204,7 +258,7 @@ grid_spatial/projection
         Only needs to be roughly correct. Prefer simpler geometry over accuracy.
 
 image/bands
-    Dictionary of band names to band definitions
+    Dictionary of band names to band definitions.
 
     path
         Path to the file containing band data. Can be absolute of relative to the folder containing this document.
@@ -213,7 +267,7 @@ image/bands
         Variable name if format is 'NetCDF' or 'HDF'. Band number otherwise. Default is 1.
 
 lineage
-    Dataset lineage metadata
+    Dataset lineage metadata.
 
     source_datasets
         Dictionary of source classifier to dataset documents like this one (yay recursion!).
@@ -285,7 +339,7 @@ Reasons for deprecation
 
 #. Costly lineage representation
 
-   To record lineage one has to recursively include entire dataset document for
+   To record lineage one has to recursively include the entire dataset document for
    every input dataset. This gets expensive for summary products with thousands
    of input datasets.
 

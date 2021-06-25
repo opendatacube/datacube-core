@@ -66,7 +66,7 @@ release = version+"-FIXME"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = ['README.rst']
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
@@ -82,6 +82,7 @@ autosummary_generate = True
 
 extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
             'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
+
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),

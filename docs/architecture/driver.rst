@@ -76,7 +76,57 @@ Example Pickle Based Driver
 ---------------------------
 
 Available in ``/examples/io_plugin``. Includes an example ``setup.py``
-as well as an example **Read** and **Write** Drivers.
+as well as example **Read** and **Write** Drivers.
+
+.. _extending-datacube-3d-reads:
+
+3D Data Read Plug-ins
+=====================
+
+3D support is enabled by an optional 3D read ``window`` in the ``read()`` method.
+
+Example code to implement a 3D read
+-----------------------------------
+
+.. code:: python
+
+    def read(
+        self,
+        window: Optional[RasterWindow] = None,
+        out_shape: Optional[RasterShape] = None,
+    ) -> np.ndarray:
+    """
+    Reads a slice into the xr.DataArray.
+
+    :param RasterWindow window: The slice to read
+    :param RasterShape out_shape: The desired output shape
+    :return: Requested data in a :class:`numpy.ndarray`
+    """
+
+    if window is None:
+        ix: Tuple = (...,)
+    else:
+        ix = tuple(slice(*w) if isinstance(w, tuple) else w for w in window)
+
+    def fn() -> Any:
+        return self.da[ix].values
+
+    data = fn()
+
+    if out_shape and data.shape != out_shape:
+        raise ValueError(
+            f"Data shape does not match 'out_shape': {data.shape} != {out_shape}"
+        )
+
+    return data
+
+Example Xarray Based 3D Driver
+------------------------------
+
+This sample driver supports reading 3D data.
+
+Available in ``/examples/io_plugin``. Includes an example ``setup.py``
+as well as an example **Read** Driver.
 
 .. _write_plugin:
 
@@ -205,7 +255,7 @@ Drivers are registered in ``setup.py -> entry_points``::
         ],
     }
 
-These are drivers ``datacube-core`` ships with. When developing custom driver one
+These are drivers ``datacube-core`` ships with. When developing a custom driver one
 does not need to add them to ``datacube-core/setup.py``, rather you have to define
 these in the ``setup.py`` of your driver package.
 
