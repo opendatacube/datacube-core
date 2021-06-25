@@ -177,7 +177,7 @@ class Datacube(object):
             Spatial dimensions can specified using the ``longitude``/``latitude`` and ``x``/``y`` fields.
 
             The CRS of this query is assumed to be WGS84/EPSG:4326 unless the ``crs`` field is supplied,
-            even if the stored data is in another projection or the `output_crs` is specified.
+            even if the stored data is in another projection or the ``output_crs`` is specified.
             The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
             ::
 
@@ -251,13 +251,16 @@ class Datacube(object):
 
         :param **query:
             Search parameters for products and dimension ranges as described above. 
-            For example: ``'x', 'y', 'time'``.
+            For example: ``'x', 'y', 'time', 'crs'``.
 
         :param str output_crs:
-            The CRS of the returned data. If no CRS is supplied, the CRS of the stored data is used
+            The CRS of the returned data, for example ``EPSG:3577``. If no CRS is supplied, the CRS of the stored data is used
             if available.
+            
+            This differs from the ``crs`` parameter desribed above, which is used to define the CRS 
+            of the coordinates in the query itself.
 
-        :param (float, float) resolution:
+        :param (float,float) resolution:
             A tuple of the spatial resolution of the returned data. Units are in the coordinate
             space of ``output_crs``.
             
@@ -276,7 +279,7 @@ class Datacube(object):
             Default is to use ``nearest`` for all bands.
             .. seealso:: :meth:`load_data`
 
-        :param (float, float) align:
+        :param (float,float) align:
             Load data such that point 'align' lies on the pixel boundary.
             Units are in the coordinate space of ``output_crs``.
 
@@ -302,7 +305,7 @@ class Datacube(object):
 
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
-            data is simply copied over the top of each other, in a relatively undefined manner. This function can
+            data is simply copied over the top of each other in a relatively undefined manner. This function can
             perform a specific combining step. This can be a dictionary if different
             fusers are needed per band.
 
