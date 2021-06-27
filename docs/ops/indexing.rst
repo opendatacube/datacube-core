@@ -140,7 +140,7 @@ Dataset Documents
 =================
 
 Every dataset requires a metadata document describing what the data represents and where it has come
-from, as well has what format it is stored in. At a minimum, you need the dimensions or fields your want to
+from, as well has what format it is stored in. At a minimum, you need the dimensions or fields you want to
 search by, such as lat, lon and time, but you can include any information you deem useful.
 
 It is typically stored in YAML documents, but JSON is also supported. It is stored in the index
