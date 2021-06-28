@@ -434,6 +434,10 @@ class DatasetType:
         return self.definition['name']
 
     @property
+    def license(self) -> str:
+        return self.definition.get("license", None)
+
+    @property
     def managed(self) -> bool:
         return self.definition.get('managed', False)
 
