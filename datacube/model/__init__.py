@@ -434,6 +434,10 @@ class DatasetType:
         return self.definition['name']
 
     @property
+    def description(self) -> str:
+        return self.definition.get("description", None)
+
+    @property
     def license(self) -> str:
         return self.definition.get("license", None)
 
@@ -675,7 +679,8 @@ class DatasetType:
         row = dict(**self.fields)
         row.update(id=self.id,
                    name=self.name,
-                   description=self.definition['description'])
+                   license=self.license,
+                   description=self.description)
 
         if self.grid_spec is not None:
             row.update({
