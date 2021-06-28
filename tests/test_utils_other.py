@@ -134,11 +134,6 @@ def test_uri_resolve(base):
     if not is_vsipath(base):
         assert uri_resolve(base + '/some/dir/file.txt', 'relative/path') == base + '/some/dir/relative/path'
 
-def test_uri_resolve_more():
-    base_path = ''
-
-
-
 
 def test_pick_uri():
     f, s, h = ('file://a', 's3://b', 'http://c')

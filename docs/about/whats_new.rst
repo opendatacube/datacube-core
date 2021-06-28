@@ -15,6 +15,7 @@ v1.8.4 (???)
 - Fix numeric precision issues in ``compute_reproject_roi`` when pixel size is small. (:issue:`1047`)
 - Follow up fix to (:issue:`1047`) to round scale to nearest integer if very close.
 - Add support for 3D Datasets. (:pull:`1099`)
+- New feature: search by URI from the command line ``datacube dataset uri-search``.
 - Added new "license" and "description" properties to `DatasetType` to enable easier access to product information. (:pull:`1143`, :pull:`1144`)
 - Revised the ``Datacube.list_products`` function to produce a simpler and more useful product list table (:pull:`1145`)
 - Add new ``dataset_predicate`` param to ``dc.load`` and ``dc.find_datasets`` for more flexible temporal filtering (e.g. loading data for non-contiguous time ranges such as specific months or seasons over multiple years). (:pull:`1148`, :pull:`1156`)
