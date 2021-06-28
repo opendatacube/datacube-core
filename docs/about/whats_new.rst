@@ -15,6 +15,7 @@ v1.8.4 (???)
 - Fix numeric precision issues in ``compute_reproject_roi`` when pixel size is small. (:issue:`1047`)
 - Follow up fix to (:issue:`1047`) to round scale to nearest integer if very close.
 - Add support for 3D Datasets. (:pull:`1099`)
+- Added new "license" property to `DatasetType` to enable easier access to product license information. (:pull:`1142`)
 
 .. _`notebook examples`: https://github.com/GeoscienceAustralia/dea-notebooks/
 
