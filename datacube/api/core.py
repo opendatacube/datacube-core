@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2021 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import uuid
 import collections.abc
@@ -135,7 +135,7 @@ class Datacube(object):
 
         # Return pandas dataframe with each product as a row
         import pandas
-        return pandas.DataFrame(rows, columns=cols).set_index('name')
+        return pandas.DataFrame(rows, columns=cols).set_index('name', drop=False)
 
     def list_measurements(self, show_archived=False, with_pandas=True):
         """
