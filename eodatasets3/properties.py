@@ -129,6 +129,16 @@ def degrees_type(value):
     return value
 
 
+def identifier_type(v: str):
+    v = v.replace("-", "_")
+    if not v.isidentifier() or not v.islower():
+        warnings.warn(
+            f"{v!r} is expected to be an identifier "
+            "(alphanumeric with underscores, typically lowercase)"
+        )
+    return v
+
+
 def producer_check(value):
     if "." not in value:
         warnings.warn(
@@ -304,7 +314,7 @@ class Eo3Dict(collections.abc.MutableMapping):
         "odc:processing_datetime": datetime_type,
         "odc:producer": producer_check,
         "odc:product": None,
-        "odc:product_family": None,
+        "odc:product_family": identifier_type,
         "odc:region_code": None,
         **_LANDSAT_EXTENDED_PROPS,
         **_GQA_FMASK_PROPS,
