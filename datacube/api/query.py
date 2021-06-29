@@ -246,8 +246,14 @@ def _values_to_search(**kwargs):
         if key.lower() in ('time', 't'):
             search['time'] = _time_to_search_dims(value)
         elif key not in ['latitude', 'lat', 'y'] + ['longitude', 'lon', 'x']:
-            if isinstance(value, collections.abc.Sequence) and len(value) == 2:
+            # If it's not a string, but is a sequence of length 2, then it's a Range
+            if (
+                not isinstance(value, str)
+                and isinstance(value, collections.abc.Sequence)
+                and len(value) == 2
+            ):
                 search[key] = Range(*value)
+            # All other cases are default
             else:
                 search[key] = value
     return search
