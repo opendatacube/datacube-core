@@ -16,6 +16,7 @@ v1.8.4 (???)
 - Follow up fix to (:issue:`1047`) to round scale to nearest integer if very close.
 - Add support for 3D Datasets. (:pull:`1099`)
 - Added new "license" and "description" properties to `DatasetType` to enable easier access to product information. (:pull:`1143`, :pull:`1144`)
+- Revised the ``Datacube.list_products`` function to produce a simpler and more useful product list table (:pull:`1145`)
 
 .. _`notebook examples`: https://github.com/GeoscienceAustralia/dea-notebooks/
 
