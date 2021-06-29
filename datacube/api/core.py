@@ -90,7 +90,7 @@ class Datacube(object):
 
         self.index = index
 
-    def list_products(self, with_pandas=True, dataset_count=True):
+    def list_products(self, with_pandas=True, dataset_count=False):
         """
         List all products in the datacube. This will produce a ``pandas.DataFrame``
         or list of dicts containing useful information about each product, including:
@@ -107,7 +107,8 @@ class Datacube(object):
 
         :param bool dataset_count:
             Return a "dataset_count" column containing the number of datasets
-            for each product. This can be disabled to reduce run time.
+            for each product. This can take several minutes on large datacubes.
+            Defaults to False.
 
         :return: A table or list of every product in the datacube.
         :rtype: pandas.DataFrame or list(dict)
