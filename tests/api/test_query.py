@@ -208,3 +208,8 @@ def test_dateline_query_building():
                 crs='EPSG:32660').search_terms['lon']
 
     assert lon.begin < 180 < lon.end
+
+
+def test_query_issue_1146():
+    q = Query(k='AB')
+    assert q.search['k'] == 'AB'
