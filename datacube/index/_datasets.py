@@ -420,7 +420,7 @@ class DatasetResource(object):
         Find datasets that exist at the given URI
 
         :param uri: search uri
-        :param str mode: 'exact' or 'prefix' or None to guess
+        :param str mode: 'exact', 'prefix' or None (to guess)
         :return:
         """
         with self._db.connect() as connection:
