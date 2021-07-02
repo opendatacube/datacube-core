@@ -143,9 +143,8 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
-             skip_broken_datasets=False,
-             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, progress_cbk=None,
-             **query):
+         skip_broken_datasets=False, dask_chunks=None, like=None, fuse_func=None, align=None, 
+         datasets=None, dataset_predicate=None, progress_cbk=None, **query):
         """
         Load data as an ``xarray.Dataset`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -317,6 +316,12 @@ class Datacube(object):
             Optional. If this is True, then don't break when failing to load a broken dataset.
             Default is False.
 
+        :param function dataset_predicate:
+            Optional. A function that can be passed to restrict loaded datasets. A predicate function should
+            take a `datacube.model.Dataset` object (e.g. as returned from `dc.find_datasets`) and return a boolean.
+            For example, the following predicate function would only return True for datasets acquired in January::
+                def filter_jan(dataset): return dataset.time.begin.month == 1
+
         :param int limit:
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
@@ -335,6 +340,10 @@ class Datacube(object):
             datasets = self.find_datasets(product=product, like=like, ensure_location=True, **query)
         elif isinstance(datasets, collections.abc.Iterator):
             datasets = list(datasets)
+        
+        # If a predicate function is provided, use this to filter datasets before load
+        if dataset_predicate:
+            datasets = [dataset for dataset in datasets if dataset_predicate(dataset)]
 
         if len(datasets) == 0:
             return xarray.Dataset()
