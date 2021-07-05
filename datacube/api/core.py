@@ -319,7 +319,8 @@ class Datacube(object):
         :param function dataset_predicate:
             Optional. A function that can be passed to restrict loaded datasets. A predicate function should
             take a `datacube.model.Dataset` object (e.g. as returned from `dc.find_datasets`) and return a boolean.
-            For example, the following predicate function would only return True for datasets acquired in January::
+            For example, loaded data could be filtered to January observations only by passing the following 
+            predicate function that returns True for datasets acquired in January::
                 def filter_jan(dataset): return dataset.time.begin.month == 1
 
         :param int limit:
