@@ -1389,8 +1389,11 @@ def lonlat_bounds(geom: Geometry,
     if geom.crs.geographic:
         return geom.boundingbox
 
-    if geom.type in ('Polygon', 'MultiPolygon'):
+    if geom.type == 'Polygon':
         geom = geom.exterior
+    
+    if geom.type == 'MultiPolygon':
+        geom = geom.convex_hull.exterior
 
     if resolution is not None and math.isfinite(resolution):
         geom = geom.segmented(resolution)
