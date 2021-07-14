@@ -39,7 +39,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def install_timestamp_trigger(connection):
-    from . import _schema 
+    from . import _schema
     TABLE_NAMES = [
         _schema.METADATA_TYPE.name,
         _schema.PRODUCT.name,
@@ -190,7 +190,7 @@ def update_schema(engine: Engine):
     # Empty, as no schema changes have been made recently.
     # -> If you need to write one, look at the Git history of this
     #    function for some examples.
-    
+
     # Post 1.8 DB Incremental Sync triggers
     if not pg_column_exists(engine, schema_qualified('dataset'), 'updated'):
         _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")

@@ -225,7 +225,7 @@ def write_cog(
     This function is "Dask aware". If ``geo_im`` is a Dask array, then the
     output of this function is also a Dask Delayed object. This allows us to
     save multiple images concurrently across a Dask cluster. If you are not
-    familiar with Dask this can be confusing, as no operation is performed until the 
+    familiar with Dask this can be confusing, as no operation is performed until the
     ``.compute()`` method is called, so if you call this function with Dask
     array it will return immediately without writing anything to disk.
 
@@ -323,7 +323,7 @@ def to_cog(
     This function is "Dask aware". If ``geo_im`` is a Dask array, then the
     output of this function is also a Dask Delayed object. This allows us to
     compress multiple images concurrently across a Dask cluster. If you are not
-    familiar with Dask this can be confusing, as no operation is performed until the 
+    familiar with Dask this can be confusing, as no operation is performed until the
     ``.compute()`` method is called, so if you call this function with Dask
     array it will return immediately without compressing any data.
 

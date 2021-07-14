@@ -123,20 +123,20 @@ class ApplyMask(Transformation):
         if self.erosion > 0:
             from skimage.morphology import binary_erosion, disk
             kernel = disk(self.erosion)
-            mask = ~xarray.apply_ufunc(binary_erosion, 
-                                       ~mask, 
+            mask = ~xarray.apply_ufunc(binary_erosion,
+                                       ~mask,
                                        kernel.reshape((1, ) + kernel.shape),
-                                       output_dtypes=[numpy.bool], 
+                                       output_dtypes=[numpy.bool],
                                        dask='parallelized',
                                        keep_attrs=True)
-            
+
         if self.dilation > 0:
             from skimage.morphology import binary_dilation, disk
             kernel = disk(self.dilation)
-            mask = ~xarray.apply_ufunc(binary_dilation, 
-                                       ~mask, 
+            mask = ~xarray.apply_ufunc(binary_dilation,
+                                       ~mask,
                                        kernel.reshape((1, ) + kernel.shape),
-                                       output_dtypes=[numpy.bool], 
+                                       output_dtypes=[numpy.bool],
                                        dask='parallelized',
                                        keep_attrs=True)
 
