@@ -246,10 +246,9 @@ class VirtualProduct(Mapping):
     _GEOBOX_KEYS = {'output_crs', 'resolution', 'align'}
     _GROUPING_KEYS = {'group_by'}
     _LOAD_KEYS = {'measurements', 'fuse_func', 'resampling', 'dask_chunks', 'like'}
-    _ADDITIONAL_KEYS = {'dataset_predicate'}
+    _ADDITIONAL_SEARCH_KEYS = {'dataset_predicate', 'ensure_location'}
 
-    _NON_SPATIAL_KEYS = _GEOBOX_KEYS | _GROUPING_KEYS
-    _NON_QUERY_KEYS = _NON_SPATIAL_KEYS | _LOAD_KEYS | _ADDITIONAL_KEYS
+    _NON_QUERY_KEYS = _GEOBOX_KEYS | _GROUPING_KEYS | _LOAD_KEYS
 
     # helper methods
 
@@ -338,26 +337,14 @@ class Product(VirtualProduct):
         if product is None:
             raise VirtualProductException("could not find product {}".format(self._product))
 
-        originals = reject_keys(self, self._NON_QUERY_KEYS)
-        overrides = reject_keys(search_terms, self._NON_QUERY_KEYS)
+        merged_terms = merge_search_terms(reject_keys(self, self._NON_QUERY_KEYS),
+                                          reject_keys(search_terms, self._NON_QUERY_KEYS))
 
-        query = Query(dc.index, **merge_search_terms(originals, overrides))
+        query = Query(dc.index, **reject_keys(merged_terms, self._ADDITIONAL_SEARCH_KEYS))
         self._assert(query.product == self._product,
                      "query for {} returned another product {}".format(self._product, query.product))
 
-        # find the datasets
-        datasets = (dataset for dataset in dc.index.datasets.search(**query.search_terms) if dataset.uris)
-
-        if query.geopolygon is not None:
-            datasets = select_datasets_inside_polygon(datasets, query.geopolygon)
-
-        # should we put it in the Transformation class?
-        if self.get('dataset_predicate') is not None:
-            datasets = [dataset
-                        for dataset in datasets
-                        if self['dataset_predicate'](dataset)]
-
-        return VirtualDatasetBag(list(datasets), query.geopolygon,
+        return VirtualDatasetBag(dc.find_datasets(**merged_terms), query.geopolygon,
                                  {product.name: product})
 
     def group(self, datasets: VirtualDatasetBag, **group_settings: Dict[str, Any]) -> VirtualDatasetBox:

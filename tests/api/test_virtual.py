@@ -229,7 +229,7 @@ def dc():
         result.center_time = center_time
         return result
 
-    def search(*args, **kwargs):
+    def find_datasets(*args, **kwargs):
         product = kwargs['product']
         if product == 'ls8_nbar_albers':
             return [example_dataset(product, ids[0], datetime(2014, 2, 7, 23, 57, 26)),
@@ -245,7 +245,7 @@ def dc():
 
     result.index.products.get_all = lambda: [example_product(x) for x in PRODUCT_LIST]
     result.index.products.get_by_name = example_product
-    result.index.datasets.search = search
+    result.find_datasets = find_datasets
     return result
 
 
