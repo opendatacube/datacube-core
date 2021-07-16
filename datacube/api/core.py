@@ -338,13 +338,13 @@ class Datacube(object):
             raise ValueError("Must specify a product or supply datasets")
 
         if datasets is None:
-            datasets = self.find_datasets(product=product, like=like, ensure_location=True, **query)
+            datasets = self.find_datasets(product=product,
+                                          like=like,
+                                          ensure_location=True,
+                                          dataset_predicate=dataset_predicate,
+                                          **query)
         elif isinstance(datasets, collections.abc.Iterator):
             datasets = list(datasets)
-
-        # If a predicate function is provided, use this to filter datasets before load
-        if dataset_predicate:
-            datasets = [dataset for dataset in datasets if dataset_predicate(dataset)]
 
         if len(datasets) == 0:
             return xarray.Dataset()
@@ -402,13 +402,14 @@ class Datacube(object):
         """
         return list(self.find_datasets_lazy(**search_terms))
 
-    def find_datasets_lazy(self, limit=None, ensure_location=False, **kwargs):
+    def find_datasets_lazy(self, limit=None, ensure_location=False, dataset_predicate=None, **kwargs):
         """
         Find datasets matching query.
 
         :param kwargs: see :class:`datacube.api.query.Query`
         :param ensure_location: only return datasets that have locations
         :param limit: if provided, limit the maximum number of datasets returned
+        :param dataset_predicate: an optional predicate to filter datasets
         :return: iterator of datasets
         :rtype: __generator[:class:`datacube.model.Dataset`]
 
@@ -426,6 +427,10 @@ class Datacube(object):
 
         if ensure_location:
             datasets = (dataset for dataset in datasets if dataset.uris)
+
+        # If a predicate function is provided, use this to filter datasets before load
+        if dataset_predicate is not None:
+            datasets = (dataset for dataset in datasets if dataset_predicate(dataset))
 
         return datasets
 
