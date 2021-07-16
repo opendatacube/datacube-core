@@ -118,7 +118,7 @@ class ApplyMask(Transformation):
 
     def compute(self, data):
         mask = data[self.mask_measurement_name]
-        rest = data.drop(self.mask_measurement_name)
+        rest = data.drop_vars([self.mask_measurement_name])
 
         if self.erosion > 0:
             from skimage.morphology import binary_erosion, disk
@@ -228,9 +228,9 @@ class Select(Transformation):
                 if key in self.measurement_names}
 
     def compute(self, data):
-        return data.drop([measurement
-                          for measurement in data.data_vars
-                          if measurement not in self.measurement_names])
+        return data.drop_vars([measurement
+                               for measurement in data.data_vars
+                               if measurement not in self.measurement_names])
 
 
 class Expressions(Transformation):

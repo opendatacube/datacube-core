@@ -521,6 +521,7 @@ class Aggregate(VirtualProduct):
                                                        geopolygon=grouped.geopolygon)],
                                     dims=['_fake_'])
 
+        # TODO: use a proper `GroupBy` object instead
         result = grouped.box.groupby(self['group_by'](grouped.box[dim]), squeeze=False).apply(to_box).squeeze('_fake_')
         result[dim].attrs.update(grouped.box[dim].attrs)
 

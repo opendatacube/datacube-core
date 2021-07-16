@@ -115,7 +115,7 @@ def valid_data_mask(data):
     :return: Dataset or DataArray
     """
     if isinstance(data, Dataset):
-        return data.apply(valid_data_mask)
+        return data.map(valid_data_mask)
 
     if not isinstance(data, DataArray):
         raise TypeError('valid_data_mask not supported for type {}'.format(type(data)))
@@ -139,7 +139,7 @@ def mask_invalid_data(data, keep_attrs=True):
     """
     if isinstance(data, Dataset):
         # Pass keep_attrs as a positional arg to the DataArray func
-        return data.apply(mask_invalid_data, keep_attrs=keep_attrs, args=(keep_attrs,))
+        return data.map(mask_invalid_data, keep_attrs=keep_attrs, args=(keep_attrs,))
 
     if isinstance(data, DataArray):
         if 'nodata' not in data.attrs:
