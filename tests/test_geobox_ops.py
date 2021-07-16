@@ -5,14 +5,14 @@
 from affine import Affine
 import numpy as np
 import pytest
-from datacube.utils.geometry import gbox as gbx
+from datacube.utils.geometry import geobox as gbx
 from datacube.utils import geometry
 from datacube.utils.geometry import GeoBox
 
 epsg3857 = geometry.CRS('EPSG:3857')
 
 
-def test_gbox_ops():
+def test_geobox_ops():
     s = GeoBox(1000, 100, Affine(10, 0, 12340, 0, -10, 316770), epsg3857)
     assert s.shape == (100, 1000)
 
@@ -139,27 +139,27 @@ def test_gbox_ops():
     assert s[49:52, 499:502].extent.contains(d[50:51, 500:501].extent), "Check that center pixel hasn't moved"
 
 
-def test_gbox_tiles():
+def test_geobox_tiles():
     A = Affine.identity()
     H, W = (300, 200)
     h, w = (10, 20)
-    gbox = GeoBox(W, H, A, epsg3857)
-    tt = gbx.GeoboxTiles(gbox, (h, w))
+    geobox = GeoBox(W, H, A, epsg3857)
+    tt = gbx.GeoboxTiles(geobox, (h, w))
     assert tt.shape == (300/10, 200/20)
-    assert tt.base is gbox
+    assert tt.base is geobox
 
-    assert tt[0, 0] == gbox[0:h, 0:w]
-    assert tt[0, 1] == gbox[0:h, w:w+w]
+    assert tt[0, 0] == geobox[0:h, 0:w]
+    assert tt[0, 1] == geobox[0:h, w:w+w]
 
     assert tt[0, 0] is tt[0, 0]  # Should cache exact same object
     assert tt[4, 1].shape == (h, w)
 
     H, W = (11, 22)
     h, w = (10, 9)
-    gbox = GeoBox(W, H, A, epsg3857)
-    tt = gbx.GeoboxTiles(gbox, (h, w))
+    geobox = GeoBox(W, H, A, epsg3857)
+    tt = gbx.GeoboxTiles(geobox, (h, w))
     assert tt.shape == (2, 3)
-    assert tt[1, 2] == gbox[10:11, 18:22]
+    assert tt[1, 2] == geobox[10:11, 18:22]
 
     for idx in [tt.shape, (-1, 0), (0, -1), (-33, 1)]:
         with pytest.raises(IndexError):
@@ -169,11 +169,11 @@ def test_gbox_tiles():
             tt.chunk_shape(idx)
 
     cc = np.zeros(tt.shape, dtype='int32')
-    for idx in tt.tiles(gbox.extent):
+    for idx in tt.tiles(geobox.extent):
         cc[idx] += 1
     np.testing.assert_array_equal(cc, np.ones(tt.shape))
 
-    assert list(tt.tiles(gbox[:h, :w].extent)) == [(0, 0)]
+    assert list(tt.tiles(geobox[:h, :w].extent)) == [(0, 0)]
 
     (H, W) = (11, 22)
     (h, w) = (10, 20)

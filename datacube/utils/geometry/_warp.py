@@ -118,8 +118,8 @@ def warp_affine(src: np.ndarray,
 
 def rio_reproject(src: np.ndarray,
                   dst: np.ndarray,
-                  s_gbox: GeoBox,
-                  d_gbox: GeoBox,
+                  s_geobox: GeoBox,
+                  d_geobox: GeoBox,
                   resampling: Resampling,
                   src_nodata: Nodata = None,
                   dst_nodata: Nodata = None,
@@ -129,8 +129,8 @@ def rio_reproject(src: np.ndarray,
 
     :param        src: image as ndarray
     :param        dst: image as ndarray
-    :param     s_gbox: GeoBox of source image
-    :param     d_gbox: GeoBox of destination image
+    :param   s_geobox: GeoBox of source image
+    :param   d_geobox: GeoBox of destination image
     :param resampling: str|rasterio.warp.Resampling resampling strategy
     :param src_nodata: Value representing "no data" in the source image
     :param dst_nodata: Value to represent "no data" in the destination image
@@ -153,10 +153,10 @@ def rio_reproject(src: np.ndarray,
 
     rasterio.warp.reproject(src,
                             _dst,
-                            src_transform=s_gbox.transform,
-                            dst_transform=d_gbox.transform,
-                            src_crs=str(s_gbox.crs),
-                            dst_crs=str(d_gbox.crs),
+                            src_transform=s_geobox.transform,
+                            dst_transform=d_geobox.transform,
+                            src_crs=str(s_geobox.crs),
+                            dst_crs=str(d_geobox.crs),
                             resampling=resampling,
                             src_nodata=src_nodata,
                             dst_nodata=dst_nodata,

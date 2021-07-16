@@ -29,7 +29,7 @@ from datacube.model.utils import xr_apply, xr_iter, SafeDumper
 from datacube.testutils.io import native_geobox
 from datacube.utils.geometry import GeoBox, rio_reproject, geobox_union_conservative
 from datacube.utils.geometry import compute_reproject_roi
-from datacube.utils.geometry.gbox import GeoboxTiles
+from datacube.utils.geometry.geobox import GeoboxTiles
 from datacube.utils.geometry._warp import resampling_s2rio
 from datacube.api.core import per_band_load_data_settings
 
@@ -893,7 +893,7 @@ def reproject_array(src, nodata, s_geobox, d_geobox, resampling):
     """ Reproject a numpy array. """
     dst = numpy.full(d_geobox.shape, fill_value=nodata, dtype=src.dtype)
     rio_reproject(src=src, dst=dst,
-                  s_gbox=s_geobox, d_gbox=d_geobox,
+                  s_geobox=s_geobox, d_geobox=d_geobox,
                   resampling=resampling_s2rio(resampling),
                   src_nodata=nodata,
                   dst_nodata=nodata)

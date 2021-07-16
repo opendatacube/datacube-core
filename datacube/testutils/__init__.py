@@ -401,7 +401,7 @@ def gen_tiff_dataset(bands,
         bands = (bands,)
 
     # write arrays to disk and construct compatible measurement definitions
-    gbox = None
+    geobox = None
     mm = []
     for band in bands:
         name = band.name
@@ -411,7 +411,7 @@ def gen_tiff_dataset(bands,
                            overwrite=True,
                            **kwargs)
 
-        gbox = meta.gbox
+        geobox = meta.geobox
 
         mm.append(dict(name=name,
                        path=fname,
@@ -422,8 +422,8 @@ def gen_tiff_dataset(bands,
     ds = mk_sample_dataset(mm,
                            uri=uri,
                            timestamp=timestamp,
-                           geobox=gbox)
-    return ds, gbox
+                           geobox=geobox)
+    return ds, geobox
 
 
 def mk_sample_xr_dataset(crs="EPSG:3578",

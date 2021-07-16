@@ -18,7 +18,7 @@ from datacube.utils import ignore_exceptions_if
 from datacube.utils import geometry
 from datacube.utils.dates import normalise_dt
 from datacube.utils.geometry import intersects, GeoBox
-from datacube.utils.geometry.gbox import GeoboxTiles
+from datacube.utils.geometry.geobox import GeoboxTiles
 from datacube.model import ExtraDimensions
 from datacube.model.utils import xr_apply
 

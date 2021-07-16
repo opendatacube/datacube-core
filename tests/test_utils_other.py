@@ -434,7 +434,7 @@ def test_testutils_gtif(tmpdir):
     assert fname.exists()
     assert fname5.exists()
 
-    assert aa_meta.gbox.shape == (h, w)
+    assert aa_meta.geobox.shape == (h, w)
     assert aa_meta.path is fname
 
     aa_, aa_meta_ = rio_slurp(fname)
@@ -461,13 +461,13 @@ def test_testutils_gtif(tmpdir):
 
     # check that overwrite re-writes file
     write_gtiff(fname, bb[:32, :32],
-                gbox=aa_meta.gbox[:32, :32],
+                geobox=aa_meta.geobox[:32, :32],
                 overwrite=True)
 
     bb_, mm = rio_slurp(fname, (32, 32))
     np.testing.assert_array_equal(bb[:32, :32], bb_)
 
-    assert mm.gbox == aa_meta.gbox[:32, :32]
+    assert mm.geobox == aa_meta.geobox[:32, :32]
 
     with pytest.raises(ValueError):
         write_gtiff(fname, np.zeros((3, 4, 5, 6)))
@@ -488,11 +488,11 @@ def test_testutils_geobox():
     crs = CRS.from_epsg(3578)
 
     meta = dict(width=w, height=h, transform=transform, crs=crs)
-    gbox = rio_geobox(meta)
+    geobox = rio_geobox(meta)
 
-    assert gbox.shape == shape
-    assert gbox.crs.epsg == 3578
-    assert gbox.transform == transform
+    assert geobox.shape == shape
+    assert geobox.crs.epsg == 3578
+    assert geobox.transform == transform
 
     wkt = '''PROJCS["unnamed",
     GEOGCS["NAD83",

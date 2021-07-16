@@ -11,7 +11,7 @@ from ..storage._rio import RasterioDataSource, RasterDatasetDataSource
 from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
-from ..utils.geometry import gbox as gbx
+from ..utils.geometry import geobox as gbx
 from ..index.eo3 import is_doc_eo3, _norm_grid
 from types import SimpleNamespace
 
@@ -91,7 +91,7 @@ def native_geobox(ds, measurements=None, basis=None):
     gs = ds.type.grid_spec
     if gs is not None:
         # Dataset is from ingested product, figure out GeoBox of the tile this dataset covers
-        bb = [gbox for _, gbox in gs.tiles(ds.bounds)]
+        bb = [geobox for _, geobox in gs.tiles(ds.bounds)]
         if len(bb) != 1:
             # Ingested product but dataset overlaps several/none tiles -- no good
             raise ValueError('Broken GridSpec detected')
@@ -104,16 +104,16 @@ def native_geobox(ds, measurements=None, basis=None):
         if basis is not None:
             return eo3_geobox(ds, basis)
 
-        gboxes = [eo3_geobox(ds, band) for band in measurements]
+        geoboxes = [eo3_geobox(ds, band) for band in measurements]
     else:
         if basis is not None:
             return get_raster_info(ds, [basis])[basis].geobox
 
         ii = get_raster_info(ds, measurements)
-        gboxes = [info.geobox for info in ii.values()]
+        geoboxes = [info.geobox for info in ii.values()]
 
-    geobox = gboxes[0]
-    consistent = all(geobox == gbox for gbox in gboxes)
+    geobox = geoboxes[0]
+    consistent = all(geobox == g for g in geoboxes)
     if not consistent:
         raise ValueError('Not all bands share the same pixel grid')
     return geobox
@@ -145,7 +145,7 @@ def native_load(ds, measurements=None, basis=None, **kw):
 
 def dc_read(path,
             band=1,
-            gbox=None,
+            geobox=None,
             resampling='nearest',
             dtype=None,
             dst_nodata=None,
@@ -156,8 +156,8 @@ def dc_read(path,
     source = RasterFileDataSource(path, band, nodata=fallback_nodata)
     with source.open() as rdr:
         dtype = rdr.dtype if dtype is None else dtype
-        if gbox is None:
-            gbox = rdr_geobox(rdr)
+        if geobox is None:
+            geobox = rdr_geobox(rdr)
         if dst_nodata is None:
             dst_nodata = rdr.nodata
 
@@ -166,8 +166,8 @@ def dc_read(path,
     if dst_nodata is None:
         dst_nodata = 0
 
-    im = np.full(gbox.shape, dst_nodata, dtype=dtype)
-    reproject_and_fuse([source], im, gbox, dst_nodata, resampling=resampling)
+    im = np.full(geobox.shape, dst_nodata, dtype=dtype)
+    reproject_and_fuse([source], im, geobox, dst_nodata, resampling=resampling)
     return im
 
 
@@ -179,14 +179,14 @@ def write_gtiff(fname,
                 nodata=None,
                 overwrite=False,
                 blocksize=None,
-                gbox=None,
+                geobox=None,
                 **extra_rio_opts):
     """ Write ndarray to GeoTiff file.
 
     Geospatial info can be supplied either via
     - resolution, offset, crs
     or
-    - gbox (takes precedence if supplied)
+    - geobox (takes precedence if supplied)
     """
     # pylint: disable=too-many-locals
 
@@ -213,11 +213,11 @@ def write_gtiff(fname,
         else:
             raise IOError("File exists")
 
-    if gbox is not None:
-        assert gbox.shape == (h, w)
+    if geobox is not None:
+        assert geobox.shape == (h, w)
 
-        A = gbox.transform
-        crs = str(gbox.crs)
+        A = geobox.transform
+        crs = str(geobox.crs)
     else:
         sx, sy = resolution
         tx, ty = offset
@@ -248,7 +248,7 @@ def write_gtiff(fname,
         dst.write(pix, band)
         meta = dst.meta
 
-    meta['gbox'] = gbox if gbox is not None else rio_geobox(meta)
+    meta['geobox'] = geobox if geobox is not None else rio_geobox(meta)
     meta['path'] = fname
     return SimpleNamespace(**meta)
 
@@ -280,7 +280,7 @@ def _fix_resampling(kw):
         kw['resampling'] = resampling_s2rio(r)
 
 
-def rio_slurp_reproject(fname, gbox, dtype=None, dst_nodata=None, **kw):
+def rio_slurp_reproject(fname, geobox, dtype=None, dst_nodata=None, **kw):
     """
     Read image with reprojection
     """
@@ -291,10 +291,10 @@ def rio_slurp_reproject(fname, gbox, dtype=None, dst_nodata=None, **kw):
 
     with rasterio.open(str(fname), 'r') as src:
         if src.count == 1:
-            shape = gbox.shape
+            shape = geobox.shape
             src_band = rasterio.band(src, 1)
         else:
-            shape = (src.count, *gbox.shape)
+            shape = (src.count, *geobox.shape)
             src_band = rasterio.band(src, tuple(range(1, src.count+1)))
 
         if dtype is None:
@@ -308,14 +308,14 @@ def rio_slurp_reproject(fname, gbox, dtype=None, dst_nodata=None, **kw):
 
         reproject(src_band, pix,
                   dst_nodata=dst_nodata,
-                  dst_transform=gbox.transform,
-                  dst_crs=str(gbox.crs),
+                  dst_transform=geobox.transform,
+                  dst_crs=str(geobox.crs),
                   **kw)
 
         meta = src.meta
-        meta['src_gbox'] = rio_geobox(meta)
+        meta['src_geobox'] = rio_geobox(meta)
         meta['path'] = fname
-        meta['gbox'] = gbox
+        meta['geobox'] = geobox
 
         return pix, SimpleNamespace(**meta)
 
@@ -336,13 +336,13 @@ def rio_slurp_read(fname, out_shape=None, **kw):
     with rasterio.open(str(fname), 'r') as src:
         data = src.read(1, **kw) if src.count == 1 else src.read(**kw)
         meta = src.meta
-        src_gbox = rio_geobox(meta)
+        src_geobox = rio_geobox(meta)
 
-        same_gbox = out_shape is None or out_shape == src_gbox.shape
-        gbox = src_gbox if same_gbox else gbx.zoom_to(src_gbox, out_shape)
+        same_geobox = out_shape is None or out_shape == src_geobox.shape
+        geobox = src_geobox if same_geobox else gbx.zoom_to(src_geobox, out_shape)
 
-        meta['src_gbox'] = src_gbox
-        meta['gbox'] = gbox
+        meta['src_geobox'] = src_geobox
+        meta['geobox'] = geobox
         meta['path'] = fname
         return data, SimpleNamespace(**meta)
 
@@ -352,11 +352,11 @@ def rio_slurp(fname, *args, **kw):
     Dispatches to either:
 
     rio_slurp_read(fname, out_shape, ..)
-    rio_slurp_reproject(fname, gbox, ...)
+    rio_slurp_reproject(fname, geobox, ...)
 
     """
     if len(args) == 0:
-        if 'gbox' in kw:
+        if 'geobox' in kw:
             return rio_slurp_reproject(fname, **kw)
         else:
             return rio_slurp_read(fname, **kw)
@@ -372,14 +372,14 @@ def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
     Dispatches to either:
 
     rio_slurp_read(fname, out_shape, ..)
-    rio_slurp_reproject(fname, gbox, ...)
+    rio_slurp_reproject(fname, geobox, ...)
 
     then wraps it all in xarray.DataArray with .crs,.nodata etc.
     """
     from xarray import DataArray
 
     if len(args) == 0:
-        if 'gbox' in kw:
+        if 'geobox' in kw:
             im, mm = rio_slurp_reproject(fname, **kw)
         else:
             im, mm = rio_slurp_read(fname, **kw)
@@ -390,15 +390,15 @@ def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
             im, mm = rio_slurp_read(fname, *args, **kw)
 
     if im.ndim == 3:
-        dims = ('band', *mm.gbox.dims)
+        dims = ('band', *mm.geobox.dims)
         if rgb and im.shape[0] in (3, 4):
             im = im.transpose([1, 2, 0])
             dims = tuple(dims[i] for i in [1, 2, 0])
     else:
-        dims = mm.gbox.dims
+        dims = mm.geobox.dims
 
     return DataArray(im,
                      dims=dims,
-                     coords=mm.gbox.xr_coords(with_crs=True),
+                     coords=mm.geobox.xr_coords(with_crs=True),
                      attrs=dict(
                          nodata=mm.nodata))

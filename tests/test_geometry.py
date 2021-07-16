@@ -56,7 +56,7 @@ from datacube.testutils.geom import (
     epsg3857,
     AlbersGS,
     mkA,
-    xy_from_gbox,
+    xy_from_geobox,
     xy_norm,
     to_fixed_point,
     from_fixed_point,
@@ -542,11 +542,11 @@ def test_no_epsg():
 
 
 def test_xy_from_geobox():
-    gbox = GeoBox(3, 7, Affine.translation(10, 1000), epsg3857)
-    xx, yy = xy_from_gbox(gbox)
+    geobox = GeoBox(3, 7, Affine.translation(10, 1000), epsg3857)
+    xx, yy = xy_from_geobox(geobox)
 
-    assert xx.shape == gbox.shape
-    assert yy.shape == gbox.shape
+    assert xx.shape == geobox.shape
+    assert yy.shape == geobox.shape
     assert (xx[:, 0] == 10.5).all()
     assert (xx[:, 1] == 11.5).all()
     assert (yy[0, :] == 1000.5).all()
@@ -566,40 +566,40 @@ def test_xy_from_geobox():
 
 
 def test_gen_test_image_xy():
-    gbox = GeoBox(3, 7, Affine.translation(10, 1000), epsg3857)
+    geobox = GeoBox(3, 7, Affine.translation(10, 1000), epsg3857)
 
-    xy, denorm = gen_test_image_xy(gbox, 'float64')
+    xy, denorm = gen_test_image_xy(geobox, 'float64')
     assert xy.dtype == 'float64'
-    assert xy.shape == (2,) + gbox.shape
+    assert xy.shape == (2,) + geobox.shape
 
     x, y = denorm(xy)
-    x_, y_ = xy_from_gbox(gbox)
+    x_, y_ = xy_from_geobox(geobox)
 
     np.testing.assert_almost_equal(x, x_)
     np.testing.assert_almost_equal(y, y_)
 
-    xy, denorm = gen_test_image_xy(gbox, 'uint16')
+    xy, denorm = gen_test_image_xy(geobox, 'uint16')
     assert xy.dtype == 'uint16'
-    assert xy.shape == (2,) + gbox.shape
+    assert xy.shape == (2,) + geobox.shape
 
     x, y = denorm(xy[0], xy[1])
     assert x.shape == xy.shape[1:]
     assert y.shape == xy.shape[1:]
     assert x.dtype == 'float64'
 
-    x_, y_ = xy_from_gbox(gbox)
+    x_, y_ = xy_from_geobox(geobox)
 
     np.testing.assert_almost_equal(x, x_, 4)
     np.testing.assert_almost_equal(y, y_, 4)
 
     for dt in ('int8', np.int16, np.dtype(np.uint64)):
-        xy, _ = gen_test_image_xy(gbox, dt)
+        xy, _ = gen_test_image_xy(geobox, dt)
         assert xy.dtype == dt
 
     # check no-data
-    xy, denorm = gen_test_image_xy(gbox, 'float32')
+    xy, denorm = gen_test_image_xy(geobox, 'float32')
     assert xy.dtype == 'float32'
-    assert xy.shape == (2,) + gbox.shape
+    assert xy.shape == (2,) + geobox.shape
     xy[0, 0, :] = np.nan
     xy[1, 1, :] = np.nan
     xy_ = denorm(xy, nodata=np.nan)
@@ -607,9 +607,9 @@ def test_gen_test_image_xy():
     np.testing.assert_almost_equal(xy_[0][2:], x_[2:], 6)
     np.testing.assert_almost_equal(xy_[1][2:], y_[2:], 6)
 
-    xy, denorm = gen_test_image_xy(gbox, 'int16')
+    xy, denorm = gen_test_image_xy(geobox, 'int16')
     assert xy.dtype == 'int16'
-    assert xy.shape == (2,) + gbox.shape
+    assert xy.shape == (2,) + geobox.shape
     xy[0, 0, :] = -999
     xy[1, 1, :] = -999
     xy_ = denorm(xy, nodata=-999)
@@ -669,47 +669,47 @@ def test_geobox():
             translation=(-48800, -2983006))
 
     w, h = 512, 256
-    gbox = GeoBox(w, h, A, epsg3577)
+    geobox = GeoBox(w, h, A, epsg3577)
 
-    assert gbox.shape == (h, w)
-    assert gbox.transform == A
-    assert gbox.extent.crs == gbox.crs
-    assert gbox.geographic_extent.crs == epsg4326
-    assert gbox.extent.boundingbox.height == h*10.0
-    assert gbox.extent.boundingbox.width == w*10.0
-    assert isinstance(str(gbox), str)
-    assert 'EPSG:3577' in repr(gbox)
+    assert geobox.shape == (h, w)
+    assert geobox.transform == A
+    assert geobox.extent.crs == geobox.crs
+    assert geobox.geographic_extent.crs == epsg4326
+    assert geobox.extent.boundingbox.height == h*10.0
+    assert geobox.extent.boundingbox.width == w*10.0
+    assert isinstance(str(geobox), str)
+    assert 'EPSG:3577' in repr(geobox)
 
     assert GeoBox(1, 1, mkA(0), epsg4326).geographic_extent.crs == epsg4326
     assert GeoBox(1, 1, mkA(0), None).dimensions == ('y', 'x')
 
-    g2 = gbox[:-10, :-20]
-    assert g2.shape == (gbox.height - 10, gbox.width - 20)
+    g2 = geobox[:-10, :-20]
+    assert g2.shape == (geobox.height - 10, geobox.width - 20)
 
     # step of 1 is ok
-    g2 = gbox[::1, ::1]
-    assert g2.shape == gbox.shape
+    g2 = geobox[::1, ::1]
+    assert g2.shape == geobox.shape
 
-    assert gbox[0].shape == (1, gbox.width)
-    assert gbox[:3].shape == (3, gbox.width)
+    assert geobox[0].shape == (1, geobox.width)
+    assert geobox[:3].shape == (3, geobox.width)
 
     with pytest.raises(NotImplementedError):
-        gbox[::2, :]
+        geobox[::2, :]
 
     # too many slices
     with pytest.raises(ValueError):
-        gbox[:1, :1, :]
+        geobox[:1, :1, :]
 
-    assert gbox.buffered(10, 0).shape == (gbox.height + 2*1, gbox.width)
-    assert gbox.buffered(30, 20).shape == (gbox.height + 2*3, gbox.width + 2*2)
+    assert geobox.buffered(10, 0).shape == (geobox.height + 2*1, geobox.width)
+    assert geobox.buffered(30, 20).shape == (geobox.height + 2*3, geobox.width + 2*2)
 
-    assert (gbox | gbox) == gbox
-    assert (gbox & gbox) == gbox
-    assert gbox.is_empty() is False
-    assert bool(gbox) is True
+    assert (geobox | geobox) == geobox
+    assert (geobox & geobox) == geobox
+    assert geobox.is_empty() is False
+    assert bool(geobox) is True
 
-    assert (gbox[:3, :4] & gbox[3:, 4:]).is_empty()
-    assert (gbox[:3, :4] & gbox[30:, 40:]).is_empty()
+    assert (geobox[:3, :4] & geobox[3:, 4:]).is_empty()
+    assert (geobox[:3, :4] & geobox[30:, 40:]).is_empty()
 
     with pytest.raises(ValueError):
         geobox_intersection_conservative([])
@@ -728,36 +728,36 @@ def test_geobox_xr_coords():
             translation=(-48800, -2983006))
 
     w, h = 512, 256
-    gbox = GeoBox(w, h, A, epsg3577)
+    geobox = GeoBox(w, h, A, epsg3577)
 
-    cc = gbox.xr_coords()
+    cc = geobox.xr_coords()
     assert list(cc) == ['y', 'x']
-    assert cc['y'].shape == (gbox.shape[0],)
-    assert cc['x'].shape == (gbox.shape[1],)
+    assert cc['y'].shape == (geobox.shape[0],)
+    assert cc['x'].shape == (geobox.shape[1],)
     assert 'crs' in cc['y'].attrs
     assert 'crs' in cc['x'].attrs
 
-    cc = gbox.xr_coords(with_crs=True)
+    cc = geobox.xr_coords(with_crs=True)
     assert list(cc) == ['y', 'x', 'spatial_ref']
     assert cc['spatial_ref'].shape == ()
-    assert cc['spatial_ref'].attrs['spatial_ref'] == gbox.crs.wkt
+    assert cc['spatial_ref'].attrs['spatial_ref'] == geobox.crs.wkt
     assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
 
-    cc = gbox.xr_coords(with_crs='Albers')
+    cc = geobox.xr_coords(with_crs='Albers')
     assert list(cc) == ['y', 'x', 'Albers']
 
     # geographic CRS
     A = mkA(0, scale=(0.1, -0.1), translation=(10, 30))
-    gbox = GeoBox(w, h, A, 'epsg:4326')
-    cc = gbox.xr_coords(with_crs=True)
+    geobox = GeoBox(w, h, A, 'epsg:4326')
+    cc = geobox.xr_coords(with_crs=True)
     assert list(cc) == ['latitude', 'longitude', 'spatial_ref']
     assert cc['spatial_ref'].shape == ()
-    assert cc['spatial_ref'].attrs['spatial_ref'] == gbox.crs.wkt
+    assert cc['spatial_ref'].attrs['spatial_ref'] == geobox.crs.wkt
     assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
 
     # missing CRS for GeoBox
-    gbox = GeoBox(w, h, A, None)
-    cc = gbox.xr_coords(with_crs=True)
+    geobox = GeoBox(w, h, A, None)
+    cc = geobox.xr_coords(with_crs=True)
     assert list(cc) == ['y', 'x']
 
     # check CRS without name
@@ -987,13 +987,13 @@ def test_polygon_path():
     assert set(pp[1].ravel()) == {2, 3}
 
 
-def test_gbox_boundary():
-    from datacube.utils.geometry.tools import gbox_boundary
+def test_geobox_boundary():
+    from datacube.utils.geometry.tools import geobox_boundary
     import numpy as np
 
     xx = np.zeros((2, 6))
 
-    bb = gbox_boundary(xx, 3)
+    bb = geobox_boundary(xx, 3)
 
     assert bb.shape == (4 + (3-2)*4, 2)
     assert set(bb.T[0]) == {0.0, 3.0, 6.0}
@@ -1007,22 +1007,22 @@ def test_geobox_scale_down():
 
     A = mkA(0, (111.2, 111.2), translation=(125671, 251465))
     for s in [2, 3, 4, 8, 13, 16]:
-        gbox = GeoBox(233*s, 755*s, A, crs)
-        gbox_ = scaled_down_geobox(gbox, s)
+        geobox = GeoBox(233*s, 755*s, A, crs)
+        geobox_ = scaled_down_geobox(geobox, s)
 
-        assert gbox_.width == 233
-        assert gbox_.height == 755
-        assert gbox_.crs is crs
-        assert gbox_.extent.contains(gbox.extent)
-        assert gbox.extent.difference(gbox.extent).area == 0.0
+        assert geobox_.width == 233
+        assert geobox_.height == 755
+        assert geobox_.crs is crs
+        assert geobox_.extent.contains(geobox.extent)
+        assert geobox.extent.difference(geobox.extent).area == 0.0
 
-    gbox = GeoBox(1, 1, A, crs)
+    geobox = GeoBox(1, 1, A, crs)
     for s in [2, 3, 5]:
-        gbox_ = scaled_down_geobox(gbox, 3)
+        geobox_ = scaled_down_geobox(geobox, 3)
 
-        assert gbox_.shape == (1, 1)
-        assert gbox_.crs is crs
-        assert gbox_.extent.contains(gbox.extent)
+        assert geobox_.shape == (1, 1)
+        assert geobox_.crs is crs
+        assert geobox_.extent.contains(geobox.extent)
 
 
 def test_roi_tools():

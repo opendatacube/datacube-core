@@ -833,11 +833,11 @@ class GridSpec:
             if geobox_cache is None:
                 return self.tile_geobox(tile_index)
 
-            gbox = geobox_cache.get(tile_index)
-            if gbox is None:
-                gbox = self.tile_geobox(tile_index)
-                geobox_cache[tile_index] = gbox
-            return gbox
+            geobox = geobox_cache.get(tile_index)
+            if geobox is None:
+                geobox = self.tile_geobox(tile_index)
+                geobox_cache[tile_index] = geobox
+            return geobox
 
         tile_size_y, tile_size_x = self.tile_size
         tile_origin_y, tile_origin_x = self.origin

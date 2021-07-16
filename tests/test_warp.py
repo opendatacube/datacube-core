@@ -5,7 +5,7 @@
 import numpy as np
 from affine import Affine
 import rasterio
-from datacube.utils.geometry import warp_affine, rio_reproject, gbox as gbx
+from datacube.utils.geometry import warp_affine, rio_reproject, geobox as gbx
 from datacube.utils.geometry._warp import resampling_s2rio, is_resampling_nn
 
 from datacube.testutils.geom import (
@@ -79,12 +79,12 @@ def test_rio_reproject():
 
     src[10:20, 30:50] = 33
 
-    s_gbox = AlbersGS.tile_geobox((15, -40))[:src.shape[0], :src.shape[1]]
+    s_geobox = AlbersGS.tile_geobox((15, -40))[:src.shape[0], :src.shape[1]]
 
     dst = np.zeros_like(src)
     dst_ = rio_reproject(src, dst,
-                         s_gbox,
-                         gbx.translate_pix(s_gbox, 30, 10),
+                         s_geobox,
+                         gbx.translate_pix(s_geobox, 30, 10),
                          resampling='nearest')
     assert dst_ is dst
     assert (dst[:10, :20] == 33).all()
@@ -96,8 +96,8 @@ def test_rio_reproject():
     dst = np.zeros_like(src)
 
     dst_ = rio_reproject(src, dst,
-                         s_gbox,
-                         gbx.translate_pix(s_gbox, 30, 10),
+                         s_geobox,
+                         gbx.translate_pix(s_geobox, 30, 10),
                          resampling='nearest')
 
     assert dst_ is dst
@@ -109,8 +109,8 @@ def test_rio_reproject():
     src = src.astype('int8')
     dst = np.zeros_like(src)
     dst_ = rio_reproject(src, dst,
-                         s_gbox,
-                         gbx.translate_pix(s_gbox, 30, 10),
+                         s_geobox,
+                         gbx.translate_pix(s_geobox, 30, 10),
                          src_nodata=0,
                          dst_nodata=-3,
                          resampling='nearest')

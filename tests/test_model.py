@@ -25,11 +25,11 @@ def test_gridspec():
     # check geobox_cache
     cache = {}
     poly = gs.tile_geobox((3, 4)).extent
-    (c1, gbox1), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
-    (c2, gbox2), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
+    (c1, geobox1), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
+    (c2, geobox2), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
 
     assert c1 == (3, 4) and c2 == c1
-    assert gbox1 is gbox2
+    assert geobox1 is geobox2
 
     assert '4326' in str(gs)
     assert '4326' in repr(gs)

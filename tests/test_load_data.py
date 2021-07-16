@@ -29,11 +29,11 @@ def test_load_data(tmpdir):
     nodata = -999
     aa = mk_test_image(96, 64, 'int16', nodata=nodata)
 
-    ds, gbox = gen_tiff_dataset([SimpleNamespace(name='aa', values=aa, nodata=nodata)],
-                                tmpdir,
-                                prefix='ds1-',
-                                timestamp='2018-07-19',
-                                **spatial)
+    ds, geobox = gen_tiff_dataset([SimpleNamespace(name='aa', values=aa, nodata=nodata)],
+                                  tmpdir,
+                                  prefix='ds1-',
+                                  timestamp='2018-07-19',
+                                  **spatial)
     assert ds.time is not None
 
     ds2, _ = gen_tiff_dataset([SimpleNamespace(name='aa', values=aa, nodata=nodata)],
@@ -50,7 +50,7 @@ def test_load_data(tmpdir):
     mm = ['aa']
     mm = [ds.type.measurements[k] for k in mm]
 
-    ds_data = Datacube.load_data(sources, gbox, mm)
+    ds_data = Datacube.load_data(sources, geobox, mm)
     assert ds_data.aa.nodata == nodata
     np.testing.assert_array_equal(aa, ds_data.aa.values[0])
 
@@ -66,7 +66,7 @@ def test_load_data(tmpdir):
     def progress_cbk(n, nt):
         progress_call_data.append((n, nt))
 
-    ds_data = Datacube.load_data(sources2, gbox, mm, fuse_func=custom_fuser,
+    ds_data = Datacube.load_data(sources2, geobox, mm, fuse_func=custom_fuser,
                                  progress_cbk=progress_cbk)
     assert ds_data.aa.nodata == nodata
     assert custom_fuser_call_count > 0
@@ -89,11 +89,11 @@ def test_load_data_cbk(tmpdir):
     bands = [SimpleNamespace(name=name, values=aa, nodata=nodata)
              for name in ['aa', 'bb']]
 
-    ds, gbox = gen_tiff_dataset(bands,
-                                tmpdir,
-                                prefix='ds1-',
-                                timestamp='2018-07-19',
-                                **spatial)
+    ds, geobox = gen_tiff_dataset(bands,
+                                  tmpdir,
+                                  prefix='ds1-',
+                                  timestamp='2018-07-19',
+                                  **spatial)
     assert ds.time is not None
 
     ds2, _ = gen_tiff_dataset(bands,
@@ -110,7 +110,7 @@ def test_load_data_cbk(tmpdir):
     def progress_cbk(n, nt):
         progress_call_data.append((n, nt))
 
-    ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
+    ds_data = Datacube.load_data(sources, geobox, ds.type.measurements,
                                  progress_cbk=progress_cbk)
 
     assert progress_call_data == [(1, 4), (2, 4), (3, 4), (4, 4)]
@@ -127,7 +127,7 @@ def test_load_data_cbk(tmpdir):
             raise KeyboardInterrupt()
 
     progress_call_data = []
-    ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
+    ds_data = Datacube.load_data(sources, geobox, ds.type.measurements,
                                  progress_cbk=progress_cbk_fail_early)
 
     assert progress_call_data == [(1, 4)]
@@ -136,7 +136,7 @@ def test_load_data_cbk(tmpdir):
     np.testing.assert_array_equal(nodata, ds_data.bb.values[0])
 
     progress_call_data = []
-    ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
+    ds_data = Datacube.load_data(sources, geobox, ds.type.measurements,
                                  progress_cbk=progress_cbk_fail_early2)
 
     assert ds_data.dc_partial_load is True
@@ -183,53 +183,53 @@ def test_rio_slurp(tmpdir):
 
     aa, mm = rio_slurp(mm0.path)
     np.testing.assert_array_equal(aa, aa0)
-    assert mm.gbox == mm0.gbox
-    assert aa.shape == mm.gbox.shape
+    assert mm.geobox == mm0.geobox
+    assert aa.shape == mm.geobox.shape
     xx = rio_slurp_xarray(mm0.path)
-    assert mm.gbox == xx.geobox
+    assert mm.geobox == xx.geobox
     np.testing.assert_array_equal(xx.values, aa0)
 
     aa, mm = rio_slurp(mm0.path, aa0.shape)
     np.testing.assert_array_equal(aa, aa0)
-    assert aa.shape == mm.gbox.shape
-    assert mm.gbox is mm.src_gbox
+    assert aa.shape == mm.geobox.shape
+    assert mm.geobox is mm.src_geobox
     xx = rio_slurp_xarray(mm0.path, aa0.shape)
-    assert mm.gbox == xx.geobox
+    assert mm.geobox == xx.geobox
     np.testing.assert_array_equal(xx.values, aa0)
 
     aa, mm = rio_slurp(mm0.path, (3, 7))
     assert aa.shape == (3, 7)
-    assert aa.shape == mm.gbox.shape
-    assert mm.gbox != mm.src_gbox
-    assert mm.src_gbox == mm0.gbox
-    assert mm.gbox.extent == mm0.gbox.extent
+    assert aa.shape == mm.geobox.shape
+    assert mm.geobox != mm.src_geobox
+    assert mm.src_geobox == mm0.geobox
+    assert mm.geobox.extent == mm0.geobox.extent
 
     aa, mm = rio_slurp(mm0.path, aa0.shape)
     np.testing.assert_array_equal(aa, aa0)
-    assert aa.shape == mm.gbox.shape
+    assert aa.shape == mm.geobox.shape
 
-    aa, mm = rio_slurp(mm0.path, mm0.gbox, resampling='nearest')
+    aa, mm = rio_slurp(mm0.path, mm0.geobox, resampling='nearest')
     np.testing.assert_array_equal(aa, aa0)
-    xx = rio_slurp_xarray(mm0.path, mm0.gbox)
-    assert mm.gbox == xx.geobox
+    xx = rio_slurp_xarray(mm0.path, mm0.geobox)
+    assert mm.geobox == xx.geobox
     np.testing.assert_array_equal(xx.values, aa0)
 
-    aa, mm = rio_slurp(mm0.path, gbox=mm0.gbox, dtype='float32')
+    aa, mm = rio_slurp(mm0.path, geobox=mm0.geobox, dtype='float32')
     assert aa.dtype == 'float32'
     np.testing.assert_array_equal(aa, aa0.astype('float32'))
-    xx = rio_slurp_xarray(mm0.path, gbox=mm0.gbox)
-    assert mm.gbox == xx.geobox
+    xx = rio_slurp_xarray(mm0.path, geobox=mm0.geobox)
+    assert mm.geobox == xx.geobox
     assert mm.nodata == xx.nodata
     np.testing.assert_array_equal(xx.values, aa0)
 
-    aa, mm = rio_slurp(mm0.path, mm0.gbox, dst_nodata=-33)
+    aa, mm = rio_slurp(mm0.path, mm0.geobox, dst_nodata=-33)
     np.testing.assert_array_equal(aa == -33, aa0 == -999)
 
-    aa, mm = rio_slurp(mm00.path, mm00.gbox, dst_nodata=None)
+    aa, mm = rio_slurp(mm00.path, mm00.geobox, dst_nodata=None)
     np.testing.assert_array_equal(aa, aa0)
 
 
-def test_rio_slurp_with_gbox(tmpdir):
+def test_rio_slurp_with_geobox(tmpdir):
     w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
 
     pp = Path(str(tmpdir))
@@ -245,7 +245,7 @@ def test_rio_slurp_with_gbox(tmpdir):
     mm = write_gtiff(pp/"rio-slurp-aa.tif", aa, nodata=-999, overwrite=True)
     assert mm.count == 2
 
-    aa, mm = rio_slurp(mm.path, mm.gbox)
+    aa, mm = rio_slurp(mm.path, mm.geobox)
     assert aa.shape == aa0.shape
     np.testing.assert_array_equal(aa, aa0)
 
@@ -283,24 +283,24 @@ def test_native_load(tmpdir):
              for name in ['aa', 'bb']]
     bands.append(SimpleNamespace(name='cc', values=cc, nodata=nodata))
 
-    ds, gbox = gen_tiff_dataset(bands[:2],
-                                tmpdir,
-                                prefix='ds1-',
-                                timestamp='2018-07-19',
-                                **spatial)
+    ds, geobox = gen_tiff_dataset(bands[:2],
+                                  tmpdir,
+                                  prefix='ds1-',
+                                  timestamp='2018-07-19',
+                                  **spatial)
 
     assert set(get_raster_info(ds)) == set(ds.measurements)
 
     xx = native_load(ds)
-    assert xx.geobox == gbox
+    assert xx.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
-    ds, gbox_cc = gen_tiff_dataset(bands,
-                                   tmpdir,
-                                   prefix='ds2-',
-                                   timestamp='2018-07-19',
-                                   **spatial)
+    ds, geobox_cc = gen_tiff_dataset(bands,
+                                     tmpdir,
+                                     prefix='ds2-',
+                                     timestamp='2018-07-19',
+                                     **spatial)
 
     # cc is different size from aa,bb
     with pytest.raises(ValueError):
@@ -311,20 +311,20 @@ def test_native_load(tmpdir):
         xx = native_geobox(ds)
 
     # aa and bb are the same
-    assert native_geobox(ds, ['aa', 'bb']) == gbox
+    assert native_geobox(ds, ['aa', 'bb']) == geobox
     xx = native_load(ds, ['aa', 'bb'])
-    assert xx.geobox == gbox
+    assert xx.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
     # cc will be reprojected
-    assert native_geobox(ds, basis='aa') == gbox
+    assert native_geobox(ds, basis='aa') == geobox
     xx = native_load(ds, basis='aa')
-    assert xx.geobox == gbox
+    assert xx.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
     # cc is compatible with self
     xx = native_load(ds, ['cc'])
-    assert xx.geobox == gbox_cc
+    assert xx.geobox == geobox_cc
     np.testing.assert_array_equal(cc, xx.isel(time=0).cc.values)

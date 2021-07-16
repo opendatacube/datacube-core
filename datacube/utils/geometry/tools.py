@@ -55,11 +55,11 @@ def polygon_path(x, y=None):
         np.vstack([np.full_like(y, x[0]), y]).T[::-1][1:]]).T
 
 
-def gbox_boundary(gbox, pts_per_side=16):
+def geobox_boundary(geobox, pts_per_side=16):
     """Return points in pixel space along the perimeter of a GeoBox, or a 2d array.
 
     """
-    H, W = gbox.shape[:2]
+    H, W = geobox.shape[:2]
     xx = np.linspace(0, W, pts_per_side, dtype='float32')
     yy = np.linspace(0, H, pts_per_side, dtype='float32')
 
@@ -614,7 +614,7 @@ def compute_reproject_roi(src, dst, tol=0.05, padding=None, align=None):
     pts_per_side = 5
 
     def compute_roi(src, dst, tr, pts_per_side, padding, align):
-        XY = np.vstack(tr.back(gbox_boundary(dst, pts_per_side)))
+        XY = np.vstack(tr.back(geobox_boundary(dst, pts_per_side)))
         roi_src = roi_from_points(XY, src.shape, padding, align=align)
 
         if roi_is_empty(roi_src):

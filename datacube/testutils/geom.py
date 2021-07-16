@@ -45,16 +45,16 @@ def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
     return Affine.translation(*translation)*Affine.rotation(rot)*Affine.shear(shear)*Affine.scale(*scale)
 
 
-def xy_from_gbox(gbox: GeoBox) -> Tuple[np.ndarray, np.ndarray]:
+def xy_from_geobox(geobox: GeoBox) -> Tuple[np.ndarray, np.ndarray]:
     """
     :returns: Two images with X and Y coordinates for centers of pixels
     """
-    h, w = gbox.shape
+    h, w = geobox.shape
 
     xx, yy = np.meshgrid(np.arange(w, dtype='float64') + 0.5,
                          np.arange(h, dtype='float64') + 0.5)
 
-    return apply_affine(gbox.transform, xx, yy)
+    return apply_affine(geobox.transform, xx, yy)
 
 
 def xy_norm(x: np.ndarray, y: np.ndarray,
@@ -121,14 +121,14 @@ def from_fixed_point(a):
     return a.astype('float64')*(1.0/ii.max)
 
 
-def gen_test_image_xy(gbox: GeoBox,
+def gen_test_image_xy(geobox: GeoBox,
                       dtype: Union[str, np.dtype, type] = 'float32',
                       deg: float = 33.0) -> Tuple[np.ndarray, Callable]:
     """
     Generate test image that captures pixel coordinates in pixel values.
     Useful for testing reprojections/reads.
 
-    :param gbox: GeoBox defining pixel plane
+    :param geobox: GeoBox defining pixel plane
 
     :dtype: data type of the image, defaults to `float32`, but it can be an
             integer type in which case normalised coordinates will be
@@ -141,7 +141,7 @@ def gen_test_image_xy(gbox: GeoBox,
     """
     dtype = np.dtype(dtype)
 
-    x, y = xy_from_gbox(gbox)
+    x, y = xy_from_geobox(geobox)
     x, y, A = xy_norm(x, y, deg)
 
     xy = np.stack([x, y])

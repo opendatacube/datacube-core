@@ -19,62 +19,62 @@ MaybeInt = Optional[int]
 MaybeFloat = Optional[float]
 
 
-def flipy(gbox: GeoBox) -> GeoBox:
+def flipy(geobox: GeoBox) -> GeoBox:
     """
     :returns: GeoBox covering the same region but with Y-axis flipped
     """
-    H, W = gbox.shape
+    H, W = geobox.shape
     A = Affine.translation(0, H)*Affine.scale(1, -1)
-    A = gbox.affine*A
-    return GeoBox(W, H, A, gbox.crs)
+    A = geobox.affine*A
+    return GeoBox(W, H, A, geobox.crs)
 
 
-def flipx(gbox: GeoBox) -> GeoBox:
+def flipx(geobox: GeoBox) -> GeoBox:
     """
     :returns: GeoBox covering the same region but with X-axis flipped
     """
-    H, W = gbox.shape
+    H, W = geobox.shape
     A = Affine.translation(W, 0)*Affine.scale(-1, 1)
-    A = gbox.affine*A
-    return GeoBox(W, H, A, gbox.crs)
+    A = geobox.affine*A
+    return GeoBox(W, H, A, geobox.crs)
 
 
-def translate_pix(gbox: GeoBox, tx: float, ty: float) -> GeoBox:
+def translate_pix(geobox: GeoBox, tx: float, ty: float) -> GeoBox:
     """
     Shift GeoBox in pixel plane. (0,0) of the new GeoBox will be at the same
     location as pixel (tx, ty) in the original GeoBox.
     """
-    H, W = gbox.shape
-    A = gbox.affine*Affine.translation(tx, ty)
-    return GeoBox(W, H, A, gbox.crs)
+    H, W = geobox.shape
+    A = geobox.affine*Affine.translation(tx, ty)
+    return GeoBox(W, H, A, geobox.crs)
 
 
-def pad(gbox: GeoBox, padx: int, pady: MaybeInt = None) -> GeoBox:
+def pad(geobox: GeoBox, padx: int, pady: MaybeInt = None) -> GeoBox:
     """
     Expand GeoBox by fixed number of pixels on each side
     """
     pady = padx if pady is None else pady
 
-    H, W = gbox.shape
-    A = gbox.affine*Affine.translation(-padx, -pady)
-    return GeoBox(W + padx*2, H + pady*2, A, gbox.crs)
+    H, W = geobox.shape
+    A = geobox.affine*Affine.translation(-padx, -pady)
+    return GeoBox(W + padx*2, H + pady*2, A, geobox.crs)
 
 
-def pad_wh(gbox: GeoBox,
+def pad_wh(geobox: GeoBox,
            alignx: int = 16,
            aligny: MaybeInt = None) -> GeoBox:
     """
     Expand GeoBox such that width and height are multiples of supplied number.
     """
     aligny = alignx if aligny is None else aligny
-    H, W = gbox.shape
+    H, W = geobox.shape
 
     return GeoBox(align_up(W, alignx),
                   align_up(H, aligny),
-                  gbox.affine, gbox.crs)
+                  geobox.affine, geobox.crs)
 
 
-def zoom_out(gbox: GeoBox, factor: float) -> GeoBox:
+def zoom_out(geobox: GeoBox, factor: float) -> GeoBox:
     """
     factor > 1 --> smaller width/height, fewer but bigger pixels
     factor < 1 --> bigger width/height, more but smaller pixels
@@ -83,25 +83,25 @@ def zoom_out(gbox: GeoBox, factor: float) -> GeoBox:
     """
     from math import ceil
 
-    H, W = (max(1, ceil(s/factor)) for s in gbox.shape)
-    A = gbox.affine*Affine.scale(factor, factor)
-    return GeoBox(W, H, A, gbox.crs)
+    H, W = (max(1, ceil(s/factor)) for s in geobox.shape)
+    A = geobox.affine*Affine.scale(factor, factor)
+    return GeoBox(W, H, A, geobox.crs)
 
 
-def zoom_to(gbox: GeoBox, shape: Tuple[int, int]) -> GeoBox:
+def zoom_to(geobox: GeoBox, shape: Tuple[int, int]) -> GeoBox:
     """
     :returns: GeoBox covering the same region but with different number of pixels
               and therefore resolution.
     """
-    H, W = gbox.shape
+    H, W = geobox.shape
     h, w = shape
 
     sx, sy = W/float(w), H/float(h)
-    A = gbox.affine*Affine.scale(sx, sy)
-    return GeoBox(w, h, A, gbox.crs)
+    A = geobox.affine*Affine.scale(sx, sy)
+    return GeoBox(w, h, A, geobox.crs)
 
 
-def rotate(gbox: GeoBox, deg: float) -> GeoBox:
+def rotate(geobox: GeoBox, deg: float) -> GeoBox:
     """
     Rotate GeoBox around the center.
 
@@ -113,28 +113,28 @@ def rotate(gbox: GeoBox, deg: float) -> GeoBox:
     in that view arrow should point down (this is assuming usual case of inverted
     y-axis)
     """
-    h, w = gbox.shape
-    c0 = gbox.transform*(w*0.5, h*0.5)
-    A = Affine.rotation(deg, c0)*gbox.transform
-    return GeoBox(w, h, A, gbox.crs)
+    h, w = geobox.shape
+    c0 = geobox.transform*(w*0.5, h*0.5)
+    A = Affine.rotation(deg, c0)*geobox.transform
+    return GeoBox(w, h, A, geobox.crs)
 
 
-def affine_transform_pix(gbox: GeoBox, transform: Affine) -> GeoBox:
+def affine_transform_pix(geobox: GeoBox, transform: Affine) -> GeoBox:
     """
     Apply affine transform on pixel side.
 
     :param transform: Affine matrix mapping from new pixel coordinate space to
-    pixel coordinate space of input gbox
+    pixel coordinate space of input geobox
 
     :returns: GeoBox of the same pixel shape but covering different region,
-    pixels in the output gbox relate to input geobox via `transform`
+    pixels in the output geobox relate to input geobox via `transform`
 
     X_old_pix = transform * X_new_pix
 
     """
-    H, W = gbox.shape
-    A = gbox.affine*transform
-    return GeoBox(W, H, A, gbox.crs)
+    H, W = geobox.shape
+    A = geobox.affine*transform
+    return GeoBox(W, H, A, geobox.crs)
 
 
 class GeoboxTiles():
@@ -147,7 +147,7 @@ class GeoboxTiles():
         :param box: source :class:`datacube.utils.geometry.GeoBox`
         :param tile_shape: Shape of sub-tiles in pixels (rows, cols)
         """
-        self._gbox = box
+        self._geobox = box
         self._tile_shape = tile_shape
         self._shape = tuple(math.ceil(float(N)/n)
                             for N, n in zip(box.shape, tile_shape))
@@ -155,7 +155,7 @@ class GeoboxTiles():
 
     @property
     def base(self) -> GeoBox:
-        return self._gbox
+        return self._geobox
 
     @property
     def shape(self):
@@ -172,7 +172,7 @@ class GeoboxTiles():
                 raise IndexError("Index ({},{})is out of range".format(*idx))
 
         ir, ic = (_slice(i, N, n)
-                  for i, N, n in zip(idx, self._gbox.shape, self._tile_shape))
+                  for i, N, n in zip(idx, self._geobox.shape, self._tile_shape))
         return (ir, ic)
 
     def chunk_shape(self, idx: Tuple[int, int]) -> Tuple[int, int]:
@@ -190,7 +190,7 @@ class GeoboxTiles():
             else:               # out of index case
                 raise IndexError("Index ({},{}) is out of range".format(*idx))
 
-        n1, n2 = map(_sz, idx, self._shape, self._tile_shape, self._gbox.shape)
+        n1, n2 = map(_sz, idx, self._shape, self._tile_shape, self._geobox.shape)
         return (n1, n2)
 
     def __getitem__(self, idx: Tuple[int, int]) -> GeoBox:
@@ -200,12 +200,12 @@ class GeoboxTiles():
             :returns: GeoBox of a tile
             :raises: IndexError when index is outside of [(0,0) -> .shape)
         """
-        sub_gbox = self._cache.get(idx, None)
-        if sub_gbox is not None:
-            return sub_gbox
+        sub_geobox = self._cache.get(idx, None)
+        if sub_geobox is not None:
+            return sub_geobox
 
         roi = self._idx_to_slice(idx)
-        return self._cache.setdefault(idx, self._gbox[roi])
+        return self._cache.setdefault(idx, self._geobox[roi])
 
     def range_from_bbox(self, bbox: BoundingBox) -> Tuple[range, range]:
         """ Compute rows and columns overlapping with a given ``BoundingBox``
@@ -216,7 +216,7 @@ class GeoboxTiles():
             return range(_in, _out)
 
         sy, sx = self._tile_shape
-        A = Affine.scale(1.0/sx, 1.0/sy)*(~self._gbox.transform)
+        A = Affine.scale(1.0/sx, 1.0/sy)*(~self._geobox.transform)
         # A maps from X,Y in meters to chunk index
         bbox = bbox.transform(A)
 
@@ -228,9 +228,9 @@ class GeoboxTiles():
     def tiles(self, polygon: Geometry) -> Iterable[Tuple[int, int]]:
         """ Return tile indexes overlapping with a given geometry.
         """
-        poly = polygon.to_crs(self._gbox.crs)
+        poly = polygon.to_crs(self._geobox.crs)
         yy, xx = self.range_from_bbox(poly.boundingbox)
         for idx in itertools.product(yy, xx):
-            gbox = self[idx]
-            if gbox.extent.intersects(poly):
+            geobox = self[idx]
+            if geobox.extent.intersects(poly):
                 yield idx
