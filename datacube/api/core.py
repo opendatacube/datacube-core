@@ -376,13 +376,13 @@ class Datacube(object):
             raise ValueError("Must specify a product or supply datasets")
 
         if datasets is None:
-            datasets = self.find_datasets(product=product, like=like, ensure_location=True, **query)
+            datasets = self.find_datasets(product=product,
+                                          like=like,
+                                          ensure_location=True,
+                                          dataset_predicate=dataset_predicate,
+                                          **query)
         elif isinstance(datasets, collections.abc.Iterator):
             datasets = list(datasets)
-
-        # If a predicate function is provided, use this to filter datasets before load
-        if dataset_predicate:
-            datasets = [dataset for dataset in datasets if dataset_predicate(dataset)]
 
         if len(datasets) == 0:
             return xarray.Dataset()
@@ -440,13 +440,14 @@ class Datacube(object):
         """
         return list(self.find_datasets_lazy(**search_terms))
 
-    def find_datasets_lazy(self, limit=None, ensure_location=False, **kwargs):
+    def find_datasets_lazy(self, limit=None, ensure_location=False, dataset_predicate=None, **kwargs):
         """
         Find datasets matching query.
 
         :param kwargs: see :class:`datacube.api.query.Query`
         :param ensure_location: only return datasets that have locations
         :param limit: if provided, limit the maximum number of datasets returned
+        :param dataset_predicate: an optional predicate to filter datasets
         :return: iterator of datasets
         :rtype: __generator[:class:`datacube.model.Dataset`]
 
@@ -464,6 +465,10 @@ class Datacube(object):
 
         if ensure_location:
             datasets = (dataset for dataset in datasets if dataset.uris)
+
+        # If a predicate function is provided, use this to filter datasets before load
+        if dataset_predicate is not None:
+            datasets = (dataset for dataset in datasets if dataset_predicate(dataset))
 
         return datasets
 
@@ -485,10 +490,8 @@ class Datacube(object):
         if isinstance(group_by, str):
             group_by = query_group_by(group_by=group_by)
 
-        dimension, group_func, units, sort_key = group_by
-
         def ds_sorter(ds):
-            return sort_key(ds), getattr(ds, 'id', 0)
+            return group_by.sort_key(ds), getattr(ds, 'id', 0)
 
         def norm_axis_value(x):
             if isinstance(x, datetime.datetime):
@@ -499,14 +502,12 @@ class Datacube(object):
 
         def mk_group(group):
             dss = tuple(sorted(group, key=ds_sorter))
-            # TODO: decouple axis_value from group sorted order
-            axis_value = sort_key(dss[0])
-            return (norm_axis_value(axis_value), dss)
+            return (norm_axis_value(group_by.group_key(dss)), dss)
 
-        datasets = sorted(datasets, key=group_func)
+        datasets = sorted(datasets, key=group_by.group_by_func)
 
         groups = [mk_group(group)
-                  for _, group in groupby(datasets, group_func)]
+                  for _, group in groupby(datasets, group_by.group_by_func)]
 
         groups.sort(key=lambda x: x[0])
 
@@ -515,10 +516,12 @@ class Datacube(object):
         for i, (_, dss) in enumerate(groups):
             data[i] = dss
 
-        sources = xarray.DataArray(data, dims=[dimension], coords=[coords])
+        sources = xarray.DataArray(data,
+                                   dims=[group_by.dimension],
+                                   coords=[coords])
         if coords.dtype.kind == 'M':
             # skip units for time dimensions as it breaks .to_netcdf(..) functionality #972
-            sources[dimension].attrs['units'] = units
+            sources[group_by.dimension].attrs['units'] = group_by.units
 
         return sources
 
