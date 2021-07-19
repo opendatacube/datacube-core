@@ -125,9 +125,19 @@ class Datacube(object):
                 for pr in self.index.products.get_all()]
 
         # Optionally compute dataset count for each product and add to row/cols
-        if dataset_count:
-            counts = [count[1] for count in self.index.datasets.count_by_product()]
-            rows = [row + [col] for row, col in zip(rows, counts)]
+        # Product lists are sorted by product name to ensure 1:1 match
+        if dataset_count:            
+           
+            # Load counts
+            counts = [(p.name, c) for p, c in self.index.datasets.count_by_product()]
+            
+            # Sort both rows and counts by product name
+            from operator import itemgetter
+            rows = sorted(rows, key=itemgetter(0))
+            counts = sorted(counts, key=itemgetter(0))
+            
+            # Add sorted count to each existing row
+            rows = [row + [count[1]] for row, count in zip(rows, counts)]
             cols = cols + ['dataset_count']
 
         # If pandas not requested, return list of dicts
