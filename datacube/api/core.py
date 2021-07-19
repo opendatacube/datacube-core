@@ -181,9 +181,8 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
-             skip_broken_datasets=False,
-             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, progress_cbk=None,
-             **query):
+         skip_broken_datasets=False, dask_chunks=None, like=None, fuse_func=None, align=None,
+         datasets=None, dataset_predicate=None, progress_cbk=None, **query):
         """
         Load data as an ``xarray.Dataset`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -275,7 +274,7 @@ class Datacube(object):
                         resampling='cubic'
                 )
 
-        :param str product: 
+        :param str product:
             The product to be loaded.
 
         :param measurements:
@@ -288,20 +287,20 @@ class Datacube(object):
         :type measurements: list(str), optional
 
         :param **query:
-            Search parameters for products and dimension ranges as described above. 
+            Search parameters for products and dimension ranges as described above.
             For example: ``'x', 'y', 'time', 'crs'``.
 
         :param str output_crs:
             The CRS of the returned data, for example ``EPSG:3577``. If no CRS is supplied, the CRS of the stored data is used
             if available.
-            
-            This differs from the ``crs`` parameter desribed above, which is used to define the CRS 
+
+            This differs from the ``crs`` parameter desribed above, which is used to define the CRS
             of the coordinates in the query itself.
 
         :param (float,float) resolution:
             A tuple of the spatial resolution of the returned data. Units are in the coordinate
             space of ``output_crs``.
-            
+
             This includes the direction (as indicated by a positive or negative number).
             For most CRSs, the first number will be negative, e.g. ``(-30, 30)``.
 
@@ -331,7 +330,7 @@ class Datacube(object):
             for more information.
 
         :param xarray.Dataset like:
-            Use the output of a previous ``datacube.load()`` to load data into the same spatial grid and 
+            Use the output of a previous ``datacube.load()`` to load data into the same spatial grid and
             resolution (i.e. ``.GeoBox``).
             E.g.::
 
@@ -355,6 +354,13 @@ class Datacube(object):
             Optional. If this is True, then don't break when failing to load a broken dataset.
             Default is False.
 
+        :param function dataset_predicate:
+            Optional. A function that can be passed to restrict loaded datasets. A predicate function should
+            take a `datacube.model.Dataset` object (e.g. as returned from `dc.find_datasets`) and return a boolean.
+            For example, loaded data could be filtered to January observations only by passing the following
+            predicate function that returns True for datasets acquired in January::
+                def filter_jan(dataset): return dataset.time.begin.month == 1
+
         :param int limit:
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
@@ -373,6 +379,10 @@ class Datacube(object):
             datasets = self.find_datasets(product=product, like=like, ensure_location=True, **query)
         elif isinstance(datasets, collections.abc.Iterator):
             datasets = list(datasets)
+
+        # If a predicate function is provided, use this to filter datasets before load
+        if dataset_predicate:
+            datasets = [dataset for dataset in datasets if dataset_predicate(dataset)]
 
         if len(datasets) == 0:
             return xarray.Dataset()
