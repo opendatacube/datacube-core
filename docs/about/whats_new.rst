@@ -16,7 +16,7 @@ v1.8.4 (???)
 - Follow up fix to (:issue:`1047`) to round scale to nearest integer if very close.
 - Add support for 3D Datasets. (:pull:`1099`)
 - Add new "license" and "description" properties to `DatasetType` to enable easier access to product information. (:pull:`1143`, :pull:`1144`)
-- Add new ``dataset_predicate`` param to ``dc.load`` for more flexible temporal filtering (e.g. loading data for non-contiguous time ranges such as specific months or seasons over multiple years). (:pull:`1148`)
+- Add new ``dataset_predicate`` param to ``dc.find_datasets`` for more flexible temporal filtering (e.g. loading data for non-contiguous time ranges such as specific months or seasons over multiple years). (:pull:`1148`, :pull:`1156`)
 
 .. _`notebook examples`: https://github.com/GeoscienceAustralia/dea-notebooks/
 
