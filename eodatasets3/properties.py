@@ -274,6 +274,11 @@ _SENTINEL_EXTENDED_PROPS = {
 }
 
 
+_STAC_MISC_PROPS = {
+    "providers": None,  # https://github.com/radiantearth/stac-spec/blob/master/item-spec/common-metadata.md#provider
+}
+
+
 class Eo3Dict(collections.abc.MutableMapping):
     """
     This acts like a dictionary, but will normalise known properties (consistent
@@ -322,6 +327,7 @@ class Eo3Dict(collections.abc.MutableMapping):
         **_LANDSAT_EXTENDED_PROPS,
         **_GQA_FMASK_PROPS,
         **_SENTINEL_EXTENDED_PROPS,
+        **_STAC_MISC_PROPS,
     }
 
     # For backwards compatibility, in case users are extending at runtime.
