@@ -23,6 +23,7 @@ from datacube.utils.aws import (
     s3_fetch,
     s3_head_object,
     _s3_cache_key,
+    obtain_new_IAM_auth_token,
 )
 
 
@@ -255,3 +256,20 @@ def test_s3_client_cache(monkeypatch, without_aws_env):
 
     keys = set(_s3_cache_key(**o) for o in opts)
     assert len(keys) == len(opts)
+
+
+def test_obtain_new_iam_token(monkeypatch, without_aws_env):
+    import moto
+    from sqlalchemy.engine.url import URL
+    url = URL.create(
+        'postgresql',
+        host="fakehost", database="fake_db", port=5432,
+        username="fakeuser", password="definitely_a_fake_password",
+    )
+
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
+    with moto.mock_iam():
+        token = obtain_new_IAM_auth_token(url)
+        assert isinstance(token, str)
+
