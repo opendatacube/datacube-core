@@ -438,3 +438,15 @@ def get_aws_settings(profile: Optional[str] = None,
                  aws_secret_access_key=cc.secret_key,
                  aws_session_token=cc.token,
                  requester_pays=requester_pays), creds)
+
+
+def obtain_new_IAM_auth_token(url: str, region_name: str = "auto", profile_name: Optional[str] = None) -> str:
+    try:
+        # Boto3 is not core requirement
+        from boto3.session import Session as Boto3Session
+    except ImportError:
+        raise ValueError("boto3 is not available")
+    session = Boto3Session(profile_name=profile_name)
+    client = session.client("rds")
+    return client.generate_db_auth_token(DBHostname=url.host, Port=url.port, DBUsername=url.username,
+                                         Region=region_name)
