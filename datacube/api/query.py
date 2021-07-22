@@ -26,7 +26,29 @@ from ..utils.dates import normalise_dt
 _LOG = logging.getLogger(__name__)
 
 
-GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units', 'sort_key'])
+class GroupBy:
+    def __init__(self, group_by_func, dimension, units, sort_key=None, group_key=None):
+        """
+        :param group_by_func: Dataset -> group identifier
+        :param dimension: dimension of the group key
+        :param units: units of the group key
+        :param sort_key: how to sort datasets in a group internally
+        :param group_key: the coordinate value for a group
+                          list[Dataset] -> coord value
+        """
+        self.group_by_func = group_by_func
+
+        self.dimension = dimension
+        self.units = units
+
+        if sort_key is None:
+            sort_key = group_by_func
+        self.sort_key = sort_key
+
+        if group_key is None:
+            group_key = lambda datasets: group_by_func(datasets[0])
+        self.group_key = group_key
+
 
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
@@ -171,15 +193,15 @@ def query_group_by(group_by='time', **kwargs):
     if not isinstance(group_by, str):
         return group_by
 
-    time_grouper = GroupBy(dimension='time',
-                           group_by_func=_extract_time_from_ds,
-                           units='seconds since 1970-01-01 00:00:00',
-                           sort_key=_extract_time_from_ds)
+    time_grouper = GroupBy(group_by_func=_extract_time_from_ds,
+                           dimension='time',
+                           units='seconds since 1970-01-01 00:00:00')
 
-    solar_day_grouper = GroupBy(dimension='time',
-                                group_by_func=solar_day,
+    solar_day_grouper = GroupBy(group_by_func=solar_day,
+                                dimension='time',
                                 units='seconds since 1970-01-01 00:00:00',
-                                sort_key=_extract_time_from_ds)
+                                sort_key=_extract_time_from_ds,
+                                group_key=lambda datasets: _extract_time_from_ds(datasets[0]))
 
     group_by_map = {
         None: time_grouper,

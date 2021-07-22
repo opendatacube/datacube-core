@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2021 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import uuid
 import collections.abc
@@ -90,25 +90,63 @@ class Datacube(object):
 
         self.index = index
 
-    def list_products(self, show_archived=False, with_pandas=True):
+    def list_products(self, with_pandas=True, dataset_count=False):
         """
-        List products in the datacube
+        List all products in the datacube. This will produce a ``pandas.DataFrame``
+        or list of dicts containing useful information about each product, including:
 
-        :param show_archived: include products that have been archived.
-        :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
+            'name'
+            'description'
+            'license'
+            'default_crs'
+            'default_resolution'
+            'dataset_count' (optional)
+
+        :param bool with_pandas:
+            Return the list as a Pandas DataFrame. If False, return a list of dicts.
+
+        :param bool dataset_count:
+            Return a "dataset_count" column containing the number of datasets
+            for each product. This can take several minutes on large datacubes.
+            Defaults to False.
+
+        :return: A table or list of every product in the datacube.
         :rtype: pandas.DataFrame or list(dict)
         """
-        rows = [product.to_dict() for product in self.index.products.get_all()]
-        if not with_pandas:
-            return rows
+        # Read properties from each datacube product
+        cols = [
+            'name',
+            'description',
+            'license',
+            'default_crs',
+            'default_resolution',
+        ]
+        rows = [[getattr(pr, col, None) for col in cols]
+                for pr in self.index.products.get_all()]
 
+        # Optionally compute dataset count for each product and add to row/cols
+        # Product lists are sorted by product name to ensure 1:1 match
+        if dataset_count:            
+           
+            # Load counts
+            counts = [(p.name, c) for p, c in self.index.datasets.count_by_product()]
+            
+            # Sort both rows and counts by product name
+            from operator import itemgetter
+            rows = sorted(rows, key=itemgetter(0))
+            counts = sorted(counts, key=itemgetter(0))
+            
+            # Add sorted count to each existing row
+            rows = [row + [count[1]] for row, count in zip(rows, counts)]
+            cols = cols + ['dataset_count']
+
+        # If pandas not requested, return list of dicts
+        if not with_pandas:
+            return [dict(zip(cols, row)) for row in rows]
+
+        # Return pandas dataframe with each product as a row
         import pandas
-        keys = set(k for r in rows for k in r)
-        main_cols = ['id', 'name', 'description']
-        grid_cols = ['crs', 'resolution', 'tile_size', 'spatial_dimensions']
-        other_cols = list(keys - set(main_cols) - set(grid_cols))
-        cols = main_cols + other_cols + grid_cols
-        return pandas.DataFrame(rows, columns=cols).set_index('id')
+        return pandas.DataFrame(rows, columns=cols).set_index('name', drop=False)
 
     def list_measurements(self, show_archived=False, with_pandas=True):
         """
@@ -143,9 +181,8 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
-             skip_broken_datasets=False,
-             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, progress_cbk=None,
-             **query):
+         skip_broken_datasets=False, dask_chunks=None, like=None, fuse_func=None, align=None,
+         datasets=None, dataset_predicate=None, progress_cbk=None, **query):
         """
         Load data as an ``xarray.Dataset`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -237,7 +274,7 @@ class Datacube(object):
                         resampling='cubic'
                 )
 
-        :param str product: 
+        :param str product:
             The product to be loaded.
 
         :param measurements:
@@ -250,20 +287,20 @@ class Datacube(object):
         :type measurements: list(str), optional
 
         :param **query:
-            Search parameters for products and dimension ranges as described above. 
+            Search parameters for products and dimension ranges as described above.
             For example: ``'x', 'y', 'time', 'crs'``.
 
         :param str output_crs:
             The CRS of the returned data, for example ``EPSG:3577``. If no CRS is supplied, the CRS of the stored data is used
             if available.
-            
-            This differs from the ``crs`` parameter desribed above, which is used to define the CRS 
+
+            This differs from the ``crs`` parameter desribed above, which is used to define the CRS
             of the coordinates in the query itself.
 
         :param (float,float) resolution:
             A tuple of the spatial resolution of the returned data. Units are in the coordinate
             space of ``output_crs``.
-            
+
             This includes the direction (as indicated by a positive or negative number).
             For most CRSs, the first number will be negative, e.g. ``(-30, 30)``.
 
@@ -293,7 +330,7 @@ class Datacube(object):
             for more information.
 
         :param xarray.Dataset like:
-            Use the output of a previous ``datacube.load()`` to load data into the same spatial grid and 
+            Use the output of a previous ``datacube.load()`` to load data into the same spatial grid and
             resolution (i.e. ``.GeoBox``).
             E.g.::
 
@@ -317,6 +354,13 @@ class Datacube(object):
             Optional. If this is True, then don't break when failing to load a broken dataset.
             Default is False.
 
+        :param function dataset_predicate:
+            Optional. A function that can be passed to restrict loaded datasets. A predicate function should
+            take a `datacube.model.Dataset` object (e.g. as returned from `dc.find_datasets`) and return a boolean.
+            For example, loaded data could be filtered to January observations only by passing the following
+            predicate function that returns True for datasets acquired in January::
+                def filter_jan(dataset): return dataset.time.begin.month == 1
+
         :param int limit:
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
@@ -332,7 +376,11 @@ class Datacube(object):
             raise ValueError("Must specify a product or supply datasets")
 
         if datasets is None:
-            datasets = self.find_datasets(product=product, like=like, ensure_location=True, **query)
+            datasets = self.find_datasets(product=product,
+                                          like=like,
+                                          ensure_location=True,
+                                          dataset_predicate=dataset_predicate,
+                                          **query)
         elif isinstance(datasets, collections.abc.Iterator):
             datasets = list(datasets)
 
@@ -392,13 +440,14 @@ class Datacube(object):
         """
         return list(self.find_datasets_lazy(**search_terms))
 
-    def find_datasets_lazy(self, limit=None, ensure_location=False, **kwargs):
+    def find_datasets_lazy(self, limit=None, ensure_location=False, dataset_predicate=None, **kwargs):
         """
         Find datasets matching query.
 
         :param kwargs: see :class:`datacube.api.query.Query`
         :param ensure_location: only return datasets that have locations
         :param limit: if provided, limit the maximum number of datasets returned
+        :param dataset_predicate: an optional predicate to filter datasets
         :return: iterator of datasets
         :rtype: __generator[:class:`datacube.model.Dataset`]
 
@@ -416,6 +465,10 @@ class Datacube(object):
 
         if ensure_location:
             datasets = (dataset for dataset in datasets if dataset.uris)
+
+        # If a predicate function is provided, use this to filter datasets before load
+        if dataset_predicate is not None:
+            datasets = (dataset for dataset in datasets if dataset_predicate(dataset))
 
         return datasets
 
@@ -437,10 +490,8 @@ class Datacube(object):
         if isinstance(group_by, str):
             group_by = query_group_by(group_by=group_by)
 
-        dimension, group_func, units, sort_key = group_by
-
         def ds_sorter(ds):
-            return sort_key(ds), getattr(ds, 'id', 0)
+            return group_by.sort_key(ds), getattr(ds, 'id', 0)
 
         def norm_axis_value(x):
             if isinstance(x, datetime.datetime):
@@ -451,14 +502,12 @@ class Datacube(object):
 
         def mk_group(group):
             dss = tuple(sorted(group, key=ds_sorter))
-            # TODO: decouple axis_value from group sorted order
-            axis_value = sort_key(dss[0])
-            return (norm_axis_value(axis_value), dss)
+            return (norm_axis_value(group_by.group_key(dss)), dss)
 
-        datasets = sorted(datasets, key=group_func)
+        datasets = sorted(datasets, key=group_by.group_by_func)
 
         groups = [mk_group(group)
-                  for _, group in groupby(datasets, group_func)]
+                  for _, group in groupby(datasets, group_by.group_by_func)]
 
         groups.sort(key=lambda x: x[0])
 
@@ -467,10 +516,12 @@ class Datacube(object):
         for i, (_, dss) in enumerate(groups):
             data[i] = dss
 
-        sources = xarray.DataArray(data, dims=[dimension], coords=[coords])
+        sources = xarray.DataArray(data,
+                                   dims=[group_by.dimension],
+                                   coords=[coords])
         if coords.dtype.kind == 'M':
             # skip units for time dimensions as it breaks .to_netcdf(..) functionality #972
-            sources[dimension].attrs['units'] = units
+            sources[group_by.dimension].attrs['units'] = group_by.units
 
         return sources
 
