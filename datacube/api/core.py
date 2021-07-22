@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2021 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import uuid
 import collections.abc
@@ -90,25 +90,63 @@ class Datacube(object):
 
         self.index = index
 
-    def list_products(self, show_archived=False, with_pandas=True):
+    def list_products(self, with_pandas=True, dataset_count=False):
         """
-        List products in the datacube
+        List all products in the datacube. This will produce a ``pandas.DataFrame``
+        or list of dicts containing useful information about each product, including:
 
-        :param show_archived: include products that have been archived.
-        :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
+            'name'
+            'description'
+            'license'
+            'default_crs'
+            'default_resolution'
+            'dataset_count' (optional)
+
+        :param bool with_pandas:
+            Return the list as a Pandas DataFrame. If False, return a list of dicts.
+
+        :param bool dataset_count:
+            Return a "dataset_count" column containing the number of datasets
+            for each product. This can take several minutes on large datacubes.
+            Defaults to False.
+
+        :return: A table or list of every product in the datacube.
         :rtype: pandas.DataFrame or list(dict)
         """
-        rows = [product.to_dict() for product in self.index.products.get_all()]
-        if not with_pandas:
-            return rows
+        # Read properties from each datacube product
+        cols = [
+            'name',
+            'description',
+            'license',
+            'default_crs',
+            'default_resolution',
+        ]
+        rows = [[getattr(pr, col, None) for col in cols]
+                for pr in self.index.products.get_all()]
 
+        # Optionally compute dataset count for each product and add to row/cols
+        # Product lists are sorted by product name to ensure 1:1 match
+        if dataset_count:            
+           
+            # Load counts
+            counts = [(p.name, c) for p, c in self.index.datasets.count_by_product()]
+            
+            # Sort both rows and counts by product name
+            from operator import itemgetter
+            rows = sorted(rows, key=itemgetter(0))
+            counts = sorted(counts, key=itemgetter(0))
+            
+            # Add sorted count to each existing row
+            rows = [row + [count[1]] for row, count in zip(rows, counts)]
+            cols = cols + ['dataset_count']
+
+        # If pandas not requested, return list of dicts
+        if not with_pandas:
+            return [dict(zip(cols, row)) for row in rows]
+
+        # Return pandas dataframe with each product as a row
         import pandas
-        keys = set(k for r in rows for k in r)
-        main_cols = ['id', 'name', 'description']
-        grid_cols = ['crs', 'resolution', 'tile_size', 'spatial_dimensions']
-        other_cols = list(keys - set(main_cols) - set(grid_cols))
-        cols = main_cols + other_cols + grid_cols
-        return pandas.DataFrame(rows, columns=cols).set_index('id')
+        return pandas.DataFrame(rows, columns=cols).set_index('name', drop=False)
 
     def list_measurements(self, show_archived=False, with_pandas=True):
         """
