@@ -447,6 +447,6 @@ def obtain_new_IAM_auth_token(url: str, region_name: str = "auto", profile_name:
     except ImportError:
         raise ValueError("boto3 is not available")
     session = Boto3Session(profile_name=profile_name)
-    client = session.client("rds")
+    client = session.client("rds", region_name=region_name)
     return client.generate_db_auth_token(DBHostname=url.host, Port=url.port, DBUsername=url.username,
                                          Region=region_name)
