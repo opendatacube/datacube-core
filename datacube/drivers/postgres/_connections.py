@@ -256,15 +256,17 @@ def handle_dynamic_token_authentication(engine: "sqlalchemy.engine.Engine",
                                         new_token: Callable[..., str],
                                         timeout: Union[float, int] = 600,
                                         **kwargs) -> None:
-    last_token = [0.0]
+    last_token = [None]
+    last_token_time = [0.0]
 
     @event.listens_for(engine, "do_connect")
     def override_new_connection(dialect, conn_rec, cargs, cparams):
         # Handle IAM authentication
         now = clock_gettime(CLOCK_REALTIME)
-        if now - last_token[0] > timeout:
-            cparams["password"] = new_token(**kwargs)
-            last_token[0] = now
+        if now - last_token_time[0] > timeout:
+            last_token[0] = new_token(**kwargs)
+            last_token_time[0] = now
+        cparams["password"] = last_token[0]
 
 
 def _to_json(o):
