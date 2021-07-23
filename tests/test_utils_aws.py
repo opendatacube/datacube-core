@@ -272,4 +272,3 @@ def test_obtain_new_iam_token(monkeypatch, without_aws_env):
     with moto.mock_iam():
         token = obtain_new_IAM_auth_token(url)
         assert isinstance(token, str)
-
