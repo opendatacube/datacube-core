@@ -20,9 +20,11 @@ def next_token(base):
 
 
 def test_dynamic_password():
-    url = URL.create('postgresql',
+    url = URL.create(
+                    'postgresql',
                     host="fake_host", database="fake_database", port=6543,
-                    username="fake_username", password="fake_password")
+                    username="fake_username", password="fake_password"
+    )
     engine = PostgresDb._create_engine(url)
     counter[0] = 0
     last_base[0] = None
