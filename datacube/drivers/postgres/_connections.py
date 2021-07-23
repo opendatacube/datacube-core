@@ -17,14 +17,17 @@ import logging
 import os
 import re
 from contextlib import contextmanager
-from typing import Optional
+from time import clock_gettime, CLOCK_REALTIME
+from typing import Callable, Optional, Union
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import event, create_engine, text
 from sqlalchemy.engine.url import URL as EngineUrl
 
 import datacube
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
+from datacube.utils.aws import obtain_new_IAM_auth_token
+
 from . import _api
 from . import _core
 
@@ -105,7 +108,7 @@ class PostgresDb(object):
 
     @staticmethod
     def _create_engine(url, application_name=None, pool_timeout=60):
-        return create_engine(
+        engine = create_engine(
             url,
             echo=False,
             echo_pool=False,
@@ -121,6 +124,11 @@ class PostgresDb(object):
             pool_recycle=pool_timeout,
             connect_args={'application_name': application_name}
         )
+
+        if os.environ.get("ODC_IAM_RDS_AUTHENTICATION", "") in ("Y", "y", "YES", "yes", "Yes"):
+            handle_dynamic_token_authentication(engine, obtain_new_IAM_auth_token, timeout=600, url=url)
+
+        return engine
 
     @property
     def url(self) -> EngineUrl:
@@ -242,6 +250,21 @@ class PostgresDb(object):
 
     def __repr__(self):
         return "PostgresDb<engine={!r}>".format(self._engine)
+
+
+def handle_dynamic_token_authentication(engine: "sqlalchemy.engine.Engine",
+                                        new_token: Callable[..., str],
+                                        timeout: Union[float, int] = 600,
+                                        **kwargs) -> None:
+    last_token = [0.0]
+
+    @event.listens_for(engine, "do_connect")
+    def override_new_connection(dialect, conn_rec, cargs, cparams):
+        # Handle IAM authentication
+        now = clock_gettime(CLOCK_REALTIME)
+        if now - last_token[0] > timeout:
+            cparams["password"] = new_token(**kwargs)
+            last_token[0] = now
 
 
 def _to_json(o):
