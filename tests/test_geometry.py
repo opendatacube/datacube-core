@@ -1558,7 +1558,6 @@ def test_lonlat_bounds():
     assert ll_bounds == approx(ll_bounds_projected)
 
 
-
 @pytest.mark.xfail(True, reason="Bounds computation for large geometries in safe mode is broken")
 def test_lonalt_bounds_more_than_180():
     poly = geometry.box(-150, -30, 150, 30, epsg4326).to_crs(epsg3857, math.inf)
