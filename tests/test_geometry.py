@@ -1549,9 +1549,14 @@ def test_lonlat_bounds():
         ]
     }
 
-    multi_poly = geometry.Geometry(multi, "epsg:4326")
-    print(multi_poly.type)
-    geometry.lonlat_bounds(multi_poly)
+    multi_geom = geometry.Geometry(multi, "epsg:4326")
+    multi_geom_projected = multi_geom.to_crs('epsg:32659', math.inf)
+
+    ll_bounds = geometry.lonlat_bounds(multi_geom)
+    ll_bounds_projected = geometry.lonlat_bounds(multi_geom_projected)
+
+    assert ll_bounds == approx(ll_bounds_projected)
+
 
 
 @pytest.mark.xfail(True, reason="Bounds computation for large geometries in safe mode is broken")
