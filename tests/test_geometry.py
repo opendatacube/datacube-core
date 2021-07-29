@@ -1541,6 +1541,18 @@ def test_lonlat_bounds():
     with pytest.raises(ValueError):
         geometry.lonlat_bounds(geometry.box(0, 0, 1, 1, None))
 
+    multi = {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [[[174, 52], [174, 53], [175, 53], [174, 52]]],
+            [[[168, 54], [167, 55], [167, 54], [168, 54]]]
+        ]
+    }
+
+    multi_poly = geometry.Geometry(multi, "epsg:4326")
+    print(multi_poly.type)
+    geometry.lonlat_bounds(multi_poly)
+
 
 @pytest.mark.xfail(True, reason="Bounds computation for large geometries in safe mode is broken")
 def test_lonalt_bounds_more_than_180():
