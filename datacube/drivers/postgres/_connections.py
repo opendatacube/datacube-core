@@ -21,12 +21,13 @@ from time import clock_gettime, CLOCK_REALTIME
 from typing import Callable, Optional, Union
 
 from sqlalchemy import event, create_engine, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL as EngineUrl
 
 import datacube
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
-from datacube.utils.aws import obtain_new_IAM_auth_token
+from datacube.utils.aws import obtain_new_iam_auth_token
 
 from . import _api
 from . import _core
@@ -126,7 +127,7 @@ class PostgresDb(object):
         )
 
         if os.environ.get("ODC_IAM_RDS_AUTHENTICATION", "") in ("Y", "y", "YES", "yes", "Yes"):
-            handle_dynamic_token_authentication(engine, obtain_new_IAM_auth_token, timeout=600, url=url)
+            handle_dynamic_token_authentication(engine, obtain_new_iam_auth_token, timeout=600, url=url)
 
         return engine
 
@@ -252,7 +253,7 @@ class PostgresDb(object):
         return "PostgresDb<engine={!r}>".format(self._engine)
 
 
-def handle_dynamic_token_authentication(engine: "sqlalchemy.engine.Engine",
+def handle_dynamic_token_authentication(engine: Engine,
                                         new_token: Callable[..., str],
                                         timeout: Union[float, int] = 600,
                                         **kwargs) -> None:

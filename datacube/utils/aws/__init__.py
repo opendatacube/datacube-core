@@ -13,6 +13,8 @@ from botocore.session import Session
 import time
 from urllib.request import urlopen
 from urllib.parse import urlparse
+from sqlachemy.engine.url import URL
+
 from typing import Optional, Dict, Tuple, Any, Union, IO
 from datacube.utils.generic import thread_local_cache
 from ..rio import configure_s3_access
@@ -440,7 +442,7 @@ def get_aws_settings(profile: Optional[str] = None,
                  requester_pays=requester_pays), creds)
 
 
-def obtain_new_IAM_auth_token(url: str, region_name: str = "auto", profile_name: Optional[str] = None) -> str:
+def obtain_new_iam_auth_token(url: URL, region_name: str = "auto", profile_name: Optional[str] = None) -> str:
     try:
         # Boto3 is not core requirement
         from boto3.session import Session as Boto3Session
