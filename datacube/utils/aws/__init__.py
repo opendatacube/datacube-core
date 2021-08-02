@@ -13,7 +13,7 @@ from botocore.session import Session
 import time
 from urllib.request import urlopen
 from urllib.parse import urlparse
-from sqlachemy.engine.url import URL
+from sqlalchemy.engine.url import URL
 
 from typing import Optional, Dict, Tuple, Any, Union, IO
 from datacube.utils.generic import thread_local_cache

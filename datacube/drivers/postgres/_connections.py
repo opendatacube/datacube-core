@@ -44,6 +44,8 @@ except (ImportError, KeyError):
     # No default on Windows and some other systems
     DEFAULT_DB_USER = None
 DEFAULT_DB_PORT = 5432
+DEFAULT_IAM_AUTH = False
+DEFAULT_IAM_TIMEOUT = 600
 
 
 class PostgresDb(object):
@@ -78,12 +80,18 @@ class PostgresDb(object):
             config.get('db_port', DEFAULT_DB_PORT),
             application_name=app_name,
             validate=validate_connection,
-            pool_timeout=int(config.get('db_connection_timeout', 60))
+            iam_rds_auth=bool(config.get("db_iam_rds_auth", DEFAULT_IAM_AUTH)),
+            iam_rds_timeout=int(config.get("db_iam_rds_timeout", DEFAULT_IAM_TIMEOUT)),
+            pool_timeout=int(config.get('db_connection_timeout', 60)),
+            # pass config?
         )
 
     @classmethod
     def create(cls, hostname, database, username=None, password=None, port=None,
-               application_name=None, validate=True, pool_timeout=60):
+               application_name=None, validate=True,
+               iam_rds_auth=False, iam_rds_timeout=600,
+               # pass config?
+               pool_timeout=60):
         mk_url = getattr(EngineUrl, 'create', EngineUrl)
         engine = cls._create_engine(
             mk_url(
@@ -92,6 +100,8 @@ class PostgresDb(object):
                 username=username, password=password,
             ),
             application_name=application_name,
+            iam_rds_auth=iam_rds_auth,
+            iam_rds_timeout=iam_rds_timeout,
             pool_timeout=pool_timeout)
         if validate:
             if not _core.database_exists(engine):
@@ -108,7 +118,7 @@ class PostgresDb(object):
         return PostgresDb(engine)
 
     @staticmethod
-    def _create_engine(url, application_name=None, pool_timeout=60):
+    def _create_engine(url, application_name=None, iam_rds_auth=False, iam_rds_timeout=600, pool_timeout=60):
         engine = create_engine(
             url,
             echo=False,
@@ -117,7 +127,6 @@ class PostgresDb(object):
             # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
             # When a transaction is needed we will do an explicit begin/commit.
             isolation_level='AUTOCOMMIT',
-
             json_serializer=_to_json,
             # If a connection is idle for this many seconds, SQLAlchemy will renew it rather
             # than assuming it's still open. Allows servers to close idle connections without clients
@@ -126,8 +135,8 @@ class PostgresDb(object):
             connect_args={'application_name': application_name}
         )
 
-        if os.environ.get("ODC_IAM_RDS_AUTHENTICATION", "") in ("Y", "y", "YES", "yes", "Yes"):
-            handle_dynamic_token_authentication(engine, obtain_new_iam_auth_token, timeout=600, url=url)
+        if iam_rds_auth:
+            handle_dynamic_token_authentication(engine, obtain_new_iam_auth_token, timeout=iam_rds_timeout, url=url)
 
         return engine
 
