@@ -23,7 +23,7 @@ from datacube.utils.aws import (
     s3_fetch,
     s3_head_object,
     _s3_cache_key,
-    obtain_new_IAM_auth_token,
+    obtain_new_iam_auth_token,
 )
 
 
@@ -270,5 +270,5 @@ def test_obtain_new_iam_token(monkeypatch, without_aws_env):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
     with moto.mock_iam():
-        token = obtain_new_IAM_auth_token(url, region_name='us-west-1')
+        token = obtain_new_iam_auth_token(url, region_name='us-west-1')
         assert isinstance(token, str)
