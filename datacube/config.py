@@ -199,25 +199,25 @@ def parse_env_params() -> Dict[str, str]:
     - Else look for DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE
     - Return {} otherwise
     """
+    # Handle environment vars that cannot fit in the DB URL
     non_url_params = {}
     iam_auth = os.environ.get('DATACUBE_IAM_AUTHENTICATION')
     if iam_auth is not None and iam_auth.tolower() in ['y', 'yes']:
         non_url_params["iam_authentication"] = iam_auth
         iam_auth_timeout = os.environ.get('DATACUBE_IAM_TIMEOUT')
         if iam_auth_timeout:
-            non_url_params["iam_authentication_timeout"] = int(iam_auth_timeout)
+            non_url_params["iam_timeout"] = int(iam_auth_timeout)
 
+    # Handle environment vars that may fit in the DB URL
     db_url = os.environ.get('DATACUBE_DB_URL', None)
     if db_url is not None:
         params = parse_connect_url(db_url)
-        params.update(non_url_params)
-        return params
-
-    raw_params = {k: os.environ.get('DB_{}'.format(k.upper()), None)
-                  for k in DB_KEYS}
-    params = {k: v
-              for k, v in raw_params.items()
-              if v is not None and v != ""}
+    else:
+        raw_params = {k: os.environ.get('DB_{}'.format(k.upper()), None)
+                      for k in DB_KEYS}
+        params = {k: v
+                  for k, v in raw_params.items()
+                  if v is not None and v != ""}
     params.update(non_url_params)
     return params
 

@@ -80,8 +80,8 @@ class PostgresDb(object):
             config.get('db_port', DEFAULT_DB_PORT),
             application_name=app_name,
             validate=validate_connection,
-            iam_rds_auth=bool(config.get("db_iam_rds_auth", DEFAULT_IAM_AUTH)),
-            iam_rds_timeout=int(config.get("db_iam_rds_timeout", DEFAULT_IAM_TIMEOUT)),
+            iam_rds_auth=bool(config.get("db_iam_authentication", DEFAULT_IAM_AUTH)),
+            iam_rds_timeout=int(config.get("db_iam_timeout", DEFAULT_IAM_TIMEOUT)),
             pool_timeout=int(config.get('db_connection_timeout', 60)),
             # pass config?
         )
