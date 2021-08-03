@@ -478,11 +478,11 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
         # This is what the API expects. I think it should be changed.
         search_mode = None
     for path in paths:
-        dss = list(index.datasets.get_datasets_for_location(uri_resolve(base=path), mode=search_mode))
-        if not dss:
-            print(f"Not found in index: {path}")
-        for ds in dss:
-            print(ds)
+        datasets = list(index.datasets.get_datasets_for_location(uri_resolve(base=path), mode=search_mode))
+        if not datasets:
+            _LOG.info(f"Not found in index: {path}")
+        for dataset in datasets:
+            print(dataset)
 
 
 @dataset_cmd.command('archive', help="Archive datasets")
