@@ -68,6 +68,23 @@ Example:
     [staging]
     db_hostname: staging.dea.ga.gov.au
 
+    ## An AWS environment, using RDS ##
+    [aws_rds]
+    # Point database to an RDS server on AWS.
+    db_hostname: your.rds.server.name
+    db_username: your_rds_username
+    db_database: your_rds_db
+
+    # Choose an authentication option:
+
+    # 1. password authentication, as documented above
+    # db_password: Ungue55able$ecRet
+
+    # 2. IAM Authentication
+    # iam_authentication: yes
+    #
+    # Token timeout in seconds.  Defaults to 600 (10 minutes)
+    # iam_timeout: 750
 
 Note that the ``staging`` environment only specifies the hostname, all other
 fields will use default values (database ``datacube``, current username,
@@ -98,7 +115,7 @@ It is possible to configure datacube with a single environment variable:
 inside a docker image. The format of the URL is the same as used by SQLAclchemy:
 ``postgresql://user:password@host:port/database``. Only the ``database`` parameter
 is required. Note that ``password`` is url encoded, so it can contain special
-characters. 
+characters.
 
 For more information refer to the `SQLAlchemy database URLs documentation
 <https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls>`_.
@@ -118,8 +135,14 @@ Examples:
 
 
 It is also possible to use separate environment variables for each component of
-the connection URL. The recognised environment variables are 
+the connection URL. The recognised environment variables are
 ``DB_HOSTNAME``, ``DB_PORT``, ``DB_USERNAME``, ``DB_PASSWORD`` and ``DB_DATABASE``.
+
+AWS IAM authentication for RDS can also be activated by setting the
+``DATACUBE_IAM_AUTHENTICATION`` environment variable to ``'y'`` or  ``'yes'``.
+The IAM token timeout can be tuned by setting the ``DATACUBE_IAM_TIMEOUT``
+environment variable to a value in seconds.  Default is 600 (i.e. 10 minutes).
+
 
 Types of Indexes
 ================
