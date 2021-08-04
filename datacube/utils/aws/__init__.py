@@ -443,11 +443,9 @@ def get_aws_settings(profile: Optional[str] = None,
 
 
 def obtain_new_iam_auth_token(url: URL, region_name: str = "auto", profile_name: Optional[str] = None) -> str:
-    try:
-        # Boto3 is not core requirement
-        from boto3.session import Session as Boto3Session
-    except ImportError:
-        raise ValueError("boto3 is not available")
+    # Boto3 is not core requirement, but ImportError is probably the right exception to throw anyway.
+    from boto3.session import Session as Boto3Session
+
     session = Boto3Session(profile_name=profile_name)
     client = session.client("rds", region_name=region_name)
     return client.generate_db_auth_token(DBHostname=url.host, Port=url.port, DBUsername=url.username,
