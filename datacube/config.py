@@ -202,8 +202,8 @@ def parse_env_params() -> Dict[str, str]:
     # Handle environment vars that cannot fit in the DB URL
     non_url_params = {}
     iam_auth = os.environ.get('DATACUBE_IAM_AUTHENTICATION')
-    if iam_auth is not None and iam_auth.tolower() in ['y', 'yes']:
-        non_url_params["iam_authentication"] = iam_auth
+    if iam_auth is not None and iam_auth.lower() in ['y', 'yes']:
+        non_url_params["iam_authentication"] = True
         iam_auth_timeout = os.environ.get('DATACUBE_IAM_TIMEOUT')
         if iam_auth_timeout:
             non_url_params["iam_timeout"] = int(iam_auth_timeout)
