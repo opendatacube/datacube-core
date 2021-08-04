@@ -125,7 +125,9 @@ def _clear_cfg_env(monkeypatch):
               'DB_HOSTNAME',
               'DB_PORT',
               'DB_USERNAME',
-              'DB_PASSWORD'):
+              'DB_PASSWORD',
+              'DATACUBE_IAM_AUTHENTICATION',
+              'DATACUBE_IAM_TIMEOUT'):
         monkeypatch.delenv(e, raising=False)
 
 
@@ -140,6 +142,10 @@ def test_parse_env(monkeypatch):
         return parse_env_params()
 
     assert check_env() == {}
+    assert check_env(DATACUBE_IAM_AUTHENTICATION="yes",
+                     DATACUBE_IAM_TIMEOUT='666') == dict(
+        iam_authentication=True,
+        iam_timeout=666)
     assert check_env(DATACUBE_DB_URL='postgresql:///db') == dict(
         hostname='',
         database='db'
