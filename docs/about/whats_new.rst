@@ -5,7 +5,13 @@
 What's New
 **********
 
-v1.8.4 (???)
+
+v1.8.5 (???)
+=======================
+
+- ???
+
+v1.8.4 (6 August 2021)
 =======================
 
 - Removed example and contributed notebooks from the repository. Better `notebook examples`_ exist.
@@ -18,6 +24,7 @@ v1.8.4 (???)
 - New feature: search by URI from the command line ``datacube dataset uri-search``.
 - Added new "license" and "description" properties to `DatasetType` to enable easier access to product information. (:pull:`1143`, :pull:`1144`)
 - Revised the ``Datacube.list_products`` function to produce a simpler and more useful product list table (:pull:`1145`)
+- Refactor docs, making them more up to date and simpler (:pull `1137`) (:pull `1128`)
 - Add new ``dataset_predicate`` param to ``dc.load`` and ``dc.find_datasets`` for more flexible temporal filtering (e.g. loading data for non-contiguous time ranges such as specific months or seasons over multiple years). (:pull:`1148`, :pull:`1156`)
 - Fix to ``GroupBy`` to ensure output output axes are correctly labelled when sorting observations using ``sort_key`` (:pull:`1157`)
 - ``GroupBy`` is now its own class to allow easier custom grouping and sorting of data (:pull:`1157`)
