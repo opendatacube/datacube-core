@@ -13,6 +13,8 @@ from botocore.session import Session
 import time
 from urllib.request import urlopen
 from urllib.parse import urlparse
+from sqlalchemy.engine.url import URL
+
 from typing import Optional, Dict, Tuple, Any, Union, IO
 from datacube.utils.generic import thread_local_cache
 from ..rio import configure_s3_access
@@ -438,3 +440,13 @@ def get_aws_settings(profile: Optional[str] = None,
                  aws_secret_access_key=cc.secret_key,
                  aws_session_token=cc.token,
                  requester_pays=requester_pays), creds)
+
+
+def obtain_new_iam_auth_token(url: URL, region_name: str = "auto", profile_name: Optional[str] = None) -> str:
+    # Boto3 is not core requirement, but ImportError is probably the right exception to throw anyway.
+    from boto3.session import Session as Boto3Session
+
+    session = Boto3Session(profile_name=profile_name)
+    client = session.client("rds", region_name=region_name)
+    return client.generate_db_auth_token(DBHostname=url.host, Port=url.port, DBUsername=url.username,
+                                         Region=region_name)
