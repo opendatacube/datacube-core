@@ -294,6 +294,7 @@ class Eo3Dict(collections.abc.MutableMapping):
     KNOWN_PROPERTIES: Mapping[str, Optional[NormaliseValueFn]] = {
         "datetime": datetime_type,
         "dea:dataset_maturity": of_enum_type(("final", "interim", "nrt"), lower=True),
+        "dea:product_maturity": of_enum_type(("stable", "provisional"), lower=True),
         "dtr:end_datetime": datetime_type,
         "dtr:start_datetime": datetime_type,
         "eo:azimuth": float,
@@ -696,6 +697,17 @@ class Eo3Interface:
     @maturity.setter
     def maturity(self, value):
         self.properties["dea:dataset_maturity"] = value
+
+    @property
+    def product_maturity(self) -> str:
+        """
+        Classification: is this a 'provisional' or 'stable' release of the product?
+        """
+        return self.properties.get("dea:product_maturity")
+
+    @product_maturity.setter
+    def product_maturity(self, value):
+        self.properties["dea:product_maturity"] = value
 
     # Note that giving a method the name 'datetime' will override the 'datetime' type
     # for class-level declarations (ie, for any types on functions!)
