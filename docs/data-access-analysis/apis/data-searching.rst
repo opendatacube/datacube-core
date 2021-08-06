@@ -1,37 +1,20 @@
 Dataset Searching & Querying
 ----------------
+``Datasets`` indexed within a Data Cube can be searched for using a variety of methods.
 
-When connected to an ODC Database, these methods are available for
-searching and querying:
+Minimal Example
+~~~~~~~~~~~~~~~~
+.. code-block:: python
+
+   dc = Datacube()
+   ds = dc.index.datasets.get(1234)
+
+API
+~~~~~~~~~~~~~~~~
+The following methods are available on ``dc.index.datasets``.
 
 .. code-block:: python
 
    dc = Datacube()
-   dc.index.datasets.{method}
+   ds = dc.index.datasets.{method}
 
-.. currentmodule:: datacube.index._datasets.DatasetResource
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generate/
-
-   get
-   search
-   search_by_metadata
-   search_by_product
-   search_eager
-   search_product_duplicates
-   search_returning
-   search_summaries
-   has
-   bulk_has
-   can_update
-   count
-   count_by_product
-   count_by_product_through_time
-   count_product_through_time
-   get_derived
-   get_field_names
-   get_locations
-   get_archived_locations
-   get_datasets_for_location

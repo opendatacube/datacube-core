@@ -1,9 +1,6 @@
-
-.. currentmodule:: datacube
-
-************
-Data Access & Analysis
-************
+************************************
+Data Access & Analysis API
+************************************
 
 These pages are designed to provide an introduction on how to access data from an existing Open Data Cube instance.
 
@@ -23,6 +20,12 @@ These pages are designed to provide an introduction on how to access data from a
     apis/data-searching.rst
     apis/product-discovery.rst
     apis/data-loading.rst
+
+.. toctree::
+    :maxdepth: 4
+    :caption: Advanced Topics
+
+    advanced-topics/virtual-products.rst
 
 
 .. toctree::

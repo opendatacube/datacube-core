@@ -9,10 +9,10 @@ configuration options from files or environment variables. This determines which
 database will be connected to, and thus which ``Products`` will be available.
 
 Options for setting up your environment
-=============================
+========================================
 
 1. Via a configuration file
--------------------------
+------------------------------
 
 ODC Configuration can be stored in a file. The following files, if they exist, are loaded in order, with
 properties from latter files overriding those in earlier ones:
@@ -23,7 +23,7 @@ properties from latter files overriding those in earlier ones:
  * ``datacube.conf``
 
 Example ODC Configuration File
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: ini
 
@@ -96,7 +96,7 @@ For more information refer to the `SQLAlchemy database URLs documentation
 <https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls>`_.
 
 Examples of configuration via environment variables
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``postgresql:///datacube``
    Connect to a local database ``datacube`` via UNIX socket.

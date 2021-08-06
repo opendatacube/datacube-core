@@ -5,6 +5,8 @@
 import os
 import sys
 
+from bs4 import BeautifulSoup as bs
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -33,7 +35,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx_click.ext',
     'click_utils',
-    'sphinx.ext.napoleon',
+    'autodocsumm',
+    'sphinx.ext.napoleon'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -71,6 +74,13 @@ exclude_patterns = ['README.rst']
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
 
+autosummary_generate = True
+autoclass_content = "both"
+autodoc_default_options = {
+    'autosummary': True,
+    'inherited-members': True
+}
+
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
 # show_authors = False
@@ -78,7 +88,6 @@ add_function_parentheses = True
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'friendly'
 
-autosummary_generate = True
 
 extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
             'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
@@ -104,9 +113,22 @@ else:
 html_theme_options = {
     "show_prev_next": False,
     "collapse_navigation": True,
-    "footer_items": []
+    "use_edit_page_button": True,
+    "footer_items": [],
+    "page_sidebar_items": [
+        "page-toc",
+        "autoclass_page_toc",
+        "autosummary_page_toc",
+        "edit-this-page"
+    ],
 }
 
+html_context = {
+    "github_user": "opendatacube",
+    "github_repo": "datacube-core",
+    "github_version": "develop",
+    "doc_path": "docs",
+}
 
 html_logo = '_static/odc-logo-horizontal.svg'
 html_static_path = ['_static']
@@ -136,11 +158,96 @@ latex_documents = [
 
 numfig = True
 
+def custom_page_funcs(app, pagename, templatename, context, doctree):
+
+    def get_autosummary_toc():
+        soup = bs(context["body"], "html.parser")
+
+        class_sections = soup.find(class_='class')
+        if class_sections is not None:
+            return ""
+
+        matches = soup.find_all('dl')
+        if matches is None or len(matches) is 0:
+            return ""
+
+        out = {
+            'title': '',
+            'menu_items': []
+        }
+
+        #  remove the class dt
+        pyclass = matches.pop(0)
+        pyclass = pyclass.find('dt')
+        if pyclass is not None:
+            out['title'] = pyclass.get('id')
+
+        for match in matches:
+            match_dt = match.find('dt')
+            link = match.find(class_="headerlink")
+            if link is not None:
+                out['menu_items'].append({
+                    'title': match_dt.get('id'),
+                    'link': link['href']
+                })
+
+        return out
+
+    def get_class_toc():
+        soup = bs(context["body"], "html.parser")
+
+        class_sections = soup.find_all(class_='autosummary')
+        if class_sections is None or len(class_sections) is 0:
+            return ""
+
+        out = {
+            'title': '',
+            'menu_items': []
+        }
+        # print(soup)
+        class_title = soup.find(class_='class')
+        if class_title is None:
+            return ""
+
+        pyclass = class_title.find('dt')
+        if pyclass is not None:
+            out['title'] = pyclass.get('id')
+
+        for section in class_sections:
+            out_section = {
+                'title': '',
+                'menu_items': []
+            }
+            out_section['title'] = section.find_previous_sibling('p').text.replace(':','')
+            matches = section.find_all('tr')
+            for match in matches:
+                link = match.find(class_="internal")
+                
+                if link is not None:
+                    title = link['title']
+                    if title is not None:
+                        title = title.replace(out['title'], '')
+                    out_section['menu_items'].append({
+                        'title': title,
+                        'link': link['href']
+                    })
+            if len(out_section['menu_items']) > 0:
+                out['menu_items'].append(out_section)
+
+        # print(out)
+        return out
+
+    context['get_class_toc'] = get_class_toc
+    context['get_autosummary_toc'] = get_autosummary_toc
+
+
 
 def setup(app):
     # Fix bug where code isn't being highlighted
     app.add_css_file('pygments.css')
     app.add_css_file('custom.css')
+
+    app.connect("html-page-context", custom_page_funcs)
 
 
 # Clean up generated documentation files that RTD seems to be having trouble with

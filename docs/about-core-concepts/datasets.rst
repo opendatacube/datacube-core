@@ -1,5 +1,5 @@
 Datasets
-=============================
+========
 Datasets are a fundamental part of the Open Data Cube. A dataset is *“The smallest aggregation of data independently described, inventoried, and managed.”​* (Definition of “Granule” from NASA EarthData Unified Metadata Model​)
 
 .. admonition:: Examples of Datasets
@@ -10,7 +10,7 @@ Datasets are a fundamental part of the Open Data Cube. A dataset is *“The smal
 
 
 Types of Datasets
-=============================
+=================
 The Open Data Cube supports two primary types of dataset, ``indexed`` datasets, and ``ingested`` datasets.
 
 Indexed Datasets

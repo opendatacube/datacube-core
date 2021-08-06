@@ -22,6 +22,4 @@ and related data from multiple sources.
    data-access-analysis/index
    odc-administration/index
    installation/index
-
-
-
+   api/index

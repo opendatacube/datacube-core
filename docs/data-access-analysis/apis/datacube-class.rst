@@ -1,11 +1,9 @@
 
-.. currentmodule:: datacube
 
 Connecting to a Datacube
 =============================
 
 The Datacube Class is how you establish a connection to an existing Datacube instance.
-
 
 Minimal Example
 ~~~~~~~~~~~~~~~~
@@ -26,7 +24,8 @@ API
 ~~~~~~~~~~~~~~~~
 See the API docs below for a completed description of the available options.
 
+.. currentmodule:: datacube
+
 .. autosummary::
-   :toctree: generate/
 
    Datacube

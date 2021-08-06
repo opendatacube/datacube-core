@@ -12,8 +12,8 @@
     --pst-font-size-h1: 1.8rem;
     --pst-font-size-h2: 1.4rem;
     --pst-font-size-h3: 1.3rem;
-    --pst-font-size-base: 14px;
-    --pst-color-headerlink: #1c375a;    
+    --pst-font-size-base: 15px;
+    --pst-color-headerlink: #1c375a;
 }
 
 
@@ -45,8 +45,8 @@
 
 #navbar-main-elements > .nav-item {
     text-transform: uppercase;
-    line-height: 50px;
-    margin: 0px 20px;
+    margin: 20px 20px 0px 20px;
+    padding-bottom: 20px;
 }
 
 #navbar-main-elements .nav-link {
@@ -98,6 +98,14 @@
     margin-top: 30px;
 }
 
+dt:target, span.highlighted {
+    background-color: #92b0dc36;
+}
+
+.viewcode-link {
+    margin-top: 3px;
+}
+
 /* Hide the in-content nav */
 .bd-content .toctree-wrapper {
     display: none;
@@ -107,6 +115,20 @@
 /* RIGHT NAV COLUMN */
 .section-nav .toc-h1 {
     margin-bottom: 20px;
+}
+
+.section-nav .toc-h2 {
+    margin-left: 20px;
+    margin-top: 10px;
+    text-transform: uppercase;
+}
+
+.section-nav .toc-h3 {
+    font-size: 0.95rem;
+}
+
+.editthispage a {
+    color: var(--pst-color-headerlink);
 }
 
 

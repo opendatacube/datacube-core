@@ -8,7 +8,7 @@ Miniconda
 
 2. Open Terminal to execute the following commands.
 
-.. include:: conda_base.rst
+.. include:: ./../../ops/conda_base.rst
 
 Datacube is now installed and can be used in Terminal by activating the `cubeenv` environment.
 
@@ -31,7 +31,7 @@ Python and packages
 -------------------
 Python 3.6+ is required (3.8 is recommended)
 
-Install the latest version of the ODC from PyPI:
+Install the latest version of the ODC from PyPI::
 
   pip install -U \
     'pyproj==2.*' \

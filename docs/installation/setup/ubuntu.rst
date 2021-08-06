@@ -122,6 +122,6 @@ Python, follow the instructions below:
 
 2. Open your favourite terminal to execute the following commands.
 
-.. include:: conda_base.rst
+.. include:: ./../../ops/conda_base.rst
 
 Datacube is now installed and can be used in a terminal by activating the `cubeenv` environment.

@@ -9,7 +9,7 @@ Miniconda
 
 2. Open the Anaconda Prompt from the Start Menu to execute the following commands.
 
-.. include:: conda_base.rst
+.. include:: ./../../ops/conda_base.rst
 
 The Open Datacube package and it's requirements are now installed. Use them by
 activating the `cubeenv` environment from the Anaconda Prompt.

@@ -2,6 +2,7 @@ Data Loading
 ============
 Once you've know the ``products`` or ``datasets`` that you are interested in you will need to load the data.
 
+
 Minimal Example
 ~~~~~~~~~~~~~~~~
 
@@ -16,12 +17,3 @@ Minimal Example
                  y=(-27.5, -27.6),
                  time=("2015-01-01", "2015-12-31"))
 
-
-API
-~~~~~~~~~~~~~~~~
-.. currentmodule:: datacube
-
-.. autosummary::
-   :toctree: generate/
-
-   Datacube.load
