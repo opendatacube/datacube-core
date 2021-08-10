@@ -19,7 +19,6 @@ matplotlib
 moto
 netcdf4
 numpy
-paramiko
 psycopg2
 pycodestyle
 pylint
@@ -34,9 +33,7 @@ sphinx-click
 sphinx_autodoc_typehints
 sphinx_rtd_theme
 sqlalchemy
-sshtunnel
 toolz
-tqdm
 xarray>=0.18
 
 # pytest
