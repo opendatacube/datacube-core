@@ -340,7 +340,7 @@ class Eo3Dict(collections.abc.MutableMapping):
         self._props = properties
         # We normalise the properties they gave us.
         if normalise_input:
-            for key in self._props:
+            for key in list(self._props):
                 self.normalise_and_set(key, self._props[key], expect_override=True)
         self._finished_init_ = True
 
