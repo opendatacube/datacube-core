@@ -29,9 +29,6 @@ and related data from multiple sources.
 .. toctree::
 
    user/intro.rst
-   user/deployments.rst
-   user/notebooks.rst
-   user/ecosystem.rst
 
 
 .. toctree::
