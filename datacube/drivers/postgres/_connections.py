@@ -27,7 +27,6 @@ from sqlalchemy.engine.url import URL as EngineUrl
 import datacube
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
-from datacube.utils.aws import obtain_new_iam_auth_token
 
 from . import _api
 from . import _core
@@ -136,6 +135,7 @@ class PostgresDb(object):
         )
 
         if iam_rds_auth:
+            from datacube.utils.aws import obtain_new_iam_auth_token
             handle_dynamic_token_authentication(engine, obtain_new_iam_auth_token, timeout=iam_rds_timeout, url=url)
 
         return engine
