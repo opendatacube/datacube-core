@@ -23,7 +23,8 @@ from datacube.utils.math import invalid_mask
 from datacube.utils.geometry import GeoBox, roi_is_empty
 from datacube.model import Measurement
 from datacube.drivers._types import ReaderDriver
-from . import DataSource, BandInfo
+from ..drivers.datasource import DataSource
+from ._base import BandInfo
 
 _LOG = logging.getLogger(__name__)
 
