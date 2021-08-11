@@ -21,7 +21,8 @@ from datacube.utils import geometry
 from datacube.utils.math import num2numpy
 from datacube.utils import uri_to_local_path, get_part_from_uri, is_vsipath
 from datacube.utils.rio import activate_from_config
-from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
+from ..drivers.datasource import DataSource, GeoRasterReader, RasterShape, RasterWindow
+from ._base import BandInfo
 from ._hdf5 import HDF5_LOCK
 
 _LOG = logging.getLogger(__name__)
