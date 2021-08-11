@@ -44,10 +44,9 @@ dkr: Dockerfile
 run-test:
 	@docker run --rm \
     -v $(CODE):/code \
-    $(DKR_IMG) pytest --timeout=30 .
+    $(DKR_IMG) pytest --timeout=30 tests integration_tests datacube
 
 clean:
-	rm -f .build/download.info.txt .build/compile.info.txt
 	@echo "Keeping wheels and pip cache"
 
 .PHONY: dbg all clean download compile dkr run-test dkr bash bash-runner
