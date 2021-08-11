@@ -205,8 +205,7 @@ class Datacube(object):
                 product_type='ndvi'
 
             The ``measurements`` argument is a list of measurement names, as listed in :meth:`list_measurements`.
-            If not provided, all measurements for the product will be returned.
-            ::
+            If not provided, all measurements for the product will be returned. ::
 
                 measurements=['red', 'nir', 'swir2']
 
@@ -225,7 +224,7 @@ class Datacube(object):
                 x=(1516200, 1541300), y=(-3867375, -3867350), crs='EPSG:3577'
 
             The ``time`` dimension can be specified using a tuple of datetime objects or strings with
-            `YYYY-MM-DD hh:mm:ss` format. Data will be loaded inclusive of the start and finish times. E.g::
+            ``YYYY-MM-DD hh:mm:ss`` format. Data will be loaded inclusive of the start and finish times. E.g::
 
                 time=('2000-01-01', '2001-12-31')
                 time=('2000-01', '2001-12')
@@ -274,19 +273,18 @@ class Datacube(object):
                         resampling='cubic'
                 )
 
+
         :param str product:
             The product to be loaded.
 
-        :param measurements:
+        :param list(str) measurements:
             Measurements name or list of names to be included, as listed in :meth:`list_measurements`.
             These will be loaded as individual ``xr.DataArray`` variables in the output ``xarray.Dataset`` object.
 
             If a list is specified, the measurements will be returned in the order requested.
             By default all available measurements are included.
 
-        :type measurements: list(str), optional
-
-        :param **query:
+        :param \*\*query:
             Search parameters for products and dimension ranges as described above.
             For example: ``'x', 'y', 'time', 'crs'``.
 
@@ -308,13 +306,17 @@ class Datacube(object):
             The resampling method to use if re-projection is required. This could be a string or
             a dictionary mapping band name to resampling mode. When using a dict use ``'*'`` to
             indicate "apply to all other bands", for example ``{'*': 'cubic', 'fmask': 'nearest'}`` would
-            use `cubic` for all bands except ``fmask`` for which `nearest` will be used.
+            use ``cubic`` for all bands except ``fmask`` for which ``nearest`` will be used.
 
-            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average',
-            'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'``
+            Valid values are: ::
+
+              'nearest', 'average', 'bilinear', 'cubic', 'cubic_spline',
+              'lanczos', 'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'
 
             Default is to use ``nearest`` for all bands.
-            .. seealso:: :meth:`load_data`
+
+            .. seealso::
+               :meth:`load_data`
 
         :param (float,float) align:
             Load data such that point 'align' lies on the pixel boundary.
@@ -330,8 +332,8 @@ class Datacube(object):
             for more information.
 
         :param xarray.Dataset like:
-            Use the output of a previous ``datacube.load()`` to load data into the same spatial grid and
-            resolution (i.e. ``.GeoBox``).
+            Use the output of a previous :meth:`load()` to load data into the same spatial grid and
+            resolution (i.e. :class:`datacube.utils.geometry.GeoBox`).
             E.g.::
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
@@ -356,21 +358,26 @@ class Datacube(object):
 
         :param function dataset_predicate:
             Optional. A function that can be passed to restrict loaded datasets. A predicate function should
-            take a `datacube.model.Dataset` object (e.g. as returned from `dc.find_datasets`) and return a boolean.
+            take a :class:`datacube.model.Dataset` object (e.g. as returned from :meth:`find_datasets`) and return a boolean.
             For example, loaded data could be filtered to January observations only by passing the following
             predicate function that returns True for datasets acquired in January::
+
                 def filter_jan(dataset): return dataset.time.begin.month == 1
 
         :param int limit:
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
 
-        :param progress_cbk: Int, Int -> None
-            if supplied will be called for every file read with `files_processed_so_far, total_files`. This is
+        :param progress_cbk:
+            ``Int, Int -> None``,
+            if supplied will be called for every file read with ``files_processed_so_far, total_files``. This is
             only applicable to non-lazy loads, ignored when using dask.
 
-        :return: Requested data in a :class:`xarray.Dataset`
-        :rtype: :class:`xarray.Dataset`
+        :return:
+            Requested data in a :class:`xarray.Dataset`
+
+        :rtype:
+            :class:`xarray.Dataset`
         """
         if product is None and datasets is None:
             raise ValueError("Must specify a product or supply datasets")

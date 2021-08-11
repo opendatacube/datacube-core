@@ -6,7 +6,7 @@ Dataset Preparation Scripts
 ***************************
 
 .. note::
-  
+
   Much of the below content is not updated and has not been tested recently.
 
 
@@ -133,7 +133,7 @@ To view an example of how to `index Sentinel-2 data from S3`_ check out the docu
 available in the datacube-dataset-config_ repository.
 
 .. _`index Sentinel-2 data from S3`: https://github.com/opendatacube/datacube-dataset-config/blob/master/sentinel-2-l2a-cogs.md
-.. _datacube-datset-config: https://github.com/opendatacube/datacube-dataset-config/
+.. _datacube-dataset-config: https://github.com/opendatacube/datacube-dataset-config/
 
 Custom Prepare Scripts
 ======================
