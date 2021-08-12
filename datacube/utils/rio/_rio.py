@@ -12,21 +12,14 @@ import rasterio.env
 from datacube.utils.generic import thread_local_cache
 
 _CFG_LOCK = threading.Lock()
-_CFG = SimpleNamespace(aws=None,
-                       cloud_defaults=False,
-                       kwargs={},
-                       epoch=0)
+_CFG = SimpleNamespace(aws=None, cloud_defaults=False, kwargs={}, epoch=0)
 
 
-SECRET_KEYS = ('AWS_ACCESS_KEY_ID',
-               'AWS_SECRET_ACCESS_KEY',
-               'AWS_SESSION_TOKEN')
+SECRET_KEYS = ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN")
 
 
 def _sanitize(opts, keys):
-    return {k: (v if k not in keys
-                else 'xx..xx')
-            for k, v in opts.items()}
+    return {k: (v if k not in keys else "xx..xx") for k, v in opts.items()}
 
 
 def _state(purge=False):
@@ -34,9 +27,9 @@ def _state(purge=False):
     .env   None| rasterio.Env
     .epoch -1  | +Int
     """
-    return thread_local_cache("__rio_state__",
-                              SimpleNamespace(env=None, epoch=-1),
-                              purge=purge)
+    return thread_local_cache(
+        "__rio_state__", SimpleNamespace(env=None, epoch=-1), purge=purge
+    )
 
 
 def get_rio_env(sanitize=True):
@@ -78,29 +71,33 @@ def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
     session = DummySession()
 
     if aws is not None:
-        if not (aws == 'auto' or
-                isinstance(aws, dict)):
+        if not (aws == "auto" or isinstance(aws, dict)):
             raise ValueError('Only support: None|"auto"|{..} for `aws` parameter')
 
-        aws = {} if aws == 'auto' else dict(**aws)
-        region_name = aws.get('region_name', 'auto')
+        aws = {} if aws == "auto" else dict(**aws)
+        region_name = aws.get("region_name", "auto")
 
-        if region_name == 'auto':
+        if region_name == "auto":
             from datacube.utils.aws import auto_find_region
+
             try:
-                aws['region_name'] = auto_find_region()
+                aws["region_name"] = auto_find_region()
             except ValueError as e:
                 # only treat it as error if it was requested by user
-                if 'region_name' in aws:
+                if "region_name" in aws:
                     raise e
 
         session = AWSSession(**aws)
 
-    opts = dict(
-        GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR',
-        GDAL_HTTP_MAX_RETRY='10',
-        GDAL_HTTP_RETRY_DELAY='0.5',
-    ) if cloud_defaults else {}
+    opts = (
+        dict(
+            GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+            GDAL_HTTP_MAX_RETRY="10",
+            GDAL_HTTP_RETRY_DELAY="0.5",
+        )
+        if cloud_defaults
+        else {}
+    )
 
     opts.update(**kwargs)
 
@@ -127,9 +124,9 @@ def activate_from_config():
     state = _state()
 
     if cfg.epoch != state.epoch:
-        ee = activate_rio_env(aws=cfg.aws,
-                              cloud_defaults=cfg.cloud_defaults,
-                              **cfg.kwargs)
+        ee = activate_rio_env(
+            aws=cfg.aws, cloud_defaults=cfg.cloud_defaults, **cfg.kwargs
+        )
         state.epoch = cfg.epoch
         return ee
 
@@ -151,12 +148,9 @@ def set_default_rio_config(aws=None, cloud_defaults=False, **kwargs):
     global _CFG  # pylint: disable=global-statement
 
     with _CFG_LOCK:
-        _CFG = SimpleNamespace(aws=aws,
-                               cloud_defaults=cloud_defaults,
-                               kwargs=kwargs,
-                               epoch=_CFG.epoch + 1)
-
-
+        _CFG = SimpleNamespace(
+            aws=aws, cloud_defaults=cloud_defaults, kwargs=kwargs, epoch=_CFG.epoch + 1
+        )
 
 
 def configure_s3_access(
