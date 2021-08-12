@@ -6,7 +6,6 @@
 """
 import threading
 from types import SimpleNamespace
-import functools
 import rasterio
 from rasterio.session import AWSSession, DummySession
 import rasterio.env
@@ -158,54 +157,28 @@ def set_default_rio_config(aws=None, cloud_defaults=False, **kwargs):
                                epoch=_CFG.epoch + 1)
 
 
-def configure_s3_access(profile=None,
-                        region_name="auto",
-                        aws_unsigned=False,
-                        requester_pays=False,
-                        cloud_defaults=True,
-                        client=None,
-                        **gdal_opts):
-    """ Credentialize for S3 bucket access or configure public access.
-
-    This function obtains credentials for S3 access and passes them on to
-    processing threads, either local or on dask cluster.
 
 
-    .. note::
-
-       if credentials are STS based they will eventually expire, currently
-       this case is not handled very well, reads will just start failing
-       eventually and will never recover.
-
-    :param profile:        AWS profile name to use
-    :param region_name:    Default region_name to use if not configured for a given/default AWS profile
-    :param aws_unsigned:   If ``True`` don't bother with credentials when reading from S3
-    :param requester_pays: Needed when accessing requester pays buckets
-
-    :param cloud_defaults: Assume files are in the cloud native format, i.e. no side-car files, disables
-                           looking for side-car files, makes things faster but won't work for files
-                           that do have side-car files with extra metadata.
-
-    :param client:         Dask distributed ``dask.Client`` instance, if supplied apply settings on the
-                           dask cluster rather than locally.
-    :param gdal_opts:      Any other option to pass to GDAL environment setup
-
-    :returns: credentials object or ``None`` if ``aws_unsigned=True``
+def configure_s3_access(
+    profile=None,
+    region_name="auto",
+    aws_unsigned=False,
+    requester_pays=False,
+    cloud_defaults=True,
+    client=None,
+    **gdal_opts
+):
     """
-    from datacube.utils.aws import get_aws_settings
+    Use :meth:`datacube.utils.aws.configure_s3_access` instead.
+    """
+    from datacube.utils.aws import configure_s3_access
 
-    aws, creds = get_aws_settings(profile=profile,
-                                  region_name=region_name,
-                                  aws_unsigned=aws_unsigned,
-                                  requester_pays=requester_pays)
-
-    if client is None:
-        set_default_rio_config(aws=aws, cloud_defaults=cloud_defaults, **gdal_opts)
-    else:
-        client.register_worker_callbacks(
-            functools.partial(set_default_rio_config,
-                              aws=aws,
-                              cloud_defaults=cloud_defaults,
-                              **gdal_opts))
-
-    return creds
+    return configure_s3_access(
+        profile=profile,
+        region_name=region_name,
+        aws_unsigned=aws_unsigned,
+        requester_pays=requester_pays,
+        cloud_defaults=cloud_defaults,
+        client=client,
+        **gdal_opts
+    )
