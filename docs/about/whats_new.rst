@@ -9,7 +9,10 @@ What's New
 v1.8.5 (???)
 =======================
 
-- ???
+- Fix unguarded dependencies on boto libraries (:pull:`1174`, :issue:`1172`)
+- Various documentation fixes (:pull:`1175`)
+- Address import problems on Windows due to use of Unix only functions (:issue:`1176`)
+
 
 v1.8.4 (6 August 2021)
 =======================
