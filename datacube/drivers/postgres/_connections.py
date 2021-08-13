@@ -17,7 +17,6 @@ import logging
 import os
 import re
 from contextlib import contextmanager
-from time import clock_gettime, CLOCK_REALTIME
 from typing import Callable, Optional, Union
 
 from sqlalchemy import event, create_engine, text
@@ -272,6 +271,8 @@ def handle_dynamic_token_authentication(engine: Engine,
     @event.listens_for(engine, "do_connect")
     def override_new_connection(dialect, conn_rec, cargs, cparams):
         # Handle IAM authentication
+        from time import clock_gettime, CLOCK_REALTIME
+
         now = clock_gettime(CLOCK_REALTIME)
         if now - last_token_time[0] > timeout:
             last_token[0] = new_token(**kwargs)
