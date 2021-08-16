@@ -2,4 +2,9 @@
 AWS
 ===
 
-dfs
+Something
+
+.. autosummary::
+   :toctree: generate/
+
+   datacube.utils.aws

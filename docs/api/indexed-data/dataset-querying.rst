@@ -13,7 +13,6 @@ When connected to an ODC Database, these methods are available for searching and
 .. currentmodule:: datacube.index._datasets.DatasetResource
 
 .. autosummary::
-   :nosignatures:
    :toctree: generate/
 
    get

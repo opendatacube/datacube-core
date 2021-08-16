@@ -2,13 +2,16 @@
 Masking
 =======
 
-.. currentmodule:: datacube.utils.masking
+something something
+
 
 
 Masking No Data Values
 ----------------------
 
-.. automethod:: masking.mask_invalid_data
+.. py:currentmodule:: datacube.utils.masking
+
+.. automethod:: mask_invalid_data
 
 Masking with Bit-Flag Measurements
 ----------------------------------
@@ -46,5 +49,5 @@ How to Create Masks within code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-.. automethod:: masking.describe_variable_flags
+.. automethod:: datacube.utils.masking.describe_variable_flags
 .. automethod:: masking.make_mask

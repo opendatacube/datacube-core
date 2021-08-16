@@ -1,28 +1,69 @@
-************************
+*********************
 About & Core Concepts
-************************
+*********************
 
-The Open Data Cube (ODC) is an open source solution for accessing, managing, and analyzing large quantities of Geographic Information System (GIS) data - namely Earth observation (EO) data.
+Overview
+========
 
-The ODC presents a common analytical framework composed of a series of data structures and tools which facilitate the organization and analysis of large gridded data collections. The Open Data Cube was developed for the analysis of temporally-rich earth observation data, however the flexibility of the platform also allows other gridded data collections to be included and analyzed. Such data may include elevation models, geophysical grids, interpolated surfaces and model outputs.
+The Open Data Cube is a collection of software designed to:
 
-A key characteristic of the Open Data Cube is that every unique observation is kept, which contrasts with many other methods used to handle large gridded data collections. Some of the major advantages of ODC are the following:
+* Index large amounts of Earth observation data, which can be stored on a file system or
+  a cloud platform
+* Provide a :term:`Python` based :term:`API` for high performance querying and data access
+* Give scientists and other users easy ability to perform exploratory data analysis
+* Allow continental-scale processing of the stored data
+* Track the provenance of all the contained data to allow for quality control and updates
 
-- Flexible framework
-- User maintains control and ownership over their data
-- Paradigm shift from scene-based analysis to pixel based
-- Lower barrier to entry for remote sensing data analysis.
+The Open Data Cube software is based around the datacube-core_ library. In addition to this
+core library, there are a range of tools that can be installed on top to enable
+further capabilities, such as open web services or metadata exploration.
 
-In this section, we briefly describe and illustrate the high-level architecture and ecosystem of the ODC framework in order to provide a better understanding to those who are new to ODC. This document only covers major components of the ODC and the relationships between them.
+
+All software in the Open Data Cube project family is released under the `Apache 2.0
+<https://github.com/opendatacube/datacube-core/blob/develop/LICENSE>`_ license.
+
+
+.. figure:: ../diagrams/f1.png
+   :name: high-level-overview
+
+   High-Level ODC Overview
+
+.. _datacube-core: https://github.com/opendatacube/datacube-core
+
+
+Use Cases
+=========
+
+The Open Data Cube has a range of uses, including the following:
+
+* **Collection Management:** The ODC can be used as an index to assist in managing a collection
+  of Earth observation data, including lineage (parent/child relationships).
+* **Exploratory Data Analysis:** Interactive analysis of data, such as through a Jupyter Notebook.
+* **Publishing Web Services:** Using the :abbr:`ODC (Open Data Cube)` to serve :abbr:`WMS (Web Map Service)`, :abbr:`WCS (Web Coverage Service)`,
+  :abbr:`WPS (Web Processing Service)` or custom tools (such as polygon drill time series analysis).
+* **Large-scale workflows on Cloud:** Continental or global-scale processing of data on the cloud
+  using XArray and Dask on Kubernetes, for example.
+* **Large-scale workflows on HPC:** Continental or global-scale processing of data on a High
+  Performance Computing supercomputer cluster.
+* **Standalone Applications:** Running environmental analysis applications on a laptop,
+  suitable for field work, or outreach to a developing region.
+
+.. toctree::
+    :caption: About & Core Concepts
+
+    Overview & Use Cases <self>
+
 
 .. toctree::
     :caption: Core Concepts
 
+    architecture-guide
     datasets
-    dataset-documents.rst
     products
+    metadata-types
 
 .. toctree::
     :caption: Ecosystem
 
+    extensions
     existing-deployments

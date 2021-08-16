@@ -19,8 +19,6 @@ When connected to an ODC Database, these methods are available for discovering i
    can_update
    get
    get_by_name
-   get_unsafe
-   get_by_name_unsafe
    get_with_fields
    search
    search_robust

@@ -1,6 +1,6 @@
-************************************
-Data Access & Analysis API
-************************************
+**********************
+Data Access & Analysis
+**********************
 
 These pages are designed to provide an introduction on how to access data from an existing Open Data Cube instance.
 
@@ -30,7 +30,7 @@ These pages are designed to provide an introduction on how to access data from a
 
 .. toctree::
     :maxdepth: 4
-    :caption: Tools for Exploring Data in an Open Data Cube
+    :caption: Examples
 
     tools-exploring-data/using-juypter.rst
     tools-exploring-data/using-stac.rst

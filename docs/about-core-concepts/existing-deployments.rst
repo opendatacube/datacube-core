@@ -1,5 +1,5 @@
 Existing Deployments
-=============================
+====================
 
 Digital Earth Australia
 -----------------------
@@ -26,6 +26,26 @@ Vietnam Open Data Cube
 ----------------------
 
 http://datacube.vn/
+
+
+INEGI - Mexico Open Data Cube
+-----------------------------
+
+http://en.www.inegi.org.mx/default.html
+
+
+Brazil Data Cube
+----------------
+
+https://github.com/brazil-data-cube
+
+
+Armenian Data Cube
+------------------
+
+http://datacube.sci.am/
+
+
 
 
 .. note::

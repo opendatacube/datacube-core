@@ -2,8 +2,6 @@
 Utilities
 =========
 
-sfdds
-
 .. currentmodule:: datacube.utils.geometry
 
 .. autosummary::

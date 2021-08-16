@@ -1,5 +1,5 @@
-Extending Open Data Cube
-************************
+Extending the Open Data Cube
+****************************
 
 Beyond the configuration available in ODC, there are three extension points
 provided for implementing different types of data storage and indexing.

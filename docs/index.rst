@@ -1,10 +1,3 @@
-
-
-..
-   .. image:: _static/odc-logo-horizontal.svg
-      :align: center
-      :alt: Open Data Cube Logo
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
    Open Data Cube Manual
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,12 +7,23 @@ analysis environment for decades of analysis ready Earth observation satellite
 and related data from multiple sources.
 
 
+.. image:: _static/UsingODC.png
+   :target: data-access-analysis/index.html
+   :class: img-fluid
+
+.. image:: _static/ManagingODC.png
+   :target: odc-administration/index.html
+   :class: img-fluid
+
+.. image:: _static/ManagingODC.png
+   :target: data-access-analysis/index.html
+   :class: img-fluid
+
+
 .. toctree::
-   :caption: Theme Documentation
    :maxdepth: 5
 
    about-core-concepts/index
    data-access-analysis/index
-   odc-administration/index
    installation/index
    api/index

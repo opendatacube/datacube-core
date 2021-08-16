@@ -2,8 +2,6 @@
 Geometry Classes
 ================
 
-sdfs
-
 .. currentmodule:: datacube
 
 .. autosummary::

@@ -2,11 +2,10 @@
 Creating Geometries
 ===================
 
-Something here
-
 .. currentmodule:: datacube.utils.geometry
 
 .. autosummary::
+   :toctree: generate/
 
    point
    multipoint

@@ -13,7 +13,6 @@ from bs4 import BeautifulSoup as bs
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('.'))
 print(sys.path)
-
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 # -- General configuration ------------------------------------------------
@@ -59,7 +58,7 @@ project = u'Open Data Cube'
 version = "1.8"
 # The full version, including alpha/beta/rc tags.
 # FIXME: obtain real version by running git
-release = version+"-FIXME"
+release = version
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -74,20 +73,20 @@ exclude_patterns = ['README.rst']
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
 
-autosummary_generate = True
-autoclass_content = "both"
-autodoc_default_options = {
-    'autosummary': True,
-    'inherited-members': True
-}
-
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
-# show_authors = False
+show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'friendly'
 
+autosummary_generate = True
+autoclass_content = "both"
+
+autodoc_default_options = {
+    'autosummary': True,
+    'inherited-members': True
+}
 
 extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
             'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
@@ -111,15 +110,28 @@ else:
     html_theme = 'pydata_sphinx_theme'
 
 html_theme_options = {
+    "navigation_depth": 1,
     "show_prev_next": False,
     "collapse_navigation": True,
     "use_edit_page_button": True,
-    "footer_items": [],
+    "footer_items": ["odc-footer"],
     "page_sidebar_items": [
         "page-toc",
         "autoclass_page_toc",
         "autosummary_page_toc",
         "edit-this-page"
+    ],
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/opendatacube/datacube-core",
+            "icon": "fab fa-github",
+        },
+        {
+            "name": "Slack",
+            "url": "http://slack.opendatacube.org/",
+            "icon": "fab fa-slack",
+        },
     ],
 }
 
@@ -164,11 +176,11 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
         soup = bs(context["body"], "html.parser")
 
         class_sections = soup.find(class_='class')
-        if class_sections is not None:
+        if class_sections != None:
             return ""
 
         matches = soup.find_all('dl')
-        if matches is None or len(matches) is 0:
+        if matches == None or len(matches) == 0:
             return ""
 
         out = {
@@ -179,13 +191,13 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
         #  remove the class dt
         pyclass = matches.pop(0)
         pyclass = pyclass.find('dt')
-        if pyclass is not None:
+        if pyclass != None:
             out['title'] = pyclass.get('id')
 
         for match in matches:
             match_dt = match.find('dt')
             link = match.find(class_="headerlink")
-            if link is not None:
+            if link != None:
                 out['menu_items'].append({
                     'title': match_dt.get('id'),
                     'link': link['href']
@@ -197,20 +209,19 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
         soup = bs(context["body"], "html.parser")
 
         class_sections = soup.find_all(class_='autosummary')
-        if class_sections is None or len(class_sections) is 0:
+        if class_sections == None or len(class_sections) == 0:
             return ""
 
         out = {
             'title': '',
             'menu_items': []
         }
-        # print(soup)
         class_title = soup.find(class_='class')
-        if class_title is None:
+        if class_title == None:
             return ""
 
         pyclass = class_title.find('dt')
-        if pyclass is not None:
+        if pyclass != None:
             out['title'] = pyclass.get('id')
 
         for section in class_sections:
@@ -223,9 +234,9 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
             for match in matches:
                 link = match.find(class_="internal")
                 
-                if link is not None:
+                if link != None:
                     title = link['title']
-                    if title is not None:
+                    if title != None:
                         title = title.replace(out['title'], '')
                     out_section['menu_items'].append({
                         'title': title,

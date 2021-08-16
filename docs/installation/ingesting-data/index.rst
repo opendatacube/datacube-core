@@ -1,7 +1,7 @@
 
 
-Ingesting Data (Legacy)
-***********************
+Ingesting Data
+**************
 .. _ingestion:
 
 .. note::

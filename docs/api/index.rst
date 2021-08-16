@@ -2,62 +2,57 @@
 API Reference
 *************
 
-dzsz
+The following pages provide a full API reference for the ``datacube`` python library.
 
 
 .. toctree::
     :caption: Core Classes & Data Model
+    :maxdepth: 1
 
-    datacube
-    /api/core-classes/dataset
-    /api/core-classes/datasetType
-    /api/core-classes/measurement
-    /api/core-classes/metadataType
+    core-classes/datacube
+    core-classes/dataset
+    core-classes/datasetType
+    geometry/classes
+    core-classes/measurement
+    core-classes/metadataType
     core-classes/range
+    core-classes/query
     grid-processing/tile
 
 
 .. toctree::
     :caption: Querying & Loading Data
+    :maxdepth: 1
 
-    indexed-data/discovery.rst
-    indexed-data/dataset-querying.rst
-    indexed-data/product-querying.rst
+    indexed-data/discovery
+    indexed-data/dataset-querying
+    indexed-data/product-querying
+    indexed-data/loading
+    imagery/masking
+
 
 
 .. toctree::
     :caption: Managing Data
 
-    indexed-data/dataset-writing.rst
-    indexed-data/product-writing.rst
-
-
-.. toctree::
-    :caption: Grid Processing
-
-    grid-processing/gridWorkflow.rst
-
-
-.. toctree::
-    :caption: Imagery Utilities
-
-    imagery/masking.rst
-    imagery/writing-cogs.rst
+    indexed-data/dataset-writing
+    indexed-data/product-writing
 
 
 .. toctree::
     :caption: Geometry Utilities
 
-    geometry/classes.rst
-    geometry/creating.rst
-    geometry/spatial-operations.rst
-    geometry/utilities.rst
+    geometry/creating
+    geometry/spatial-operations
+    geometry/utilities
 
 
 .. toctree::
     :caption: Utilities
 
-    utilities/dask.rst
-    utilities/aws.rst
+    Amazon Web Services (AWS) <utilities/aws>
+    Writing GeoTIFFs <imagery/cogs>
+    utilities/dask
+    grid-processing/gridWorkflow
 
 

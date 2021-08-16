@@ -1,8 +1,8 @@
-************************************
-Setting up an Open Data Cube
-************************************
+******************************************
+Installing and managing the Open Data Cube
+******************************************
 
-This section contains information on setting up and running an Open Data Cube.
+This section contains information on setting up and managing the Open Data Cube.
 
 .. admonition:: Note
    :class: info
@@ -14,9 +14,18 @@ This section contains information on setting up and running an Open Data Cube.
     :caption: Setting up an Open Data Cube
     :maxdepth: 5
 
+    setup/miniconda
     setup/macosx
     setup/ubuntu
     setup/windows
+
+
+.. toctree::
+    :maxdepth: 4
+    :caption: Open Data Cube CLI
+
+    cli
+
 
 .. toctree::
     :maxdepth: 4
@@ -24,3 +33,22 @@ This section contains information on setting up and running an Open Data Cube.
 
     database/setup
 
+
+.. toctree::
+    :caption: Indexing Data
+
+    indexing-data/step-guide
+    indexing-data/indexing-from-s3
+
+
+.. toctree::
+    :caption: Advanced Topics
+
+    extending-odc
+
+
+.. toctree::
+    :caption: Legacy Approaches
+
+    data-preperation-scripts
+    ingesting-data/index
