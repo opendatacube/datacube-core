@@ -1,0 +1,33 @@
+name: Conda Smoke Test
+on:
+  pull_request:
+    paths:
+      - '**'
+
+  push:
+    paths:
+      - '**'
+
+jobs:
+  check-conda:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+          os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+          python-version: ["3.7", "3.8"]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: cubeenv
+          auto-update-conda: true
+          channels: conda-forge,defaults
+          python-version: ${{ matrix.python-version}}
+
+      - name: Bash
+        shell: bash -l {0}
+        run: |
+          conda install datacube
+          datacube --help
