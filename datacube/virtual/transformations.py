@@ -126,7 +126,7 @@ class ApplyMask(Transformation):
             mask = ~xarray.apply_ufunc(binary_erosion,
                                        ~mask,
                                        kernel.reshape((1, ) + kernel.shape),
-                                       output_dtypes=[numpy.bool],
+                                       output_dtypes=[bool],
                                        dask='parallelized',
                                        keep_attrs=True)
 
@@ -136,7 +136,7 @@ class ApplyMask(Transformation):
             mask = ~xarray.apply_ufunc(binary_dilation,
                                        ~mask,
                                        kernel.reshape((1, ) + kernel.shape),
-                                       output_dtypes=[numpy.bool],
+                                       output_dtypes=[bool],
                                        dask='parallelized',
                                        keep_attrs=True)
 
@@ -330,7 +330,7 @@ class Expressions(Transformation):
             dtype = result.dtype
             mask = evaluate_nodata_mask(formula, data, parser, MaskEvaluator)
 
-            if numpy.dtype(dtype) == numpy.bool:
+            if numpy.dtype(dtype) == bool:
                 # any operation on nodata should evaluate to False
                 # omission of attrs['nodata'] is deliberate
                 result = result.where(~mask, False)

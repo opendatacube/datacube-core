@@ -11,7 +11,6 @@ The main functions are `make_mask(variable)` `describe_flags(variable)`
 import collections
 
 import pandas
-import numpy
 import xarray
 from xarray import DataArray, Dataset
 
@@ -124,7 +123,7 @@ def valid_data_mask(data):
 
     return xarray.apply_ufunc(valid_mask, data, nodata,
                               dask='parallelized',
-                              output_dtypes=[numpy.bool])
+                              output_dtypes=[bool])
 
 
 def mask_invalid_data(data, keep_attrs=True):
