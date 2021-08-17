@@ -40,7 +40,6 @@ jobs:
       - name: Bash
         shell: bash -l {0}
         run: |
-          conda install datacube
           pip install .
           python --version
           datacube --version
