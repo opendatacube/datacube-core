@@ -73,7 +73,6 @@ def test_pickleable():
 
 
 def test_geobox_simple():
-    from affine import Affine
     t = geometry.GeoBox(4000, 4000,
                         Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0),
                         epsg4326)
@@ -98,6 +97,14 @@ def test_geobox_simple():
     assert isinstance(geometry.GeoBox(4000, 4000,
                                       Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0),
                                       'epsg:4326').crs, CRS)
+
+    # Check GeoBox class is hashable
+    t_copy = GeoBox(t.width, t.height, t.transform, t.crs)
+    t_other = GeoBox(t.width+1, t.height, t.transform, t.crs)
+    assert t_copy is not t
+    assert t == t_copy
+    assert len(set([t, t, t_copy])) == 1
+    assert len(set([t, t_copy, t_other])) == 2
 
 
 def test_props():

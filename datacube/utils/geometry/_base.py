@@ -1065,6 +1065,9 @@ class GeoBox:
     def __bool__(self) -> bool:
         return not self.is_empty()
 
+    def __hash__(self):
+        return hash((*self.shape, self.crs, self.affine))
+
     @property
     def transform(self) -> Affine:
         return self.affine
