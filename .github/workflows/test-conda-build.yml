@@ -30,6 +30,7 @@ jobs:
         shell: bash -l {0}
         run: |
           conda install datacube
-          pip install -e .
+          pip install --editable --user .
           python --version
           datacube --version
+          conda env export
