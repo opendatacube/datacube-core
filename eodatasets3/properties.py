@@ -256,6 +256,13 @@ _LANDSAT_EXTENDED_PROPS = {
     "landsat:processing_software_version": None,
     "landsat:scan_gap_interpolation": float,
     "landsat:station_id": None,
+    # Landsat USGS Properties
+    "landsat:rmse": None,
+    "landsat:rmse_x": None,
+    "landsat:rmse_y": None,
+    "landsat:wrs_type": None,
+    "landsat:correction": None,
+    "landsat:cloud_cover_land": None,
 }
 
 _SENTINEL_EXTENDED_PROPS = {
@@ -275,7 +282,11 @@ _SENTINEL_EXTENDED_PROPS = {
 
 
 _STAC_MISC_PROPS = {
-    "providers": None,  # https://github.com/radiantearth/stac-spec/blob/master/item-spec/common-metadata.md#provider
+    "providers": None,  # https://github.com/radiantearth/stac-spec/blob/master/item-spec/common-metadata.md#provider,
+    # Projection extension
+    "proj:epsg": int,
+    "proj:shape": None,
+    "proj:transform": None,
 }
 
 
