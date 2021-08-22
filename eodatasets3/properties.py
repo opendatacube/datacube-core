@@ -350,8 +350,10 @@ class Eo3Dict(collections.abc.MutableMapping):
             properties = {}
         self._props = properties
         # We normalise the properties they gave us.
-        if normalise_input:
-            for key in list(self._props):
+        for key in list(self._props):
+            # We always want to normalise dates as datetime objects rather than strings
+            # for consistency.
+            if normalise_input or ("datetime" in key):
                 self.normalise_and_set(key, self._props[key], expect_override=True)
         self._finished_init_ = True
 
