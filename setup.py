@@ -47,7 +47,7 @@ extra_plugins = dict(read=[], write=[], index=[])
 
 setup(
     name='datacube',
-    python_requires='>=3.6.0',
+    python_requires='>=3.8.0',
 
     url='https://github.com/opendatacube/datacube-core',
     author='Open Data Cube',
