@@ -7,7 +7,7 @@ These installation instructions build an Open Data Cube (ODC) environment that c
 
 The ODC is a Python library with dependencies including:
 
-* Python 3.6+
+* Python 3.8+
 * GDAL and other geospatial libraries
 * A range of Python dependencies, such as Rasterio and XArray
 * A PostgreSQL database.

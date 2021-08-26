@@ -24,7 +24,7 @@ Create the environment
 
 .. code::
 
-    conda create --name cubeenv python=3.6 datacube
+    conda create --name cubeenv python=3.8 datacube
 
 Activate the environment on **Linux** and **OS X**
 
