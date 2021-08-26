@@ -29,7 +29,7 @@ HDF5, netCDF4, and GDAL::
 
 Python and packages
 -------------------
-Python 3.6+ is required (3.8 is recommended)
+Python 3.8+ is recommended
 
 Install the latest version of the ODC from PyPI:
 

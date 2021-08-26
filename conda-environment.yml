@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - pip
-  - python >=3.6
+  - python >=3.8
   - setuptools
   - setuptools_scm >=3.4
   - toml
@@ -12,7 +12,7 @@ dependencies:
   - sphinx
   - sphinx-click
   - click
-  - python >=3.6
+  - python >=3.8
   - affine
   - botocore
   - boto3
