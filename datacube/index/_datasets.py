@@ -5,23 +5,23 @@
 """
 API for dataset indexing, access and search.
 """
+import json
 import logging
 import warnings
 from collections import namedtuple
 from typing import Iterable, Tuple, Union, List, Optional
 from uuid import UUID
 
+from sqlalchemy import select, func
+
+from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
+from datacube.drivers.postgres._schema import DATASET
 from datacube.model import Dataset, DatasetType
+from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes, cached_property
 from datacube.utils.changes import get_doc_changes
 from . import fields
-
-import json
-from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
-from datacube.drivers.postgres._schema import DATASET
-from sqlalchemy import select, func
-from datacube.model.fields import Field
 
 _LOG = logging.getLogger(__name__)
 
@@ -352,6 +352,16 @@ class DatasetResource(object):
         with self._db.begin() as transaction:
             for id_ in ids:
                 transaction.restore_dataset(id_)
+
+    def purge(self, ids: Iterable[UUID]):
+        """
+        Delete archived datasets
+
+        :param ids: iterable of dataset ids to purge
+        """
+        with self._db.begin() as transaction:
+            for id_ in ids:
+                transaction.delete_dataset(id_)
 
     def get_field_names(self, product_name=None):
         """
