@@ -105,7 +105,7 @@ graphviz_output_format = 'svg'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 if on_rtd:
-    html_theme = 'default'
+    html_theme = 'pydata_sphinx_theme'
 else:
     html_theme = 'pydata_sphinx_theme'
 
