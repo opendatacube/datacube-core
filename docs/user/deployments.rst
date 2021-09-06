@@ -43,6 +43,11 @@ Armenian Data Cube
 http://datacube.sci.am/
 
 
+Mongolian and Kyrgyz Data Cubes
+------------------
+https://eosphere.co.uk/mongolia-and-kyrgyzstan-data-cubes
+
+
 .. note::
 
   If you'd like your project to be on this list, please raise an issue or create a pull request.
