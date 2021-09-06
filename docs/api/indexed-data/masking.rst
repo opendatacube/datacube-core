@@ -1,15 +1,13 @@
+.. py:module:: datacube.utils.masking
+
 =======
 Masking
 =======
 
-something something
-
-
-
 Masking No Data Values
 ----------------------
 
-.. py:currentmodule:: datacube.utils.masking
+.. currentmodule:: datacube.utils
 
 .. automethod:: mask_invalid_data
 
@@ -41,13 +39,10 @@ variable.
 How to Define Meanings on Measurements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. warning::
-
-   TODO
 
 How to Create Masks within code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-.. automethod:: datacube.utils.masking.describe_variable_flags
+.. automethod:: masking.describe_variable_flags
 .. automethod:: masking.make_mask

@@ -2,7 +2,6 @@
 AWS
 ===
 
-Something
 
 .. autosummary::
    :toctree: generate/
