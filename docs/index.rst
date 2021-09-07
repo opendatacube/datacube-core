@@ -28,9 +28,9 @@ and related data from multiple sources.
    installation/index
    api/index
 
+
 .. toctree::
    :hidden:
-   :maxdepth: 5
 
    about/license
    about/whats_new
