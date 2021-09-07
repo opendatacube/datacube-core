@@ -1,4 +1,0 @@
-ODC License
-***********
-
-.. literalinclude:: ./../LICENSE

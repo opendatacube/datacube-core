@@ -27,3 +27,10 @@ and related data from multiple sources.
    data-access-analysis/index
    installation/index
    api/index
+
+.. toctree::
+   :hidden:
+   :maxdepth: 5
+
+   about/license
+   about/whats_new

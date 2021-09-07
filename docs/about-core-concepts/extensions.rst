@@ -7,7 +7,7 @@ Open Web Services
 The datacube-ows_ server allows users to interact with
 an Open Data Cube instance using client software
 (for example, Desktop GIS like QGIS, or a web mapping library like Leaflet or Terria),
-through the use of Web Map Service (WMS) and Web Coverage Service (WCS) standards from the Open Goespatial Consortium.
+through the use of Web Map Service (WMS) and Web Coverage Service (WCS) standards from the Open Geospatial Consortium.
 
 
 .. _datacube-ows: https://github.com/opendatacube/datacube-ows
@@ -33,7 +33,7 @@ See the `Digital Earth Australia Explorer`_ for an example deployment showing th
 Cube in a Box
 -------------
 
-_`Cube in a Box` provides everything needed to get up and running quickly with Open Data Cube inside
+`Cube in a Box`_ provides everything needed to get up and running quickly with Open Data Cube inside
 an Amazon Web Services Environment.
 
 .. _`Cube in a Box`: https://github.com/opendatacube/cube-in-a-box
@@ -53,7 +53,7 @@ producing datasets that are packaged completely.
 Data Cube Statistician
 ----------------------
 
-_`Data Cube Statistician` is a framework of tools for generating statistical summaries of large collections of Earth Observation Imagery
+`Data Cube Statistician`_ is a framework of tools for generating statistical summaries of large collections of Earth Observation Imagery
 managed in an Open Datacube Instance. It is a spiritual successor to `datacube-stats`_, but intended to run in a
 cloud environment rather than on a High Performance Computer (HPC). It has already run at continental scale to produce annual geomedian
 summaries of all of Africa based on Sentinel-2 data. It is still under development, including adding support

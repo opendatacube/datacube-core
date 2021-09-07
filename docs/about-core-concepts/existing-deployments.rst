@@ -13,6 +13,7 @@ If you are using `Digital Earth Australia`_ at the :term:`NCI`, see the
 
 Digital Earth Africa
 --------------------
+
 https://www.digitalearthafrica.org/
 
 
@@ -46,6 +47,10 @@ Armenian Data Cube
 http://datacube.sci.am/
 
 
+Mongolian and Kyrgyz Data Cubes
+-------------------------------
+
+https://eosphere.co.uk/mongolia-and-kyrgyzstan-data-cubes
 
 
 .. note::
