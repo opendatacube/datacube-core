@@ -28,9 +28,3 @@ and related data from multiple sources.
    installation/index
    api/index
 
-
-.. toctree::
-   :hidden:
-
-   about/license
-   about/whats_new
