@@ -7,6 +7,7 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
+from textwrap import dedent
 from typing import Iterable, Mapping, MutableMapping, Any, List, Set
 
 import click
@@ -142,7 +143,7 @@ def load_datasets_for_update(doc_stream, index):
                     'you can supply several by repeating this option with a new product name'),
               multiple=True)
 @click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
-              is_flag=True, default=False)
+              is_flag=True, default=False, hidden=True)
 @click.option('--auto-add-lineage/--no-auto-add-lineage', is_flag=True, default=True,
               help=('Default behaviour is to automatically add lineage datasets if they are missing from the database, '
                     'but this can be disabled if lineage is expected to be present in the DB, '
@@ -237,11 +238,13 @@ def parse_update_rules(keys_that_can_change):
 @click.option('--location-policy',
               type=click.Choice(['keep', 'archive', 'forget']),
               default='keep',
-              help='''What to do with previously recorded dataset location
-'keep' - keep as alternative location [default]
-'archive' - mark as archived
-'forget' - remove from the index
-''')
+              help=dedent('''
+              What to do with previously recorded dataset location(s)
+              
+              \b
+              - 'keep': keep as alternative location [default]
+              - 'archive': mark as archived
+              - 'forget': remove from the index'''))
 @click.argument('dataset-paths', nargs=-1)
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
