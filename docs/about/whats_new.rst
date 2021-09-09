@@ -5,6 +5,10 @@
 What's New
 **********
 
+v1.8.next
+=========
+
+- Trivial fixes to CLI help output (:pull:`1197`)
 
 v1.8.5 (18 August 2021)
 =======================
