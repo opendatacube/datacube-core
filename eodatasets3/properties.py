@@ -5,7 +5,7 @@ from collections import defaultdict
 from datetime import datetime
 from enum import Enum, EnumMeta
 from textwrap import dedent
-from typing import Tuple, Dict, Optional, Any, Mapping, Callable, Union, Set
+from typing import Any, Callable, Dict, Mapping, Optional, Set, Tuple, Union
 from urllib.parse import urlencode
 
 import ciso8601
@@ -113,7 +113,7 @@ def normalise_platforms(value: Union[str, list, set]):
     if not isinstance(value, (list, set, tuple)):
         value = value.split(",")
 
-    platforms = sorted(set(s.strip().lower().replace("_", "-") for s in value if s))
+    platforms = sorted({s.strip().lower().replace("_", "-") for s in value if s})
     if not platforms:
         return None
 

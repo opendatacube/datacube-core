@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple, Dict, Optional, List, Union
+from typing import Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 import affine
