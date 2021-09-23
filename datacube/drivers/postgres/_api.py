@@ -344,6 +344,16 @@ class PostgresDbAPI(object):
 
     def delete_dataset(self, dataset_id):
         self._connection.execute(
+            DATASET_LOCATION.delete().where(
+                DATASET_LOCATION.c.dataset_ref == dataset_id
+            )
+        )
+        self._connection.execute(
+            DATASET_SOURCE.delete().where(
+                DATASET_SOURCE.c.dataset_ref == dataset_id
+            )
+        )
+        self._connection.execute(
             DATASET.delete().where(
                 DATASET.c.id == dataset_id
             )
