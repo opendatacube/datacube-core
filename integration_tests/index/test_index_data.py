@@ -146,11 +146,11 @@ def test_purge_datasets(index, initialised_postgres_db, local_config, default_me
     indexed_dataset = index.datasets.get(_telemetry_uuid)
     assert indexed_dataset.is_archived
 
-    clirunner(['dataset', 'purge', '--dry-run', _telemetry_uuid])
+    clirunner(['dataset', 'purge', '--dry-run', str(_telemetry_uuid)])
     indexed_dataset = index.datasets.get(_telemetry_uuid)
     assert indexed_dataset.is_archived
 
-    clirunner(['dataset', 'purge', _telemetry_uuid])
+    clirunner(['dataset', 'purge', str(_telemetry_uuid)])
     assert index.datasets.get(_telemetry_uuid) is None
 
 
