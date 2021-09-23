@@ -106,6 +106,35 @@ def test_archive_datasets(index, initialised_postgres_db, local_config, default_
     assert not indexed_dataset.is_archived
 
 
+def test_purge_datasets(index, initialised_postgres_db, local_config, default_metadata_type):
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
+    with initialised_postgres_db.begin() as transaction:
+        was_inserted = transaction.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+
+    assert was_inserted
+    assert index.datasets.has(_telemetry_uuid)
+
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 1
+    assert datasets[0].is_active
+
+    index.datasets.archive([_telemetry_uuid])
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 0
+
+    # The model should show it as archived now.
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+    assert not indexed_dataset.is_active
+
+    index.datasets.purge([_telemetry_uuid])
+    assert index.datasets.get(_telemetry_uuid) is None
+
+
 @pytest.fixture
 def telemetry_dataset(index: Index, initialised_postgres_db: PostgresDb, default_metadata_type) -> Dataset:
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
