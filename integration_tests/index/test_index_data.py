@@ -107,6 +107,7 @@ def test_archive_datasets(index, initialised_postgres_db, local_config, default_
 
 
 def test_purge_datasets(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
+    # Create dataset
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
@@ -117,11 +118,11 @@ def test_purge_datasets(index, initialised_postgres_db, local_config, default_me
 
     assert was_inserted
     assert index.datasets.has(_telemetry_uuid)
-
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
     assert datasets[0].is_active
 
+    # Archive dataset
     index.datasets.archive([_telemetry_uuid])
     datasets = index.datasets.search_eager()
     assert len(datasets) == 0
@@ -131,10 +132,18 @@ def test_purge_datasets(index, initialised_postgres_db, local_config, default_me
     assert indexed_dataset.is_archived
     assert not indexed_dataset.is_active
 
+    # Purge dataset
     index.datasets.purge([_telemetry_uuid])
     assert index.datasets.get(_telemetry_uuid) is None
 
-    # Test again through the cli interface
+
+def test_purge_datasets_cli(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
+
+    # Attempt to purge non-existent dataset should fail
+    clirunner(['dataset', 'purge', str(_telemetry_uuid)], expect_success=False)
+
+    # Create dataset
     with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
@@ -142,14 +151,21 @@ def test_purge_datasets(index, initialised_postgres_db, local_config, default_me
             dataset_type.id
         )
     assert was_inserted
+
+    # Attempt to purge non-archived dataset should fail
+    clirunner(['dataset', 'purge', str(_telemetry_uuid)], expect_success=False)
+
+    # Archive dataset
     index.datasets.archive([_telemetry_uuid])
     indexed_dataset = index.datasets.get(_telemetry_uuid)
     assert indexed_dataset.is_archived
 
+    # Test CLI dry run
     clirunner(['dataset', 'purge', '--dry-run', str(_telemetry_uuid)])
     indexed_dataset = index.datasets.get(_telemetry_uuid)
     assert indexed_dataset.is_archived
 
+    # Test CLI purge
     clirunner(['dataset', 'purge', str(_telemetry_uuid)])
     assert index.datasets.get(_telemetry_uuid) is None
 
