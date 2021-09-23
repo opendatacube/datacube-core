@@ -602,4 +602,4 @@ def purge_cmd(index: Index, dry_run: bool, all: bool, ids: List[str]):
         # Perform purge
         index.datasets.purge(datasets_for_archive.keys())
 
-    click.echo('Completed dataset archival.')
+    click.echo('Completed dataset purge.')
