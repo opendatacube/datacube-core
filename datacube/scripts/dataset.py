@@ -566,7 +566,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 @dataset_cmd.command('purge', help="Purge archived datasets")
 @click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
               is_flag=True, default=False)
-@click.option('--all', help="Ignore id list - purge all archived datasets",
+@click.option('--all', help="Ignore id list - purge all archived datasets  (warning: VERY slow on large databases)",
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
