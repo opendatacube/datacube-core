@@ -106,7 +106,7 @@ def test_archive_datasets(index, initialised_postgres_db, local_config, default_
     assert not indexed_dataset.is_archived
 
 
-def test_purge_datasets(index, initialised_postgres_db, local_config, default_metadata_type):
+def test_purge_datasets(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
@@ -132,6 +132,25 @@ def test_purge_datasets(index, initialised_postgres_db, local_config, default_me
     assert not indexed_dataset.is_active
 
     index.datasets.purge([_telemetry_uuid])
+    assert index.datasets.get(_telemetry_uuid) is None
+
+    # Test again through the cli interface
+    with initialised_postgres_db.begin() as transaction:
+        was_inserted = transaction.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+    assert was_inserted
+    index.datasets.archive([_telemetry_uuid])
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+
+    clirunner(['dataset', 'purge', '--dry-run', _telemetry_uuid])
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+
+    clirunner(['dataset', 'purge', _telemetry_uuid])
     assert index.datasets.get(_telemetry_uuid) is None
 
 
