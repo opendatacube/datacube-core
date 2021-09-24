@@ -363,6 +363,19 @@ class DatasetResource(object):
             for id_ in ids:
                 transaction.delete_dataset(id_)
 
+    def get_all_dataset_ids(self, archived: bool):
+        """
+        Get list of all dataset IDs based only on archived status
+
+        This will be very slow and inefficient for large databases, and is really
+        only intended for small and/or experimental databases.
+
+        :param archived:
+        :rtype: list[str]
+        """
+        with self._db.begin() as transaction:
+            return [str(dsid[0]) for dsid in transaction.all_dataset_ids(archived)]
+
     def get_field_names(self, product_name=None):
         """
         Get the list of possible search fields for a Product

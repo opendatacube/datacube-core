@@ -492,22 +492,27 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
 @click.option('--archive-derived', '-d', help='Also recursively archive derived datasets', is_flag=True, default=False)
 @click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
               is_flag=True, default=False)
+@click.option('--all', "all_ds", help="Ignore id list - archive ALL non-archived datasets  (warning: may be slow on large databases)",
+              is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[str]):
-    datasets_for_archive = {dataset_id: exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
-
-    if False in datasets_for_archive.values():
-        for dataset_id, exists in datasets_for_archive.items():
-            if not exists:
-                click.echo(f'No dataset found with id: {dataset_id}')
-        sys.exit(-1)
-
+def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
     derived_datasets = []
-    if archive_derived:
-        derived_datasets = [_get_derived_set(index, dataset) for dataset in datasets_for_archive]
-        # Get the UUID of our found derived datasets
-        derived_datasets = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
+    if all_ds:
+        datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=False)}
+    else:
+        datasets_for_archive = {dataset_id: exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
+
+        if False in datasets_for_archive.values():
+            for dataset_id, exists in datasets_for_archive.items():
+                if not exists:
+                    click.echo(f'No dataset found with id: {dataset_id}')
+            sys.exit(-1)
+
+        if archive_derived:
+            derived_datasets = [_get_derived_set(index, dataset) for dataset in datasets_for_archive]
+            # Get the UUID of our found derived datasets
+            derived_datasets = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
 
     all_datasets = derived_datasets + [uuid for uuid in datasets_for_archive.keys()]
 
@@ -528,10 +533,14 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[st
               help="Only restore derived datasets that were archived "
                    "this recently to the original dataset",
               default=10 * 60)
+@click.option('--all', "all_ds", help="Ignore id list - restore ALL archived datasets  (warning: may be slow on large databases)",
+              is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int, dry_run: bool, ids: List[str]):
+def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int, dry_run: bool, all_ds: bool, ids: List[str]):
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
+    if all_ds:
+        ids = index.datasets.get_all_dataset_ids(archived=True)
 
     for id_ in ids:
         target_dataset = index.datasets.get(id_)
@@ -566,15 +575,13 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 @dataset_cmd.command('purge', help="Purge archived datasets")
 @click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
               is_flag=True, default=False)
-@click.option('--all', help="Ignore id list - purge all archived datasets  (warning: VERY slow on large databases)",
+@click.option('--all', "all_ds", help="Ignore id list - purge ALL archived datasets  (warning: may be slow on large databases)",
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def purge_cmd(index: Index, dry_run: bool, all: bool, ids: List[str]):
-    if all:
-        # TODO: query database for all archived datasets.
-        click.echo("purge --all not yet supported")
-        sys.exit(-1)
+def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
+    if all_ds:
+        datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
     else:
         datasets_for_archive = {dataset_id: exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
 
@@ -601,5 +608,8 @@ def purge_cmd(index: Index, dry_run: bool, all: bool, ids: List[str]):
     if not dry_run:
         # Perform purge
         index.datasets.purge(datasets_for_archive.keys())
+        click.echo(f'{len(datasets_for_archive)} datasets purged')
+    else:
+        click.echo(f'{len(datasets_for_archive)} datasets not purged (dry run)')
 
     click.echo('Completed dataset purge.')

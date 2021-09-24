@@ -306,6 +306,22 @@ class PostgresDbAPI(object):
             )
         ).fetchall()
 
+    def all_dataset_ids(self, archived: bool):
+        query = select(
+            DATASET.c.id
+        ).select_from(
+            DATASET
+        )
+        if archived:
+            query = query.where(
+                DATASET.c.archived != None
+            )
+        else:
+            query = query.where(
+                DATASET.c.archived == None
+            )
+        return self._connection.execute(query).fetchall()
+
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
         try:
             r = self._connection.execute(
