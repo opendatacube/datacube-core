@@ -170,6 +170,37 @@ def test_purge_datasets_cli(index, initialised_postgres_db, local_config, defaul
     assert index.datasets.get(_telemetry_uuid) is None
 
 
+def test_purge_all_datasets_cli(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
+
+    # Create dataset
+    with initialised_postgres_db.begin() as transaction:
+        was_inserted = transaction.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+    assert was_inserted
+
+    # archive all datasets
+    clirunner(['dataset', 'archive', '--all'])
+
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+
+    # Restore all datasets
+    clirunner(['dataset', 'restore', '--all'])
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert not indexed_dataset.is_archived
+
+    # Archive again
+    clirunner(['dataset', 'archive', '--all'])
+
+    # and purge
+    clirunner(['dataset', 'purge', '--all'])
+    assert index.datasets.get(_telemetry_uuid) is None
+
+
 @pytest.fixture
 def telemetry_dataset(index: Index, initialised_postgres_db: PostgresDb, default_metadata_type) -> Dataset:
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
