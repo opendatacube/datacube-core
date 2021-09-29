@@ -1195,6 +1195,10 @@ def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Datas
     datasets = dc.find_datasets(product=['ls5_nbar_scene', 'ls5_level1_scene'])
     assert len(datasets) == 2
 
+    # Can we query multiple products in a tuple
+    datasets = dc.find_datasets(product=('ls5_nbar_scene', 'ls5_level1_scene'))
+    assert len(datasets) == 2
+
 
 def _cli_csv_search(args, clirunner):
     # Do a CSV search from the cli, returning results as a list of dictionaries
