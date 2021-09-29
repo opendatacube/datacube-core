@@ -99,12 +99,12 @@ class Query(object):
             # Retrieve known keys for extra dimensions
             known_dim_keys = set()
             if product is not None:
-                datacube_product = index.products.get_by_name(product)
-                if datacube_product is not None:
-                    known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
+                datacube_products = index.products.search(product=product)
             else:
-                for datacube_product in index.products.get_all():
-                    known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
+                datacube_products = index.products.get_all()
+
+            for datacube_product in datacube_products:
+                known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
 
             remaining_keys -= known_dim_keys
 
