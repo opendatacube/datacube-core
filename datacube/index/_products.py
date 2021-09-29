@@ -331,7 +331,12 @@ class ProductResource(object):
         """
 
         def _listify(v):
-            return v if isinstance(v, list) else [v]
+            if isinstance(v, tuple):
+                return list(v)
+            elif isinstance(v, list):
+                return v
+            else:
+                return [v]
 
         for type_ in self.get_all():
             remaining_matchable = query.copy()
