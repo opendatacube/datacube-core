@@ -32,6 +32,8 @@ from datacube.model import Range
 
 from datacube.testutils import load_dataset_definition
 
+from datacube import Datacube
+
 
 @pytest.fixture
 def pseudo_ls8_type(index, ga_metadata_type):
@@ -1179,6 +1181,19 @@ def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
     assert len(lines) == 3
 
     assert lines[0] == _EXPECTED_OUTPUT_HEADER
+
+
+def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Dataset):
+    # We have one ls5 level1 and its child nbar
+    dc = Datacube(index)
+
+    # Can we query a single product name?
+    datasets = dc.find_datasets(product='ls5_nbar_scene')
+    assert len(datasets) == 1
+
+    # Can we query multiple products?
+    datasets = dc.find_datasets(product=['ls5_nbar_scene', 'ls5_level1_scene'])
+    assert len(datasets) == 2
 
 
 def _cli_csv_search(args, clirunner):
