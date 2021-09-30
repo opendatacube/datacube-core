@@ -12,11 +12,11 @@ and related data from multiple sources.
    :class: img-fluid
 
 .. image:: _static/ManagingODC.png
-   :target: odc-administration/index.html
+   :target: installation/index.html
    :class: img-fluid
 
-.. image:: _static/ManagingODC.png
-   :target: data-access-analysis/index.html
+.. image:: _static/PythonAPI.png
+   :target: api/index.html
    :class: img-fluid
 
 
