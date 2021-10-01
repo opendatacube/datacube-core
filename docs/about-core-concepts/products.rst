@@ -154,7 +154,7 @@ Product Definition API
             extra_dim: z
 
 
-:extra_dimensions (required for 3D datasets):
+extra_dimensions (required for 3D datasets)
     Definition of the extra dimensions.
 
     name
@@ -175,14 +175,12 @@ Product Definition API
             dtype: float64
 
 
-
+.. _product-doc-extra-dim:
 
 3D product definition
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
-Example 3D product definition for a DEM
+Example 3D product definition for GEDI L2B cover_z:
 
-.. highlight:: language
-
-.. literalinclude:: ../config_samples/dataset_types/dem1sv1_0.yaml
+.. literalinclude:: ../config_samples/dataset_types/gedi_l2b_cover_z.yaml
    :language: yaml

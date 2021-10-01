@@ -62,6 +62,8 @@ for processing sibling products, eg. Water Observations together with Surface Re
 .. _`Data Cube Statistician`: https://github.com/opendatacube/odc-tools/tree/develop/libs/stats
 
 
+.. _datacube-stats:
+
 Data Cube Stats
 ---------------
 

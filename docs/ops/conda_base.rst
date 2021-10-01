@@ -11,7 +11,7 @@
 
     .. code::
 
-        conda create --name cubeenv python=3.6 datacube
+        conda create --name cubeenv python=3.8 datacube
 
 5. Activate the virtual environment
 

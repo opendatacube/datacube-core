@@ -26,7 +26,29 @@ from ..utils.dates import normalise_dt
 _LOG = logging.getLogger(__name__)
 
 
-GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units', 'sort_key'])
+class GroupBy:
+    def __init__(self, group_by_func, dimension, units, sort_key=None, group_key=None):
+        """
+        :param group_by_func: Dataset -> group identifier
+        :param dimension: dimension of the group key
+        :param units: units of the group key
+        :param sort_key: how to sort datasets in a group internally
+        :param group_key: the coordinate value for a group
+                          list[Dataset] -> coord value
+        """
+        self.group_by_func = group_by_func
+
+        self.dimension = dimension
+        self.units = units
+
+        if sort_key is None:
+            sort_key = group_by_func
+        self.sort_key = sort_key
+
+        if group_key is None:
+            group_key = lambda datasets: group_by_func(datasets[0])
+        self.group_key = group_key
+
 
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
@@ -60,6 +82,8 @@ class Query(object):
         :param search_terms:
          * `measurements` - list of measurements to retrieve
          * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
+         * 'extra_dimension_name' (e.g. `z`) - tuples (min, max) bounding extra \
+            dimensions specified by name for 3D datasets. E.g. z=(10, 30).
          * `crs` - spatial coordinate reference system to interpret the spatial bounds
          * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
         """
@@ -72,6 +96,18 @@ class Query(object):
 
         remaining_keys = set(search_terms.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
+            # Retrieve known keys for extra dimensions
+            known_dim_keys = set()
+            if product is not None:
+                datacube_products = index.products.search(product=product)
+            else:
+                datacube_products = index.products.get_all()
+
+            for datacube_product in datacube_products:
+                known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
+
+            remaining_keys -= known_dim_keys
+
             unknown_keys = remaining_keys - set(index.datasets.get_field_names())
             # TODO: What about keys source filters, and what if the keys don't match up with this product...
             if unknown_keys:
@@ -157,15 +193,15 @@ def query_group_by(group_by='time', **kwargs):
     if not isinstance(group_by, str):
         return group_by
 
-    time_grouper = GroupBy(dimension='time',
-                           group_by_func=_extract_time_from_ds,
-                           units='seconds since 1970-01-01 00:00:00',
-                           sort_key=_extract_time_from_ds)
+    time_grouper = GroupBy(group_by_func=_extract_time_from_ds,
+                           dimension='time',
+                           units='seconds since 1970-01-01 00:00:00')
 
-    solar_day_grouper = GroupBy(dimension='time',
-                                group_by_func=solar_day,
+    solar_day_grouper = GroupBy(group_by_func=solar_day,
+                                dimension='time',
                                 units='seconds since 1970-01-01 00:00:00',
-                                sort_key=_extract_time_from_ds)
+                                sort_key=_extract_time_from_ds,
+                                group_key=lambda datasets: _extract_time_from_ds(datasets[0]))
 
     group_by_map = {
         None: time_grouper,
@@ -232,8 +268,14 @@ def _values_to_search(**kwargs):
         if key.lower() in ('time', 't'):
             search['time'] = _time_to_search_dims(value)
         elif key not in ['latitude', 'lat', 'y'] + ['longitude', 'lon', 'x']:
-            if isinstance(value, collections.abc.Sequence) and len(value) == 2:
+            # If it's not a string, but is a sequence of length 2, then it's a Range
+            if (
+                not isinstance(value, str)
+                and isinstance(value, collections.abc.Sequence)
+                and len(value) == 2
+            ):
                 search[key] = Range(*value)
+            # All other cases are default
             else:
                 search[key] = value
     return search
@@ -273,7 +315,7 @@ def _time_to_search_dims(time_range):
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
             tmp = list(time_range)
             if len(tmp) > 2:
-                raise ValueError(f"Please supply start and end date only for time query")
+                raise ValueError("Please supply start and end date only for time query")
 
             tr_start, tr_end = tmp[0], tmp[-1]
 

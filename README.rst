@@ -29,8 +29,8 @@ Requirements
 System
 ~~~~~~
 
--  PostgreSQL 9.5+
--  Python 3.6+
+-  PostgreSQL 10+
+-  Python 3.8+
 
 Developer setup
 ===============
@@ -44,7 +44,7 @@ Developer setup
 
 ::
 
-   conda create -n odc -c conda-forge python=3.6 datacube pre_commit
+   conda create -n odc -c conda-forge python=3.8 datacube pre_commit
    conda activate odc
 
 3. Install a develop version of datacube-core.

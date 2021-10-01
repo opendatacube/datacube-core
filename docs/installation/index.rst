@@ -14,7 +14,6 @@ This section contains information on setting up and managing the Open Data Cube.
     :caption: Setting up an Open Data Cube
     :maxdepth: 5
 
-    setup/miniconda
     setup/macosx
     setup/ubuntu
     setup/windows

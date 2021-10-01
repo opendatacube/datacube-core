@@ -15,6 +15,12 @@ from datacube.utils import parse_time
 from datacube.utils.geometry import CRS
 
 
+@pytest.fixture
+def mock_index():
+    from unittest.mock import MagicMock
+    return MagicMock()
+
+
 def test_datetime_to_timestamp():
     assert _datetime_to_timestamp((1990, 1, 7)) == 631670400
     assert _datetime_to_timestamp(datetime.datetime(1990, 1, 7)) == 631670400
@@ -22,10 +28,7 @@ def test_datetime_to_timestamp():
     assert _datetime_to_timestamp('1990-01-07T00:00:00.0Z') == 631670400
 
 
-def test_query_kwargs():
-    from unittest.mock import MagicMock
-
-    mock_index = MagicMock()
+def test_query_kwargs(mock_index):
     mock_index.datasets.get_field_names = lambda: {u'product', u'lat', u'sat_path', 'type_id', u'time', u'lon',
                                                    u'orbit', u'instrument', u'sat_row', u'platform', 'metadata_type',
                                                    u'gsi', 'type', 'id'}
@@ -208,3 +211,13 @@ def test_dateline_query_building():
                 crs='EPSG:32660').search_terms['lon']
 
     assert lon.begin < 180 < lon.end
+
+
+def test_query_issue_1146():
+    q = Query(k='AB')
+    assert q.search['k'] == 'AB'
+
+
+def test_query_multiple_products(mock_index):
+    q = Query(index=mock_index, product=['ls5_nbar_albers', 'ls7_nbar_albers'])
+    assert q.product == ['ls5_nbar_albers', 'ls7_nbar_albers']

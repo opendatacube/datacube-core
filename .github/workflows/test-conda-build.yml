@@ -1,0 +1,46 @@
+name: Conda Smoke Test
+on:
+  pull_request:
+    paths:
+      - '**'
+
+  push:
+    paths:
+      - '**'
+
+jobs:
+  check-conda:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+          os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+          python-version: ["3.8", "3.9"]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache conda
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache if setup.py has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('conda-environment.yml') }}
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: conda-environment.yml
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version}}
+          use-only-tar-bz2: true  # Used for cache
+
+      - name: Bash
+        shell: bash -l {0}
+        run: |
+          pip install .
+          python --version
+          datacube --version
+          conda env export

@@ -7,6 +7,7 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
+from textwrap import dedent
 from typing import Iterable, Mapping, MutableMapping, Any, List, Set
 
 import click
@@ -24,6 +25,7 @@ from datacube.ui.click import cli
 from datacube.ui.common import ui_path_doc_stream
 from datacube.utils import changes, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
+from datacube.utils.uris import uri_resolve
 
 _LOG = logging.getLogger('datacube-dataset')
 
@@ -141,7 +143,7 @@ def load_datasets_for_update(doc_stream, index):
                     'you can supply several by repeating this option with a new product name'),
               multiple=True)
 @click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
-              is_flag=True, default=False)
+              is_flag=True, default=False, hidden=True)
 @click.option('--auto-add-lineage/--no-auto-add-lineage', is_flag=True, default=True,
               help=('Default behaviour is to automatically add lineage datasets if they are missing from the database, '
                     'but this can be disabled if lineage is expected to be present in the DB, '
@@ -236,11 +238,13 @@ def parse_update_rules(keys_that_can_change):
 @click.option('--location-policy',
               type=click.Choice(['keep', 'archive', 'forget']),
               default='keep',
-              help='''What to do with previously recorded dataset location
-'keep' - keep as alternative location [default]
-'archive' - mark as archived
-'forget' - remove from the index
-''')
+              help=dedent('''
+              What to do with previously recorded dataset location(s)
+              
+              \b
+              - 'keep': keep as alternative location [default]
+              - 'archive': mark as archived
+              - 'forget': remove from the index'''))
 @click.argument('dataset-paths', nargs=-1)
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
@@ -462,26 +466,53 @@ def _get_derived_set(index: Index, id_: str) -> Set[Dataset]:
     return derived_set
 
 
+@dataset_cmd.command('uri-search')
+@click.option('--search-mode', help='Exact, prefix or guess based searching',
+              type=click.Choice(['exact', 'prefix', 'guess']), default='prefix')
+@click.argument('paths', nargs=-1)
+@ui.pass_index()
+def uri_search_cmd(index: Index, paths: List[str], search_mode):
+    """
+    Search by dataset locations
+
+    PATHS may be either file paths or URIs
+    """
+    if search_mode == 'guess':
+        # This is what the API expects. I think it should be changed.
+        search_mode = None
+    for path in paths:
+        datasets = list(index.datasets.get_datasets_for_location(uri_resolve(base=path), mode=search_mode))
+        if not datasets:
+            _LOG.info(f"Not found in index: {path}")
+        for dataset in datasets:
+            print(dataset)
+
+
 @dataset_cmd.command('archive', help="Archive datasets")
 @click.option('--archive-derived', '-d', help='Also recursively archive derived datasets', is_flag=True, default=False)
 @click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
               is_flag=True, default=False)
+@click.option('--all', "all_ds", help="Ignore id list - archive ALL non-archived datasets  (warning: may be slow on large databases)",
+              is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[str]):
-    datasets_for_archive = {dataset_id: exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
-
-    if False in datasets_for_archive.values():
-        for dataset_id, exists in datasets_for_archive.items():
-            if not exists:
-                click.echo(f'No dataset found with id: {dataset_id}')
-        sys.exit(-1)
-
+def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
     derived_datasets = []
-    if archive_derived:
-        derived_datasets = [_get_derived_set(index, dataset) for dataset in datasets_for_archive]
-        # Get the UUID of our found derived datasets
-        derived_datasets = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
+    if all_ds:
+        datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=False)}
+    else:
+        datasets_for_archive = {dataset_id: exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
+
+        if False in datasets_for_archive.values():
+            for dataset_id, exists in datasets_for_archive.items():
+                if not exists:
+                    click.echo(f'No dataset found with id: {dataset_id}')
+            sys.exit(-1)
+
+        if archive_derived:
+            derived_datasets = [_get_derived_set(index, dataset) for dataset in datasets_for_archive]
+            # Get the UUID of our found derived datasets
+            derived_datasets = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
 
     all_datasets = derived_datasets + [uuid for uuid in datasets_for_archive.keys()]
 
@@ -502,10 +533,14 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, ids: List[st
               help="Only restore derived datasets that were archived "
                    "this recently to the original dataset",
               default=10 * 60)
+@click.option('--all', "all_ds", help="Ignore id list - restore ALL archived datasets  (warning: may be slow on large databases)",
+              is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int, dry_run: bool, ids: List[str]):
+def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int, dry_run: bool, all_ds: bool, ids: List[str]):
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
+    if all_ds:
+        ids = index.datasets.get_all_dataset_ids(archived=True)
 
     for id_ in ids:
         target_dataset = index.datasets.get(id_)
@@ -535,3 +570,46 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
             click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
         if not dry_run:
             index.datasets.restore(d.id for d in to_process)
+
+
+@dataset_cmd.command('purge', help="Purge archived datasets")
+@click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
+              is_flag=True, default=False)
+@click.option('--all', "all_ds", help="Ignore id list - purge ALL archived datasets  (warning: may be slow on large databases)",
+              is_flag=True, default=False)
+@click.argument('ids', nargs=-1)
+@ui.pass_index()
+def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
+    if all_ds:
+        datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
+    else:
+        datasets_for_archive = {dataset_id: exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
+
+        # Check for non-existent datasets
+        if False in datasets_for_archive.values():
+            for dataset_id, exists in datasets_for_archive.items():
+                if not exists:
+                    click.echo(f'No dataset found with id: {dataset_id}')
+            sys.exit(-1)
+
+        # Check for unarchived datasets
+        datasets = index.datasets.bulk_get(datasets_for_archive.keys())
+        unarchived_datasets = False
+        for d in datasets:
+            if not d.is_archived:
+                click.echo(f'Cannot purge non-archived dataset: {d.id}')
+                unarchived_datasets = True
+        if unarchived_datasets:
+            sys.exit(-1)
+
+    for dataset in datasets_for_archive.keys():
+        click.echo(f'Purging dataset: {dataset}')
+
+    if not dry_run:
+        # Perform purge
+        index.datasets.purge(datasets_for_archive.keys())
+        click.echo(f'{len(datasets_for_archive)} datasets purged')
+    else:
+        click.echo(f'{len(datasets_for_archive)} datasets not purged (dry run)')
+
+    click.echo('Completed dataset purge.')

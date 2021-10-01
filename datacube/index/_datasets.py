@@ -5,23 +5,23 @@
 """
 API for dataset indexing, access and search.
 """
+import json
 import logging
 import warnings
 from collections import namedtuple
 from typing import Iterable, Tuple, Union, List, Optional
 from uuid import UUID
 
+from sqlalchemy import select, func
+
+from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
+from datacube.drivers.postgres._schema import DATASET
 from datacube.model import Dataset, DatasetType
+from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes, cached_property
 from datacube.utils.changes import get_doc_changes
 from . import fields
-
-import json
-from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
-from datacube.drivers.postgres._schema import DATASET
-from sqlalchemy import select, func
-from datacube.model.fields import Field
 
 _LOG = logging.getLogger(__name__)
 
@@ -353,6 +353,29 @@ class DatasetResource(object):
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
+    def purge(self, ids: Iterable[UUID]):
+        """
+        Delete archived datasets
+
+        :param ids: iterable of dataset ids to purge
+        """
+        with self._db.begin() as transaction:
+            for id_ in ids:
+                transaction.delete_dataset(id_)
+
+    def get_all_dataset_ids(self, archived: bool):
+        """
+        Get list of all dataset IDs based only on archived status
+
+        This will be very slow and inefficient for large databases, and is really
+        only intended for small and/or experimental databases.
+
+        :param archived:
+        :rtype: list[str]
+        """
+        with self._db.begin() as transaction:
+            return [str(dsid[0]) for dsid in transaction.all_dataset_ids(archived)]
+
     def get_field_names(self, product_name=None):
         """
         Get the list of possible search fields for a Product
@@ -420,7 +443,7 @@ class DatasetResource(object):
         Find datasets that exist at the given URI
 
         :param uri: search uri
-        :param str mode: 'exact' or 'prefix'
+        :param str mode: 'exact', 'prefix' or None (to guess)
         :return:
         """
         with self._db.connect() as connection:

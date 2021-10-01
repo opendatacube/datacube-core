@@ -14,7 +14,7 @@ These pages are designed to provide an introduction on how to access data from a
 
 .. toctree::
     :maxdepth: 4
-    :caption: Data Access & Analysis API's
+    :caption: Data Access & Analysis
 
     apis/datacube-class.rst
     apis/data-searching.rst
@@ -26,11 +26,10 @@ These pages are designed to provide an introduction on how to access data from a
     :caption: Advanced Topics
 
     advanced-topics/virtual-products.rst
-
+    advanced-topics/data-loading.rst
 
 .. toctree::
     :maxdepth: 4
     :caption: Examples
 
     tools-exploring-data/using-juypter.rst
-    tools-exploring-data/using-stac.rst

@@ -1,6 +1,11 @@
-=======
 Masking
 =======
+=======
+.. py:module:: datacube.utils.masking
+.. _bit-masking:
+
+Bit Masking
+===========
 
 Masking No Data Values
 ----------------------

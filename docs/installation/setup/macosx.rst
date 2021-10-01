@@ -1,43 +1,25 @@
-==========
- Mac OS X
-==========
+Mac OSX Developer Setup
+***********************
 
-Miniconda
-=========
-1. Download and install Miniconda using the following instructions https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html
+**Under construction**
 
-2. Open Terminal to execute the following commands.
+Base OS: Mac OSX
 
-.. include:: ./../../ops/conda_base.rst
+This guide will setup an ODC core development environment and includes:
 
-Datacube is now installed and can be used in Terminal by activating the `cubeenv` environment.
+ - Anaconda python using conda environments to isolate the odc development environment
+ - installation of required software and useful developer manuals for those libraries
+ - Postgres database installation with a local user configuration
+ - Integration tests to confirm both successful development setup and for ongoing testing
+ - Build configuration for local ODC documentation
 
-Manual Installation (Fallback)
-==============================
-Only follow these steps if the Miniconda installation does not suit your needs.
 
 Required software
------------------
-Homebrew::
+=================
 
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+Postgres:
+
+    Download and install the EnterpriseDB distribution from `here <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads>`_
 
 
-HDF5, netCDF4, and GDAL::
-
-  brew install hdf5 netcdf gdal postgres
-
-Python and packages
--------------------
-Python 3.6+ is required (3.8 is recommended)
-
-Install the latest version of the ODC from PyPI::
-
-  pip install -U \
-    'pyproj==2.*' \
-    'datacube[all]' \
-    --no-binary=rasterio,pyproj,shapely,fiona,psycopg2,netCDF4,h5py
-
-.. note::
-
-    Usage of Docker and if not then Python virtual environments is recommended.
+.. include:: common_install.rst

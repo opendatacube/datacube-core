@@ -1,0 +1,35 @@
+name: cubeenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pip
+  - python >=3.8
+  - setuptools
+  - setuptools_scm >=3.4
+  - toml
+  - pytest-runner
+  - sphinx
+  - sphinx-click
+  - click
+  - affine
+  - botocore
+  - boto3
+  - cachetools
+  - click
+  - cloudpickle >=0.4.0
+  - dask
+  - pyproj
+  - shapely
+  - jsonschema
+  - lark-parser
+  - netcdf4
+  - numpy
+  - pandas
+  - psycopg2
+  - python-dateutil
+  - pyyaml
+  - rasterio >=1.0.2
+  - sqlalchemy
+  - xarray >=0.9
+  - toolz

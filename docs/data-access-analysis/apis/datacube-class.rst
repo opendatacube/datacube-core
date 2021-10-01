@@ -1,9 +1,9 @@
 
 
-Connecting to a Datacube
-=============================
+Connecting to the Open Datacube
+===============================
 
-The Datacube Class is how you establish a connection to an existing Datacube instance.
+The Datacube Class is how you establish a connection to an existing Open Datacube instance.
 
 Minimal Example
 ~~~~~~~~~~~~~~~~

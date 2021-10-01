@@ -118,25 +118,25 @@ class ApplyMask(Transformation):
 
     def compute(self, data):
         mask = data[self.mask_measurement_name]
-        rest = data.drop(self.mask_measurement_name)
+        rest = data.drop_vars([self.mask_measurement_name])
 
         if self.erosion > 0:
             from skimage.morphology import binary_erosion, disk
             kernel = disk(self.erosion)
-            mask = ~xarray.apply_ufunc(binary_erosion, 
-                                       ~mask, 
+            mask = ~xarray.apply_ufunc(binary_erosion,
+                                       ~mask,
                                        kernel.reshape((1, ) + kernel.shape),
-                                       output_dtypes=[numpy.bool], 
+                                       output_dtypes=[bool],
                                        dask='parallelized',
                                        keep_attrs=True)
-            
+
         if self.dilation > 0:
             from skimage.morphology import binary_dilation, disk
             kernel = disk(self.dilation)
-            mask = ~xarray.apply_ufunc(binary_dilation, 
-                                       ~mask, 
+            mask = ~xarray.apply_ufunc(binary_dilation,
+                                       ~mask,
                                        kernel.reshape((1, ) + kernel.shape),
-                                       output_dtypes=[numpy.bool], 
+                                       output_dtypes=[bool],
                                        dask='parallelized',
                                        keep_attrs=True)
 
@@ -228,9 +228,9 @@ class Select(Transformation):
                 if key in self.measurement_names}
 
     def compute(self, data):
-        return data.drop([measurement
-                          for measurement in data.data_vars
-                          if measurement not in self.measurement_names])
+        return data.drop_vars([measurement
+                               for measurement in data.data_vars
+                               if measurement not in self.measurement_names])
 
 
 class Expressions(Transformation):
@@ -330,7 +330,7 @@ class Expressions(Transformation):
             dtype = result.dtype
             mask = evaluate_nodata_mask(formula, data, parser, MaskEvaluator)
 
-            if numpy.dtype(dtype) == numpy.bool:
+            if numpy.dtype(dtype) == bool:
                 # any operation on nodata should evaluate to False
                 # omission of attrs['nodata'] is deliberate
                 result = result.where(~mask, False)

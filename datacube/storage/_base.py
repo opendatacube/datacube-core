@@ -81,7 +81,8 @@ class BandInfo:
     def __init__(self,
                  ds: Dataset,
                  band: str,
-                 uri_scheme: Optional[str] = None):
+                 uri_scheme: Optional[str] = None,
+                 extra_dim_index: Optional[int] = None):
         try:
             mp, = ds.type.lookup_measurements([band]).values()
         except KeyError:

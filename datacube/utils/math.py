@@ -35,7 +35,7 @@ def unsqueeze_data_array(da: xr.DataArray,
 
 
 def unsqueeze_dataset(ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0) -> xr.Dataset:
-    ds = ds.apply(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
+    ds = ds.map(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
     return ds
 
 
@@ -110,11 +110,11 @@ def snap_scale(s, tol=1e-6):
             return s
 
         # Check for simple fractions
-        s_inv = 1/s
+        s_inv = 1 / s
         s_inv_snapped = maybe_int(s_inv, tol)
         if s_inv_snapped is s_inv:
             return s
-        return 1/s_inv_snapped
+        return 1 / s_inv_snapped
 
 
 def clamp(x, lo, up):
@@ -152,7 +152,7 @@ def valid_mask(xx, nodata):
         return ~numpy.isnan(xx) & (xx != nodata)
 
     if nodata is None:
-        return numpy.full_like(xx, True, dtype=numpy.bool)
+        return numpy.full_like(xx, True, dtype=bool)
     return xx != nodata
 
 
@@ -166,7 +166,7 @@ def invalid_mask(xx, nodata):
         return numpy.isnan(xx) | (xx == nodata)
 
     if nodata is None:
-        return numpy.full_like(xx, False, dtype=numpy.bool)
+        return numpy.full_like(xx, False, dtype=bool)
     return xx == nodata
 
 

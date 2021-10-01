@@ -1065,6 +1065,9 @@ class GeoBox:
     def __bool__(self) -> bool:
         return not self.is_empty()
 
+    def __hash__(self):
+        return hash((*self.shape, self.crs, self.affine))
+
     @property
     def transform(self) -> Affine:
         return self.affine
@@ -1389,16 +1392,12 @@ def lonlat_bounds(geom: Geometry,
     if geom.crs.geographic:
         return geom.boundingbox
 
-    if geom.type in ('Polygon', 'MultiPolygon'):
-        geom = geom.exterior
-
     if resolution is not None and math.isfinite(resolution):
         geom = geom.segmented(resolution)
 
-    xx, yy = geom.to_crs('EPSG:4326', resolution=math.inf).xy
-    xx_range = min(xx), max(xx)
-    yy_range = min(yy), max(yy)
+    bbox = geom.to_crs('EPSG:4326', resolution=math.inf).boundingbox
 
+    xx_range = bbox.range_x
     if mode == "safe":
         # If range in Longitude is more than 180 then it's probably wrapped
         # around 180 (X-360 for X > 180), so we add back 360 but only for X<0
@@ -1406,18 +1405,17 @@ def lonlat_bounds(geom: Geometry,
         # a globe, so we need to check for that too, but this is not yet
         # implemented...
 
-        span_x = xx_range[1] - xx_range[0]
-        if span_x > 180:
+        if bbox.span_x > 180:
             # TODO: check the case when input geometry spans >180 region.
             #       For now we assume "smaller" geometries not too close
             #       to poles.
-            xx_ = [x + 360 if x < 0 else x for x in xx]
+            xx_ = [x + 360 if x < 0 else x for x in bbox.range_x]
             xx_range_ = min(xx_), max(xx_)
             span_x_ = xx_range_[1] - xx_range_[0]
-            if span_x_ < span_x:
+            if span_x_ < bbox.span_x:
                 xx_range = xx_range_
 
-    return BoundingBox.from_xy(xx_range, yy_range)
+    return BoundingBox.from_xy(xx_range, bbox.range_y)
 
 
 def assign_crs(xx: Union[xr.DataArray, xr.Dataset],

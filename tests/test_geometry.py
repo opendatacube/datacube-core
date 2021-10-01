@@ -73,7 +73,6 @@ def test_pickleable():
 
 
 def test_geobox_simple():
-    from affine import Affine
     t = geometry.GeoBox(4000, 4000,
                         Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0),
                         epsg4326)
@@ -98,6 +97,14 @@ def test_geobox_simple():
     assert isinstance(geometry.GeoBox(4000, 4000,
                                       Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0),
                                       'epsg:4326').crs, CRS)
+
+    # Check GeoBox class is hashable
+    t_copy = GeoBox(t.width, t.height, t.transform, t.crs)
+    t_other = GeoBox(t.width+1, t.height, t.transform, t.crs)
+    assert t_copy is not t
+    assert t == t_copy
+    assert len(set([t, t, t_copy])) == 1
+    assert len(set([t, t_copy, t_other])) == 2
 
 
 def test_props():
@@ -1540,6 +1547,22 @@ def test_lonlat_bounds():
 
     with pytest.raises(ValueError):
         geometry.lonlat_bounds(geometry.box(0, 0, 1, 1, None))
+
+    multi = {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [[[174, 52], [174, 53], [175, 53], [174, 52]]],
+            [[[168, 54], [167, 55], [167, 54], [168, 54]]]
+        ]
+    }
+
+    multi_geom = geometry.Geometry(multi, "epsg:4326")
+    multi_geom_projected = multi_geom.to_crs('epsg:32659', math.inf)
+
+    ll_bounds = geometry.lonlat_bounds(multi_geom)
+    ll_bounds_projected = geometry.lonlat_bounds(multi_geom_projected)
+
+    assert ll_bounds == approx(ll_bounds_projected)
 
 
 @pytest.mark.xfail(True, reason="Bounds computation for large geometries in safe mode is broken")

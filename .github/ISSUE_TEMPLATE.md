@@ -14,3 +14,7 @@
 
 * Which ``datacube --version`` are you using?
 * What datacube deployment/enviornment are you running against?
+
+
+> **Note:** Stale issues will be automatically closed after a period of six months with no activity. 
+> To ensure critical issues are not closed, tag them with the Github `pinned` tag .

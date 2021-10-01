@@ -24,12 +24,10 @@ doc_require = [
 
 extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
-    'interactive': ['matplotlib', 'fiona'],
     'distributed': ['distributed', 'dask[distributed]'],
     'doc': doc_require,
-    'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
-    'celery': ['celery>=4,<5', 'redis'],
-    's3': ['boto3'],
+    'celery': ['celery>=4,<5', 'redis', 'kombu'],
+    's3': ['boto3', 'botocore'],
     'test': tests_require,
     'cf': ['compliance-checker>=4.0.0'],
 }
@@ -37,7 +35,6 @@ extras_require = {
 extras_require['dev'] = sorted(set(sum([extras_require[k] for k in [
     'test',
     'doc',
-    'replicas',
     'performance',
     's3',
     'distributed',
@@ -50,7 +47,7 @@ extra_plugins = dict(read=[], write=[], index=[])
 
 setup(
     name='datacube',
-    python_requires='>=3.6.0',
+    python_requires='>=3.8.0',
 
     url='https://github.com/opendatacube/datacube-core',
     author='Open Data Cube',
@@ -73,8 +70,8 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering :: GIS",
         "Topic :: Scientific/Engineering :: Information Analysis",
     ],
@@ -101,6 +98,7 @@ setup(
         'numpy',
         'psycopg2',
         'lark-parser>=0.6.7',
+        'pandas',
         'python-dateutil',
         'pyyaml',
         'rasterio>=1.0.2',  # Multi-band re-project fixed in that version

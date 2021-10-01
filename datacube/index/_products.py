@@ -54,6 +54,8 @@ class ProductResource(object):
         """
         # This column duplication is getting out of hand:
         DatasetType.validate(definition)
+        # Validate extra dimension metadata
+        DatasetType.validate_extra_dims(definition)
 
         metadata_type = definition['metadata_type']
 
@@ -329,7 +331,12 @@ class ProductResource(object):
         """
 
         def _listify(v):
-            return v if isinstance(v, list) else [v]
+            if isinstance(v, tuple):
+                return list(v)
+            elif isinstance(v, list):
+                return v
+            else:
+                return [v]
 
         for type_ in self.get_all():
             remaining_matchable = query.copy()

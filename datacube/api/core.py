@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2021 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import uuid
 import collections.abc
@@ -19,6 +19,7 @@ from datacube.utils import geometry
 from datacube.utils.dates import normalise_dt
 from datacube.utils.geometry import intersects, GeoBox
 from datacube.utils.geometry.gbox import GeoboxTiles
+from datacube.model import ExtraDimensions
 from datacube.model.utils import xr_apply
 
 from .query import Query, query_group_by, query_geopolygon
@@ -89,25 +90,63 @@ class Datacube(object):
 
         self.index = index
 
-    def list_products(self, show_archived=False, with_pandas=True):
+    def list_products(self, with_pandas=True, dataset_count=False):
         """
-        List products in the datacube
+        List all products in the datacube. This will produce a ``pandas.DataFrame``
+        or list of dicts containing useful information about each product, including:
 
-        :param show_archived: include products that have been archived.
-        :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
+            'name'
+            'description'
+            'license'
+            'default_crs'
+            'default_resolution'
+            'dataset_count' (optional)
+
+        :param bool with_pandas:
+            Return the list as a Pandas DataFrame. If False, return a list of dicts.
+
+        :param bool dataset_count:
+            Return a "dataset_count" column containing the number of datasets
+            for each product. This can take several minutes on large datacubes.
+            Defaults to False.
+
+        :return: A table or list of every product in the datacube.
         :rtype: pandas.DataFrame or list(dict)
         """
-        rows = [product.to_dict() for product in self.index.products.get_all()]
-        if not with_pandas:
-            return rows
+        # Read properties from each datacube product
+        cols = [
+            'name',
+            'description',
+            'license',
+            'default_crs',
+            'default_resolution',
+        ]
+        rows = [[getattr(pr, col, None) for col in cols]
+                for pr in self.index.products.get_all()]
 
+        # Optionally compute dataset count for each product and add to row/cols
+        # Product lists are sorted by product name to ensure 1:1 match
+        if dataset_count:            
+           
+            # Load counts
+            counts = [(p.name, c) for p, c in self.index.datasets.count_by_product()]
+            
+            # Sort both rows and counts by product name
+            from operator import itemgetter
+            rows = sorted(rows, key=itemgetter(0))
+            counts = sorted(counts, key=itemgetter(0))
+            
+            # Add sorted count to each existing row
+            rows = [row + [count[1]] for row, count in zip(rows, counts)]
+            cols = cols + ['dataset_count']
+
+        # If pandas not requested, return list of dicts
+        if not with_pandas:
+            return [dict(zip(cols, row)) for row in rows]
+
+        # Return pandas dataframe with each product as a row
         import pandas
-        keys = set(k for r in rows for k in r)
-        main_cols = ['id', 'name', 'description']
-        grid_cols = ['crs', 'resolution', 'tile_size', 'spatial_dimensions']
-        other_cols = list(keys - set(main_cols) - set(grid_cols))
-        cols = main_cols + other_cols + grid_cols
-        return pandas.DataFrame(rows, columns=cols).set_index('id')
+        return pandas.DataFrame(rows, columns=cols).set_index('name', drop=False)
 
     def list_measurements(self, show_archived=False, with_pandas=True):
         """
@@ -142,11 +181,10 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
-             skip_broken_datasets=False,
-             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, progress_cbk=None,
-             **query):
+         skip_broken_datasets=False, dask_chunks=None, like=None, fuse_func=None, align=None,
+         datasets=None, dataset_predicate=None, progress_cbk=None, **query):
         """
-        Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
+        Load data as an ``xarray.Dataset`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
         See the `xarray documentation <http://xarray.pydata.org/en/stable/data-structures.html>`_ for usage of the
         :class:`xarray.Dataset` and :class:`xarray.DataArray` objects.
@@ -167,8 +205,7 @@ class Datacube(object):
                 product_type='ndvi'
 
             The ``measurements`` argument is a list of measurement names, as listed in :meth:`list_measurements`.
-            If not provided, all measurements for the product will be returned.
-            ::
+            If not provided, all measurements for the product will be returned. ::
 
                 measurements=['red', 'nir', 'swir2']
 
@@ -176,7 +213,7 @@ class Datacube(object):
             Spatial dimensions can specified using the ``longitude``/``latitude`` and ``x``/``y`` fields.
 
             The CRS of this query is assumed to be WGS84/EPSG:4326 unless the ``crs`` field is supplied,
-            even if the stored data is in another projection or the `output_crs` is specified.
+            even if the stored data is in another projection or the ``output_crs`` is specified.
             The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
             ::
 
@@ -187,9 +224,24 @@ class Datacube(object):
                 x=(1516200, 1541300), y=(-3867375, -3867350), crs='EPSG:3577'
 
             The ``time`` dimension can be specified using a tuple of datetime objects or strings with
-            `YYYY-MM-DD hh:mm:ss` format. E.g::
+            ``YYYY-MM-DD hh:mm:ss`` format. Data will be loaded inclusive of the start and finish times. E.g::
 
-                time=('2001-04', '2001-07')
+                time=('2000-01-01', '2001-12-31')
+                time=('2000-01', '2001-12')
+                time=('2000', '2001')
+
+            For 3D datasets, where the product definition contains an ``extra_dimension`` specification,
+            these dimensions can be queried using that dimension's name. E.g.::
+
+                z=(10, 30)
+
+            or ::
+
+                z=5
+
+            or ::
+
+                wvl=(560.3, 820.5)
 
             For EO-specific datasets that are based around scenes, the time dimension can be reduced to the day level,
             using solar day to keep scenes together.
@@ -198,62 +250,79 @@ class Datacube(object):
                 group_by='solar_day'
 
             For data that has different values for the scene overlap the requires more complex rules for combining data,
-            such as GA's Pixel Quality dataset, a function can be provided to the merging into a single time slice.
+            a function can be provided to the merging into a single time slice.
 
             See :func:`datacube.helpers.ga_pq_fuser` for an example implementation.
 
 
         **Output**
-            To reproject or resample the data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
+            To reproject or resample data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
             fields.
 
-            By default, the resampling method is 'nearest'. However any stored overview layers may be used
+            By default, the resampling method is 'nearest'. However, any stored overview layers may be used
             when down-sampling, which may override (or hybridise) the choice of resampling method.
 
-            To reproject data to 25m resolution for EPSG:3577::
+            To reproject data to 30 m resolution for EPSG:3577::
 
-                dc.load(product='ls5_nbar_albers', x=(148.15, 148.2), y=(-35.15, -35.2), time=('1990', '1991'),
-                        output_crs='EPSG:3577`, resolution=(-25, 25), resampling='cubic')
+                dc.load(product='ls5_nbar_albers',
+                        x=(148.15, 148.2),
+                        y=(-35.15, -35.2),
+                        time=('1990', '1991'),
+                        output_crs='EPSG:3577`,
+                        resolution=(-30, 30),
+                        resampling='cubic'
+                )
 
-        :param str product: the product to be included.
 
-        :param measurements:
+        :param str product:
+            The product to be loaded.
+
+        :param list(str) measurements:
             Measurements name or list of names to be included, as listed in :meth:`list_measurements`.
+            These will be loaded as individual ``xr.DataArray`` variables in the output ``xarray.Dataset`` object.
 
             If a list is specified, the measurements will be returned in the order requested.
             By default all available measurements are included.
 
-        :type measurements: list(str), optional
-
-        :param query:
+        :param \*\*query:
             Search parameters for products and dimension ranges as described above.
+            For example: ``'x', 'y', 'time', 'crs'``.
 
         :param str output_crs:
-            The CRS of the returned data.  If no CRS is supplied, the CRS of the stored data is used.
+            The CRS of the returned data, for example ``EPSG:3577``. If no CRS is supplied, the CRS of the stored data is used
+            if available.
+
+            This differs from the ``crs`` parameter desribed above, which is used to define the CRS
+            of the coordinates in the query itself.
 
         :param (float,float) resolution:
-            A tuple of the spatial resolution of the returned data.
-            This includes the direction (as indicated by a positive or negative number).
+            A tuple of the spatial resolution of the returned data. Units are in the coordinate
+            space of ``output_crs``.
 
-            Typically when using most CRSs, the first number would be negative.
+            This includes the direction (as indicated by a positive or negative number).
+            For most CRSs, the first number will be negative, e.g. ``(-30, 30)``.
 
         :param str|dict resampling:
             The resampling method to use if re-projection is required. This could be a string or
             a dictionary mapping band name to resampling mode. When using a dict use ``'*'`` to
             indicate "apply to all other bands", for example ``{'*': 'cubic', 'fmask': 'nearest'}`` would
-            use `cubic` for all bands except ``fmask`` for which `nearest` will be used.
+            use ``cubic`` for all bands except ``fmask`` for which ``nearest`` will be used.
 
-            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average',
-            'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'``
+            Valid values are: ::
+
+              'nearest', 'average', 'bilinear', 'cubic', 'cubic_spline',
+              'lanczos', 'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'
 
             Default is to use ``nearest`` for all bands.
-            .. seealso:: :meth:`load_data`
+
+            .. seealso::
+               :meth:`load_data`
 
         :param (float,float) align:
             Load data such that point 'align' lies on the pixel boundary.
-            Units are in the co-ordinate space of the output CRS.
+            Units are in the coordinate space of ``output_crs``.
 
-            Default is (0,0)
+            Default is ``(0, 0)``
 
         :param dict dask_chunks:
             If the data should be lazily loaded using :class:`dask.array.Array`,
@@ -263,18 +332,20 @@ class Datacube(object):
             for more information.
 
         :param xarray.Dataset like:
-            Uses the output of a previous ``load()`` to form the basis of a request for another product.
+            Use the output of a previous :meth:`load()` to load data into the same spatial grid and
+            resolution (i.e. :class:`datacube.utils.geometry.GeoBox`).
             E.g.::
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
 
         :param str group_by:
-            When specified, perform basic combining/reducing of the data.
+            When specified, perform basic combining/reducing of the data. For example, ``group_by='solar_day'``
+            can be used to combine consecutive observations along a single satellite overpass into a single time slice.
 
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
-            data is simply copied over the top of each other, in a relatively undefined manner. This function can
-            perform a specific combining step, eg. for combining GA PQ data. This can be a dictionary if different
+            data is simply copied over the top of each other in a relatively undefined manner. This function can
+            perform a specific combining step. This can be a dictionary if different
             fusers are needed per band.
 
         :param datasets:
@@ -285,22 +356,38 @@ class Datacube(object):
             Optional. If this is True, then don't break when failing to load a broken dataset.
             Default is False.
 
+        :param function dataset_predicate:
+            Optional. A function that can be passed to restrict loaded datasets. A predicate function should
+            take a :class:`datacube.model.Dataset` object (e.g. as returned from :meth:`find_datasets`) and return a boolean.
+            For example, loaded data could be filtered to January observations only by passing the following
+            predicate function that returns True for datasets acquired in January::
+
+                def filter_jan(dataset): return dataset.time.begin.month == 1
+
         :param int limit:
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
 
-        :param progress_cbk: Int, Int -> None
-            if supplied will be called for every file read with `files_processed_so_far, total_files`. This is
+        :param progress_cbk:
+            ``Int, Int -> None``,
+            if supplied will be called for every file read with ``files_processed_so_far, total_files``. This is
             only applicable to non-lazy loads, ignored when using dask.
 
-        :return: Requested data in a :class:`xarray.Dataset`
-        :rtype: :class:`xarray.Dataset`
+        :return:
+            Requested data in a :class:`xarray.Dataset`
+
+        :rtype:
+            :class:`xarray.Dataset`
         """
         if product is None and datasets is None:
             raise ValueError("Must specify a product or supply datasets")
 
         if datasets is None:
-            datasets = self.find_datasets(product=product, like=like, ensure_location=True, **query)
+            datasets = self.find_datasets(product=product,
+                                          like=like,
+                                          ensure_location=True,
+                                          dataset_predicate=dataset_predicate,
+                                          **query)
         elif isinstance(datasets, collections.abc.Iterator):
             datasets = list(datasets)
 
@@ -310,23 +397,41 @@ class Datacube(object):
         ds, *_ = datasets
         datacube_product = ds.type
 
+        # Retrieve extra_dimension from product definition
+        extra_dims = None
+        if datacube_product:
+            extra_dims = datacube_product.extra_dimensions
+
+            # Extract extra_dims slice information
+            extra_dims_slice = {
+                k: query.pop(k, None)
+                for k in list(query.keys())
+                if k in extra_dims.dims and query.get(k, None) is not None
+            }
+            extra_dims = extra_dims[extra_dims_slice]
+            # Check if empty
+            if extra_dims.has_empty_dim():
+                return xarray.Dataset()
+
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
                                grid_spec=datacube_product.grid_spec,
                                load_hints=datacube_product.load_hints(),
                                datasets=datasets, **query)
-
         group_by = query_group_by(**query)
         grouped = self.group_datasets(datasets, group_by)
 
         measurement_dicts = datacube_product.lookup_measurements(measurements)
 
+        # `extra_dims` put last for backwards compability, but should really be the second position
+        # betwween `grouped` and `geobox`
         result = self.load_data(grouped, geobox,
                                 measurement_dicts,
                                 resampling=resampling,
                                 fuse_func=fuse_func,
                                 dask_chunks=dask_chunks,
                                 skip_broken_datasets=skip_broken_datasets,
-                                progress_cbk=progress_cbk)
+                                progress_cbk=progress_cbk,
+                                extra_dims=extra_dims)
 
         return result
 
@@ -342,13 +447,14 @@ class Datacube(object):
         """
         return list(self.find_datasets_lazy(**search_terms))
 
-    def find_datasets_lazy(self, limit=None, ensure_location=False, **kwargs):
+    def find_datasets_lazy(self, limit=None, ensure_location=False, dataset_predicate=None, **kwargs):
         """
         Find datasets matching query.
 
         :param kwargs: see :class:`datacube.api.query.Query`
         :param ensure_location: only return datasets that have locations
         :param limit: if provided, limit the maximum number of datasets returned
+        :param dataset_predicate: an optional predicate to filter datasets
         :return: iterator of datasets
         :rtype: __generator[:class:`datacube.model.Dataset`]
 
@@ -366,6 +472,10 @@ class Datacube(object):
 
         if ensure_location:
             datasets = (dataset for dataset in datasets if dataset.uris)
+
+        # If a predicate function is provided, use this to filter datasets before load
+        if dataset_predicate is not None:
+            datasets = (dataset for dataset in datasets if dataset_predicate(dataset))
 
         return datasets
 
@@ -387,10 +497,8 @@ class Datacube(object):
         if isinstance(group_by, str):
             group_by = query_group_by(group_by=group_by)
 
-        dimension, group_func, units, sort_key = group_by
-
         def ds_sorter(ds):
-            return sort_key(ds), getattr(ds, 'id', 0)
+            return group_by.sort_key(ds), getattr(ds, 'id', 0)
 
         def norm_axis_value(x):
             if isinstance(x, datetime.datetime):
@@ -401,14 +509,12 @@ class Datacube(object):
 
         def mk_group(group):
             dss = tuple(sorted(group, key=ds_sorter))
-            # TODO: decouple axis_value from group sorted order
-            axis_value = sort_key(dss[0])
-            return (norm_axis_value(axis_value), dss)
+            return (norm_axis_value(group_by.group_key(dss)), dss)
 
-        datasets = sorted(datasets, key=group_func)
+        datasets = sorted(datasets, key=group_by.group_by_func)
 
         groups = [mk_group(group)
-                  for _, group in groupby(datasets, group_func)]
+                  for _, group in groupby(datasets, group_by.group_by_func)]
 
         groups.sort(key=lambda x: x[0])
 
@@ -417,15 +523,17 @@ class Datacube(object):
         for i, (_, dss) in enumerate(groups):
             data[i] = dss
 
-        sources = xarray.DataArray(data, dims=[dimension], coords=[coords])
+        sources = xarray.DataArray(data,
+                                   dims=[group_by.dimension],
+                                   coords=[coords])
         if coords.dtype.kind == 'M':
             # skip units for time dimensions as it breaks .to_netcdf(..) functionality #972
-            sources[dimension].attrs['units'] = units
+            sources[group_by.dimension].attrs['units'] = group_by.units
 
         return sources
 
     @staticmethod
-    def create_storage(coords, geobox, measurements, data_func=None):
+    def create_storage(coords, geobox, measurements, data_func=None, extra_dims=None):
         """
         Create a :class:`xarray.Dataset` and (optionally) fill it with data.
 
@@ -445,11 +553,15 @@ class Datacube(object):
             as an argument. It should return an appropriately shaped numpy array. If not provided memory is
             allocated an filled with `nodata` value defined on a given Measurement.
 
+        :param ExtraDimensions extra_dims:
+            A ExtraDimensions describing the any additional dimensions on top of (t, y, x)
+
         :rtype: :class:`xarray.Dataset`
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
         from collections import OrderedDict
+        from copy import deepcopy
         spatial_ref = 'spatial_ref'
 
         def empty_func(m, shape):
@@ -460,14 +572,37 @@ class Datacube(object):
             crs_attrs['crs'] = str(geobox.crs)
             crs_attrs['grid_mapping'] = spatial_ref
 
-        dims = tuple(coords) + geobox.dimensions
-        shape = tuple(c.size for c in coords.values()) + geobox.shape
-        coords = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
+        # Assumptions
+        #  - 3D dims must fit between (t) and (y, x) or (lat, lon)
 
-        data_func = data_func or (lambda m: empty_func(m, shape))
+        # 2D defaults
+        dims_default = tuple(coords) + geobox.dimensions
+        shape_default = tuple(c.size for c in coords.values()) + geobox.shape
+        coords_default = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
 
-        def mk_data_var(m, data_func):
-            data = data_func(m)
+        arrays = []
+        ds_coords = deepcopy(coords_default)
+
+        for m in measurements:
+            if 'extra_dim' not in m:
+                # 2D default case
+                arrays.append((m, shape_default, coords_default, dims_default))
+            elif extra_dims:
+                # 3D case
+                name = m.extra_dim
+                new_dims = dims_default[:1] + (name,) + dims_default[1:]
+                new_coords = deepcopy(coords_default)
+                new_coords[name] = extra_dims._coords[name].copy()
+                new_coords[name].attrs.update(crs_attrs)
+                ds_coords.update(new_coords)
+
+                new_shape = shape_default[:1] + (len(new_coords[name].values),) + shape_default[1:]
+                arrays.append((m, new_shape, new_coords, new_dims))
+
+        data_func = data_func or (lambda m, shape: empty_func(m, shape))
+
+        def mk_data_var(m, shape, coords, dims, data_func):
+            data = data_func(m, shape)
             attrs = dict(**m.dataarray_attrs(),
                          **crs_attrs)
             return xarray.DataArray(data,
@@ -476,15 +611,19 @@ class Datacube(object):
                                     dims=dims,
                                     attrs=attrs)
 
-        return xarray.Dataset({m.name: mk_data_var(m, data_func)
-                               for m in measurements},
-                              coords=coords,
+        return xarray.Dataset({m.name: mk_data_var(m, shape, coords, dims, data_func)
+                               for m, shape, coords, dims in arrays},
+                              coords=ds_coords,
                               attrs=crs_attrs)
 
     @staticmethod
     def _dask_load(sources, geobox, measurements, dask_chunks,
-                   skip_broken_datasets=False):
-        needed_irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
+                   skip_broken_datasets=False, extra_dims=None):
+        chunk_sizes = _calculate_chunk_sizes(sources, geobox, dask_chunks, extra_dims)
+        needed_irr_chunks = chunk_sizes[0]
+        if extra_dims:
+            extra_dim_chunks = chunk_sizes[1]
+        grid_chunks = chunk_sizes[-1]
         gbt = GeoboxTiles(geobox, grid_chunks)
         dsk = {}
 
@@ -500,24 +639,36 @@ class Datacube(object):
                                 lambda _, dss: chunk_datasets(dss, gbt),
                                 dtype=object)
 
-        def data_func(measurement):
+        def data_func(measurement, shape):
+            if 'extra_dim' in measurement:
+                chunks = needed_irr_chunks + extra_dim_chunks + grid_chunks
+            else:
+                chunks = needed_irr_chunks + grid_chunks
             return _make_dask_array(chunked_srcs, dsk, gbt,
                                     measurement,
-                                    chunks=needed_irr_chunks+grid_chunks,
-                                    skip_broken_datasets=skip_broken_datasets)
+                                    chunks=chunks,
+                                    skip_broken_datasets=skip_broken_datasets,
+                                    extra_dims=extra_dims)
 
-        return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
+        return Datacube.create_storage(sources.coords, geobox, measurements, data_func, extra_dims)
 
     @staticmethod
     def _xr_load(sources, geobox, measurements,
                  skip_broken_datasets=False,
-                 progress_cbk=None):
+                 progress_cbk=None, extra_dims=None):
 
         def mk_cbk(cbk):
             if cbk is None:
                 return None
             n = 0
-            n_total = sum(len(x) for x in sources.values.ravel())*len(measurements)
+            t_size = sum(len(x) for x in sources.values.ravel())
+            n_total = 0
+            for m in measurements:
+                if 'extra_dim' in m:
+                    index_subset = extra_dims.measurements_slice(m.extra_dim)
+                    n_total += t_size*len(m.extra_dim.get('measurement_map')[index_subset])
+                else:
+                    n_total += t_size
 
             def _cbk(*ignored):
                 nonlocal n
@@ -525,27 +676,41 @@ class Datacube(object):
                 return cbk(n, n_total)
             return _cbk
 
-        data = Datacube.create_storage(sources.coords, geobox, measurements)
+        data = Datacube.create_storage(sources.coords, geobox, measurements, extra_dims=extra_dims)
         _cbk = mk_cbk(progress_cbk)
 
+        # Create a list of read IO operations
+        read_ios = []
         for index, datasets in numpy.ndenumerate(sources.values):
             for m in measurements:
-                t_slice = data[m.name].values[index]
+                if 'extra_dim' in m:
+                    # When we want to support 3D native reads, we can start by replacing the for loop with
+                    # read_ios.append(((index + extra_dim_index), (datasets, m, index_subset)))
+                    index_subset = extra_dims.measurements_index(m.extra_dim)
+                    for result_index, extra_dim_index in enumerate(range(*index_subset)):
+                        read_ios.append(((index + (result_index,)), (datasets, m, extra_dim_index)))
+                else:
+                    # Get extra_dim index if available
+                    extra_dim_index = m.get('extra_dim_index', None)
+                    read_ios.append((index, (datasets, m, extra_dim_index)))
 
-                try:
-                    _fuse_measurement(t_slice, datasets, geobox, m,
-                                      skip_broken_datasets=skip_broken_datasets,
-                                      progress_cbk=_cbk)
-                except (TerminateCurrentLoad, KeyboardInterrupt):
-                    data.attrs['dc_partial_load'] = True
-                    return data
+        # Perform the read IO operations
+        for index, (datasets, m, extra_dim_index) in read_ios:
+            data_slice = data[m.name].values[index]
+            try:
+                _fuse_measurement(data_slice, datasets, geobox, m,
+                                  skip_broken_datasets=skip_broken_datasets,
+                                  progress_cbk=_cbk, extra_dim_index=extra_dim_index)
+            except (TerminateCurrentLoad, KeyboardInterrupt):
+                data.attrs['dc_partial_load'] = True
+                return data
 
         return data
 
     @staticmethod
     def load_data(sources, geobox, measurements, resampling=None,
                   fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
-                  progress_cbk=None,
+                  progress_cbk=None, extra_dims=None,
                   **extra):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
@@ -586,6 +751,9 @@ class Datacube(object):
             if supplied will be called for every file read with `files_processed_so_far, total_files`. This is
             only applicable to non-lazy loads, ignored when using dask.
 
+        :param ExtraDimensions extra_dims:
+            A ExtraDimensions describing the any additional dimensions on top of (t, y, x)
+
         :rtype: xarray.Dataset
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
@@ -594,11 +762,13 @@ class Datacube(object):
 
         if dask_chunks is not None:
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
-                                       skip_broken_datasets=skip_broken_datasets)
+                                       skip_broken_datasets=skip_broken_datasets,
+                                       extra_dims=extra_dims)
         else:
             return Datacube._xr_load(sources, geobox, measurements,
                                      skip_broken_datasets=skip_broken_datasets,
-                                     progress_cbk=progress_cbk)
+                                     progress_cbk=progress_cbk,
+                                     extra_dims=extra_dims)
 
     def __str__(self):
         return "Datacube<index={!r}>".format(self.index)
@@ -712,22 +882,24 @@ def select_datasets_inside_polygon(datasets, polygon):
             yield dataset
 
 
-def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend_dims=0):
+def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend_dims=0, extra_dim_index=None):
     prepend_shape = (1,) * prepend_dims
     data = numpy.full(geobox.shape, measurement.nodata, dtype=measurement.dtype)
     _fuse_measurement(data, datasets, geobox, measurement,
-                      skip_broken_datasets=skip_broken_datasets)
+                      skip_broken_datasets=skip_broken_datasets,
+                      extra_dim_index=extra_dim_index)
     return data.reshape(prepend_shape + geobox.shape)
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
-                      progress_cbk=None):
+                      progress_cbk=None,
+                      extra_dim_index=None):
     srcs = []
     for ds in datasets:
         src = None
         with ignore_exceptions_if(skip_broken_datasets):
-            src = new_datasource(BandInfo(ds, measurement.name))
+            src = new_datasource(BandInfo(ds, measurement.name, extra_dim_index=extra_dim_index))
 
         if src is None:
             if not skip_broken_datasets:
@@ -742,7 +914,8 @@ def _fuse_measurement(dest, datasets, geobox, measurement,
                        resampling=measurement.get('resampling_method', 'nearest'),
                        fuse_func=measurement.get('fuser', None),
                        skip_broken_datasets=skip_broken_datasets,
-                       progress_cbk=progress_cbk)
+                       progress_cbk=progress_cbk,
+                       extra_dim_index=extra_dim_index)
 
 
 def get_bounds(datasets, crs):
@@ -752,17 +925,24 @@ def get_bounds(datasets, crs):
 
 def _calculate_chunk_sizes(sources: xarray.DataArray,
                            geobox: GeoBox,
-                           dask_chunks: Dict[str, Union[str, int]]):
-    valid_keys = sources.dims + geobox.dimensions
+                           dask_chunks: Dict[str, Union[str, int]],
+                           extra_dims: Optional[ExtraDimensions] = None):
+    extra_dim_names = ()
+    extra_dim_shapes = ()
+    if extra_dims is not None:
+        extra_dim_names, extra_dim_shapes = extra_dims.chunk_size()
+
+    valid_keys = sources.dims + extra_dim_names + geobox.dimensions
     bad_keys = set(dask_chunks) - set(valid_keys)
     if bad_keys:
         raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 
-    chunk_maxsz = dict((dim, sz) for dim, sz in zip(sources.dims + geobox.dimensions,
-                                                    sources.shape + geobox.shape))
+    chunk_maxsz = dict((dim, sz) for dim, sz in zip(sources.dims + extra_dim_names + geobox.dimensions,
+                                                    sources.shape + extra_dim_shapes + geobox.shape))
 
     # defaults: 1 for non-spatial, whole dimension for Y/X
-    chunk_defaults = dict([(dim, 1) for dim in sources.dims] + [(dim, -1) for dim in geobox.dimensions])
+    chunk_defaults = dict([(dim, 1) for dim in sources.dims] + [(dim, 1) for dim in extra_dim_names]
+                          + [(dim, -1) for dim in geobox.dimensions])
 
     def _resolve(k, v: Optional[Union[str, int]]) -> int:
         if v is None or v == "auto":
@@ -775,9 +955,13 @@ def _calculate_chunk_sizes(sources: xarray.DataArray,
         raise ValueError("Chunk should be one of int|'auto'")
 
     irr_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in sources.dims)
+    extra_dim_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in extra_dim_names)
     grid_chunks = tuple(_resolve(dim, dask_chunks.get(str(dim))) for dim in geobox.dimensions)
 
-    return irr_chunks, grid_chunks
+    if extra_dim_chunks:
+        return irr_chunks, extra_dim_chunks, grid_chunks
+    else:
+        return irr_chunks, grid_chunks
 
 
 def _tokenize_dataset(dataset):
@@ -790,7 +974,8 @@ def _make_dask_array(chunked_srcs,
                      gbt,
                      measurement,
                      chunks,
-                     skip_broken_datasets=False):
+                     skip_broken_datasets=False,
+                     extra_dims=None):
     dsk = dsk.copy()  # this contains mapping from dataset id to dataset object
 
     token = uuid.uuid4().hex
@@ -805,7 +990,7 @@ def _make_dask_array(chunked_srcs,
     #  B BR
     empties = {}  # type Dict[Tuple[int,int], str]
 
-    def _mk_empty(shape: Tuple[int, int]) -> str:
+    def _mk_empty(shape: Tuple[int, ...]) -> str:
         name = empties.get(shape, None)
         if name is not None:
             return name
@@ -825,25 +1010,46 @@ def _make_dask_array(chunked_srcs,
 
             if dss is None:
                 val = _mk_empty(gbt.chunk_shape(idx))
+                # 3D case
+                if 'extra_dim' in measurement:
+                    index_subset = extra_dims.measurements_index(measurement.extra_dim)
+                    for result_index, extra_dim_index in numpy.ndenumerate(range(*index_subset)):
+                        dsk[key_prefix + result_index + idx] = val
+                else:
+                    dsk[key_prefix + idx] = val
             else:
                 val = (fuse_lazy,
                        [_tokenize_dataset(ds) for ds in dss],
                        gbt[idx],
                        measurement,
                        skip_broken_datasets,
-                       chunked_srcs.ndim)
+                       len(needed_irr_chunks))
 
-            dsk[key_prefix + idx] = val
+                # 3D case
+                if 'extra_dim' in measurement:
+                    # Do extra_dim subsetting here
+                    index_subset = extra_dims.measurements_index(measurement.extra_dim)
+                    for result_index, extra_dim_index in enumerate(range(*index_subset)):
+                        dsk[key_prefix + (result_index,) + idx] = val + (extra_dim_index,)
+                else:
+                    # Get extra_dim index if available
+                    extra_dim_index = measurement.get('extra_dim_index', None)
+                    dsk[key_prefix + idx] = val + (extra_dim_index,)
 
     y_shapes = [grid_chunks[0]]*gbt.shape[0]
     x_shapes = [grid_chunks[1]]*gbt.shape[1]
 
     y_shapes[-1], x_shapes[-1] = gbt.chunk_shape(tuple(n-1 for n in gbt.shape))
 
+    extra_dim_shape = ()
+    if 'extra_dim' in measurement:
+        dim_name = measurement.extra_dim
+        extra_dim_shape += (len(extra_dims.measurements_values(dim_name)),)
+
     data = da.Array(dsk, dsk_name,
                     chunks=actual_irr_chunks + (tuple(y_shapes), tuple(x_shapes)),
                     dtype=measurement.dtype,
-                    shape=(chunked_srcs.shape + gbt.base.shape))
+                    shape=(chunked_srcs.shape + extra_dim_shape + gbt.base.shape))
 
     if needed_irr_chunks != actual_irr_chunks:
         data = data.rechunk(chunks=chunks)

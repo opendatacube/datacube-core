@@ -14,9 +14,6 @@ import dask
 import threading
 import logging
 import os
-from botocore.credentials import ReadOnlyCredentials
-from botocore.exceptions import BotoCoreError
-from .aws import s3_dump, s3_client
 
 
 __all__ = (
@@ -260,11 +257,14 @@ def _save_blob_to_file(data: Union[bytes, str],
 def _save_blob_to_s3(data: Union[bytes, str],
                      url: str,
                      profile: Optional[str] = None,
-                     creds: Optional[ReadOnlyCredentials] = None,
+                     creds = None,
                      region_name: Optional[str] = None,
                      with_deps=None,
                      **kw) -> Tuple[str, bool]:
     from botocore.errorfactory import ClientError
+    from botocore.credentials import ReadOnlyCredentials
+    from botocore.exceptions import BotoCoreError
+    from .aws import s3_dump, s3_client
 
     try:
         s3 = s3_client(profile=profile,

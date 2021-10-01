@@ -324,8 +324,9 @@ class Measurement(dict):
 
     """
     REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
-    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition', 'scale_factor', 'add_offset')
-    ATTR_SKIP = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser'])
+    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition', 'scale_factor', 'add_offset',
+                     'extra_dim')
+    ATTR_SKIP = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser', 'extra_dim', 'extra_dim_index'])
 
     def __init__(self, canonical_name=None, **kwargs):
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
@@ -405,6 +406,7 @@ class DatasetType:
         self.metadata_type = metadata_type
         #: product definition document
         self.definition = definition
+        self._extra_dimensions = None
         self._canonical_measurements: Optional[Mapping[str, Measurement]] = None
         self._all_measurements: Optional[Dict[str, Measurement]] = None
         self._load_hints: Optional[Dict[str, Any]] = None
@@ -432,6 +434,14 @@ class DatasetType:
         return self.definition['name']
 
     @property
+    def description(self) -> str:
+        return self.definition.get("description", None)
+
+    @property
+    def license(self) -> str:
+        return self.definition.get("license", None)
+
+    @property
     def managed(self) -> bool:
         return self.definition.get('managed', False)
 
@@ -452,6 +462,7 @@ class DatasetType:
         """
         Dictionary of measurements in this product
         """
+        # from copy import deepcopy
         if self._canonical_measurements is None:
             def fix_nodata(m):
                 nodata = m.get('nodata', None)
@@ -462,6 +473,7 @@ class DatasetType:
 
             self._canonical_measurements = OrderedDict((m['name'], Measurement(**fix_nodata(m)))
                                                        for m in self.definition.get('measurements', []))
+
         return self._canonical_measurements
 
     @property
@@ -475,6 +487,16 @@ class DatasetType:
             spatial_dims = DEFAULT_SPATIAL_DIMS
 
         return ('time',) + spatial_dims
+
+    @property
+    def extra_dimensions(self) -> Mapping[str, Measurement]:
+        """
+        Dictionary of metadata for the third dimension.
+        """
+        if self._extra_dimensions is None:
+            self._extra_dimensions = OrderedDict((d['name'], d)
+                                                 for d in self.definition.get('extra_dimensions', []))
+        return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
     def grid_spec(self) -> Optional['GridSpec']:
@@ -504,6 +526,59 @@ class DatasetType:
 
         return GridSpec(crs=crs, **gs_params)
 
+    def validate_extra_dims(definition: dict):
+        """Validate 3D metadata in the product definition.
+
+        Perform some basic checks for validity of the 3D dataset product definition:
+          - Checks extra_dimensions section exists
+          - For each 3D measurement, check if the required dimension is defined
+          - If the 3D spectral_definition is defined:
+            - Check there's one entry per coordinate.
+            - Check that wavelength and response are the same length.
+
+        :param definition: Dimension definition dict, typically retrieved from the product definition's
+            `extra_dimensions` field.
+        """
+        # Dict of extra dimensions names and values in the product definition
+        defined_extra_dimensions = OrderedDict(
+            (d.get("name"), d.get("values")) for d in definition.get("extra_dimensions", [])
+        )
+
+        for m in definition.get('measurements', []):
+            # Skip if not a 3D measurement
+            if 'extra_dim' not in m:
+                continue
+
+            # Found 3D measurement, check if extra_dimension is defined.
+            if (len(defined_extra_dimensions) == 0):
+                raise ValueError(
+                    "extra_dimensions is not defined. 3D measurements require extra_dimensions "
+                    "to be defined for the dimension"
+                )
+
+            dim_name = m.get('extra_dim')
+
+            # Check extra dimension is defined
+            if dim_name not in defined_extra_dimensions:
+                raise ValueError(f"Dimension {dim_name} is not defined in extra_dimensions")
+
+            if 'spectral_definition' in m:
+                spectral_definitions = m.get('spectral_definition', [])
+                # Check spectral_definition of expected length
+                if len(defined_extra_dimensions.get(dim_name)) != len(spectral_definitions):
+                    raise ValueError(
+                        f"spectral_definition should be the same length as values for extra_dim {m.get('extra_dim')}"
+                    )
+
+                # Check each spectral_definition has the same length for wavelength and response if both exists
+                for idx, spectral_definition in enumerate(spectral_definitions):
+                    if 'wavelength' in spectral_definition and 'response' in spectral_definition:
+                        if len(spectral_definition.get('wavelength')) != len(spectral_definition.get('response')):
+                            raise ValueError(
+                                f"spectral_definition_map: wavelength should be the same length as response "
+                                f"in the product definition for spectral definition at index {idx}."
+                            )
+
     def canonical_measurement(self, measurement: str) -> str:
         """ resolve measurement alias into canonical name
         """
@@ -513,7 +588,9 @@ class DatasetType:
 
         return m.canonical_name
 
-    def lookup_measurements(self, measurements: Optional[Union[Iterable[str], str]] = None) -> Mapping[str, Measurement]:
+    def lookup_measurements(
+        self, measurements: Optional[Union[Iterable[str], str]] = None
+    ) -> Mapping[str, Measurement]:
         """
         Find measurements by name
 
@@ -602,7 +679,8 @@ class DatasetType:
         row = dict(**self.fields)
         row.update(id=self.id,
                    name=self.name,
-                   description=self.definition['description'])
+                   license=self.license,
+                   description=self.description)
 
         if self.grid_spec is not None:
             row.update({
@@ -840,3 +918,183 @@ def metadata_from_doc(doc: Mapping[str, Any]) -> MetadataType:
     from .fields import get_dataset_fields
     MetadataType.validate(doc)  # type: ignore
     return MetadataType(doc, get_dataset_fields(doc))
+
+
+class ExtraDimensions:
+    """
+    Definition for the additional dimensions between (t) and (y, x)
+
+    It allows the creation of a subsetted ExtraDimensions that contains slicing information relative to
+    the original dimension coordinates.
+    """
+
+    def __init__(self, extra_dim: Dict[str, Any]):
+        """Init function
+
+        :param extra_dim: Dimension definition dict, typically retrieved from the product definition's
+            `extra_dimensions` field.
+        """
+        import xarray
+
+        # Dict of information about each dimension
+        self._dims = extra_dim
+        # Dimension slices that results in this ExtraDimensions object
+        self._dim_slice = {
+            name: (0, len(dim['values'])) for name, dim in extra_dim.items()
+        }
+        # Coordinate information
+        self._coords = {
+            name: xarray.DataArray(
+                data=dim['values'],
+                coords={name: dim['values']},
+                dims=(name,),
+                name=name,
+            ).astype(dim['dtype'])
+            for name, dim in extra_dim.items()
+        }
+
+    def has_empty_dim(self) -> bool:
+        """Return True if ExtraDimensions has an empty dimension, otherwise False.
+
+        :return: A boolean if ExtraDimensions has an empty dimension, otherwise False.
+        """
+        for value in self._coords.values():
+            if value.shape[0] == 0:
+                return True
+        return False
+
+    def __getitem__(self, dim_slices: Dict[str, Union[float, Tuple[float, float]]]) -> "ExtraDimensions":
+        """Return a ExtraDimensions subsetted by dim_slices
+
+        :param dim_slices: Dict of dimension slices to subset by.
+        :return: An ExtraDimensions object subsetted by `dim_slices`
+        """
+        # Check all dimensions specified in dim_slices exists
+        unknown_keys = set(dim_slices.keys()) - set(self._dims.keys())
+        if unknown_keys:
+            raise KeyError(f"Found unknown keys {unknown_keys} in dim_slices")
+
+        from copy import deepcopy
+
+        ed = ExtraDimensions(deepcopy(self._dims))
+        ed._dim_slice = self._dim_slice
+
+        # Convert to integer index
+        for dim_name, dim_slice in dim_slices.items():
+            dim_slices[dim_name] = self.coord_slice(dim_name, dim_slice)
+
+        for dim_name, dim_slice in dim_slices.items():
+            # Adjust slices relative to original.
+            if dim_name in ed._dim_slice:
+                ed._dim_slice[dim_name] = (
+                    ed._dim_slice[dim_name][0] + dim_slice[0],
+                    ed._dim_slice[dim_name][0] + dim_slice[1],
+                )
+
+            # Subset dimension values.
+            if dim_name in ed._dims:
+                ed._dims[dim_name]['values'] = ed._dims[dim_name]['values'][slice(*dim_slice)]
+
+            # Subset dimension coordinates.
+            if dim_name in ed._coords:
+                slice_dict = {k: slice(*v) for k, v in dim_slices.items()}
+                ed._coords[dim_name] = ed._coords[dim_name].isel(slice_dict)
+
+        return ed
+
+    @property
+    def dims(self) -> Dict[str, dict]:
+        """Returns stored dimension information
+
+        :return: A dict of information about each dimension
+        """
+        return self._dims
+
+    @property
+    def dim_slice(self) -> Dict[str, Tuple[int, int]]:
+        """Returns dimension slice for this ExtraDimensions object
+
+        :return: A dict of dimension slices that results in this ExtraDimensions object
+        """
+        return self._dim_slice
+
+    def measurements_values(self, dim: str) -> List[Any]:
+        """Returns the dimension values after slicing
+
+        :param dim: The name of the dimension
+        :return: A list of dimension values for the requested dimension.
+        """
+        if dim not in self._dims:
+            raise ValueError(f"Dimension {dim} not found.")
+        return self._dims[dim]['values']
+
+    def measurements_slice(self, dim: str) -> slice:
+        """Returns the index for slicing on a dimension
+
+        :param dim: The name of the dimension
+        :return: A slice for the the requested dimension.
+        """
+        dim_slice = self.measurements_index(dim)
+        return slice(*dim_slice)
+
+    def measurements_index(self, dim: str) -> Tuple[int, int]:
+        """Returns the index for slicing on a dimension as a tuple.
+
+        :param dim: The name of the dimension
+        :return: A tuple for the the requested dimension.
+        """
+        if dim not in self._dim_slice:
+            raise ValueError(f"Dimension {dim} not found.")
+
+        dim_slice = self._dim_slice[dim]
+        return dim_slice
+
+    def index_of(self, dim: str, value: Any) -> int:
+        """Find index for value in the dimension dim
+
+        :param dim: The name of the dimension
+        :param value: The coordinate value.
+        :return: The integer index of `value`
+        """
+        if dim not in self._coords:
+            raise ValueError(f"Dimension {dim} not found.")
+        return self._coords[dim].searchsorted(value)
+
+    def coord_slice(self, dim: str, coord_range: Union[float, Tuple[float, float]]) -> Tuple[int, int]:
+        """Returns the Integer index for a coordinate (min, max) range.
+
+        :param dim: The name of the dimension
+        :param coord_range: The coordinate range.
+        :return: A tuple containing the integer indexes of `coord_range.
+        """
+        # Convert to Tuple if it's an int or float
+        if isinstance(coord_range, int) or isinstance(coord_range, float):
+            coord_range = (coord_range, coord_range)
+
+        start_index = self.index_of(dim, coord_range[0])
+        stop_index = self.index_of(dim, coord_range[1] + 1)
+        return start_index, stop_index
+
+    def chunk_size(self) -> Tuple[Tuple[str, ...], Tuple[int, ...]]:
+        """Returns the names and shapes of dimenions in dimension order
+
+        :return: A tuple containing the names and max sizes of each dimension
+        """
+        names = ()
+        shapes = ()
+        if self.dims is not None:
+            for dim in self.dims.values():
+                name = dim.get('name')
+                names += (name,)
+                shapes += (len(self.measurements_values(name)),)
+        return names, shapes
+
+    def __str__(self) -> str:
+        return (
+            f"ExtraDimensions(extra_dim={dict(self._dims)}, dim_slice={self._dim_slice} "
+            f"coords={self._coords} "
+            f")"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()

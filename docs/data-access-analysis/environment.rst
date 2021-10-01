@@ -60,6 +60,23 @@ Example ODC Configuration File
     [staging]
     db_hostname: staging.dea.ga.gov.au
 
+    ## An AWS environment, using RDS ##
+    [aws_rds]
+    # Point database to an RDS server on AWS.
+    db_hostname: your.rds.server.name
+    db_username: your_rds_username
+    db_database: your_rds_db
+
+    # Choose an authentication option:
+
+    # 1. password authentication, as documented above
+    # db_password: Ungue55able$ecRet
+
+    # 2. IAM Authentication
+    # iam_authentication: yes
+    #
+    # Token timeout in seconds.  Defaults to 600 (10 minutes)
+    # iam_timeout: 750
 
 Note that the ``staging`` environment only specifies the hostname, all other
 fields will use default values (database ``datacube``, current username,
@@ -113,3 +130,22 @@ Examples of configuration via environment variables
 It is also possible to use separate environment variables for each component of
 the connection URL. The recognised environment variables are
 ``DB_HOSTNAME``, ``DB_PORT``, ``DB_USERNAME``, ``DB_PASSWORD`` and ``DB_DATABASE``.
+
+AWS IAM authentication for RDS can also be activated by setting the
+``DATACUBE_IAM_AUTHENTICATION`` environment variable to ``'y'`` or  ``'yes'``.
+The IAM token timeout can be tuned by setting the ``DATACUBE_IAM_TIMEOUT``
+environment variable to a value in seconds.  Default is 600 (i.e. 10 minutes).
+
+
+Types of Indexes
+================
+
+It is possible to implement a custom index driver and hook it into the datacube
+via the plugin mechanism. This is an experimental feature that was used to
+investigate the ``S3 AIO`` format. The index driver interface however is not
+well defined and it is unrealistic to implement a completely new backend. One
+could however extend the existing PostgreSQL backend, and this was the strategy used
+by the ``S3 AIO`` driver before it got decommissioned.
+
+The type of index driver to use is defined by the ``index_driver`` option in
+each section of the user config file.
