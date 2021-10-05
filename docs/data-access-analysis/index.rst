@@ -2,14 +2,16 @@
 Data Access & Analysis
 **********************
 
-These pages are designed to provide an introduction on how to access data from an existing Open Data Cube instance.
+For users looking to access data from the Open Data Cube the simplest way to get started is to access a sandbox environment for your Open Data Cube of interest.
+Once you have access to a sandbox environment you'll be able to start searching, loading and analysing data.
 
-.. toctree::
-    :maxdepth: 4
-    :caption: Working with an Open Data Cube Instance
+The Sandbox prepares a JupyterLab environment for you. All necessary software is provided as part of this environment, so no additional installation or configuration is required.
 
-    odc-library.rst
-    environment.rst
+- `Digital Earth Australia Sandbox`_
+- `Digital Earth Africa Sandbox`_
+
+.. _`Digital Earth Australia Sandbox`: https://www.dea.ga.gov.au/developers/sandbox
+.. _`Digital Earth Africa Sandbox`: https://sandbox.digitalearth.africa/
 
 
 .. toctree::
