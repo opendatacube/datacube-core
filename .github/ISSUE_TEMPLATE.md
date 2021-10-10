@@ -18,3 +18,5 @@
 
 > **Note:** Stale issues will be automatically closed after a period of six months with no activity. 
 > To ensure critical issues are not closed, tag them with the Github `pinned` tag .
+> If you are a community member and not a maintainer please escalate this issue to maintainers via
+> [GIS StackExchange](https://gis.stackexchange.com/questions/tagged/open-data-cube) or [Slack](https://join.slack.com/t/opendatacube/shared_invite/zt-d6hu7l35-CGDhSxiSmTwacKNuXWFUkg).
