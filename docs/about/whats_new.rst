@@ -8,7 +8,12 @@ What's New
 v1.8.next
 =========
 
-- Added ``dataset purge`` command for hard deletion of archived datasets.
+v1.8.6 (30 September 2021)
+==========================
+
+- Fix for searching for multiple products, now works with ``product="product_name"``
+  as well as ``product=["product_name1", "product_name2"]`` (:pull:`1201`)
+- Added ``dataset purge`` command for hard deletion of archived datasets. 
   ``--all`` option deletes all archived datasets.  (N.B. will fail if there
   are unarchived datasets that depend on the archived datasets.)
 
