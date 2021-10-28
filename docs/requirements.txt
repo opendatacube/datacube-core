@@ -1,6 +1,9 @@
 paramiko==2.7.1
-Sphinx==3.0.1
-sphinx-autodoc-typehints==1.10.3
-sphinx-click==2.3.2
+Sphinx==4.1.2
+sphinx-autodoc-typehints==1.12.0
+autodocsumm==0.2.6
+sphinx-click==3.0.1
 sphinx-rtd-theme==0.4.3
+pydata-sphinx-theme==0.6.3
 sshtunnel==0.1.5
+beautifulsoup4==4.9.3

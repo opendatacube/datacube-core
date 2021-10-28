@@ -17,7 +17,7 @@ This page lists definitions for terms used in the Open Data Cube and this manual
       The Data Cube Application Programming Interface gives programmers full
       access to the capabilities of the Cube, allowing query and advanced data
       retrieval.
-   
+
    CEOS-SEO
    Committee on Earth Observation, Systems Engineering Office
       Another group of developers working on ODC
@@ -90,8 +90,8 @@ This page lists definitions for terms used in the Open Data Cube and this manual
    USGS
    United States Geological Survey
       The USA government organisation which operates both the Landsat and MODIS satellites,
-      which are available as free an open earth observation data. 
-      
+      which are available as free an open earth observation data.
+
    VDI
    Virtual Desktop Infrastructure
       A virtual desktop environment at NCI that provides a linux desktop

@@ -9,17 +9,17 @@ v1.8.next
 =========
 
 v1.8.6 (30 September 2021)
-=======================
+==========================
 
 - Fix for searching for multiple products, now works with ``product="product_name"``
   as well as ``product=["product_name1", "product_name2"]`` (:pull:`1201`)
 - Added ``dataset purge`` command for hard deletion of archived datasets. 
   ``--all`` option deletes all archived datasets.  (N.B. will fail if there
-  are unarchived datasets that depend on the archived datasets.)  
+  are unarchived datasets that depend on the archived datasets.)
 
-  ``--all`` option also added to ``dataset archive`` and ``dataset restore`` 
+  ``--all`` option also added to ``dataset archive`` and ``dataset restore``
   commands, to archive all unarchived datasets, and restore all archived
-  datasets, respectively.  
+  datasets, respectively.
   (:pull:`1199`)
 - Trivial fixes to CLI help output (:pull:`1197`)
 
