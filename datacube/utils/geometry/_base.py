@@ -605,7 +605,7 @@ class Geometry:
                 return type(geom)(geom)  # clone without changes
 
             if geom.type in ['GeometryCollection', 'MultiPolygon', 'MultiLineString']:
-                return type(geom)([segmentize_shapely(g) for g in geom])
+                return type(geom)([segmentize_shapely(g) for g in geom.geoms])
 
             if geom.type in ['LineString', 'LinearRing']:
                 return type(geom)(densify(list(geom.coords), resolution))
