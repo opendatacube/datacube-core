@@ -336,6 +336,7 @@ class Eo3Dict(collections.abc.MutableMapping):
         "odc:product": None,
         "odc:product_family": identifier_type,
         "odc:region_code": None,
+        "odc:sat_row": None,  # When a dataset has a range of rows (... telemetry)
         **_LANDSAT_EXTENDED_PROPS,
         **_GQA_FMASK_PROPS,
         **_SENTINEL_EXTENDED_PROPS,
@@ -747,7 +748,7 @@ def _github_suggest_new_property_url(key: str, value: object) -> str:
             labels="known-properties",
             body=dedent(
                 f"""\
-                   Hello! The property {key!r} does not appear to be in the KNOWN_STAC_PROPERTIES list,
+                   Hello! The property {key!r} does not appear to be in the KNOWN_PROPERTIES list,
                    but I believe it to be valid.
 
                    An example value of this property is: {value!r}
