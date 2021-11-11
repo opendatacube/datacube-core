@@ -14,19 +14,25 @@ Anaconda Python
 
 Add conda-forge to package channels::
 
-    conda config --add channels conda-forge
+    conda config --append channels conda-forge
 
-Conda Environments are recommended for use in isolating your ODC development environment from your system installation and other python evironments.
+Conda environments are recommended for use in isolating your ODC development environment from your system installation and other Python environments.
 
-Install required python packages and create an ``odc`` conda environment.
+Install required Python packages and create a conda environment named ``odc_env``.
 
 Python::
 
-    conda env create -n odc --file .travis/environment.yaml sphinx
+    conda create --name odc_env python=3.8 datacube
 
-Activate ``odc`` python environment::
+Activate the ``odc_env`` conda environment::
 
-    source activate odc
+    conda activate odc_env
+    
+Find out more about conda environments `here <https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/environments.html>`_.
+
+Install other packages::
+
+    conda install jupyter matplotlib scipy
 
 
 Postgres database configuration
