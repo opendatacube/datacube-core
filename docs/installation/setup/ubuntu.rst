@@ -2,7 +2,7 @@
 Ubuntu Developer Setup
 **********************
 
-Base OS: Ubuntu 16.04 LTS
+Base OS: Ubuntu 20.04 LTS
 
 This guide will setup an ODC core development environment and includes:
 
@@ -18,16 +18,22 @@ Required software
 
 GDAL, HDF5, and netCDF4::
 
-    sudo apt-get install libgdal1-dev libhdf5-serial-dev libnetcdf-dev
+    sudo apt-get install libgdal-dev libhdf5-serial-dev libnetcdf-dev
 
-Postgres::
+Install the latest Postgres version `available <https://packages.ubuntu.com/search?keywords=postgresql>` for your
+Ubuntu distribution, eg::
 
-    sudo apt-get install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5
+    sudo apt-get install postgresql-12
+
+    # Optionally, Postgis too
+    sudo apt-get install postgresql-12-postgis-3
+
+Ubuntu's official repositories usually ship older versions of Postgres. You can alternatively get the most recent version from
+`the official PostgreSQL repository <https://wiki.postgresql.org/wiki/Apt>`_.
 
 Optional packages (useful utilities, docs)::
 
-    sudo apt-get install postgresql-doc-9.5 libhdf5-doc netcdf-doc libgdal-doc
+    sudo apt-get install libhdf5-doc netcdf-doc libgdal-doc
     sudo apt-get install hdf5-tools netcdf-bin gdal-bin pgadmin3
-
 
 .. include:: common_install.rst
