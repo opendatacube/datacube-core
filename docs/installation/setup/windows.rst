@@ -41,7 +41,7 @@ Install required python packages and create an ``odc`` conda environment.
 
 Python::
 
-    conda env create -n odc --file .travis/environment.yaml sphinx
+    conda create --name odc_env python=3.8 datacube
 
 Activate ``odc`` python environment::
 
@@ -86,6 +86,7 @@ Run the integration tests::
 Build the documentation::
 
     cd datacube-core/docs
+    pip install -r requirements.txt
     make html
     open _build/html/index.html
 
