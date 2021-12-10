@@ -105,7 +105,7 @@ Run the integration tests::
 Build the documentation::
 
     cd datacube-core/docs
-    conda install -r requirements.txt
+    pip install -r requirements.txt
     make html
 
 Then open :file:`_build/html/index.html` in your browser to view the Documentation.
