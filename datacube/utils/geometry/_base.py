@@ -141,12 +141,13 @@ def _guess_crs_str(crs_spec: Any) -> Optional[str]:
     if isinstance(crs_spec, dict):
         crs_spec = _CRS.from_dict(crs_spec)
 
+    if hasattr(crs_spec, 'to_wkt'):
+        return crs_spec.to_wkt()
     if hasattr(crs_spec, 'to_epsg'):
         epsg = crs_spec.to_epsg()
         if epsg is not None:
             return 'EPSG:{}'.format(crs_spec.to_epsg())
-    if hasattr(crs_spec, 'to_wkt'):
-        return crs_spec.to_wkt()
+
     return None
 
 
