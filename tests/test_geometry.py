@@ -949,7 +949,7 @@ def test_crs():
 
     crs2 = CRS(crs)
     assert crs2 == crs
-    assert crs.proj is crs2.proj
+    assert crs.proj == crs2.proj
 
     assert epsg4326.valid_region == geometry.box(-180, -90, 180, 90, epsg4326)
     assert epsg3857.valid_region.crs == epsg4326
@@ -1475,7 +1475,7 @@ def test_crs_hash():
 
 
 def test_base_internals():
-    assert _guess_crs_str(CRS("epsg:3577")) == 'EPSG:3577'
+    assert _guess_crs_str(CRS("epsg:3577")) == epsg3577.to_wkt()
     no_epsg_crs = CRS(SAMPLE_WKT_WITHOUT_AUTHORITY)
     assert _guess_crs_str(no_epsg_crs) == no_epsg_crs.to_wkt()
 
