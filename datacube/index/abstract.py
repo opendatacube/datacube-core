@@ -10,6 +10,8 @@ from typing import (Any, Callable, Iterable,
                     Tuple, Union)
 from uuid import UUID
 
+from datacube.utils.changes import AllowPolicy, Change, Offset
+
 
 class AbstractUserResource(ABC):
     """
@@ -62,9 +64,6 @@ class AbstractUserResource(ABC):
 
 MetadataType = "datacube.model.MetadataType"
 
-# TODO: Move to datacube.utils.changes (currently has no typehints)
-MetadataChange = Tuple[Tuple, Any, Any]
-MetadataAllowedChanges = Mapping[Tuple[str, ...], Callable[[str, str, Any, Any], bool]]
 
 class AbstractMetadataTypeResource(ABC):
     """
@@ -108,7 +107,7 @@ class AbstractMetadataTypeResource(ABC):
     def can_update(self,
                    metadata_type: MetadataType,
                    allow_unsafe_updates: bool = False
-                  ) -> Tuple[bool, Iterable[MetadataChange], Iterable[MetadataChange]]:
+                  ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if metadata type can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -269,7 +268,7 @@ class AbstractProductResource(ABC):
                    product: Product,
                    allow_unsafe_updates: bool = False,
                    allow_table_lock: bool = False
-                  ) -> Tuple[bool, Iterable[MetadataChange], Iterable[MetadataChange]]:
+                  ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if product can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -528,8 +527,8 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def can_update(self,
                    dataset: Dataset,
-                   updates_allowed: Optional[MetadataAllowedChanges] = None
-                  ):
+                   updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None
+                  ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -541,7 +540,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def update(self,
                dataset: Dataset,
-               updates_allowed: Optional[MetadataAllowedChanges] = None
+               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None
               ) -> Dataset:
         """
         Update dataset metadata and location
