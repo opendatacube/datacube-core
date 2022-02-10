@@ -10,6 +10,8 @@ from typing import (Any, Callable, Iterable,
                     Tuple, Union)
 from uuid import UUID
 
+from datacube.model import Dataset, MetadataType
+from datacube.model import DatasetType as Product
 from datacube.utils.changes import AllowPolicy, Change, Offset
 
 
@@ -61,9 +63,6 @@ class AbstractUserResource(ABC):
         List all database users
         :return: Iterable of (role, username, description) tuples
         """
-
-
-MetadataType = "datacube.model.MetadataType"
 
 
 class AbstractMetadataTypeResource(ABC):
@@ -223,8 +222,6 @@ class AbstractMetadataTypeResource(ABC):
         :rtype: iter[datacube.model.MetadataType]
         """
 
-
-Product = "datacube.model.DatasetType"
 
 class AbstractProductResource(ABC):
     """
@@ -423,7 +420,6 @@ class AbstractProductResource(ABC):
 
 
 DSID = Union[str, UUID]
-Dataset = "datacube.model.Dataset"
 
 
 class AbstractDatasetResource(ABC):

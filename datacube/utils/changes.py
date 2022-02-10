@@ -6,13 +6,13 @@
 Validation of document/dictionary changes.
 """
 from itertools import zip_longest
-from typing import Any, Callable, List, Mapping, Tuple, Union
+from typing import Any, Callable, List, Mapping, Sequence, Tuple, Union
 
 # Type that can be checked for changes.
 # (MyPy approximation without recursive references)
-Changable = Union[str, int, None, List[Any], Mapping[str, Any]]
+Changable = Union[str, int, None, Sequence[Any], Mapping[str, Any]]
 # More accurate recursive definition:
-# Changable = Union[str, int, None, List["Changable"], Mapping[str, "Changable"]]
+# Changable = Union[str, int, None, Sequence["Changable"], Mapping[str, "Changable"]]
 
 def contains(v1: Changable, v2: Changable, case_sensitive: bool = False) -> bool:
     """
