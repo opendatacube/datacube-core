@@ -2,14 +2,15 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import List
+from typing import List, Optional
 
 from ._tools import singleton_setup
 from .driver_cache import load_drivers
+from datacube.index.abstract import AbstractIndexDriver
 
 
 class IndexDriverCache(object):
-    def __init__(self, group: str):
+    def __init__(self, group: str) -> None:
         self._drivers = load_drivers(group)
 
         if len(self._drivers) == 0:
@@ -21,7 +22,7 @@ class IndexDriverCache(object):
                 for alias in driver.aliases:
                     self._drivers[alias] = driver
 
-    def __call__(self, name: str):
+    def __call__(self, name: str) -> AbstractIndexDriver:
         """
         :returns: None if driver with a given name is not found
 
@@ -44,13 +45,13 @@ def index_cache() -> IndexDriverCache:
                            'datacube.plugins.index')
 
 
-def index_drivers():
+def index_drivers() -> List[str]:
     """ Returns list driver names
     """
     return index_cache().drivers()
 
 
-def index_driver_by_name(name):
+def index_driver_by_name(name: str) -> Optional[AbstractIndexDriver]:
     """ Lookup writer driver by name
 
     :returns: Initialised writer driver instance

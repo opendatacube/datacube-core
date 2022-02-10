@@ -62,6 +62,7 @@ class AbstractUserResource(ABC):
         :return: Iterable of (role, username, description) tuples
         """
 
+
 MetadataType = "datacube.model.MetadataType"
 
 
