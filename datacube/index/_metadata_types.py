@@ -8,6 +8,7 @@ from pathlib import Path
 
 from cachetools.func import lru_cache
 
+from datacube.index.abstract import AbstractMetadataTypeResource
 from datacube.model import MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset, read_documents
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
@@ -22,7 +23,7 @@ def default_metadata_type_docs():
     return [doc for (path, doc) in read_documents(_DEFAULT_METADATA_TYPES_PATH)]
 
 
-class MetadataTypeResource(object):
+class MetadataTypeResource(AbstractMetadataTypeResource):
     def __init__(self, db):
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
@@ -170,24 +171,6 @@ class MetadataTypeResource(object):
         :rtype: datacube.model.MetadataType
         """
         return self.update(self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates)
-
-    def get(self, id_):
-        """
-        :rtype: datacube.model.MetadataType
-        """
-        try:
-            return self.get_unsafe(id_)
-        except KeyError:
-            return None
-
-    def get_by_name(self, name):
-        """
-        :rtype: datacube.model.MetadataType
-        """
-        try:
-            return self.get_by_name_unsafe(name)
-        except KeyError:
-            return None
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden

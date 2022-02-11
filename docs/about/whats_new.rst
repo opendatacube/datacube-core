@@ -8,12 +8,17 @@ What's New
 v1.8.next
 =========
 
+- Separate index driver interface definition from default index driver implementation. (:pull:`1226`)
+- Prefer WKT over EPSG when guessing CRS strings. (:pull:`1223`)
+- Updates install docs. (:pull:`1208`, :pull:`1212`, :pull:`1215`)
+- Tweak to segmented in geometry to suppress Shapely warning. (:pull:`1207`)
+
 v1.8.6 (30 September 2021)
 ==========================
 
 - Fix for searching for multiple products, now works with ``product="product_name"``
   as well as ``product=["product_name1", "product_name2"]`` (:pull:`1201`)
-- Added ``dataset purge`` command for hard deletion of archived datasets. 
+- Added ``dataset purge`` command for hard deletion of archived datasets.
   ``--all`` option deletes all archived datasets.  (N.B. will fail if there
   are unarchived datasets that depend on the archived datasets.)
 

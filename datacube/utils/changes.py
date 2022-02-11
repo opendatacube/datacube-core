@@ -6,9 +6,15 @@
 Validation of document/dictionary changes.
 """
 from itertools import zip_longest
+from typing import Any, Callable, List, Mapping, Sequence, Tuple, Union
 
+# Type that can be checked for changes.
+# (MyPy approximation without recursive references)
+Changable = Union[str, int, None, Sequence[Any], Mapping[str, Any]]
+# More accurate recursive definition:
+# Changable = Union[str, int, None, Sequence["Changable"], Mapping[str, "Changable"]]
 
-def contains(v1, v2, case_sensitive=False):
+def contains(v1: Changable, v2: Changable, case_sensitive: bool = False) -> bool:
     """
     Check that v1 is a superset of v2.
 
@@ -29,7 +35,7 @@ def contains(v1, v2, case_sensitive=False):
     return v1 == v2
 
 
-class MissingSentinel(object):
+class MissingSentinel:
     def __str__(self):
         return "missing"
 
@@ -39,8 +45,21 @@ class MissingSentinel(object):
 
 MISSING = MissingSentinel()
 
+# Representation of an offset in a dict structure
+OffsetElem = Union[str, int]
+Offset = Tuple[OffsetElem, ...]
 
-def get_doc_changes(original, new, base_prefix=()):
+# Representation of a changed value
+ChangedValue = Union[MissingSentinel, Changable]
+
+# Representation of a change
+Change = Tuple[Offset, ChangedValue, ChangedValue]
+
+
+def get_doc_changes(original: Changable,
+                    new: Changable,
+                    base_prefix: Offset = ()
+                   ) -> List[Change]:
     """
     Return a list of `changed fields` between two dict structures.
 
@@ -57,7 +76,7 @@ def get_doc_changes(original, new, base_prefix=()):
 
 
     """
-    changed_fields = []
+    changed_fields: List[Change] = []
     if original == new:
         return changed_fields
 
@@ -80,7 +99,7 @@ class DocumentMismatchError(Exception):
     pass
 
 
-def check_doc_unchanged(original, new, doc_name):
+def check_doc_unchanged(original: Changable, new: Changable, doc_name: str) -> None:
     """
     Raise an error if any fields have been modified on a document.
 
@@ -99,27 +118,35 @@ def check_doc_unchanged(original, new, doc_name):
         )
 
 
-def allow_truncation(key, offset, old_value, new_value):
-    return offset and key == offset[:-1] and new_value == MISSING
+AllowPolicy = Callable[[Offset, Offset, ChangedValue, ChangedValue], bool]
+
+def allow_truncation(key: Offset, offset: Offset,
+                     old_value: ChangedValue, new_value: ChangedValue) -> bool:
+    return bool(offset) and key == offset[:-1] and new_value == MISSING
 
 
-def allow_extension(key, offset, old_value, new_value):
-    return offset and key == offset[:-1] and old_value == MISSING
+def allow_extension(key: Offset, offset: Offset,
+                    old_value: ChangedValue, new_value: ChangedValue) -> bool:
+    return bool(offset) and key == offset[:-1] and old_value == MISSING
 
 
-def allow_addition(key, offset, old_value, new_value):
+def allow_addition(key: Offset, offset: Offset,
+                   old_value: ChangedValue, new_value: ChangedValue) -> bool:
     return key == offset and old_value == MISSING
 
 
-def allow_removal(key, offset, old_value, new_value):
+def allow_removal(key: Offset, offset: Offset,
+                  old_value: ChangedValue, new_value: ChangedValue) -> bool:
     return key == offset and new_value == MISSING
 
 
-def allow_any(key, offset, old, new):
-    return True, None
+def allow_any(key: Offset, offset: Offset,
+              old: ChangedValue, new: ChangedValue) -> bool:
+    return True
 
 
-def classify_changes(changes, allowed_changes):
+def classify_changes(changes: List[Change], allowed_changes: Mapping[Offset, AllowPolicy]
+                    ) -> Tuple[List[Change], List[Change]]:
     """
     Classify list of changes into good(allowed) and bad(not allowed) based on allowed changes.
 
@@ -129,8 +156,8 @@ def classify_changes(changes, allowed_changes):
     """
     allowed_changes_index = dict(allowed_changes)
 
-    good_changes = []
-    bad_changes = []
+    good_changes: List[Change] = []
+    bad_changes: List[Change] = []
 
     for offset, old_val, new_val in changes:
         allowance = allowed_changes_index.get(offset)

@@ -16,6 +16,7 @@ from sqlalchemy import select, func
 
 from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgres._schema import DATASET
+from datacube.index.abstract import AbstractDatasetResource
 from datacube.model import Dataset, DatasetType
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
@@ -53,7 +54,7 @@ class DatasetSpatialMixin(object):
         return Dataset.bounds.__get__(self)
 
 
-class DatasetResource(object):
+class DatasetResource(AbstractDatasetResource):
     """
     :type _db: datacube.drivers.postgres._connections.PostgresDb
     :type types: datacube.index._products.ProductResource
@@ -738,15 +739,6 @@ class DatasetResource(object):
         for _, results in self._do_search_by_product(query, return_fields=True):
             for columns in results:
                 yield dict(columns)
-
-    def search_eager(self, **query):
-        """
-        Perform a search, returning results as Dataset objects.
-
-        :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: list[Dataset]
-        """
-        return list(self.search(**query))
 
     def get_product_time_bounds(self, product: str):
         """

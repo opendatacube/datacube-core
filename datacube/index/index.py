@@ -9,12 +9,13 @@ from datacube.index._datasets import DatasetResource  # type: ignore
 from datacube.index._metadata_types import MetadataTypeResource, default_metadata_type_docs
 from datacube.index._products import ProductResource
 from datacube.index._users import UserResource
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver
 from datacube.model import MetadataType
 
 _LOG = logging.getLogger(__name__)
 
 
-class Index(object):
+class Index(AbstractIndex):
     """
     Access to the datacube index.
 
@@ -41,10 +42,26 @@ class Index(object):
     def __init__(self, db: PostgresDb) -> None:
         self._db = db
 
-        self.users = UserResource(db)
-        self.metadata_types = MetadataTypeResource(db)
-        self.products = ProductResource(db, self.metadata_types)
-        self.datasets = DatasetResource(db, self.products)
+        self._users = UserResource(db)
+        self._metadata_types = MetadataTypeResource(db)
+        self._products = ProductResource(db, self.metadata_types)
+        self._datasets = DatasetResource(db, self.products)
+
+    @property
+    def users(self) -> UserResource:
+        return self._users
+
+    @property
+    def metadata_types(self) -> MetadataTypeResource:
+        return self._metadata_types
+
+    @property
+    def products(self) -> ProductResource:
+        return self._products
+
+    @property
+    def datasets(self) -> DatasetResource:
+        return self._datasets
 
     @property
     def url(self) -> str:
@@ -81,17 +98,11 @@ class Index(object):
         """
         self._db.close()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type_, value, traceback):
-        self.close()
-
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
 
 
-class DefaultIndexDriver(object):
+class DefaultIndexDriver(AbstractIndexDriver):
     @staticmethod
     def connect_to_index(config, application_name=None, validate_connection=True):
         return Index.from_config(config, application_name, validate_connection)

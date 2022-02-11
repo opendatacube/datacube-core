@@ -7,6 +7,7 @@ import logging
 from cachetools.func import lru_cache
 
 from datacube.index import fields
+from datacube.index.abstract import AbstractProductResource
 from datacube.model import DatasetType
 from datacube.utils import InvalidDocException, jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
@@ -16,7 +17,7 @@ from typing import Iterable
 _LOG = logging.getLogger(__name__)
 
 
-class ProductResource(object):
+class ProductResource(AbstractProductResource):
     """
     :type _db: datacube.drivers.postgres._connections.PostgresDb
     :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
@@ -255,30 +256,6 @@ class ProductResource(object):
         type_ = self.from_doc(definition)
         return self.add(type_)
 
-    def get(self, id_):
-        """
-        Retrieve Product by id
-
-        :param int id_: id of the Product
-        :rtype: DatasetType
-        """
-        try:
-            return self.get_unsafe(id_)
-        except KeyError:
-            return None
-
-    def get_by_name(self, name):
-        """
-        Retrieve Product by name
-
-        :param str name: name of the Product
-        :rtype: DatasetType
-        """
-        try:
-            return self.get_by_name_unsafe(name)
-        except KeyError:
-            return None
-
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_unsafe(self, id_):  # type: ignore
@@ -309,17 +286,6 @@ class ProductResource(object):
                 if name not in type_.metadata_type.dataset_fields:
                     break
             else:
-                yield type_
-
-    def search(self, **query):
-        """
-        Return dataset types that have all the given fields.
-
-        :param dict query:
-        :rtype: __generator[DatasetType]
-        """
-        for type_, q in self.search_robust(**query):
-            if not q:
                 yield type_
 
     def search_robust(self, **query):
