@@ -5,12 +5,12 @@
 import datetime
 
 from abc import ABC, abstractmethod
-from typing import (Any, Callable, Iterable,
+from typing import (Any, Iterable, Iterator,
                     List, Mapping, Optional,
                     Tuple, Union)
 from uuid import UUID
 
-from datacube.model import Dataset, MetadataType
+from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
 from datacube.utils.changes import AllowPolicy, Change, Offset
 
@@ -77,10 +77,12 @@ class AbstractMetadataTypeResource(ABC):
     """
 
     @abstractmethod
-    def from_doc(self, definition: Mapping[str, Any]) -> "datacube.model.AbstractMetadataType":
+    def from_doc(self, definition: Mapping[str, Any]) -> MetadataType:
         """
-        :param dict definition:
-        :rtype: datacube.model.AbstractMetadataType
+        Construct a MetadataType object from a dictionary definition
+
+        :param definition: A metadata definition dictionary
+        :return: An unpersisted MetadataType object
         """
 
     @abstractmethod
@@ -113,9 +115,9 @@ class AbstractMetadataTypeResource(ABC):
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
-        :param datacube.model.MetadataType metadata_type: updated MetadataType
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
-        :rtype: bool,list[change],list[change]
+        :param metadata_type: updated MetadataType
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :return: Tuple of: boolean (can/can't update); safe changes; unsafe changes
         """
 
     @abstractmethod
@@ -129,14 +131,14 @@ class AbstractMetadataTypeResource(ABC):
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
-        :param datacube.model.MetadataType metadata_type: updated MetadataType
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param metadata_type: MetadataType model with unpersisted updates
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: datacube.model.MetadataType
+        :return: Persisted updated MetadataType model
         """
 
     def update_document(self,
@@ -148,9 +150,9 @@ class AbstractMetadataTypeResource(ABC):
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
-        :param dict definition: Updated definition
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
-        :rtype: datacube.model.MetadataType
+        :param definition: Updated definition
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :return: Persisted updated MetadataType model
         """
         return self.update(self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates)
 
@@ -158,7 +160,7 @@ class AbstractMetadataTypeResource(ABC):
         """
         Fetch metadata type by id.
 
-        :rtype: datacube.model.MetadataType or None if not found
+        :return: MetadataType model or None if not found
         """
         try:
             return self.get_unsafe(id_)
@@ -169,7 +171,7 @@ class AbstractMetadataTypeResource(ABC):
         """
         Fetch metadata type by name.
 
-        :rtype: datacube.model.MetadataType or None if not found
+        :return: MetadataType model or None if not found
         """
         try:
             return self.get_by_name_unsafe(name)
@@ -182,7 +184,7 @@ class AbstractMetadataTypeResource(ABC):
         Fetch metadata type by id
 
         :param id_:
-        :return: metadata type
+        :return: metadata type model
         :raises KeyError: if not found
         """
 
@@ -192,7 +194,7 @@ class AbstractMetadataTypeResource(ABC):
         Fetch metadata type by name
 
         :param name:
-        :return: metadata type
+        :return: metadata type model
         :raises KeyError: if not found
         """
 
@@ -212,6 +214,8 @@ class AbstractMetadataTypeResource(ABC):
             This will halt other user's requests until completed.
 
             If false, creation will be slightly slower and cannot be done in a transaction.
+        :param: rebuild_views: whether or not views should be rebuilt
+        :param: rebuild_indexes: whether or not views should be rebuilt
         """
 
     @abstractmethod
@@ -219,9 +223,11 @@ class AbstractMetadataTypeResource(ABC):
         """
         Retrieve all Metadata Types
 
-        :rtype: iter[datacube.model.MetadataType]
+        :returns: All available MetadataType models
         """
 
+QueryField = Union[str, float, int, Range, datetime.datetime]
+QueryDict = Mapping[str, QueryField]
 
 class AbstractProductResource(ABC):
     """
@@ -237,8 +243,10 @@ class AbstractProductResource(ABC):
     @abstractmethod
     def from_doc(self, definition: Mapping[str, Any]) -> Product:
         """
-        :param dict definition:
-        :rtype: datacube.model.DatasetType
+        Construct unpersisted Product model from product metadata dictionary
+
+        :param definition: a Product metadata dictionary
+        :return: Unpersisted product model
         """
 
     @abstractmethod
@@ -273,14 +281,14 @@ class AbstractProductResource(ABC):
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param datacube.model.DatasetType product: product to update
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param product: product to update
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: bool,list[change],list[change]
+        :return: Tuple of: boolean (can/can't update); safe changes; unsafe changes
         """
 
     @abstractmethod
@@ -290,19 +298,19 @@ class AbstractProductResource(ABC):
                allow_table_lock: bool = False
                ) -> Product:
         """
-        Update a product from the document. Unsafe changes will throw a ValueError by default.
+        Persist updates to a product. Unsafe changes will throw a ValueError by default.
 
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param datacube.model.DatasetType metadata_type: updated DatasetType
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param metadata_type: Product model with unpersisted updates
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: datacube.model.DatasetType
+        :return: Persisted updated Product model
         """
 
     def update_document(self,
@@ -311,18 +319,18 @@ class AbstractProductResource(ABC):
                         allow_table_lock: bool = False
                        ) -> Product:
         """
-        Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
+        Update a metadata type from a document. Unsafe changes will throw a ValueError by default.
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
-        :param dict definition: Updated definition
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param definition: Updated definition
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: datacube.model.DatasetType
+        :return: Persisted updated Product model
         """
         return self.update(self.from_doc(definition),
                            allow_unsafe_updates=allow_unsafe_updates,
@@ -334,7 +342,7 @@ class AbstractProductResource(ABC):
         Add a Product using its definition
 
         :param dict definition: product definition document
-        :rtype: DatasetType
+        :return: Persisted Product model
         """
         type_ = self.from_doc(definition)
         return self.add(type_)
@@ -343,7 +351,8 @@ class AbstractProductResource(ABC):
         """
         Fetch product by id.
 
-        :rtype: datacube.model.DatasetType or None if not found
+        :param id_: Id of desired product
+        :return: Product model or None if not found
         """
         try:
             return self.get_unsafe(id_)
@@ -354,7 +363,8 @@ class AbstractProductResource(ABC):
         """
         Fetch product by name.
 
-        :rtype: datacube.model.DatasetType or None if not found
+        :param name: Name of desired product
+        :return: Product model or None if not found
         """
         try:
             return self.get_by_name_unsafe(name)
@@ -366,8 +376,8 @@ class AbstractProductResource(ABC):
         """
         Fetch product by id
 
-        :param id_:
-        :return: product
+        :param id_: id of desired product
+        :return: product model
         :raises KeyError: if not found
         """
 
@@ -376,26 +386,26 @@ class AbstractProductResource(ABC):
         """
         Fetch product by name
 
-        :param name:
-        :return: product
+        :param name: name of desired product
+        :return: product model
         :raises KeyError: if not found
         """
 
     @abstractmethod
     def get_with_fields(self, field_names: Iterable[str]) -> Iterable[Product]:
         """
-        Return products that have all the given fields.
+        Return products that have all of the given fields.
 
-        :param iter[str] field_names:
-        :rtype: __generator[DatasetType]
+        :param field_names: names of fields that returned products must have
+        :returns: Matching product models
         """
 
-    def search(self, **query: Any) -> Iterable[Product]:
+    def search(self, **query: QueryField) -> Iterator[Product]:
         """
-        Return products that have all the given fields.
+        Return products that match the supplied query
 
-        :param dict query:
-        :rtype: __generator[DatasetType]
+        :param query: Query parameters
+        :return: Generator of product models
         """
         for type_, q in self.search_robust(**query):
             if not q:
@@ -403,22 +413,25 @@ class AbstractProductResource(ABC):
 
     @abstractmethod
     def search_robust(self,
-                      **query: Any
+                      **query: QueryField
                      ) -> Iterable[Tuple[Product, Mapping]]:
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
 
-        :param dict query:
-        :rtype: __generator[(DatasetType, dict)]
+        :param query: Query parameters
+        :return: Tuples of product model and a dict of remaining unmatchable fields
         """
 
     @abstractmethod
     def get_all(self) -> Iterable[Product]:
         """
         Retrieve all Products
+
+        :returns: Product models for all known products
         """
 
 
+# Non-strict Dataset ID representation
 DSID = Union[str, UUID]
 
 
@@ -441,9 +454,9 @@ class AbstractDatasetResource(ABC):
         """
         Get dataset by id
 
-        :param UUID or str id_: id of the dataset to retrieve
-        :param bool include_sources: get the full provenance graph?
-        :rtype: Dataset (None if not found)
+        :param id_: id of the dataset to retrieve
+        :param include_sources: get the full provenance graph?
+        :rtype: Dataset model (None if not found)
         """
 
     @abstractmethod
@@ -451,8 +464,8 @@ class AbstractDatasetResource(ABC):
         """
         Get multiple datasets by id. (Lineage sources NOT included)
 
-        :param Iterable of UUIDs and/or strings ids: ids to retrieve
-        :return: Iterable of Datasets
+        :param ids: ids to retrieve
+        :return: Iterable of Dataset models
         """
 
     @abstractmethod
@@ -460,29 +473,30 @@ class AbstractDatasetResource(ABC):
         """
         Get all datasets derived from a dataset
 
-        :param UUID id_: dataset id
+        :param id_: dataset id
         :rtype: list[Dataset]
         """
+        # TODO: Upgrade to DSID (requires changes to existing index driver)
 
     @abstractmethod
     def has(self, id_: DSID) -> bool:
         """
         Is this dataset in this index?
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :rtype: bool
+        :param id_: dataset id
+        :return: True if the dataset exists in this index
         """
 
     @abstractmethod
     def bulk_has(self, ids_: Iterable[DSID]) -> Iterable[bool]:
         """
-        Like `has` but operates on a list of ids.
+        Like `has` but operates on a multiple ids.
 
         For every supplied id check if database contains a dataset with that id.
 
-        :param [typing.Union[UUID, str]] ids_: list of dataset ids
+        :param ids_: iterable of dataset ids to check existence in index
 
-        :rtype: [bool]
+        :return: Iterable of bools, true for datasets that exist in index
         """
 
     @abstractmethod
@@ -493,14 +507,14 @@ class AbstractDatasetResource(ABC):
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
-        :param dataset: dataset to add
+        :param dataset: Unpersisted dataset model
 
         :param with_lineage:
            - ``True|None`` attempt adding lineage datasets if missing
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
 
-        :rtype: Dataset
+        :return: Persisted Dataset model
         """
 
     @abstractmethod
@@ -530,8 +544,8 @@ class AbstractDatasetResource(ABC):
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
         :param Dataset dataset: Dataset to update
-        :param dict updates_allowed: Allowed updates
-        :rtype: bool,list[change],list[change]
+        :param updates_allowed: Allowed updates
+        :return: Tuple of: boolean (can/can't update); safe changes; unsafe changes
         """
 
     @abstractmethod
@@ -541,9 +555,9 @@ class AbstractDatasetResource(ABC):
               ) -> Dataset:
         """
         Update dataset metadata and location
-        :param Dataset dataset: Dataset to update
+        :param Dataset dataset: Dataset model with unpersisted updates
         :param updates_allowed: Allowed updates
-        :rtype: Dataset
+        :return: Persisted dataset model
         """
 
     @abstractmethod
@@ -578,35 +592,36 @@ class AbstractDatasetResource(ABC):
         This will be very slow and inefficient for large databases, and is really
         only intended for small and/or experimental databases.
 
-        :param archived:
-        :rtype: list[str]
+        :param archived: If true, return all archived datasets, if false, all unarchived datatsets
+        :return: Iterable of dataset ids
         """
+        # TODO: Should return Iterable[UUID] for API consistency - requires changes to default index driver
 
     @abstractmethod
     def get_field_names(self, product_name: Optional[str] = None) -> Iterable[str]:
         """
         Get the list of possible search fields for a Product (or all products)
 
-        :param Optional[str] product_name: None for all products
-        :rtype: set[str]
+        :param product_name: Name of product, or None for all products
+        :return: All possible search field names
         """
 
     @abstractmethod
     def get_locations(self, id_: DSID) -> Iterable[str]:
         """
-        Get the list of storage locations for the given dataset id
+        Get (active) storage locations for the given dataset id
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :rtype: list[str]
+        :param id_: dataset id
+        :return: Storage locations for the dataset
         """
 
     @abstractmethod
     def get_archived_locations(self, id_: DSID) -> Iterable[str]:
         """
-        Find locations which have been archived for a dataset
+        Get archived locations for a dataset
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :rtype: list[str]
+        :param id_: dataset id
+        :return: Archived storage locations for the dataset
         """
 
     @abstractmethod
@@ -616,8 +631,8 @@ class AbstractDatasetResource(ABC):
         """
         Get each archived location along with the time it was archived.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :rtype: List[Tuple[str, datetime.datetime]]
+        :param id_: dataset id
+        :return: Archived storage locations, with archive date.
         """
 
     @abstractmethod
@@ -625,9 +640,9 @@ class AbstractDatasetResource(ABC):
         """
         Add a location to the dataset if it doesn't already exist.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :param str uri: fully qualified uri
-        :returns bool: Was one added?
+        :param id_: dataset id
+        :param uri: fully qualified uri
+        :return: True if a location was added, false if location already existed
         """
 
     @abstractmethod
@@ -639,8 +654,8 @@ class AbstractDatasetResource(ABC):
         Find datasets that exist at the given URI
 
         :param uri: search uri
-        :param str mode: 'exact', 'prefix' or None (to guess)
-        :return:
+        :param mode: 'exact', 'prefix' or None (to guess)
+        :return: Matching dataset models
         """
 
     @abstractmethod
@@ -651,9 +666,9 @@ class AbstractDatasetResource(ABC):
         """
         Remove a location from the dataset if it exists.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :param str uri: fully qualified uri
-        :returns bool: Was one removed?
+        :param id_: dataset id
+        :param uri: fully qualified uri
+        :return: True if location was removed, false if it didn't exist for the database
         """
 
     @abstractmethod
@@ -662,11 +677,11 @@ class AbstractDatasetResource(ABC):
                          uri: str
                         ) -> bool:
         """
-        Archive a location of the dataset if it exists.
+        Archive a location of the dataset if it exists and is active.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :param str uri: fully qualified uri
-        :return bool: location was able to be archived
+        :param id_: dataset id
+        :param uri: fully qualified uri
+        :return: True if location was able to be archived
         """
 
     @abstractmethod
@@ -677,9 +692,9 @@ class AbstractDatasetResource(ABC):
         """
         Un-archive a location of the dataset if it exists.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :param str uri: fully qualified uri
-        :return bool: location was able to be restored
+        :param id_: dataset id
+        :param uri: fully qualified uri
+        :return: True location was able to be restored
         """
 
     @abstractmethod
@@ -691,38 +706,38 @@ class AbstractDatasetResource(ABC):
 
         Caution – slow! This will usually not use indexes.
 
-        :param dict metadata:
-        :rtype: list[Dataset]
+        :param metadata: metadata dictionary representing arbitrary search query
+        :return: Matching dataset models
         """
 
     @abstractmethod
     def search(self,
                limit: Optional[int] = None,
-               **query: Any) -> Iterable[Dataset]:
+               **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
 
-        :param Union[str,float,Range,list] query:
-        :param Optional[int] limit: Limit number of dataset (None = unlimited)
-        :rtype: __generator[Dataset]
+        :param limit: Limit number of dataset (None/default = unlimited)
+        :param query: search query parameters
+        :return: Matching datasets
         """
 
     @abstractmethod
     def search_by_product(self,
-                          **query: Any
+                          **query: QueryField
                          ) -> Iterable[Tuple[Iterable[Dataset], Product]]:
         """
         Perform a search, returning datasets grouped by product type.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[(DatasetType,  __generator[Dataset])]]
+        :param query: search query parameters
+        :return: Matching datasets, grouped by Product
         """
 
     @abstractmethod
     def search_returning(self,
                          field_names: Iterable[str],
                          limit: Optional[int] = None,
-                         **query: Any
+                         **query: QueryField
                         ) -> Iterable[Tuple]:
         """
         Perform a search, returning only the specified fields.
@@ -731,50 +746,48 @@ class AbstractDatasetResource(ABC):
 
         It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
 
-        :param tuple[str] field_names:
-        :param Union[str,float,Range,list] query:
-        :param int limit: Limit number of datasets
-        :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
+        :param field_names: Names of desired fields
+        :param limit: Limit number of dataset (None/default = unlimited)
+        :param query: search query parameters
+        :return: Namedtuple of requested fields, for each matching dataset.
         """
 
     @abstractmethod
-    def count(self, **query: Any) -> int:
+    def count(self, **query: QueryField) -> int:
         """
         Perform a search, returning count of results.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: int
+        :param query: search query parameters
+        :return: Count of matching datasets in index
         """
 
     @abstractmethod
-    def count_by_product(self, **query: Any) -> Iterable[Tuple[Product, int]]:
+    def count_by_product(self, **query: QueryField) -> Iterable[Tuple[Product, int]]:
         """
         Perform a search, returning a count of for each matching product type.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :returns: Sequence of (product, count)
-        :rtype: __generator[(DatasetType,  int)]]
+        :param query: search query parameters
+        :return: Counts of matching datasets in index, grouped by product.
         """
 
     @abstractmethod
     def count_by_product_through_time(self,
                                       period: str,
-                                      **query: Any
+                                      **query: QueryField
                                      ) -> Iterable[Tuple[Product, Iterable[Tuple[datetime.datetime, datetime.datetime]], int]]:
         """
         Perform a search, returning counts for each product grouped in time slices
         of the given period.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :param str period: Time range for each slice: '1 month', '1 day' etc.
+        :param period: Time range for each slice: '1 month', '1 day' etc.
+        :param query: search query parameters
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: __generator[(DatasetType, list[(datetime.datetime, datetime.datetime), int)]]
         """
 
     @abstractmethod
     def count_product_through_time(self,
                                    period: str,
-                                   **query: Any
+                                   **query: QueryField
                                   ) -> Iterable[Tuple[str, Iterable[Tuple[datetime.datetime, datetime.datetime]], int]]:
         """
         Perform a search, returning counts for a single product grouped in time slices
@@ -782,27 +795,26 @@ class AbstractDatasetResource(ABC):
 
         Will raise an error if the search terms match more than one product.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :param str period: Time range for each slice: '1 month', '1 day' etc.
-        :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int)]]
+        :param period: Time range for each slice: '1 month', '1 day' etc.
+        :param query: search query parameters
+        :returns: For each product, a list of time ranges and the count of matching datasets.
         """
 
     @abstractmethod
-    def search_summaries(self, **query: Any) -> Iterable[Mapping[str, Any]]:
+    def search_summaries(self, **query: QueryField) -> Iterable[Mapping[str, Any]]:
         """
         Perform a search, returning just the search fields of each dataset.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[dict]
+        :param query: search query parameters
+        :return: Mappings of search fields for matching datasets
         """
 
-    def search_eager(self, **query: Any) -> List[Dataset]:
+    def search_eager(self, **query: QueryField) -> List[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: list[Dataset]
+        :param query: search query parameters
+        :return: Fully instantiated list of matching dataset models
         """
         return list(self.search(**query))
 
@@ -812,6 +824,9 @@ class AbstractDatasetResource(ABC):
                                ) -> Tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
+
+        :param product: Name of product
+        :return: minimum and maximum acquisition times
         """
 
     @abstractmethod
@@ -819,7 +834,7 @@ class AbstractDatasetResource(ABC):
                                         field_names: Tuple[str, ...],
                                         custom_offsets: Optional[Mapping[str, str]] = None,
                                         limit: Optional[int] = None,
-                                        **query: Any
+                                        **query: QueryField
                                        ) -> Iterable[Tuple]:
         """
         This is a dataset search function that returns the results as objects of a dynamically
@@ -841,7 +856,7 @@ class AbstractDatasetResource(ABC):
                             such as extent, crs
         :param custom_offsets: A dictionary of offsets in the metadata doc for custom fields
         :param limit: Number of datasets returned per product.
-        :param query: key, value mappings of query that will be processed against metadata_types,
+        :param query: query parameters that will be processed against metadata_types,
                       product definitions and/or dataset table.
         :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
         property functions).
