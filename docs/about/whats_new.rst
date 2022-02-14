@@ -8,6 +8,9 @@ What's New
 v1.8.next
 =========
 
+- Move (default) postgres driver-specific files from `datacube.index` to `datacube.index.postgres`.
+  `datacube.index.Index` is now an alias for the abstract base class index interface definition
+  rather than postgres driver-specific implementation of that interface. (:pull:`1227`)
 - Separate index driver interface definition from default index driver implementation. (:pull:`1226`)
 - Prefer WKT over EPSG when guessing CRS strings. (:pull:`1223`)
 - Updates install docs. (:pull:`1208`, :pull:`1212`, :pull:`1215`)
