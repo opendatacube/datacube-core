@@ -24,7 +24,7 @@ import datacube.scripts.search_tool
 from datacube.config import LocalConfig
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._connections import DEFAULT_DB_USER
-from datacube.index import AbstractIndex
+from datacube.index import Index
 from datacube.model import Dataset
 from datacube.model import DatasetType
 from datacube.model import MetadataType
@@ -164,7 +164,7 @@ def pseudo_ls8_dataset2(index, initialised_postgres_db, pseudo_ls8_type):
 
 # Datasets 3 and 4 mirror 1 and 2 but have a different path/row.
 @pytest.fixture
-def pseudo_ls8_dataset3(index: AbstractIndex,
+def pseudo_ls8_dataset3(index: Index,
                         initialised_postgres_db: PostgresDb,
                         pseudo_ls8_type: DatasetType,
                         pseudo_ls8_dataset: Dataset) -> Dataset:
@@ -191,7 +191,7 @@ def pseudo_ls8_dataset3(index: AbstractIndex,
 
 
 @pytest.fixture
-def pseudo_ls8_dataset4(index: AbstractIndex,
+def pseudo_ls8_dataset4(index: Index,
                         initialised_postgres_db: PostgresDb,
                         pseudo_ls8_type: DatasetType,
                         pseudo_ls8_dataset2: Dataset) -> Dataset:
@@ -234,7 +234,7 @@ def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
         raise RuntimeError("LS5 type was not among types")
 
 
-def test_search_dataset_equals(index: AbstractIndex, pseudo_ls8_dataset: Dataset):
+def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
     datasets = index.datasets.search_eager(
         platform='LANDSAT_8'
     )
@@ -256,7 +256,7 @@ def test_search_dataset_equals(index: AbstractIndex, pseudo_ls8_dataset: Dataset
         )
 
 
-def test_search_dataset_by_metadata(index: AbstractIndex, pseudo_ls8_dataset: Dataset) -> None:
+def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     datasets = index.datasets.search_by_metadata(
         {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}}
     )
@@ -271,7 +271,7 @@ def test_search_dataset_by_metadata(index: AbstractIndex, pseudo_ls8_dataset: Da
     assert len(datasets) == 0
 
 
-def test_search_day(index: AbstractIndex, pseudo_ls8_dataset: Dataset) -> None:
+def test_search_day(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # Matches day
     datasets = index.datasets.search_eager(
         time=datetime.date(2014, 7, 26)
@@ -286,7 +286,7 @@ def test_search_day(index: AbstractIndex, pseudo_ls8_dataset: Dataset) -> None:
     assert len(datasets) == 0
 
 
-def test_search_dataset_ranges(index: AbstractIndex, pseudo_ls8_dataset: Dataset) -> None:
+def test_search_dataset_ranges(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # In the lat bounds.
     datasets = index.datasets.search_eager(
         lat=Range(-30.5, -29.5),
@@ -362,7 +362,7 @@ def test_search_dataset_ranges(index: AbstractIndex, pseudo_ls8_dataset: Dataset
     assert len(datasets) == 0
 
 
-def test_search_globally(index: AbstractIndex, pseudo_ls8_dataset: Dataset) -> None:
+def test_search_globally(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # Insert dataset. It should be matched to the telemetry collection.
     # No expressions means get all.
     results = list(index.datasets.search())
@@ -386,7 +386,7 @@ def _load_product_query(
     return products
 
 
-def test_search_by_product(index: AbstractIndex,
+def test_search_by_product(index: Index,
                            pseudo_ls8_type: DatasetType,
                            pseudo_ls8_dataset: Dataset,
                            indexed_ls5_scene_products,
@@ -427,7 +427,7 @@ def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
     assert len(datasets) == 2
 
 
-def test_search_or_expressions(index: AbstractIndex,
+def test_search_or_expressions(index: Index,
                                pseudo_ls8_type: DatasetType,
                                pseudo_ls8_dataset: Dataset,
                                ls5_dataset_nbar_type: DatasetType,
@@ -492,7 +492,7 @@ def test_search_or_expressions(index: AbstractIndex,
     assert datasets[0].id == pseudo_ls8_dataset.id
 
 
-def test_search_returning(index: AbstractIndex,
+def test_search_returning(index: Index,
                           local_config: LocalConfig,
                           pseudo_ls8_type: DatasetType,
                           pseudo_ls8_dataset: Dataset,
@@ -601,7 +601,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
     }
 
 
-def test_searches_only_type(index: AbstractIndex,
+def test_searches_only_type(index: Index,
                             pseudo_ls8_type: DatasetType,
                             pseudo_ls8_dataset: Dataset,
                             ls5_telem_type) -> None:
@@ -652,7 +652,7 @@ def test_searches_only_type(index: AbstractIndex,
         )
 
 
-def test_search_special_fields(index: AbstractIndex,
+def test_search_special_fields(index: Index,
                                pseudo_ls8_type: DatasetType,
                                pseudo_ls8_dataset: Dataset,
                                ls5_dataset_w_children) -> None:
@@ -691,7 +691,7 @@ def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
         )
 
 
-def test_fetch_all_of_md_type(index: AbstractIndex, pseudo_ls8_dataset: Dataset) -> None:
+def test_fetch_all_of_md_type(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # Get every dataset of the md type.
     assert pseudo_ls8_dataset.metadata_type is not None  # to shut up mypy
     results = index.datasets.search_eager(
@@ -713,7 +713,7 @@ def test_fetch_all_of_md_type(index: AbstractIndex, pseudo_ls8_dataset: Dataset)
         )
 
 
-def test_count_searches(index: AbstractIndex,
+def test_count_searches(index: Index,
                         pseudo_ls8_type: DatasetType,
                         pseudo_ls8_dataset: Dataset,
                         ls5_telem_type) -> None:
@@ -761,7 +761,7 @@ def test_count_searches(index: AbstractIndex,
     assert datasets == 0
 
 
-def test_get_dataset_with_children(index: AbstractIndex, ls5_dataset_w_children: Dataset) -> None:
+def test_get_dataset_with_children(index: Index, ls5_dataset_w_children: Dataset) -> None:
     id_ = ls5_dataset_w_children.id
     assert isinstance(id_, UUID)
 
@@ -784,7 +784,7 @@ def test_get_dataset_with_children(index: AbstractIndex, ls5_dataset_w_children:
     assert list(level1.sources['satellite_telemetry_data'].sources) == []
 
 
-def test_count_by_product_searches(index: AbstractIndex,
+def test_count_by_product_searches(index: Index,
                                    pseudo_ls8_type: DatasetType,
                                    pseudo_ls8_dataset: Dataset,
                                    ls5_telem_type: DatasetType) -> None:
@@ -834,7 +834,7 @@ def test_count_by_product_searches(index: AbstractIndex,
     assert products == ()
 
 
-def test_count_time_groups(index: AbstractIndex,
+def test_count_time_groups(index: Index,
                            pseudo_ls8_type: DatasetType,
                            pseudo_ls8_dataset: Dataset) -> None:
     # 'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
@@ -938,7 +938,7 @@ def test_search_cli_basic(clirunner: Any,
     assert result.exit_code == 0
 
 
-def test_cli_info(index: AbstractIndex,
+def test_cli_info(index: Index,
                   clirunner: Any,
                   pseudo_ls8_dataset: Dataset,
                   pseudo_ls8_dataset2: Dataset) -> None:
@@ -1026,7 +1026,7 @@ def test_cli_missing_info(clirunner, initialised_postgres_db):
 def test_find_duplicates(index, pseudo_ls8_type,
                          pseudo_ls8_dataset, pseudo_ls8_dataset2, pseudo_ls8_dataset3, pseudo_ls8_dataset4,
                          ls5_dataset_w_children):
-    # type: (AbstractIndex, DatasetType, Dataset, Dataset, Dataset, Dataset, Dataset) -> None
+    # type: (Index, DatasetType, Dataset, Dataset, Dataset, Dataset, Dataset) -> None
 
     # Our four ls8 datasets and three ls5.
     all_datasets = index.datasets.search_eager()
@@ -1183,7 +1183,7 @@ def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
     assert lines[0] == _EXPECTED_OUTPUT_HEADER
 
 
-def test_query_dataset_multi_product(index: AbstractIndex, ls5_dataset_w_children: Dataset):
+def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Dataset):
     # We have one ls5 level1 and its child nbar
     dc = Datacube(index)
 
