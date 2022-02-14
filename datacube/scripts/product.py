@@ -6,7 +6,6 @@ import csv
 import json
 import logging
 import sys
-from pathlib import Path
 from typing import List
 
 import click
@@ -16,7 +15,7 @@ import yaml
 import yaml.resolver
 from click import echo, style
 
-from datacube.index.index import Index
+from datacube.index.abstract import AbstractIndex
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
@@ -38,7 +37,7 @@ def product_cli():
                 nargs=-1)
 @ui.pass_index()
 def add_products(index, allow_exclusive_lock, files):
-    # type: (Index, bool, list) -> None
+    # type: (AbstractIndex, bool, list) -> None
     """
     Add or update products in the generic index.
     """
@@ -73,7 +72,7 @@ bigger your database the longer it will take. Just wait a bit.''')
               help='Check if everything is ok')
 @click.argument('files', type=str, nargs=-1)
 @ui.pass_index()
-def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: List):
+def update_products(index: AbstractIndex, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: List):
     """
     Update existing products.
 

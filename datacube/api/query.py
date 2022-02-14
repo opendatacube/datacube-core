@@ -74,7 +74,7 @@ class Query(object):
 
         Used by :meth:`datacube.Datacube.find_datasets` and :meth:`datacube.Datacube.load`.
 
-        :param datacube.index.Index index: An optional `index` object, if checking of field names is desired.
+        :param datacube.index.abstract.AbstractIndex index: An optional `index` object, if checking of field names is desired.
         :param str product: name of product
         :param geopolygon: spatial bounds of the search
         :type geopolygon: geometry.Geometry or None

@@ -8,12 +8,11 @@ import sys
 from typing import List
 
 import yaml
-from pathlib import Path
 
 import click
 from click import echo, style
 
-from datacube.index.index import Index
+from datacube.index.abstract import AbstractIndex
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
@@ -35,7 +34,7 @@ def this_group():
                 nargs=-1)
 @ui.pass_index()
 def add_metadata_types(index, allow_exclusive_lock, files):
-    # type: (Index, bool, list) -> None
+    # type: (AbstractIndex, bool, list) -> None
     """
     Add or update metadata types in the index
     """
@@ -60,7 +59,7 @@ def add_metadata_types(index, allow_exclusive_lock, files):
               help='Check if everything is ok')
 @click.argument('files', type=str, nargs=-1)
 @ui.pass_index()
-def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: List):
+def update_metadata_types(index: AbstractIndex, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: List):
     """
     Update existing metadata types.
 

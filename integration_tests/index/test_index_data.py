@@ -18,7 +18,7 @@ from dateutil import tz
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.index.exceptions import MissingRecordError
-from datacube.index.index import Index
+from datacube.index import AbstractIndex
 from datacube.model import Dataset, MetadataType
 
 _telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
@@ -202,7 +202,7 @@ def test_purge_all_datasets_cli(index, initialised_postgres_db, local_config, de
 
 
 @pytest.fixture
-def telemetry_dataset(index: Index, initialised_postgres_db: PostgresDb, default_metadata_type) -> Dataset:
+def telemetry_dataset(index: AbstractIndex, initialised_postgres_db: PostgresDb, default_metadata_type) -> Dataset:
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
@@ -217,7 +217,7 @@ def telemetry_dataset(index: Index, initialised_postgres_db: PostgresDb, default
     return index.datasets.get(_telemetry_uuid)
 
 
-def test_index_duplicate_dataset(index: Index, initialised_postgres_db: PostgresDb,
+def test_index_duplicate_dataset(index: AbstractIndex, initialised_postgres_db: PostgresDb,
                                  local_config,
                                  default_metadata_type) -> None:
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
@@ -245,7 +245,7 @@ def test_index_duplicate_dataset(index: Index, initialised_postgres_db: Postgres
     assert index.datasets.has(_telemetry_uuid)
 
 
-def test_has_dataset(index: Index, telemetry_dataset: Dataset) -> None:
+def test_has_dataset(index: AbstractIndex, telemetry_dataset: Dataset) -> None:
     assert index.datasets.has(_telemetry_uuid)
     assert index.datasets.has(str(_telemetry_uuid))
 
@@ -256,7 +256,7 @@ def test_has_dataset(index: Index, telemetry_dataset: Dataset) -> None:
     assert index.datasets.bulk_has([str(_telemetry_uuid), 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
 
 
-def test_get_dataset(index: Index, telemetry_dataset: Dataset) -> None:
+def test_get_dataset(index: AbstractIndex, telemetry_dataset: Dataset) -> None:
     assert index.datasets.has(_telemetry_uuid)
     assert index.datasets.has(str(_telemetry_uuid))
 
@@ -273,7 +273,7 @@ def test_get_dataset(index: Index, telemetry_dataset: Dataset) -> None:
                                     'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
 
 
-def test_transactions(index: Index,
+def test_transactions(index: AbstractIndex,
                       initialised_postgres_db: PostgresDb,
                       local_config,
                       default_metadata_type) -> None:
@@ -297,7 +297,7 @@ def test_transactions(index: Index,
     assert not index.datasets.has(_telemetry_uuid)
 
 
-def test_get_missing_things(index: Index) -> None:
+def test_get_missing_things(index: AbstractIndex) -> None:
     """
     The get(id) methods should return None if the object doesn't exist.
     """
@@ -348,7 +348,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ), indirect=True)
-def test_index_dataset_with_location(index: Index, default_metadata_type: MetadataType):
+def test_index_dataset_with_location(index: AbstractIndex, default_metadata_type: MetadataType):
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()
 
