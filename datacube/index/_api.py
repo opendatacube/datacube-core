@@ -19,7 +19,7 @@ def index_connect(local_config: LocalConfig = None,
                   application_name: str = None,
                   validate_connection: bool = True) -> Index:
     """
-    Create a Data Cube Index that can connect to a PostgreSQL server
+    Create a Data Cube Index (as per config)
 
     It contains all the required connection parameters, but doesn't actually
     check that the server is available.
