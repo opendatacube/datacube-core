@@ -17,7 +17,7 @@ jsonschema
 lark-parser>=0.6.7
 matplotlib
 moto
-netcdf4
+netcdf4>=1.5.8
 numpy
 psycopg2
 pycodestyle
