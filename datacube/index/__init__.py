@@ -9,11 +9,11 @@ Modules for interfacing with the index/database.
 from ._api import index_connect
 from .fields import UnknownFieldError
 from .exceptions import DuplicateRecordError, MissingRecordError, IndexSetupError
-from datacube.index.abstract import AbstractIndex
+from datacube.index.abstract import AbstractIndex as Index
 
 __all__ = [
     'index_connect',
-    'AbstractIndex',
+    'Index',
 
     'DuplicateRecordError',
     'IndexSetupError',
