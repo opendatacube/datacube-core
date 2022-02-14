@@ -13,7 +13,7 @@ class IndexDriverCache(object):
         self._drivers = load_drivers(group)
 
         if len(self._drivers) == 0:
-            from datacube.index.index import index_driver_init
+            from datacube.index.postgres.index import index_driver_init
             self._drivers = dict(default=index_driver_init())
 
         for driver in list(self._drivers.values()):
