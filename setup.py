@@ -124,7 +124,7 @@ setup(
             *extra_plugins['write'],
         ],
         'datacube.plugins.index': [
-            'default = datacube.index.index:index_driver_init',
+            'default = datacube.index.postgres.index:index_driver_init',
             *extra_plugins['index'],
         ],
     },
