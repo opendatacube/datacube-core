@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from configparser import ConfigParser
 
-from datacube.index.index import Index
+from datacube.index.postgres.index import Index
 
 
 def test_with_standard_index(uninitialised_postgres_db):

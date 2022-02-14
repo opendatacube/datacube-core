@@ -22,7 +22,7 @@ import datacube.scripts.cli_app
 import datacube.utils
 from datacube.drivers.postgres import _core
 from datacube.index import index_connect
-from datacube.index._metadata_types import default_metadata_type_docs
+from datacube.index.postgres._metadata_types import default_metadata_type_docs
 from integration_tests.utils import _make_geotiffs, _make_ls5_scene_datasets, load_yaml_file, \
     GEOTIFF, load_test_products
 
