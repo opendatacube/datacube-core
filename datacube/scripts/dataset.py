@@ -18,7 +18,7 @@ from click import echo
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.hl import Doc2Dataset, check_dataset_consistent
 from datacube.index.eo3 import prep_eo3
-from datacube.index.abstract import AbstractIndex
+from datacube.index import Index
 from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
@@ -331,7 +331,7 @@ def update_dry_run(index, updates_allowed, dataset):
     return can_update
 
 
-def build_dataset_info(index: AbstractIndex, dataset: Dataset,
+def build_dataset_info(index: Index, dataset: Dataset,
                        show_sources: bool = False,
                        show_derived: bool = False,
                        depth: int = 1,
@@ -407,7 +407,7 @@ _OUTPUT_WRITERS = {
               default=99)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def info_cmd(index: AbstractIndex, show_sources: bool, show_derived: bool,
+def info_cmd(index: Index, show_sources: bool, show_derived: bool,
              f: str,
              max_depth: int,
              ids: Iterable[str]) -> None:
@@ -452,7 +452,7 @@ def search_cmd(index, limit, f, expressions):
     )
 
 
-def _get_derived_set(index: AbstractIndex, id_: str) -> Set[Dataset]:
+def _get_derived_set(index: Index, id_: str) -> Set[Dataset]:
     """
     Get a single flat set of all derived datasets.
     (children, grandchildren, great-grandchildren...)
@@ -471,7 +471,7 @@ def _get_derived_set(index: AbstractIndex, id_: str) -> Set[Dataset]:
               type=click.Choice(['exact', 'prefix', 'guess']), default='prefix')
 @click.argument('paths', nargs=-1)
 @ui.pass_index()
-def uri_search_cmd(index: AbstractIndex, paths: List[str], search_mode):
+def uri_search_cmd(index: Index, paths: List[str], search_mode):
     """
     Search by dataset locations
 
@@ -496,7 +496,7 @@ def uri_search_cmd(index: AbstractIndex, paths: List[str], search_mode):
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def archive_cmd(index: AbstractIndex, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
+def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
     derived_datasets = []
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=False)}
@@ -537,7 +537,7 @@ def archive_cmd(index: AbstractIndex, archive_derived: bool, dry_run: bool, all_
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def restore_cmd(index: AbstractIndex, restore_derived: bool, derived_tolerance_seconds: int, dry_run: bool, all_ds: bool, ids: List[str]):
+def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int, dry_run: bool, all_ds: bool, ids: List[str]):
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
     if all_ds:
         ids = index.datasets.get_all_dataset_ids(archived=True)
@@ -579,7 +579,7 @@ def restore_cmd(index: AbstractIndex, restore_derived: bool, derived_tolerance_s
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def purge_cmd(index: AbstractIndex, dry_run: bool, all_ds: bool, ids: List[str]):
+def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
     else:

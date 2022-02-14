@@ -16,7 +16,7 @@ from typing import Tuple
 
 import datacube
 from datacube.api.core import Datacube
-from datacube.index.abstract import AbstractIndex
+from datacube.index import Index
 from datacube.model import DatasetType, Range, Measurement, IngestorConfig
 from datacube.utils import geometry
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
@@ -148,7 +148,7 @@ def get_resampling(config):
     return {spec['src_varname']: spec.get('resampling_method') for spec in config['measurements']}
 
 
-def ensure_output_type(index: AbstractIndex,
+def ensure_output_type(index: Index,
                        config: dict,
                        storage_format: str,
                        allow_product_changes: bool = False) -> Tuple[DatasetType, DatasetType]:

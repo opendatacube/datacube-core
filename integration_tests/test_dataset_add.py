@@ -7,7 +7,7 @@ import math
 import toolz
 import yaml
 
-from datacube.index import AbstractIndex
+from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
 from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files, dataset_maker
@@ -564,7 +564,7 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
     assert 'status: archived' not in r.output
 
 
-def test_dataset_add_http(dataset_add_configs, index: AbstractIndex, default_metadata_type: MetadataType, httpserver,
+def test_dataset_add_http(dataset_add_configs, index: Index, default_metadata_type: MetadataType, httpserver,
                           clirunner):
     # pytest-localserver also looks good, it's been around for ages, but httpserver is the new cool
     p = dataset_add_configs

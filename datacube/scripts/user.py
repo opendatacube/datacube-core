@@ -13,7 +13,7 @@ from collections import OrderedDict
 
 from datacube.utils import gen_password
 from datacube.config import LocalConfig
-from datacube.index import AbstractIndex
+from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils.serialise import SafeDatacubeDumper
@@ -101,7 +101,7 @@ def grant(index, role, users):
 @ui.pass_index()
 @ui.pass_config
 def create_user(config, index, role, user, description):
-    # type: (LocalConfig, AbstractIndex, str, str, str) -> None
+    # type: (LocalConfig, Index, str, str, str) -> None
     """
     Create a User
     """
