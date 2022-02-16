@@ -10,6 +10,8 @@ v1.8.next
 
 - Move (default) postgres driver-specific files from `datacube.index` to `datacube.index.postgres`.
   `datacube.index.Index` is now an alias for the abstract base class index interface definition
+  rather than postgres driver-specific implementation of that interface. (:pull:`1231`)
+- Update numpy and netcdf4 version in docker build (:pull:`1229`)
   rather than postgres driver-specific implementation of that interface. (:pull:`1227`)
 - Migrate test docker image from `datacube/geobase` to `osgeo/gdal`. (:pull:`1233`)
 - Separate index driver interface definition from default index driver implementation. (:pull:`1226`)
