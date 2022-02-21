@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- Migrate test docker image from `datacube/geobase` to `osgeo/gdal`. (:pull:`1233`)
 - Separate index driver interface definition from default index driver implementation. (:pull:`1226`)
 - Prefer WKT over EPSG when guessing CRS strings. (:pull:`1223`)
 - Updates install docs. (:pull:`1208`, :pull:`1212`, :pull:`1215`)
