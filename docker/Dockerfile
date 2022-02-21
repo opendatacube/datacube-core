@@ -5,7 +5,7 @@
 ## SPDX-License-Identifier: Apache-2.0
 ##
 ARG V_PG=12
-FROM osgeo/gdal:ubuntu-small-latest as env_builder
+FROM osgeo/gdal:ubuntu-small-3.4.1
 
 # Update and install Ubuntu packages
 
