@@ -18,7 +18,7 @@ from click import echo
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.hl import Doc2Dataset, check_dataset_consistent
 from datacube.index.eo3 import prep_eo3
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli

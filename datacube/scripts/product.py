@@ -6,7 +6,6 @@ import csv
 import json
 import logging
 import sys
-from pathlib import Path
 from typing import List
 
 import click
@@ -16,7 +15,7 @@ import yaml
 import yaml.resolver
 from click import echo, style
 
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException

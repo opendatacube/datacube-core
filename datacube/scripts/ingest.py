@@ -16,7 +16,7 @@ from typing import Tuple
 
 import datacube
 from datacube.api.core import Datacube
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.model import DatasetType, Range, Measurement, IngestorConfig
 from datacube.utils import geometry
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc

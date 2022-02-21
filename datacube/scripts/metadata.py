@@ -8,12 +8,11 @@ import sys
 from typing import List
 
 import yaml
-from pathlib import Path
 
 import click
 from click import echo, style
 
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException

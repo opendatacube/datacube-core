@@ -18,7 +18,7 @@ from dateutil import tz
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.index.exceptions import MissingRecordError
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.model import Dataset, MetadataType
 
 _telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')

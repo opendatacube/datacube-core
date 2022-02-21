@@ -15,7 +15,7 @@ from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
 _LOG = logging.getLogger(__name__)
 
-_DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
+_DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.parent.joinpath('default-metadata-types.yaml')
 
 
 def default_metadata_type_docs():

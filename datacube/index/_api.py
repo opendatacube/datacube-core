@@ -10,16 +10,16 @@ import logging
 
 from datacube.config import LocalConfig
 from datacube.drivers import index_driver_by_name, index_drivers
-from .index import Index
+from datacube.index.abstract import AbstractIndex
 
 _LOG = logging.getLogger(__name__)
 
 
 def index_connect(local_config: LocalConfig = None,
                   application_name: str = None,
-                  validate_connection: bool = True) -> Index:
+                  validate_connection: bool = True) -> AbstractIndex:
     """
-    Create a Data Cube Index that can connect to a PostgreSQL server
+    Create a Data Cube Index (as per config)
 
     It contains all the required connection parameters, but doesn't actually
     check that the server is available.

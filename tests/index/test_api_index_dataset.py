@@ -7,13 +7,11 @@ from collections import namedtuple
 from contextlib import contextmanager
 from copy import deepcopy
 
-import pytest
 from uuid import UUID
 
-from datacube.index._datasets import DatasetResource
+from datacube.index.postgres._datasets import DatasetResource
 from datacube.index.exceptions import DuplicateRecordError
 from datacube.model import DatasetType, MetadataType, Dataset
-from datacube.utils.changes import DocumentMismatchError
 
 _nbar_uuid = UUID('f2f12372-8366-11e5-817e-1040f381a756')
 _ortho_uuid = UUID('5cf41d98-eda9-11e4-8a8e-1040f381a756')
