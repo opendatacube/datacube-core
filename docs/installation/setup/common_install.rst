@@ -32,7 +32,7 @@ Find out more about conda environments `here <https://docs.conda.io/projects/con
 
 Install other packages::
 
-    conda install jupyter matplotlib scipy
+    conda install jupyter matplotlib scipy pytest-cov hypothesis
 
 
 Postgres database configuration
