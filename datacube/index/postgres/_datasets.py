@@ -116,9 +116,11 @@ class DatasetResource(AbstractDatasetResource):
         """
         Get all derived datasets
 
-        :param UUID id_: dataset id
+        :param Union[str,UUID] id_: dataset id
         :rtype: list[Dataset]
         """
+        if not isinstance(id_, UUID):
+            id_ = UUID(id_)
         with self._db.connect() as connection:
             return [
                 self._make(result, full_info=True)
@@ -372,10 +374,10 @@ class DatasetResource(AbstractDatasetResource):
         only intended for small and/or experimental databases.
 
         :param archived:
-        :rtype: list[str]
+        :rtype: list[UUID]
         """
         with self._db.begin() as transaction:
-            return [str(dsid[0]) for dsid in transaction.all_dataset_ids(archived)]
+            return [dsid[0] for dsid in transaction.all_dataset_ids(archived)]
 
     def get_field_names(self, product_name=None):
         """

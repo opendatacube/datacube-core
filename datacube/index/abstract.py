@@ -469,14 +469,13 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def get_derived(self, id_: UUID) -> Iterable[Dataset]:
+    def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         """
         Get all datasets derived from a dataset
 
         :param id_: dataset id
         :rtype: list[Dataset]
         """
-        # TODO: Upgrade to DSID (requires changes to existing index driver)
 
     @abstractmethod
     def has(self, id_: DSID) -> bool:
@@ -585,7 +584,7 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def get_all_dataset_ids(self, archived: bool) -> Iterable[str]:
+    def get_all_dataset_ids(self, archived: bool) -> Iterable[UUID]:
         """
         Get all dataset IDs based only on archived status
 
@@ -595,7 +594,6 @@ class AbstractDatasetResource(ABC):
         :param archived: If true, return all archived datasets, if false, all unarchived datatsets
         :return: Iterable of dataset ids
         """
-        # TODO: Should return Iterable[UUID] for API consistency - requires changes to default index driver
 
     @abstractmethod
     def get_field_names(self, product_name: Optional[str] = None) -> Iterable[str]:
