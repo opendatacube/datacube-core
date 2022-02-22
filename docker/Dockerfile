@@ -19,6 +19,7 @@ RUN apt-get update -y \
         python3-dev python3-distutils python3-pip \
         build-essential \
         postgresql \
+        redis-server \
         postgresql-client-${V_PG} \
         postgresql-${V_PG} \
         sudo make graphviz \
