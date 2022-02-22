@@ -469,14 +469,13 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def get_derived(self, id_: UUID) -> Iterable[Dataset]:
+    def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         """
         Get all datasets derived from a dataset
 
         :param id_: dataset id
         :rtype: list[Dataset]
         """
-        # TODO: Upgrade to DSID (requires changes to existing index driver)
 
     @abstractmethod
     def has(self, id_: DSID) -> bool:

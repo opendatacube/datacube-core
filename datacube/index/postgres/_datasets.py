@@ -116,9 +116,11 @@ class DatasetResource(AbstractDatasetResource):
         """
         Get all derived datasets
 
-        :param UUID id_: dataset id
+        :param Union[str,UUID] id_: dataset id
         :rtype: list[Dataset]
         """
+        if not isinstance(id_, UUID):
+            id_ = UUID(id_)
         with self._db.connect() as connection:
             return [
                 self._make(result, full_info=True)
