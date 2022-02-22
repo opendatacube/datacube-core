@@ -9,6 +9,7 @@ import sys
 from collections import OrderedDict
 from textwrap import dedent
 from typing import Iterable, Mapping, MutableMapping, Any, List, Set
+from uuid import UUID
 
 import click
 import yaml
@@ -452,7 +453,7 @@ def search_cmd(index, limit, f, expressions):
     )
 
 
-def _get_derived_set(index: Index, id_: str) -> Set[Dataset]:
+def _get_derived_set(index: Index, id_: UUID) -> Set[Dataset]:
     """
     Get a single flat set of all derived datasets.
     (children, grandchildren, great-grandchildren...)
