@@ -246,16 +246,6 @@ class ProductResource(AbstractProductResource):
             allow_table_lock=allow_table_lock,
         )
 
-    def add_document(self, definition):
-        """
-        Add a Product using its definition
-
-        :param dict definition: product definition document
-        :rtype: DatasetType
-        """
-        type_ = self.from_doc(definition)
-        return self.add(type_)
-
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_unsafe(self, id_):  # type: ignore
