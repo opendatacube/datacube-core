@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
+from pathlib import Path
 
 from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
@@ -12,6 +13,7 @@ from uuid import UUID
 
 from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
+from datacube.utils import read_documents
 from datacube.utils.changes import AllowPolicy, Change, Offset
 
 
@@ -63,6 +65,12 @@ class AbstractUserResource(ABC):
         List all database users
         :return: Iterable of (role, username, description) tuples
         """
+
+_DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
+
+def default_metadata_type_docs():
+    """A list of the bare dictionary format of default :class:`datacube.model.MetadataType`"""
+    return [doc for (path, doc) in read_documents(_DEFAULT_METADATA_TYPES_PATH)]
 
 
 class AbstractMetadataTypeResource(ABC):
@@ -937,3 +945,4 @@ class AbstractIndexDriver(ABC):
                                definition: dict
                               ) -> MetadataType:
         pass
+

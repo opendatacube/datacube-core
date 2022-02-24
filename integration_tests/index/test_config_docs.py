@@ -12,7 +12,7 @@ import yaml
 
 from datacube.drivers.postgres._fields import NumericRangeDocField, PgField
 from datacube.index import Index
-from datacube.index.postgres._metadata_types import default_metadata_type_docs
+from datacube.index.abstract import default_metadata_type_docs
 from datacube.model import MetadataType, DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes

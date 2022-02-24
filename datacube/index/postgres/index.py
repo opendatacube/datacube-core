@@ -6,10 +6,10 @@ import logging
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.index.postgres._datasets import DatasetResource  # type: ignore
-from datacube.index.postgres._metadata_types import MetadataTypeResource, default_metadata_type_docs
+from datacube.index.postgres._metadata_types import MetadataTypeResource
 from datacube.index.postgres._products import ProductResource
 from datacube.index.postgres._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs
 from datacube.model import MetadataType
 
 _LOG = logging.getLogger(__name__)
