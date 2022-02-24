@@ -1,0 +1,116 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
+from typing import Iterable, Union, Optional
+from uuid import UUID
+
+from datacube.index.abstract import AbstractDatasetResource
+from datacube.model import Dataset, DatasetType
+
+
+class DatasetResource(AbstractDatasetResource):
+    def __init__(self, product_resource):
+        self.types = product_resource
+
+    def get(self, id_: Union[str, UUID], include_sources=False):
+        return None
+
+    def bulk_get(self, ids):
+        return []
+
+    def get_derived(self, id_):
+        return []
+
+    def has(self, id_):
+        return False
+
+    def bulk_has(self, ids_):
+        return [False for id in ids_]
+
+    def add(self, dataset: Dataset,
+            with_lineage: Optional[bool] = None,
+            **kwargs) -> Dataset:
+        return NotImplementedError()
+
+    def search_product_duplicates(self, product: DatasetType, *args):
+        return []
+
+    def can_update(self, dataset, updates_allowed=None):
+        return NotImplementedError()
+
+    def update(self, dataset: Dataset, updates_allowed=None):
+        return NotImplementedError()
+
+    def archive(self, ids):
+        return NotImplementedError()
+
+    def restore(self, ids):
+        return NotImplementedError()
+
+    def purge(self, ids: Iterable[UUID]):
+        return NotImplementedError()
+
+    def get_all_dataset_ids(self, archived: bool):
+        return []
+
+    def get_field_names(self, product_name=None):
+        return []
+
+    def get_locations(self, id_):
+        return []
+
+    def get_archived_locations(self, id_):
+        return []
+
+    def get_archived_location_times(self, id_):
+        return []
+
+    def add_location(self, id_, uri):
+        return NotImplementedError()
+
+    def get_datasets_for_location(self, uri, mode=None):
+        return []
+
+    def remove_location(self, id_, uri):
+        return NotImplementedError()
+
+    def archive_location(self, id_, uri):
+        return NotImplementedError()
+
+    def restore_location(self, id_, uri):
+        return NotImplementedError()
+
+    def search_by_metadata(self, metadata):
+        return []
+
+    def search(self, limit=None, **query):
+        return []
+
+    def search_by_product(self, **query):
+        return []
+
+    def search_returning(self, field_names, limit=None, **query):
+        return []
+
+    def count(self, **query):
+        return 0
+
+    def count_by_product(self, **query):
+        return []
+
+    def count_by_product_through_time(self, period, **query):
+        return []
+
+    def count_product_through_time(self, period, **query):
+        return []
+
+    def search_summaries(self, **query):
+        return []
+
+    def get_product_time_bounds(self, product: str):
+        raise NotImplementedError()
+
+    # pylint: disable=redefined-outer-name
+    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
+        return []
