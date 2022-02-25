@@ -20,4 +20,4 @@ class UserResource(AbstractUserResource):
         raise NotImplementedError()
 
     def list_users(self) -> Iterable[Tuple[str, str, str]]:
-        raise NotImplementedError()
+        return []

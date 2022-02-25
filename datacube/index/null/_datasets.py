@@ -31,25 +31,25 @@ class DatasetResource(AbstractDatasetResource):
     def add(self, dataset: Dataset,
             with_lineage: Optional[bool] = None,
             **kwargs) -> Dataset:
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def search_product_duplicates(self, product: DatasetType, *args):
         return []
 
     def can_update(self, dataset, updates_allowed=None):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def update(self, dataset: Dataset, updates_allowed=None):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def archive(self, ids):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def restore(self, ids):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def purge(self, ids: Iterable[UUID]):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def get_all_dataset_ids(self, archived: bool):
         return []
@@ -67,19 +67,19 @@ class DatasetResource(AbstractDatasetResource):
         return []
 
     def add_location(self, id_, uri):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def get_datasets_for_location(self, uri, mode=None):
         return []
 
     def remove_location(self, id_, uri):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def archive_location(self, id_, uri):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def restore_location(self, id_, uri):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def search_by_metadata(self, metadata):
         return []
