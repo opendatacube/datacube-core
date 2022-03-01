@@ -8,6 +8,8 @@ What's New
 v1.8.next
 =========
 
+- Deprecate use of the celery executor. Update numpy pin in rtd-requirements.txt to suppress
+  Dependabot warnings. (:pull:`1239`)
 - Implement a minimal "null" index driver that provides an always-empty index. Mainly intended
   to validate the recent abstraction work around the index driver layer, but may be useful
   for some testing scenarios, and ODC use cases that do not require an index. (:pull:`1236')
