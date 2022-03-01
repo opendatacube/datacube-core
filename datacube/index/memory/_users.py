@@ -16,7 +16,7 @@ class User:
 
     def grant_role(self, role: str):
         if role not in self.roles:
-            self.roles.append[role]
+            self.roles.append(role)
 
 
 class UserResource(AbstractUserResource):
@@ -28,7 +28,7 @@ class UserResource(AbstractUserResource):
             "agdc_user",
             "agdc_ingest",
             "agdc_manage",
-            "agdc_admin"
+            "agdc_admin",
             
             # For forwards compatibility with future driver(s)
             "odc_user",
@@ -42,10 +42,10 @@ class UserResource(AbstractUserResource):
 
     def grant_role(self, role: str, *usernames: str) -> None:
         if role not in self.roles:
-            raise ValueError(f"{role} is not a known role name")
+            raise ValueError(f"{role} is not a known role")
         for user in usernames:
             if user not in self.users:
-                raise ValueError(f"{user} is not a valid username")
+                raise ValueError(f"{user} is not a known username")
         for user in usernames:
             self.users[user].grant_role(role)
 
@@ -54,15 +54,15 @@ class UserResource(AbstractUserResource):
         if username in self.users:
             raise ValueError(f"User {username} already exists")
         if role not in self.roles:
-            raise ValueError(f"Role {role} is not a known role name")
+            raise ValueError(f"{role} is not a known role")
         self.users[username] = User(username, password, role, description)
 
     def delete_user(self, *usernames: str) -> None:
         for user in usernames:
             if user not in self.users:
-                raise ValueError(f"{user} is not a valid username")
+                raise ValueError(f"{user} is not a known username")
         for user in usernames:
             del self.users[user]
 
     def list_users(self) -> Iterable[Tuple[str, str, str]]:
-        return [(u.default_role, u.username, u.description) for u in self.users]
+        return [(u.default_role, u.username, u.description) for u in self.users.values()]

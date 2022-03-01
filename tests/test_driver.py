@@ -49,6 +49,7 @@ def test_index_drivers():
     available_drivers = index_drivers()
     assert 'default' in available_drivers
     assert 'null' in available_drivers
+    assert 'memory' in available_drivers
 
 
 def test_default_injection():

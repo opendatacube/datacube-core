@@ -85,13 +85,16 @@ def local_config(datacube_env_name):
 
 @pytest.fixture
 def null_config():
-    """Provides a :class:`LocalConfig` configured with suitable config file paths.
-
-    .. seealso::
-
-        The :func:`integration_config_paths` fixture sets up the config files.
+    """Provides a :class:`LocalConfig` configured with null index driver
     """
     return LocalConfig.find(CONFIG_FILE_PATHS, env="null_driver")
+
+
+@pytest.fixture
+def in_memory_config():
+    """Provides a :class:`LocalConfig` configured with memory index driver
+    """
+    return LocalConfig.find(CONFIG_FILE_PATHS, env="local_memory")
 
 
 @pytest.fixture
