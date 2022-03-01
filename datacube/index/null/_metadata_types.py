@@ -23,9 +23,6 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
     def update(self, metadata_type: MetadataType, allow_unsafe_updates=False, allow_table_lock=False):
         raise NotImplementedError
 
-    def update_document(self, definition, allow_unsafe_updates=False):
-        raise NotImplementedError
-
     def get_unsafe(self, id_):
         raise KeyError(id_)
 
