@@ -43,7 +43,7 @@ class Index(AbstractIndex):
 
     @property
     def url(self) -> str:
-        return "null"
+        return "memory"
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
@@ -60,7 +60,7 @@ class Index(AbstractIndex):
         pass
 
     def __repr__(self):
-        return "Index<null>"
+        return "Index<memory>"
 
 
 class MemoryIndexDriver(AbstractIndexDriver):
