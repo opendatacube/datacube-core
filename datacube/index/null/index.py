@@ -10,6 +10,7 @@ from datacube.index.null._products import ProductResource
 from datacube.index.null._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver
 from datacube.model import MetadataType
+from datacube.model.fields import get_dataset_fields
 
 _LOG = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class Index(AbstractIndex):
 
     @classmethod
     def get_dataset_fields(cls, doc):
-        return {}
+        return get_dataset_fields(doc)
 
     def init_db(self, with_default_types=True, with_permissions=True):
         return True

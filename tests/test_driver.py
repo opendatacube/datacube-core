@@ -100,9 +100,7 @@ dataset:
         assert isinstance(metadata, MetadataType)
         assert metadata.id is None
         assert metadata.name == 'minimal'
-        if name != "null":
-            # Null driver currently doesn't process dataset search fields
-            assert 'some_custom_field' in metadata.dataset_fields
+        assert 'some_custom_field' in metadata.dataset_fields
 
 
 def test_reader_cache_throws_on_missing_fallback():
