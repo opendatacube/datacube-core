@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
+from pathlib import Path
 
 from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
@@ -12,6 +13,7 @@ from uuid import UUID
 
 from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
+from datacube.utils import read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset
 
 
@@ -63,6 +65,12 @@ class AbstractUserResource(ABC):
         List all database users
         :return: Iterable of (role, username, description) tuples
         """
+
+_DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
+
+def default_metadata_type_docs():
+    """A list of the bare dictionary format of default :class:`datacube.model.MetadataType`"""
+    return [doc for (path, doc) in read_documents(_DEFAULT_METADATA_TYPES_PATH)]
 
 
 class AbstractMetadataTypeResource(ABC):
@@ -240,7 +248,6 @@ class AbstractProductResource(ABC):
     raise a NotImplementedError)
     """
 
-    @abstractmethod
     def from_doc(self, definition: Mapping[str, Any]) -> Product:
         """
         Construct unpersisted Product model from product metadata dictionary
@@ -248,6 +255,27 @@ class AbstractProductResource(ABC):
         :param definition: a Product metadata dictionary
         :return: Unpersisted product model
         """
+        # This column duplication is getting out of hand:
+        Product.validate(definition)
+        # Validate extra dimension metadata
+        Product.validate_extra_dims(definition)
+
+        metadata_type = definition['metadata_type']
+
+        # They either specified the name of a metadata type, or specified a metadata type.
+        # Is it a name?
+        if isinstance(metadata_type, str):
+            metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
+        else:
+            # Otherwise they embedded a document, add it if needed:
+            metadata_type = self.metadata_type_resource.from_doc(metadata_type)
+            definition = definition.copy()
+            definition['metadata_type'] = metadata_type.name
+
+        if not metadata_type:
+            raise InvalidDocException('Unknown metadata type: %r' % definition['metadata_type'])
+
+        return Product(metadata_type, definition)
 
     @abstractmethod
     def add(self,
@@ -937,3 +965,4 @@ class AbstractIndexDriver(ABC):
                                definition: dict
                               ) -> MetadataType:
         pass
+

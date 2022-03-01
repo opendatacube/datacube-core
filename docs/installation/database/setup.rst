@@ -36,6 +36,14 @@ Create Configuration File
 Datacube looks for a configuration file in ~/.datacube.conf or in the location specified by the ``DATACUBE_CONFIG_PATH`` environment variable. The file has this format::
 
     [datacube]
+    # One config file may contain multiple named sections providing multiple configuration environments.
+    # The section named "datacube" (or "default") is used if no environment is specified.
+
+    # index_driver is optional and defaults to "default" (the default Postgres index driver)
+    index_driver: default
+
+    # The remaining configuration entries are for the default Postgres index driver and
+    # may not apply to other index drivers.
     db_database: datacube
 
     # A blank host will use a local socket. Specify a hostname (such as localhost) to use TCP.
@@ -46,6 +54,15 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
     # db_username:
     # db_password:
 
+   [test]
+   # A "test" environment that accesses a separate test database.
+   index_driver: default
+   db_database: datacube_test
+
+   [null]
+   # A "null" environment for working with no index.
+   index_driver: null
+
 Uncomment and fill in lines as required.
 
 Alternately, you can configure the ODC connection to Postgres using environment variables:
@@ -55,7 +72,11 @@ Alternately, you can configure the ODC connection to Postgres using environment 
   DB_PASSWORD
   DB_DATABASE
 
-See also :ref:`runtime-config-doc`
+The desired environment can be specified:
+
+1. in code, with the ``env`` argument to the ``datacube.Datacube`` constructor;
+2. with the ``-E`` option to the command line ui;
+3. with the ``$DATACUBE_ENVIRONMENT`` environment variable.
 
 Initialise the Database Schema
 ==============================

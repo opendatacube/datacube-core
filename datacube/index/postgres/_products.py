@@ -46,35 +46,6 @@ class ProductResource(AbstractProductResource):
         """
         self.__init__(*state)
 
-    def from_doc(self, definition):
-        """
-        Create a Product from its definitions
-
-        :param dict definition: product definition document
-        :rtype: DatasetType
-        """
-        # This column duplication is getting out of hand:
-        DatasetType.validate(definition)
-        # Validate extra dimension metadata
-        DatasetType.validate_extra_dims(definition)
-
-        metadata_type = definition['metadata_type']
-
-        # They either specified the name of a metadata type, or specified a metadata type.
-        # Is it a name?
-        if isinstance(metadata_type, str):
-            metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
-        else:
-            # Otherwise they embedded a document, add it if needed:
-            metadata_type = self.metadata_type_resource.from_doc(metadata_type)
-            definition = definition.copy()
-            definition['metadata_type'] = metadata_type.name
-
-        if not metadata_type:
-            raise InvalidDocException('Unknown metadata type: %r' % definition['metadata_type'])
-
-        return DatasetType(metadata_type, definition)
-
     def add(self, product, allow_table_lock=False):
         """
         Add a Product.
@@ -245,16 +216,6 @@ class ProductResource(AbstractProductResource):
             allow_unsafe_updates=allow_unsafe_updates,
             allow_table_lock=allow_table_lock,
         )
-
-    def add_document(self, definition):
-        """
-        Add a Product using its definition
-
-        :param dict definition: product definition document
-        :rtype: DatasetType
-        """
-        type_ = self.from_doc(definition)
-        return self.add(type_)
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden

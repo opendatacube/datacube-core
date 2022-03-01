@@ -215,18 +215,10 @@ to connect to an ``Index``. This PR extends this with an
 to use. If this parameter is missing, it falls back to using the default
 PostgreSQL Index.
 
-Example code to implement an index driver
------------------------------------------
-
-.. code:: python
-
-    def index_driver_init():
-        return AbstractIndexDriver()
-
-    class AbstractIndexDriver(object):
-        @staticmethod
-        def connect_to_index(config, application_name=None, validate_connection=True):
-            return Index.from_config(config, application_name, validate_connection)
+A set of abstract base classes are defined in ``datacube.index.abstract``. An index plugin
+is expected to supply implementations of all these abstract base classes. If any abstract
+methods is not relevant to or implementable by a particular Index Driver, that method should
+defined to raise a ``NotImplementedError``.
 
 Default Implementation
 ----------------------
@@ -234,6 +226,18 @@ Default Implementation
 The default ``Index`` uses a PostgreSQL database for all storage and
 retrieval.
 
+Null Implementation
+-------------------
+
+`datacube-core` includes a minimal "null" index driver, that implements an index that is always
+empty. The code for this driver is located at ``datacube.index.null`` and can be used by setting
+the ``index_driver`` to ``null`` in the configuration file.
+
+The null index driver may be useful:
+
+1. for ODC use cases where no database access is required;
+2. for testing scenarios where no database access is required; or
+3. as an example/template for developing other index drivers.
 
 Drivers Plugin Management Module
 ================================
@@ -248,7 +252,8 @@ Drivers are registered in ``setup.py -> entry_points``::
             'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
         ],
         'datacube.plugins.index': [
-            'default = datacube.index.index:index_driver_init',
+            'default = datacube.index.postgres.index:index_driver_init',
+            'null = datacube.index.null.index:index_driver_init',
             *extra_plugins['index'],
         ],
     }

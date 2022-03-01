@@ -48,6 +48,7 @@ def test_writer_drivers():
 def test_index_drivers():
     available_drivers = index_drivers()
     assert 'default' in available_drivers
+    assert 'null' in available_drivers
 
 
 def test_default_injection():
@@ -98,7 +99,9 @@ dataset:
         assert isinstance(metadata, MetadataType)
         assert metadata.id is None
         assert metadata.name == 'minimal'
-        assert 'some_custom_field' in metadata.dataset_fields
+        if name != "null":
+            # Null driver currently doesn't process dataset search fields
+            assert 'some_custom_field' in metadata.dataset_fields
 
 
 def test_reader_cache_throws_on_missing_fallback():
