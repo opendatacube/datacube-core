@@ -54,3 +54,27 @@ def test_mem_user_resource(in_memory_config):
         # Confirm delete error success
         dc.index.users.delete_user("test_user_1", "test_user_2")
         assert dc.index.users.list_users() == [("local_user", "localuser", "Default user")]
+
+
+def test_mem_metadatatype_resource(in_memory_config):
+    with Datacube(config=in_memory_config, validate_connection=True) as dc:
+        assert len(dc.index.metadata_types.by_id) == len(dc.index.metadata_types.by_name)
+        assert len(list(dc.index.metadata_types.get_all())) == 3
+        mdt = dc.index.metadata_types.get(1)
+        assert mdt is not None and mdt.id == 1
+        eo3 = dc.index.metadata_types.get_by_name("eo3")
+        assert eo3 is not None and eo3.name == "eo3"
+        # Verify we cannot mess with the cache
+        eo3.definition["description"] = "foo"
+        eo3.definition["dataset"]["measurements"] = ["over_here", "measurements"]
+        eo3_fresh = dc.index.metadata_types.get_by_name("eo3")
+        assert eo3.description != eo3_fresh.description
+        assert eo3.definition["dataset"]["measurements"] != eo3_fresh.definition["dataset"]["measurements"]
+        # Changing measurements definition is not safe
+        with pytest.raises(ValueError) as e:
+            dc.index.metadata_types.update(eo3)
+        # Changing descriptions is safe.
+        eo3_fresh.definition["description"] = "New description"
+        dc.index.metadata_types.update(eo3_fresh)
+        eo3_fresher = dc.index.metadata_types.get_by_name("eo3")
+        assert eo3_fresher.description == eo3_fresh.description
