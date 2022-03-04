@@ -344,17 +344,3 @@ Reasons for deprecation
 #. Format does not capture per band resolution/image size
 
 .. _metadata-type-definition:
-
-Metadata Type Definition
-========================
-A Metadata Type defines which fields should be searchable in your product or dataset metadata.
-
-A metadata type is added by default called ``eo`` with *platform/instrument/lat/lon/time* fields.
-
-You would create a new metadata type if you want custom fields to be searchable for your products, or
-if you want to structure your metadata documents differently.
-
-You can see the default metadata type in the repository at ``datacube/index/default-metadata-types.yaml``.
-
-Or more elaborate examples (with fewer comments) in GA's configuration
-repository: https://github.com/GeoscienceAustralia/datacube-ingestion

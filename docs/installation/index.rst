@@ -31,6 +31,9 @@ This section contains information on setting up and managing the Open Data Cube.
     :caption: Configuring the ODC Database
 
     database/setup
+    metadata-types
+    product-definitions
+    dataset-documents
 
 
 .. toctree::
