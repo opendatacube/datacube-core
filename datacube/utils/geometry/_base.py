@@ -996,7 +996,6 @@ class GeoBox:
     """
 
     def __init__(self, width: int, height: int, affine: Affine, crs: MaybeCRS):
-        assert is_affine_st(affine), "Only axis-aligned geoboxes are currently supported"
         self.width = width
         self.height = height
         self.affine = affine
@@ -1119,6 +1118,7 @@ class GeoBox:
         """
         dict of coordinate labels
         """
+        assert is_affine_st(self.affine), "Only axis-aligned geoboxes are currently supported"
         yres, xres = self.resolution
         yoff, xoff = self.affine.yoff, self.affine.xoff
 
