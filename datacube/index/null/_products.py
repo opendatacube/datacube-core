@@ -19,19 +19,16 @@ class ProductResource(AbstractProductResource):
     def add(self, product, allow_table_lock=False):
         raise NotImplementedError()
 
-    def can_update(self, product, allow_unsafe_updates=False):
+    def can_update(self, product, allow_unsafe_updates=False, allow_table_lock=False):
         raise NotImplementedError()
 
     def update(self, product: DatasetType, allow_unsafe_updates=False, allow_table_lock=False):
         raise NotImplementedError()
 
-    def update_document(self, definition, allow_unsafe_updates=False, allow_table_lock=False):
-        raise NotImplementedError()
-
-    def get_unsafe(self, id_):  # type: ignore
+    def get_unsafe(self, id_):
         raise KeyError(id_)
 
-    def get_by_name_unsafe(self, name):  # type: ignore
+    def get_by_name_unsafe(self, name):
         raise KeyError(name)
 
     def get_with_fields(self, field_names):

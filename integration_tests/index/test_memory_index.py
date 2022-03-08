@@ -3,6 +3,8 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
+from datacube.utils import InvalidDocException
+
 from datacube import Datacube
 
 
@@ -70,11 +72,67 @@ def test_mem_metadatatype_resource(in_memory_config):
         eo3_fresh = dc.index.metadata_types.get_by_name("eo3")
         assert eo3.description != eo3_fresh.description
         assert eo3.definition["dataset"]["measurements"] != eo3_fresh.definition["dataset"]["measurements"]
-        # Changing measurements definition is not safe
+        # Updating measurements definition is not safe
         with pytest.raises(ValueError) as e:
             dc.index.metadata_types.update(eo3)
-        # Changing descriptions is safe.
+        # Updating descriptions is safe.
         eo3_fresh.definition["description"] = "New description"
         dc.index.metadata_types.update(eo3_fresh)
         eo3_fresher = dc.index.metadata_types.get_by_name("eo3")
         assert eo3_fresher.description == eo3_fresh.description
+
+
+def test_mem_product_resource(in_memory_config,
+                              extended_eo3_metadata_type_doc,
+                              extended_eo3_product_doc,
+                              base_eo3_product_doc):
+    with Datacube(config=in_memory_config, validate_connection=True) as dc:
+        # Test Empty index works as expected:
+        assert list(dc.index.products.get_with_fields(("measurements", "extent"))) == []
+        assert list(dc.index.products.search_robust()) == []
+        assert dc.index.products.get_by_name("product1") is None
+        # Add an e03 product doc
+        wo_prod = dc.index.products.add_document(base_eo3_product_doc)
+        assert wo_prod is not None
+        assert wo_prod.name == 'ga_ls_wo_3'
+        assert dc.index.products.get_by_name("ga_ls_wo_3").name == "ga_ls_wo_3"
+        # Attempt to add a product without a metadata type
+        with pytest.raises(InvalidDocException) as e:
+            ls8_prod = dc.index.products.add_document(extended_eo3_product_doc)
+        # Add extended eo3 metadatatype
+        dc.index.metadata_types.add(dc.index.metadata_types.from_doc(extended_eo3_metadata_type_doc))
+        # Add an extended eo3 product doc
+        ls8_prod = dc.index.products.add_document(extended_eo3_product_doc)
+        assert ls8_prod.name == 'ga_ls8c_ard_3'
+        assert dc.index.products.get_by_name("ga_ls8c_ard_3").name == 'ga_ls8c_ard_3'
+        # Verify we cannot mess with the cache
+        ls8_prod.definition["description"] = "foo"
+        ls8_prod.definition["measurements"][0]["name"] = "blueish"
+        ls8_fresh = dc.index.products.get_by_name("ga_ls8c_ard_3")
+        assert ls8_prod.description != ls8_fresh.description
+        assert ls8_prod.definition["measurements"][0]["name"] != ls8_fresh.definition["measurements"][0]["name"]
+        # Updating measurements definition is not safe
+        with pytest.raises(ValueError) as e:
+            dc.index.products.update(ls8_prod)
+        # Updating descriptions is safe.
+        ls8_fresh.definition["description"] = "New description"
+        dc.index.products.update(ls8_fresh)
+        ls8_fresher = dc.index.products.get_by_name("ga_ls8c_ard_3")
+        assert ls8_fresher.description == ls8_fresh.description
+        # Test get_with_fields
+        assert len(list(dc.index.products.get_with_fields(("platform", "product_family")))) == 2
+        assert len(list(dc.index.products.get_with_fields(("platform", "eo_sun_elevation")))) == 1
+        # Test search_robust
+        search_results = list(dc.index.products.search_robust(region_code="my_backyard"))
+        assert len(search_results) == 2
+        for prod, unmatched in search_results:
+            assert "region_code" in unmatched
+        search_results = list(dc.index.products.search_robust(product_family="the_simpsons"))
+        assert len(search_results) == 0
+        search_results = list(dc.index.products.search_robust(platform="landsat-8"))
+        assert len(search_results) == 2
+        for prod, unmatched in search_results:
+            if prod.name == 'ga_ls8c_ard_3':
+                assert unmatched == {}
+            else:
+                assert unmatched["platform"] == 'landsat-8'

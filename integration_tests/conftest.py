@@ -54,6 +54,29 @@ settings.register_profile(
 )
 settings.load_profile('opendatacube')
 
+MEMORY_DRIVER_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'memory'
+
+
+def get_memory_test_data_doc(path):
+    from datacube.utils import read_documents
+    for path, doc in read_documents(MEMORY_DRIVER_TESTDIR / path):
+        return doc
+
+
+@pytest.fixture
+def extended_eo3_metadata_type_doc():
+    return get_memory_test_data_doc("eo3_landsat_ard.odc-type.yaml")
+
+
+@pytest.fixture
+def extended_eo3_product_doc():
+    return get_memory_test_data_doc("ard_ls8.odc-product.yaml")
+
+
+@pytest.fixture
+def base_eo3_product_doc():
+    return get_memory_test_data_doc("ga_ls_wo_3.odc-product.yaml")
+
 
 @pytest.fixture
 def global_integration_cli_args():

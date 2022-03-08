@@ -1,0 +1,59 @@
+name: ga_ls_wo_3
+description: Geoscience Australia Landsat Water Observations Collection 3
+metadata_type: eo3
+
+license: CC-BY-4.0
+
+metadata:
+  properties:
+    odc:file_format: GeoTIFF
+    odc:product_family: wo
+  product:
+    name: ga_ls_wo_3
+
+measurements:
+  - name: water
+    dtype: uint8
+    nodata: 1
+    units: '1'
+    flags_definition:
+      dry:
+        bits: [7, 6, 5, 4, 3, 2, 1, 0]
+        description: No water detected
+        values: {0: true}
+      nodata:
+        bits: 0
+        description: No data
+        values: {0: false, 1: true}
+      noncontiguous:
+        bits: 1
+        description: At least one EO band is missing or saturated
+        values: {0: false, 1: true}
+      low_solar_angle:
+        bits: 2
+        description: Low solar incidence angle
+        values: {0: false, 1: true}
+      terrain_shadow:
+        bits: 3
+        description: Terrain shadow
+        values: {0: false, 1: true}
+      high_slope:
+        bits: 4
+        description: High slope
+        values: {0: false, 1: true}
+      cloud_shadow:
+        bits: 5
+        description: Cloud shadow
+        values: {0: false, 1: true}
+      cloud:
+        bits: 6
+        description: Cloudy
+        values: {0: false, 1: true}
+      water_observed:
+        bits: 7
+        description: Classified as water by the decision tree
+        values: {0: false, 1: true}
+      wet:
+        bits: [7, 6, 5, 4, 3, 2, 1, 0]
+        description: Clear and Wet
+        values: {128: true}

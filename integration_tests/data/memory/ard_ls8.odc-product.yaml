@@ -1,0 +1,181 @@
+---
+name: ga_ls8c_ard_3
+description: Geoscience Australia Landsat 8 Operational Land Imager and Thermal Infra-Red Scanner Analysis Ready Data Collection 3
+metadata_type: eo3_landsat_ard
+
+license: CC-BY-4.0
+
+metadata:
+  product:
+    name: ga_ls8c_ard_3
+  properties:
+     eo:platform: landsat-8
+     eo:instrument: OLI_TIRS
+     odc:product_family: ard
+     odc:producer: ga.gov.au
+
+measurements:
+  # NBART
+  - name: nbart_coastal_aerosol
+    aliases:
+      - nbart_band01
+      - coastal_aerosol
+    dtype: int16
+    nodata: -999
+    units: '1'
+  - name: nbart_blue
+    aliases:
+      - nbart_band02
+      - blue
+    dtype: int16
+    nodata: -999
+    units: '1'
+  - name: nbart_green
+    aliases:
+      - nbart_band03
+      - green
+    dtype: int16
+    nodata: -999
+    units: '1'
+  - name: nbart_red
+    aliases:
+      - nbart_band04
+      - red
+    dtype: int16
+    nodata: -999
+    units: '1'
+  - name: nbart_nir
+    aliases:
+      - nbart_band05
+      - nir
+    dtype: int16
+    nodata: -999
+    units: '1'
+  - name: nbart_swir_1
+    aliases:
+      - nbart_band06
+      - swir_1
+      # Requested for backwards compatibility with previous collection
+      - swir1
+    dtype: int16
+    nodata: -999
+    units: '1'
+  - name: nbart_swir_2
+    aliases:
+      - nbart_band07
+      - swir_2
+      # Requested for backwards compatibility with previous collection
+      - swir2
+    dtype: int16
+    nodata: -999
+    units: '1'
+  - name: nbart_panchromatic
+    aliases:
+      - nbart_band08
+      - panchromatic
+    dtype: int16
+    nodata: -999
+    units: '1'
+
+    # Observation Attributes
+  - name: oa_fmask
+    aliases:
+      - fmask
+    dtype: uint8
+    nodata: 0
+    units: '1'
+    flags_definition:
+      fmask:
+        bits: [0, 1, 2, 3, 4, 5, 6, 7]
+        description: Fmask
+        values:
+          '0': nodata
+          '1': valid
+          '2': cloud
+          '3': shadow
+          '4': snow
+          '5': water
+  - name: oa_nbart_contiguity
+    aliases:
+      - nbart_contiguity
+    dtype: uint8
+    nodata: 255
+    units: '1'
+    flags_definition:
+      contiguous:
+        bits: [0]
+        values:
+          '1': true
+          '0': false
+  - name: oa_azimuthal_exiting
+    aliases:
+      - azimuthal_exiting
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_azimuthal_incident
+    aliases:
+      - azimuthal_incident
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_combined_terrain_shadow
+    aliases:
+      - combined_terrain_shadow
+    dtype: uint8
+    nodata: 255
+    units: '1'
+  - name: oa_exiting_angle
+    aliases:
+      - exiting_angle
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_incident_angle
+    aliases:
+      - incident_angle
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_relative_azimuth
+    aliases:
+      - relative_azimuth
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_relative_slope
+    aliases:
+      - relative_slope
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_satellite_azimuth
+    aliases:
+      - satellite_azimuth
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_satellite_view
+    aliases:
+      - satellite_view
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_solar_azimuth
+    aliases:
+      - solar_azimuth
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_solar_zenith
+    aliases:
+      - solar_zenith
+    dtype: float32
+    nodata: .nan
+    units: '1'
+  - name: oa_time_delta
+    aliases:
+      - time_delta
+    dtype: float32
+    nodata: .nan
+    units: '1'

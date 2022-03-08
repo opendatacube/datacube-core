@@ -1,0 +1,298 @@
+---
+name: eo3_landsat_ard
+description: EO3 for ARD Landsat Collection 3
+dataset:
+  id: [id]  # No longer configurable in newer ODCs.
+  sources: [lineage, source_datasets]  # No longer configurable in newer ODCs.
+
+  grid_spatial: [grid_spatial, projection]
+  measurements: [measurements]
+  creation_dt: [properties, 'odc:processing_datetime']
+  label: [label]
+  format: [properties, 'odc:file_format']
+
+  search_fields:
+    platform:
+      description: Platform code
+      offset: [properties, 'eo:platform']
+      indexed: false
+
+    instrument:
+      description: Instrument name
+      offset: [properties, 'eo:instrument']
+      indexed: false
+
+    product_family:
+      description: Product family code
+      offset: [properties, 'odc:product_family']
+      indexed: false
+
+    region_code:
+      description: >
+        Spatial reference code from the provider.
+        For Landsat region_code is a scene path row:
+                '{:03d}{:03d}.format(path,row)'
+        For Sentinel it is MGRS code.
+        In general it is a unique string identifier
+        that datasets covering roughly the same spatial
+        region share.
+
+      offset: [properties, 'odc:region_code']
+
+    crs_raw:
+      description: The raw CRS string as it appears in metadata
+      offset: ['crs']
+      indexed: false
+
+    dataset_maturity:
+      description: One of - final|interim|nrt  (near real time)
+      offset: [properties, 'dea:dataset_maturity']
+
+    gqa:
+      description: GQA Circular error probable (90%)
+      type: double
+      offset: [properties, 'gqa:cep90']
+
+    cloud_cover:
+      description: Cloud cover percentage [0, 100]
+      type: double
+      offset: [properties, 'eo:cloud_cover']
+
+    time:
+      description: Acquisition time range
+      type: datetime-range
+      min_offset:
+        - [properties, 'dtr:start_datetime']
+        - [properties, datetime]
+      max_offset:
+        - [properties, 'dtr:end_datetime']
+        - [properties, datetime]
+
+    # LonLat bounding box, generated on the fly from:
+    #  `grids`, `crs` and `geometry` of the new metadata format
+    #
+    # Bounding box is defined by two ranges:
+    #   [lon.begin, lon.end] -- Longitude
+    #   [lat.begin, lat.end] -- Latitude
+    #
+    # Note that STAC is using `bbox` for the same thing as following:
+    #
+    #     bbox: [left, bottom, right, top]
+    #              0      1      2     3
+    #             lon    lat    lon   lat
+    #
+    # But MetadataType does not support integer index keys, so...
+    #   BoundingBox: [lon.begin, lat.begin, lon.end, lat.end]
+
+    lon:
+      description: Longitude range
+      type: double-range
+      min_offset:
+        - [extent, lon, begin]
+      max_offset:
+        - [extent, lon, end]
+
+    lat:
+      description: Latitude range
+      type: double-range
+      min_offset:
+        - [extent, lat, begin]
+      max_offset:
+        - [extent, lat, end]
+
+    landsat_product_id:
+      description: Landsat Product ID
+      indexed: false
+      offset:
+        - properties
+        - landsat:landsat_product_id
+
+    # semi-auto generated below
+    eo_gsd:
+      description: Ground sample distance, meters
+      indexed: false
+      offset:
+        - properties
+        - eo:gsd
+      type: double
+    eo_sun_azimuth:
+      description: 'TODO: <eo:sun_azimuth>'
+      indexed: false
+      offset:
+        - properties
+        - eo:sun_azimuth
+      type: double
+    eo_sun_elevation:
+      description: 'TODO: <eo:sun_elevation>'
+      indexed: false
+      offset:
+        - properties
+        - eo:sun_elevation
+      type: double
+    fmask_clear:
+      description: 'TODO: <fmask:clear>'
+      indexed: false
+      offset:
+        - properties
+        - fmask:clear
+      type: double
+    fmask_cloud_shadow:
+      description: 'TODO: <fmask:cloud_shadow>'
+      indexed: false
+      offset:
+        - properties
+        - fmask:cloud_shadow
+      type: double
+    fmask_snow:
+      description: 'TODO: <fmask:snow>'
+      indexed: false
+      offset:
+        - properties
+        - fmask:snow
+      type: double
+    fmask_water:
+      description: 'TODO: <fmask:water>'
+      indexed: false
+      offset:
+        - properties
+        - fmask:water
+      type: double
+    gqa_abs_iterative_mean_x:
+      description: 'TODO: <gqa:abs_iterative_mean_x>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:abs_iterative_mean_x
+      type: double
+    gqa_abs_iterative_mean_xy:
+      description: 'TODO: <gqa:abs_iterative_mean_xy>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:abs_iterative_mean_xy
+      type: double
+    gqa_abs_iterative_mean_y:
+      description: 'TODO: <gqa:abs_iterative_mean_y>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:abs_iterative_mean_y
+      type: double
+    gqa_abs_x:
+      description: 'TODO: <gqa:abs_x>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:abs_x
+      type: double
+    gqa_abs_xy:
+      description: 'TODO: <gqa:abs_xy>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:abs_xy
+      type: double
+    gqa_abs_y:
+      description: 'TODO: <gqa:abs_y>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:abs_y
+      type: double
+    gqa_cep90:
+      description: 'TODO: <gqa:cep90>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:cep90
+      type: double
+    gqa_iterative_mean_x:
+      description: 'TODO: <gqa:iterative_mean_x>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:iterative_mean_x
+      type: double
+    gqa_iterative_mean_xy:
+      description: 'TODO: <gqa:iterative_mean_xy>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:iterative_mean_xy
+      type: double
+    gqa_iterative_mean_y:
+      description: 'TODO: <gqa:iterative_mean_y>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:iterative_mean_y
+      type: double
+    gqa_iterative_stddev_x:
+      description: 'TODO: <gqa:iterative_stddev_x>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:iterative_stddev_x
+      type: double
+    gqa_iterative_stddev_xy:
+      description: 'TODO: <gqa:iterative_stddev_xy>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:iterative_stddev_xy
+      type: double
+    gqa_iterative_stddev_y:
+      description: 'TODO: <gqa:iterative_stddev_y>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:iterative_stddev_y
+      type: double
+    gqa_mean_x:
+      description: 'TODO: <gqa:mean_x>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:mean_x
+      type: double
+    gqa_mean_xy:
+      description: 'TODO: <gqa:mean_xy>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:mean_xy
+      type: double
+    gqa_mean_y:
+      description: 'TODO: <gqa:mean_y>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:mean_y
+      type: double
+    gqa_stddev_x:
+      description: 'TODO: <gqa:stddev_x>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:stddev_x
+      type: double
+    gqa_stddev_xy:
+      description: 'TODO: <gqa:stddev_xy>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:stddev_xy
+      type: double
+    gqa_stddev_y:
+      description: 'TODO: <gqa:stddev_y>'
+      indexed: false
+      offset:
+        - properties
+        - gqa:stddev_y
+      type: double
+    landsat_scene_id:
+      description: Landsat Scene ID
+      indexed: false
+      offset:
+        - properties
+        - landsat:landsat_scene_id
