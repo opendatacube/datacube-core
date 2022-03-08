@@ -116,10 +116,25 @@ class BoundingBox(_BoundingBox):
                                    (p1[1], p2[1]))
 
 
-@cachetools.cached({})
-def _make_crs(crs_str: str) -> Tuple[_CRS, Optional[int]]:
-    crs = _CRS.from_user_input(crs_str)
-    return (crs, crs.to_epsg())
+def _make_crs_key(crs_spec: Union[str, _CRS]) -> str:
+    if isinstance(crs_spec, str):
+        normed_epsg = crs_spec.upper()
+        if normed_epsg.startswith("EPSG:"):
+            return normed_epsg
+        return crs_spec
+    return crs_spec.to_wkt()
+
+
+@cachetools.cached({}, key=_make_crs_key)
+def _make_crs(crs: Union[str, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
+    if isinstance(crs, str):
+        crs = _CRS.from_user_input(crs)
+    epsg = crs.to_epsg()
+    if epsg is not None:
+        crs_str = f"EPSG:{epsg}"
+    else:
+        crs_str = crs.to_wkt()
+    return (crs, crs_str, crs.to_epsg())
 
 
 def _make_crs_transform_key(from_crs, to_crs, always_xy):
@@ -131,26 +146,6 @@ def _make_crs_transform(from_crs, to_crs, always_xy):
     return Transformer.from_crs(from_crs, to_crs, always_xy=always_xy).transform
 
 
-def _guess_crs_str(crs_spec: Any) -> Optional[str]:
-    """
-    Returns a string representation of the crs spec.
-    Returns `None` if it does not understand the spec.
-    """
-    if isinstance(crs_spec, str):
-        return crs_spec
-    if isinstance(crs_spec, dict):
-        crs_spec = _CRS.from_dict(crs_spec)
-
-    if hasattr(crs_spec, 'to_wkt'):
-        return crs_spec.to_wkt()
-    if hasattr(crs_spec, 'to_epsg'):
-        epsg = crs_spec.to_epsg()
-        if epsg is not None:
-            return 'EPSG:{}'.format(crs_spec.to_epsg())
-
-    return None
-
-
 class CRS:
     """
     Wrapper around `pyproj.CRS` for backwards compatibility.
@@ -160,20 +155,34 @@ class CRS:
 
     __slots__ = ('_crs', '_epsg', '_str')
 
-    def __init__(self, crs_str: Any):
+    def __init__(self, crs_spec: Any):
         """
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
         :raises: `pyproj.exceptions.CRSError`
         """
-        crs_str = _guess_crs_str(crs_str)
-        if crs_str is None:
-            raise CRSError("Expect string or any object with `.to_epsg()` or `.to_wkt()` method")
+        if isinstance(crs_spec, str):
+            self._crs, self._str, self._epsg = _make_crs(crs_spec)
+        elif isinstance(crs_spec, CRS):
+            self._crs = crs_spec._crs
+            self._epsg = crs_spec._epsg
+            self._str = crs_spec._str
+        elif isinstance(crs_spec, _CRS):
+            self._crs, self._str, self._epsg = _make_crs(crs_spec)
+        elif isinstance(crs_spec, dict):
+            self._crs, self._str, self._epsg = _make_crs(_CRS.from_dict(crs_spec))
+        else:
+            _to_epsg = getattr(crs_spec, "to_epsg", None)
+            if _to_epsg is not None:
+                self._crs, self._str, self._epsg = _make_crs(f"EPSG:{_to_epsg()}")
+                return
+            _to_wkt = getattr(crs_spec, "to_wkt", None)
+            if _to_wkt is not None:
+                self._crs, self._str, self._epsg = _make_crs(_to_wkt())
+                return
 
-        _crs, _epsg = _make_crs(crs_str)
-
-        self._crs = _crs
-        self._epsg = _epsg
-        self._str = crs_str
+            raise CRSError(
+                "Expect string or any object with `.to_epsg()` or `.to_wkt()` methods"
+            )
 
     def __getstate__(self):
         return {'crs_str': self._str}
@@ -257,7 +266,7 @@ class CRS:
         return self._str
 
     def __hash__(self) -> int:
-        return hash(self.to_wkt())
+        return hash(self._str)
 
     def __repr__(self) -> str:
         return "CRS('%s')" % self._str

@@ -43,12 +43,12 @@ from datacube.utils.geometry._base import (
     bounding_box_in_pixel_domain,
     geobox_intersection_conservative,
     geobox_union_conservative,
-    _guess_crs_str,
     force_2d,
     _align_pix,
     _round_to_res,
     _norm_crs,
     _norm_crs_or_error,
+    _make_crs_key,
 )
 from datacube.testutils.geom import (
     epsg4326,
@@ -1475,9 +1475,9 @@ def test_crs_hash():
 
 
 def test_base_internals():
-    assert _guess_crs_str(CRS("epsg:3577")) == epsg3577.to_wkt()
+    assert _make_crs_key("epsg:3577") == "EPSG:3577"
     no_epsg_crs = CRS(SAMPLE_WKT_WITHOUT_AUTHORITY)
-    assert _guess_crs_str(no_epsg_crs) == no_epsg_crs.to_wkt()
+    assert _make_crs_key(no_epsg_crs.proj) == no_epsg_crs.proj.to_wkt()
 
     gjson_bad = {'type': 'a', 'coordinates': [1, [2, 3, 4]]}
     assert force_2d(gjson_bad) == {'type': 'a', 'coordinates': [1, [2, 3]]}
