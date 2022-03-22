@@ -79,6 +79,51 @@ def base_eo3_product_doc():
 
 
 @pytest.fixture
+def mem_index_dc_for_eo3_testing(in_memory_config,
+                                 extended_eo3_metadata_type_doc,
+                                 extended_eo3_product_doc,
+                                 base_eo3_product_doc):
+    from datacube import Datacube
+    with Datacube(config=in_memory_config) as dc:
+        dc.index.metadata_types.add(dc.index.metadata_types.from_doc(extended_eo3_metadata_type_doc))
+        dc.index.products.add_document(base_eo3_product_doc)
+        dc.index.products.add_document(extended_eo3_product_doc)
+        yield dc
+
+
+@pytest.fixture
+def mem_index_fresh(in_memory_config):
+    from datacube import Datacube
+    with Datacube(config=in_memory_config) as dc:
+        yield dc
+
+
+@pytest.fixture
+def dataset_with_lineage_doc():
+    return (
+        get_memory_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
+        's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+        'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def datasets_with_unembedded_lineage_doc():
+    return [
+        (
+            get_memory_test_data_doc("ls8_dataset.yaml"),
+            's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/12/'
+            'ga_ls8c_ard_3-0-0_090086_2016-05-12_final.stac-item.json'
+        ),
+        (
+            get_memory_test_data_doc("wo_dataset.yaml"),
+            's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+            'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+        ),
+    ]
+
+
+@pytest.fixture
 def global_integration_cli_args():
     """
     The first arguments to pass to a cli command for integration test configuration.
@@ -367,7 +412,7 @@ def default_metadata_types(index):
 
 
 @pytest.fixture
-def ga_metadata_type(index, ga_metadata_type_doc):
+def ga_metadata_type(index, ):
     return index.metadata_types.add(index.metadata_types.from_doc(ga_metadata_type_doc))
 
 

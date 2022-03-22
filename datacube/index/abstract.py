@@ -463,6 +463,13 @@ class AbstractProductResource(ABC):
 DSID = Union[str, UUID]
 
 
+def dsid_to_uuid(dsid: DSID) -> UUID:
+    if isinstance(dsid, UUID):
+        return dsid
+    else:
+        return UUID(dsid)
+
+
 class AbstractDatasetResource(ABC):
     """
     Abstract base class for the Dataset portion of an index api.
@@ -499,7 +506,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         """
-        Get all datasets derived from a dataset
+        Get all datasets derived from a dataset (NOT recursive)
 
         :param id_: dataset id
         :rtype: list[Dataset]
@@ -588,23 +595,23 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def archive(self, ids: Iterable[UUID]) -> None:
+    def archive(self, ids: Iterable[DSID]) -> None:
         """
         Mark datasets as archived
 
-        :param Iterable[UUID] ids: list of dataset ids to archive
+        :param Iterable[Union[str,UUID]] ids: list of dataset ids to archive
         """
 
     @abstractmethod
-    def restore(self, ids: Iterable[UUID]) -> None:
+    def restore(self, ids: Iterable[DSID]) -> None:
         """
         Mark datasets as not archived
 
-        :param Iterable[UUID] ids: list of dataset ids to restore
+        :param Iterable[Union[str,UUID]] ids: list of dataset ids to restore
         """
 
     @abstractmethod
-    def purge(self, ids: Iterable[UUID]) -> None:
+    def purge(self, ids: Iterable[DSID]) -> None:
         """
         Delete archived datasets
 

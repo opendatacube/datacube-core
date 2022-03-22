@@ -2,8 +2,13 @@
 #
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import datetime
+
 import pytest
-from datacube.utils import InvalidDocException
+from uuid import UUID
+from datacube.testutils import gen_dataset_test_dag
+
+from datacube.utils import InvalidDocException, read_documents, SimpleDocNav
 
 from datacube import Datacube
 
@@ -136,3 +141,131 @@ def test_mem_product_resource(in_memory_config,
                 assert unmatched == {}
             else:
                 assert unmatched["platform"] == 'landsat-8'
+
+
+# Hand crafted tests with recent real-world eo3 examples
+def test_mem_dataset_eo3(mem_index_dc_for_eo3_testing,
+                         dataset_with_lineage_doc,
+                         datasets_with_unembedded_lineage_doc):
+    dc = mem_index_dc_for_eo3_testing
+    assert list(dc.index.datasets.get_all_dataset_ids(True)) == []
+    assert list(dc.index.datasets.get_all_dataset_ids(False)) == []
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(dc.index)
+    with pytest.raises(ValueError) as e:
+        ds, err = resolver(dataset_with_lineage_doc[0], dataset_with_lineage_doc[1])
+    assert "Embedded lineage not supported for eo3 metadata types" in str(e.value)
+    (doc_ls8, loc_ls8), (doc_wo, loc_wo) = datasets_with_unembedded_lineage_doc
+    assert not dc.index.datasets.has(doc_ls8["id"])
+    assert not dc.index.datasets.has(doc_wo["id"])
+    assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [False, False]
+
+    ds, err = resolver(doc_ls8, loc_ls8)
+    assert err is None
+    dc.index.datasets.add(ds)
+    assert dc.index.datasets.has(doc_ls8["id"])
+    ls8_ds = dc.index.datasets.get(
+        doc_ls8["id"],
+        include_sources=True
+    )
+    assert ls8_ds is not None
+    ds, err = resolver(datasets_with_unembedded_lineage_doc[1][0], datasets_with_unembedded_lineage_doc[1][1])
+    assert err is None
+    dc.index.datasets.add(ds)
+    assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [True, True]
+    wo_ds = dc.index.datasets.get(datasets_with_unembedded_lineage_doc[1][0]["id"],
+                                  include_sources=True)
+    assert wo_ds.sources["ard"].id == ls8_ds.id
+    wo_ds = dc.index.datasets.get(wo_ds.id, include_sources=False)
+    assert not wo_ds.sources
+    assert dc.index.datasets.bulk_get((wo_ds.id, ls8_ds.id))
+    derived = list(dc.index.datasets.get_derived(ls8_ds.id))
+    assert len(derived) == 1
+    assert derived[0].id == wo_ds.id
+    # Test adding/archiving/restoring locations
+    before_test = datetime.datetime.now()
+    dc.index.datasets.add_location(ls8_ds.id, "file:///test_loc_1")
+    assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_ds.id)
+    assert list(dc.index.datasets.get_archived_locations(ls8_ds.id)) == []
+    dc.index.datasets.archive_location(ls8_ds.id, "file:///test_loc_1")
+    assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_ds.id)
+    assert "file:///test_loc_1" in dc.index.datasets.get_archived_locations(ls8_ds.id)
+    found = False
+    for loc, dt in dc.index.datasets.get_archived_location_times(ls8_ds.id):
+        if loc == "file:///test_loc_1":
+            found = True
+            assert dt >= before_test
+            break
+    assert found
+    dc.index.datasets.restore_location(ls8_ds.id, "file:///test_loc_1")
+    assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_ds.id)
+    assert list(dc.index.datasets.get_archived_locations(ls8_ds.id)) == []
+    dc.index.datasets.remove_location(ls8_ds.id, "file:///test_loc_1")
+    assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_ds.id)
+    assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_ds.id)
+    # Test archiving, restoring and purging datasets
+    # Both datasets are not archived
+    all_ids = list(dc.index.datasets.get_all_dataset_ids(False))
+    assert ls8_ds.id in all_ids
+    assert wo_ds.id in all_ids
+    assert list(dc.index.datasets.get_all_dataset_ids(True)) == []
+    # Archive both datasets
+    dc.index.datasets.archive((wo_ds.id, ls8_ds.id))
+    # Both datasets ARE archived
+    all_ids = list(dc.index.datasets.get_all_dataset_ids(True))
+    assert ls8_ds.id in all_ids
+    assert wo_ds.id in all_ids
+    assert list(dc.index.datasets.get_all_dataset_ids(False)) == []
+    archived_ls_ds = dc.index.datasets.get(ls8_ds.id)
+    assert archived_ls_ds.is_archived
+    # Purge ls8_ds and restore wo_ds
+    dc.index.datasets.purge((ls8_ds.id,))
+    dc.index.datasets.restore((wo_ds.id,))
+    active_ids = list(dc.index.datasets.get_all_dataset_ids(False))
+    archived_ids = list(dc.index.datasets.get_all_dataset_ids(True))
+    assert ls8_ds.id not in active_ids
+    assert wo_ds.id in active_ids
+    assert archived_ids == []
+
+
+# Tests adapted from test_dataset_add
+def test_memory_dataset_add(dataset_add_configs, mem_index_fresh):
+    idx = mem_index_fresh.index
+    # Make sure index is empty
+    assert list(idx.products.get_all()) == []
+    for path, metadata_doc in read_documents(dataset_add_configs.metadata):
+        idx.metadata_types.add(idx.metadata_types.from_doc(metadata_doc))
+    for path, product_doc in read_documents(dataset_add_configs.products):
+        idx.products.add_document(product_doc)
+    ds_ids = set()
+    ds_bad_ids = set()
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(idx)
+    for path, ds_doc in read_documents(dataset_add_configs.datasets):
+        ds, err = resolver(ds_doc, 'file:///fake_uri')
+        assert err is None
+        ds_ids.add(ds.id)
+        idx.datasets.add(ds)
+    for path, ds_doc in read_documents(dataset_add_configs.datasets_bad1):
+        ds, err = resolver(ds_doc, 'file:///fake_uri')
+        if err is not None:
+            ds_bad_ids.add(ds_doc["id"])
+            continue
+        ds_ids.add(ds.id)
+        idx.datasets.add(ds)
+    for path, ds_doc in read_documents(dataset_add_configs.datasets_eo3):
+        ds, err = resolver(ds_doc, 'file:///fake_uri')
+        assert err is None
+        ds_ids.add(ds.id)
+        idx.datasets.add(ds)
+
+    for id_ in ds_ids:
+        assert idx.datasets.has(id_)
+    for id_ in ds_bad_ids:
+        assert not idx.datasets.has(id_)
+
+    ds_ = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
+    assert UUID(ds_.id) in ds_ids
+    ds_from_idx = idx.datasets.get(ds_.id, include_sources=True)
+    assert str(ds_from_idx.sources['ab'].id) == ds_.sources['ab'].id
+    assert str(ds_from_idx.sources['ac'].sources["cd"].id) == ds_.sources['ac'].sources['cd'].id

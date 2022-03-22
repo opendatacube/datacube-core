@@ -37,7 +37,7 @@ class ProductResource(AbstractProductResource):
                 _LOG.warning(f'Adding metadata_type "{product.metadata_type.name}" as it doesn\'t exist')
                 product.metadata_type = self.metadata_type_resource.add(product.metadata_type,
                                                       allow_table_lock=allow_table_lock)
-            clone = self._clone(product)
+            clone = self.clone(product)
             clone.id = self.next_id
             self.next_id += 1
             self.by_id[clone.id] = clone
@@ -101,17 +101,17 @@ class ProductResource(AbstractProductResource):
         if product.metadata_type.name != existing.metadata_type.name:
             raise ValueError("Unsafe change: cannot (currently) switch metadata types for a product")
         _LOG.info(f"Updating product {product.name}")
-        persisted = self._clone(product)
+        persisted = self.clone(product)
         persisted.id = existing.id
         self.by_id[persisted.id] = persisted
         self.by_name[persisted.name] = persisted
         return self.get_by_name(product.name)
 
     def get_unsafe(self, id_: int) -> Product:
-        return self._clone(self.by_id[id_])
+        return self.clone(self.by_id[id_])
 
     def get_by_name_unsafe(self, name: str) -> Product:
-        return self._clone(self.by_name[name])
+        return self.clone(self.by_name[name])
 
     def get_with_fields(self, field_names: Iterable[str]) -> Iterable[Product]:
         for prod in self.get_all():
@@ -160,11 +160,11 @@ class ProductResource(AbstractProductResource):
                 yield prod, unmatched
 
     def get_all(self) -> Iterable[Product]:
-        return (self._clone(prod) for prod in self.by_id.values())
+        return (self.clone(prod) for prod in self.by_id.values())
 
-    def _clone(self, orig: Product) -> Product:
+    def clone(self, orig: Product) -> Product:
         return Product(
-            self.metadata_type_resource._clone(orig.metadata_type),
+            self.metadata_type_resource.clone(orig.metadata_type),
             jsonify_document(orig.definition),
             id_=orig.id
         )

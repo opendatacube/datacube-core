@@ -83,16 +83,16 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
 
         _LOG.info(f"Updating metadata type {metadata_type.name}")
 
-        persisted = self._clone(metadata_type)
+        persisted = self.clone(metadata_type)
         self.by_id[metadata_type.id] = persisted
         self.by_name[metadata_type.name] = persisted
         return persisted
 
     def get_unsafe(self, id_: int) -> MetadataType:
-        return self._clone(self.by_id[id_])
+        return self.clone(self.by_id[id_])
 
     def get_by_name_unsafe(self, name: str) -> MetadataType:
-        return self._clone(self.by_name[name])
+        return self.clone(self.by_name[name])
 
     def check_field_indexes(self, allow_table_lock: bool = False, rebuild_all: bool = None,
                             rebuild_views: bool = False, rebuild_indexes: bool = False) -> None:
@@ -101,7 +101,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
         pass
 
     def get_all(self) -> Iterable[MetadataType]:
-        return (self._clone(mdt) for mdt in self.by_id.values())
+        return (self.clone(mdt) for mdt in self.by_id.values())
 
     @staticmethod
     def _make(definition: Mapping[str, Any], id_=None) -> MetadataType:
@@ -110,5 +110,5 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
                             id_=id_)
 
     @staticmethod
-    def _clone(orig: MetadataType) -> MetadataType:
+    def clone(orig: MetadataType) -> MetadataType:
         return MetadataTypeResource._make(deepcopy(orig.definition), id_=orig.id)
