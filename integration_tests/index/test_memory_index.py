@@ -182,6 +182,11 @@ def test_mem_dataset_eo3(mem_index_dc_for_eo3_testing,
     derived = list(dc.index.datasets.get_derived(ls8_ds.id))
     assert len(derived) == 1
     assert derived[0].id == wo_ds.id
+    assert "cloud_cover" in dc.index.datasets.get_field_names(ls8_ds.type.name)
+    dup_results = dc.index.datasets.search_product_duplicates(ls8_ds.type, "cloud_cover", "dataset_maturity")
+    assert len(dup_results) == 1
+    assert dup_results[0][0].cloud_cover == ls8_ds.metadata.cloud_cover
+    assert ls8_ds.id in dup_results[0][1]
     # Test adding/archiving/restoring locations
     before_test = datetime.datetime.now()
     dc.index.datasets.add_location(ls8_ds.id, "file:///test_loc_1")

@@ -11,6 +11,7 @@ from typing import (Any, Iterable, Iterator,
                     Tuple, Union)
 from uuid import UUID
 
+from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
 from datacube.utils import read_documents, InvalidDocException
@@ -554,12 +555,12 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_product_duplicates(self,
                                   product: Product,
-                                  *args: str
+                                  *args: Union[str, Field]
                                  ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
         """
         Find dataset ids who have duplicates of the given set of field names.
 
-        Product is always inserted as the first grouping field.
+        (Search is always restricted by Product)
 
         Returns a generator returning a tuple containing a namedtuple of
         the values of the supplied fields, and the datasets that match those

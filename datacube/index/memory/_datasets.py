@@ -5,10 +5,12 @@
 import datetime
 import logging
 import warnings
-from typing import Iterable, List, Mapping, Optional, Tuple
+from collections import namedtuple
+from typing import Iterable, List, Mapping, Optional, Tuple, Union
 from uuid import UUID
 
 from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid
+from datacube.index.fields import Field
 from datacube.index.memory._products import ProductResource
 from datacube.model import Dataset, DatasetType
 from datacube.utils import jsonify_document
@@ -43,16 +45,16 @@ class DatasetResource(AbstractDatasetResource):
         except KeyError:
             return None
 
-    def bulk_get(self, ids):
+    def bulk_get(self, ids: Iterable[DSID]) -> Iterable[Dataset]:
         return (ds for ds in (self.get(dsid) for dsid in ids) if ds is not None)
 
-    def get_derived(self, id_):
+    def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         return (self.get(dsid) for dsid in self.derivations.get(dsid_to_uuid(id_), {}).values())
 
-    def has(self, id_):
+    def has(self, id_: DSID) -> bool:
         return dsid_to_uuid(id_) in self.by_id
 
-    def bulk_has(self, ids_):
+    def bulk_has(self, ids_: Iterable[DSID]) -> Iterable[bool]:
         return (self.has(id_) for id_ in ids_)
 
     def add(self, dataset: Dataset,
@@ -83,7 +85,7 @@ class DatasetResource(AbstractDatasetResource):
             self.archived_locations[persistable.id] = []
         return self.get(dataset.id)
 
-    def persist_source_relationship(self, ds: Dataset, src: Dataset, classifier: str):
+    def persist_source_relationship(self, ds: Dataset, src: Dataset, classifier: str) -> None:
         # Add source lineage link
         if ds.id not in self.derived_from:
             self.derived_from[ds.id] = {}
@@ -105,8 +107,33 @@ class DatasetResource(AbstractDatasetResource):
                          ds.id)
         self.derivations[src.id][classifier] = ds.id
 
-    def search_product_duplicates(self, product: DatasetType, *args):
-        return []
+    def search_product_duplicates(self,
+                                  product: DatasetType,
+                                  *args: Union[str, Field]
+                                 ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
+        GroupedVals = namedtuple('search_result', args)
+        def to_field(f: Union[str, Field]) -> Field:
+            if isinstance(f, str):
+                return product.metadata_type.dataset_fields[f]
+            assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
+            return f
+        fields = [to_field(f) for f in args]
+        def values(ds: Dataset) -> GroupedVals:
+            vals = []
+            for field in fields:
+                vals.append(field.extract(ds.metadata_doc))
+            return GroupedVals(*vals)
+
+        dups = {}
+        for ds in self.active_by_id.values():
+            if ds.type.name != product.name:
+                continue
+            vals = values(ds)
+            if vals in dups:
+                dups[vals].append(ds.id)
+            else:
+                dups[vals] = [ds.id]
+        return list(dups.items())
 
     def can_update(self, dataset, updates_allowed=None):
         raise NotImplementedError()
@@ -152,7 +179,15 @@ class DatasetResource(AbstractDatasetResource):
             return (id_ for id_ in self.active_by_id.keys())
 
     def get_field_names(self, product_name=None) -> Iterable[str]:
-        return []
+        if product_name is None:
+            prods = self.product_resource.get_all()
+        else:
+            prods = [self.product_resource.get_by_name(product_name)]
+
+        out = set()
+        for prod in prods:
+            out.update(prod.metadata_type.dataset_fields)
+        return out
 
     def get_locations(self, id_: DSID) -> Iterable[str]:
         uuid = dsid_to_uuid(id_)
