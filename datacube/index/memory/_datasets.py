@@ -6,7 +6,7 @@ import datetime
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Callable, Iterable, List, Mapping, Optional, Set, Tuple, Union
 from uuid import UUID
 
 from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid
@@ -16,6 +16,7 @@ from datacube.model import Dataset, DatasetType
 from datacube.utils import jsonify_document
 
 _LOG = logging.getLogger(__name__)
+
 
 class DatasetResource(AbstractDatasetResource):
     def __init__(self, product_resource: ProductResource) -> None:
@@ -110,14 +111,17 @@ class DatasetResource(AbstractDatasetResource):
     def search_product_duplicates(self,
                                   product: DatasetType,
                                   *args: Union[str, Field]
-                                 ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
+                                  ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
         GroupedVals = namedtuple('search_result', args)
+
         def to_field(f: Union[str, Field]) -> Field:
             if isinstance(f, str):
                 return product.metadata_type.dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
+
         fields = [to_field(f) for f in args]
+
         def values(ds: Dataset) -> GroupedVals:
             vals = []
             for field in fields:
@@ -157,7 +161,7 @@ class DatasetResource(AbstractDatasetResource):
                 ds.archived_time = None
                 self.active_by_id[id_] = ds
 
-    def purge(self, ids: Iterable[DSID]):
+    def purge(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
             if id_ in self.archived_by_id:
@@ -199,7 +203,7 @@ class DatasetResource(AbstractDatasetResource):
 
     def get_archived_location_times(self, id_: DSID) -> Iterable[Tuple[str, datetime.datetime]]:
         uuid = dsid_to_uuid(id_)
-        return ((s,dt) for s, dt in self.archived_locations[uuid])
+        return ((s, dt) for s, dt in self.archived_locations[uuid])
 
     def add_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
@@ -214,8 +218,22 @@ class DatasetResource(AbstractDatasetResource):
         self.locations[uuid].append(uri)
         return True
 
-    def get_datasets_for_location(self, uri: str, mode : Optional[str]=None) -> Iterable[Dataset]:
-        return []
+    def get_datasets_for_location(self, uri: str, mode: Optional[str] = None) -> Iterable[Dataset]:
+        if mode is None:
+            mode = 'exact' if uri.count('#') > 0 else 'prefix'
+        if mode not in ("exact", "prefix"):
+            raise ValueError(f"Unsupported query mode: {mode}")
+        ids: Set[DSID] = set()
+        if mode == "exact":
+            test: Callable[[str], bool] = lambda l: l == uri
+        else:
+            test = lambda l: l.startswith(uri)
+        for id_, locs in self.locations.items():
+            for loc in locs:
+                if test(loc):
+                    ids.add(id_)
+                    break
+        return self.bulk_get(ids)
 
     def remove_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)

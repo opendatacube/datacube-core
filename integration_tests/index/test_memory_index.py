@@ -205,6 +205,7 @@ def test_mem_dataset_eo3(mem_index_dc_for_eo3_testing,
     dc.index.datasets.restore_location(ls8_ds.id, "file:///test_loc_1")
     assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_ds.id)
     assert list(dc.index.datasets.get_archived_locations(ls8_ds.id)) == []
+    assert list(dc.index.datasets.get_datasets_for_location("file:///test_loc_1", "exact"))[0].id == ls8_ds.id
     dc.index.datasets.remove_location(ls8_ds.id, "file:///test_loc_1")
     assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_ds.id)
     assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_ds.id)
@@ -252,14 +253,14 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh):
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
     for path, ds_doc in read_documents(dataset_add_configs.datasets_bad1):
-        ds, err = resolver(ds_doc, 'file:///fake_uri')
+        ds, err = resolver(ds_doc, 'file:///fake_bad_uri')
         if err is not None:
             ds_bad_ids.add(ds_doc["id"])
             continue
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
     for path, ds_doc in read_documents(dataset_add_configs.datasets_eo3):
-        ds, err = resolver(ds_doc, 'file:///fake_uri')
+        ds, err = resolver(ds_doc, 'file:///fake_eo3_uri')
         assert err is None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
@@ -268,7 +269,10 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh):
         assert idx.datasets.has(id_)
     for id_ in ds_bad_ids:
         assert not idx.datasets.has(id_)
-
+    loc_matches = idx.datasets.get_datasets_for_location("file:///fake", mode="prefix")
+    loc_ids = [loc.id for loc in loc_matches]
+    for id_ in ds_ids:
+        assert id_ in loc_ids
     ds_ = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
     assert UUID(ds_.id) in ds_ids
     ds_from_idx = idx.datasets.get(ds_.id, include_sources=True)
