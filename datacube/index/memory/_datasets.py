@@ -304,8 +304,28 @@ class DatasetResource(AbstractDatasetResource):
     def search_summaries(self, **query):
         return []
 
-    def get_product_time_bounds(self, product: str):
-        raise NotImplementedError()
+    def get_product_time_bounds(self, product: str) -> Tuple[datetime.datetime, datetime.datetime]:
+        min_time: Optional[datetime.datetime] = None
+        max_time: Optional[datetime.datetime] = None
+        prod = self.product_resource.get_by_name(product)
+        if prod is None:
+            raise ValueError(f"Product {product} not in index")
+        time_fld = prod.metadata_type.dataset_fields["time"]
+        for ds in self.active_by_id.values():
+            if ds.type.name != product:
+                continue
+            dsmin, dsmax = time_fld.extract(ds.metadata_doc)
+            if dsmax is None and dsmin is None:
+                continue
+            elif dsmin is None:
+                dsmin = dsmax
+            elif dsmax is None:
+                dsmax = dsmin
+            if min_time is None or dsmin < min_time:
+                min_time = dsmin
+            if max_time is None or dsmax > max_time:
+                max_time = dsmax
+        return (min_time, max_time)
 
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):

@@ -209,6 +209,9 @@ def test_mem_dataset_eo3(mem_index_dc_for_eo3_testing,
     dc.index.datasets.remove_location(ls8_ds.id, "file:///test_loc_1")
     assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_ds.id)
     assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_ds.id)
+    for prod in dc.index.products.get_all():
+        tmin, tmax = dc.index.datasets.get_product_time_bounds(prod.name)
+        assert (tmin is None and tmax is None) or tmin < tmax
     # Test archiving, restoring and purging datasets
     # Both datasets are not archived
     all_ids = list(dc.index.datasets.get_all_dataset_ids(False))
