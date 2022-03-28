@@ -209,6 +209,18 @@ def test_mem_dataset_eo3(mem_index_dc_for_eo3_testing,
     dc.index.datasets.remove_location(ls8_ds.id, "file:///test_loc_1")
     assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_ds.id)
     assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_ds.id)
+    # Test updates
+    raw = dc.index.datasets.get(ls8_ds.id)
+    raw.uris.append("file:///update_test_1")
+    raw.metadata_doc["properties"]["silly_sausages"] = ["weisswurst", "frankfurter"]
+    with pytest.raises(ValueError):
+        updated = dc.index.datasets.update(raw)
+    from datacube.utils import changes
+    updated = dc.index.datasets.update(raw, updates_allowed={
+        ("properties", "silly_sausages"): changes.allow_any
+    })
+    assert "silly_sausages" in updated.metadata_doc["properties"]
+    # Test get_product_time_bounds
     for prod in dc.index.products.get_all():
         tmin, tmax = dc.index.datasets.get_product_time_bounds(prod.name)
         assert (tmin is None and tmax is None) or tmin < tmax

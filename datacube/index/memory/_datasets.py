@@ -13,7 +13,9 @@ from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid
 from datacube.index.fields import Field
 from datacube.index.memory._products import ProductResource
 from datacube.model import Dataset, DatasetType
-from datacube.utils import jsonify_document
+from datacube.utils import jsonify_document, _readable_offset
+from datacube.utils import changes
+from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
 
 _LOG = logging.getLogger(__name__)
 
@@ -139,11 +141,86 @@ class DatasetResource(AbstractDatasetResource):
                 dups[vals] = [ds.id]
         return list(dups.items())
 
-    def can_update(self, dataset, updates_allowed=None):
-        raise NotImplementedError()
+    def can_update(self,
+                   dataset: Dataset,
+                   updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None
+                  ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
+        # Current exactly the same as postgres implementation.  Could be pushed up to base class?
+        existing = self.get(dataset.id, include_sources=dataset.sources is not None)
+        if not existing:
+            raise ValueError(
+                f'Unknown dataset {dataset.id}, cannot update - did you intend to add it?'
+            )
+        if dataset.type.name != existing.type.name:
+            raise ValueError(
+                f'Changing product is not supported. From {existing.type.name} to {dataset.type.name} in {dataset.id}'
+            )
+        # TODO: Determine (un)safe changes from metadata type
+        allowed = {
+            tuple(): changes.allow_extension
+        }
+        allowed.update(updates_allowed or {})
+        doc_changes = get_doc_changes(
+            existing.metadata_doc,
+            jsonify_document(dataset.metadata_doc)
+        )
+        good_changes, bad_changes = changes.classify_changes(doc_changes, allowed)
+        return not bad_changes, good_changes, bad_changes
 
-    def update(self, dataset: Dataset, updates_allowed=None):
-        raise NotImplementedError()
+    def update(self,
+               dataset: Dataset,
+               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None
+              ) -> Dataset:
+        existing = self.get(dataset.id)
+        if not existing:
+            raise ValueError(
+                f'Unknown dataset {dataset.id}, cannot update - did you intend to add it?'
+            )
+        elif existing.is_archived:
+            raise ValueError(f"Dataset {dataset.id} is archived.  Please restore before updating.")
+        can_update, safe_changes, unsafe_changes = self.can_update(dataset, updates_allowed)
+        if not safe_changes and not unsafe_changes:
+            self._update_locations(dataset, existing)
+            _LOG.info("No metadata changes detected for dataset %s", dataset.id)
+            return dataset
+
+        for offset, old_val, new_val in safe_changes:
+            _LOG.info(
+                "Safe metadata changes in %s from %r to %r",
+                _readable_offset(offset),
+                old_val,
+                new_val
+            )
+        for offset, old_val, new_val in safe_changes:
+            _LOG.warning(
+                "Unsafe metadata changes in %s from %r to %r",
+                _readable_offset(offset),
+                old_val,
+                new_val
+            )
+
+        if not can_update:
+            unsafe_txt = ", ".join(_readable_offset(offset) for offset, _, _ in unsafe_changes)
+            raise ValueError(f"Unsafe metadata changes in {dataset.id}: {unsafe_txt}")
+
+        # Apply update
+        _LOG.info("Updating dataset %s", dataset.id)
+        persistable = self.clone(dataset, for_save=True)
+        self.by_id[dataset.id] = persistable
+        self.active_by_id[dataset.id] = persistable
+        return self.get(dataset.id)
+
+    def _update_locations(self,
+                          dataset: Dataset,
+                          existing: Optional[Dataset] = None
+                         ) -> bool:
+        skip_set = set([None] + existing.uris if existing is not None else [])
+        new_uris = [uri for uri in dataset.uris if uri not in skip_set]
+        if len(new_uris):
+            _LOG.info("Adding locations for dataset %s: %s", dataset.id, ", ".join(new_uris))
+        for uri in reversed(new_uris):
+            self.add_location(dataset.id, uri)
+        return len(new_uris) > 0
 
     def archive(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
