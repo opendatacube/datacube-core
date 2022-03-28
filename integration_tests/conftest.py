@@ -79,23 +79,35 @@ def base_eo3_product_doc():
 
 
 @pytest.fixture
-def mem_index_dc_for_eo3_testing(in_memory_config,
-                                 extended_eo3_metadata_type_doc,
-                                 extended_eo3_product_doc,
-                                 base_eo3_product_doc):
-    from datacube import Datacube
-    with Datacube(config=in_memory_config) as dc:
-        dc.index.metadata_types.add(dc.index.metadata_types.from_doc(extended_eo3_metadata_type_doc))
-        dc.index.products.add_document(base_eo3_product_doc)
-        dc.index.products.add_document(extended_eo3_product_doc)
-        yield dc
-
-
-@pytest.fixture
 def mem_index_fresh(in_memory_config):
     from datacube import Datacube
     with Datacube(config=in_memory_config) as dc:
         yield dc
+
+
+@pytest.fixture
+def mem_index_eo3(mem_index_fresh,
+                  extended_eo3_metadata_type_doc,
+                  extended_eo3_product_doc,
+                  base_eo3_product_doc):
+    mem_index_fresh.index.metadata_types.add(
+        mem_index_fresh.index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
+    )
+    mem_index_fresh.index.products.add_document(base_eo3_product_doc)
+    mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
+    return mem_index_fresh
+
+
+@pytest.fixture
+def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
+    (doc_ls8, loc_ls8), (doc_wo, loc_wo) = datasets_with_unembedded_lineage_doc
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(mem_index_eo3.index)
+    ds_ls8, err = resolver(doc_ls8, loc_ls8)
+    mem_index_eo3.index.datasets.add(ds_ls8)
+    ds_wo, err = resolver(doc_wo, loc_wo)
+    mem_index_eo3.index.datasets.add(ds_wo)
+    return mem_index_eo3, ds_ls8.id, ds_wo.id
 
 
 @pytest.fixture
