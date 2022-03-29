@@ -175,8 +175,6 @@ global_cli_options = compose(
 @click.group(help="Data Cube command-line interface", context_settings=CLICK_SETTINGS)
 @global_cli_options
 def cli():
-    import pydevd_pycharm
-    pydevd_pycharm.settrace('localhost', port=54321, stdoutToServer=True, stderrToServer=True)
     pass
 
 

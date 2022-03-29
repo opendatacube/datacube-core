@@ -443,7 +443,7 @@ class AbstractProductResource(ABC):
     @abstractmethod
     def search_robust(self,
                       **query: QueryField
-                     ) -> Iterable[Tuple[Product, Mapping]]:
+                     ) -> Iterable[Tuple[Product, Mapping[str, QueryField]]]:
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
 
@@ -733,7 +733,7 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def search_by_metadata(self,
-                           metadata: Mapping[str, Any]
+                           metadata: Mapping[str, QueryField]
                           ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
@@ -747,6 +747,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search(self,
                limit: Optional[int] = None,
+               source_filter: Optional[Mapping[str, QueryField]] = None,
                **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.

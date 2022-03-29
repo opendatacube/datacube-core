@@ -529,15 +529,15 @@ class DatasetResource(AbstractDatasetResource):
             for dataset in self._make_many(connection.search_datasets_by_metadata(metadata)):
                 yield dataset
 
-    def search(self, limit=None, **query):
+    def search(self, limit=None, source_filter=None, **query):
         """
         Perform a search, returning results as Dataset objects.
 
         :param Union[str,float,Range,list] query:
+        :param int source_filter: query terms against source datasets
         :param int limit: Limit number of datasets
         :rtype: __generator[Dataset]
         """
-        source_filter = query.pop('source_filter', None)
         for product, datasets in self._do_search_by_product(query,
                                                             source_filter=source_filter,
                                                             limit=limit):

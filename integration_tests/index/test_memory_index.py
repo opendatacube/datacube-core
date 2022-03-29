@@ -273,6 +273,24 @@ def test_mem_ds_archive_purge(mem_eo3_data):
     assert archived_ids == []
 
 
+def test_mem_ds_search(mem_eo3_data):
+    dc, ls8_id, wo_id = mem_eo3_data
+    # No source_filter; no results
+    assert not list(dc.index.datasets.search(platform="deplatformed"))
+    lds = list(dc.index.datasets.search(platform='landsat-8'))
+    assert len(lds) == 2
+    lds = list(dc.index.datasets.search(platform='landsat-8', limit=1))
+    assert len(lds) == 1
+    lds = list(dc.index.datasets.search(source_filter={"product_family": 'ard'}))
+    assert len(lds) == 1
+    lds = list(dc.index.datasets.search(platform='landsat-8', source_filter={"product_family": 'ard'}))
+    assert len(lds) == 1
+    lds = list(dc.index.datasets.search(product_family='wo', source_filter={"product_family": 'ard'}))
+    assert len(lds) == 1
+    lds = list(dc.index.datasets.search(product_family='ard', source_filter={"product_family": 'ard'}))
+    assert len(lds) == 0
+
+
 # Tests adapted from test_dataset_add
 def test_memory_dataset_add(dataset_add_configs, mem_index_fresh):
     idx = mem_index_fresh.index

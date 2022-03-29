@@ -9,10 +9,12 @@ from collections import namedtuple
 from typing import Callable, Iterable, List, Mapping, Optional, Set, Tuple, Union
 from uuid import UUID
 
-from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid
+from datacube.index import fields
+
+from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid, QueryField
 from datacube.index.fields import Field
 from datacube.index.memory._products import ProductResource
-from datacube.model import Dataset, DatasetType
+from datacube.model import Dataset, DatasetType as Product
 from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes
 from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
@@ -35,6 +37,8 @@ class DatasetResource(AbstractDatasetResource):
         # Location registers
         self.locations: Mapping[UUID, List[str]] = {}
         self.archived_locations: Mapping[UUID, List[Tuple[str, datetime.datetime]]] = {}
+        # Active Index By Product
+        self.by_product: Mapping[str, List[UUID]] = {}
 
     def get(self, id_: DSID, include_sources: bool = False) -> Optional[Dataset]:
         try:
@@ -86,6 +90,10 @@ class DatasetResource(AbstractDatasetResource):
             else:
                 self.locations[persistable.id] = []
             self.archived_locations[persistable.id] = []
+            if dataset.type.name in self.by_product:
+                self.by_product[dataset.type.name].append(dataset.id)
+            else:
+                self.by_product[dataset.type.name] = [dataset.id]
         return self.get(dataset.id)
 
     def persist_source_relationship(self, ds: Dataset, src: Dataset, classifier: str) -> None:
@@ -111,7 +119,7 @@ class DatasetResource(AbstractDatasetResource):
         self.derivations[src.id][classifier] = ds.id
 
     def search_product_duplicates(self,
-                                  product: DatasetType,
+                                  product: Product,
                                   *args: Union[str, Field]
                                   ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
         GroupedVals = namedtuple('search_result', args)
@@ -227,6 +235,7 @@ class DatasetResource(AbstractDatasetResource):
             id_ = dsid_to_uuid(id_)
             if id_ in self.active_by_id:
                 ds = self.active_by_id.pop(id_)
+                self.by_product[ds.type.name] = [i for i in self.by_product[ds.type.name] if i != ds.id]
                 ds.archived_time = datetime.datetime.now()
                 self.archived_by_id[id_] = ds
 
@@ -237,6 +246,7 @@ class DatasetResource(AbstractDatasetResource):
                 ds = self.archived_by_id.pop(id_)
                 ds.archived_time = None
                 self.active_by_id[id_] = ds
+                self.by_product[ds.type.name].append(ds.id)
 
     def purge(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
@@ -357,8 +367,65 @@ class DatasetResource(AbstractDatasetResource):
     def search_by_metadata(self, metadata):
         return []
 
-    def search(self, limit=None, **query):
-        return []
+    def search(self,
+               limit: Optional[int] = None,
+               source_filter: Optional[Mapping[str, QueryField]] = None,
+               **query: QueryField) -> Iterable[Dataset]:
+        def get_prod_queries(**query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
+            return ((q, product) for  product, q in self.product_resource.search_robust(**query))
+
+        if source_filter:
+            product_queries = list(get_prod_queries(**source_filter))
+            if not product_queries:
+                raise ValueError(f"No products match source filter: {source_filter}")
+            if len(product_queries) > 1:
+                raise RuntimeError(f"Multiproduct source_filters are not supported. Try adding 'product' field.")
+            source_queries, source_product = product_queries[0]
+            source_exprs = tuple(fields.to_expressions(source_product.metadata_type.dataset_fields.get, **source_queries))
+        else:
+            source_product = None
+            source_exprs = ()
+        product_queries = list(get_prod_queries(**query))
+        if not product_queries:
+            prod_name = query.get('product')
+            if prod_name is None:
+                raise ValueError(f'No products match search terms: {query}')
+            else:
+                raise ValueError(f'No such product: {prod_name}')
+
+        matches = 0
+        for q, product in product_queries:
+            if limit is not None and matches >= limit:
+                break
+            query_exprs = tuple(fields.to_expressions(product.metadata_type.dataset_fields.get, **q))
+            for dsid in self.by_product.get(product.name, []):
+                if limit is not None and matches >= limit:
+                    break
+                ds = self.get(dsid, include_sources=True)
+                query_matches = True
+                for expr in query_exprs:
+                    if not expr.evaluate(ds.metadata_doc):
+                        query_matches = False
+                        break
+                if not query_matches:
+                    continue
+                if source_product:
+                    matching_source = None
+                    for sds in ds.sources.values():
+                        if sds.type != source_product:
+                            continue
+                        source_matches = True
+                        for expr in source_exprs:
+                            if not expr.evaluate(sds.metadata_doc):
+                                source_matches = False
+                                break
+                        if source_matches:
+                            matching_source = sds
+                            break
+                    if not matching_source:
+                        continue
+                matches += 1
+                yield ds
 
     def search_by_product(self, **query):
         return []
@@ -388,9 +455,8 @@ class DatasetResource(AbstractDatasetResource):
         if prod is None:
             raise ValueError(f"Product {product} not in index")
         time_fld = prod.metadata_type.dataset_fields["time"]
-        for ds in self.active_by_id.values():
-            if ds.type.name != product:
-                continue
+        for dsid in self.by_product.get(product, []):
+            ds = self.get(dsid)
             dsmin, dsmax = time_fld.extract(ds.metadata_doc)
             if dsmax is None and dsmin is None:
                 continue

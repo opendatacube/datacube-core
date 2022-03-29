@@ -121,7 +121,7 @@ class ProductResource(AbstractProductResource):
             else:
                 yield prod
 
-    def search_robust(self, **query: QueryField) -> Iterator[Tuple[Product, Mapping]]:
+    def search_robust(self, **query: QueryField) -> Iterator[Tuple[Product, Mapping[str, QueryField]]]:
         def listify(v):
             if isinstance(v, tuple):
                 return list()
