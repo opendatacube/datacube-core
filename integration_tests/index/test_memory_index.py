@@ -273,22 +273,25 @@ def test_mem_ds_archive_purge(mem_eo3_data):
     assert archived_ids == []
 
 
-def test_mem_ds_search(mem_eo3_data):
+def test_mem_ds_search_and_count(mem_eo3_data):
     dc, ls8_id, wo_id = mem_eo3_data
     # No source_filter; no results
     assert not list(dc.index.datasets.search(platform="deplatformed"))
     lds = list(dc.index.datasets.search(platform='landsat-8'))
     assert len(lds) == 2
+    assert dc.index.datasets.count(platform='landsat-8') == 2
     lds = list(dc.index.datasets.search(platform='landsat-8', limit=1))
     assert len(lds) == 1
     lds = list(dc.index.datasets.search(source_filter={"product_family": 'ard'}))
     assert len(lds) == 1
+    assert dc.index.datasets.count(source_filter={"product_family": 'ard'}) == 1
     lds = list(dc.index.datasets.search(platform='landsat-8', source_filter={"product_family": 'ard'}))
     assert len(lds) == 1
     lds = list(dc.index.datasets.search(product_family='wo', source_filter={"product_family": 'ard'}))
     assert len(lds) == 1
     lds = list(dc.index.datasets.search(product_family='ard', source_filter={"product_family": 'ard'}))
     assert len(lds) == 0
+    assert dc.index.datasets.count(product_family='ard', source_filter={"product_family": 'ard'}) == 0
 
 
 def test_mem_ds_search_by_metadata(mem_eo3_data):

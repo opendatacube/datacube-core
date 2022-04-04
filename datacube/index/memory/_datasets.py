@@ -436,8 +436,8 @@ class DatasetResource(AbstractDatasetResource):
     def search_returning(self, field_names, limit=None, **query):
         return []
 
-    def count(self, **query):
-        return 0
+    def count(self, **query: QueryField) -> int:
+        return len(list(self.search(**query)))
 
     def count_by_product(self, **query):
         return []
