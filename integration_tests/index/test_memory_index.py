@@ -291,6 +291,18 @@ def test_mem_ds_search(mem_eo3_data):
     assert len(lds) == 0
 
 
+def test_mem_ds_search_by_metadata(mem_eo3_data):
+    dc, ls8_id, wo_id = mem_eo3_data
+    lds = list(dc.index.datasets.search_by_metadata({"product_family": "ard"}))
+    assert len(lds) == 0
+    lds = list(dc.index.datasets.search_by_metadata({"odc:product_family": "ard"}))
+    assert len(lds) == 1
+    lds = list(dc.index.datasets.search_by_metadata({"platform": "landsat-8"}))
+    assert len(lds) == 0
+    lds = list(dc.index.datasets.search_by_metadata({"eo:platform": "landsat-8"}))
+    assert len(lds) == 2
+
+
 # Tests adapted from test_dataset_add
 def test_memory_dataset_add(dataset_add_configs, mem_index_fresh):
     idx = mem_index_fresh.index

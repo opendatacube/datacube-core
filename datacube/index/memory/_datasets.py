@@ -18,6 +18,7 @@ from datacube.model import Dataset, DatasetType as Product
 from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes
 from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
+from datacube.utils.documents import metadata_subset
 
 _LOG = logging.getLogger(__name__)
 
@@ -364,8 +365,10 @@ class DatasetResource(AbstractDatasetResource):
         self.locations[uuid].append(uri)
         return True
 
-    def search_by_metadata(self, metadata):
-        return []
+    def search_by_metadata(self, metadata: Mapping[str, QueryField]):
+        for ds in self.active_by_id.values():
+            if metadata_subset(metadata, ds.metadata_doc):
+                yield ds
 
     def search(self,
                limit: Optional[int] = None,
