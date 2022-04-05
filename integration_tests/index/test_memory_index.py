@@ -294,6 +294,21 @@ def test_mem_ds_search_and_count(mem_eo3_data):
     assert dc.index.datasets.count(product_family='ard', source_filter={"product_family": 'ard'}) == 0
 
 
+def test_mem_ds_search_and_count_by_product(mem_eo3_data):
+    dc, ls8_id, wo_id = mem_eo3_data
+    # No source_filter; no results
+    assert not list(dc.index.datasets.search_by_product(platform="deplatformed"))
+    lds = list(dc.index.datasets.search_by_product(platform='landsat-8'))
+    assert len(lds) == 2
+    for dss, product in lds:
+        for ds in dss:
+            assert ds.type.name == product.name
+    lds = list(dc.index.datasets.count_by_product(platform='landsat-8'))
+    assert len(lds) == 2
+    for prod, count in lds:
+        assert count == 1
+
+
 def test_mem_ds_search_by_metadata(mem_eo3_data):
     dc, ls8_id, wo_id = mem_eo3_data
     lds = list(dc.index.datasets.search_by_metadata({"product_family": "ard"}))

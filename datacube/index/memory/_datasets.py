@@ -370,7 +370,11 @@ class DatasetResource(AbstractDatasetResource):
             if metadata_subset(metadata, ds.metadata_doc):
                 yield ds
 
-    def search(self,
+    RET_FORMAT_DATASETS = 0
+    RET_FORMAT_PRODUCT_GROUPED = 1
+
+    def _search(self,
+               return_format: int,
                limit: Optional[int] = None,
                source_filter: Optional[Mapping[str, QueryField]] = None,
                **query: QueryField) -> Iterable[Dataset]:
@@ -401,6 +405,7 @@ class DatasetResource(AbstractDatasetResource):
             if limit is not None and matches >= limit:
                 break
             query_exprs = tuple(fields.to_expressions(product.metadata_type.dataset_fields.get, **q))
+            product_results = []
             for dsid in self.by_product.get(product.name, []):
                 if limit is not None and matches >= limit:
                     break
@@ -428,10 +433,21 @@ class DatasetResource(AbstractDatasetResource):
                     if not matching_source:
                         continue
                 matches += 1
-                yield ds
+                if return_format == self.RET_FORMAT_DATASETS:
+                    yield ds
+                elif return_format == self.RET_FORMAT_PRODUCT_GROUPED:
+                    product_results.append(ds)
+            if return_format == self.RET_FORMAT_PRODUCT_GROUPED and product_results:
+                yield (product_results, product)
 
-    def search_by_product(self, **query):
-        return []
+    def search(self,
+               limit: Optional[int] = None,
+               source_filter: Optional[Mapping[str, QueryField]] = None,
+               **query: QueryField) -> Iterable[Dataset]:
+        return self._search(self.RET_FORMAT_DATASETS, limit=limit, source_filter=source_filter, **query)
+
+    def search_by_product(self, **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
+        return self._search(self.RET_FORMAT_PRODUCT_GROUPED, **query)
 
     def search_returning(self, field_names, limit=None, **query):
         return []
@@ -439,8 +455,9 @@ class DatasetResource(AbstractDatasetResource):
     def count(self, **query: QueryField) -> int:
         return len(list(self.search(**query)))
 
-    def count_by_product(self, **query):
-        return []
+    def count_by_product(self, **query: QueryField) -> Iterable[Tuple[Product, int]]:
+        for datasets, prod in self.search_by_product(**query):
+            yield (prod, len(datasets))
 
     def count_by_product_through_time(self, period, **query):
         return []
