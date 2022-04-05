@@ -5,12 +5,12 @@
 import logging
 
 from datacube.index.memory._datasets import DatasetResource  # type: ignore
+from datacube.index.memory._fields import get_dataset_fields
 from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.index.memory._products import ProductResource
 from datacube.index.memory._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver
 from datacube.model import MetadataType
-from datacube.model.fields import get_dataset_fields
 
 _LOG = logging.getLogger(__name__)
 

@@ -309,6 +309,20 @@ def test_mem_ds_search_and_count_by_product(mem_eo3_data):
         assert count == 1
 
 
+def test_mem_ds_search_returning(mem_eo3_data):
+    dc, ls8_id, wo_id = mem_eo3_data
+    lds = list(dc.index.datasets.search_returning(
+        field_names=[
+            "platform", "id", "product_family"
+        ],
+        platform='landsat-8'
+    ))
+    assert len(lds) == 2
+    for res in lds:
+        assert res.platform == "landsat-8"
+        assert res.id == str(ls8_id) or res.id == str(wo_id)
+
+
 def test_mem_ds_search_by_metadata(mem_eo3_data):
     dc, ls8_id, wo_id = mem_eo3_data
     lds = list(dc.index.datasets.search_by_metadata({"product_family": "ard"}))

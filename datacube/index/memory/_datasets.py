@@ -13,6 +13,7 @@ from datacube.index import fields
 
 from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid, QueryField
 from datacube.index.fields import Field
+from datacube.index.memory._fields import get_dataset_fields
 from datacube.index.memory._products import ProductResource
 from datacube.model import Dataset, DatasetType as Product
 from datacube.utils import jsonify_document, _readable_offset
@@ -449,8 +450,19 @@ class DatasetResource(AbstractDatasetResource):
     def search_by_product(self, **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
         return self._search(self.RET_FORMAT_PRODUCT_GROUPED, **query)
 
-    def search_returning(self, field_names, limit=None, **query):
-        return []
+    def search_returning(self,
+                         field_names: Iterable[str],
+                         limit: Optional[int] = None,
+                         **query: QueryField) -> Iterable[Tuple]:
+        field_names = list(field_names)
+        result_type = namedtuple('search_result', field_names)
+        for ds in self.search(limit=limit, **query):
+            ds_fields = get_dataset_fields(ds.type.metadata_type.definition)
+            result_vals = {
+                 fn: ds_fields[fn].extract(ds.metadata_doc)
+                 for fn in field_names
+            }
+            yield result_type(**result_vals)
 
     def count(self, **query: QueryField) -> int:
         return len(list(self.search(**query)))
