@@ -8,7 +8,7 @@ from typing import Any, Iterable, Mapping, Tuple
 
 from datacube.index.abstract import AbstractMetadataTypeResource, default_metadata_type_docs
 from datacube.model import MetadataType
-from datacube.model.fields import get_dataset_fields
+from datacube.index.memory._fields import get_dataset_fields
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import Change, check_doc_unchanged, get_doc_changes
 

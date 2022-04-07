@@ -6,7 +6,8 @@ import datetime
 import logging
 import warnings
 from collections import namedtuple
-from typing import Callable, Iterable, List, Mapping, Optional, Set, Tuple, Union
+from typing import (Any, Callable, Iterable, List, Mapping,
+                    Optional, Set, Tuple, Union)
 from uuid import UUID
 
 from datacube.index import fields
@@ -477,8 +478,12 @@ class DatasetResource(AbstractDatasetResource):
     def count_product_through_time(self, period, **query):
         return []
 
-    def search_summaries(self, **query):
-        return []
+    def search_summaries(self, **query: QueryField) -> Iterable[Mapping[str, Any]]:
+        def make_summary(ds: Dataset) -> Mapping[str, Any]:
+            fields = ds.metadata_type.dataset_fields
+            return {field_name: field.extract(ds.metadata_doc) for field_name, field in fields.items()}
+        for ds in self.search(**query):
+            yield make_summary(ds)
 
     def get_product_time_bounds(self, product: str) -> Tuple[datetime.datetime, datetime.datetime]:
         min_time: Optional[datetime.datetime] = None

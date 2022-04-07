@@ -28,7 +28,7 @@ def get_native_fields() -> Mapping[str, Field]:
             name="format",
             description="File format (GeoTIFF, NetCDF)"
         ),
-        "metadat_doc": SimpleField(
+        "metadata_doc": SimpleField(
             [],
             str, 'string',
             name="metadata_doc",

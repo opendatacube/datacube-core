@@ -320,7 +320,16 @@ def test_mem_ds_search_returning(mem_eo3_data):
     assert len(lds) == 2
     for res in lds:
         assert res.platform == "landsat-8"
-        assert res.id == str(ls8_id) or res.id == str(wo_id)
+        assert res.id in (str(ls8_id), str(wo_id))
+
+
+def test_mem_ds_search_summary(mem_eo3_data):
+    dc, ls8_id, wo_id = mem_eo3_data
+    lds = list(dc.index.datasets.search_summaries(platform='landsat-8'))
+    assert len(lds) == 2
+    for res in lds:
+        assert res["platform"] == "landsat-8"
+        assert res["id"] in (str(ls8_id), str(wo_id))
 
 
 def test_mem_ds_search_by_metadata(mem_eo3_data):
