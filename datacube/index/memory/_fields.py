@@ -1,5 +1,6 @@
 from typing import Any, Mapping
 from datacube.model.fields import SimpleField, Field, get_dataset_fields as generic_get_dataset_fields
+from datacube.index.abstract import Offset
 
 # TODO: SimpleFields cannot handle non-metadata fields because e.g. the extract API expects a doc, not a Dataset model
 def get_native_fields() -> Mapping[str, Field]:
@@ -40,3 +41,14 @@ def get_dataset_fields(metadata_definition: Mapping[str, Any]) -> Mapping[str, F
     fields = get_native_fields()
     fields.update(generic_get_dataset_fields(metadata_definition))
     return fields
+
+def build_custom_fields(custom_offsets: Mapping[str, Offset]):
+    return {
+        name: SimpleField(
+            offset,
+            lambda x: x, 'Any',
+            name=name,
+            description=f"Custom field: {name}"
+        )
+        for name, offset in custom_offsets.items()
+    }

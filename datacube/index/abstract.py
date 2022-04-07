@@ -14,7 +14,7 @@ from uuid import UUID
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
-from datacube.utils import read_documents, InvalidDocException
+from datacube.utils import cached_property, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset
 
 
@@ -867,7 +867,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_returning_datasets_light(self,
                                         field_names: Tuple[str, ...],
-                                        custom_offsets: Optional[Mapping[str, str]] = None,
+                                        custom_offsets: Optional[Mapping[str, Offset]] = None,
                                         limit: Optional[int] = None,
                                         **query: QueryField
                                        ) -> Iterable[Tuple]:
@@ -975,3 +975,27 @@ class AbstractIndexDriver(ABC):
                               ) -> MetadataType:
         pass
 
+
+# NB. The special handling of grid_spatial, etc appears to NOT apply to EO3.
+class DatasetSpatialMixin(object):
+    __slots__ = ()
+
+    @property
+    def _gs(self):
+        return self.grid_spatial
+
+    @property
+    def crs(self):
+        return Dataset.crs.__get__(self)
+
+    @cached_property
+    def extent(self):
+        return Dataset.extent.func(self)
+
+    @property
+    def transform(self):
+        return Dataset.transform.__get__(self)
+
+    @property
+    def bounds(self):
+        return Dataset.bounds.__get__(self)

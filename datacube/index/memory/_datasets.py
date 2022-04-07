@@ -12,9 +12,9 @@ from uuid import UUID
 
 from datacube.index import fields
 
-from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid, QueryField
+from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid, QueryField, DatasetSpatialMixin
 from datacube.index.fields import Field
-from datacube.index.memory._fields import get_dataset_fields
+from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.index.memory._products import ProductResource
 from datacube.model import Dataset, DatasetType as Product
 from datacube.utils import jsonify_document, _readable_offset
@@ -508,8 +508,37 @@ class DatasetResource(AbstractDatasetResource):
         return (min_time, max_time)
 
     # pylint: disable=redefined-outer-name
-    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
-        return []
+    def search_returning_datasets_light(
+            self,
+            field_names: Tuple[str, ...],
+            custom_offsets: Optional[Mapping[str, Offset]] = None,
+            limit: Optional[int] = None,
+            **query: QueryField
+    ) -> Iterable[Tuple]:
+        if custom_offsets:
+            custom_fields = build_custom_fields(custom_offsets)
+        else:
+            custom_fields = {}
+        def make_ds_light(ds: Dataset) -> Tuple:
+            fields = {
+                fname: ds.metadata_type.dataset_fields[fname]
+                for fname in field_names
+            }
+            fields.update(custom_fields)
+            result_type = namedtuple('DatasetLight', list(fields.keys()))
+            if 'grid_spatial' in fields:
+                class DatasetLight(result_type, DatasetSpatialMixin):
+                    pass
+            else:
+                class DatasetLight(result_type):
+                    __slots__ = ()
+            fld_vals = {
+                fname: field.extract(ds.metadata_doc)
+                for fname, field in fields.items()
+            }
+            return DatasetLight(**fld_vals)
+        for ds in self.search(limit=limit, **query):
+            yield make_ds_light(ds)
 
     def clone(self, orig: Dataset, for_save=False, lookup_locations=True) -> Dataset:
         if for_save:

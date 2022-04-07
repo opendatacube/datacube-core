@@ -332,6 +332,18 @@ def test_mem_ds_search_summary(mem_eo3_data):
         assert res["id"] in (str(ls8_id), str(wo_id))
 
 
+def test_mem_ds_search_returning_datasets_light(mem_eo3_data):
+    dc, ls8_id, wo_id = mem_eo3_data
+    lds = list(dc.index.datasets.search_returning_datasets_light(
+        field_names=['platform', 'id'],
+        platform='landsat-8'))
+    assert len(lds) == 2
+    for res in lds:
+        assert res.__class__.__name__ == 'DatasetLight'
+        assert res.platform == "landsat-8"
+        assert res.id in (str(ls8_id), str(wo_id))
+
+
 def test_mem_ds_search_by_metadata(mem_eo3_data):
     dc, ls8_id, wo_id = mem_eo3_data
     lds = list(dc.index.datasets.search_by_metadata({"product_family": "ard"}))
