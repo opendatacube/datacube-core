@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import logging
+import re
 import warnings
 from collections import namedtuple
+from dateutil import tz
 from typing import (Any, Callable, Iterable, List, Mapping,
                     Optional, Set, Tuple, Union)
 from uuid import UUID
@@ -16,13 +18,19 @@ from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid,
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.index.memory._products import ProductResource
-from datacube.model import Dataset, DatasetType as Product
+from datacube.model import Dataset, DatasetType as Product, Range, ranges_overlap
 from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes
 from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
 from datacube.utils.documents import metadata_subset
 
 _LOG = logging.getLogger(__name__)
+
+
+def _default_utc(d):
+    if d.tzinfo is None:
+        return d.replace(tzinfo=tz.tzutc())
+    return d
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -375,16 +383,16 @@ class DatasetResource(AbstractDatasetResource):
     RET_FORMAT_DATASETS = 0
     RET_FORMAT_PRODUCT_GROUPED = 1
 
-    def _search(self,
-               return_format: int,
-               limit: Optional[int] = None,
-               source_filter: Optional[Mapping[str, QueryField]] = None,
-               **query: QueryField) -> Iterable[Dataset]:
-        def get_prod_queries(**query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
-            return ((q, product) for  product, q in self.product_resource.search_robust(**query))
+    def _search(
+            self,
+            return_format: int,
+            limit: Optional[int] = None,
+            source_filter: Optional[Mapping[str, QueryField]] = None,
+            **query: QueryField
+    ) -> Iterable[Dataset]:
 
         if source_filter:
-            product_queries = list(get_prod_queries(**source_filter))
+            product_queries = list(self._get_prod_queries(**source_filter))
             if not product_queries:
                 raise ValueError(f"No products match source filter: {source_filter}")
             if len(product_queries) > 1:
@@ -394,7 +402,7 @@ class DatasetResource(AbstractDatasetResource):
         else:
             source_product = None
             source_exprs = ()
-        product_queries = list(get_prod_queries(**query))
+        product_queries = list(self._get_prod_queries(**query))
         if not product_queries:
             prod_name = query.get('product')
             if prod_name is None:
@@ -442,6 +450,9 @@ class DatasetResource(AbstractDatasetResource):
             if return_format == self.RET_FORMAT_PRODUCT_GROUPED and product_results:
                 yield (product_results, product)
 
+    def _get_prod_queries(self, **query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
+        return ((q, product) for product, q in self.product_resource.search_robust(**query))
+
     def search(self,
                limit: Optional[int] = None,
                source_filter: Optional[Mapping[str, QueryField]] = None,
@@ -472,11 +483,124 @@ class DatasetResource(AbstractDatasetResource):
         for datasets, prod in self.search_by_product(**query):
             yield (prod, len(datasets))
 
-    def count_by_product_through_time(self, period, **query):
-        return []
+    def count_by_product_through_time(self,
+            period: str,
+            **query: QueryField
+    ) -> Iterable[
+        Tuple[
+            Product,
+            Iterable[
+                Tuple[Range, int]
+            ]
+        ]
+    ]:
+        return self._product_period_count(period, **query)
 
-    def count_product_through_time(self, period, **query):
-        return []
+    def _expand_period(
+            self,
+            period: str,
+            begin: datetime.datetime,
+            end: datetime.datetime
+    ) -> Iterable[Range]:
+        begin = _default_utc(begin)
+        end = _default_utc(end)
+        match = re.match(r'(?P<precision>[0-9]+) (?P<unit>day|month|week|year)', period)
+        if not match:
+            raise ValueError('Invalid period string. Must specify a number of days, weeks, months or years')
+        precision = int(match.group("precision"))
+        if precision <= 0:
+            raise ValueError('Invalid period string. Must specify a natural number of days, weeks, months or years')
+        unit = match.group("unit")
+        def next_period(prev: datetime.datetime) -> datetime.datetime:
+            if unit == 'day':
+                return prev + datetime.timedelta(days=precision)
+            elif unit == 'week':
+                return prev + datetime.timedelta(days=precision * 7)
+            elif unit == 'year':
+                return datetime.datetime(
+                    prev.year + precision,
+                    prev.month,
+                    prev.day,
+                    prev.hour,
+                    prev.minute,
+                    prev.second,
+                    tzinfo=prev.tzinfo
+                )
+            # unit == month
+            year = prev.year
+            month = prev.month
+            month += precision
+            while month > 12:
+                month -= 12
+                year += 1
+            day = prev.day
+            while True:
+                try:
+                    return datetime.datetime(
+                        year,
+                        month,
+                        day,
+                        prev.hour,
+                        prev.minute,
+                        prev.second,
+                        tzinfo=prev.tzinfo
+                    )
+                except ValueError:
+                    day -= 1
+        period_start = begin
+        while period_start < end:
+            period_end = next_period(period_start)
+            yield Range(begin=period_start, end=period_end)
+            period_start = period_end
+
+    def _product_period_count(
+            self,
+            period: str,
+            single_product_only: bool = False,
+            **query: QueryField
+    ) -> Iterable[
+        Tuple[
+            Product,
+            Iterable[
+                Tuple[Range, int]
+            ],
+        ]
+    ]:
+        query = dict(query)
+        try:
+            start, end = query.pop('time')
+        except KeyError:
+            raise ValueError('Must specify "time" range in period-counting query')
+        periods = self._expand_period(period, start, end)
+        last_product: Optional[Tuple] = None
+        for dss, product in self._search(return_format=self.RET_FORMAT_PRODUCT_GROUPED, **query):
+            if last_product and single_product_only:
+                raise ValueError(f"Multiple products match single query search: {repr(query)}")
+            if last_product:
+                yield last_product
+            period_counts = []
+            for p in periods:
+                count = 0
+                for ds in dss:
+                    if ranges_overlap(ds.time, p):
+                        count += 1
+                period_counts.append((p, count))
+            retval = (product, period_counts)
+            if last_product is not None:
+                yield retval
+            last_product = retval
+
+        if last_product is None:
+            raise ValueError(f"No products match search terms: {repr(query)}")
+        else:
+            yield last_product
+
+    def count_product_through_time(
+            self,
+            period: str,
+            **query: QueryField
+    ) -> Iterable[Tuple[Range, int]]:
+        return next(self._product_period_count(period, single_product_only=True, **query))[1]
 
     def search_summaries(self, **query: QueryField) -> Iterable[Mapping[str, Any]]:
         def make_summary(ds: Dataset) -> Mapping[str, Any]:

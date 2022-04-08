@@ -5,3 +5,9 @@
 from collections import namedtuple
 
 Range = namedtuple('Range', ('begin', 'end'))
+
+
+def ranges_overlap(ra: Range, rb: Range) -> bool:
+    if ra.begin <= rb.begin:
+        return ra.end > rb.begin
+    return rb.end > ra.begin

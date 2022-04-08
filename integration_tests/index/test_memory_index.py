@@ -11,6 +11,7 @@ from datacube.testutils import gen_dataset_test_dag
 from datacube.utils import InvalidDocException, read_documents, SimpleDocNav
 
 from datacube import Datacube
+from datacube.model import Range
 
 
 def test_init_memory(in_memory_config):
@@ -238,6 +239,108 @@ def test_mem_ds_updates(mem_eo3_data):
     assert "silly_sausages" in updated.metadata_doc["properties"]
 
 
+def test_mem_ds_expand_periods(mem_index_fresh):
+    periods = list(mem_index_fresh.index.datasets._expand_period(
+        "1 day",
+        datetime.datetime(2016, 5, 5),
+        datetime.datetime(2016, 5, 8),
+    ))
+    assert periods == [
+        Range(
+            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 6, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 5, 6, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc)
+        ),
+    ]
+    periods = list(mem_index_fresh.index.datasets._expand_period(
+        "2 days",
+        datetime.datetime(2016, 5, 5),
+        datetime.datetime(2016, 5, 8),
+    ))
+    assert periods == [
+        Range(
+            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 9, tzinfo=datetime.timezone.utc)
+        ),
+    ]
+    periods = list(mem_index_fresh.index.datasets._expand_period(
+        "1 weeks",
+        datetime.datetime(2016, 5, 1),
+        datetime.datetime(2016, 5, 25),
+    ))
+    assert periods == [
+        Range(
+            datetime.datetime(2016, 5, 1, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 15, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 5, 15, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 22, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 5, 22, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 29, tzinfo=datetime.timezone.utc)
+        ),
+    ]
+    periods = list(mem_index_fresh.index.datasets._expand_period(
+        "2 months",
+        datetime.datetime(2016, 3, 5),
+        datetime.datetime(2016, 12, 25),
+    ))
+    assert periods == [
+        Range(
+            datetime.datetime(2016, 3, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 7, 5, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 7, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 9, 5, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 9, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 11, 5, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2016, 11, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2017, 1, 5, tzinfo=datetime.timezone.utc)
+        ),
+    ]
+    periods = list(mem_index_fresh.index.datasets._expand_period(
+        "2 years",
+        datetime.datetime(2016, 3, 5),
+        datetime.datetime(2019, 12, 25),
+    ))
+    assert periods == [
+        Range(
+            datetime.datetime(2016, 3, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2018, 3, 5, tzinfo=datetime.timezone.utc)
+        ),
+        Range(
+            datetime.datetime(2018, 3, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2020, 3, 5, tzinfo=datetime.timezone.utc)
+        ),
+    ]
+
+
 def test_mem_prod_time_bounds(mem_eo3_data):
     dc, ls8_id, wo_id = mem_eo3_data
     # Test get_product_time_bounds
@@ -354,6 +457,31 @@ def test_mem_ds_search_by_metadata(mem_eo3_data):
     assert len(lds) == 0
     lds = list(dc.index.datasets.search_by_metadata({"eo:platform": "landsat-8"}))
     assert len(lds) == 2
+
+
+def test_mem_ds_count_product_through_time(mem_eo3_data):
+    dc, ls8_id, wo_id = mem_eo3_data
+    lds = list(dc.index.datasets.count_by_product_through_time(
+        period="1 day",
+        time=[datetime.datetime(2016, 5, 10), datetime.datetime(2016, 5, 15)]
+    ))
+    for prod, counts in lds:
+        for rng, count in counts:
+            if rng.begin == datetime.datetime(2016, 5, 12, tzinfo=datetime.timezone.utc):
+                assert count == 1
+            else:
+                assert count == 0
+
+    counts = list(dc.index.datasets.count_product_through_time(
+        period="1 month",
+        product="ga_ls_wo_3",
+        time=[datetime.datetime(2016, 4, 1), datetime.datetime(2016, 12, 1)]
+    ))
+    for rng, count in counts:
+        if rng.begin == datetime.datetime(2016, 5, 1, tzinfo=datetime.timezone.utc):
+            assert count == 1
+        else:
+            assert count == 0
 
 
 # Tests adapted from test_dataset_add

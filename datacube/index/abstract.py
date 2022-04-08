@@ -809,7 +809,7 @@ class AbstractDatasetResource(ABC):
     def count_by_product_through_time(self,
                                       period: str,
                                       **query: QueryField
-                                     ) -> Iterable[Tuple[Product, Iterable[Tuple[datetime.datetime, datetime.datetime]], int]]:
+                                     ) -> Iterable[Tuple[Product, Iterable[Tuple[Range, int]]]]:
         """
         Perform a search, returning counts for each product grouped in time slices
         of the given period.
@@ -823,7 +823,7 @@ class AbstractDatasetResource(ABC):
     def count_product_through_time(self,
                                    period: str,
                                    **query: QueryField
-                                  ) -> Iterable[Tuple[str, Iterable[Tuple[datetime.datetime, datetime.datetime]], int]]:
+                                  ) -> Iterable[Tuple[Range, int]]:
         """
         Perform a search, returning counts for a single product grouped in time slices
         of the given period.
@@ -832,7 +832,7 @@ class AbstractDatasetResource(ABC):
 
         :param period: Time range for each slice: '1 month', '1 day' etc.
         :param query: search query parameters
-        :returns: For each product, a list of time ranges and the count of matching datasets.
+        :returns: The product, a list of time ranges and the count of matching datasets.
         """
 
     @abstractmethod
@@ -976,7 +976,8 @@ class AbstractIndexDriver(ABC):
         pass
 
 
-# NB. The special handling of grid_spatial, etc appears to NOT apply to EO3.
+# The special handling of grid_spatial, etc appears to NOT apply to EO3.
+# Does EO3 handle it in metadata?
 class DatasetSpatialMixin(object):
     __slots__ = ()
 
