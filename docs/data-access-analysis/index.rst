@@ -24,9 +24,9 @@ This instance can be configured to index a selection Sentinel-2 level 2 data.
     :caption: Data Access & Analysis
 
     apis/datacube-class.rst
-    apis/data-searching.rst
-    apis/product-discovery.rst
-    apis/data-loading.rst
+    apis/product-discovery.ipynb
+    apis/data-searching.ipynb
+    apis/data-loading.ipynb
 
 .. toctree::
     :maxdepth: 4
