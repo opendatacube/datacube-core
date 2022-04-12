@@ -330,21 +330,20 @@ class DatasetResource(AbstractDatasetResource):
 
     def remove_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
+        removed = False
         if uuid in self.locations:
             old_locations = self.locations[uuid]
             new_locations = [loc for loc in old_locations if loc != uri]
-            if len(new_locations) == len(old_locations):
-                return False
-            self.locations[uuid] = new_locations
-            return True
-        if uuid in self.archived_locations:
+            if len(new_locations) != len(old_locations):
+                self.locations[uuid] = new_locations
+                removed = True
+        if not removed and uuid in self.archived_locations:
             old_locations = self.archived_locations[uuid]
             new_locations = [(loc, dt) for loc, dt in old_locations if loc != uri]
-            if len(new_locations) == len(old_locations):
-                return False
-            self.archived_locations[uuid] = new_locations
-            return True
-        return False
+            if len(new_locations) != len(old_locations):
+                self.archived_locations[uuid] = new_locations
+                removed = True
+        return removed
 
     def archive_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)

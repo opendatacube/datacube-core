@@ -215,18 +215,20 @@ def test_mem_ds_locations(mem_eo3_data):
             assert dt >= before_test
             break
     assert found
-    dc.index.datasets.restore_location(ls8_id, "file:///test_loc_1")
+    assert dc.index.datasets.restore_location(ls8_id, "file:///test_loc_1")
     assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_id)
     assert list(dc.index.datasets.get_archived_locations(ls8_id)) == []
     assert list(dc.index.datasets.get_datasets_for_location("file:///test_loc_1", "exact"))[0].id == ls8_id
-    dc.index.datasets.remove_location(ls8_id, "file:///test_loc_1")
+    assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_1")
     assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)
     assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_id)
-    dc.index.datasets.add_location(ls8_id, "file:///test_loc_2")
-    dc.index.datasets.archive_location(ls8_id, "file:///test_loc_2")
-    dc.index.datasets.remove_location(ls8_id, "file:///test_loc_2")
+    assert dc.index.datasets.add_location(ls8_id, "file:///test_loc_2")
+    assert dc.index.datasets.archive_location(ls8_id, "file:///test_loc_2")
+    assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_2")
     assert "file:///test_loc_2" not in list(dc.index.datasets.get_locations(ls8_id))
-    assert "file:///test_loc_2" not in list(r[0] for r in dc.index.datasets.get_archived_locations(ls8_id))
+    assert "file:///test_loc_2" not in list(dc.index.datasets.get_archived_locations(ls8_id))
+    assert not dc.index.datasets.archive_location(ls8_id, "file:////not_a_valid_loc")
+    assert not dc.index.datasets.remove_location(ls8_id, "file:////not_a_valid_loc")
 
 
 def test_mem_ds_updates(mem_eo3_data):
