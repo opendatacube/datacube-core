@@ -7,7 +7,6 @@ import logging
 import re
 import warnings
 from collections import namedtuple
-from dateutil import tz
 from typing import (Any, Callable, Iterable, List, Mapping,
                     Optional, Set, Tuple, Union)
 from uuid import UUID
@@ -22,15 +21,10 @@ from datacube.model import Dataset, DatasetType as Product, Range, ranges_overla
 from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes
 from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
+from datacube.utils.dates import tz_aware
 from datacube.utils.documents import metadata_subset
 
 _LOG = logging.getLogger(__name__)
-
-
-def _default_utc(d):
-    if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
-    return d
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -137,8 +131,8 @@ class DatasetResource(AbstractDatasetResource):
 
         def to_field(f: Union[str, Field]) -> Field:
             if isinstance(f, str):
-                return product.metadata_type.dataset_fields[f]
-            assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
+                f = product.metadata_type.dataset_fields[f]
+            assert isinstance(f, Field), "Not a field: %r" % (f,)
             return f
 
         fields = [to_field(f) for f in args]
@@ -224,6 +218,7 @@ class DatasetResource(AbstractDatasetResource):
 
         # Apply update
         _LOG.info("Updating dataset %s", dataset.id)
+        self._update_locations(dataset, existing)
         persistable = self.clone(dataset, for_save=True)
         self.by_id[dataset.id] = persistable
         self.active_by_id[dataset.id] = persistable
@@ -502,8 +497,8 @@ class DatasetResource(AbstractDatasetResource):
             begin: datetime.datetime,
             end: datetime.datetime
     ) -> Iterable[Range]:
-        begin = _default_utc(begin)
-        end = _default_utc(end)
+        begin = tz_aware(begin)
+        end = tz_aware(end)
         match = re.match(r'(?P<precision>[0-9]+) (?P<unit>day|month|week|year)', period)
         if not match:
             raise ValueError('Invalid period string. Must specify a number of days, weeks, months or years')

@@ -228,15 +228,27 @@ def test_mem_ds_updates(mem_eo3_data):
     dc, ls8_id, wo_id = mem_eo3_data
     # Test updates
     raw = dc.index.datasets.get(ls8_id)
+    # Update location only
     raw.uris.append("file:///update_test_1")
+    updated = dc.index.datasets.update(raw)
+    raw = dc.index.datasets.get(ls8_id)
+    assert raw.uris == updated.uris
+    # Test bad change
+    raw.uris.append("file:///update_test_2")
     raw.metadata_doc["properties"]["silly_sausages"] = ["weisswurst", "frankfurter"]
     with pytest.raises(ValueError):
         updated = dc.index.datasets.update(raw)
+    assert "file:///update_test_2" in raw.uris
+    # Make bad change ok
     from datacube.utils import changes
     updated = dc.index.datasets.update(raw, updates_allowed={
         ("properties", "silly_sausages"): changes.allow_any
     })
     assert "silly_sausages" in updated.metadata_doc["properties"]
+    raw = dc.index.datasets.get(ls8_id)
+    assert "silly_sausages" in raw.metadata_doc["properties"]
+    assert "file:///update_test_1" in raw.uris
+    assert "file:///update_test_2" in raw.uris
 
 
 def test_mem_ds_expand_periods(mem_index_fresh):
