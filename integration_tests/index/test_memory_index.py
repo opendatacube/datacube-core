@@ -222,6 +222,11 @@ def test_mem_ds_locations(mem_eo3_data):
     dc.index.datasets.remove_location(ls8_id, "file:///test_loc_1")
     assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)
     assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_id)
+    dc.index.datasets.add_location(ls8_id, "file:///test_loc_2")
+    dc.index.datasets.archive_location(ls8_id, "file:///test_loc_2")
+    dc.index.datasets.remove_location(ls8_id, "file:///test_loc_2")
+    assert "file:///test_loc_2" not in list(dc.index.datasets.get_locations(ls8_id))
+    assert "file:///test_loc_2" not in list(r[0] for r in dc.index.datasets.get_archived_locations(ls8_id))
 
 
 def test_mem_ds_updates(mem_eo3_data):
@@ -407,6 +412,12 @@ def test_mem_ds_search_and_count(mem_eo3_data):
     lds = list(dc.index.datasets.search(product_family='ard', source_filter={"product_family": 'ard'}))
     assert len(lds) == 0
     assert dc.index.datasets.count(product_family='ard', source_filter={"product_family": 'ard'}) == 0
+    lds = list(dc.index.datasets.search(product="ga_ls_wo_3", platform='landsat-8'))
+    assert len(lds) == 1
+    with pytest.raises(ValueError):
+        lds = list(dc.index.datasets.search(product="weird_whacky_product"))
+    with pytest.raises(ValueError):
+        lds = list(dc.index.datasets.search(product_family='addams'))
 
 
 def test_mem_ds_search_and_count_by_product(mem_eo3_data):
