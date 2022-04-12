@@ -11,7 +11,7 @@ v1.8.next
 - Implement a local non-persistent in-memory index driver, with maximal backwards-compatibility
   with default postgres index driver. Doesn't work with CLI interface, as every invocation
   will receive a new, empty index, but useful for testing and small scale proof-of-concept
-  work. (:pull:`????`)
+  work. (:pull:`1247`)
 - Performance and correctness fixes backported from ``odc-geo``. (:pull:`1242`)
 - Deprecate use of the celery executor. Update numpy pin in rtd-requirements.txt to suppress
   Dependabot warnings. (:pull:`1239`)
