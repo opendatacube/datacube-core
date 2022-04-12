@@ -8,6 +8,11 @@ What's New
 v1.8.next
 =========
 
+- Implement a local non-persistent in-memory index driver, with maximal backwards-compatibility
+  with default postgres index driver. Doesn't work with CLI interface, as every invocation
+  will receive a new, empty index, but useful for testing and small scale proof-of-concept
+  work. (:pull:`????`)
+- Performance and correctness fixes backported from ``odc-geo``. (:pull:`1242`)
 - Deprecate use of the celery executor. Update numpy pin in rtd-requirements.txt to suppress
   Dependabot warnings. (:pull:`1239`)
 - Implement a minimal "null" index driver that provides an always-empty index. Mainly intended
@@ -22,7 +27,7 @@ v1.8.next
 - Migrate test docker image from `datacube/geobase` to `osgeo/gdal`. (:pull:`1233`)
 - Separate index driver interface definition from default index driver implementation. (:pull:`1226`)
 - Prefer WKT over EPSG when guessing CRS strings. (:pull:`1223`)
-- Updates install docs. (:pull:`1208`, :pull:`1212`, :pull:`1215`, :pull:`1218`)
+- Updates to documentation. (:pull:`1208`, :pull:`1212`, :pull:`1215`, :pull:`1218`, :pull:`1240`)
 - Tweak to segmented in geometry to suppress Shapely warning. (:pull:`1207`)
 
 v1.8.6 (30 September 2021)

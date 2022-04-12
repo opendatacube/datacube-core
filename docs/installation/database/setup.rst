@@ -63,6 +63,12 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
    # A "null" environment for working with no index.
    index_driver: null
 
+   [local_memory]
+   # A local non-persistent in-memory index.
+   #   Compatible with the default index driver, but resides purely in memory with no persistent database.
+   #   Note that each new invocation will receive a new, empty index.
+   index_driver: memory
+
 Uncomment and fill in lines as required.
 
 Alternately, you can configure the ODC connection to Postgres using environment variables:
