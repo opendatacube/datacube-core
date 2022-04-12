@@ -146,6 +146,7 @@ def global_integration_cli_args():
 
 @pytest.fixture
 def datacube_env_name(request):
+
     if hasattr(request, 'param'):
         return request.param
     else:
@@ -424,7 +425,7 @@ def default_metadata_types(index):
 
 
 @pytest.fixture
-def ga_metadata_type(index, ):
+def ga_metadata_type(index, ga_metadata_type_doc):
     return index.metadata_types.add(index.metadata_types.from_doc(ga_metadata_type_doc))
 
 
