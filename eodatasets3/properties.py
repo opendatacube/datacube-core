@@ -212,6 +212,8 @@ _GQA_FMASK_PROPS = {
     "fmask:cloud_shadow": float,
     "fmask:snow": float,
     "fmask:water": float,
+    "s2cloudless:clear": float,
+    "s2cloudless:cloud": float,
     "gqa:abs_iterative_mean_x": float,
     "gqa:abs_iterative_mean_xy": float,
     "gqa:abs_iterative_mean_y": float,
