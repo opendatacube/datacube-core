@@ -127,6 +127,7 @@ setup(
             'default = datacube.index.postgres.index:index_driver_init',
             'null = datacube.index.null.index:index_driver_init',
             'memory = datacube.index.memory.index:index_driver_init',
+            'postgis = datacube.index.postgis.index:index_driver_init',
             *extra_plugins['index'],
         ],
     },
