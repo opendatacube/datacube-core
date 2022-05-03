@@ -73,13 +73,13 @@ Database schema and internal APIs may change significantly between releases. Use
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
-        db = PostgresDb.from_config(config, application_name=application_name,
+        db = PostGisDb.from_config(config, application_name=application_name,
                                     validate_connection=validate_connection)
         return cls(db)
 
     @classmethod
     def get_dataset_fields(cls, doc):
-        return PostgresDb.get_dataset_fields(doc)
+        return PostGisDb.get_dataset_fields(doc)
 
     def init_db(self, with_default_types=True, with_permissions=True):
         is_new = self._db.init(with_permissions=with_permissions)
