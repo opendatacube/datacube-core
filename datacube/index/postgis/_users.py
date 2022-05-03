@@ -6,9 +6,9 @@ from typing import Iterable, Optional, Tuple
 from datacube.index.abstract import AbstractUserResource
 
 class UserResource(AbstractUserResource):
-    def __init__(self, db: "datacube.drivers.postgres.PostgresDb") -> None:
+    def __init__(self, db: "datacube.drivers.postgis.PostGisDb") -> None:
         """
-        :type db: datacube.drivers.postgres._connections.PostgresDb
+        :type db: datacube.drivers.postgis._connections.PostGisDb
         """
         self._db = db
 

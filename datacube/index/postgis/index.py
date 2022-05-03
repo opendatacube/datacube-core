@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 
-from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgis import PostGisDb
 from datacube.index.postgis._datasets import DatasetResource  # type: ignore
 from datacube.index.postgis._metadata_types import MetadataTypeResource
 from datacube.index.postgis._products import ProductResource
@@ -39,7 +39,7 @@ class Index(AbstractIndex):
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
 
-    def __init__(self, db: PostgresDb) -> None:
+    def __init__(self, db: PostGisDb) -> None:
         self._db = db
 
         self._users = UserResource(db)
