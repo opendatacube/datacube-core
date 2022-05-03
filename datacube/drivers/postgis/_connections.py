@@ -63,7 +63,7 @@ class PostGisDb(object):
 
     def __init__(self, engine):
         # We don't recommend using this constructor directly as it may change.
-        # Use static methods PostGisDb.create() or PostgisDb.from_config()
+        # Use static methods PostGisDb.create() or PostGisDb.from_config()
         self._engine = engine
 
     @classmethod
@@ -168,15 +168,15 @@ class PostGisDb(object):
     @classmethod
     def _expand_app_name(cls, application_name):
         """
-        >>> PostgisDb._expand_app_name(None) #doctest: +ELLIPSIS
+        >>> PostGisDb._expand_app_name(None) #doctest: +ELLIPSIS
         'agdc-...'
-        >>> PostgisDb._expand_app_name('') #doctest: +ELLIPSIS
+        >>> PostGisDb._expand_app_name('') #doctest: +ELLIPSIS
         'agdc-...'
-        >>> PostgisDb._expand_app_name('cli') #doctest: +ELLIPSIS
+        >>> PostGisDb._expand_app_name('cli') #doctest: +ELLIPSIS
         'cli agdc-...'
-        >>> PostgisDb._expand_app_name('a b.c/d')
+        >>> PostGisDb._expand_app_name('a b.c/d')
         'a-b-c-d agdc-...'
-        >>> PostgisDb._expand_app_name(5)
+        >>> PostGisDb._expand_app_name(5)
         Traceback (most recent call last):
         ...
         TypeError: Application name must be a string
