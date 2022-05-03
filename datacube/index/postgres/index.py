@@ -103,6 +103,8 @@ class Index(AbstractIndex):
 
 
 class DefaultIndexDriver(AbstractIndexDriver):
+    aliases = ['postgres']
+
     @staticmethod
     def connect_to_index(config, application_name=None, validate_connection=True):
         return Index.from_config(config, application_name, validate_connection)
