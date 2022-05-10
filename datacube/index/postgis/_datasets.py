@@ -14,8 +14,8 @@ from uuid import UUID
 
 from sqlalchemy import select, func
 
-from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
-from datacube.drivers.postgres._schema import DATASET
+from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
+from datacube.drivers.postgis._schema import DATASET
 from datacube.index.abstract import AbstractDatasetResource
 from datacube.model import Dataset, DatasetType
 from datacube.model.fields import Field
@@ -56,13 +56,13 @@ class DatasetSpatialMixin(object):
 
 class DatasetResource(AbstractDatasetResource):
     """
-    :type _db: datacube.drivers.postgres._connections.PostgresDb
+    :type _db: datacube.drivers.postgis._connections.PostgresDb
     :type types: datacube.index._products.ProductResource
     """
 
     def __init__(self, db, dataset_type_resource):
         """
-        :type db: datacube.drivers.postgres._connections.PostgresDb
+        :type db: datacube.drivers.postgis._connections.PostgresDb
         :type dataset_type_resource: datacube.index._products.ProductResource
         """
         self._db = db

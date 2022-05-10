@@ -42,8 +42,8 @@ class Index(AbstractIndex):
     def __init__(self, db: PostGisDb) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
         _LOG.warning("""WARNING: The POSTGIS index driver implementation is considered EXPERIMENTAL.
-        
-Database schema and internal APIs may change significantly between releases. Use at your own risk.""")
+WARNING:        
+WARNING: Database schema and internal APIs may change significantly between releases. Use at your own risk.""")
         self._db = db
 
         self._users = UserResource(db)

@@ -19,13 +19,13 @@ _LOG = logging.getLogger(__name__)
 
 class ProductResource(AbstractProductResource):
     """
-    :type _db: datacube.drivers.postgres._connections.PostgresDb
+    :type _db: datacube.drivers.postgis._connections.PostgresDb
     :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
     """
 
     def __init__(self, db, metadata_type_resource):
         """
-        :type db: datacube.drivers.postgres._connections.PostgresDb
+        :type db: datacube.drivers.postgis._connections.PostgresDb
         :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
         """
         self._db = db

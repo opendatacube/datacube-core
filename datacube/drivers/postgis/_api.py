@@ -174,7 +174,7 @@ def get_dataset_fields(metadata_type_definition):
     return fields
 
 
-class PostgresDbAPI(object):
+class PostgisDbAPI(object):
     def __init__(self, connection):
         self._connection = connection
 
@@ -492,8 +492,8 @@ class PostgresDbAPI(object):
                 ).label('dataset_refs'),
             )
 
-        raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
-        from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields)
+        raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
+        from_expression = PostgisDbAPI._from_expression(DATASET, expressions, select_fields)
         where_expr = and_(DATASET.c.archived == None, *raw_expressions)
 
         if not source_exprs:
@@ -545,7 +545,7 @@ class PostgresDbAPI(object):
             ).select_from(
                 recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
             ).where(
-                and_(DATASET.c.archived == None, *PostgresDbAPI._alchemify_expressions(source_exprs))
+                and_(DATASET.c.archived == None, *PostgisDbAPI._alchemify_expressions(source_exprs))
             ).limit(
                 limit
             )
@@ -608,12 +608,12 @@ class PostgresDbAPI(object):
         else:
             select_columns = _DATASET_SELECT_FIELDS
 
-        raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
+        raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
 
         # We don't need 'DATASET_LOCATION table in the from expression
         select_fields_ = [field for field in select_fields if field.name not in {'uri', 'uris'}]
 
-        from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields_)
+        from_expression = PostgisDbAPI._from_expression(DATASET, expressions, select_fields_)
         where_expr = and_(DATASET.c.archived == None, *raw_expressions)
 
         return (
@@ -649,9 +649,9 @@ class PostgresDbAPI(object):
         select_query = select(
             (func.array_agg(DATASET.c.id),) + group_expressions
         ).select_from(
-            PostgresDbAPI._from_expression(DATASET, expressions, match_fields)
+            PostgisDbAPI._from_expression(DATASET, expressions, match_fields)
         ).where(
-            and_(DATASET.c.archived == None, *(PostgresDbAPI._alchemify_expressions(expressions)))
+            and_(DATASET.c.archived == None, *(PostgisDbAPI._alchemify_expressions(expressions)))
         ).group_by(
             *group_expressions
         ).having(

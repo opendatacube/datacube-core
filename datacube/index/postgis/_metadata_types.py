@@ -17,7 +17,7 @@ _LOG = logging.getLogger(__name__)
 class MetadataTypeResource(AbstractMetadataTypeResource):
     def __init__(self, db):
         """
-        :type db: datacube.drivers.postgres._connections.PostgresDb
+        :type db: datacube.drivers.postgis._connections.PostgresDb
         """
         self._db = db
 

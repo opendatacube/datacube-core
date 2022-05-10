@@ -220,7 +220,7 @@ class PostGisDb(object):
         connection from being reused while borrowed.
         """
         with self._engine.connect() as connection:
-            yield _api.PostgresDbAPI(connection)
+            yield _api.PostgisDbAPI(connection)
             connection.close()
 
     @contextmanager
@@ -242,7 +242,7 @@ class PostGisDb(object):
         with self._engine.connect() as connection:
             connection.execute(text('BEGIN'))
             try:
-                yield _api.PostgresDbAPI(connection)
+                yield _api.PostgisDbAPI(connection)
                 connection.execute(text('COMMIT'))
             except Exception:  # pylint: disable=broad-except
                 connection.execute(text('ROLLBACK'))
