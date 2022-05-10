@@ -226,6 +226,9 @@ Default Implementation
 The default ``Index`` uses a PostgreSQL database for all storage and
 retrieval.
 
+If explicitly declaring the default index driver, you can use either ``default`` or ``postgres``
+as the ``index_driver`` in the configuration file.
+
 Null Implementation
 -------------------
 
@@ -244,7 +247,7 @@ Memory Implementation
 
 `datacube-core` includes a non-persistent, local, in-memory index driver.  The index is maintained
 in local memory and is not backed by a database.
-The code for this driver is located at ``datacube.index.null`` and can be used by setting
+The code for this driver is located at ``datacube.index.memory`` and can be used by setting
 the ``index_driver`` to ``memory`` in the configuration file.
 
 The memory index driver may be useful:
@@ -253,6 +256,17 @@ The memory index driver may be useful:
 2. for testing scenarios where no index persistence is required; or
 3. as an example/template for developing other index drivers.
 
+
+Postgis Implementation
+----------------------
+
+`datacube-core` also includes a PostGIS index driver that can be accessed by setting the ``index_driver``
+to ``postgis`` in the configuration file.
+
+The ``postgis`` driver is part of the `ODCv2 development roadmap`_.  It is currently considered experimental,
+meaning it may be subject to sudden backwards-incompatible changes. Use this index driver at your own risk.
+
+.. _ODCv2 development roadmap: https://github.com/opendatacube/datacube-core/wiki/ODC-v2-Roadmap
 
 Drivers Plugin Management Module
 ================================
