@@ -916,7 +916,7 @@ def test_count_time_groups_cli(clirunner: Any,
         '    2014-07-26: 1\n'
     ).format(pseudo_ls8_type.name)
 
-    assert result.output == expected_out
+    assert result.output.endswith(expected_out)
 
 
 def test_search_cli_basic(clirunner: Any,
@@ -954,14 +954,17 @@ def test_cli_info(index: Index,
     result = clirunner(opts, verbose_flag='')
 
     output = result.output
+    # Remove WARNING messages for experimental driver
+    output_lines = [line for line in output.splitlines() if "WARNING:" not in line]
+    output = "\n".join(output_lines)
 
     # Should be a valid yaml
     yaml_docs = list(yaml.safe_load_all(output))
     assert len(yaml_docs) == 1
 
     # We output properties in order for readability:
-    output_lines = [line for line in output.splitlines() if not line.startswith('indexed:')]
-    assert output_lines == [
+    output_lines = [line for line in output_lines if not line.startswith('indexed:')]
+    expected_lines = [
         "id: " + str(pseudo_ls8_dataset.id),
         'product: ls8_telemetry',
         'status: active',
@@ -983,7 +986,8 @@ def test_cli_info(index: Index,
         '    sat_path: {begin: 116, end: 116}',
         '    sat_row: {begin: 74, end: 84}',
         "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
-    ]
+        ]
+    assert expected_lines == output_lines
 
     # Check indexed time separately, as we don't care what timezone it's displayed in.
     indexed_time = yaml_docs[0]['indexed']
@@ -1017,10 +1021,9 @@ def test_cli_missing_info(clirunner, initialised_postgres_db):
         expect_success=False,
         verbose_flag=False
     )
-
     assert result.exit_code == 1, "Should return exit status when dataset is missing"
     # This should have been output to stderr, but the CliRunner doesnit distinguish
-    assert result.output == "{id} missing\n".format(id=id_)
+    assert result.output.endswith("{id} missing\n".format(id=id_))
 
 
 def test_find_duplicates(index, pseudo_ls8_type,
@@ -1209,4 +1212,6 @@ def _cli_csv_search(args, clirunner):
 def _csv_search_raw(args, clirunner):
     # Do a CSV search from the cli, returning output as a string
     result = clirunner(['-f', 'csv'] + list(args), cli_method=datacube.scripts.search_tool.cli, verbose_flag=False)
-    return result.output
+    output = result.output
+    output_lines = output.split("\n")
+    return "\n".join(line for line in output_lines if "WARNING:" not in line)

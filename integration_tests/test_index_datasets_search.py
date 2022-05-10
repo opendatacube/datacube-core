@@ -8,7 +8,6 @@ from pathlib import PurePosixPath
 from integration_tests.test_full_ingestion import ensure_datasets_are_indexed
 
 
-@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_index_datasets_search_light(index, tmpdir, clirunner,
@@ -99,7 +98,6 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
     assert len(results_with_uri[0].uri) == 2
 
 
-@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_index_get_product_time_bounds(index, clirunner, example_ls5_dataset_paths):

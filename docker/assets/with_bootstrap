@@ -62,7 +62,7 @@ db_database: agdcintegration
 index_driver: default
 
 [experimental]
-db_hostname: localhost
+db_hostname:
 db_database: odcintegration
 index_driver: postgis
 
