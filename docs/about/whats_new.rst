@@ -8,7 +8,7 @@ What's New
 v1.8.next
 =========
 
-- Clone ``postgres`` index driver as ``postgis``, and flag as experimental.
+- Clone ``postgres`` index driver as ``postgis``, and flag as experimental. (:pull:`1248`)
 - Implement a local non-persistent in-memory index driver, with maximal backwards-compatibility
   with default postgres index driver. Doesn't work with CLI interface, as every invocation
   will receive a new, empty index, but useful for testing and small scale proof-of-concept
