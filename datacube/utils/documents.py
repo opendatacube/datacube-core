@@ -313,7 +313,14 @@ def transform_object_tree(f, o, key_transform=lambda k: k):
     return f(o)
 
 
-def metadata_subset(element, document):
+def metadata_subset(element, document) -> bool:
+    """
+    Recursively check if one metadata document/object is a subset of another
+
+    :param element: The document/object to search for
+    :param document: The document/object to search in
+    :return: True if element is a subset of document
+    """
     if isinstance(element, dict) and isinstance(document, dict):
         matches = True
         for k in element.keys():
