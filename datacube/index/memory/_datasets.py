@@ -7,7 +7,8 @@ import logging
 import re
 import warnings
 from collections import namedtuple
-from typing import (Any, Callable, Iterable, List, Mapping,
+from typing import (Any, Callable, Iterable, List,
+                    Mapping, MutableMapping,
                     Optional, Set, Tuple, Union)
 from uuid import UUID
 
@@ -32,18 +33,18 @@ class DatasetResource(AbstractDatasetResource):
         self.product_resource = product_resource
         self.metadata_type_resource = product_resource.metadata_type_resource
         # Main dataset index
-        self.by_id: Mapping[UUID, Dataset] = {}
+        self.by_id: MutableMapping[UUID, Dataset] = {}
         # Indexes for active and archived datasets
-        self.active_by_id: Mapping[UUID, Dataset] = {}
-        self.archived_by_id: Mapping[UUID, Dataset] = {}
+        self.active_by_id: MutableMapping[UUID, Dataset] = {}
+        self.archived_by_id: MutableMapping[UUID, Dataset] = {}
         # Lineage indexes:
-        self.derived_from: Mapping[UUID, Mapping[str, UUID]] = {}
-        self.derivations: Mapping[UUID, Mapping[str, UUID]] = {}
+        self.derived_from: MutableMapping[UUID, MutableMapping[str, UUID]] = {}
+        self.derivations: MutableMapping[UUID, MutableMapping[str, UUID]] = {}
         # Location registers
-        self.locations: Mapping[UUID, List[str]] = {}
-        self.archived_locations: Mapping[UUID, List[Tuple[str, datetime.datetime]]] = {}
+        self.locations: MutableMapping[UUID, List[str]] = {}
+        self.archived_locations: MutableMapping[UUID, List[Tuple[str, datetime.datetime]]] = {}
         # Active Index By Product
-        self.by_product: Mapping[str, List[UUID]] = {}
+        self.by_product: MutableMapping[str, List[UUID]] = {}
 
     def get(self, id_: DSID, include_sources: bool = False) -> Optional[Dataset]:
         try:
