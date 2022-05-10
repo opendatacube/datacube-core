@@ -4,20 +4,20 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 
-from datacube.index.null._datasets import DatasetResource  # type: ignore
-from datacube.index.null._metadata_types import MetadataTypeResource
-from datacube.index.null._products import ProductResource
-from datacube.index.null._users import UserResource
+from datacube.index.memory._datasets import DatasetResource  # type: ignore
+from datacube.index.memory._fields import get_dataset_fields
+from datacube.index.memory._metadata_types import MetadataTypeResource
+from datacube.index.memory._products import ProductResource
+from datacube.index.memory._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver
 from datacube.model import MetadataType
-from datacube.model.fields import get_dataset_fields
 
 _LOG = logging.getLogger(__name__)
 
 
 class Index(AbstractIndex):
     """
-    (Sub-)Minimal (non-)implementation of the Index API.
+    Lightweight in-memory index driver
     """
 
     def __init__(self) -> None:
@@ -44,7 +44,7 @@ class Index(AbstractIndex):
 
     @property
     def url(self) -> str:
-        return "null"
+        return "memory"
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
@@ -61,10 +61,10 @@ class Index(AbstractIndex):
         pass
 
     def __repr__(self):
-        return "Index<null>"
+        return "Index<memory>"
 
 
-class NullIndexDriver(AbstractIndexDriver):
+class MemoryIndexDriver(AbstractIndexDriver):
     @staticmethod
     def connect_to_index(config, application_name=None, validate_connection=True):
         return Index.from_config(config, application_name, validate_connection)
@@ -80,4 +80,4 @@ class NullIndexDriver(AbstractIndexDriver):
 
 
 def index_driver_init():
-    return NullIndexDriver()
+    return MemoryIndexDriver()

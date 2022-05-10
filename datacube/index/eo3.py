@@ -199,6 +199,8 @@ def prep_eo3(doc: Dict[str, Any],
         """
         if len(uuids) == 0:
             return {}
+        if isinstance(uuids, dict) or isinstance(uuids[0], dict):
+            raise ValueError("Embedded lineage not supported for eo3 metadata types")
         if len(uuids) == 1:
             return {name: {'id': uuids[0]}}
 

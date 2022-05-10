@@ -16,11 +16,11 @@ from sqlalchemy import select, func
 
 from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgres._schema import DATASET
-from datacube.index.abstract import AbstractDatasetResource
+from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin
 from datacube.model import Dataset, DatasetType
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
-from datacube.utils import jsonify_document, _readable_offset, changes, cached_property
+from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
 from datacube.index import fields
 
@@ -29,29 +29,6 @@ _LOG = logging.getLogger(__name__)
 
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
-
-class DatasetSpatialMixin(object):
-    __slots__ = ()
-
-    @property
-    def _gs(self):
-        return self.grid_spatial
-
-    @property
-    def crs(self):
-        return Dataset.crs.__get__(self)
-
-    @cached_property
-    def extent(self):
-        return Dataset.extent.func(self)
-
-    @property
-    def transform(self):
-        return Dataset.transform.__get__(self)
-
-    @property
-    def bounds(self):
-        return Dataset.bounds.__get__(self)
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -529,15 +506,15 @@ class DatasetResource(AbstractDatasetResource):
             for dataset in self._make_many(connection.search_datasets_by_metadata(metadata)):
                 yield dataset
 
-    def search(self, limit=None, **query):
+    def search(self, limit=None, source_filter=None, **query):
         """
         Perform a search, returning results as Dataset objects.
 
         :param Union[str,float,Range,list] query:
+        :param int source_filter: query terms against source datasets
         :param int limit: Limit number of datasets
         :rtype: __generator[Dataset]
         """
-        source_filter = query.pop('source_filter', None)
         for product, datasets in self._do_search_by_product(query,
                                                             source_filter=source_filter,
                                                             limit=limit):

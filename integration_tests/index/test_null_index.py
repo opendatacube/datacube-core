@@ -68,8 +68,6 @@ def test_null_product_resource(null_config):
             dc.index.products.can_update(MagicMock())
         with pytest.raises(NotImplementedError) as e:
             dc.index.products.update(MagicMock())
-        with pytest.raises(NotImplementedError) as e:
-            dc.index.products.update_document({})
 
 
 def test_null_dataset_resource(null_config):

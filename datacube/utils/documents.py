@@ -313,6 +313,39 @@ def transform_object_tree(f, o, key_transform=lambda k: k):
     return f(o)
 
 
+def metadata_subset(element, document):
+    if isinstance(element, dict) and isinstance(document, dict):
+        matches = True
+        for k in element.keys():
+            if k not in document or not metadata_subset(element[k], document[k]):
+                matches = False
+                break
+        if matches:
+            return True
+        for k in document.keys():
+            if metadata_subset(element, document[k]):
+                return True
+    elif isinstance(document, dict):
+        for k in document.keys():
+            if metadata_subset(element, document[k]):
+                return True
+    elif isinstance(element, list) or isinstance(element, tuple):
+        matches = True
+        for i in element:
+            if not metadata_subset(i, document):
+                matches = False
+                break
+        if matches:
+            return True
+    elif isinstance(document, list) or isinstance(document, tuple):
+        for i in document:
+            if metadata_subset(element, i):
+                return True
+    else:
+        return element == document
+    return False
+
+
 class SimpleDocNav(object):
     """
     Allows navigation of Dataset metadata document lineage tree without

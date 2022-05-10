@@ -41,6 +41,15 @@ class Expression:
         return self.__dict__ == other.__dict__
 
 
+class SimpleEqualsExpression(Expression):
+    def __init__(self, field, value):
+        self.field = field
+        self.value = value
+
+    def evaluate(self, ctx):
+        return self.field.extract(ctx) == self.value
+
+
 class Field:
     """
     A searchable field within a dataset/storage metadata document.
@@ -76,7 +85,7 @@ class Field:
         raise NotImplementedError('between expression')
 
 
-class SimpleField:
+class SimpleField(Field):
     def __init__(self,
                  offset,
                  converter,
@@ -86,8 +95,10 @@ class SimpleField:
         self._offset = offset
         self._converter = converter
         self.type_name = type_name
-        self.description = description
-        self.name = name
+        super().__init__(name, description)
+
+    def __eq__(self, value) -> Expression:
+        return SimpleEqualsExpression(self, value)
 
     def extract(self, doc):
         v = toolz.get_in(self._offset, doc, default=None)

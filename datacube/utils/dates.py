@@ -8,8 +8,9 @@ Date and time utility functions
 Includes sequence generation functions to be used by statistics apps
 
 """
+import datetime
 from typing import Union, Callable
-from datetime import datetime
+from datetime import datetime, tzinfo
 
 import dateutil
 import dateutil.parser
@@ -108,6 +109,14 @@ def normalise_dt(dt: Union[str, datetime]) -> datetime:
         dt = parse_time(dt)
     if dt.tzinfo is not None:
         dt = dt.astimezone(tzutc()).replace(tzinfo=None)
+    return dt
+
+
+def tz_aware(dt: datetime, default: tzinfo = tzutc()) -> datetime:
+    """ Ensure a datetime is timezone aware, defaulting to UTC or a user-selected default
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=default)
     return dt
 
 

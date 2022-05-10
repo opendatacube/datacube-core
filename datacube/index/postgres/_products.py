@@ -9,7 +9,7 @@ from cachetools.func import lru_cache
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
 from datacube.model import DatasetType
-from datacube.utils import InvalidDocException, jsonify_document, changes, _readable_offset
+from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
 from typing import Iterable
@@ -165,7 +165,10 @@ class ProductResource(AbstractProductResource):
         changing_metadata_type = product.metadata_type.name != existing.metadata_type.name
         if changing_metadata_type:
             raise ValueError("Unsafe change: cannot (currently) switch metadata types for a product")
-            # TODO: Ask Jeremy WTF is going on here
+            #  In the past, an effort was made to allow changing metadata types where the new
+            #  type extends the old type without breaking it.  Banning all metadata type changes
+            #  is safer and simpler.
+            #
             # If the two metadata types declare the same field with different postgres expressions
             # we can't safely change it.
             # (Replacing the index would cause all existing users to have no effective index)
@@ -180,8 +183,8 @@ class ProductResource(AbstractProductResource):
             #             )
             #         )
         metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
-        # TODO: should we add metadata type here?
-        assert metadata_type, "TODO: should we add metadata type here?"
+        #     Given we cannot change metadata type because of the check above, and this is an
+        #     update method, the metadata type is guaranteed to already exist.
         with self._db.connect() as conn:
             conn.update_product(
                 name=product.name,

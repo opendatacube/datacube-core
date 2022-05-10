@@ -11,9 +11,10 @@ from typing import (Any, Iterable, Iterator,
                     Tuple, Union)
 from uuid import UUID
 
+from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
-from datacube.utils import read_documents, InvalidDocException
+from datacube.utils import cached_property, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset
 
 
@@ -442,7 +443,7 @@ class AbstractProductResource(ABC):
     @abstractmethod
     def search_robust(self,
                       **query: QueryField
-                     ) -> Iterable[Tuple[Product, Mapping]]:
+                     ) -> Iterable[Tuple[Product, Mapping[str, QueryField]]]:
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
 
@@ -461,6 +462,13 @@ class AbstractProductResource(ABC):
 
 # Non-strict Dataset ID representation
 DSID = Union[str, UUID]
+
+
+def dsid_to_uuid(dsid: DSID) -> UUID:
+    if isinstance(dsid, UUID):
+        return dsid
+    else:
+        return UUID(dsid)
 
 
 class AbstractDatasetResource(ABC):
@@ -499,7 +507,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         """
-        Get all datasets derived from a dataset
+        Get all datasets derived from a dataset (NOT recursive)
 
         :param id_: dataset id
         :rtype: list[Dataset]
@@ -547,12 +555,12 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_product_duplicates(self,
                                   product: Product,
-                                  *args: str
+                                  *args: Union[str, Field]
                                  ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
         """
         Find dataset ids who have duplicates of the given set of field names.
 
-        Product is always inserted as the first grouping field.
+        (Search is always restricted by Product)
 
         Returns a generator returning a tuple containing a namedtuple of
         the values of the supplied fields, and the datasets that match those
@@ -588,23 +596,23 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def archive(self, ids: Iterable[UUID]) -> None:
+    def archive(self, ids: Iterable[DSID]) -> None:
         """
         Mark datasets as archived
 
-        :param Iterable[UUID] ids: list of dataset ids to archive
+        :param Iterable[Union[str,UUID]] ids: list of dataset ids to archive
         """
 
     @abstractmethod
-    def restore(self, ids: Iterable[UUID]) -> None:
+    def restore(self, ids: Iterable[DSID]) -> None:
         """
         Mark datasets as not archived
 
-        :param Iterable[UUID] ids: list of dataset ids to restore
+        :param Iterable[Union[str,UUID]] ids: list of dataset ids to restore
         """
 
     @abstractmethod
-    def purge(self, ids: Iterable[UUID]) -> None:
+    def purge(self, ids: Iterable[DSID]) -> None:
         """
         Delete archived datasets
 
@@ -725,7 +733,7 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def search_by_metadata(self,
-                           metadata: Mapping[str, Any]
+                           metadata: Mapping[str, QueryField]
                           ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
@@ -739,6 +747,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search(self,
                limit: Optional[int] = None,
+               source_filter: Optional[Mapping[str, QueryField]] = None,
                **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
@@ -800,7 +809,7 @@ class AbstractDatasetResource(ABC):
     def count_by_product_through_time(self,
                                       period: str,
                                       **query: QueryField
-                                     ) -> Iterable[Tuple[Product, Iterable[Tuple[datetime.datetime, datetime.datetime]], int]]:
+                                     ) -> Iterable[Tuple[Product, Iterable[Tuple[Range, int]]]]:
         """
         Perform a search, returning counts for each product grouped in time slices
         of the given period.
@@ -814,7 +823,7 @@ class AbstractDatasetResource(ABC):
     def count_product_through_time(self,
                                    period: str,
                                    **query: QueryField
-                                  ) -> Iterable[Tuple[str, Iterable[Tuple[datetime.datetime, datetime.datetime]], int]]:
+                                  ) -> Iterable[Tuple[Range, int]]:
         """
         Perform a search, returning counts for a single product grouped in time slices
         of the given period.
@@ -823,7 +832,7 @@ class AbstractDatasetResource(ABC):
 
         :param period: Time range for each slice: '1 month', '1 day' etc.
         :param query: search query parameters
-        :returns: For each product, a list of time ranges and the count of matching datasets.
+        :returns: The product, a list of time ranges and the count of matching datasets.
         """
 
     @abstractmethod
@@ -858,7 +867,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_returning_datasets_light(self,
                                         field_names: Tuple[str, ...],
-                                        custom_offsets: Optional[Mapping[str, str]] = None,
+                                        custom_offsets: Optional[Mapping[str, Offset]] = None,
                                         limit: Optional[int] = None,
                                         **query: QueryField
                                        ) -> Iterable[Tuple]:
@@ -966,3 +975,28 @@ class AbstractIndexDriver(ABC):
                               ) -> MetadataType:
         pass
 
+
+# The special handling of grid_spatial, etc appears to NOT apply to EO3.
+# Does EO3 handle it in metadata?
+class DatasetSpatialMixin:
+    __slots__ = ()
+
+    @property
+    def _gs(self):
+        return self.grid_spatial
+
+    @property
+    def crs(self):
+        return Dataset.crs.__get__(self)
+
+    @cached_property
+    def extent(self):
+        return Dataset.extent.func(self)
+
+    @property
+    def transform(self):
+        return Dataset.transform.__get__(self)
+
+    @property
+    def bounds(self):
+        return Dataset.bounds.__get__(self)

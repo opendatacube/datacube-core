@@ -6,7 +6,8 @@ import pytest
 import numpy
 from copy import deepcopy
 from datacube.testutils import mk_sample_dataset, mk_sample_product
-from datacube.model import GridSpec, Measurement, MetadataType, DatasetType
+from datacube.model import (DatasetType, GridSpec, Measurement,
+                            MetadataType, Range, ranges_overlap)
 from datacube.utils import geometry
 from datacube.utils.documents import InvalidDocException
 from datacube.storage import measurement_paths
@@ -328,3 +329,38 @@ def test_metadata_type():
     assert m.name == 'eo'
     assert m.description is None
     assert m.dataset_reader({}) is not None
+
+
+def test_ranges_overlap():
+    assert not ranges_overlap(
+        Range(begin=1, end=5),
+        Range(begin=11, end=15)
+    )
+    assert not ranges_overlap(
+        Range(begin=1, end=5),
+        Range(begin=5, end=11)
+    )
+    assert not ranges_overlap(
+        Range(begin=5, end=11),
+        Range(begin=1, end=5)
+    )
+    assert ranges_overlap(
+        Range(begin=1, end=5),
+        Range(begin=1, end=5)
+    )
+    assert ranges_overlap(
+        Range(begin=1, end=15),
+        Range(begin=10, end=25)
+    )
+    assert ranges_overlap(
+        Range(begin=10, end=25),
+        Range(begin=1, end=15)
+    )
+    assert ranges_overlap(
+        Range(begin=1, end=25),
+        Range(begin=10, end=15)
+    )
+    assert ranges_overlap(
+        Range(begin=10, end=15),
+        Range(begin=1, end=25)
+    )

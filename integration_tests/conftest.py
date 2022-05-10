@@ -54,6 +54,86 @@ settings.register_profile(
 )
 settings.load_profile('opendatacube')
 
+MEMORY_DRIVER_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'memory'
+
+
+def get_memory_test_data_doc(path):
+    from datacube.utils import read_documents
+    for path, doc in read_documents(MEMORY_DRIVER_TESTDIR / path):
+        return doc
+
+
+@pytest.fixture
+def extended_eo3_metadata_type_doc():
+    return get_memory_test_data_doc("eo3_landsat_ard.odc-type.yaml")
+
+
+@pytest.fixture
+def extended_eo3_product_doc():
+    return get_memory_test_data_doc("ard_ls8.odc-product.yaml")
+
+
+@pytest.fixture
+def base_eo3_product_doc():
+    return get_memory_test_data_doc("ga_ls_wo_3.odc-product.yaml")
+
+
+@pytest.fixture
+def mem_index_fresh(in_memory_config):
+    from datacube import Datacube
+    with Datacube(config=in_memory_config) as dc:
+        yield dc
+
+
+@pytest.fixture
+def mem_index_eo3(mem_index_fresh,
+                  extended_eo3_metadata_type_doc,
+                  extended_eo3_product_doc,
+                  base_eo3_product_doc):
+    mem_index_fresh.index.metadata_types.add(
+        mem_index_fresh.index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
+    )
+    mem_index_fresh.index.products.add_document(base_eo3_product_doc)
+    mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
+    return mem_index_fresh
+
+
+@pytest.fixture
+def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
+    (doc_ls8, loc_ls8), (doc_wo, loc_wo) = datasets_with_unembedded_lineage_doc
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(mem_index_eo3.index)
+    ds_ls8, err = resolver(doc_ls8, loc_ls8)
+    mem_index_eo3.index.datasets.add(ds_ls8)
+    ds_wo, err = resolver(doc_wo, loc_wo)
+    mem_index_eo3.index.datasets.add(ds_wo)
+    return mem_index_eo3, ds_ls8.id, ds_wo.id
+
+
+@pytest.fixture
+def dataset_with_lineage_doc():
+    return (
+        get_memory_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
+        's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+        'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def datasets_with_unembedded_lineage_doc():
+    return [
+        (
+            get_memory_test_data_doc("ls8_dataset.yaml"),
+            's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/12/'
+            'ga_ls8c_ard_3-0-0_090086_2016-05-12_final.stac-item.json'
+        ),
+        (
+            get_memory_test_data_doc("wo_dataset.yaml"),
+            's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+            'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+        ),
+    ]
+
 
 @pytest.fixture
 def global_integration_cli_args():
@@ -66,6 +146,7 @@ def global_integration_cli_args():
 
 @pytest.fixture
 def datacube_env_name(request):
+
     if hasattr(request, 'param'):
         return request.param
     else:
@@ -85,13 +166,16 @@ def local_config(datacube_env_name):
 
 @pytest.fixture
 def null_config():
-    """Provides a :class:`LocalConfig` configured with suitable config file paths.
-
-    .. seealso::
-
-        The :func:`integration_config_paths` fixture sets up the config files.
+    """Provides a :class:`LocalConfig` configured with null index driver
     """
     return LocalConfig.find(CONFIG_FILE_PATHS, env="null_driver")
+
+
+@pytest.fixture
+def in_memory_config():
+    """Provides a :class:`LocalConfig` configured with memory index driver
+    """
+    return LocalConfig.find(CONFIG_FILE_PATHS, env="local_memory")
 
 
 @pytest.fixture

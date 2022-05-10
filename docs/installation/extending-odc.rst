@@ -239,6 +239,21 @@ The null index driver may be useful:
 2. for testing scenarios where no database access is required; or
 3. as an example/template for developing other index drivers.
 
+Memory Implementation
+---------------------
+
+`datacube-core` includes a non-persistent, local, in-memory index driver.  The index is maintained
+in local memory and is not backed by a database.
+The code for this driver is located at ``datacube.index.null`` and can be used by setting
+the ``index_driver`` to ``memory`` in the configuration file.
+
+The memory index driver may be useful:
+
+1. for ODC use cases where there is no need for the index to be re-used beyond the current session;
+2. for testing scenarios where no index persistence is required; or
+3. as an example/template for developing other index drivers.
+
+
 Drivers Plugin Management Module
 ================================
 
