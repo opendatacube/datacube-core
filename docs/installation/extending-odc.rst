@@ -257,7 +257,7 @@ The memory index driver may be useful:
 3. as an example/template for developing other index drivers.
 
 
-Postgis Implementation
+PostGIS Implementation
 ----------------------
 
 `datacube-core` also includes a PostGIS index driver that can be accessed by setting the ``index_driver``
