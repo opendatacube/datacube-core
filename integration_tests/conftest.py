@@ -20,7 +20,8 @@ from hypothesis import HealthCheck, settings
 
 import datacube.scripts.cli_app
 import datacube.utils
-from datacube.drivers.postgres import _core
+from datacube.drivers.postgres import _core as pgres_core
+from datacube.drivers.postgis import _core as pgis_core
 from datacube.index import index_connect
 from datacube.index.abstract import default_metadata_type_docs
 from integration_tests.utils import _make_geotiffs, _make_ls5_scene_datasets, load_yaml_file, \
@@ -28,6 +29,7 @@ from integration_tests.utils import _make_geotiffs, _make_ls5_scene_datasets, lo
 
 from datacube.config import LocalConfig
 from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgis import PostGisDb
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 
@@ -144,13 +146,9 @@ def global_integration_cli_args():
     return list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
 
 
-@pytest.fixture
+@pytest.fixture(scope="module", params=["datacube", "experimental"])
 def datacube_env_name(request):
-
-    if hasattr(request, 'param'):
-        return request.param
-    else:
-        return 'datacube'
+    return request.param
 
 
 @pytest.fixture
@@ -191,27 +189,42 @@ def ingest_configs(datacube_env_name):
 @pytest.fixture(params=["US/Pacific", "UTC", ])
 def uninitialised_postgres_db(local_config, request):
     """
-    Return a connection to an empty PostgreSQL database
+    Return a connection to an empty PostgreSQL or PostGIS database
     """
     timezone = request.param
 
-    db = PostgresDb.from_config(local_config,
-                                application_name='test-run',
-                                validate_connection=False)
-
-    # Drop tables so our tests have a clean db.
-    # with db.begin() as c:  # Creates a new PostgresDbAPI, by passing a new connection to it
-    _core.drop_db(db._engine)
-    db._engine.execute('alter database %s set timezone = %r' % (local_config['db_database'], timezone))
-
-    # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
-    # and attempts to recreate them. WTF TODO FIX
-    remove_dynamic_indexes()
+    if local_config._env == "datacube":
+        db = PostgresDb.from_config(
+            local_config,
+            application_name='test-run',
+            validate_connection=False
+        )
+        # Drop tables so our tests have a clean db.
+        # with db.begin() as c:  # Creates a new PostgresDbAPI, by passing a new connection to it
+        pgres_core.drop_db(db._engine)
+        db._engine.execute('alter database %s set timezone = %r' % (local_config['db_database'], timezone))
+        # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
+        # and attempts to recreate them. WTF TODO FIX
+        remove_postgres_dynamic_indexes()
+    else:
+        db = PostGisDb.from_config(
+            local_config,
+            application_name='test-run',
+            validate_connection=False
+        )
+        pgis_core.drop_db(db._engine)
+        db._engine.execute('alter database %s set timezone = %r' % (local_config['db_database'], timezone))
+        remove_postgis_dynamic_indexes()
 
     yield db
-    # with db.begin() as c:  # Drop SCHEMA
-    _core.drop_db(db._engine)
-    db.close()
+
+    if local_config._env in ('default', 'postgres'):
+        # with db.begin() as c:  # Drop SCHEMA
+        pgres_core.drop_db(db._engine)
+        db.close()
+    else:
+        pgis_core.drop_db(db._engine)
+        db.close()
 
 
 @pytest.fixture
@@ -240,12 +253,21 @@ def initialised_postgres_db(index):
     return index._db
 
 
-def remove_dynamic_indexes():
+def remove_postgres_dynamic_indexes():
     """
     Clear any dynamically created postgresql indexes from the schema.
     """
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-    for table in _core.METADATA.tables.values():
+    for table in pgres_core.METADATA.tables.values():
+        table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
+
+
+def remove_postgis_dynamic_indexes():
+    """
+    Clear any dynamically created postgis indexes from the schema.
+    """
+    # Our normal indexes start with "ix_", dynamic indexes with "dix_"
+    for table in pgis_core.METADATA.tables.values():
         table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
 
 

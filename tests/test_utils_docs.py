@@ -612,3 +612,6 @@ def test_document_subset():
         {"a": "foo", "k": {"b": [34, 11]}},
         {"g": "goo", "h": {"a": "foo", "b": [11, 34], "k": {"b": [11, 234, 35]}, "d": "doop"}}
     )
+
+    assert metadata_subset([35, 47, 58], [0, 35, 47, 58, 102])
+    assert metadata_subset([35, 47, 58], {"a": "foo", "b": [35, 47, 52, 58]})

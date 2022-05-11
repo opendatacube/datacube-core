@@ -11,7 +11,6 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
 @pytest.mark.timeout(20)
-@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_invalid_ingestor_config(clirunner, index, tmpdir):

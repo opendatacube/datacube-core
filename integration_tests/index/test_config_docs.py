@@ -10,7 +10,8 @@ import copy
 import pytest
 import yaml
 
-from datacube.drivers.postgres._fields import NumericRangeDocField, PgField
+from datacube.drivers.postgres._fields import NumericRangeDocField as PgrNumericRangeDocField, PgField as PgrPgField
+from datacube.drivers.postgis._fields import NumericRangeDocField as PgsNumericRangeDocField, PgField as PgsPgField
 from datacube.index import Index
 from datacube.index.abstract import default_metadata_type_docs
 from datacube.model import MetadataType, DatasetType
@@ -97,9 +98,7 @@ def test_dataset_composite_indexes_exist(initialised_postgres_db, ls5_telem_type
     assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_time")
 
 
-def test_field_expression_unchanged(default_metadata_type, telemetry_metadata_type):
-    # type: (MetadataType, MetadataType) -> None
-
+def test_field_expression_unchanged(default_metadata_type: MetadataType, telemetry_metadata_type: MetadataType) -> None:
     # We're checking for accidental changes here in our field-to-SQL code
 
     # If we started outputting a different expression they would quietly no longer match the expression
@@ -107,7 +106,7 @@ def test_field_expression_unchanged(default_metadata_type, telemetry_metadata_ty
 
     # The time field on the default 'eo' metadata type.
     field = default_metadata_type.dataset_fields['time']
-    assert isinstance(field, PgField)
+    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
     assert field.sql_expression == (
         "tstzrange("
         "least("
@@ -120,7 +119,7 @@ def test_field_expression_unchanged(default_metadata_type, telemetry_metadata_ty
     )
 
     field = default_metadata_type.dataset_fields['lat']
-    assert isinstance(field, PgField)
+    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
     assert field.sql_expression == (
         "agdc.float8range("
         "least("
@@ -138,14 +137,14 @@ def test_field_expression_unchanged(default_metadata_type, telemetry_metadata_ty
 
     # A single string value
     field = default_metadata_type.dataset_fields['platform']
-    assert isinstance(field, PgField)
+    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
     assert field.sql_expression == (
         "agdc.dataset.metadata #>> '{platform, code}'"
     )
 
     # A single integer value
     field = telemetry_metadata_type.dataset_fields['orbit']
-    assert isinstance(field, PgField)
+    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
     assert field.sql_expression == (
         "CAST(agdc.dataset.metadata #>> '{acquisition, platform_orbit}' AS INTEGER)"
     )
@@ -414,7 +413,10 @@ def test_update_metadata_type(index, default_metadata_type):
     # But works when unsafe updates are allowed.
     index.metadata_types.update_document(different_mt_doc, allow_unsafe_updates=True)
     updated_type = index.metadata_types.get_by_name(mt_doc['name'])
-    assert isinstance(updated_type.dataset_fields['time'], NumericRangeDocField)
+    assert (
+            isinstance(updated_type.dataset_fields['time'], PgrNumericRangeDocField)
+            or isinstance(updated_type.dataset_fields['time'], PgsNumericRangeDocField)
+    )
 
 
 def test_filter_types_by_fields(index, ls5_telem_type):

@@ -4,11 +4,11 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 
-from datacube.drivers.postgres import PostgresDb
-from datacube.index.postgres._datasets import DatasetResource  # type: ignore
-from datacube.index.postgres._metadata_types import MetadataTypeResource
-from datacube.index.postgres._products import ProductResource
-from datacube.index.postgres._users import UserResource
+from datacube.drivers.postgis import PostGisDb
+from datacube.index.postgis._datasets import DatasetResource  # type: ignore
+from datacube.index.postgis._metadata_types import MetadataTypeResource
+from datacube.index.postgis._products import ProductResource
+from datacube.index.postgis._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs
 from datacube.model import MetadataType
 
@@ -39,7 +39,11 @@ class Index(AbstractIndex):
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
 
-    def __init__(self, db: PostgresDb) -> None:
+    def __init__(self, db: PostGisDb) -> None:
+        # POSTGIS driver is not stable with respect to database schema or internal APIs.
+        _LOG.warning("""WARNING: The POSTGIS index driver implementation is considered EXPERIMENTAL.
+WARNING:        
+WARNING: Database schema and internal APIs may change significantly between releases. Use at your own risk.""")
         self._db = db
 
         self._users = UserResource(db)
@@ -69,13 +73,13 @@ class Index(AbstractIndex):
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
-        db = PostgresDb.from_config(config, application_name=application_name,
+        db = PostGisDb.from_config(config, application_name=application_name,
                                     validate_connection=validate_connection)
         return cls(db)
 
     @classmethod
     def get_dataset_fields(cls, doc):
-        return PostgresDb.get_dataset_fields(doc)
+        return PostGisDb.get_dataset_fields(doc)
 
     def init_db(self, with_default_types=True, with_permissions=True):
         is_new = self._db.init(with_permissions=with_permissions)
@@ -103,8 +107,6 @@ class Index(AbstractIndex):
 
 
 class DefaultIndexDriver(AbstractIndexDriver):
-    aliases = ['postgres']
-
     @staticmethod
     def connect_to_index(config, application_name=None, validate_connection=True):
         return Index.from_config(config, application_name, validate_connection)
