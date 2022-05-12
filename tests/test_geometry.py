@@ -362,8 +362,8 @@ def test_shapely_wrappers():
     assert x.typecode == y.typecode
     assert x.typecode == 'd'
 
-    assert (poly | poly) == poly
-    assert (poly & poly) == poly
+    assert ((poly | poly) ^ poly).is_empty
+    assert ((poly & poly) ^ poly).is_empty
     assert (poly ^ poly).is_empty
     assert (poly - poly).is_empty
 

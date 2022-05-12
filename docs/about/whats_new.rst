@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- Address upstream security alerts and update upstream library versions. (:pull:`1250`)
 - Clone ``postgres`` index driver as ``postgis``, and flag as experimental. (:pull:`1248`)
 - Implement a local non-persistent in-memory index driver, with maximal backwards-compatibility
   with default postgres index driver. Doesn't work with CLI interface, as every invocation
