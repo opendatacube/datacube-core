@@ -9,6 +9,7 @@ Query datasets.
 
 import csv
 import datetime
+import shutil
 import sys
 from functools import partial
 
@@ -27,7 +28,7 @@ def printable_values(d):
     return {k: printable(v) for k, v in d.items()}
 
 
-def write_pretty(out_f, field_names, search_results, terminal_size=click.get_terminal_size()):
+def write_pretty(out_f, field_names, search_results, terminal_size=shutil.get_terminal_size()):
     """
     Output in a human-readable text format. Inspired by psql's expanded output.
     """
