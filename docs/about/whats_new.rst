@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- Clearer error message when local metadata file does not exist. (:pull:`1252`)
 - Address upstream security alerts and update upstream library versions. (:pull:`1250`)
 - Clone ``postgres`` index driver as ``postgis``, and flag as experimental. (:pull:`1248`)
 - Implement a local non-persistent in-memory index driver, with maximal backwards-compatibility
@@ -31,7 +32,6 @@ v1.8.next
 - Prefer WKT over EPSG when guessing CRS strings. (:pull:`1223`)
 - Updates to documentation. (:pull:`1208`, :pull:`1212`, :pull:`1215`, :pull:`1218`, :pull:`1240`, :pull:`1244`)
 - Tweak to segmented in geometry to suppress Shapely warning. (:pull:`1207`)
-- Improve documentation for Product Discovery, Data Searching and Data Loading docs
 
 v1.8.6 (30 September 2021)
 ==========================
