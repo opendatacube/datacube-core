@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- Prevent Shapely deprecation warning. (:pull:`1253`)
 - Clearer error message when local metadata file does not exist. (:pull:`1252`)
 - Address upstream security alerts and update upstream library versions. (:pull:`1250`)
 - Clone ``postgres`` index driver as ``postgis``, and flag as experimental. (:pull:`1248`)

@@ -705,7 +705,8 @@ class Geometry:
             yield Geometry(g, self.crs)
 
     def __iter__(self) -> Iterator['Geometry']:
-        for geom in self.geom:
+        sub_geoms = getattr(self.geom, "geoms", [])
+        for geom in sub_geoms:
             yield Geometry(geom, self.crs)
 
     def __nonzero__(self) -> bool:
