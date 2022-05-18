@@ -17,6 +17,7 @@ SCHEMA_NAME = 'agdc'
 
 
 class CreateView(Executable, ClauseElement):
+    inherit_cache = True
     def __init__(self, name, select):
         self.name = name
         self.select = select
@@ -87,6 +88,7 @@ class CommonTimestamp(GenericFunction):
     type = TIMESTAMP(timezone=True)
     package = 'agdc'
     identifier = 'common_timestamp'
+    inherit_cache = False
 
     name = 'common_timestamp'
 
@@ -100,6 +102,7 @@ class Float8Range(GenericFunction):
     type = FLOAT8RANGE
     package = 'agdc'
     identifier = 'float8range'
+    inherit_cache = False
 
     name = 'float8range'
 

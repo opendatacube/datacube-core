@@ -61,6 +61,8 @@ class PostgresDb(object):
     or else use a separate instance of this class in each process.
     """
 
+    driver_name = 'postgres'   # Mostly to support parametised tests
+
     def __init__(self, engine):
         # We don't recommend using this constructor directly as it may change.
         # Use static methods PostgresDb.create() or PostgresDb.from_config()

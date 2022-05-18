@@ -1,36 +1,36 @@
 -- Index each dimension min/max value separately as traditional btree-indexed scalars.
 
-create index ix_dataset_metadata_lat_min on agdc.dataset (
+create index ix_dataset_metadata_lat_min on odc.dataset (
     least(
             CAST(metadata #>> '{extent, coord, ul, lat}' as float),
             CAST(metadata #>> '{extent, coord, ll, lat}' as float)
     )
 );
-create index ix_dataset_metadata_lat_max on agdc.dataset (
+create index ix_dataset_metadata_lat_max on odc.dataset (
     greatest(
             CAST(metadata #>> '{extent, coord, ur, lat}' as float),
             CAST(metadata #>> '{extent, coord, lr, lat}' as float)
     )
 );
 
-create index ix_dataset_metadata_lon_min on agdc.dataset (
+create index ix_dataset_metadata_lon_min on odc.dataset (
     least(
             CAST(metadata #>> '{extent, coord, ll, lon}' as float),
             CAST(metadata #>> '{extent, coord, lr, lon}' as float)
     )
 );
-create index ix_dataset_metadata_lon_max on agdc.dataset (
+create index ix_dataset_metadata_lon_max on odc.dataset (
     greatest(
             CAST(metadata #>> '{extent, coord, ul, lon}' as float),
             CAST(metadata #>> '{extent, coord, ur, lon}' as float)
     )
 );
 
-create index id_dataset_metadata on agdc.dataset (metadata);
+create index id_dataset_metadata on odc.dataset (metadata);
 
 
 explain analyse select *
-                from agdc.dataset
+                from odc.dataset
                 where
                     -30 :: float between
                     least(

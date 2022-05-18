@@ -13,10 +13,11 @@ from sqlalchemy.sql import sqltypes
 from sqlalchemy.sql.expression import Executable, ClauseElement
 from sqlalchemy.sql.functions import GenericFunction
 
-SCHEMA_NAME = 'agdc'
+SCHEMA_NAME = 'odc'
 
 
 class CreateView(Executable, ClauseElement):
+    inherit_cache = True
     def __init__(self, name, select):
         self.name = name
         self.select = select
@@ -85,8 +86,9 @@ def visit_float8range(element, compiler, **kw):
 # pylint: disable=too-many-ancestors
 class CommonTimestamp(GenericFunction):
     type = TIMESTAMP(timezone=True)
-    package = 'agdc'
+    package = 'odc'
     identifier = 'common_timestamp'
+    inherit_cache = False
 
     name = 'common_timestamp'
 
@@ -98,8 +100,9 @@ class CommonTimestamp(GenericFunction):
 # pylint: disable=too-many-ancestors
 class Float8Range(GenericFunction):
     type = FLOAT8RANGE
-    package = 'agdc'
+    package = 'odc'
     identifier = 'float8range'
+    inherit_cache = False
 
     name = 'float8range'
 
