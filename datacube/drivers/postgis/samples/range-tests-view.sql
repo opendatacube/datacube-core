@@ -1,6 +1,6 @@
 -- Index using Postgres range types, using a view for convenient access.
 
-create index ix_dataset_metadata_lat_range on agdc.dataset using gist (
+create index ix_dataset_metadata_lat_range on odc.dataset using gist (
     numrange(
             least(
                     CAST(metadata #>> '{extent, coord, ul, lat}' as numeric),
@@ -14,7 +14,7 @@ create index ix_dataset_metadata_lat_range on agdc.dataset using gist (
     )
 );
 
-create index ix_dataset_metadata_lon_range on agdc.dataset using gist (
+create index ix_dataset_metadata_lon_range on odc.dataset using gist (
     numrange(
             least(
                     CAST(metadata #>> '{extent, coord, ll, lon}' as numeric),
@@ -29,10 +29,10 @@ create index ix_dataset_metadata_lon_range on agdc.dataset using gist (
 );
 
 
-create index id_dataset_metadata on agdc.dataset (metadata);
+create index id_dataset_metadata on odc.dataset (metadata);
 
 drop index ix_dataset_md_sat;
-create index ix_dataset_md_sat on agdc.dataset (upper(metadata #>> '{platform, code}'));
+create index ix_dataset_md_sat on odc.dataset (upper(metadata #>> '{platform, code}'));
 
 drop view eo_dataset;
 create view eo_dataset as
@@ -64,7 +64,7 @@ create view eo_dataset as
         )                                      as lon,
         metadata,
         metadata_path
-    from agdc.dataset;
+    from odc.dataset;
 
 
 select *

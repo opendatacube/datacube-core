@@ -6,6 +6,8 @@
 Test creation of added/updated columns during
 `datacube system init`
 """
+import pytest
+
 from datacube.drivers.postgres.sql import SCHEMA_NAME
 from datacube.drivers.postgres import _schema
 
@@ -50,6 +52,7 @@ def drop_column(conn, table: str, column: str):
         schema=SCHEMA_NAME, table=table, column=column))
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_added_column(clirunner, uninitialised_postgres_db):
     # Run on an empty database.
     result = clirunner(["system", "init"])
@@ -72,6 +75,7 @@ def test_added_column(clirunner, uninitialised_postgres_db):
         assert not check_trigger(connection, _schema.DATASET_LOCATION.name)
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_readd_column(clirunner, uninitialised_postgres_db):
     # Run on an empty database. drop columns and readd
     result = clirunner(["system", "init"])

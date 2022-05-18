@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- Cleaner separation of postgis and postgres drivers, and suppress SQLAlchemy cache warnings. (:pull:`1254`)
 - Prevent Shapely deprecation warning. (:pull:`1253`)
 - Clearer error message when local metadata file does not exist. (:pull:`1252`)
 - Address upstream security alerts and update upstream library versions. (:pull:`1250`)

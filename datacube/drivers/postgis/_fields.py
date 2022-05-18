@@ -264,7 +264,7 @@ class DateDocField(SimpleDocField):
             return _default_utc(value)
         # SQLAlchemy expression or string are parsed in pg as dates.
         elif isinstance(value, (ColumnElement, str)):
-            return func.agdc.common_timestamp(value)
+            return func.odc.common_timestamp(value)
         else:
             raise ValueError("Value not readable as date: %r" % (value,))
 
@@ -384,7 +384,7 @@ class DoubleRangeDocField(RangeDocField):
 
     def value_to_alchemy(self, value):
         low, high = value
-        return func.agdc.float8range(
+        return func.odc.float8range(
             low, high,
             # Inclusive on both sides.
             '[]',

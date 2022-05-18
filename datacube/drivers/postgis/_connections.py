@@ -30,7 +30,7 @@ from datacube.utils import jsonify_document
 from . import _api
 from . import _core
 
-_LIB_ID = 'agdc-' + str(datacube.__version__)
+_LIB_ID = 'odc-' + str(datacube.__version__)
 
 _LOG = logging.getLogger(__name__)
 
@@ -60,6 +60,8 @@ class PostGisDb(object):
     processes. You can call close() before forking if you know no other threads currently hold connections,
     or else use a separate instance of this class in each process.
     """
+
+    driver_name = 'postgis'  # Mostly to support parametised tests
 
     def __init__(self, engine):
         # We don't recommend using this constructor directly as it may change.
@@ -169,13 +171,13 @@ class PostGisDb(object):
     def _expand_app_name(cls, application_name):
         """
         >>> PostGisDb._expand_app_name(None) #doctest: +ELLIPSIS
-        'agdc-...'
+        'odc-...'
         >>> PostGisDb._expand_app_name('') #doctest: +ELLIPSIS
-        'agdc-...'
+        'odc-...'
         >>> PostGisDb._expand_app_name('cli') #doctest: +ELLIPSIS
-        'cli agdc-...'
+        'cli odc-...'
         >>> PostGisDb._expand_app_name('a b.c/d')
-        'a-b-c-d agdc-...'
+        'a-b-c-d odc-...'
         >>> PostGisDb._expand_app_name(5)
         Traceback (most recent call last):
         ...

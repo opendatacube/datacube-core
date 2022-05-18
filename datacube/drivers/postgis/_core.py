@@ -8,7 +8,7 @@ Core SQL schema settings.
 
 import logging
 
-from datacube.drivers.postgres.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
+from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                            SCHEMA_NAME, TYPES_INIT_SQL,
                                            UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
                                            ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
@@ -62,7 +62,7 @@ def install_added_column(connection):
 def schema_qualified(name):
     """
     >>> schema_qualified('dataset')
-    'agdc.dataset'
+    'odc.dataset'
     """
     return '{}.{}'.format(SCHEMA_NAME, name)
 
