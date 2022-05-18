@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- Remove reference to `rasterio.path`. (:pull:`1255`)
 - Cleaner separation of postgis and postgres drivers, and suppress SQLAlchemy cache warnings. (:pull:`1254`)
 - Prevent Shapely deprecation warning. (:pull:`1253`)
 - Clearer error message when local metadata file does not exist. (:pull:`1252`)
