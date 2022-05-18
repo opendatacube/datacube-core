@@ -164,7 +164,7 @@ class RasterioDataSource(DataSource):
 
         try:
             _LOG.debug("opening %s", self.filename)
-            with rasterio.open(str(self.filename)) as src:
+            with rasterio.open(str(self.filename), sharing=False) as src:
                 override = False
 
                 transform = src.transform
