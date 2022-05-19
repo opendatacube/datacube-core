@@ -9,7 +9,7 @@ User configuration.
 import os
 from pathlib import Path
 import configparser
-from urllib.parse import unquote_plus, urlparse
+from urllib.parse import unquote_plus, urlparse, parse_qsl
 from typing import Optional, Iterable, Union, Any, Tuple, Dict
 
 PathLike = Union[str, 'os.PathLike[Any]']
@@ -172,7 +172,7 @@ def parse_connect_url(url: str) -> Dict[str, str]:
         i = s.find(separator)
         return (s, '') if i < 0 else (s[:i], s[i+1:])
 
-    _, netloc, path, *_ = urlparse(url)
+    _, netloc, path, _, query, *_ = urlparse(url)
 
     db = path[1:] if path else ''
     if '@' in netloc:
@@ -189,6 +189,16 @@ def parse_connect_url(url: str) -> Dict[str, str]:
         oo['password'] = unquote_plus(password)
     if user:
         oo['username'] = user
+
+    supported_keys = {
+        'user': 'username',
+        'host': 'hostname',
+        'dbname': 'database',
+        'password': 'password',
+        'port': 'port',
+    }
+    oo.update({supported_keys[k]: v for k, v in parse_qsl(query) if k in supported_keys})
+
     return oo
 
 
