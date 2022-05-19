@@ -11,6 +11,7 @@ v1.8.next
 - Remove reference to `rasterio.path`. (:pull:`1255`)
 - Cleaner separation of postgis and postgres drivers, and suppress SQLAlchemy cache warnings. (:pull:`1254`)
 - Prevent Shapely deprecation warning. (:pull:`1253`)
+- Fix `DATACUBE_DB_URL` parsing to understand syntax like: `postgresql:///datacube?host=/var/run/postgresql` (:pull:`1256`)
 - Clearer error message when local metadata file does not exist. (:pull:`1252`)
 - Address upstream security alerts and update upstream library versions. (:pull:`1250`)
 - Clone ``postgres`` index driver as ``postgis``, and flag as experimental. (:pull:`1248`)

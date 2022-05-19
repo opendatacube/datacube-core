@@ -119,6 +119,19 @@ def test_parse_db_url():
         hostname='some.tld',
         port='3344')
 
+    assert parse_connect_url('postgresql:///db?host=/var/run/postgresql') == dict(
+        database='db',
+        hostname='/var/run/postgresql')
+
+    assert parse_connect_url(
+        'postgresql:///?user=user&password=pass%40&host=/var/run/postgresql&port=3344&dbname=db&sslmode=allow'
+    ) == dict(
+        password='pass@',
+        username='user',
+        database='db',
+        hostname='/var/run/postgresql',
+        port='3344')
+
 
 def _clear_cfg_env(monkeypatch):
     for e in ('DATACUBE_DB_URL',
