@@ -245,7 +245,7 @@ class VirtualProduct(Mapping):
 
     _GEOBOX_KEYS = {'output_crs', 'resolution', 'align'}
     _GROUPING_KEYS = {'group_by'}
-    _LOAD_KEYS = {'measurements', 'fuse_func', 'resampling', 'dask_chunks', 'like'}
+    _LOAD_KEYS = {'measurements', 'fuse_func', 'resampling', 'dask_chunks', 'like', 'skip_broken_datasets'}
     _ADDITIONAL_SEARCH_KEYS = {'dataset_predicate', 'ensure_location'}
 
     _NON_QUERY_KEYS = _GEOBOX_KEYS | _GROUPING_KEYS | _LOAD_KEYS
@@ -421,6 +421,7 @@ class Product(VirtualProduct):
                                     geobox, list(measurement_dicts.values()),
                                     fuse_func=merged.get('fuse_func'),
                                     dask_chunks=merged.get('dask_chunks'),
+                                    skip_broken_datasets=merged.get('skip_broken_datasets', False),
                                     resampling=merged.get('resampling', 'nearest'))
 
         return result
