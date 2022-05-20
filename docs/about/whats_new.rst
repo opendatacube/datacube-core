@@ -36,6 +36,7 @@ v1.8.next
 - Prefer WKT over EPSG when guessing CRS strings. (:pull:`1223`)
 - Updates to documentation. (:pull:`1208`, :pull:`1212`, :pull:`1215`, :pull:`1218`, :pull:`1240`, :pull:`1244`)
 - Tweak to segmented in geometry to suppress Shapely warning. (:pull:`1207`)
+- Fix to ensure ``skip_broken_datasets`` is correctly propagated in virtual products (:pull:`1259`)
 
 v1.8.6 (30 September 2021)
 ==========================
