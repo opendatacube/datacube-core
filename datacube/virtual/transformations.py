@@ -359,13 +359,22 @@ def year(time):
 
 def fiscal_year(time):
     """"
-    This function will support group-by financial years
+    This function supports group-by financial years
     """
-    df = pd.Series(time.values)
-    years = df.apply(lambda x: np.datetime64(str(x.to_period('Q-JUN').qyear))).values
-    ds = xr.DataArray(years, name='time', attrs=time.attrs, coords=time.coords, dims=time.dims)
+    def convert_to_quarters(x):
+        df = pd.Series(x)
+        return df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
+
+    ds = xarray.apply_ufunc(convert_to_quarters,
+                       time,
+                       input_core_dims=[["time"]],
+                       output_core_dims=[["time"]],
+                       vectorize=True)
+
+    df = time['time'].to_series()
+    years = df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
     ds = ds.assign_coords({"time": years})
-    return ds
+    return(ds)
 
 
 def month(time):
