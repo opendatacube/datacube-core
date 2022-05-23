@@ -7,7 +7,7 @@ What's New
 
 v1.8.next
 =========
-
+- Added support for group-by financial years to virtual products. (:pull:`1257`)
 - Remove reference to `rasterio.path`. (:pull:`1255`)
 - Cleaner separation of postgis and postgres drivers, and suppress SQLAlchemy cache warnings. (:pull:`1254`)
 - Prevent Shapely deprecation warning. (:pull:`1253`)

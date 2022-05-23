@@ -6,6 +6,7 @@ from typing import Optional, Collection
 
 import numpy
 import xarray
+import pandas as pd
 
 from datacube.utils.masking import make_mask as make_mask_prim
 from datacube.utils.masking import mask_invalid_data as mask_invalid_data_prim
@@ -355,6 +356,25 @@ class Expressions(Transformation):
 
 def year(time):
     return time.astype('datetime64[Y]')
+
+def fiscal_year(time):
+    """"
+    This function supports group-by financial years
+    """
+    def convert_to_quarters(x):
+        df = pd.Series(x)
+        return df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
+
+    ds = xarray.apply_ufunc(convert_to_quarters,
+                       time,
+                       input_core_dims=[["time"]],
+                       output_core_dims=[["time"]],
+                       vectorize=True)
+
+    df = time['time'].to_series()
+    years = df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
+    ds = ds.assign_coords({"time": years})
+    return(ds)
 
 
 def month(time):

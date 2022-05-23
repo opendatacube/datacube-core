@@ -10,13 +10,16 @@ import warnings
 import pytest
 from unittest import mock
 import numpy
+import xarray as xr
 
 from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
 from datacube.utils import geometry
 from datacube.virtual import construct_from_yaml, catalog_from_yaml, VirtualProductException
 from datacube.virtual import DEFAULT_RESOLVER, Transformation
 from datacube.virtual.impl import Datacube
+
 from datacube.virtual.expr import formula_parser, FormulaEvaluator, evaluate_data
+from datacube.virtual.transformations import fiscal_year
 
 
 ##########################################
@@ -535,3 +538,66 @@ def test_reproject(dc, query, catalog):
     assert data.geobox.crs == geometry.CRS('EPSG:32755')
     assert data.coords['x'].attrs['resolution'] == -30
     assert data.coords['y'].attrs['resolution'] == 30
+
+
+def test_fiscal_year():
+    """
+    Test fiscal year function
+    """
+    times = ['2015-07-02T11:59:59.999999000',
+             '2015-07-02T11:59:59.999999000',
+             '2016-07-01T23:59:59.999999000',
+             '2016-07-01T23:59:59.999999']
+
+    times = [numpy.datetime64(x) for x in times]
+    coords = ({'time': times})
+    attribs = {'units': 'seconds since 1970-01-01 00:00:00'}
+    dimension = ('time',)
+    da = xr.DataArray(times, name='time',
+                      attrs=attribs,
+                      coords=coords,
+                      dims=dimension)
+
+    fy = fiscal_year(da)
+
+    expected = ['2016-01-01', '2016-01-01', '2017-01-01', '2017-01-01']
+    expected = [numpy.datetime64(x) for x in expected]
+
+    assert (expected == fy.data).all()
+    assert (expected == fy.time).all()
+
+
+def test_fiscal_year_multi_time_dimensions():
+    """
+    Test the fiscal year is applied to every
+    input time dimension
+    """
+
+    times_mock_1 = ['2015-06-30T11:59:59.999999000',
+                    '2015-12-31T11:59:59.999999000',
+                    '2016-01-01T23:59:59.999999000',
+                    '2016-07-01T23:59:59.999999']
+
+    times_mock_2 = ['2019-06-30T11:59:59.999999000',
+                    '2019-12-31T11:59:59.999999000',
+                    '2020-01-01T23:59:59.999999000',
+                    '2020-05-31T23:59:59.999999']
+
+    times_mock_1 = [numpy.datetime64(x) for x in times_mock_1]
+    times_mock_2 = [numpy.datetime64(x) for x in times_mock_2]
+    data = numpy.array([times_mock_1, times_mock_2])
+    attribs = {'units': 'seconds since 1970-01-01 00:00:00'}
+    da = xr.DataArray(data, name='time',
+                      attrs=attribs,
+                      coords={'x': [1, 2], 'time': times_mock_1},
+                      dims=('x', 'time'))
+    fy = fiscal_year(da)
+
+    expected_times_mock_1 = ['2015-01-01', '2016-01-01', '2016-01-01', '2017-01-01']
+    expected_times_mock_2 = ['2019-01-01', '2020-01-01', '2020-01-01', '2020-01-01']
+    expected_times_mock_1 = [numpy.datetime64(x) for x in expected_times_mock_1]
+    expected_times_mock_2 = [numpy.datetime64(x) for x in expected_times_mock_2]
+    expected_data = numpy.array([expected_times_mock_1, expected_times_mock_2])
+
+    assert (expected_data == fy.data).all()
+    assert (expected_times_mock_1 == fy.time).all()
