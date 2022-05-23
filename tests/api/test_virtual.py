@@ -539,6 +539,7 @@ def test_reproject(dc, query, catalog):
     assert data.coords['x'].attrs['resolution'] == -30
     assert data.coords['y'].attrs['resolution'] == 30
 
+
 def test_fiscal_year():
     """
     Test fiscal year function
