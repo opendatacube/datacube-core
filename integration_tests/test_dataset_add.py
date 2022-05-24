@@ -41,13 +41,15 @@ def check_no_product_match(clirunner, index):
     r = clirunner(['dataset', 'add',
                    '--product', 'A',
                    str(prefix)])
-    assert 'ERROR Dataset metadata did not match product signature' in r.output
+    assert 'ERROR' in r.output
+    assert 'Dataset metadata did not match product signature' in r.output
 
     r = clirunner(['dataset', 'add',
                    '--product', 'A',
                    '--product', 'B',
                    str(prefix)])
-    assert 'ERROR No matching Product found for dataset' in r.output
+    assert 'ERROR' in r.output
+    assert 'No matching Product found for dataset' in r.output
 
     ds_ = index.datasets.get(ds.id, include_sources=True)
     assert ds_ is None
@@ -58,7 +60,8 @@ def check_no_product_match(clirunner, index):
                    '--confirm-ignore-lineage',
                    str(prefix)])
 
-    assert 'ERROR Dataset metadata did not match product signature' in r.output
+    assert 'ERROR' in r.output
+    assert 'Dataset metadata did not match product signature' in r.output
     assert index.datasets.has(ds.id) is False
 
 
