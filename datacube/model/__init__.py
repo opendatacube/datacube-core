@@ -22,6 +22,9 @@ from datacube.utils import geometry, without_lineage_sources, parse_time, cached
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap
 
+# TODO: Multi-dimension code is has incomplete type hints and significant type issues that will require attention
+# type: ignore
+
 _LOG = logging.getLogger(__name__)
 
 DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
@@ -406,7 +409,7 @@ class DatasetType:
         self.metadata_type = metadata_type
         #: product definition document
         self.definition = definition
-        self._extra_dimensions = None
+        self._extra_dimensions: Optional[Mapping[str, Any]] = None
         self._canonical_measurements: Optional[Mapping[str, Measurement]] = None
         self._all_measurements: Optional[Dict[str, Measurement]] = None
         self._load_hints: Optional[Dict[str, Any]] = None
@@ -489,7 +492,7 @@ class DatasetType:
         return ('time',) + spatial_dims
 
     @property
-    def extra_dimensions(self) -> Mapping[str, Measurement]:
+    def extra_dimensions(self) -> "ExtraDimensions":
         """
         Dictionary of metadata for the third dimension.
         """
@@ -526,6 +529,7 @@ class DatasetType:
 
         return GridSpec(crs=crs, **gs_params)
 
+    @staticmethod
     def validate_extra_dims(definition: dict):
         """Validate 3D metadata in the product definition.
 
@@ -565,7 +569,7 @@ class DatasetType:
             if 'spectral_definition' in m:
                 spectral_definitions = m.get('spectral_definition', [])
                 # Check spectral_definition of expected length
-                if len(defined_extra_dimensions.get(dim_name)) != len(spectral_definitions):
+                if len(defined_extra_dimensions[dim_name]) != len(spectral_definitions):
                     raise ValueError(
                         f"spectral_definition should be the same length as values for extra_dim {m.get('extra_dim')}"
                     )
@@ -928,7 +932,7 @@ class ExtraDimensions:
     the original dimension coordinates.
     """
 
-    def __init__(self, extra_dim: Dict[str, Any]):
+    def __init__(self, extra_dim: Mapping[str, Any]):
         """Init function
 
         :param extra_dim: Dimension definition dict, typically retrieved from the product definition's
