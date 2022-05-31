@@ -2,9 +2,6 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-
-# TODO: Multi-dimension code is has incomplete type hints and significant type issues that will require attention
-# type: ignore
 """
 Core classes used across modules.
 """
@@ -32,6 +29,8 @@ DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
+
+# TODO: Multi-dimension code is has incomplete type hints and significant type issues that will require attention
 
 class Dataset:
     """
@@ -991,24 +990,24 @@ class ExtraDimensions:
         for dim_name, dim_slice in dim_slices.items():
             # Adjust slices relative to original.
             if dim_name in ed._dim_slice:
-                ed._dim_slice[dim_name] = (
-                    ed._dim_slice[dim_name][0] + dim_slice[0],
-                    ed._dim_slice[dim_name][0] + dim_slice[1],
+                ed._dim_slice[dim_name] = (    # type: ignore[assignment]
+                    ed._dim_slice[dim_name][0] + dim_slice[0],  # type: ignore[index]
+                    ed._dim_slice[dim_name][0] + dim_slice[1],  # type: ignore[index]
                 )
 
             # Subset dimension values.
             if dim_name in ed._dims:
-                ed._dims[dim_name]['values'] = ed._dims[dim_name]['values'][slice(*dim_slice)]
+                ed._dims[dim_name]['values'] = ed._dims[dim_name]['values'][slice(*dim_slice)]  # type: ignore[misc]
 
             # Subset dimension coordinates.
             if dim_name in ed._coords:
-                slice_dict = {k: slice(*v) for k, v in dim_slices.items()}
+                slice_dict = {k: slice(*v) for k, v in dim_slices.items()}  # type: ignore[misc]
                 ed._coords[dim_name] = ed._coords[dim_name].isel(slice_dict)
 
         return ed
 
     @property
-    def dims(self) -> Dict[str, dict]:
+    def dims(self) -> Mapping[str, dict]:
         """Returns stored dimension information
 
         :return: A dict of information about each dimension
@@ -1016,7 +1015,7 @@ class ExtraDimensions:
         return self._dims
 
     @property
-    def dim_slice(self) -> Dict[str, Tuple[int, int]]:
+    def dim_slice(self) -> Mapping[str, Tuple[int, int]]:
         """Returns dimension slice for this ExtraDimensions object
 
         :return: A dict of dimension slices that results in this ExtraDimensions object
@@ -1090,8 +1089,8 @@ class ExtraDimensions:
         if self.dims is not None:
             for dim in self.dims.values():
                 name = dim.get('name')
-                names += (name,)
-                shapes += (len(self.measurements_values(name)),)
+                names += (name,)   # type: ignore[assignment]
+                shapes += (len(self.measurements_values(name)),)   # type: ignore[assignment,arg-type]
         return names, shapes
 
     def __str__(self) -> str:
