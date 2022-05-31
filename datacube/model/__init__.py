@@ -2,9 +2,13 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+
+# TODO: Multi-dimension code is has incomplete type hints and significant type issues that will require attention
+# type: ignore
 """
 Core classes used across modules.
 """
+
 import logging
 import math
 import warnings
@@ -21,9 +25,6 @@ from datacube.utils import geometry, without_lineage_sources, parse_time, cached
     schema_validated, DocReader
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap
-
-# TODO: Multi-dimension code is has incomplete type hints and significant type issues that will require attention
-# type: ignore
 
 _LOG = logging.getLogger(__name__)
 
