@@ -97,7 +97,7 @@ class SimpleField(Field):
         self.type_name = type_name
         super().__init__(name, description)
 
-    def __eq__(self, value) -> Expression:
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
         return SimpleEqualsExpression(self, value)
 
     def extract(self, doc):
