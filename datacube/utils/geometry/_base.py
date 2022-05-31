@@ -28,7 +28,7 @@ from .tools import roi_normalise, roi_shape, is_affine_st
 from ..math import is_almost_int
 
 Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
-_BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
+_BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))  # type: ignore[name-match]
 SomeCRS = Union[str, 'CRS', _CRS, Dict[str, Any]]
 MaybeCRS = Optional[SomeCRS]
 CoordList = List[Tuple[float, float]]
@@ -125,7 +125,7 @@ def _make_crs_key(crs_spec: Union[str, _CRS]) -> str:
     return crs_spec.to_wkt()
 
 
-@cachetools.cached({}, key=_make_crs_key)
+@cachetools.cached({}, key=_make_crs_key)  # type: ignore[misc]
 def _make_crs(crs: Union[str, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
     if isinstance(crs, str):
         crs = _CRS.from_user_input(crs)
@@ -207,7 +207,7 @@ class CRS:
 
     @property
     def wkt(self) -> str:
-        return self.to_wkt(version="WKT1_GDAL")
+        return self.to_wkt(version=WktVersion.WKT1_GDAL)
 
     def to_epsg(self) -> Optional[int]:
         """
@@ -277,7 +277,7 @@ class CRS:
     def __repr__(self) -> str:
         return "CRS('%s')" % self._str
 
-    def __eq__(self, other: SomeCRS) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, CRS):
             try:
                 other = CRS(other)
