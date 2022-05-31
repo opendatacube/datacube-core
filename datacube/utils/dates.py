@@ -8,7 +8,6 @@ Date and time utility functions
 Includes sequence generation functions to be used by statistics apps
 
 """
-import datetime
 from typing import Union, Callable
 from datetime import datetime, tzinfo
 

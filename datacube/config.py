@@ -10,10 +10,11 @@ import os
 from pathlib import Path
 import configparser
 from urllib.parse import unquote_plus, urlparse, parse_qsl
-from typing import Optional, Iterable, Union, Any, Tuple, Dict
+from typing import Any, Dict, Iterable, MutableMapping, Optional, Tuple, Union, cast
 
 PathLike = Union[str, 'os.PathLike[Any]']
 
+ConfigDict = Dict[str, Union[str, int, bool]]
 
 ENVIRONMENT_VARNAME = 'DATACUBE_CONFIG_PATH'
 #: Config locations in order. Properties found in latter locations override
@@ -161,7 +162,7 @@ class LocalConfig(object):
 DB_KEYS = ('hostname', 'port', 'database', 'username', 'password')
 
 
-def parse_connect_url(url: str) -> Dict[str, str]:
+def parse_connect_url(url: str) -> ConfigDict:
     """ Extract database,hostname,port,username,password from db URL.
 
     Example: postgresql://username:password@hostname:port/database
@@ -181,7 +182,7 @@ def parse_connect_url(url: str) -> Dict[str, str]:
         user, password = '', ''
         host, port = split2(netloc, ':')
 
-    oo = dict(hostname=host, database=db)
+    oo: ConfigDict = dict(hostname=host, database=db)
 
     if port:
         oo['port'] = port
@@ -202,7 +203,7 @@ def parse_connect_url(url: str) -> Dict[str, str]:
     return oo
 
 
-def parse_env_params() -> Dict[str, str]:
+def parse_env_params() -> ConfigDict:
     """
     - Read DATACUBE_IAM_* environment variables.
     - Extract parameters from DATACUBE_DB_URL if present
@@ -210,7 +211,7 @@ def parse_env_params() -> Dict[str, str]:
     - Return {} otherwise
     """
     # Handle environment vars that cannot fit in the DB URL
-    non_url_params = {}
+    non_url_params: MutableMapping[str, Union[bool, int]] = {}
     iam_auth = os.environ.get('DATACUBE_IAM_AUTHENTICATION')
     if iam_auth is not None and iam_auth.lower() in ['y', 'yes']:
         non_url_params["iam_authentication"] = True
@@ -232,13 +233,21 @@ def parse_env_params() -> Dict[str, str]:
     return params
 
 
-def _cfg_from_env_opts(opts: Dict[str, str],
+def _cfg_from_env_opts(opts: ConfigDict,
                        base: configparser.ConfigParser) -> LocalConfig:
-    base['default'] = {'db_'+k: v for k, v in opts.items()}
+    def stringify(vin: Union[int, str, bool]) -> str:
+        if isinstance(vin, bool):
+            if vin:
+                return "yes"
+            else:
+                return "no"
+        else:
+            return str(vin)
+    base['default'] = {'db_'+k: stringify(v) for k, v in opts.items()}
     return LocalConfig(base, files_loaded=[], env='default')
 
 
-def render_dc_config(params: Dict[str, Any],
+def render_dc_config(params: ConfigDict,
                      section_name: str = 'default') -> str:
     """ Render output of parse_env_params to a string that can be written to config file.
     """
