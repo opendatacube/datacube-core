@@ -228,7 +228,10 @@ class GeoboxTiles():
     def tiles(self, polygon: Geometry) -> Iterable[Tuple[int, int]]:
         """ Return tile indexes overlapping with a given geometry.
         """
-        poly = polygon.to_crs(self._gbox.crs)
+        if self._gbox.crs is None:
+            poly = Polygon
+        else:
+            poly = polygon.to_crs(self._gbox.crs)
         yy, xx = self.range_from_bbox(poly.boundingbox)
         for idx in itertools.product(yy, xx):
             gbox = self[idx]
