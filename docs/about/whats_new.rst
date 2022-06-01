@@ -8,9 +8,10 @@ What's New
 v1.8.next
 =========
 
+- Cleanup mypy typechecking compliance. (:pull:`???`)
 - When dataset add operations fail due to lineage issues, the produced error message now clearly indicates that
   the problem was due to lineage issues. (:pull:`1260`)
-- Added support for group-by financial years to virtual products. (:pull:`1257`)
+- Added support for group-by financial years to virtual products. (:pull:`1257`, :pull:`1261`)
 - Remove reference to `rasterio.path`. (:pull:`1255`)
 - Cleaner separation of postgis and postgres drivers, and suppress SQLAlchemy cache warnings. (:pull:`1254`)
 - Prevent Shapely deprecation warning. (:pull:`1253`)
