@@ -7,7 +7,7 @@
 This allows extraction of fields of interest from dataset metadata document.
 """
 from typing import Mapping, Dict, Any
-import toolz
+import toolz  # type: ignore[import]
 import decimal
 from datacube.utils import parse_time
 from ._base import Range

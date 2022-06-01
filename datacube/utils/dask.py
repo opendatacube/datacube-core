@@ -7,7 +7,7 @@
 """
 from typing import Any, Iterable, Optional, Union, Tuple
 from random import randint
-import toolz
+import toolz  # type: ignore[import]
 import queue
 from dask.distributed import Client
 import dask

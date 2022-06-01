@@ -190,9 +190,9 @@ def apply_affine(A: Affine, x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, n
 
     shape = x.shape
 
-    A = np.asarray(A).reshape(3, 3)
-    t = A[:2, -1].reshape((2, 1))
-    A = A[:2, :2]
+    A = np.asarray(A).reshape(3, 3)  # type: ignore[assignment]
+    t = A[:2, -1].reshape((2, 1))    # type: ignore[index]
+    A = A[:2, :2]                    # type: ignore[index]
 
     x, y = A @ np.vstack([x.ravel(), y.ravel()]) + t
     x, y = (a.reshape(shape) for a in (x, y))

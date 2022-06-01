@@ -333,7 +333,7 @@ def s3_open(url: str,
 
     s3 = s3 or s3_client()
     bucket, key = s3_url_parse(url)
-    oo = s3.get_object(Bucket=bucket, Key=key, **kwargs)
+    oo = s3.get_object(Bucket=bucket, Key=key, **kwargs)  # type: ignore[attr-defined]
     return oo['Body']
 
 
@@ -353,7 +353,7 @@ def s3_head_object(url: str,
     bucket, key = s3_url_parse(url)
 
     try:
-        oo = s3.head_object(Bucket=bucket, Key=key, **kwargs)
+        oo = s3.head_object(Bucket=bucket, Key=key, **kwargs)  # type: ignore[attr-defined]
     except ClientError:
         return None
 
@@ -397,7 +397,7 @@ def s3_dump(data: Union[bytes, str, IO],
     s3 = s3 or s3_client()
     bucket, key = s3_url_parse(url)
 
-    r = s3.put_object(Bucket=bucket,
+    r = s3.put_object(Bucket=bucket,  # type: ignore[attr-defined]
                       Key=key,
                       Body=data,
                       **kwargs)
@@ -408,7 +408,7 @@ def s3_dump(data: Union[bytes, str, IO],
 def get_aws_settings(profile: Optional[str] = None,
                      region_name: str = "auto",
                      aws_unsigned: bool = False,
-                     requester_pays: bool = False) -> Tuple[Dict[str, Any], Credentials]:
+                     requester_pays: bool = False) -> Tuple[Dict[str, Any], Optional[Credentials]]:
     """
     Compute ``aws=`` parameter for ``set_default_rio_config``.
 

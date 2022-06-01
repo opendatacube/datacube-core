@@ -2,11 +2,14 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+#
+# type: ignore
+# TODO: typehints need attention
 """ Tools for working with EO3 metadata
 """
 from types import SimpleNamespace
 from affine import Affine
-import toolz
+import toolz  # type: ignore[import]
 from typing import Dict, Any, Optional
 
 from datacube.utils.geometry import (

@@ -8,7 +8,7 @@ Common methods for UI code.
 from pathlib import Path
 from typing import Union, Optional
 
-from toolz.functoolz import identity
+from toolz.functoolz import identity  # type: ignore[import]
 
 from datacube.utils import read_documents, InvalidDocException, SimpleDocNav, is_supported_document_type, is_url
 

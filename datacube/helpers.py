@@ -9,7 +9,7 @@ Not used internally, those should go in `utils.py`
 """
 
 import numpy as np
-import rasterio
+import rasterio  # type: ignore[import]
 import warnings
 
 DEFAULT_PROFILE = {
