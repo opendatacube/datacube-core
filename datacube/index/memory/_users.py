@@ -64,5 +64,5 @@ class UserResource(AbstractUserResource):
         for user in usernames:
             del self.users[user]
 
-    def list_users(self) -> Iterable[Tuple[str, str, str]]:
+    def list_users(self) -> Iterable[Tuple[str, str, Optional[str]]]:
         return [(u.default_role, u.username, u.description) for u in self.users.values()]

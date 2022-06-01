@@ -11,7 +11,7 @@ from dateutil.tz import tz
 from typing import List
 
 from datacube.model import Range
-from datacube.model.fields import Expression, Field, SimpleEqualsExpression
+from datacube.model.fields import Expression, Field
 
 __all__ = ['Field',
            'Expression',

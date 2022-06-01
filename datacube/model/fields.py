@@ -40,6 +40,9 @@ class Expression:
             return False
         return self.__dict__ == other.__dict__
 
+    def evaluate(self, ctx):
+        raise NotImplementedError()
+
 
 class SimpleEqualsExpression(Expression):
     def __init__(self, field, value):
@@ -84,6 +87,9 @@ class Field:
         """
         raise NotImplementedError('between expression')
 
+    def extract(self, doc):
+        raise NotImplementedError('extract method')
+
 
 class SimpleField(Field):
     def __init__(self,
@@ -107,7 +113,7 @@ class SimpleField(Field):
         return self._converter(v)
 
 
-class RangeField:
+class RangeField(Field):
     def __init__(self,
                  min_offset,
                  max_offset,
@@ -116,11 +122,10 @@ class RangeField:
                  name='',
                  description=''):
         self.type_name = type_name
-        self.description = description
-        self.name = name
         self._converter = base_converter
         self._min_offset = min_offset
         self._max_offset = max_offset
+        super().__init__(name, description)
 
     def extract(self, doc):
         def extract_raw(paths):

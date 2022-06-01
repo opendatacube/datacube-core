@@ -11,6 +11,7 @@ from typing import (Any, Iterable, Iterator,
                     Tuple, Union)
 from uuid import UUID
 
+from datacube.config import LocalConfig
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
@@ -61,15 +62,17 @@ class AbstractUserResource(ABC):
         """
 
     @abstractmethod
-    def list_users(self) -> Iterable[Tuple[str, str, str]]:
+    def list_users(self) -> Iterable[Tuple[str, str, Optional[str]]]:
         """
         List all database users
         :return: Iterable of (role, username, description) tuples
         """
 
+
 _DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
-def default_metadata_type_docs():
+
+def default_metadata_type_docs() -> List[MetadataType]:
     """A list of the bare dictionary format of default :class:`datacube.model.MetadataType`"""
     return [doc for (path, doc) in read_documents(_DEFAULT_METADATA_TYPES_PATH)]
 
@@ -248,6 +251,7 @@ class AbstractProductResource(ABC):
     (If a particular abstract method is not applicable for a particular implementation
     raise a NotImplementedError)
     """
+    metadata_type_resource: AbstractMetadataTypeResource
 
     def from_doc(self, definition: Mapping[str, Any]) -> Product:
         """
@@ -257,7 +261,7 @@ class AbstractProductResource(ABC):
         :return: Unpersisted product model
         """
         # This column duplication is getting out of hand:
-        Product.validate(definition)
+        Product.validate(definition)   # type: ignore[attr-defined]   # validate method added by decorator
         # Validate extra dimension metadata
         Product.validate_extra_dims(definition)
 
@@ -270,7 +274,7 @@ class AbstractProductResource(ABC):
         else:
             # Otherwise they embedded a document, add it if needed:
             metadata_type = self.metadata_type_resource.from_doc(metadata_type)
-            definition = definition.copy()
+            definition = dict(definition)
             definition['metadata_type'] = metadata_type.name
 
         if not metadata_type:
@@ -851,7 +855,7 @@ class AbstractDatasetResource(ABC):
         :param query: search query parameters
         :return: Fully instantiated list of matching dataset models
         """
-        return list(self.search(**query))
+        return list(self.search(**query))  # type: ignore[arg-type]   # mypy isn't being very smart here :(
 
     @abstractmethod
     def get_product_time_bounds(self,
@@ -927,7 +931,7 @@ class AbstractIndex(ABC):
     @classmethod
     @abstractmethod
     def from_config(cls,
-                    config: "datacube.config.LocalConfig",
+                    config: LocalConfig,
                     application_name: Optional[str] = None,
                     validate_connection: bool = True
                    ) -> "AbstractIndex":
@@ -937,7 +941,7 @@ class AbstractIndex(ABC):
     @abstractmethod
     def get_dataset_fields(cls,
                            doc: dict
-                          ) -> Mapping[str, "datacube.model.fields.Field"]:
+                          ) -> Mapping[str, Field]:
         pass
 
     @abstractmethod
@@ -962,10 +966,10 @@ class AbstractIndexDriver(ABC):
     """
     @staticmethod
     @abstractmethod
-    def connect_to_index(config: "datacube.config.LocalConfig",
+    def connect_to_index(config: LocalConfig,
                          application_name: Optional[str] = None,
                          validate_connection: bool = True
-                        ) -> "datacube.index.AbstractIndex":
+                        ) -> "AbstractIndex":
         pass
 
     @staticmethod

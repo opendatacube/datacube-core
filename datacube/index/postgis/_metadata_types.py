@@ -147,8 +147,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
                 concurrently=not allow_table_lock
             )
 
-        self.get_by_name_unsafe.cache_clear()
-        self.get_unsafe.cache_clear()
+        self.get_by_name_unsafe.cache_clear()   # type: ignore[attr-defined]
+        self.get_unsafe.cache_clear()           # type: ignore[attr-defined]
         return self.get_by_name(metadata_type.name)
 
     def update_document(self, definition, allow_unsafe_updates=False):

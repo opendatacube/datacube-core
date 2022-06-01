@@ -530,7 +530,7 @@ class DatasetType:
         return GridSpec(crs=crs, **gs_params)
 
     @staticmethod
-    def validate_extra_dims(definition: dict):
+    def validate_extra_dims(definition: Mapping[str, Any]):
         """Validate 3D metadata in the product definition.
 
         Perform some basic checks for validity of the 3D dataset product definition:

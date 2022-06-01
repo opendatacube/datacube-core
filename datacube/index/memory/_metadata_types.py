@@ -4,13 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from copy import deepcopy
-from typing import Any, Iterable, Mapping, Tuple
+from typing import cast, Any, Iterable, Mapping, Tuple
 
 from datacube.index.abstract import AbstractMetadataTypeResource, default_metadata_type_docs
 from datacube.model import MetadataType
 from datacube.index.memory._fields import get_dataset_fields
 from datacube.utils import jsonify_document, changes, _readable_offset
-from datacube.utils.changes import Change, check_doc_unchanged, get_doc_changes
+from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes
 
 _LOG = logging.getLogger(__name__)
 
@@ -24,11 +24,11 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
             self.add(self.from_doc(doc))
 
     def from_doc(self, definition: Mapping[str, Any]) -> MetadataType:
-        MetadataType.validate(definition)
+        MetadataType.validate(definition)  # type: ignore[attr-defined]
         return self._make(definition)
 
     def add(self, metadata_type: MetadataType, allow_table_lock: bool = False) -> MetadataType:
-        MetadataType.validate(metadata_type.definition)
+        MetadataType.validate(metadata_type.definition)  # type: ignore[attr-defined]
         if metadata_type.name in self.by_name:
             # Error unless it's the exact same metadata_type
             check_doc_unchanged(self.by_name[metadata_type.name].definition,
@@ -40,15 +40,15 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
             self.next_id += 1
             self.by_id[persisted.id] = persisted
             self.by_name[persisted.name] = persisted
-        return self.get_by_name(metadata_type.name)
+        return cast(MetadataType, self.get_by_name(metadata_type.name))
 
     def can_update(self, metadata_type: MetadataType, allow_unsafe_updates: bool = False
                    ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
-        MetadataType.validate(metadata_type.definition)
+        MetadataType.validate(metadata_type.definition)  # type: ignore[attr-defined]
         existing = self.get_by_name(metadata_type.name)
         if not existing:
             raise ValueError(f"Unknown metadata type {metadata_type.name}, cannot update - add first")
-        updates_allowed = {
+        updates_allowed: Mapping[Offset, AllowPolicy] = {
             ('description',): changes.allow_any,
             # You can add new fields safely but not modify existing ones.
             ('dataset',): changes.allow_extension,
@@ -75,7 +75,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
 
         if not safe_changes and not unsafe_changes:
             _LOG.info(f"No changes detected for metadata type {metadata_type.name}")
-            return self.get_by_name(metadata_type.name)
+            return cast(MetadataType, self.get_by_name(metadata_type.name))
 
         if not can_update:
             errs = ", ".join(_readable_offset(change[0]) for change in unsafe_changes)
@@ -94,7 +94,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
     def get_by_name_unsafe(self, name: str) -> MetadataType:
         return self.clone(self.by_name[name])
 
-    def check_field_indexes(self, allow_table_lock: bool = False, rebuild_all: bool = None,
+    def check_field_indexes(self, allow_table_lock: bool = False,
                             rebuild_views: bool = False, rebuild_indexes: bool = False) -> None:
         # Cannot implement this method without separating index implementation into
         # separate layer from the API Resource implmentations.
