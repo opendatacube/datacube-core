@@ -272,7 +272,7 @@ def auto_config() -> str:
     option3:
        default config
     """
-    cfg_path = os.environ.get('DATACUBE_CONFIG_PATH', None)
+    cfg_path: Optional[PathLike] = os.environ.get('DATACUBE_CONFIG_PATH', None)
     cfg_path = Path(cfg_path) if cfg_path else Path.home()/'.datacube.conf'
 
     if cfg_path.exists():
