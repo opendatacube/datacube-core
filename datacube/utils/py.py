@@ -6,7 +6,7 @@ import importlib
 import logging
 from contextlib import contextmanager
 
-import toolz
+import toolz  # type: ignore[import]
 
 _LOG = logging.getLogger(__name__)
 
