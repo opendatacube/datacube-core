@@ -37,7 +37,7 @@ v1.8.next
   rather than postgres driver-specific implementation of that interface. (:pull:`1227`)
 - Migrate test docker image from `datacube/geobase` to `osgeo/gdal`. (:pull:`1233`)
 - Separate index driver interface definition from default index driver implementation. (:pull:`1226`)
-- Prefer WKT over EPSG when guessing CRS strings. (:pull:`1223`)
+- Prefer WKT over EPSG when guessing CRS strings. (:pull:`1223`, :pull:`1262`)
 - Updates to documentation. (:pull:`1208`, :pull:`1212`, :pull:`1215`, :pull:`1218`, :pull:`1240`, :pull:`1244`)
 - Tweak to segmented in geometry to suppress Shapely warning. (:pull:`1207`)
 - Fix to ensure ``skip_broken_datasets`` is correctly propagated in virtual products (:pull:`1259`)
