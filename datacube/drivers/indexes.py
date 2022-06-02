@@ -6,6 +6,7 @@ from typing import List, Optional
 
 from ._tools import singleton_setup
 from .driver_cache import load_drivers
+from ..index.abstract import AbstractIndexDriver
 
 
 class IndexDriverCache(object):
@@ -21,7 +22,7 @@ class IndexDriverCache(object):
                 for alias in driver.aliases:
                     self._drivers[alias] = driver
 
-    def __call__(self, name: str) -> "datacube.index.abstract.AbstractIndexDriver":
+    def __call__(self, name: str) -> AbstractIndexDriver:
         """
         :returns: None if driver with a given name is not found
 
@@ -50,7 +51,7 @@ def index_drivers() -> List[str]:
     return index_cache().drivers()
 
 
-def index_driver_by_name(name: str) -> Optional["datacube.index.AbstractIndexDriver"]:
+def index_driver_by_name(name: str) -> Optional[AbstractIndexDriver]:
     """ Lookup writer driver by name
 
     :returns: Initialised writer driver instance

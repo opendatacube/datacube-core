@@ -49,7 +49,8 @@ PRODUCT = Table(
     Column('metadata', postgres.JSONB, nullable=False),
 
     # The metadata format expected (eg. what fields to search by)
-    Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
+    #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
+    Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),  # type: ignore[call-overload]
 
     Column('definition', postgres.JSONB, nullable=False),
 
@@ -68,8 +69,10 @@ DATASET = Table(
     'dataset', _core.METADATA,
     Column('id', postgres.UUID(as_uuid=True), primary_key=True),
 
-    Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
-    Column('dataset_type_ref', None, ForeignKey(PRODUCT.c.id), index=True, nullable=False),
+    #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
+    Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),  # type: ignore[call-overload]
+    #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
+    Column('dataset_type_ref', None, ForeignKey(PRODUCT.c.id), index=True, nullable=False),  # type: ignore[call-overload]
 
     Column('metadata', postgres.JSONB, index=False, nullable=False),
 
@@ -87,7 +90,8 @@ DATASET = Table(
 DATASET_LOCATION = Table(
     'dataset_location', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('dataset_ref', None, ForeignKey(DATASET.c.id), index=True, nullable=False),
+    #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
+    Column('dataset_ref', None, ForeignKey(DATASET.c.id), index=True, nullable=False),  # type: ignore[call-overload]
 
     # The base URI to find the dataset.
     #
@@ -115,13 +119,15 @@ DATASET_LOCATION = Table(
 # Link datasets to their source datasets.
 DATASET_SOURCE = Table(
     'dataset_source', _core.METADATA,
-    Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
+    #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
+    Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),  # type: ignore[call-overload]
 
     # An identifier for this source dataset.
     #    -> Usually it's the dataset type ('ortho', 'nbar'...), as there's typically only one source
     #       of each type.
     Column('classifier', String, nullable=False),
-    Column('source_dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
+    #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
+    Column('source_dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),  # type: ignore[call-overload]
 
     PrimaryKeyConstraint('dataset_ref', 'classifier'),
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),
