@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from typing import Optional, Collection
+import warnings
 
 import numpy
 import xarray
@@ -160,10 +161,40 @@ class ToFloat(Transformation):
 
     Alias in recipe: ``to_float``.
 
+    .. note::
+
+        The ``to_float`` transform is deprecated. Please use ``expressions`` instead.
+
+        Using ``to_float``:
+
+        .. code-block:: yaml
+
+            transform: to_float
+            apply_to: [green]
+            dtype: float32
+            input: ...
+
+        Using equivalent ``expressions``:
+
+        .. code-block:: yaml
+
+            transform: expressions
+            output:
+                green:
+                    formula: green
+                    dtype: float32
+
+                # copy unaffected other bands
+                red: red
+                blue: blue
+            input: ...
+
     :param apply_to: list of names of measurements to apply conversion to
     :param dtype: default ``dtype`` for conversion
     """
     def __init__(self, apply_to=None, dtype='float32'):
+        warnings.warn("the `to_float` transform is deprecated, please use `expressions` instead",
+                      category=DeprecationWarning)
         self.apply_to = apply_to
         self.dtype = dtype
 
@@ -191,9 +222,37 @@ class Rename(Transformation):
 
     Alias in recipe: ``rename``.
 
+    .. note::
+
+        The ``rename`` transform is deprecated. Please use ``expressions`` instead.
+
+        Using ``rename``:
+
+        .. code-block:: yaml
+
+            transform: rename
+            measurement_names:
+                green: verde
+            input: ...
+
+        Using equivalent ``expressions``:
+
+        .. code-block:: yaml
+
+            transform: expressions
+            output:
+                verde: green
+
+                # copy other unaffected bands
+                red: red
+                blue: blue
+            input: ...
+
     :param measurement_names: mapping from INPUT NAME to OUTPUT NAME
     """
     def __init__(self, measurement_names):
+        warnings.warn("the `rename` transform is deprecated, please use `expressions` instead",
+                      category=DeprecationWarning)
         self.measurement_names = measurement_names
 
     def measurements(self, input_measurements):
@@ -218,9 +277,32 @@ class Select(Transformation):
 
     Alias in recipe: ``select``.
 
+    .. note::
+
+        The ``select`` transform is deprecated. Please use ``expressions`` instead.
+
+        Using ``select``:
+
+        .. code-block:: yaml
+
+            transform: select
+            measurement_names: [green]
+            input: ...
+
+        Using equivalent ``expressions``:
+
+        .. code-block:: yaml
+
+            transform: expressions
+            output:
+                green: green
+            input: ...
+
     :param measurement_names: list of measurements to keep
     """
     def __init__(self, measurement_names):
+        warnings.warn("the `select` transform is deprecated, please use `expressions` instead",
+                      category=DeprecationWarning)
         self.measurement_names = measurement_names
 
     def measurements(self, input_measurements):
@@ -374,7 +456,8 @@ def fiscal_year(time):
     df = time['time'].to_series()
     years = df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
     ds = ds.assign_coords({"time": years})
-    return(ds)
+
+    return ds
 
 
 def month(time):

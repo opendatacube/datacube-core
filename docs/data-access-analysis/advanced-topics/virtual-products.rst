@@ -274,6 +274,12 @@ Built in Transforms
 
 .. py:module:: datacube.virtual.transformations
 
+Expressions
+-----------
+
+.. autoclass:: Expressions
+
+
 Make mask
 ---------
 
@@ -298,12 +304,6 @@ Select
 ------
 
 .. autoclass:: Select
-
-Expressions
------------
-
-.. autoclass:: Expressions
-
 
 
 .. _user-defined-virtual-product-transforms:
