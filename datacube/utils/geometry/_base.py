@@ -171,13 +171,19 @@ class CRS:
         elif isinstance(crs_spec, dict):
             self._crs, self._str, self._epsg = _make_crs(_CRS.from_dict(crs_spec))
         else:
-            _to_epsg = getattr(crs_spec, "to_epsg", None)
-            if _to_epsg is not None:
-                self._crs, self._str, self._epsg = _make_crs(f"EPSG:{_to_epsg()}")
+            try:
+                epsg = crs_spec.to_epsg()
+            except AttributeError:
+                epsg = None
+            if epsg is not None:
+                self._crs, self._str, self._epsg = _make_crs(f"EPSG:{epsg}")
                 return
-            _to_wkt = getattr(crs_spec, "to_wkt", None)
-            if _to_wkt is not None:
-                self._crs, self._str, self._epsg = _make_crs(_to_wkt())
+            try:
+                wkt = crs_spec.to_wkt()
+            except AttributeError:
+                wkt = None
+            if wkt is not None:
+                self._crs, self._str, self._epsg = _make_crs(wkt)
                 return
 
             raise CRSError(
