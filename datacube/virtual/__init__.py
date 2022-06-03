@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Mapping, Any
+from typing import Mapping, Any, cast
 import copy
 
 from .impl import VirtualProduct, Transformation, VirtualProductException
@@ -65,7 +65,7 @@ class NameResolver:
 
         if kind == 'transform':
             cls_name = recipe['transform']
-            input_product = get('input')
+            input_product = cast(Mapping, get('input'))
 
             self._assert(input_product is not None, "no input for transformation in {}".format(recipe))
 
@@ -87,7 +87,7 @@ class NameResolver:
 
         if kind == 'aggregate':
             cls_name = recipe['aggregate']
-            input_product = get('input')
+            input_product = cast(Mapping, get('input'))
             group_by = get('group_by')
 
             self._assert(input_product is not None, "no input for aggregate in {}".format(recipe))
@@ -99,7 +99,7 @@ class NameResolver:
                                               **reject_keys(recipe, ['aggregate', 'input', 'group_by'])))
 
         if kind == 'reproject':
-            input_product = get('input')
+            input_product = cast(Mapping, get('input'))
             output_crs = recipe['reproject'].get('output_crs')
             resolution = recipe['reproject'].get('resolution')
             align = recipe['reproject'].get('align')
