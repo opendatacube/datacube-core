@@ -144,7 +144,7 @@ class DatasetResource(AbstractDatasetResource):
         def values(ds: Dataset) -> GroupedVals:
             vals = []
             for field in fields:
-                vals.append(field.extract(ds.metadata_doc))
+                vals.append(field.extract(ds.metadata_doc))  # type: ignore[attr-defined]
             return GroupedVals(*vals)
 
         dups: Dict[Tuple, List[UUID]] = {}
@@ -503,7 +503,7 @@ class DatasetResource(AbstractDatasetResource):
         for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
             ds_fields = get_dataset_fields(ds.type.metadata_type.definition)
             result_vals = {
-                 fn: ds_fields[fn].extract(ds.metadata_doc)
+                 fn: ds_fields[fn].extract(ds.metadata_doc)  # type: ignore[attr-defined]
                  for fn in field_names
             }
             yield result_type(**result_vals)
@@ -638,7 +638,10 @@ class DatasetResource(AbstractDatasetResource):
     def search_summaries(self, **query: QueryField) -> Iterable[Mapping[str, Any]]:
         def make_summary(ds: Dataset) -> Mapping[str, Any]:
             fields = ds.metadata_type.dataset_fields
-            return {field_name: field.extract(ds.metadata_doc) for field_name, field in fields.items()}
+            return {
+                field_name: field.extract(ds.metadata_doc)   # type: ignore[attr-defined]
+                for field_name, field in fields.items()
+            }
         for ds in self.search(**query):  # type: ignore[arg-type]
             yield make_summary(ds)
 
@@ -651,7 +654,7 @@ class DatasetResource(AbstractDatasetResource):
         time_fld = prod.metadata_type.dataset_fields["time"]
         for dsid in self.by_product.get(product, []):
             ds = cast(Dataset, self.get(dsid))
-            dsmin, dsmax = time_fld.extract(ds.metadata_doc)
+            dsmin, dsmax = time_fld.extract(ds.metadata_doc)  # type: ignore[attr-defined]
             if dsmax is None and dsmin is None:
                 continue
             elif dsmin is None:
@@ -691,7 +694,7 @@ class DatasetResource(AbstractDatasetResource):
                 class DatasetLight(result_type):  # type: ignore[no-redef]
                     __slots__ = ()
             fld_vals = {
-                fname: field.extract(ds.metadata_doc)
+                fname: field.extract(ds.metadata_doc)  # type: ignore[attr-defined]
                 for fname, field in fields.items()
             }
             return DatasetLight(**fld_vals)

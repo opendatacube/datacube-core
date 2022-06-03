@@ -87,9 +87,6 @@ class Field:
         """
         raise NotImplementedError('between expression')
 
-    def extract(self, doc):
-        raise NotImplementedError('extract method')
-
 
 class SimpleField(Field):
     def __init__(self,
