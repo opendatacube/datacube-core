@@ -308,7 +308,7 @@ class PostgisDbAPI(object):
 
     def all_dataset_ids(self, archived: bool):
         query = select(
-            DATASET.c.id
+            DATASET.c.id  # type: ignore[arg-type]
         ).select_from(
             DATASET
         )
