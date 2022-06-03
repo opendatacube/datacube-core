@@ -432,9 +432,9 @@ class DatasetResource(AbstractDatasetResource):
                         break
                 if not query_matches:
                     continue
-                if source_product and ds.sources:
+                if source_product:
                     matching_source = None
-                    for sds in ds.sources.values():
+                    for sds in cast(Mapping[str, Dataset], ds.sources).values():
                         if sds.type != source_product:
                             continue
                         source_matches = True
