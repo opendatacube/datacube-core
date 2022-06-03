@@ -16,7 +16,7 @@ import click
 from datacube import config, __version__
 from datacube.api.core import Datacube
 
-from datacube.executor import get_executor, mk_celery_executor
+from datacube.executor import get_executor, mk_celery_executor  # type: ignore[attr-defined]
 from datacube.index import index_connect
 
 from datacube.ui.expression import parse_expressions
