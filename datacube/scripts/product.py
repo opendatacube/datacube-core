@@ -110,12 +110,12 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
 
             if can_update:
                 echo('Can update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                              len(unsafe_changes),
-                                                                              len(safe_changes)))
+                                                                              len(list(unsafe_changes)),
+                                                                              len(list(safe_changes))))
             else:
                 echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                                 len(unsafe_changes),
-                                                                                 len(safe_changes)))
+                                                                                 len(list(unsafe_changes)),
+                                                                                 len(list(safe_changes))))
     sys.exit(failures)
 
 
