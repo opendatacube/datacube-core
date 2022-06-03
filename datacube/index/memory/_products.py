@@ -146,7 +146,7 @@ class ProductResource(AbstractProductResource):
                 if not hasattr(field, 'extract'):
                     # non-document/native field (??)
                     continue
-                if field.extract(prod.metadata_doc) is None:
+                if field.extract(prod.metadata_doc) is None:  # type: ignore[attr-defined]
                     # Product has the field, but not defined in the type doc, so unmatchable
                     continue
                 expr = as_expression(field, value)
