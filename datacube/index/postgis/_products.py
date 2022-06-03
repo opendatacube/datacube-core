@@ -8,11 +8,11 @@ from cachetools.func import lru_cache
 
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
-from datacube.model import DatasetType
+from datacube.model import DatasetType, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
-from typing import Iterable
+from typing import Iterable, cast
 
 _LOG = logging.getLogger(__name__)
 
@@ -161,7 +161,7 @@ class ProductResource(AbstractProductResource):
 
         _LOG.info("Updating product %s", product.name)
 
-        existing = self.get_by_name(product.name)
+        existing = cast(DatasetType, self.get_by_name(product.name))
         changing_metadata_type = product.metadata_type.name != existing.metadata_type.name
         if changing_metadata_type:
             raise ValueError("Unsafe change: cannot (currently) switch metadata types for a product")
@@ -193,8 +193,8 @@ class ProductResource(AbstractProductResource):
                 concurrently=not allow_table_lock
             )
 
-        self.get_by_name_unsafe.cache_clear()
-        self.get_unsafe.cache_clear()
+        self.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
+        self.get_unsafe.cache_clear()          # type: ignore[attr-defined]
         return self.get_by_name(product.name)
 
     def update_document(self, definition, allow_unsafe_updates=False, allow_table_lock=False):
@@ -310,6 +310,6 @@ class ProductResource(AbstractProductResource):
     def _make(self, query_row) -> DatasetType:
         return DatasetType(
             definition=query_row['definition'],
-            metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
+            metadata_type=cast(MetadataType, self.metadata_type_resource.get(query_row['metadata_type_ref'])),
             id_=query_row['id'],
         )

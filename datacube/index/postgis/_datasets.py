@@ -16,7 +16,7 @@ from sqlalchemy import select, func
 
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgis._schema import DATASET
-from datacube.index.abstract import AbstractDatasetResource
+from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, DatasetType
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
@@ -356,7 +356,7 @@ class DatasetResource(AbstractDatasetResource):
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
-    def purge(self, ids: Iterable[UUID]):
+    def purge(self, ids: Iterable[DSID]):
         """
         Delete archived datasets
 
