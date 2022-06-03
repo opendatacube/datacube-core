@@ -7,9 +7,10 @@ import logging
 import re
 import warnings
 from collections import namedtuple
-from typing import (Any, Callable, Iterable, List,
-                    Mapping, MutableMapping,
-                    Optional, Set, Tuple, Union)
+from typing import (Any, Callable, Dict, Iterable,
+                    List, Mapping, MutableMapping,
+                    Optional, Set, Tuple, Union,
+                    cast)
 from uuid import UUID
 
 from datacube.index import fields
@@ -51,7 +52,7 @@ class DatasetResource(AbstractDatasetResource):
             ds = self.clone(self.by_id[dsid_to_uuid(id_)])
             if include_sources:
                 ds.sources = {
-                    classifier: self.get(dsid, include_sources=True)
+                    classifier: cast(Dataset, self.get(dsid, include_sources=True))
                     for classifier, dsid in self.derived_from.get(ds.id, {}).items()
                 }
             return ds
@@ -62,7 +63,7 @@ class DatasetResource(AbstractDatasetResource):
         return (ds for ds in (self.get(dsid) for dsid in ids) if ds is not None)
 
     def get_derived(self, id_: DSID) -> Iterable[Dataset]:
-        return (self.get(dsid) for dsid in self.derivations.get(dsid_to_uuid(id_), {}).values())
+        return (cast(Dataset, self.get(dsid)) for dsid in self.derivations.get(dsid_to_uuid(id_), {}).values())
 
     def has(self, id_: DSID) -> bool:
         return dsid_to_uuid(id_) in self.by_id
@@ -76,7 +77,7 @@ class DatasetResource(AbstractDatasetResource):
         if with_lineage is None:
             with_lineage = True
         _LOG.info('indexing %s', dataset.id)
-        if with_lineage:
+        if with_lineage and dataset.sources:
             # Add base dataset without lineage
             self.add(dataset, with_lineage=False)
             # Add lineage
@@ -100,7 +101,7 @@ class DatasetResource(AbstractDatasetResource):
                 self.by_product[dataset.type.name].append(dataset.id)
             else:
                 self.by_product[dataset.type.name] = [dataset.id]
-        return self.get(dataset.id)
+        return cast(Dataset, self.get(dataset.id))
 
     def persist_source_relationship(self, ds: Dataset, src: Dataset, classifier: str) -> None:
         # Add source lineage link
@@ -128,7 +129,9 @@ class DatasetResource(AbstractDatasetResource):
                                   product: Product,
                                   *args: Union[str, Field]
                                   ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
-        GroupedVals = namedtuple('search_result', args)
+        field_names: List[str] = [arg.name if isinstance(arg, Field) else arg for arg in args]
+        #   Typing note: mypy cannot handle dynamically created namedtuples
+        GroupedVals = namedtuple('search_result', field_names)  # type: ignore[misc]
 
         def to_field(f: Union[str, Field]) -> Field:
             if isinstance(f, str):
@@ -144,7 +147,7 @@ class DatasetResource(AbstractDatasetResource):
                 vals.append(field.extract(ds.metadata_doc))
             return GroupedVals(*vals)
 
-        dups = {}
+        dups: Dict[Tuple, List[UUID]] = {}
         for ds in self.active_by_id.values():
             if ds.type.name != product.name:
                 continue
@@ -170,7 +173,7 @@ class DatasetResource(AbstractDatasetResource):
                 f'Changing product is not supported. From {existing.type.name} to {dataset.type.name} in {dataset.id}'
             )
         # TODO: Determine (un)safe changes from metadata type
-        allowed = {
+        allowed: Dict[Offset, AllowPolicy] = {
             tuple(): changes.allow_extension
         }
         allowed.update(updates_allowed or {})
@@ -223,14 +226,19 @@ class DatasetResource(AbstractDatasetResource):
         persistable = self.clone(dataset, for_save=True)
         self.by_id[dataset.id] = persistable
         self.active_by_id[dataset.id] = persistable
-        return self.get(dataset.id)
+        return cast(Dataset, self.get(dataset.id))
 
     def _update_locations(self,
                           dataset: Dataset,
                           existing: Optional[Dataset] = None
                          ) -> bool:
-        skip_set = set([None] + existing.uris if existing is not None else [])
-        new_uris = [uri for uri in dataset.uris if uri not in skip_set]
+        skip_set: Set[Optional[str]] = set([None])
+        new_uris: List[str] = []
+        if existing and existing.uris:
+            for uri in existing.uris:
+                skip_set.add(uri)
+            if dataset.uris:
+                new_uris = [uri for uri in dataset.uris if uri not in skip_set]
         if len(new_uris):
             _LOG.info("Adding locations for dataset %s: %s", dataset.id, ", ".join(new_uris))
         for uri in reversed(new_uris):
@@ -280,9 +288,12 @@ class DatasetResource(AbstractDatasetResource):
         if product_name is None:
             prods = self.product_resource.get_all()
         else:
-            prods = [self.product_resource.get_by_name(product_name)]
-
-        out = set()
+            prod = self.product_resource.get_by_name(product_name)
+            if prod:
+                prods = [prod]
+            else:
+                prods = []
+        out: Set[str] = set()
         for prod in prods:
             out.update(prod.metadata_type.dataset_fields)
         return out
@@ -339,10 +350,10 @@ class DatasetResource(AbstractDatasetResource):
                 self.locations[uuid] = new_locations
                 removed = True
         if not removed and uuid in self.archived_locations:
-            old_locations = self.archived_locations[uuid]
-            new_locations = [(loc, dt) for loc, dt in old_locations if loc != uri]
-            if len(new_locations) != len(old_locations):
-                self.archived_locations[uuid] = new_locations
+            archived_locations = self.archived_locations[uuid]
+            new_archived_locations = [(loc, dt) for loc, dt in archived_locations if loc != uri]
+            if len(new_archived_locations) != len(archived_locations):
+                self.archived_locations[uuid] = new_archived_locations
                 removed = True
         return removed
 
@@ -384,8 +395,7 @@ class DatasetResource(AbstractDatasetResource):
             limit: Optional[int] = None,
             source_filter: Optional[Mapping[str, QueryField]] = None,
             **query: QueryField
-    ) -> Iterable[Dataset]:
-
+    ) -> Iterable[Union[Dataset, Tuple[Iterable[Dataset], Product]]]:
         if source_filter:
             product_queries = list(self._get_prod_queries(**source_filter))
             if not product_queries:
@@ -414,7 +424,7 @@ class DatasetResource(AbstractDatasetResource):
             for dsid in self.by_product.get(product.name, []):
                 if limit is not None and matches >= limit:
                     break
-                ds = self.get(dsid, include_sources=True)
+                ds = cast(Dataset, self.get(dsid, include_sources=True))
                 query_matches = True
                 for expr in query_exprs:
                     if not expr.evaluate(ds.metadata_doc):
@@ -422,7 +432,7 @@ class DatasetResource(AbstractDatasetResource):
                         break
                 if not query_matches:
                     continue
-                if source_product:
+                if source_product and ds.sources:
                     matching_source = None
                     for sds in ds.sources.values():
                         if sds.type != source_product:
@@ -445,6 +455,32 @@ class DatasetResource(AbstractDatasetResource):
             if return_format == self.RET_FORMAT_PRODUCT_GROUPED and product_results:
                 yield (product_results, product)
 
+    def _search_flat(
+            self,
+            limit: Optional[int] = None,
+            source_filter: Optional[Mapping[str, QueryField]] = None,
+            **query: QueryField
+    ) -> Iterable[Dataset]:
+        return cast(Iterable[Dataset], self._search(
+                return_format=self.RET_FORMAT_DATASETS,
+                limit=limit,
+                source_filter=source_filter,
+                **query)
+        )
+
+    def _search_grouped(
+            self,
+            limit: Optional[int] = None,
+            source_filter: Optional[Mapping[str, QueryField]] = None,
+            **query: QueryField
+    ) -> Iterable[Tuple[Iterable[Dataset], Product]]:
+        return cast(Iterable[Tuple[Iterable[Dataset], Product]], self._search(
+                return_format=self.RET_FORMAT_PRODUCT_GROUPED,
+                limit=limit,
+                source_filter=source_filter,
+                **query)
+        )
+
     def _get_prod_queries(self, **query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
         return ((q, product) for product, q in self.product_resource.search_robust(**query))
 
@@ -452,18 +488,19 @@ class DatasetResource(AbstractDatasetResource):
                limit: Optional[int] = None,
                source_filter: Optional[Mapping[str, QueryField]] = None,
                **query: QueryField) -> Iterable[Dataset]:
-        return self._search(self.RET_FORMAT_DATASETS, limit=limit, source_filter=source_filter, **query)
+        return cast(Iterable[Dataset], self._search_flat(limit=limit, source_filter=source_filter, **query))
 
     def search_by_product(self, **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
-        return self._search(self.RET_FORMAT_PRODUCT_GROUPED, **query)
+        return self._search_grouped(**query)  # type: ignore[arg-type]
 
     def search_returning(self,
                          field_names: Iterable[str],
                          limit: Optional[int] = None,
                          **query: QueryField) -> Iterable[Tuple]:
         field_names = list(field_names)
-        result_type = namedtuple('search_result', field_names)
-        for ds in self.search(limit=limit, **query):
+        #    Typing note: mypy can't handle dynamically created namedtuples
+        result_type = namedtuple('search_result', field_names)  # type: ignore[misc]
+        for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
             ds_fields = get_dataset_fields(ds.type.metadata_type.definition)
             result_vals = {
                  fn: ds_fields[fn].extract(ds.metadata_doc)
@@ -472,11 +509,11 @@ class DatasetResource(AbstractDatasetResource):
             yield result_type(**result_vals)
 
     def count(self, **query: QueryField) -> int:
-        return len(list(self.search(**query)))
+        return len(list(self.search(**query)))  # type: ignore[arg-type]
 
     def count_by_product(self, **query: QueryField) -> Iterable[Tuple[Product, int]]:
         for datasets, prod in self.search_by_product(**query):
-            yield (prod, len(datasets))
+            yield (prod, len(list(datasets)))
 
     def count_by_product_through_time(self,
             period: str,
@@ -489,7 +526,7 @@ class DatasetResource(AbstractDatasetResource):
             ]
         ]
     ]:
-        return self._product_period_count(period, **query)
+        return self._product_period_count(period, **query)  # type: ignore[arg-type]
 
     def _expand_period(
             self,
@@ -561,23 +598,24 @@ class DatasetResource(AbstractDatasetResource):
             ],
         ]
     ]:
+        YieldType = Tuple[Product, Iterable[Tuple[Range, int]]]
         query = dict(query)
         try:
-            start, end = query.pop('time')
+            start, end = cast(Range, query.pop('time'))
         except KeyError:
             raise ValueError('Must specify "time" range in period-counting query')
         periods = self._expand_period(period, start, end)
-        last_product: Optional[Tuple] = None
-        for dss, product in self._search(return_format=self.RET_FORMAT_PRODUCT_GROUPED, **query):
+        last_product: Optional[YieldType] = None
+        for dss, product in self._search_grouped(**query):  # type: ignore[arg-type]
             if last_product and single_product_only:
                 raise ValueError(f"Multiple products match single query search: {repr(query)}")
             if last_product:
-                yield last_product
+                yield cast(YieldType, last_product)
             period_counts = []
             for p in periods:
                 count = 0
                 for ds in dss:
-                    if ranges_overlap(ds.time, p):
+                    if ranges_overlap(cast(Range, ds.time), p):
                         count += 1
                 period_counts.append((p, count))
             retval = (product, period_counts)
@@ -595,13 +633,13 @@ class DatasetResource(AbstractDatasetResource):
             period: str,
             **query: QueryField
     ) -> Iterable[Tuple[Range, int]]:
-        return next(self._product_period_count(period, single_product_only=True, **query))[1]
+        return list(self._product_period_count(period, single_product_only=True, **query))[0][1]
 
     def search_summaries(self, **query: QueryField) -> Iterable[Mapping[str, Any]]:
         def make_summary(ds: Dataset) -> Mapping[str, Any]:
             fields = ds.metadata_type.dataset_fields
             return {field_name: field.extract(ds.metadata_doc) for field_name, field in fields.items()}
-        for ds in self.search(**query):
+        for ds in self.search(**query):  # type: ignore[arg-type]
             yield make_summary(ds)
 
     def get_product_time_bounds(self, product: str) -> Tuple[datetime.datetime, datetime.datetime]:
@@ -612,7 +650,7 @@ class DatasetResource(AbstractDatasetResource):
             raise ValueError(f"Product {product} not in index")
         time_fld = prod.metadata_type.dataset_fields["time"]
         for dsid in self.by_product.get(product, []):
-            ds = self.get(dsid)
+            ds = cast(Dataset, self.get(dsid))
             dsmin, dsmax = time_fld.extract(ds.metadata_doc)
             if dsmax is None and dsmin is None:
                 continue
@@ -624,7 +662,7 @@ class DatasetResource(AbstractDatasetResource):
                 min_time = dsmin
             if max_time is None or dsmax > max_time:
                 max_time = dsmax
-        return (min_time, max_time)
+        return (cast(datetime.datetime, min_time), cast(datetime.datetime,max_time))
 
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(
@@ -644,19 +682,20 @@ class DatasetResource(AbstractDatasetResource):
                 for fname in field_names
             }
             fields.update(custom_fields)
-            result_type = namedtuple('DatasetLight', list(fields.keys()))
+            #   Typing note: mypy cannot handle dynamically created namedtuples
+            result_type = namedtuple('DatasetLight', list(fields.keys()))  # type: ignore[misc]
             if 'grid_spatial' in fields:
                 class DatasetLight(result_type, DatasetSpatialMixin):
                     pass
             else:
-                class DatasetLight(result_type):
+                class DatasetLight(result_type):  # type: ignore[no-redef]
                     __slots__ = ()
             fld_vals = {
                 fname: field.extract(ds.metadata_doc)
                 for fname, field in fields.items()
             }
             return DatasetLight(**fld_vals)
-        for ds in self.search(limit=limit, **query):
+        for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
             yield make_ds_light(ds)
 
     def clone(self, orig: Dataset, for_save=False, lookup_locations=True) -> Dataset:
@@ -664,8 +703,10 @@ class DatasetResource(AbstractDatasetResource):
             uris = []
         elif lookup_locations:
             uris = self.locations[orig.id].copy()
-        else:
+        elif orig.uris:
             uris = orig.uris.copy()
+        else:
+            uris = []
         return Dataset(
             type_=self.product_resource.clone(orig.type),
             metadata_doc=jsonify_document(orig.metadata_doc_without_lineage()),
