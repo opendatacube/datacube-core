@@ -132,7 +132,7 @@ def xr_load(sources: XrDataArray,
 
     out = _allocate_storage(sources.coords, geobox, measurements)
 
-    def all_groups() -> Iterator[Tuple[Measurement, int, List[BandInfo]]]:
+    def all_groups() -> Iterator[Tuple[Measurement, Tuple[int, ...], List[BandInfo]]]:
         for idx, dss in np.ndenumerate(sources.values):
             for m in measurements:
                 bbi = [BandInfo(ds, m.name) for ds in dss]

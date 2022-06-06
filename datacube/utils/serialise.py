@@ -23,15 +23,15 @@ class SafeDatacubeDumper(yaml.SafeDumper):  # pylint: disable=too-many-ancestors
     pass
 
 
-def _dict_representer(dumper, data):
+def _dict_representer(dumper: SafeDatacubeDumper, data: OrderedDict) -> yaml.Node:
     return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
 
 
-def _reduced_accuracy_decimal_representer(dumper: yaml.Dumper, data: Decimal) -> yaml.Node:
+def _reduced_accuracy_decimal_representer(dumper: SafeDatacubeDumper, data: Decimal) -> yaml.Node:
     return dumper.represent_float(float(data))
 
 
-def _range_representer(dumper: yaml.Dumper, data: Range) -> yaml.Node:
+def _range_representer(dumper: SafeDatacubeDumper, data: Range) -> yaml.Node:
     begin, end = data
 
     # pyyaml doesn't output timestamps in flow style as timestamps(?)

@@ -3,9 +3,8 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from typing import Iterable, Union, Optional
-from uuid import UUID
 
-from datacube.index.abstract import AbstractDatasetResource
+from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, DatasetType
 
 
@@ -13,7 +12,7 @@ class DatasetResource(AbstractDatasetResource):
     def __init__(self, product_resource):
         self.types = product_resource
 
-    def get(self, id_: Union[str, UUID], include_sources=False):
+    def get(self, id_: DSID, include_sources=False):
         return None
 
     def bulk_get(self, ids):
@@ -26,7 +25,7 @@ class DatasetResource(AbstractDatasetResource):
         return False
 
     def bulk_has(self, ids_):
-        return [False for id in ids_]
+        return [False for id_ in ids_]
 
     def add(self, dataset: Dataset,
             with_lineage: Optional[bool] = None,
@@ -48,7 +47,7 @@ class DatasetResource(AbstractDatasetResource):
     def restore(self, ids):
         raise NotImplementedError()
 
-    def purge(self, ids: Iterable[UUID]):
+    def purge(self, ids: Iterable[DSID]):
         raise NotImplementedError()
 
     def get_all_dataset_ids(self, archived: bool):

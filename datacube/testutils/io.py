@@ -12,7 +12,7 @@ from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
 from ..utils.geometry import gbox as gbx
-from ..index.eo3 import is_doc_eo3, _norm_grid
+from ..index.eo3 import is_doc_eo3, _norm_grid  # type: ignore[attr-defined]
 from types import SimpleNamespace
 
 

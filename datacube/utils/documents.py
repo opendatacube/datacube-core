@@ -20,7 +20,7 @@ from typing import Dict, Any, Mapping
 from copy import deepcopy
 
 import numpy
-import toolz
+import toolz  # type: ignore[import]
 import yaml
 
 try:
@@ -171,7 +171,7 @@ def netcdf_extract_string(chars):
     """
     Convert netcdf S|U chars to Unicode string.
     """
-    import netCDF4
+    import netCDF4  # type: ignore[import]
 
     if isinstance(chars, str):
         return chars

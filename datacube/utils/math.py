@@ -64,7 +64,8 @@ def spatial_dims(xx: Union[xr.DataArray, xr.Dataset],
             return guess
 
     if relaxed and len(xx.dims) >= 2:
-        return cast(Tuple[str, str], xx.dims[-2:])
+        # This operation is pushing mypy's type-inference engine.
+        return cast(Tuple[str, str], cast(Tuple[str, ...], xx.dims)[-2:])
 
     return None
 

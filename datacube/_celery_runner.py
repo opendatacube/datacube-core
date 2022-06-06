@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+#
+# type: ignore
 import cloudpickle
 import logging
 from celery import Celery

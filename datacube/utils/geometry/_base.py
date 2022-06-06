@@ -16,9 +16,9 @@ import cachetools
 import numpy
 import xarray as xr
 from affine import Affine
-import rasterio
-from shapely import geometry, ops
-from shapely.geometry import base
+import rasterio                    # type: ignore[import]
+from shapely import geometry, ops  # type: ignore[import]
+from shapely.geometry import base  # type: ignore[import]
 from pyproj import CRS as _CRS
 from pyproj.enums import WktVersion
 from pyproj.transformer import Transformer
@@ -28,7 +28,7 @@ from .tools import roi_normalise, roi_shape, is_affine_st
 from ..math import is_almost_int
 
 Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
-_BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
+_BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))  # type: ignore[name-match]
 SomeCRS = Union[str, 'CRS', _CRS, Dict[str, Any]]
 MaybeCRS = Optional[SomeCRS]
 CoordList = List[Tuple[float, float]]
@@ -125,7 +125,7 @@ def _make_crs_key(crs_spec: Union[str, _CRS]) -> str:
     return crs_spec.to_wkt()
 
 
-@cachetools.cached({}, key=_make_crs_key)
+@cachetools.cached({}, key=_make_crs_key)  # type: ignore[misc]
 def _make_crs(crs: Union[str, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
     if isinstance(crs, str):
         crs = _CRS.from_user_input(crs)
@@ -207,7 +207,7 @@ class CRS:
 
     @property
     def wkt(self) -> str:
-        return self.to_wkt(version="WKT1_GDAL")
+        return self.to_wkt(version=WktVersion.WKT1_GDAL)
 
     def to_epsg(self) -> Optional[int]:
         """
@@ -277,7 +277,7 @@ class CRS:
     def __repr__(self) -> str:
         return "CRS('%s')" % self._str
 
-    def __eq__(self, other: SomeCRS) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, CRS):
             try:
                 other = CRS(other)
@@ -917,7 +917,7 @@ def polygon_from_transform(width: float, height: float, transform: Affine, crs: 
     :param crs: CRS
     """
     points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
-    transform.itransform(points)
+    transform.itransform(points)  # type: ignore[arg-type]
     return polygon(points, crs=crs)
 
 
@@ -936,13 +936,13 @@ def multigeom(geoms: Iterable[Geometry]) -> Geometry:
     """ Construct Multi{Polygon|LineString|Point}
     """
     geoms = [g for g in geoms]  # force into list
-    src_type = {g.type for g in geoms}
-    if len(src_type) > 1:
+    src_types = {g.type for g in geoms}
+    if len(src_types) > 1:
         raise ValueError("All Geometries must be of the same type")
 
     crs = common_crs(geoms)  # will raise if some differ
     raw_geoms = [g.geom for g in geoms]
-    src_type = src_type.pop()
+    src_type = src_types.pop()
     if src_type == 'Polygon':
         return Geometry(geometry.MultiPolygon(raw_geoms), crs)
     elif src_type == 'Point':
@@ -1158,13 +1158,12 @@ class GeoBox:
             with_crs = True
 
         attrs = {}
-        coords = self.coordinates
         crs = self.crs
         if crs is not None:
             attrs['crs'] = str(crs)
 
         coords = dict((n, _coord_to_xr(n, c, **attrs))
-                      for n, c in coords.items())  # type: Dict[Hashable, xr.DataArray]
+                      for n, c in self.coordinates.items())  # type: Dict[Hashable, xr.DataArray]
 
         if with_crs and crs is not None:
             coords[spatial_ref] = _mk_crs_coord(crs, spatial_ref)
@@ -1215,13 +1214,13 @@ def bounding_box_in_pixel_domain(geobox: GeoBox, reference: GeoBox) -> BoundingB
     if reference.crs != geobox.crs:
         raise ValueError("Cannot combine geoboxes in different CRSs")
 
-    a, b, c, d, e, f, *_ = ~reference.affine * geobox.affine
+    a, b, c, d, e, f, *_ = ~reference.affine * geobox.affine  # type: ignore[misc]
 
-    if not (numpy.isclose(a, 1) and numpy.isclose(b, 0) and is_almost_int(c, tol)
-            and numpy.isclose(d, 0) and numpy.isclose(e, 1) and is_almost_int(f, tol)):
+    if not (numpy.isclose(a, 1) and numpy.isclose(b, 0) and is_almost_int(c, tol)        # type: ignore[has-type]
+            and numpy.isclose(d, 0) and numpy.isclose(e, 1) and is_almost_int(f, tol)):  # type: ignore[has-type]
         raise ValueError("Incompatible grids")
 
-    tx, ty = round(c), round(f)
+    tx, ty = round(c), round(f)   # type: ignore[has-type]
     return BoundingBox(tx, ty, tx + geobox.width, ty + geobox.height)
 
 

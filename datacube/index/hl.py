@@ -13,7 +13,7 @@ from datacube.model import Dataset
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
-from .eo3 import prep_eo3, is_doc_eo3
+from .eo3 import prep_eo3, is_doc_eo3  # type: ignore[attr-defined]
 
 
 def load_rules_from_types(index, product_names=None, excluding=None):

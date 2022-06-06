@@ -1,9 +1,9 @@
-from typing import Any, Mapping
+from typing import Any, Mapping, MutableMapping
 from datacube.model.fields import SimpleField, Field, get_dataset_fields as generic_get_dataset_fields
 from datacube.index.abstract import Offset
 
 # TODO: SimpleFields cannot handle non-metadata fields because e.g. the extract API expects a doc, not a Dataset model
-def get_native_fields() -> Mapping[str, Field]:
+def get_native_fields() -> MutableMapping[str, Field]:
     return {
         "id": SimpleField(
             ["id"],

@@ -3,27 +3,27 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from copy import deepcopy
 
 from datacube.index.fields import as_expression
 from datacube.index.abstract import AbstractProductResource, QueryField
+from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.model import DatasetType as Product
 from datacube.utils import changes, jsonify_document, _readable_offset
-from datacube.utils.changes import Change, check_doc_unchanged, get_doc_changes, classify_changes
-from typing import Any, Iterable, Iterator, Mapping, Tuple
+from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes, classify_changes
+from typing import Iterable, Iterator, Mapping, Tuple, Union, cast
 
 _LOG = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource):
     def __init__(self, metadata_type_resource):
-        self.metadata_type_resource = metadata_type_resource
+        self.metadata_type_resource: MetadataTypeResource = metadata_type_resource
         self.by_id = {}
         self.by_name = {}
         self.next_id = 1
 
     def add(self, product: Product, allow_table_lock: bool = False) -> Product:
-        Product.validate(product.definition)
+        Product.validate(product.definition)  # type: ignore[attr-defined]
         existing = self.get_by_name(product.name)
         if existing:
             check_doc_unchanged(
@@ -42,19 +42,19 @@ class ProductResource(AbstractProductResource):
             self.next_id += 1
             self.by_id[clone.id] = clone
             self.by_name[clone.name] = clone
-        return self.get_by_name(product.name)
+        return cast(Product, self.get_by_name(product.name))
 
     def can_update(self, product: Product,
                    allow_unsafe_updates: bool = False,
                    allow_table_lock: bool = False
                   ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
-        Product.validate(product.definition)
+        Product.validate(product.definition)  # type: ignore[attr-defined]
 
         existing = self.get_by_name(product.name)
         if not existing:
             raise ValueError(f"Unknown product {product.name}, cannot update - add first")
 
-        updates_allowed = {
+        updates_allowed: Mapping[Offset, AllowPolicy] = {
             ('description',): changes.allow_any,
             ('license',): changes.allow_any,
             ('metadata_type',): changes.allow_any,
@@ -91,13 +91,13 @@ class ProductResource(AbstractProductResource):
 
         if not safe_changes and not unsafe_changes:
             _LOG.info(f"No changes detected for product {product.name}")
-            return self.get_by_name(product.name)
+            return cast(Product, self.get_by_name(product.name))
 
         if not can_update:
             errs = ", ".join(_readable_offset(offset) for offset, _, _ in unsafe_changes)
             raise ValueError(f"Unsafe changes in {product.name}: {errs}")
 
-        existing = self.get_by_name(product.name)
+        existing = cast(Product, self.get_by_name(product.name))
         if product.metadata_type.name != existing.metadata_type.name:
             raise ValueError("Unsafe change: cannot (currently) switch metadata types for a product")
         _LOG.info(f"Updating product {product.name}")
@@ -105,7 +105,7 @@ class ProductResource(AbstractProductResource):
         persisted.id = existing.id
         self.by_id[persisted.id] = persisted
         self.by_name[persisted.name] = persisted
-        return self.get_by_name(product.name)
+        return cast(Product, self.get_by_name(product.name))
 
     def get_unsafe(self, id_: int) -> Product:
         return self.clone(self.by_id[id_])
@@ -146,7 +146,7 @@ class ProductResource(AbstractProductResource):
                 if not hasattr(field, 'extract'):
                     # non-document/native field (??)
                     continue
-                if field.extract(prod.metadata_doc) is None:
+                if field.extract(prod.metadata_doc) is None:  # type: ignore[attr-defined]
                     # Product has the field, but not defined in the type doc, so unmatchable
                     continue
                 expr = as_expression(field, value)

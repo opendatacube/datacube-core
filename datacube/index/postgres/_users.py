@@ -4,9 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Iterable, Optional, Tuple
 from datacube.index.abstract import AbstractUserResource
+from datacube.drivers.postgres import PostgresDb
 
 class UserResource(AbstractUserResource):
-    def __init__(self, db: "datacube.drivers.postgres.PostgresDb") -> None:
+    def __init__(self, db: PostgresDb) -> None:
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
         """
@@ -34,7 +35,7 @@ class UserResource(AbstractUserResource):
         with self._db.connect() as connection:
             connection.drop_users(usernames)
 
-    def list_users(self) -> Iterable[Tuple[str, str, str]]:
+    def list_users(self) -> Iterable[Tuple[str, str, Optional[str]]]:
         """
         :return: list of (role, user, description)
         :rtype: list[(str, str, str)]

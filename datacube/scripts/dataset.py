@@ -8,7 +8,7 @@ import logging
 import sys
 from collections import OrderedDict
 from textwrap import dedent
-from typing import Iterable, Mapping, MutableMapping, Any, List, Set
+from typing import cast, Iterable, Mapping, MutableMapping, Any, List, Set
 from uuid import UUID
 
 import click
@@ -18,7 +18,7 @@ from click import echo
 
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.hl import Doc2Dataset, check_dataset_consistent
-from datacube.index.eo3 import prep_eo3
+from datacube.index.eo3 import prep_eo3  # type: ignore[attr-defined]
 from datacube.index import Index
 from datacube.model import Dataset
 from datacube.ui import click as ui
@@ -458,7 +458,7 @@ def _get_derived_set(index: Index, id_: UUID) -> Set[Dataset]:
     Get a single flat set of all derived datasets.
     (children, grandchildren, great-grandchildren...)
     """
-    derived_set = {index.datasets.get(id_)}
+    derived_set = {cast(Dataset, index.datasets.get(id_))}
     to_process = {id_}
     while to_process:
         derived = index.datasets.get_derived(to_process.pop())
@@ -498,11 +498,11 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
-    derived_datasets = []
+    derived_dataset_ids: List[UUID] = []
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=False)}
     else:
-        datasets_for_archive = {dataset_id: exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
+        datasets_for_archive = {UUID(dataset_id): exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
 
         if False in datasets_for_archive.values():
             for dataset_id, exists in datasets_for_archive.items():
@@ -513,9 +513,9 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
         if archive_derived:
             derived_datasets = [_get_derived_set(index, dataset) for dataset in datasets_for_archive]
             # Get the UUID of our found derived datasets
-            derived_datasets = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
+            derived_dataset_ids = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
 
-    all_datasets = derived_datasets + [uuid for uuid in datasets_for_archive.keys()]
+    all_datasets = derived_dataset_ids + [uuid for uuid in datasets_for_archive.keys()]
 
     for dataset in all_datasets:
         click.echo(f'Archiving dataset: {dataset}')
@@ -541,7 +541,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
 def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int, dry_run: bool, all_ds: bool, ids: List[str]):
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
     if all_ds:
-        ids = index.datasets.get_all_dataset_ids(archived=True)
+        ids = index.datasets.get_all_dataset_ids(archived=True)  # type: ignore[assignment]
 
     for id_ in ids:
         target_dataset = index.datasets.get(id_)
@@ -549,7 +549,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
             echo(f'No dataset found with id {id_}')
             sys.exit(-1)
 
-        to_process = _get_derived_set(index, id_) if restore_derived else {target_dataset}
+        to_process = _get_derived_set(index, UUID(id_)) if restore_derived else {target_dataset}
         _LOG.debug("%s selected", len(to_process))
 
         # Only the already-archived ones.
@@ -584,7 +584,7 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
     else:
-        datasets_for_archive = {dataset_id: exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
+        datasets_for_archive = {UUID(dataset_id): exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
 
         # Check for non-existent datasets
         if False in datasets_for_archive.values():

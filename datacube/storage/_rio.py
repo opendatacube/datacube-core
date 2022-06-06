@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from threading import RLock
 import numpy as np
 from affine import Affine
-import rasterio
+import rasterio  # type: ignore[import]
 from urllib.parse import urlparse
 from typing import Optional, Iterator
 
@@ -249,7 +249,10 @@ class RasterDatasetDataSource(RasterioDataSource):
         raise DeprecationWarning("Stacked netcdf without explicit time index is not supported anymore")
 
     def get_transform(self, shape: RasterShape) -> Affine:
-        return self._band_info.transform * Affine.scale(1 / shape[1], 1 / shape[0])
+        return self._band_info.transform * Affine.scale(   # type: ignore[type-var, return-value]
+            1 / shape[1],
+            1 / shape[0]
+        )
 
     def get_crs(self):
         return self._band_info.crs

@@ -9,7 +9,6 @@ Access methods for indexing datasets & products.
 import logging
 
 from datacube.config import LocalConfig
-from datacube.drivers import index_driver_by_name, index_drivers
 from datacube.index.abstract import AbstractIndex
 
 _LOG = logging.getLogger(__name__)
@@ -29,6 +28,8 @@ def index_connect(local_config: LocalConfig = None,
     :param validate_connection: Validate database connection and schema immediately
     :raises datacube.index.Exceptions.IndexSetupError:
     """
+    from datacube.drivers import index_driver_by_name, index_drivers
+
     if local_config is None:
         local_config = LocalConfig.find()
 

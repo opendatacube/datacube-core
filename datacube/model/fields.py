@@ -7,7 +7,7 @@
 This allows extraction of fields of interest from dataset metadata document.
 """
 from typing import Mapping, Dict, Any
-import toolz
+import toolz  # type: ignore[import]
 import decimal
 from datacube.utils import parse_time
 from ._base import Range
@@ -39,6 +39,9 @@ class Expression:
         if self.__class__ != other.__class__:
             return False
         return self.__dict__ == other.__dict__
+
+    def evaluate(self, ctx):
+        raise NotImplementedError()
 
 
 class SimpleEqualsExpression(Expression):
@@ -97,7 +100,7 @@ class SimpleField(Field):
         self.type_name = type_name
         super().__init__(name, description)
 
-    def __eq__(self, value) -> Expression:
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
         return SimpleEqualsExpression(self, value)
 
     def extract(self, doc):
@@ -107,7 +110,7 @@ class SimpleField(Field):
         return self._converter(v)
 
 
-class RangeField:
+class RangeField(Field):
     def __init__(self,
                  min_offset,
                  max_offset,
@@ -116,11 +119,10 @@ class RangeField:
                  name='',
                  description=''):
         self.type_name = type_name
-        self.description = description
-        self.name = name
         self._converter = base_converter
         self._min_offset = min_offset
         self._max_offset = max_offset
+        super().__init__(name, description)
 
     def extract(self, doc):
         def extract_raw(paths):

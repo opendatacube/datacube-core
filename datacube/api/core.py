@@ -5,7 +5,7 @@
 import uuid
 import collections.abc
 from itertools import groupby
-from typing import Union, Optional, Dict, Tuple
+from typing import Set, Union, Optional, Dict, Tuple, cast
 import datetime
 
 import numpy
@@ -927,13 +927,13 @@ def _calculate_chunk_sizes(sources: xarray.DataArray,
                            geobox: GeoBox,
                            dask_chunks: Dict[str, Union[str, int]],
                            extra_dims: Optional[ExtraDimensions] = None):
-    extra_dim_names = ()
-    extra_dim_shapes = ()
+    extra_dim_names: Tuple[str, ...] = ()
+    extra_dim_shapes: Tuple[int, ...] = ()
     if extra_dims is not None:
         extra_dim_names, extra_dim_shapes = extra_dims.chunk_size()
 
     valid_keys = sources.dims + extra_dim_names + geobox.dimensions
-    bad_keys = set(dask_chunks) - set(valid_keys)
+    bad_keys = cast(Set[str], set(dask_chunks)) - cast(Set[str], set(valid_keys))
     if bad_keys:
         raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 

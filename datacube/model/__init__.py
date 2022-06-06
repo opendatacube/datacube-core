@@ -5,6 +5,7 @@
 """
 Core classes used across modules.
 """
+
 import logging
 import math
 import warnings
@@ -28,6 +29,8 @@ DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
+
+# TODO: Multi-dimension code is has incomplete type hints and significant type issues that will require attention
 
 class Dataset:
     """
@@ -406,7 +409,7 @@ class DatasetType:
         self.metadata_type = metadata_type
         #: product definition document
         self.definition = definition
-        self._extra_dimensions = None
+        self._extra_dimensions: Optional[Mapping[str, Any]] = None
         self._canonical_measurements: Optional[Mapping[str, Measurement]] = None
         self._all_measurements: Optional[Dict[str, Measurement]] = None
         self._load_hints: Optional[Dict[str, Any]] = None
@@ -489,7 +492,7 @@ class DatasetType:
         return ('time',) + spatial_dims
 
     @property
-    def extra_dimensions(self) -> Mapping[str, Measurement]:
+    def extra_dimensions(self) -> "ExtraDimensions":
         """
         Dictionary of metadata for the third dimension.
         """
@@ -526,7 +529,8 @@ class DatasetType:
 
         return GridSpec(crs=crs, **gs_params)
 
-    def validate_extra_dims(definition: dict):
+    @staticmethod
+    def validate_extra_dims(definition: Mapping[str, Any]):
         """Validate 3D metadata in the product definition.
 
         Perform some basic checks for validity of the 3D dataset product definition:
@@ -565,7 +569,7 @@ class DatasetType:
             if 'spectral_definition' in m:
                 spectral_definitions = m.get('spectral_definition', [])
                 # Check spectral_definition of expected length
-                if len(defined_extra_dimensions.get(dim_name)) != len(spectral_definitions):
+                if len(defined_extra_dimensions[dim_name]) != len(spectral_definitions):
                     raise ValueError(
                         f"spectral_definition should be the same length as values for extra_dim {m.get('extra_dim')}"
                     )
@@ -928,7 +932,7 @@ class ExtraDimensions:
     the original dimension coordinates.
     """
 
-    def __init__(self, extra_dim: Dict[str, Any]):
+    def __init__(self, extra_dim: Mapping[str, Any]):
         """Init function
 
         :param extra_dim: Dimension definition dict, typically retrieved from the product definition's
@@ -986,24 +990,24 @@ class ExtraDimensions:
         for dim_name, dim_slice in dim_slices.items():
             # Adjust slices relative to original.
             if dim_name in ed._dim_slice:
-                ed._dim_slice[dim_name] = (
-                    ed._dim_slice[dim_name][0] + dim_slice[0],
-                    ed._dim_slice[dim_name][0] + dim_slice[1],
+                ed._dim_slice[dim_name] = (    # type: ignore[assignment]
+                    ed._dim_slice[dim_name][0] + dim_slice[0],  # type: ignore[index]
+                    ed._dim_slice[dim_name][0] + dim_slice[1],  # type: ignore[index]
                 )
 
             # Subset dimension values.
             if dim_name in ed._dims:
-                ed._dims[dim_name]['values'] = ed._dims[dim_name]['values'][slice(*dim_slice)]
+                ed._dims[dim_name]['values'] = ed._dims[dim_name]['values'][slice(*dim_slice)]  # type: ignore[misc]
 
             # Subset dimension coordinates.
             if dim_name in ed._coords:
-                slice_dict = {k: slice(*v) for k, v in dim_slices.items()}
+                slice_dict = {k: slice(*v) for k, v in dim_slices.items()}  # type: ignore[misc]
                 ed._coords[dim_name] = ed._coords[dim_name].isel(slice_dict)
 
         return ed
 
     @property
-    def dims(self) -> Dict[str, dict]:
+    def dims(self) -> Mapping[str, dict]:
         """Returns stored dimension information
 
         :return: A dict of information about each dimension
@@ -1011,7 +1015,7 @@ class ExtraDimensions:
         return self._dims
 
     @property
-    def dim_slice(self) -> Dict[str, Tuple[int, int]]:
+    def dim_slice(self) -> Mapping[str, Tuple[int, int]]:
         """Returns dimension slice for this ExtraDimensions object
 
         :return: A dict of dimension slices that results in this ExtraDimensions object
@@ -1085,8 +1089,8 @@ class ExtraDimensions:
         if self.dims is not None:
             for dim in self.dims.values():
                 name = dim.get('name')
-                names += (name,)
-                shapes += (len(self.measurements_values(name)),)
+                names += (name,)   # type: ignore[assignment]
+                shapes += (len(self.measurements_values(name)),)   # type: ignore[assignment,arg-type]
         return names, shapes
 
     def __str__(self) -> str:

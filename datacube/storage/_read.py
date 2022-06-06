@@ -196,7 +196,7 @@ def read_time_slice(rdr,
 def read_time_slice_v2(rdr,
                        dst_gbox: GeoBox,
                        resampling: Resampling,
-                       dst_nodata: Nodata) -> Tuple[np.ndarray,
+                       dst_nodata: Nodata) -> Tuple[Optional[np.ndarray],
                                                     Tuple[slice, slice]]:
     """ From opened reader object read into `dst`
 

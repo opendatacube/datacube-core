@@ -6,9 +6,9 @@
 """
 import threading
 from types import SimpleNamespace
-import rasterio
-from rasterio.session import AWSSession, DummySession
-import rasterio.env
+import rasterio                                         # type: ignore[import]
+from rasterio.session import AWSSession, DummySession   # type: ignore[import]
+import rasterio.env                                     # type: ignore[import]
 from datacube.utils.generic import thread_local_cache
 
 _CFG_LOCK = threading.Lock()

@@ -65,7 +65,7 @@ class Index(AbstractIndex):
 
     @property
     def url(self) -> str:
-        return self._db.url
+        return str(self._db.url)
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):

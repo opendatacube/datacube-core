@@ -11,7 +11,8 @@ products implementing the same interface.
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from functools import reduce
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Optional, cast
+from typing import Mapping as TypeMapping
 
 import uuid
 import numpy
@@ -321,8 +322,8 @@ class Product(VirtualProduct):
         return {key: value if key not in ['fuse_func', 'dataset_predicate'] else qualified_name(value)
                 for key, value in self.items()}
 
-    def output_measurements(self, product_definitions: Dict[str, DatasetType],
-                            measurements: List[str] = None) -> Dict[str, Measurement]:
+    def output_measurements(self, product_definitions: TypeMapping[str, DatasetType],  # type: ignore[override]
+                            measurements: Optional[List[str]] = None) -> TypeMapping[str, Measurement]:
         self._assert(self._product in product_definitions,
                      "product {} not found in definitions".format(self._product))
 
@@ -392,7 +393,7 @@ class Product(VirtualProduct):
                              '{} not found in {}'.format(measurement, self._product))
 
         measurement_dicts = self.output_measurements(grouped.product_definitions,
-                                                     load_settings.get('measurements'))
+                                                     cast(List[str], load_settings.get('measurements')))
 
         if grouped.load_natively:
             canonical_names = [product.canonical_measurement(measurement) for measurement in measurement_dicts]

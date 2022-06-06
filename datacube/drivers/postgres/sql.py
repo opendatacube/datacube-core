@@ -99,7 +99,7 @@ class CommonTimestamp(GenericFunction):
 
 # pylint: disable=too-many-ancestors
 class Float8Range(GenericFunction):
-    type = FLOAT8RANGE
+    type = FLOAT8RANGE  # type: ignore[assignment]
     package = 'agdc'
     identifier = 'float8range'
     inherit_cache = False

@@ -10,7 +10,7 @@ written as UTF-8 encoded bytes.
 
 For more information see https://github.com/Unidata/netcdf4-python/issues/448
 """
-import netCDF4
+import netCDF4   # type: ignore[import]
 
 
 class _VariableProxy(object):
