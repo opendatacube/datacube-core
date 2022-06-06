@@ -8,7 +8,7 @@ What's New
 v1.8.next
 =========
 
-- Cleanup mypy typechecking compliance. (:pull:`???`)
+- Cleanup mypy typechecking compliance. (:pull:`1266`)
 - When dataset add operations fail due to lineage issues, the produced error message now clearly indicates that
   the problem was due to lineage issues. (:pull:`1260`)
 - Added support for group-by financial years to virtual products. (:pull:`1257`, :pull:`1261`)
