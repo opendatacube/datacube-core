@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 import yaml
 
@@ -23,6 +27,12 @@ def test_new_datasource_fallback():
     assert rdr is not None
     assert isinstance(rdr, RasterDatasetDataSource)
 
+    # check that None format works
+    band = BandInfo(mk_sample_dataset(bands, 'file:///file', format=None), 'green')
+    rdr = new_datasource(band)
+    assert rdr is not None
+    assert isinstance(rdr, RasterDatasetDataSource)
+
 
 def test_reader_drivers():
     available_drivers = reader_drivers()
@@ -38,11 +48,13 @@ def test_writer_drivers():
 def test_index_drivers():
     available_drivers = index_drivers()
     assert 'default' in available_drivers
+    assert 'null' in available_drivers
+    assert 'memory' in available_drivers
 
 
 def test_default_injection():
     cache = IndexDriverCache('datacube.plugins.index-no-such-prefix')
-    assert cache.drivers() == ['default']
+    assert cache.drivers() == ['default', 'postgres']
 
 
 def test_netcdf_driver_import():

@@ -3,7 +3,7 @@
 launch_db () {
     local pgdata="${1:-/srv/postgresql}"
     local dbuser="${2:-odc}"
-    local bin=/usr/lib/postgresql/10/bin
+    local bin=$(find /usr/lib/postgresql/ -type d -name bin)
 
     [ -e "${pgdata}/PG_VERSION" ] || {
         sudo -u postgres "${bin}/initdb" -D "${pgdata}" --auth-host=md5 --encoding=UTF8
@@ -15,6 +15,7 @@ launch_db () {
     sudo -u postgres createdb "${dbuser}"
     sudo -u postgres createdb datacube
     sudo -u postgres createdb agdcintegration
+    sudo -u postgres createdb odcintegration
 }
 
 # Become `odc` user with UID/GID compatible to datacube-core volume
@@ -35,9 +36,19 @@ launch_db () {
     target_gid=$(stat -c '%g' .)
 
     [[ $target_uid -eq 0 ]] || {
-        groupmod --gid "${target_gid}" odc
-        usermod --gid "${target_gid}" --uid "${target_uid}" odc
-        chown -R odc:odc /home/odc/
+
+        # unless gid already matches update gid
+        [[ $(id -g odc) -eq ${target_gid} ]] || {
+            groupmod --gid ${target_gid} odc
+            usermod --gid ${target_gid} odc
+        }
+
+        # unless uid already matches: change it and update HOME and /env
+        [[ $(id -u odc) -eq ${target_uid} ]] || {
+            usermod --uid ${target_uid} odc
+            chown -R odc:odc /home/odc/ /env
+        }
+
         exec sudo -u odc -E -H bash "$0" "$@"
     }
 }
@@ -50,9 +61,18 @@ db_hostname:
 db_database: agdcintegration
 index_driver: default
 
+[experimental]
+db_hostname:
+db_database: odcintegration
+index_driver: postgis
+
 [no_such_driver_env]
 db_hostname:
 index_driver: no_such_driver
+
+[null_driver]
+index_driver: null
+
 EOL
 
 env="${PYENV:-/env}"
@@ -61,13 +81,13 @@ if [ -e "${env}/bin/activate" ]; then
     [ -n "${VIRTUAL_ENV:-}" ] || {
         source "${env}/bin/activate"
 
-        if [ -e "./setup.py" ]; then
-            pip install -e '.[test,cf,celery,s3,performance,distributed]'
-        fi
-
-        if [ -e "./tests/drivers/fail_drivers" ]; then
-            pip install -e "./tests/drivers/fail_drivers"
-        fi
+        # if there is no .egg-info then we need to install in
+        # edit mode again to generate it, needed for plugin registration
+        [[ -e /code/datacube.egg-info ]] || {
+            python -m pip install -e /code --no-deps
+            python -m pip install -e /code/tests/drivers/fail_drivers --no-deps
+            python -m pip install -e /code/examples/io_plugin --no-deps
+        }
 
         [ -n "${GDAL_DATA:-}" ] || {
             # if binary version of rasterio was used, set GDAL_DATA to that

@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Tools for masking data based on a bit-mask variable with attached definition.
 
@@ -7,7 +11,6 @@ The main functions are `make_mask(variable)` `describe_flags(variable)`
 import collections
 
 import pandas
-import numpy
 import xarray
 from xarray import DataArray, Dataset
 
@@ -111,7 +114,7 @@ def valid_data_mask(data):
     :return: Dataset or DataArray
     """
     if isinstance(data, Dataset):
-        return data.apply(valid_data_mask)
+        return data.map(valid_data_mask)
 
     if not isinstance(data, DataArray):
         raise TypeError('valid_data_mask not supported for type {}'.format(type(data)))
@@ -120,7 +123,7 @@ def valid_data_mask(data):
 
     return xarray.apply_ufunc(valid_mask, data, nodata,
                               dask='parallelized',
-                              output_dtypes=[numpy.bool])
+                              output_dtypes=[bool])
 
 
 def mask_invalid_data(data, keep_attrs=True):
@@ -135,7 +138,7 @@ def mask_invalid_data(data, keep_attrs=True):
     """
     if isinstance(data, Dataset):
         # Pass keep_attrs as a positional arg to the DataArray func
-        return data.apply(mask_invalid_data, keep_attrs=keep_attrs, args=(keep_attrs,))
+        return data.map(mask_invalid_data, keep_attrs=keep_attrs, args=(keep_attrs,))
 
     if isinstance(data, DataArray):
         if 'nodata' not in data.attrs:

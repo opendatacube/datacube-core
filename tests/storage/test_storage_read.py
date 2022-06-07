@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 from affine import Affine
 import numpy as np
 
@@ -239,7 +243,10 @@ def test_read_paste_v2(tmpdir):
 
         yy = np.full(gbox.shape, dst_nodata, dtype=rdr.dtype)
         yy_, roi = read_time_slice_v2(rdr, gbox, resampling, dst_nodata)
-        yy[roi] = yy_
+        if yy_ is None:
+            print(f"Got None out of read_time_slice_v2: {roi} must be empty")
+        else:
+            yy[roi] = yy_
         return yy, roi
 
     # read native whole

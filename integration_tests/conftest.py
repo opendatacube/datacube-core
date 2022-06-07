@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Common methods for index integration tests.
 """
@@ -17,14 +20,16 @@ from hypothesis import HealthCheck, settings
 
 import datacube.scripts.cli_app
 import datacube.utils
-from datacube.drivers.postgres import _core
+from datacube.drivers.postgres import _core as pgres_core
+from datacube.drivers.postgis import _core as pgis_core
 from datacube.index import index_connect
-from datacube.index._metadata_types import default_metadata_type_docs
+from datacube.index.abstract import default_metadata_type_docs
 from integration_tests.utils import _make_geotiffs, _make_ls5_scene_datasets, load_yaml_file, \
     GEOTIFF, load_test_products
 
 from datacube.config import LocalConfig
 from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgis import PostGisDb
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 
@@ -51,6 +56,86 @@ settings.register_profile(
 )
 settings.load_profile('opendatacube')
 
+MEMORY_DRIVER_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'memory'
+
+
+def get_memory_test_data_doc(path):
+    from datacube.utils import read_documents
+    for path, doc in read_documents(MEMORY_DRIVER_TESTDIR / path):
+        return doc
+
+
+@pytest.fixture
+def extended_eo3_metadata_type_doc():
+    return get_memory_test_data_doc("eo3_landsat_ard.odc-type.yaml")
+
+
+@pytest.fixture
+def extended_eo3_product_doc():
+    return get_memory_test_data_doc("ard_ls8.odc-product.yaml")
+
+
+@pytest.fixture
+def base_eo3_product_doc():
+    return get_memory_test_data_doc("ga_ls_wo_3.odc-product.yaml")
+
+
+@pytest.fixture
+def mem_index_fresh(in_memory_config):
+    from datacube import Datacube
+    with Datacube(config=in_memory_config) as dc:
+        yield dc
+
+
+@pytest.fixture
+def mem_index_eo3(mem_index_fresh,
+                  extended_eo3_metadata_type_doc,
+                  extended_eo3_product_doc,
+                  base_eo3_product_doc):
+    mem_index_fresh.index.metadata_types.add(
+        mem_index_fresh.index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
+    )
+    mem_index_fresh.index.products.add_document(base_eo3_product_doc)
+    mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
+    return mem_index_fresh
+
+
+@pytest.fixture
+def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
+    (doc_ls8, loc_ls8), (doc_wo, loc_wo) = datasets_with_unembedded_lineage_doc
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(mem_index_eo3.index)
+    ds_ls8, err = resolver(doc_ls8, loc_ls8)
+    mem_index_eo3.index.datasets.add(ds_ls8)
+    ds_wo, err = resolver(doc_wo, loc_wo)
+    mem_index_eo3.index.datasets.add(ds_wo)
+    return mem_index_eo3, ds_ls8.id, ds_wo.id
+
+
+@pytest.fixture
+def dataset_with_lineage_doc():
+    return (
+        get_memory_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
+        's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+        'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def datasets_with_unembedded_lineage_doc():
+    return [
+        (
+            get_memory_test_data_doc("ls8_dataset.yaml"),
+            's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/12/'
+            'ga_ls8c_ard_3-0-0_090086_2016-05-12_final.stac-item.json'
+        ),
+        (
+            get_memory_test_data_doc("wo_dataset.yaml"),
+            's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+            'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+        ),
+    ]
+
 
 @pytest.fixture
 def global_integration_cli_args():
@@ -61,12 +146,9 @@ def global_integration_cli_args():
     return list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
 
 
-@pytest.fixture
+@pytest.fixture(scope="module", params=["datacube", "experimental"])
 def datacube_env_name(request):
-    if hasattr(request, 'param'):
-        return request.param
-    else:
-        return 'datacube'
+    return request.param
 
 
 @pytest.fixture
@@ -78,6 +160,20 @@ def local_config(datacube_env_name):
         The :func:`integration_config_paths` fixture sets up the config files.
     """
     return LocalConfig.find(CONFIG_FILE_PATHS, env=datacube_env_name)
+
+
+@pytest.fixture
+def null_config():
+    """Provides a :class:`LocalConfig` configured with null index driver
+    """
+    return LocalConfig.find(CONFIG_FILE_PATHS, env="null_driver")
+
+
+@pytest.fixture
+def in_memory_config():
+    """Provides a :class:`LocalConfig` configured with memory index driver
+    """
+    return LocalConfig.find(CONFIG_FILE_PATHS, env="local_memory")
 
 
 @pytest.fixture
@@ -93,27 +189,42 @@ def ingest_configs(datacube_env_name):
 @pytest.fixture(params=["US/Pacific", "UTC", ])
 def uninitialised_postgres_db(local_config, request):
     """
-    Return a connection to an empty PostgreSQL database
+    Return a connection to an empty PostgreSQL or PostGIS database
     """
     timezone = request.param
 
-    db = PostgresDb.from_config(local_config,
-                                application_name='test-run',
-                                validate_connection=False)
-
-    # Drop tables so our tests have a clean db.
-    # with db.begin() as c:  # Creates a new PostgresDbAPI, by passing a new connection to it
-    _core.drop_db(db._engine)
-    db._engine.execute('alter database %s set timezone = %r' % (local_config['db_database'], timezone))
-
-    # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
-    # and attempts to recreate them. WTF TODO FIX
-    remove_dynamic_indexes()
+    if local_config._env == "datacube":
+        db = PostgresDb.from_config(
+            local_config,
+            application_name='test-run',
+            validate_connection=False
+        )
+        # Drop tables so our tests have a clean db.
+        # with db.begin() as c:  # Creates a new PostgresDbAPI, by passing a new connection to it
+        pgres_core.drop_db(db._engine)
+        db._engine.execute('alter database %s set timezone = %r' % (local_config['db_database'], timezone))
+        # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
+        # and attempts to recreate them. WTF TODO FIX
+        remove_postgres_dynamic_indexes()
+    else:
+        db = PostGisDb.from_config(
+            local_config,
+            application_name='test-run',
+            validate_connection=False
+        )
+        pgis_core.drop_db(db._engine)
+        db._engine.execute('alter database %s set timezone = %r' % (local_config['db_database'], timezone))
+        remove_postgis_dynamic_indexes()
 
     yield db
-    # with db.begin() as c:  # Drop SCHEMA
-    _core.drop_db(db._engine)
-    db.close()
+
+    if local_config._env in ('default', 'postgres'):
+        # with db.begin() as c:  # Drop SCHEMA
+        pgres_core.drop_db(db._engine)
+        db.close()
+    else:
+        pgis_core.drop_db(db._engine)
+        db.close()
 
 
 @pytest.fixture
@@ -142,12 +253,21 @@ def initialised_postgres_db(index):
     return index._db
 
 
-def remove_dynamic_indexes():
+def remove_postgres_dynamic_indexes():
     """
     Clear any dynamically created postgresql indexes from the schema.
     """
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-    for table in _core.METADATA.tables.values():
+    for table in pgres_core.METADATA.tables.values():
+        table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
+
+
+def remove_postgis_dynamic_indexes():
+    """
+    Clear any dynamically created postgis indexes from the schema.
+    """
+    # Our normal indexes start with "ix_", dynamic indexes with "dix_"
+    for table in pgis_core.METADATA.tables.values():
         table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
 
 

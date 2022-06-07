@@ -1,16 +1,22 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 from typing import Optional, Collection
+import warnings
 
 import numpy
 import xarray
-import lark
+import pandas as pd
 
 from datacube.utils.masking import make_mask as make_mask_prim
 from datacube.utils.masking import mask_invalid_data as mask_invalid_data_prim
-from datacube.utils.masking import valid_data_mask
 
 from datacube.utils.math import dtype_is_float
 
 from .impl import VirtualProductException, Transformation, Measurement
+from .expr import FormulaEvaluator, MaskEvaluator
+from .expr import formula_parser, evaluate_data, evaluate_nodata_mask, evaluate_type
 
 
 def selective_apply_dict(dictionary, apply_to=None, key_map=None, value_map=None):
@@ -84,14 +90,16 @@ class ApplyMask(Transformation):
     :param apply_to: list of names of measurements to apply the mask to
     :param preserve_dtype: whether to cast back to original ``dtype`` after masking
     :param fallback_dtype: default ``dtype`` for masked measurements
+    :param erosion: the erosion to apply to mask in pixels
     :param dilation: the dilation to apply to mask in pixels
     """
     def __init__(self, mask_measurement_name, apply_to: Optional[Collection[str]] = None,
-                 preserve_dtype=True, fallback_dtype='float32', dilation: int = 0):
+                 preserve_dtype=True, fallback_dtype='float32', erosion: int = 0, dilation: int = 0):
         self.mask_measurement_name = mask_measurement_name
         self.apply_to = apply_to
         self.preserve_dtype = preserve_dtype
         self.fallback_dtype = fallback_dtype
+        self.erosion = int(erosion)
         self.dilation = int(dilation)
 
     def measurements(self, input_measurements):
@@ -112,21 +120,27 @@ class ApplyMask(Transformation):
 
     def compute(self, data):
         mask = data[self.mask_measurement_name]
-        rest = data.drop(self.mask_measurement_name)
+        rest = data.drop_vars([self.mask_measurement_name])
 
-        def dilate(array):
-            """Dilation e.g. for the mask"""
-            # e.g. kernel = [[1] * 7] * 7 # blocky 3-pixel dilation
-            # pylint: disable=invalid-unary-operand-type
-            y, x = numpy.ogrid[-self.dilation:(self.dilation+1), -self.dilation:(self.dilation+1)]
-            kernel = ((x * x) + (y * y) <= (self.dilation + 0.5) ** 2)  # disk-like `self.dilation` radial dilation
-            return ~scipy.ndimage.binary_dilation(~array.astype(numpy.bool),
-                                                  structure=kernel.reshape((1, )+kernel.shape))
+        if self.erosion > 0:
+            from skimage.morphology import binary_erosion, disk
+            kernel = disk(self.erosion)
+            mask = ~xarray.apply_ufunc(binary_erosion,
+                                       ~mask,
+                                       kernel.reshape((1, ) + kernel.shape),
+                                       output_dtypes=[bool],
+                                       dask='parallelized',
+                                       keep_attrs=True)
 
         if self.dilation > 0:
-            import scipy.ndimage
-            mask = xarray.apply_ufunc(dilate, mask, output_dtypes=[numpy.bool], dask='parallelized',
-                                      keep_attrs=True)
+            from skimage.morphology import binary_dilation, disk
+            kernel = disk(self.dilation)
+            mask = ~xarray.apply_ufunc(binary_dilation,
+                                       ~mask,
+                                       kernel.reshape((1, ) + kernel.shape),
+                                       output_dtypes=[bool],
+                                       dask='parallelized',
+                                       keep_attrs=True)
 
         def worker(key, value):
             if self.preserve_dtype:
@@ -147,10 +161,40 @@ class ToFloat(Transformation):
 
     Alias in recipe: ``to_float``.
 
+    .. note::
+
+        The ``to_float`` transform is deprecated. Please use ``expressions`` instead.
+
+        Using ``to_float``:
+
+        .. code-block:: yaml
+
+            transform: to_float
+            apply_to: [green]
+            dtype: float32
+            input: ...
+
+        Using equivalent ``expressions``:
+
+        .. code-block:: yaml
+
+            transform: expressions
+            output:
+                green:
+                    formula: green
+                    dtype: float32
+
+                # copy unaffected other bands
+                red: red
+                blue: blue
+            input: ...
+
     :param apply_to: list of names of measurements to apply conversion to
     :param dtype: default ``dtype`` for conversion
     """
     def __init__(self, apply_to=None, dtype='float32'):
+        warnings.warn("the `to_float` transform is deprecated, please use `expressions` instead",
+                      category=DeprecationWarning)
         self.apply_to = apply_to
         self.dtype = dtype
 
@@ -178,9 +222,37 @@ class Rename(Transformation):
 
     Alias in recipe: ``rename``.
 
+    .. note::
+
+        The ``rename`` transform is deprecated. Please use ``expressions`` instead.
+
+        Using ``rename``:
+
+        .. code-block:: yaml
+
+            transform: rename
+            measurement_names:
+                green: verde
+            input: ...
+
+        Using equivalent ``expressions``:
+
+        .. code-block:: yaml
+
+            transform: expressions
+            output:
+                verde: green
+
+                # copy other unaffected bands
+                red: red
+                blue: blue
+            input: ...
+
     :param measurement_names: mapping from INPUT NAME to OUTPUT NAME
     """
     def __init__(self, measurement_names):
+        warnings.warn("the `rename` transform is deprecated, please use `expressions` instead",
+                      category=DeprecationWarning)
         self.measurement_names = measurement_names
 
     def measurements(self, input_measurements):
@@ -205,9 +277,32 @@ class Select(Transformation):
 
     Alias in recipe: ``select``.
 
+    .. note::
+
+        The ``select`` transform is deprecated. Please use ``expressions`` instead.
+
+        Using ``select``:
+
+        .. code-block:: yaml
+
+            transform: select
+            measurement_names: [green]
+            input: ...
+
+        Using equivalent ``expressions``:
+
+        .. code-block:: yaml
+
+            transform: expressions
+            output:
+                green: green
+            input: ...
+
     :param measurement_names: list of measurements to keep
     """
     def __init__(self, measurement_names):
+        warnings.warn("the `select` transform is deprecated, please use `expressions` instead",
+                      category=DeprecationWarning)
         self.measurement_names = measurement_names
 
     def measurements(self, input_measurements):
@@ -216,80 +311,9 @@ class Select(Transformation):
                 if key in self.measurement_names}
 
     def compute(self, data):
-        return data.drop([measurement
-                          for measurement in data.data_vars
-                          if measurement not in self.measurement_names])
-
-
-def formula_parser():
-    return lark.Lark("""
-                ?expr: num_expr | bool_expr
-
-                ?bool_expr: or_clause | comparison_clause
-
-                ?or_clause: or_clause "|" and_clause -> or_
-                          | or_clause "^" and_clause -> xor
-                          | and_clause
-                ?and_clause: and_clause "&" term -> and_
-                           | term
-                ?term: "not" term -> not_
-                     | "(" bool_expr ")"
-
-                ?comparison_clause: eq | ne | le | ge | lt | gt
-
-                eq: num_expr "==" num_expr
-                ne: num_expr "!=" num_expr
-                le: num_expr "<=" num_expr
-                ge: num_expr ">=" num_expr
-                lt: num_expr "<" num_expr
-                gt: num_expr ">" num_expr
-
-
-                ?num_expr: shift
-
-                ?shift: shift "<<" sum -> lshift
-                      | shift ">>" sum -> rshift
-                      | sum
-
-                ?sum: sum "+" product -> add
-                    | sum "-" product -> sub
-                    | product
-
-                ?product: product "*" atom -> mul
-                        | product "/" atom -> truediv
-                        | product "//" atom -> floordiv
-                        | product "%" atom -> mod
-                        | atom
-
-                ?atom: "-" subatom -> neg
-                     | "+" subatom -> pos
-                     | "~" subatom -> inv
-                     | subatom "**" atom -> pow
-                     | subatom
-
-                ?subatom: NAME -> var_name
-                        | FLOAT -> float_literal
-                        | INT -> int_literal
-                        | "(" num_expr ")"
-
-
-                %import common.FLOAT
-                %import common.INT
-                %import common.WS_INLINE
-                %import common.CNAME -> NAME
-
-                %ignore WS_INLINE
-                """, start='expr')
-
-
-@lark.v_args(inline=True)
-class EvaluateTree(lark.Transformer):
-    from operator import not_, or_, and_, xor
-    from operator import eq, ne, le, ge, lt, gt
-    from operator import add, sub, mul, truediv, floordiv, neg, pos, inv, mod, pow, lshift, rshift
-
-    float_literal = float
-    int_literal = int
+        return data.drop_vars([measurement
+                               for measurement in data.data_vars
+                               if measurement not in self.measurement_names])
 
 
 class Expressions(Transformation):
@@ -331,21 +355,13 @@ class Expressions(Transformation):
     def measurements(self, input_measurements):
         parser = formula_parser()
 
-        @lark.v_args(inline=True)
-        class EvaluateType(EvaluateTree):
-            def var_name(self, key):
-                return numpy.array([], dtype=input_measurements[key.value].dtype)
-
-        ev = EvaluateType()
-
         def deduce_type(output_var, output_desc):
             if 'dtype' in output_desc:
                 return numpy.dtype(output_desc['dtype'])
 
             formula = output_desc['formula']
-            tree = parser.parse(formula)
+            result = evaluate_type(formula, input_measurements, parser, FormulaEvaluator)
 
-            result = ev.transform(tree)
             return result.dtype
 
         def measurement(output_var, output_desc):
@@ -363,41 +379,6 @@ class Expressions(Transformation):
     def compute(self, data):
         parser = formula_parser()
 
-        @lark.v_args(inline=True)
-        class EvaluateData(EvaluateTree):
-            def var_name(self, key):
-                return data[key.value]
-
-        @lark.v_args(inline=True)
-        class EvaluateNodataMask(lark.Transformer):
-            # the result of an expression is nodata whenever any of its subexpressions is nodata
-            from operator import or_
-
-            # pylint: disable=invalid-name
-            and_ = _xor = or_
-            eq = ne = le = ge = lt = gt = or_
-            add = sub = mul = truediv = floordiv = mod = pow = lshift = rshift = or_
-
-            def not_(self, value):
-                return value
-
-            neg = pos = inv = not_
-
-            @staticmethod
-            def float_literal(value):
-                return False
-
-            @staticmethod
-            def int_literal(value):
-                return False
-
-            def var_name(self, key):
-                # pylint: disable=invalid-unary-operand-type
-                return ~valid_data_mask(data[key.value])
-
-        ev_data = EvaluateData()
-        ev_mask = EvaluateNodataMask()
-
         def result(output_var, output_desc):
             # pylint: disable=invalid-unary-operand-type
 
@@ -409,8 +390,7 @@ class Expressions(Transformation):
             dtype = output_desc.get('dtype')
 
             formula = output_desc['formula']
-            tree = parser.parse(formula)
-            result = ev_data.transform(tree)
+            result = evaluate_data(formula, data, parser, FormulaEvaluator)
             result.attrs['crs'] = data.attrs['crs']
             if nodata is not None:
                 result.attrs['nodata'] = nodata
@@ -431,9 +411,9 @@ class Expressions(Transformation):
                 result = result.astype(dtype)
 
             dtype = result.dtype
-            mask = ev_mask.transform(tree)
+            mask = evaluate_nodata_mask(formula, data, parser, MaskEvaluator)
 
-            if numpy.dtype(dtype) == numpy.bool:
+            if numpy.dtype(dtype) == bool:
                 # any operation on nodata should evaluate to False
                 # omission of attrs['nodata'] is deliberate
                 result = result.where(~mask, False)
@@ -458,6 +438,26 @@ class Expressions(Transformation):
 
 def year(time):
     return time.astype('datetime64[Y]')
+
+def fiscal_year(time):
+    """"
+    This function supports group-by financial years
+    """
+    def convert_to_quarters(x):
+        df = pd.Series(x)
+        return df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
+
+    ds = xarray.apply_ufunc(convert_to_quarters,
+                       time,
+                       input_core_dims=[["time"]],
+                       output_core_dims=[["time"]],
+                       vectorize=True)
+
+    df = time['time'].to_series()
+    years = df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
+    ds = ds.assign_coords({"time": years})
+
+    return ds
 
 
 def month(time):

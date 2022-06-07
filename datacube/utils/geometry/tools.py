@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import numpy as np
 import collections.abc
 from types import SimpleNamespace
@@ -186,9 +190,9 @@ def apply_affine(A: Affine, x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, n
 
     shape = x.shape
 
-    A = np.asarray(A).reshape(3, 3)
-    t = A[:2, -1].reshape((2, 1))
-    A = A[:2, :2]
+    A = np.asarray(A).reshape(3, 3)  # type: ignore[assignment]
+    t = A[:2, -1].reshape((2, 1))    # type: ignore[index]
+    A = A[:2, :2]                    # type: ignore[index]
 
     x, y = A @ np.vstack([x.ravel(), y.ravel()]) + t
     x, y = (a.reshape(shape) for a in (x, y))
@@ -431,7 +435,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> Tuple[slice, s
     return (src, dst)
 
 
-def box_overlap(src_shape, dst_shape, ST):
+def box_overlap(src_shape, dst_shape, ST, tol):
     """
     Given two image planes whose coordinate systems are related via scale and
     translation only, find overlapping regions within both.
@@ -440,10 +444,19 @@ def box_overlap(src_shape, dst_shape, ST):
     :param dst_shape: Shape of destination image plane
     :param        ST: Affine transform with only scale/translation,
                       direction is: Xsrc = ST*Xdst
+    :param       tol: Sub-pixel translation tolerance that's scaled by resolution.
     """
+    from datacube.utils.math import maybe_int, snap_scale
+
     (sx, _, tx,
      _, sy, ty,
      *_) = ST
+
+    sy = snap_scale(sy)
+    sx = snap_scale(sx)
+
+    ty = maybe_int(ty, tol)
+    tx = maybe_int(tx, tol)
 
     s0, d0 = compute_axis_overlap(src_shape[0], dst_shape[0], sy, ty)
     s1, d1 = compute_axis_overlap(src_shape[1], dst_shape[1], sx, tx)
@@ -553,7 +566,7 @@ def roi_from_points(xy, shape, padding=0, align=None):
     return to_roi(yy, xx)
 
 
-def compute_reproject_roi(src, dst, padding=None, align=None):
+def compute_reproject_roi(src, dst, tol=0.05, padding=None, align=None):
     """Given two GeoBoxes find the region within the source GeoBox that overlaps
     with the destination GeoBox, and also compute the scale factor (>1 means
     shrink). Scale is chosen such that if you apply it to the source image
@@ -584,6 +597,8 @@ def compute_reproject_roi(src, dst, padding=None, align=None):
 
     - No padding beyond sub-pixel alignment if Scale+Translation
     - 1 pixel source padding in all other cases
+
+    :param tol: Sub-pixel translation tolerance as a percentage of resolution.
 
     :returns: SimpleNamespace with following fields:
      .roi_src    : (slice, slice)
@@ -617,7 +632,7 @@ def compute_reproject_roi(src, dst, padding=None, align=None):
         is_st = is_affine_st(tr.linear)
 
         if tight_ok and is_st:
-            roi_src, roi_dst = box_overlap(src.shape, dst.shape, tr.back.linear)
+            roi_src, roi_dst = box_overlap(src.shape, dst.shape, tr.back.linear, tol)
         else:
             padding = 1 if padding is None else padding
             roi_src, roi_dst = compute_roi(src, dst, tr, 2, padding, align)

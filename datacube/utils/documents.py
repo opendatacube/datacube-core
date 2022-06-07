@@ -1,6 +1,10 @@
-###
-# Functions for working with YAML documents and configurations
-###
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
+"""
+Functions for working with YAML documents and configurations
+"""
 import gzip
 import json
 import logging
@@ -16,7 +20,7 @@ from typing import Dict, Any, Mapping
 from copy import deepcopy
 
 import numpy
-import toolz
+import toolz  # type: ignore[import]
 import yaml
 
 try:
@@ -167,7 +171,7 @@ def netcdf_extract_string(chars):
     """
     Convert netcdf S|U chars to Unicode string.
     """
-    import netCDF4
+    import netCDF4  # type: ignore[import]
 
     if isinstance(chars, str):
         return chars
@@ -309,6 +313,46 @@ def transform_object_tree(f, o, key_transform=lambda k: k):
     return f(o)
 
 
+def metadata_subset(element, document) -> bool:
+    """
+    Recursively check if one metadata document/object is a subset of another
+
+    :param element: The document/object to search for
+    :param document: The document/object to search in
+    :return: True if element is a subset of document
+    """
+    if isinstance(element, dict) and isinstance(document, dict):
+        matches = True
+        for k in element.keys():
+            if k not in document or not metadata_subset(element[k], document[k]):
+                matches = False
+                break
+        if matches:
+            return True
+        for k in document.keys():
+            if metadata_subset(element, document[k]):
+                return True
+    elif isinstance(document, dict):
+        for k in document.keys():
+            if metadata_subset(element, document[k]):
+                return True
+    elif isinstance(element, list) or isinstance(element, tuple):
+        matches = True
+        for i in element:
+            if not metadata_subset(i, document):
+                matches = False
+                break
+        if matches:
+            return True
+    elif isinstance(document, list) or isinstance(document, tuple):
+        for i in document:
+            if metadata_subset(element, i):
+                return True
+    else:
+        return element == document
+    return False
+
+
 class SimpleDocNav(object):
     """
     Allows navigation of Dataset metadata document lineage tree without
@@ -354,6 +398,15 @@ class SimpleDocNav(object):
     @property
     def sources_path(self):
         return self._sources_path
+
+    @property
+    def location(self):
+        return self._doc.get('location', None)
+
+    def without_location(self):
+        if self.location is None:
+            return self
+        return SimpleDocNav(toolz.dissoc(self._doc, 'location'))
 
 
 def _set_doc_offset(offset, document, value):

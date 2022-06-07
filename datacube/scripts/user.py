@@ -1,4 +1,7 @@
-
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import logging
 import click
 import csv
@@ -10,7 +13,7 @@ from collections import OrderedDict
 
 from datacube.utils import gen_password
 from datacube.config import LocalConfig
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils.serialise import SafeDatacubeDumper

@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Module
 """
@@ -21,13 +24,15 @@ import datacube.scripts.search_tool
 from datacube.config import LocalConfig
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._connections import DEFAULT_DB_USER
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.model import Dataset
 from datacube.model import DatasetType
 from datacube.model import MetadataType
 from datacube.model import Range
 
 from datacube.testutils import load_dataset_definition
+
+from datacube import Datacube
 
 
 @pytest.fixture
@@ -911,7 +916,7 @@ def test_count_time_groups_cli(clirunner: Any,
         '    2014-07-26: 1\n'
     ).format(pseudo_ls8_type.name)
 
-    assert result.output == expected_out
+    assert result.output.endswith(expected_out)
 
 
 def test_search_cli_basic(clirunner: Any,
@@ -949,14 +954,17 @@ def test_cli_info(index: Index,
     result = clirunner(opts, verbose_flag='')
 
     output = result.output
+    # Remove WARNING messages for experimental driver
+    output_lines = [line for line in output.splitlines() if "WARNING:" not in line]
+    output = "\n".join(output_lines)
 
     # Should be a valid yaml
     yaml_docs = list(yaml.safe_load_all(output))
     assert len(yaml_docs) == 1
 
     # We output properties in order for readability:
-    output_lines = [l for l in output.splitlines() if not l.startswith('indexed:')]
-    assert output_lines == [
+    output_lines = [line for line in output_lines if not line.startswith('indexed:')]
+    expected_lines = [
         "id: " + str(pseudo_ls8_dataset.id),
         'product: ls8_telemetry',
         'status: active',
@@ -978,7 +986,8 @@ def test_cli_info(index: Index,
         '    sat_path: {begin: 116, end: 116}',
         '    sat_row: {begin: 74, end: 84}',
         "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
-    ]
+        ]
+    assert expected_lines == output_lines
 
     # Check indexed time separately, as we don't care what timezone it's displayed in.
     indexed_time = yaml_docs[0]['indexed']
@@ -1012,10 +1021,9 @@ def test_cli_missing_info(clirunner, initialised_postgres_db):
         expect_success=False,
         verbose_flag=False
     )
-
     assert result.exit_code == 1, "Should return exit status when dataset is missing"
     # This should have been output to stderr, but the CliRunner doesnit distinguish
-    assert result.output == "{id} missing\n".format(id=id_)
+    assert result.output.endswith("{id} missing\n".format(id=id_))
 
 
 def test_find_duplicates(index, pseudo_ls8_type,
@@ -1178,6 +1186,23 @@ def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
     assert lines[0] == _EXPECTED_OUTPUT_HEADER
 
 
+def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Dataset):
+    # We have one ls5 level1 and its child nbar
+    dc = Datacube(index)
+
+    # Can we query a single product name?
+    datasets = dc.find_datasets(product='ls5_nbar_scene')
+    assert len(datasets) == 1
+
+    # Can we query multiple products?
+    datasets = dc.find_datasets(product=['ls5_nbar_scene', 'ls5_level1_scene'])
+    assert len(datasets) == 2
+
+    # Can we query multiple products in a tuple
+    datasets = dc.find_datasets(product=('ls5_nbar_scene', 'ls5_level1_scene'))
+    assert len(datasets) == 2
+
+
 def _cli_csv_search(args, clirunner):
     # Do a CSV search from the cli, returning results as a list of dictionaries
     output = _csv_search_raw(args, clirunner)
@@ -1187,4 +1212,6 @@ def _cli_csv_search(args, clirunner):
 def _csv_search_raw(args, clirunner):
     # Do a CSV search from the cli, returning output as a string
     result = clirunner(['-f', 'csv'] + list(args), cli_method=datacube.scripts.search_tool.cli, verbose_flag=False)
-    return result.output
+    output = result.output
+    output_lines = output.split("\n")
+    return "\n".join(line for line in output_lines if "WARNING:" not in line)

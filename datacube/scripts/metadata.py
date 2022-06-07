@@ -1,16 +1,18 @@
-
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import json
 import logging
 import sys
 from typing import List
 
 import yaml
-from pathlib import Path
 
 import click
 from click import echo, style
 
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
@@ -64,7 +66,7 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
     An error will be thrown if a change is potentially unsafe.
 
     (An unsafe change is anything that may potentially make the metadata type
-    incompatible with existing ones of the same name)
+    incompatible with existing types of the same name)
     """
     for descriptor_path, parsed_doc in read_documents(*files):
         try:
@@ -87,12 +89,12 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
             )
             if can_update:
                 echo('Can update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                              len(unsafe_changes),
-                                                                              len(safe_changes)))
+                                                                              len(list(unsafe_changes)),
+                                                                              len(list(safe_changes))))
             else:
                 echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                                 len(unsafe_changes),
-                                                                                 len(safe_changes)))
+                                                                                 len(list(unsafe_changes)),
+                                                                                 len(list(safe_changes))))
 
 
 @this_group.command('show')

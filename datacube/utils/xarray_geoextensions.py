@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Add geometric extensions to :class:`xarray.Dataset` and :class:`xarray.DataArray` for use
 with Data Cube by Monkey Patching those classes.
@@ -9,9 +13,8 @@ This extension is reliant on an `xarray` object having a `.crs` property of type
 `.geobox`, `.affine` and `.extent` respectively.
 
 """
-
+import warnings
 import xarray
-
 from datacube.utils import geometry, spatial_dims
 from datacube.utils.math import affine_from_axis
 
@@ -27,34 +30,56 @@ def _norm_crs(crs):
 
 def _get_crs_from_attrs(obj, sdims):
     """ Looks for attribute named `crs` containing CRS string
-        1. Checks spatials coords attrs
-        2. Checks data variable attrs
-        3. Checks dataset attrs
+        - Checks spatials coords attrs
+        - Checks data variable attrs
+        - Checks dataset attrs
 
         Returns
         =======
         Content for `.attrs[crs]` usually it's a string
         None if not present in any of the places listed above
     """
-    if isinstance(obj, xarray.Dataset):
-        if len(obj.data_vars) > 0:
-            data_array = next(iter(obj.data_vars.values()))
-        else:
-            # fall back option
-            return obj.attrs.get('crs', None)
-    else:
-        data_array = obj
+    crs_set = set()
 
-    crs_set = set(data_array[d].attrs.get('crs', None) for d in sdims)
+    def _add_candidate(crs):
+        if crs is None:
+            return
+        if isinstance(crs, str):
+            try:
+                crs_set.add(geometry.CRS(crs))
+            except geometry.CRSError:
+                warnings.warn(f"Failed to parse CRS: {crs}")
+        elif isinstance(crs, geometry.CRS):
+            # support current bad behaviour of injecting CRS directly into
+            # attributes in example notebooks
+            crs_set.add(crs)
+        else:
+            warnings.warn(f"Ignoring crs attribute of type: {type(crs)}")
+
+    def process_attrs(attrs):
+        _add_candidate(attrs.get('crs', None))
+        _add_candidate(attrs.get('crs_wkt', None))
+
+    def process_datavar(x):
+        process_attrs(x.attrs)
+        for dim in sdims:
+            if dim in x.coords:
+                process_attrs(x.coords[dim].attrs)
+
+    if isinstance(obj, xarray.Dataset):
+        process_attrs(obj.attrs)
+        for dv in obj.data_vars.values():
+            process_datavar(dv)
+    else:
+        process_datavar(obj)
+
     crs = None
     if len(crs_set) > 1:
-        raise ValueError('Spatial dimensions have different crs.')
-    elif len(crs_set) == 1:
+        warnings.warn("Have several candidates for a CRS")
+
+    if len(crs_set) >= 1:
         crs = crs_set.pop()
 
-    if crs is None:
-        # fall back option
-        crs = data_array.attrs.get('crs', None) or obj.attrs.get('crs', None)
     return crs
 
 
@@ -138,17 +163,15 @@ def _xarray_geobox(obj):
         pass
 
     if crs is None:
-        try:
-            crs = _get_crs_from_attrs(obj, sdims)
-        except ValueError:
-            pass
+        crs = _get_crs_from_attrs(obj, sdims)
 
     if crs is None:
         return None
 
     try:
         crs = _norm_crs(crs)
-    except ValueError:
+    except (ValueError, geometry.CRSError):
+        warnings.warn(f"Encountered malformed CRS: {crs}")
         return None
 
     h, w = (obj.coords[dim].size for dim in sdims)

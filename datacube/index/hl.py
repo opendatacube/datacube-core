@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 High level indexing operations/utilities
 """
@@ -7,13 +11,9 @@ from types import SimpleNamespace
 
 from datacube.model import Dataset
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
-from datacube.model.utils import dedup_lineage, remap_lineage_doc, flatten_datasets
+from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
-from .eo3 import prep_eo3, is_doc_eo3
-
-
-class BadMatch(Exception):
-    pass
+from .eo3 import prep_eo3, is_doc_eo3  # type: ignore[attr-defined]
 
 
 def load_rules_from_types(index, product_names=None, excluding=None):
@@ -98,10 +98,17 @@ def check_dataset_consistent(dataset):
 
     # It the type expects measurements, ensure our dataset contains them all.
     if not product_measurements.issubset(dataset.measurements.keys()):
-        not_measured = str(product_measurements - set(dataset.measurements.keys()))
-        msg = "The dataset is not specifying all of the measurements in this product.\n"
-        msg += "Missing fields are;\n" + not_measured
-        return False, msg
+        # Exclude 3D measurements since it's just a mapping to 2D measurements
+        not_measured = {
+            m
+            for m in product_measurements - set(dataset.measurements.keys())
+            if "extra_dim" not in dataset.type.measurements.get(m, [])
+        }
+
+        if not_measured:
+            msg = "The dataset is not specifying all of the measurements in this product.\n"
+            msg += "Missing fields are;\n" + str(not_measured)
+            return False, msg
 
     return True, None
 

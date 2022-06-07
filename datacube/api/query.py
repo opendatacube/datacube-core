@@ -1,16 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Storage Query and Access API module
 """
@@ -20,6 +11,7 @@ import logging
 import datetime
 import collections
 import warnings
+from typing import Optional, Union
 import pandas
 
 from dateutil import tz
@@ -34,7 +26,29 @@ from ..utils.dates import normalise_dt
 _LOG = logging.getLogger(__name__)
 
 
-GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units', 'sort_key'])
+class GroupBy:
+    def __init__(self, group_by_func, dimension, units, sort_key=None, group_key=None):
+        """
+        :param group_by_func: Dataset -> group identifier
+        :param dimension: dimension of the group key
+        :param units: units of the group key
+        :param sort_key: how to sort datasets in a group internally
+        :param group_key: the coordinate value for a group
+                          list[Dataset] -> coord value
+        """
+        self.group_by_func = group_by_func
+
+        self.dimension = dimension
+        self.units = units
+
+        if sort_key is None:
+            sort_key = group_by_func
+        self.sort_key = sort_key
+
+        if group_key is None:
+            group_key = lambda datasets: group_by_func(datasets[0])
+        self.group_key = group_key
+
 
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
@@ -68,6 +82,8 @@ class Query(object):
         :param search_terms:
          * `measurements` - list of measurements to retrieve
          * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
+         * 'extra_dimension_name' (e.g. `z`) - tuples (min, max) bounding extra \
+            dimensions specified by name for 3D datasets. E.g. z=(10, 30).
          * `crs` - spatial coordinate reference system to interpret the spatial bounds
          * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
         """
@@ -80,6 +96,18 @@ class Query(object):
 
         remaining_keys = set(search_terms.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
+            # Retrieve known keys for extra dimensions
+            known_dim_keys = set()
+            if product is not None:
+                datacube_products = index.products.search(product=product)
+            else:
+                datacube_products = index.products.get_all()
+
+            for datacube_product in datacube_products:
+                known_dim_keys.update(datacube_product.extra_dimensions.dims.keys())
+
+            remaining_keys -= known_dim_keys
+
             unknown_keys = remaining_keys - set(index.datasets.get_field_names())
             # TODO: What about keys source filters, and what if the keys don't match up with this product...
             if unknown_keys:
@@ -165,15 +193,15 @@ def query_group_by(group_by='time', **kwargs):
     if not isinstance(group_by, str):
         return group_by
 
-    time_grouper = GroupBy(dimension='time',
-                           group_by_func=_extract_time_from_ds,
-                           units='seconds since 1970-01-01 00:00:00',
-                           sort_key=_extract_time_from_ds)
+    time_grouper = GroupBy(group_by_func=_extract_time_from_ds,
+                           dimension='time',
+                           units='seconds since 1970-01-01 00:00:00')
 
-    solar_day_grouper = GroupBy(dimension='time',
-                                group_by_func=solar_day,
+    solar_day_grouper = GroupBy(group_by_func=solar_day,
+                                dimension='time',
                                 units='seconds since 1970-01-01 00:00:00',
-                                sort_key=_extract_time_from_ds)
+                                sort_key=_extract_time_from_ds,
+                                group_key=lambda datasets: _extract_time_from_ds(datasets[0]))
 
     group_by_map = {
         None: time_grouper,
@@ -240,8 +268,14 @@ def _values_to_search(**kwargs):
         if key.lower() in ('time', 't'):
             search['time'] = _time_to_search_dims(value)
         elif key not in ['latitude', 'lat', 'y'] + ['longitude', 'lon', 'x']:
-            if isinstance(value, collections.abc.Sequence) and len(value) == 2:
+            # If it's not a string, but is a sequence of length 2, then it's a Range
+            if (
+                not isinstance(value, str)
+                and isinstance(value, collections.abc.Sequence)
+                and len(value) == 2
+            ):
                 search[key] = Range(*value)
+            # All other cases are default
             else:
                 search[key] = value
     return search
@@ -280,6 +314,9 @@ def _time_to_search_dims(time_range):
 
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
             tmp = list(time_range)
+            if len(tmp) > 2:
+                raise ValueError("Please supply start and end date only for time query")
+
             tr_start, tr_end = tmp[0], tmp[-1]
 
         # Attempt conversion to isoformat
@@ -309,16 +346,54 @@ def _convert_to_solar_time(utc, longitude):
     return utc + offset
 
 
-def solar_day(dataset, longitude=None):
+def _ds_mid_longitude(dataset: Dataset) -> Optional[float]:
+    m = dataset.metadata
+    if hasattr(m, 'lon'):
+        lon = m.lon
+        return (lon.begin + lon.end)*0.5
+    return None
+
+
+def solar_day(dataset: Dataset, longitude: Optional[float] = None) -> np.datetime64:
+    """
+    Adjust Dataset timestamp for "local time" given location and convert to numpy.
+
+    :param dataset: Dataset object from which to read time and location
+    :param longitude: If supplied correct timestamp for this longitude,
+                      rather than mid-point of the Dataset's footprint
+    """
     utc = dataset.center_time
 
     if longitude is None:
-        m = dataset.metadata
-        if hasattr(m, 'lon'):
-            lon = m.lon
-            longitude = (lon.begin + lon.end)*0.5
-        else:
+        _lon = _ds_mid_longitude(dataset)
+        if _lon is None:
             raise ValueError('Cannot compute solar_day: dataset is missing spatial info')
+        longitude = _lon
 
     solar_time = _convert_to_solar_time(utc, longitude)
     return np.datetime64(solar_time.date(), 'D')
+
+
+def solar_offset(geom: Union[geometry.Geometry, Dataset],
+                 precision: str = 'h') -> datetime.timedelta:
+    """
+    Given a geometry or a Dataset compute offset to add to UTC timestamp to get solar day right.
+
+    This only work when geometry is "local enough".
+
+    :param geom: Geometry with defined CRS
+    :param precision: one of ``'h'`` or ``'s'``, defaults to hour precision
+    """
+    if isinstance(geom, geometry.Geometry):
+        lon = geometry.mid_longitude(geom)
+    else:
+        _lon = _ds_mid_longitude(geom)
+        if _lon is None:
+            raise ValueError('Cannot compute solar offset, dataset is missing spatial info')
+        lon = _lon
+
+    if precision == 'h':
+        return datetime.timedelta(hours=int(round(lon*24/360)))
+
+    # 240 == (24*60*60)/360 (seconds of a day per degree of longitude)
+    return datetime.timedelta(seconds=int(lon*240))

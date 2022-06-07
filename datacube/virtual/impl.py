@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Implementation of virtual products. Provides an interface for the products in the datacube
 to query and to load data, and combinators to combine multiple products into "virtual"
@@ -7,7 +11,8 @@ products implementing the same interface.
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from functools import reduce
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Optional, cast
+from typing import Mapping as TypeMapping
 
 import uuid
 import numpy
@@ -241,11 +246,10 @@ class VirtualProduct(Mapping):
 
     _GEOBOX_KEYS = {'output_crs', 'resolution', 'align'}
     _GROUPING_KEYS = {'group_by'}
-    _LOAD_KEYS = {'measurements', 'fuse_func', 'resampling', 'dask_chunks', 'like'}
-    _ADDITIONAL_KEYS = {'dataset_predicate'}
+    _LOAD_KEYS = {'measurements', 'fuse_func', 'resampling', 'dask_chunks', 'like', 'skip_broken_datasets'}
+    _ADDITIONAL_SEARCH_KEYS = {'dataset_predicate', 'ensure_location'}
 
-    _NON_SPATIAL_KEYS = _GEOBOX_KEYS | _GROUPING_KEYS
-    _NON_QUERY_KEYS = _NON_SPATIAL_KEYS | _LOAD_KEYS | _ADDITIONAL_KEYS
+    _NON_QUERY_KEYS = _GEOBOX_KEYS | _GROUPING_KEYS | _LOAD_KEYS
 
     # helper methods
 
@@ -318,8 +322,8 @@ class Product(VirtualProduct):
         return {key: value if key not in ['fuse_func', 'dataset_predicate'] else qualified_name(value)
                 for key, value in self.items()}
 
-    def output_measurements(self, product_definitions: Dict[str, DatasetType],
-                            measurements: List[str] = None) -> Dict[str, Measurement]:
+    def output_measurements(self, product_definitions: TypeMapping[str, DatasetType],  # type: ignore[override]
+                            measurements: Optional[List[str]] = None) -> TypeMapping[str, Measurement]:
         self._assert(self._product in product_definitions,
                      "product {} not found in definitions".format(self._product))
 
@@ -334,26 +338,14 @@ class Product(VirtualProduct):
         if product is None:
             raise VirtualProductException("could not find product {}".format(self._product))
 
-        originals = reject_keys(self, self._NON_QUERY_KEYS)
-        overrides = reject_keys(search_terms, self._NON_QUERY_KEYS)
+        merged_terms = merge_search_terms(reject_keys(self, self._NON_QUERY_KEYS),
+                                          reject_keys(search_terms, self._NON_QUERY_KEYS))
 
-        query = Query(dc.index, **merge_search_terms(originals, overrides))
+        query = Query(dc.index, **reject_keys(merged_terms, self._ADDITIONAL_SEARCH_KEYS))
         self._assert(query.product == self._product,
                      "query for {} returned another product {}".format(self._product, query.product))
 
-        # find the datasets
-        datasets = (dataset for dataset in dc.index.datasets.search(**query.search_terms) if dataset.uris)
-
-        if query.geopolygon is not None:
-            datasets = select_datasets_inside_polygon(datasets, query.geopolygon)
-
-        # should we put it in the Transformation class?
-        if self.get('dataset_predicate') is not None:
-            datasets = [dataset
-                        for dataset in datasets
-                        if self['dataset_predicate'](dataset)]
-
-        return VirtualDatasetBag(list(datasets), query.geopolygon,
+        return VirtualDatasetBag(dc.find_datasets(**merged_terms), query.geopolygon,
                                  {product.name: product})
 
     def group(self, datasets: VirtualDatasetBag, **group_settings: Dict[str, Any]) -> VirtualDatasetBox:
@@ -401,7 +393,7 @@ class Product(VirtualProduct):
                              '{} not found in {}'.format(measurement, self._product))
 
         measurement_dicts = self.output_measurements(grouped.product_definitions,
-                                                     load_settings.get('measurements'))
+                                                     cast(List[str], load_settings.get('measurements')))
 
         if grouped.load_natively:
             canonical_names = [product.canonical_measurement(measurement) for measurement in measurement_dicts]
@@ -430,6 +422,7 @@ class Product(VirtualProduct):
                                     geobox, list(measurement_dicts.values()),
                                     fuse_func=merged.get('fuse_func'),
                                     dask_chunks=merged.get('dask_chunks'),
+                                    skip_broken_datasets=merged.get('skip_broken_datasets', False),
                                     resampling=merged.get('resampling', 'nearest'))
 
         return result
@@ -530,6 +523,7 @@ class Aggregate(VirtualProduct):
                                                        geopolygon=grouped.geopolygon)],
                                     dims=['_fake_'])
 
+        # TODO: use a proper `GroupBy` object instead
         result = grouped.box.groupby(self['group_by'](grouped.box[dim]), squeeze=False).apply(to_box).squeeze('_fake_')
         result[dim].attrs.update(grouped.box[dim].attrs)
 
@@ -798,6 +792,9 @@ class Reproject(VirtualProduct):
 
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: Dict[str, Any]) -> xarray.Dataset:
         """ Convert grouped datasets to `xarray.Dataset`. """
+        from collections import OrderedDict
+        spatial_ref = 'spatial_ref'
+
         geobox = grouped.geobox
 
         measurements = self.output_measurements(grouped.product_definitions)
@@ -820,8 +817,8 @@ class Reproject(VirtualProduct):
         result = xarray.Dataset()
         result.coords['time'] = grouped.box.coords['time']
 
-        for name, coord in grouped.geobox.coordinates.items():
-            result.coords[name] = (name, coord.values, {'units': coord.units, 'resolution': coord.resolution})
+        coords = OrderedDict(**geobox.xr_coords(with_crs=spatial_ref))
+        result.coords.update(coords)
 
         for measurement in measurements:
             result[measurement] = xarray.concat([reproject_band(raster[measurement],

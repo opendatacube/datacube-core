@@ -11,6 +11,7 @@ repos:
         - id: check-docstring-first
         - id: check-json
         - id: check-yaml
+          args: [--allow-multiple-documents]
         - id: debug-statements
         - id: name-tests-test
           args: ['--django']

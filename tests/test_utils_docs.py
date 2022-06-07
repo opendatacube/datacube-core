@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Test utility functions from :module:`datacube.utils`
 
@@ -30,6 +34,7 @@ from datacube.utils.documents import (
     get_doc_offset_safe,
     _set_doc_offset,
     transform_object_tree,
+    metadata_subset,
 )
 from datacube.utils.serialise import jsonify_document
 from datacube.utils.uris import as_url
@@ -284,6 +289,11 @@ A:..:0
     assert len(fv['E']) == 1
     assert set(fv.keys()) == set('ABCDE')
 
+    leaf = SimpleNamespace(id='N', sources=None)
+    out = []
+    traverse_datasets(leaf, visitor, out=out)
+    assert out == ["N:..:0"]
+
 
 def test_simple_doc_nav():
     """
@@ -354,7 +364,7 @@ A:..:0
     assert set(fv.keys()) == set('ABCDE')
     assert isinstance(dg, list)
     assert len(dg) == 4
-    assert [len(l) for l in dg] == [1, 3, 2, 1]
+    assert [len(dss) for dss in dg] == [1, 3, 2, 1]
 
     def to_set(xx):
         return set(x.id for x in xx)
@@ -582,3 +592,26 @@ def test_transform_object_tree():
     # Order must be maintained
     assert transform_object_tree(add_one, OrderedDict([('z', 1), ('w', 2), ('y', 3), ('s', 7)])) \
         == OrderedDict([('z', 2), ('w', 3), ('y', 4), ('s', 8)])
+
+
+def test_document_subset():
+    assert metadata_subset(37, 37)
+    assert metadata_subset(37, {"b": 37})
+    assert metadata_subset(37, {"b": "foo", "a": {"d": 37}})
+    assert metadata_subset(37, {"b": [56, 36, 37]})
+    assert not metadata_subset(37, {"b": [56, 36, 57]})
+
+    assert metadata_subset({"a": "foo"}, {"b": "blob", "a": "foo", "d": [76, 345, 34, 54]})
+    assert metadata_subset({"a": "foo"}, {"b": "blob", "d": [{"b": "glue", "a": "nope"}, {"a": "foo"}, 54]})
+    assert metadata_subset({"a": "foo"}, {"g": "goo", "h": {"f": "foo", "j": {"w": "who", "a": "foo"}}})
+    assert metadata_subset(
+        {"a": "foo", "k": {"b": [34, 11]}},
+        {"g": "goo", "h": {"a": "foo", "k": {"b": [11, 234, 34, 35]}, "d": "doop"}}
+    )
+    assert not metadata_subset(
+        {"a": "foo", "k": {"b": [34, 11]}},
+        {"g": "goo", "h": {"a": "foo", "b": [11, 34], "k": {"b": [11, 234, 35]}, "d": "doop"}}
+    )
+
+    assert metadata_subset([35, 47, 58], [0, 35, 47, 58, 102])
+    assert metadata_subset([35, 47, 58], {"a": "foo", "b": [35, 47, 52, 58]})

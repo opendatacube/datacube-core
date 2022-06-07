@@ -1,5 +1,9 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import pytest
-import mock
+from unittest import mock
 import json
 import botocore
 from botocore.credentials import ReadOnlyCredentials
@@ -17,7 +21,9 @@ from datacube.utils.aws import (
     s3_client,
     s3_dump,
     s3_fetch,
+    s3_head_object,
     _s3_cache_key,
+    obtain_new_iam_auth_token,
 )
 
 
@@ -197,9 +203,18 @@ def test_s3_io(monkeypatch, without_aws_env):
 
     with moto.mock_s3():
         s3 = s3_client(region_name='kk')
-        s3.create_bucket(Bucket=bucket)
+        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': "fake-region"})
         assert s3_dump(b"33", url, s3=s3) is True
         assert s3_fetch(url, s3=s3) == b"33"
+
+        meta = s3_head_object(url, s3=s3)
+        assert meta is not None
+        assert 'LastModified' in meta
+        assert 'ContentLength' in meta
+        assert 'ETag' in meta
+        assert meta['ContentLength'] == 2
+
+        assert s3_head_object(url+'-nosuch', s3=s3) is None
 
         assert s3_dump(b"0123456789ABCDEF", url, s3=s3) is True
         assert s3_fetch(url, range=s_[:4], s3=s3) == b"0123"
@@ -241,3 +256,19 @@ def test_s3_client_cache(monkeypatch, without_aws_env):
 
     keys = set(_s3_cache_key(**o) for o in opts)
     assert len(keys) == len(opts)
+
+
+def test_obtain_new_iam_token(monkeypatch, without_aws_env):
+    import moto
+    from sqlalchemy.engine.url import URL
+    url = URL.create(
+        'postgresql',
+        host="fakehost", database="fake_db", port=5432,
+        username="fakeuser", password="definitely_a_fake_password",
+    )
+
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
+    with moto.mock_iam():
+        token = obtain_new_iam_auth_token(url, region_name='us-west-1')
+        assert isinstance(token, str)

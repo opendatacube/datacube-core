@@ -4,7 +4,6 @@ from setuptools import setup, find_packages
 
 tests_require = [
     'hypothesis',
-    'mock',
     'pycodestyle',
     'pylint',
     'pytest',
@@ -25,12 +24,10 @@ doc_require = [
 
 extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
-    'interactive': ['matplotlib', 'fiona'],
     'distributed': ['distributed', 'dask[distributed]'],
     'doc': doc_require,
-    'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
-    'celery': ['celery>=4', 'redis'],
-    's3': ['boto3'],
+    'celery': ['celery>=4,<5', 'redis', 'kombu'],
+    's3': ['boto3', 'botocore'],
     'test': tests_require,
     'cf': ['compliance-checker>=4.0.0'],
 }
@@ -38,7 +35,6 @@ extras_require = {
 extras_require['dev'] = sorted(set(sum([extras_require[k] for k in [
     'test',
     'doc',
-    'replicas',
     'performance',
     's3',
     'distributed',
@@ -51,7 +47,7 @@ extra_plugins = dict(read=[], write=[], index=[])
 
 setup(
     name='datacube',
-    python_requires='>=3.6.0',
+    python_requires='>=3.8.0',
 
     url='https://github.com/opendatacube/datacube-core',
     author='Open Data Cube',
@@ -74,8 +70,8 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering :: GIS",
         "Topic :: Scientific/Engineering :: Information Analysis",
     ],
@@ -87,9 +83,7 @@ setup(
     package_data={
         '': ['*.yaml', '*/*.yaml'],
     },
-    scripts=[
-        'datacube_apps/scripts/pbs_helpers.sh'
-    ],
+    scripts=[],
     install_requires=[
         'affine',
         'pyproj>=2.5',
@@ -104,6 +98,7 @@ setup(
         'numpy',
         'psycopg2',
         'lark-parser>=0.6.7',
+        'pandas',
         'python-dateutil',
         'pyyaml',
         'rasterio>=1.0.2',  # Multi-band re-project fixed in that version
@@ -118,13 +113,7 @@ setup(
         'console_scripts': [
             'datacube = datacube.scripts.cli_app:cli',
             'datacube-search = datacube.scripts.search_tool:cli',
-            'datacube-stacker = datacube_apps.stacker:main',
             'datacube-worker = datacube.execution.worker:main',
-            'datacube-fixer = datacube_apps.stacker:fixer_main',
-            'datacube-ncml = datacube_apps.ncml:ncml_app',
-            'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
-            'movie_generator = datacube_apps.movie_generator:main',
-            'datacube-simple-replica = datacube_apps.simple_replica:replicate [replicas]'
         ],
         'datacube.plugins.io.read': [
             'netcdf = datacube.drivers.netcdf.driver:reader_driver_init',
@@ -135,7 +124,10 @@ setup(
             *extra_plugins['write'],
         ],
         'datacube.plugins.index': [
-            'default = datacube.index.index:index_driver_init',
+            'default = datacube.index.postgres.index:index_driver_init',
+            'null = datacube.index.null.index:index_driver_init',
+            'memory = datacube.index.memory.index:index_driver_init',
+            'postgis = datacube.index.postgis.index:index_driver_init',
             *extra_plugins['index'],
         ],
     },

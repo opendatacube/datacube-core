@@ -1,0 +1,87 @@
+id: 78e507ff-4a92-402d-acb1-a9a1085b2299
+$schema: https://schemas.opendatacube.org/dataset
+product:
+  name: gedi_l2b
+crs: epsg:4326
+grids:
+  default:
+    shape:
+      - 415
+      - 548
+    transform:
+      - 0.00027778
+      - 0.0
+      - 149.04036673536626
+      - 0.0
+      - -0.00027778
+      - -35.30377268593081
+      - 0.0
+      - 0.0
+      - 1.0
+measurements:
+  beam:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_beam.xarray_3d
+  channel:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_channel.xarray_3d
+  shot_number:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_shot_number.xarray_3d
+  delta_time:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_delta_time.xarray_3d
+  cover:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover.xarray_3d
+  pai:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_pai.xarray_3d
+  rh100:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_rh100.xarray_3d
+  fhd_normal:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_fhd_normal.xarray_3d
+  rhov:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_rhov.xarray_3d
+  rhog:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_rhog.xarray_3d
+  omega:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_omega.xarray_3d
+  sensitivity:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_sensitivity.xarray_3d
+  surface_flag:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_surface_flag.xarray_3d
+  digital_elevation_model:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_digital_elevation_model.xarray_3d
+  elev_lowestmode:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_elev_lowestmode.xarray_3d
+  degrade_flag:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_degrade_flag.xarray_3d
+  stale_return_flag:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_stale_return_flag.xarray_3d
+  l2a_quality_flag:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_l2a_quality_flag.xarray_3d
+  l2b_quality_flag:
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_l2b_quality_flag.xarray_3d
+properties:
+  datetime: 2019-08-16 09:28:51+00:00
+  dtr:end_datetime: 2019-08-16 09:28:51+00:00
+  dtr:start_datetime: 2019-08-16 09:28:51+00:00
+  eo:instrument: GEDI
+  eo:platform: ISS
+  odc:file_format: xarray_3d
+  odc:processing_datetime: 2021-04-15 04:44:47.356581
+lineage: {}

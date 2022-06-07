@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 import moto
 from pathlib import Path
@@ -121,7 +125,7 @@ def test_save_blob_s3_direct(blob, monkeypatch):
 
     with moto.mock_s3():
         s3 = s3_client(region_name=region_name)
-        s3.create_bucket(Bucket=bucket)
+        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': "fake-region"})
 
         assert _save_blob_to_s3(blob, url, region_name=region_name) == (url, True)
         assert _save_blob_to_s3(blob2, url2, region_name=region_name) == (url2, True)
@@ -159,7 +163,7 @@ def test_save_blob_s3(blob, monkeypatch, dask_client):
 
     with moto.mock_s3():
         s3 = s3_client(region_name=region_name)
-        s3.create_bucket(Bucket=bucket)
+        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': "fake-region"})
 
         rr = save_blob_to_s3(dask_blob, url, region_name=region_name)
         assert rr.compute() == (url, True)

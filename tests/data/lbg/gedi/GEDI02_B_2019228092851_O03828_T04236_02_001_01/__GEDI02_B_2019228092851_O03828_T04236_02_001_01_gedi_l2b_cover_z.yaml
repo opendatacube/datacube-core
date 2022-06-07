@@ -1,0 +1,33 @@
+id: 28de4ad6-e0c7-4443-b0c9-1f6e99d86086
+$schema: https://schemas.opendatacube.org/dataset
+product:
+  name: gedi_l2b_cover_z
+crs: epsg:4326
+grids:
+  default:
+    shape:
+      - 415
+      - 548
+    transform:
+      - 0.00027778
+      - 0.0
+      - 149.04036673536626
+      - 0.0
+      - -0.00027778
+      - -35.30377268593081
+      - 0.0
+      - 0.0
+      - 1.0
+measurements:
+  "cover_z":
+    layer: array
+    path: ./GEDI02_B_2019228092851_O03828_T04236_02_001_01_cover_z.xarray_3d
+properties:
+  datetime: 2019-08-16 09:28:51+00:00
+  dtr:end_datetime: 2019-08-16 09:28:51+00:00
+  dtr:start_datetime: 2019-08-16 09:28:51+00:00
+  eo:instrument: GEDI
+  eo:platform: ISS
+  odc:file_format: xarray_3d
+  odc:processing_datetime: 2021-04-15 04:44:47.439923
+lineage: {}

@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import xarray as xr
 import numpy as np
 import datetime
@@ -23,7 +27,7 @@ def test_grouping_datasets():
         SimpleNamespace(time=datetime.datetime(2016, 1, 1), value='flim', id=UUID(int=9)),
     ]
 
-    group_by = GroupBy(dimension, group_func, units, sort_key=group_func)
+    group_by = GroupBy(group_func, dimension, units, sort_key=group_func)
     grouped = Datacube.group_datasets(datasets, group_by)
     dss = grouped.isel(time=0).values[()]
     assert isinstance(dss, tuple)
@@ -82,7 +86,7 @@ def _group_datasets_by_date(datasets):
     dimension = 'time'
     units = None
 
-    group_by = GroupBy(dimension, group_func, units, sort_key)
+    group_by = GroupBy(group_func, dimension, units, sort_key)
     return Datacube.group_datasets(datasets, group_by)
 
 

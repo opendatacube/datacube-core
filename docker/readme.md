@@ -9,7 +9,7 @@ Example Use:
 git clone https://github.com/opendatacube/datacube-core.git
 cd datacube-core
 docker run --rm \
-  -v $(pwd):/src/datacube-core \
+  -v $(pwd):/code \
   opendatacube/datacube-tests:latest \
   ./check-code.sh integration_tests
 ```

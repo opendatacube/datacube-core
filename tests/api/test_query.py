@@ -1,15 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import datetime
 import pandas
 import numpy as np
@@ -17,10 +9,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day, GroupBy
+from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day, GroupBy, solar_offset
 from datacube.model import Range
 from datacube.utils import parse_time
 from datacube.utils.geometry import CRS
+
+
+@pytest.fixture
+def mock_index():
+    from unittest.mock import MagicMock
+    return MagicMock()
 
 
 def test_datetime_to_timestamp():
@@ -30,10 +28,7 @@ def test_datetime_to_timestamp():
     assert _datetime_to_timestamp('1990-01-07T00:00:00.0Z') == 631670400
 
 
-def test_query_kwargs():
-    from mock import MagicMock
-
-    mock_index = MagicMock()
+def test_query_kwargs(mock_index):
     mock_index.datasets.get_field_names = lambda: {u'product', u'lat', u'sat_path', 'type_id', u'time', u'lon',
                                                    u'orbit', u'instrument', u'sat_row', u'platform', 'metadata_type',
                                                    u'gsi', 'type', 'id'}
@@ -78,6 +73,12 @@ def test_query_kwargs():
 
     query = Query(index=mock_index, time=('2001', '2002'))
     assert 'time' in query.search
+
+    with pytest.raises(ValueError):
+        query = Query(index=mock_index, time=('2001', '2002', '2003'))
+
+    with pytest.raises(ValueError):
+        query = Query(index=mock_index, time=['2001', '2002', '2003'])
 
     with pytest.raises(ValueError):
         Query(index=mock_index,
@@ -143,7 +144,7 @@ testdata = [
      format_test('2008-11-10T11:00', '2008-11-16T14:01:59.999999')),
     ((datetime.date(1995, 1, 1), datetime.date(1999, 1, 1)),
      format_test('1995-01-01T00:00:00', '1999-01-01T23:59:59.999999')),
-    ((datetime.datetime(2008, 1, 1), datetime.date(2008, 1, 4), datetime.datetime(2008, 1, 10, 23, 59, 40)),
+    ((datetime.datetime(2008, 1, 1), datetime.datetime(2008, 1, 10, 23, 59, 40)),
      format_test('2008-01-01T00:00:00', '2008-01-10T23:59:40.999999')),
     ((datetime.date(2008, 1, 1)),
      format_test('2008-01-01T00:00:00', '2008-01-01T23:59:59.999999'))
@@ -174,9 +175,49 @@ def test_solar_day():
     assert 'Cannot compute solar_day: dataset is missing spatial info' in str(e.value)
 
 
+def test_solar_offset():
+    from datacube.utils.geometry import point
+    from datetime import timedelta
+
+    def _hr(t):
+        return t.days*24 + t.seconds/3600
+
+    def p(lon):
+        return point(lon, 0, 'epsg:4326')
+
+    assert solar_offset(p(0)) == timedelta(seconds=0)
+    assert solar_offset(p(0).to_crs('epsg:3857')) == timedelta(seconds=0)
+
+    assert solar_offset(p(179.9)) == timedelta(hours=12)
+    assert _hr(solar_offset(p(-179.9))) == -12.0
+
+    assert solar_offset(p(20), 's') != solar_offset(p(20), 'h')
+    assert solar_offset(p(20), 's') < solar_offset(p(21), 's')
+
+    _s = SimpleNamespace
+    ds = _s(center_time=parse_time('1987-05-22 23:07:44.2270250Z'),
+            metadata=_s(lon=Range(begin=150.415,
+                                  end=152.975)))
+    assert solar_offset(ds) == timedelta(hours=10)
+    ds.metadata = _s()
+
+    with pytest.raises(ValueError):
+        solar_offset(ds)
+
+
 def test_dateline_query_building():
     lon = Query(x=(618300, 849000),
                 y=(-1876800, -1642500),
                 crs='EPSG:32660').search_terms['lon']
 
     assert lon.begin < 180 < lon.end
+
+
+def test_query_issue_1146():
+    q = Query(k='AB')
+    assert q.search['k'] == 'AB'
+
+
+def test_query_multiple_products(mock_index):
+    q = Query(index=mock_index, product=['ls5_nbar_albers', 'ls7_nbar_albers'])
+    assert q.product == ['ls5_nbar_albers', 'ls7_nbar_albers']

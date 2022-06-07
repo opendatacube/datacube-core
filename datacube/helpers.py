@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Useful functions for Datacube users
 
@@ -5,7 +9,7 @@ Not used internally, those should go in `utils.py`
 """
 
 import numpy as np
-import rasterio
+import rasterio  # type: ignore[import]
 import warnings
 
 DEFAULT_PROFILE = {

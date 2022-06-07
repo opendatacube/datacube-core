@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Provides `SafeStringsDataset`, a replacement netCDF4.Dataset class which works
 around a bug in NetCDF4 which causes attribute strings written to files to
@@ -6,7 +10,7 @@ written as UTF-8 encoded bytes.
 
 For more information see https://github.com/Unidata/netcdf4-python/issues/448
 """
-import netCDF4
+import netCDF4   # type: ignore[import]
 
 
 class _VariableProxy(object):

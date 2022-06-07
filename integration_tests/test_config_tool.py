@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Module
 """
@@ -9,8 +12,6 @@ from pathlib import Path
 
 import pytest
 
-from datacube.drivers.postgres import _dynamic
-from datacube.drivers.postgres._core import drop_db, has_schema, SCHEMA_NAME
 
 EXAMPLE_DATASET_TYPE_DOCS = map(str, Path(__file__).parent.parent.
                                 joinpath('docs', 'config_samples', 'dataset_types').glob('**/*.yaml'))
@@ -149,13 +150,19 @@ def test_db_init_noop(clirunner, local_config, ls5_telem_type):
 
 
 def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):
+    if local_config._env == "datacube":
+        from datacube.drivers.postgres import _dynamic
+        from datacube.drivers.postgres._core import SCHEMA_NAME
+    else:
+        from datacube.drivers.postgis import _dynamic
+        from datacube.drivers.postgis._core import SCHEMA_NAME
     # We set the field creation logging to debug, as we assert its logging output below.
     _dynamic._LOG.setLevel(logging.DEBUG)
 
     # Run on an existing database.
     result = clirunner(
         [
-            '-v', 'system', 'init', '--rebuild'
+            '-v', '-E', local_config._env, 'system', 'init', '--rebuild'
         ]
     )
     assert 'Updated.' in result.output
@@ -171,13 +178,22 @@ def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):
 
 
 def test_db_init(clirunner, initialised_postgres_db):
+    if initialised_postgres_db.driver_name == "postgis":
+        from datacube.drivers.postgis._core import drop_db, has_schema
+    else:
+        from datacube.drivers.postgres._core import drop_db, has_schema
+
     with initialised_postgres_db.connect() as connection:
         drop_db(connection._connection)
 
         assert not has_schema(initialised_postgres_db._engine, connection._connection)
 
     # Run on an empty database.
-    result = clirunner(['system', 'init'])
+    if initialised_postgres_db.driver_name == "postgis":
+        result = clirunner(['-E', 'experimental', 'system', 'init'])
+    else:
+        result = clirunner(['system', 'init'])
+
     assert 'Created.' in result.output
 
     with initialised_postgres_db.connect() as connection:

@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Module
 """
@@ -116,13 +119,28 @@ def test_parse_db_url():
         hostname='some.tld',
         port='3344')
 
+    assert parse_connect_url('postgresql:///db?host=/var/run/postgresql') == dict(
+        database='db',
+        hostname='/var/run/postgresql')
+
+    assert parse_connect_url(
+        'postgresql:///?user=user&password=pass%40&host=/var/run/postgresql&port=3344&dbname=db&sslmode=allow'
+    ) == dict(
+        password='pass@',
+        username='user',
+        database='db',
+        hostname='/var/run/postgresql',
+        port='3344')
+
 
 def _clear_cfg_env(monkeypatch):
     for e in ('DATACUBE_DB_URL',
               'DB_HOSTNAME',
               'DB_PORT',
               'DB_USERNAME',
-              'DB_PASSWORD'):
+              'DB_PASSWORD',
+              'DATACUBE_IAM_AUTHENTICATION',
+              'DATACUBE_IAM_TIMEOUT'):
         monkeypatch.delenv(e, raising=False)
 
 
@@ -137,6 +155,10 @@ def test_parse_env(monkeypatch):
         return parse_env_params()
 
     assert check_env() == {}
+    assert check_env(DATACUBE_IAM_AUTHENTICATION="yes",
+                     DATACUBE_IAM_TIMEOUT='666') == dict(
+        iam_authentication=True,
+        iam_timeout=666)
     assert check_env(DATACUBE_DB_URL='postgresql:///db') == dict(
         hostname='',
         database='db'

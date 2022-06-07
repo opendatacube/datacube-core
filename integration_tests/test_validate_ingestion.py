@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 
 from integration_tests.utils import prepare_test_ingestion_configuration
@@ -7,7 +11,6 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
 @pytest.mark.timeout(20)
-@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_invalid_ingestor_config(clirunner, index, tmpdir):

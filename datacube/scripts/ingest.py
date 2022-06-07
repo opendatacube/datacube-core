@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import time
 import logging
 import click
@@ -12,7 +16,7 @@ from typing import Tuple
 
 import datacube
 from datacube.api.core import Datacube
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.model import DatasetType, Range, Measurement, IngestorConfig
 from datacube.utils import geometry
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc

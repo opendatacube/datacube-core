@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import os
 
 import pathlib
@@ -163,7 +167,7 @@ def normalise_path(p: Union[str, pathlib.Path],
     return norm(base / p)
 
 
-def uri_resolve(base: str, path: Optional[str]) -> str:
+def uri_resolve(base: str, path: Optional[str] = None) -> str:
     """
     path                  -- if path is a uri or /vsi.* style path
     Path(path).as_uri()   -- if path is absolute filename
@@ -229,5 +233,6 @@ register_scheme(
     's3',         # `s3://...`      -- AWS S3 Object Store
     'gs',         # `gs://...`      -- Google Cloud Storage
     'wasb',       # `wasb[s]://...` -- Windows Azure Storage Blob
-    'wasbs'
+    'wasbs',
+    'az',
 )

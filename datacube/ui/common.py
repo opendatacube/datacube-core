@@ -1,11 +1,14 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Common methods for UI code.
 """
 from pathlib import Path
 from typing import Union, Optional
 
-from toolz.functoolz import identity
+from toolz.functoolz import identity  # type: ignore[import]
 
 from datacube.utils import read_documents, InvalidDocException, SimpleDocNav, is_supported_document_type, is_url
 
@@ -39,7 +42,10 @@ def get_metadata_path(possible_path: Union[str, Path]) -> str:
         if found:
             return str(found)
 
-    raise ValueError('No metadata found for input %r' % dataset_path)
+    if is_supported_document_type(dataset_path):
+        raise ValueError(f'No such file {dataset_path}')
+    else:
+        raise ValueError(f'No supported metadata docs found for dataset {dataset_path}')
 
 
 def _find_any_metadata_suffix(path: Path) -> Optional[Path]:
@@ -85,7 +91,7 @@ def ui_path_doc_stream(paths, logger=None, uri=True, raw=False):
 
     def on_error1(p, e):
         if logger is not None:
-            logger.error('No supported metadata docs found for dataset %s', str(p))
+            logger.error(str(e))
 
     def on_error2(p, e):
         if logger is not None:

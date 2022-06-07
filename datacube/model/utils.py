@@ -1,4 +1,7 @@
-
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import datetime
 import os
 import platform
@@ -20,6 +23,10 @@ try:
     from yaml import CSafeDumper as SafeDumper  # type: ignore
 except ImportError:
     from yaml import SafeDumper  # type: ignore
+
+
+class BadMatch(Exception):
+    pass
 
 
 def machine_info():
@@ -343,7 +350,13 @@ def remap_lineage_doc(root, mk_node, **kwargs):
     if not isinstance(root, SimpleDocNav):
         root = SimpleDocNav(root)
 
-    return visit(root)
+    try:
+        return visit(root)
+    except BadMatch as e:
+        if root.id not in str(e):
+            raise BadMatch(f"Error loading lineage dataset: {e}") from None
+        else:
+            raise
 
 
 def dedup_lineage(root):

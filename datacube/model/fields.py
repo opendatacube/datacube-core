@@ -1,9 +1,13 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """Non-db specific implementation of metadata search fields.
 
 This allows extraction of fields of interest from dataset metadata document.
 """
 from typing import Mapping, Dict, Any
-import toolz
+import toolz  # type: ignore[import]
 import decimal
 from datacube.utils import parse_time
 from ._base import Range
@@ -35,6 +39,18 @@ class Expression:
         if self.__class__ != other.__class__:
             return False
         return self.__dict__ == other.__dict__
+
+    def evaluate(self, ctx):
+        raise NotImplementedError()
+
+
+class SimpleEqualsExpression(Expression):
+    def __init__(self, field, value):
+        self.field = field
+        self.value = value
+
+    def evaluate(self, ctx):
+        return self.field.extract(ctx) == self.value
 
 
 class Field:
@@ -72,7 +88,7 @@ class Field:
         raise NotImplementedError('between expression')
 
 
-class SimpleField:
+class SimpleField(Field):
     def __init__(self,
                  offset,
                  converter,
@@ -82,8 +98,10 @@ class SimpleField:
         self._offset = offset
         self._converter = converter
         self.type_name = type_name
-        self.description = description
-        self.name = name
+        super().__init__(name, description)
+
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
+        return SimpleEqualsExpression(self, value)
 
     def extract(self, doc):
         v = toolz.get_in(self._offset, doc, default=None)
@@ -92,7 +110,7 @@ class SimpleField:
         return self._converter(v)
 
 
-class RangeField:
+class RangeField(Field):
     def __init__(self,
                  min_offset,
                  max_offset,
@@ -101,11 +119,10 @@ class RangeField:
                  name='',
                  description=''):
         self.type_name = type_name
-        self.description = description
-        self.name = name
         self._converter = base_converter
         self._min_offset = min_offset
         self._max_offset = max_offset
+        super().__init__(name, description)
 
     def extract(self, doc):
         def extract_raw(paths):

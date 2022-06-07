@@ -1,19 +1,43 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Helper methods for working with AWS
 """
 import os
+import time
+import functools
 import botocore
 import botocore.session
 from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.session import Session
-import time
 from urllib.request import urlopen
 from urllib.parse import urlparse
+from sqlalchemy.engine.url import URL
+
 from typing import Optional, Dict, Tuple, Any, Union, IO
 from datacube.utils.generic import thread_local_cache
 
 ByteRange = Union[slice, Tuple[int, int]]       # pylint: disable=invalid-name
 MaybeS3 = Optional[botocore.client.BaseClient]  # pylint: disable=invalid-name
+
+__all__ = (
+    "s3_url_parse",
+    "s3_fmt_range",
+    "s3_client",
+    "s3_open",
+    "s3_fetch",
+    "s3_dump",
+    "ec2_metadata",
+    "ec2_current_region",
+    "botocore_default_region",
+    "auto_find_region",
+    "get_creds_with_retry",
+    "mk_boto_session",
+    "get_aws_settings",
+    "configure_s3_access",
+)
 
 
 def _fetch_text(url: str, timeout: float = 0.1) -> Optional[str]:
@@ -250,7 +274,10 @@ def s3_client(profile: Optional[str] = None,
 
     """
     if aws_unsigned is None:
-        aws_unsigned = _aws_unsigned_check_env()
+        if creds is None:
+            aws_unsigned = _aws_unsigned_check_env()
+        else:
+            aws_unsigned = False
 
     if aws_unsigned:
         cfg.update(signature_version=botocore.UNSIGNED)
@@ -306,8 +333,37 @@ def s3_open(url: str,
 
     s3 = s3 or s3_client()
     bucket, key = s3_url_parse(url)
-    oo = s3.get_object(Bucket=bucket, Key=key, **kwargs)
+    oo = s3.get_object(Bucket=bucket, Key=key, **kwargs)  # type: ignore[attr-defined]
     return oo['Body']
+
+
+def s3_head_object(url: str,
+                   s3: MaybeS3 = None,
+                   **kwargs) -> Optional[Dict[str, Any]]:
+    """
+    Head object, return object metadata.
+
+    :param url: s3://bucket/path/to/object
+    :param s3: pre-configured s3 client, see make_s3_client()
+    :param kwargs: are passed on to ``s3.head_object(..)``
+    """
+    from botocore.exceptions import ClientError
+
+    s3 = s3 or s3_client()
+    bucket, key = s3_url_parse(url)
+
+    try:
+        oo = s3.head_object(Bucket=bucket, Key=key, **kwargs)  # type: ignore[attr-defined]
+    except ClientError:
+        return None
+
+    meta = oo.pop('ResponseMetadata', {})
+    code = meta.get('HTTPStatusCode', 0)
+    if 200 <= code < 300:
+        return oo
+
+    # it actually raises exceptions when http code is in the "fail" range
+    return None  # pragma: no cover
 
 
 def s3_fetch(url: str,
@@ -341,7 +397,7 @@ def s3_dump(data: Union[bytes, str, IO],
     s3 = s3 or s3_client()
     bucket, key = s3_url_parse(url)
 
-    r = s3.put_object(Bucket=bucket,
+    r = s3.put_object(Bucket=bucket,  # type: ignore[attr-defined]
                       Key=key,
                       Body=data,
                       **kwargs)
@@ -352,7 +408,7 @@ def s3_dump(data: Union[bytes, str, IO],
 def get_aws_settings(profile: Optional[str] = None,
                      region_name: str = "auto",
                      aws_unsigned: bool = False,
-                     requester_pays: bool = False) -> Tuple[Dict[str, Any], Credentials]:
+                     requester_pays: bool = False) -> Tuple[Dict[str, Any], Optional[Credentials]]:
     """
     Compute ``aws=`` parameter for ``set_default_rio_config``.
 
@@ -384,3 +440,66 @@ def get_aws_settings(profile: Optional[str] = None,
                  aws_secret_access_key=cc.secret_key,
                  aws_session_token=cc.token,
                  requester_pays=requester_pays), creds)
+
+
+def obtain_new_iam_auth_token(url: URL, region_name: str = "auto", profile_name: Optional[str] = None) -> str:
+    # Boto3 is not core requirement, but ImportError is probably the right exception to throw anyway.
+    from boto3.session import Session as Boto3Session
+
+    session = Boto3Session(profile_name=profile_name)
+    client = session.client("rds", region_name=region_name)
+    return client.generate_db_auth_token(DBHostname=url.host, Port=url.port, DBUsername=url.username,
+                                         Region=region_name)
+
+
+def configure_s3_access(profile=None,
+                        region_name="auto",
+                        aws_unsigned=False,
+                        requester_pays=False,
+                        cloud_defaults=True,
+                        client=None,
+                        **gdal_opts):
+    """ Credentialize for S3 bucket access or configure public access.
+
+    This function obtains credentials for S3 access and passes them on to
+    processing threads, either local or on dask cluster.
+
+
+    .. note::
+
+       if credentials are STS based they will eventually expire, currently
+       this case is not handled very well, reads will just start failing
+       eventually and will never recover.
+
+    :param profile:        AWS profile name to use
+    :param region_name:    Default region_name to use if not configured for a given/default AWS profile
+    :param aws_unsigned:   If ``True`` don't bother with credentials when reading from S3
+    :param requester_pays: Needed when accessing requester pays buckets
+
+    :param cloud_defaults: Assume files are in the cloud native format, i.e. no side-car files, disables
+                           looking for side-car files, makes things faster but won't work for files
+                           that do have side-car files with extra metadata.
+
+    :param client:         Dask distributed ``dask.Client`` instance, if supplied apply settings on the
+                           dask cluster rather than locally.
+    :param gdal_opts:      Any other option to pass to GDAL environment setup
+
+    :returns: credentials object or ``None`` if ``aws_unsigned=True``
+    """
+    from ..rio import set_default_rio_config
+
+    aws, creds = get_aws_settings(profile=profile,
+                                  region_name=region_name,
+                                  aws_unsigned=aws_unsigned,
+                                  requester_pays=requester_pays)
+
+    if client is None:
+        set_default_rio_config(aws=aws, cloud_defaults=cloud_defaults, **gdal_opts)
+    else:
+        client.register_worker_callbacks(
+            functools.partial(set_default_rio_config,
+                              aws=aws,
+                              cloud_defaults=cloud_defaults,
+                              **gdal_opts))
+
+    return creds

@@ -16,14 +16,14 @@ if [ "${1:-}" == "--with-docker" ]; then
 
     exec docker run $ti \
          -e SKIP_STYLE_CHECK="${SKIP_STYLE_CHECK:-no}" \
-         -v $(pwd):/src/datacube-core \
+         -v $(pwd):/code \
          opendatacube/datacube-tests:latest \
          $0 $@
 fi
 
 if [ "${SKIP_STYLE_CHECK:-no}" != "yes" ]; then
     pycodestyle tests integration_tests examples --max-line-length 120
-    pylint -j 2 --reports no datacube datacube_apps
+    pylint -j 2 --reports no datacube
 fi
 
 # Run tests, taking coverage.
@@ -34,12 +34,11 @@ pytest -r a \
        --durations=5 \
        datacube \
        tests \
-       datacube_apps \
        $@
 
 set +x
 
-# Optinally validate example yaml docs.
+# Optionally validate example yaml docs.
 if which yamllint;
 then
     set -x

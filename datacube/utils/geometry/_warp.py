@@ -1,6 +1,10 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 from typing import Union, Optional
-import rasterio.warp
-import rasterio.crs
+import rasterio.warp  # type: ignore[import]
+import rasterio.crs   # type: ignore[import]
 import numpy as np
 from affine import Affine
 from . import GeoBox
@@ -42,7 +46,7 @@ def warp_affine_rio(src: np.ndarray,
 
     :param        src: image as ndarray
     :param        dst: image as ndarray
-    :param          A: Affine transformm, maps from dst_coords to src_coords
+    :param          A: Affine transform, maps from dst_coords to src_coords
     :param resampling: str|rasterio.warp.Resampling resampling strategy
     :param src_nodata: Value representing "no data" in the source image
     :param dst_nodata: Value to represent "no data" in the destination image

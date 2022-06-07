@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Test utility functions from :module:`datacube.utils`
 
@@ -24,6 +28,9 @@ from datacube.utils.dates import date_sequence
 from datacube.utils.math import (
     num2numpy,
     is_almost_int,
+    maybe_zero,
+    maybe_int,
+    snap_scale,
     valid_mask,
     invalid_mask,
     clamp,
@@ -300,6 +307,8 @@ def test_sorted_items():
     remap = dict(c=0, a=1, b=2)
     assert ''.join(k for k, _ in sorted_items(aa, key=lambda x: remap[x])) == 'cab'
 
+    assert sorted_items(None) == []
+
 
 def test_default_base_dir(monkeypatch):
     def set_pwd(p):
@@ -533,6 +542,35 @@ def test_is_almost_int():
     assert is_almost_int(1.001, .1)
     assert is_almost_int(2 - 0.001, .1)
     assert is_almost_int(-1.001, .1)
+
+
+def test_maybe_zero():
+    assert maybe_zero(0.0001, 0.1) == 0
+    assert maybe_zero(-0.0001, 0.1) == 0
+    assert maybe_zero(1.5, 0.1) == 1.5
+
+
+def test_maybe_int():
+    assert maybe_int(1, 1e-10) == 1
+    assert maybe_int(1.6, .1) == 1.6
+    assert maybe_int(-1.6, .1) == -1.6
+    assert maybe_int(1.001, .1) == 1
+    assert maybe_int(2 - 0.001, .1) == 2
+    assert maybe_int(-1.001, .1) == -1
+    assert maybe_int(1.1, .1) == 1.1
+    for x in [3/7, 7/3, -13.7878]:
+        assert maybe_int(x, 1e-10) is x
+
+
+def test_snap_scale():
+    assert snap_scale(0.9999999) == 1
+    assert snap_scale(-0.9999999) == -1
+    for x in [0.0, 0.999, 0.621612621868, 3/7, 7/3]:
+        assert snap_scale(x) is x
+        x = -x
+        assert snap_scale(x) is x
+    assert snap_scale(0.33333331) == 1/3
+    assert snap_scale(-0.33333331) == -1/3
 
 
 def test_valid_mask():

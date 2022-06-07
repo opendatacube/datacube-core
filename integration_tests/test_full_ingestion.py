@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import hashlib
 import warnings
 from uuid import UUID
@@ -18,7 +22,6 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
 @pytest.mark.timeout(20)
-@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):
@@ -66,7 +69,6 @@ def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ing
 
 
 @pytest.mark.timeout(20)
-@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_process_all_ingest_jobs(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):

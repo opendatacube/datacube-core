@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import numpy as np
 import pytest
 from datetime import datetime
@@ -8,6 +12,8 @@ from datacube.utils.dates import (
     _parse_time_generic,
     mk_time_coord,
     normalise_dt,
+    tz_aware,
+    tzutc
 )
 
 from dateutil.rrule import YEARLY, MONTHLY, DAILY
@@ -45,6 +51,17 @@ def test_normalise_dt():
     assert normalise_dt('2020-03-26T10:15:32.556793+1:00').tzinfo is None
     assert normalise_dt('2020-03-26T10:15:32.556793+1:00') == datetime(2020, 3, 26, 9, 15, 32, 556793)
     assert normalise_dt('2020-03-26T10:15:32.556793+9:00') == datetime(2020, 3, 26, 1, 15, 32, 556793)
+
+
+def test_tz_aware():
+    dt_tz = parse_time('2020-11-15T15:11:56.23456+9:00')
+    assert dt_tz.tzinfo is not None
+    assert tz_aware(dt_tz) is dt_tz
+
+    dt_notz = parse_time('2020-11-15T15:11:56.23456')
+    assert dt_notz.tzinfo is None
+    assert tz_aware(parse_time('2020-11-15T15:11:56.23456')).tzinfo == tzutc()
+    assert tz_aware(parse_time('2020-11-15T15:11:56.23456'), default=dt_tz.tzinfo).tzinfo == dt_tz.tzinfo
 
 
 def test_mk_time_coord():

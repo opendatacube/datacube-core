@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 from datetime import datetime
 from dateutil.tz import tzutc
 
@@ -8,6 +12,21 @@ from datacube.ui import parse_expressions
 def test_parse_empty_str():
     q = parse_expressions('')
     assert q == {}
+
+
+def test_id_search():
+    q = parse_expressions("id = 26931d17-7a4e-4b55-98e7-d6777fb61df6")
+    assert q['id'] == "26931d17-7a4e-4b55-98e7-d6777fb61df6"
+
+    q = parse_expressions('id = "26931d17-7a4e-4b55-98e7-d6777fb61df6"')
+    assert q['id'] == "26931d17-7a4e-4b55-98e7-d6777fb61df6"
+
+
+def test_simple_string():
+    q = parse_expressions("region_code = 56KKD", "i=10", "f=10.3")
+    assert q['region_code'] == '56KKD'
+    assert q['i'] == 10
+    assert q['f'] == 10.3
 
 
 def test_between_expression():

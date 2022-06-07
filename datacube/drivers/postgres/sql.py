@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Custom types for postgres & sqlalchemy
 """
@@ -14,6 +17,7 @@ SCHEMA_NAME = 'agdc'
 
 
 class CreateView(Executable, ClauseElement):
+    inherit_cache = True
     def __init__(self, name, select):
         self.name = name
         self.select = select
@@ -26,6 +30,34 @@ def visit_create_view(element, compiler, **kw):
         compiler.process(element.select, literal_binds=True)
     )
 
+
+UPDATE_TIMESTAMP_SQL = """
+create or replace function {schema}.set_row_update_time()
+returns trigger as $$
+begin
+  new.updated = now();
+  return new;
+end;
+$$ language plpgsql;
+""".format(schema=SCHEMA_NAME)
+
+UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE = """
+alter table {schema}.{table} add column if not exists updated
+timestamptz default null;
+"""
+
+ADDED_COLUMN_MIGRATE_SQL_TEMPLATE = """
+alter table {schema}.{table} add column if not exists added
+timestamptz default now();
+"""
+
+INSTALL_TRIGGER_SQL_TEMPLATE = """
+drop trigger if exists row_update_time_{table} on {schema}.{table};
+create trigger row_update_time_{table}
+before update on {schema}.{table}
+for each row
+execute procedure {schema}.set_row_update_time();
+"""
 
 TYPES_INIT_SQL = """
 create or replace function {schema}.common_timestamp(text)
@@ -56,6 +88,7 @@ class CommonTimestamp(GenericFunction):
     type = TIMESTAMP(timezone=True)
     package = 'agdc'
     identifier = 'common_timestamp'
+    inherit_cache = False
 
     name = 'common_timestamp'
 
@@ -66,9 +99,10 @@ class CommonTimestamp(GenericFunction):
 
 # pylint: disable=too-many-ancestors
 class Float8Range(GenericFunction):
-    type = FLOAT8RANGE
+    type = FLOAT8RANGE  # type: ignore[assignment]
     package = 'agdc'
     identifier = 'float8range'
+    inherit_cache = False
 
     name = 'float8range'
 

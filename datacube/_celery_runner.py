@@ -1,5 +1,11 @@
-
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# type: ignore
 import cloudpickle
+import logging
 from celery import Celery
 from time import sleep
 import redis
@@ -7,6 +13,7 @@ import os
 import kombu.serialization
 
 from celery.backends import base as celery_base
+_LOG = logging.getLogger(__name__)
 
 # This can be changed via environment variable `REDIS`
 REDIS_URL = 'redis://localhost:6379/0'
@@ -121,6 +128,7 @@ class CeleryExecutor(object):
         return 'CeleryRunner'
 
     def submit(self, func, *args, **kwargs):
+        _LOG.warning("WARNING: Celery executor is deprecated and will be removed in a future release.")
         return run_function.delay(func, *args, **kwargs)
 
     def map(self, func, iterable):

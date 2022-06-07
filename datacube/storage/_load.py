@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Important functions are:
 
@@ -19,7 +23,8 @@ from datacube.utils.math import invalid_mask
 from datacube.utils.geometry import GeoBox, roi_is_empty
 from datacube.model import Measurement
 from datacube.drivers._types import ReaderDriver
-from . import DataSource, BandInfo
+from ..drivers.datasource import DataSource
+from ._base import BandInfo
 
 _LOG = logging.getLogger(__name__)
 
@@ -43,7 +48,8 @@ def reproject_and_fuse(datasources: List[DataSource],
                        resampling: str = 'nearest',
                        fuse_func: Optional[FuserFunction] = None,
                        skip_broken_datasets: bool = False,
-                       progress_cbk: Optional[ProgressFunction] = None):
+                       progress_cbk: Optional[ProgressFunction] = None,
+                       extra_dim_index: Optional[int] = None):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
@@ -69,7 +75,7 @@ def reproject_and_fuse(datasources: List[DataSource],
     elif len(datasources) == 1:
         with ignore_exceptions_if(skip_broken_datasets):
             with datasources[0].open() as rdr:
-                read_time_slice(rdr, destination, dst_gbox, resampling, dst_nodata)
+                read_time_slice(rdr, destination, dst_gbox, resampling, dst_nodata, extra_dim_index)
 
         if progress_cbk:
             progress_cbk(1, 1)
@@ -81,7 +87,7 @@ def reproject_and_fuse(datasources: List[DataSource],
         for n_so_far, source in enumerate(datasources, 1):
             with ignore_exceptions_if(skip_broken_datasets):
                 with source.open() as rdr:
-                    roi = read_time_slice(rdr, buffer_, dst_gbox, resampling, dst_nodata)
+                    roi = read_time_slice(rdr, buffer_, dst_gbox, resampling, dst_nodata, extra_dim_index)
 
                 if not roi_is_empty(roi):
                     fuse_func(destination[roi], buffer_[roi])
@@ -126,7 +132,7 @@ def xr_load(sources: XrDataArray,
 
     out = _allocate_storage(sources.coords, geobox, measurements)
 
-    def all_groups() -> Iterator[Tuple[Measurement, int, List[BandInfo]]]:
+    def all_groups() -> Iterator[Tuple[Measurement, Tuple[int, ...], List[BandInfo]]]:
         for idx, dss in np.ndenumerate(sources.values):
             for m in measurements:
                 bbi = [BandInfo(ds, m.name) for ds in dss]

@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import functools
 import itertools
 import math
@@ -12,9 +16,9 @@ import cachetools
 import numpy
 import xarray as xr
 from affine import Affine
-import rasterio
-from shapely import geometry, ops
-from shapely.geometry import base
+import rasterio                    # type: ignore[import]
+from shapely import geometry, ops  # type: ignore[import]
+from shapely.geometry import base  # type: ignore[import]
 from pyproj import CRS as _CRS
 from pyproj.enums import WktVersion
 from pyproj.transformer import Transformer
@@ -24,7 +28,7 @@ from .tools import roi_normalise, roi_shape, is_affine_st
 from ..math import is_almost_int
 
 Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
-_BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))
+_BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))  # type: ignore[name-match]
 SomeCRS = Union[str, 'CRS', _CRS, Dict[str, Any]]
 MaybeCRS = Optional[SomeCRS]
 CoordList = List[Tuple[float, float]]
@@ -112,10 +116,25 @@ class BoundingBox(_BoundingBox):
                                    (p1[1], p2[1]))
 
 
-@cachetools.cached({})
-def _make_crs(crs_str: str) -> Tuple[_CRS, Optional[int]]:
-    crs = _CRS.from_user_input(crs_str)
-    return (crs, crs.to_epsg())
+def _make_crs_key(crs_spec: Union[str, _CRS]) -> str:
+    if isinstance(crs_spec, str):
+        normed_epsg = crs_spec.upper()
+        if normed_epsg.startswith("EPSG:"):
+            return normed_epsg
+        return crs_spec
+    return crs_spec.to_wkt()
+
+
+@cachetools.cached({}, key=_make_crs_key)  # type: ignore[misc]
+def _make_crs(crs: Union[str, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
+    if isinstance(crs, str):
+        crs = _CRS.from_user_input(crs)
+    epsg = crs.to_epsg()
+    if epsg is not None:
+        crs_str = f"EPSG:{epsg}"
+    else:
+        crs_str = crs.to_wkt()
+    return (crs, crs_str, crs.to_epsg())
 
 
 def _make_crs_transform_key(from_crs, to_crs, always_xy):
@@ -127,25 +146,6 @@ def _make_crs_transform(from_crs, to_crs, always_xy):
     return Transformer.from_crs(from_crs, to_crs, always_xy=always_xy).transform
 
 
-def _guess_crs_str(crs_spec: Any) -> Optional[str]:
-    """
-    Returns a string representation of the crs spec.
-    Returns `None` if it does not understand the spec.
-    """
-    if isinstance(crs_spec, str):
-        return crs_spec
-    if isinstance(crs_spec, dict):
-        crs_spec = _CRS.from_dict(crs_spec)
-
-    if hasattr(crs_spec, 'to_epsg'):
-        epsg = crs_spec.to_epsg()
-        if epsg is not None:
-            return 'EPSG:{}'.format(crs_spec.to_epsg())
-    if hasattr(crs_spec, 'to_wkt'):
-        return crs_spec.to_wkt()
-    return None
-
-
 class CRS:
     """
     Wrapper around `pyproj.CRS` for backwards compatibility.
@@ -155,20 +155,40 @@ class CRS:
 
     __slots__ = ('_crs', '_epsg', '_str')
 
-    def __init__(self, crs_str: Any):
+    def __init__(self, crs_spec: Any):
         """
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
         :raises: `pyproj.exceptions.CRSError`
         """
-        crs_str = _guess_crs_str(crs_str)
-        if crs_str is None:
-            raise CRSError("Expect string or any object with `.to_epsg()` or `.to_wkt()` method")
+        if isinstance(crs_spec, str):
+            self._crs, self._str, self._epsg = _make_crs(crs_spec)
+        elif isinstance(crs_spec, CRS):
+            self._crs = crs_spec._crs
+            self._epsg = crs_spec._epsg
+            self._str = crs_spec._str
+        elif isinstance(crs_spec, _CRS):
+            self._crs, self._str, self._epsg = _make_crs(crs_spec)
+        elif isinstance(crs_spec, dict):
+            self._crs, self._str, self._epsg = _make_crs(_CRS.from_dict(crs_spec))
+        else:
+            try:
+                epsg = crs_spec.to_epsg()
+            except AttributeError:
+                epsg = None
+            if epsg is not None:
+                self._crs, self._str, self._epsg = _make_crs(f"EPSG:{epsg}")
+                return
+            try:
+                wkt = crs_spec.to_wkt()
+            except AttributeError:
+                wkt = None
+            if wkt is not None:
+                self._crs, self._str, self._epsg = _make_crs(wkt)
+                return
 
-        _crs, _epsg = _make_crs(crs_str)
-
-        self._crs = _crs
-        self._epsg = _epsg
-        self._str = crs_str
+            raise CRSError(
+                "Expect string or any object with `.to_epsg()` or `.to_wkt()` methods"
+            )
 
     def __getstate__(self):
         return {'crs_str': self._str}
@@ -187,7 +207,7 @@ class CRS:
 
     @property
     def wkt(self) -> str:
-        return self.to_wkt(version="WKT1_GDAL")
+        return self.to_wkt(version=WktVersion.WKT1_GDAL)
 
     def to_epsg(self) -> Optional[int]:
         """
@@ -252,12 +272,12 @@ class CRS:
         return self._str
 
     def __hash__(self) -> int:
-        return hash(self.to_wkt())
+        return hash(self._str)
 
     def __repr__(self) -> str:
         return "CRS('%s')" % self._str
 
-    def __eq__(self, other: SomeCRS) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, CRS):
             try:
                 other = CRS(other)
@@ -601,7 +621,7 @@ class Geometry:
                 return type(geom)(geom)  # clone without changes
 
             if geom.type in ['GeometryCollection', 'MultiPolygon', 'MultiLineString']:
-                return type(geom)([segmentize_shapely(g) for g in geom])
+                return type(geom)([segmentize_shapely(g) for g in geom.geoms])
 
             if geom.type in ['LineString', 'LinearRing']:
                 return type(geom)(densify(list(geom.coords), resolution))
@@ -691,7 +711,8 @@ class Geometry:
             yield Geometry(g, self.crs)
 
     def __iter__(self) -> Iterator['Geometry']:
-        for geom in self.geom:
+        sub_geoms = getattr(self.geom, "geoms", [])
+        for geom in sub_geoms:
             yield Geometry(geom, self.crs)
 
     def __nonzero__(self) -> bool:
@@ -896,7 +917,7 @@ def polygon_from_transform(width: float, height: float, transform: Affine, crs: 
     :param crs: CRS
     """
     points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
-    transform.itransform(points)
+    transform.itransform(points)  # type: ignore[arg-type]
     return polygon(points, crs=crs)
 
 
@@ -915,13 +936,13 @@ def multigeom(geoms: Iterable[Geometry]) -> Geometry:
     """ Construct Multi{Polygon|LineString|Point}
     """
     geoms = [g for g in geoms]  # force into list
-    src_type = {g.type for g in geoms}
-    if len(src_type) > 1:
+    src_types = {g.type for g in geoms}
+    if len(src_types) > 1:
         raise ValueError("All Geometries must be of the same type")
 
     crs = common_crs(geoms)  # will raise if some differ
     raw_geoms = [g.geom for g in geoms]
-    src_type = src_type.pop()
+    src_type = src_types.pop()
     if src_type == 'Polygon':
         return Geometry(geometry.MultiPolygon(raw_geoms), crs)
     elif src_type == 'Point':
@@ -982,7 +1003,6 @@ class GeoBox:
     """
 
     def __init__(self, width: int, height: int, affine: Affine, crs: MaybeCRS):
-        assert is_affine_st(affine), "Only axis-aligned geoboxes are currently supported"
         self.width = width
         self.height = height
         self.affine = affine
@@ -1061,6 +1081,9 @@ class GeoBox:
     def __bool__(self) -> bool:
         return not self.is_empty()
 
+    def __hash__(self):
+        return hash((*self.shape, self.crs, self.affine))
+
     @property
     def transform(self) -> Affine:
         return self.affine
@@ -1102,6 +1125,7 @@ class GeoBox:
         """
         dict of coordinate labels
         """
+        assert is_affine_st(self.affine), "Only axis-aligned geoboxes are currently supported"
         yres, xres = self.resolution
         yoff, xoff = self.affine.yoff, self.affine.xoff
 
@@ -1134,13 +1158,12 @@ class GeoBox:
             with_crs = True
 
         attrs = {}
-        coords = self.coordinates
         crs = self.crs
         if crs is not None:
             attrs['crs'] = str(crs)
 
         coords = dict((n, _coord_to_xr(n, c, **attrs))
-                      for n, c in coords.items())  # type: Dict[Hashable, xr.DataArray]
+                      for n, c in self.coordinates.items())  # type: Dict[Hashable, xr.DataArray]
 
         if with_crs and crs is not None:
             coords[spatial_ref] = _mk_crs_coord(crs, spatial_ref)
@@ -1191,13 +1214,13 @@ def bounding_box_in_pixel_domain(geobox: GeoBox, reference: GeoBox) -> BoundingB
     if reference.crs != geobox.crs:
         raise ValueError("Cannot combine geoboxes in different CRSs")
 
-    a, b, c, d, e, f, *_ = ~reference.affine * geobox.affine
+    a, b, c, d, e, f, *_ = ~reference.affine * geobox.affine  # type: ignore[misc]
 
-    if not (numpy.isclose(a, 1) and numpy.isclose(b, 0) and is_almost_int(c, tol)
-            and numpy.isclose(d, 0) and numpy.isclose(e, 1) and is_almost_int(f, tol)):
+    if not (numpy.isclose(a, 1) and numpy.isclose(b, 0) and is_almost_int(c, tol)        # type: ignore[has-type]
+            and numpy.isclose(d, 0) and numpy.isclose(e, 1) and is_almost_int(f, tol)):  # type: ignore[has-type]
         raise ValueError("Incompatible grids")
 
-    tx, ty = round(c), round(f)
+    tx, ty = round(c), round(f)   # type: ignore[has-type]
     return BoundingBox(tx, ty, tx + geobox.width, ty + geobox.height)
 
 
@@ -1385,16 +1408,12 @@ def lonlat_bounds(geom: Geometry,
     if geom.crs.geographic:
         return geom.boundingbox
 
-    if geom.type in ('Polygon', 'MultiPolygon'):
-        geom = geom.exterior
-
     if resolution is not None and math.isfinite(resolution):
         geom = geom.segmented(resolution)
 
-    xx, yy = geom.to_crs('EPSG:4326', resolution=math.inf).xy
-    xx_range = min(xx), max(xx)
-    yy_range = min(yy), max(yy)
+    bbox = geom.to_crs('EPSG:4326', resolution=math.inf).boundingbox
 
+    xx_range = bbox.range_x
     if mode == "safe":
         # If range in Longitude is more than 180 then it's probably wrapped
         # around 180 (X-360 for X > 180), so we add back 360 but only for X<0
@@ -1402,18 +1421,17 @@ def lonlat_bounds(geom: Geometry,
         # a globe, so we need to check for that too, but this is not yet
         # implemented...
 
-        span_x = xx_range[1] - xx_range[0]
-        if span_x > 180:
+        if bbox.span_x > 180:
             # TODO: check the case when input geometry spans >180 region.
             #       For now we assume "smaller" geometries not too close
             #       to poles.
-            xx_ = [x + 360 if x < 0 else x for x in xx]
+            xx_ = [x + 360 if x < 0 else x for x in bbox.range_x]
             xx_range_ = min(xx_), max(xx_)
             span_x_ = xx_range_[1] - xx_range_[0]
-            if span_x_ < span_x:
+            if span_x_ < bbox.span_x:
                 xx_range = xx_range_
 
-    return BoundingBox.from_xy(xx_range, yy_range)
+    return BoundingBox.from_xy(xx_range, bbox.range_y)
 
 
 def assign_crs(xx: Union[xr.DataArray, xr.Dataset],
@@ -1458,3 +1476,11 @@ def assign_crs(xx: Union[xr.DataArray, xr.Dataset],
             band.attrs.update(grid_mapping=crs_coord_name)
 
     return xx
+
+
+def mid_longitude(geom: Geometry) -> float:
+    """
+    Compute longitude of the center point of a geometry
+    """
+    ((lon,), _) = geom.centroid.to_crs('epsg:4326').xy
+    return lon

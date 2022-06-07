@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 from typing import Tuple, Union, Optional, Any, cast
 from math import ceil, fmod
 
@@ -31,7 +35,7 @@ def unsqueeze_data_array(da: xr.DataArray,
 
 
 def unsqueeze_dataset(ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0) -> xr.Dataset:
-    ds = ds.apply(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
+    ds = ds.map(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
     return ds
 
 
@@ -60,9 +64,58 @@ def spatial_dims(xx: Union[xr.DataArray, xr.Dataset],
             return guess
 
     if relaxed and len(xx.dims) >= 2:
-        return cast(Tuple[str, str], xx.dims[-2:])
+        # This operation is pushing mypy's type-inference engine.
+        return cast(Tuple[str, str], cast(Tuple[str, ...], xx.dims)[-2:])
 
     return None
+
+
+def maybe_zero(x: float, tol: float) -> float:
+    """ Turn almost zeros to actual zeros
+    """
+    if abs(x) < tol:
+        return 0
+    return x
+
+
+def maybe_int(x: float, tol: float) -> Union[int, float]:
+    """ Turn almost ints to actual ints, pass through other values unmodified
+    """
+    def split(x):
+        x_part = fmod(x, 1.0)
+        x_whole = x - x_part
+        if x_part > 0.5:
+            x_part -= 1
+            x_whole += 1
+        elif x_part < -0.5:
+            x_part += 1
+            x_whole -= 1
+        return (x_whole, x_part)
+
+    x_whole, x_part = split(x)
+
+    if abs(x_part) < tol:  # almost int
+        return int(x_whole)
+    else:
+        return x
+
+
+def snap_scale(s, tol=1e-6):
+    """ Snap scale to the nearest integer and simple fractions in the form 1/<int>
+    """
+    if abs(s) >= 1 - tol:
+        return maybe_int(s, tol)
+    else:
+        # Check of s is 0
+        if abs(s) < tol:
+            return s
+
+        # Check for simple fractions
+        s_inv = 1 / s
+        s_inv_snapped = maybe_int(s_inv, tol)
+        if s_inv_snapped is s_inv:
+            return s
+        return 1 / s_inv_snapped
 
 
 def clamp(x, lo, up):
@@ -100,7 +153,7 @@ def valid_mask(xx, nodata):
         return ~numpy.isnan(xx) & (xx != nodata)
 
     if nodata is None:
-        return numpy.full_like(xx, True, dtype=numpy.bool)
+        return numpy.full_like(xx, True, dtype=bool)
     return xx != nodata
 
 
@@ -114,7 +167,7 @@ def invalid_mask(xx, nodata):
         return numpy.isnan(xx) | (xx == nodata)
 
     if nodata is None:
-        return numpy.full_like(xx, False, dtype=numpy.bool)
+        return numpy.full_like(xx, False, dtype=bool)
     return xx == nodata
 
 

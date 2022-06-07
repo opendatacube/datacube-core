@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 
 import datacube
@@ -13,7 +16,6 @@ import netCDF4
 
 
 @pytest.mark.timeout(20)
-@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_index_out_of_bound_error(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):

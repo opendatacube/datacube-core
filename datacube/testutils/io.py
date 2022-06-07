@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import numpy as np
 import toolz
 
@@ -8,7 +12,7 @@ from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
 from ..utils.geometry import gbox as gbx
-from ..index.eo3 import is_doc_eo3, _norm_grid
+from ..index.eo3 import is_doc_eo3, _norm_grid  # type: ignore[attr-defined]
 from types import SimpleNamespace
 
 
@@ -56,8 +60,8 @@ def get_raster_info(ds: Dataset, measurements=None):
 
 
 def eo3_geobox(ds: Dataset, band: str) -> GeoBox:
-    band = ds.type.canonical_measurement(band)
-    mm = ds.measurements.get(band, None)
+    mm = ds.measurements.get(ds.type.canonical_measurement(band),
+                             None)
     if mm is None:
         raise ValueError(f"No such band: {band}")
 

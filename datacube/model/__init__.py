@@ -1,7 +1,11 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Core classes used across modules.
 """
+
 import logging
 import math
 import warnings
@@ -11,13 +15,13 @@ from pathlib import Path
 from uuid import UUID
 
 from affine import Affine
-from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator
+from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union
 
 from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
 from .fields import Field, get_dataset_fields
-from ._base import Range
+from ._base import Range, ranges_overlap
 
 _LOG = logging.getLogger(__name__)
 
@@ -25,6 +29,8 @@ DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
+
+# TODO: Multi-dimension code is has incomplete type hints and significant type issues that will require attention
 
 class Dataset:
     """
@@ -121,9 +127,10 @@ class Dataset:
     def measurements(self) -> Dict[str, Any]:
         # It's an optional field in documents.
         # Dictionary of key -> measurement descriptor
-        if not hasattr(self.metadata, 'measurements'):
+        metadata = self.metadata
+        if not hasattr(metadata, 'measurements'):
             return {}
-        return self.metadata.measurements
+        return metadata.measurements
 
     @cached_property
     def center_time(self) -> Optional[datetime]:
@@ -320,14 +327,16 @@ class Measurement(dict):
 
     """
     REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
-    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition')
-    ATTR_BLACKLIST = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser'])
+    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition', 'scale_factor', 'add_offset',
+                     'extra_dim')
+    ATTR_SKIP = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser', 'extra_dim', 'extra_dim_index'])
 
-    def __init__(self, **kwargs):
+    def __init__(self, canonical_name=None, **kwargs):
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
         if missing_keys:
             raise ValueError("Measurement required keys missing: {}".format(missing_keys))
 
+        self.canonical_name = canonical_name or kwargs.get('name')
         super().__init__(**kwargs)
 
     def __getattr__(self, key: str) -> Any:
@@ -347,7 +356,7 @@ class Measurement(dict):
 
     def dataarray_attrs(self) -> Dict[str, Any]:
         """This returns attributes filtered for display in a dataarray."""
-        return {key: value for key, value in self.items() if key not in self.ATTR_BLACKLIST}
+        return {key: value for key, value in self.items() if key not in self.ATTR_SKIP}
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
@@ -400,10 +409,40 @@ class DatasetType:
         self.metadata_type = metadata_type
         #: product definition document
         self.definition = definition
+        self._extra_dimensions: Optional[Mapping[str, Any]] = None
+        self._canonical_measurements: Optional[Mapping[str, Measurement]] = None
+        self._all_measurements: Optional[Dict[str, Measurement]] = None
+        self._load_hints: Optional[Dict[str, Any]] = None
+
+    def _resolve_aliases(self):
+        if self._all_measurements is not None:
+            return self._all_measurements
+        mm = self.measurements
+        oo = {}
+
+        for m in mm.values():
+            oo[m.name] = m
+            for alias in m.get('aliases', []):
+                # TODO: check for duplicates
+                # if alias is in oo already -- bad
+                m_alias = dict(**m)
+                m_alias.update(name=alias, canonical_name=m.name)
+                oo[alias] = Measurement(**m_alias)
+
+        self._all_measurements = oo
+        return self._all_measurements
 
     @property
     def name(self) -> str:
         return self.definition['name']
+
+    @property
+    def description(self) -> str:
+        return self.definition.get("description", None)
+
+    @property
+    def license(self) -> str:
+        return self.definition.get("license", None)
 
     @property
     def managed(self) -> bool:
@@ -426,7 +465,19 @@ class DatasetType:
         """
         Dictionary of measurements in this product
         """
-        return OrderedDict((m['name'], Measurement(**m)) for m in self.definition.get('measurements', []))
+        # from copy import deepcopy
+        if self._canonical_measurements is None:
+            def fix_nodata(m):
+                nodata = m.get('nodata', None)
+                if isinstance(nodata, str):
+                    m = dict(**m)
+                    m['nodata'] = float(nodata)
+                return m
+
+            self._canonical_measurements = OrderedDict((m['name'], Measurement(**fix_nodata(m)))
+                                                       for m in self.definition.get('measurements', []))
+
+        return self._canonical_measurements
 
     @property
     def dimensions(self) -> Tuple[str, str, str]:
@@ -439,6 +490,16 @@ class DatasetType:
             spatial_dims = DEFAULT_SPATIAL_DIMS
 
         return ('time',) + spatial_dims
+
+    @property
+    def extra_dimensions(self) -> "ExtraDimensions":
+        """
+        Dictionary of metadata for the third dimension.
+        """
+        if self._extra_dimensions is None:
+            self._extra_dimensions = OrderedDict((d['name'], d)
+                                                 for d in self.definition.get('extra_dimensions', []))
+        return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
     def grid_spec(self) -> Optional['GridSpec']:
@@ -462,38 +523,155 @@ class DatasetType:
         gs_params = {name: extract_point(name)
                      for name in ('tile_size', 'resolution', 'origin')}
 
+        complete = all(gs_params[k] is not None for k in ('tile_size', 'resolution'))
+        if not complete:
+            return None
+
         return GridSpec(crs=crs, **gs_params)
+
+    @staticmethod
+    def validate_extra_dims(definition: Mapping[str, Any]):
+        """Validate 3D metadata in the product definition.
+
+        Perform some basic checks for validity of the 3D dataset product definition:
+          - Checks extra_dimensions section exists
+          - For each 3D measurement, check if the required dimension is defined
+          - If the 3D spectral_definition is defined:
+            - Check there's one entry per coordinate.
+            - Check that wavelength and response are the same length.
+
+        :param definition: Dimension definition dict, typically retrieved from the product definition's
+            `extra_dimensions` field.
+        """
+        # Dict of extra dimensions names and values in the product definition
+        defined_extra_dimensions = OrderedDict(
+            (d.get("name"), d.get("values")) for d in definition.get("extra_dimensions", [])
+        )
+
+        for m in definition.get('measurements', []):
+            # Skip if not a 3D measurement
+            if 'extra_dim' not in m:
+                continue
+
+            # Found 3D measurement, check if extra_dimension is defined.
+            if (len(defined_extra_dimensions) == 0):
+                raise ValueError(
+                    "extra_dimensions is not defined. 3D measurements require extra_dimensions "
+                    "to be defined for the dimension"
+                )
+
+            dim_name = m.get('extra_dim')
+
+            # Check extra dimension is defined
+            if dim_name not in defined_extra_dimensions:
+                raise ValueError(f"Dimension {dim_name} is not defined in extra_dimensions")
+
+            if 'spectral_definition' in m:
+                spectral_definitions = m.get('spectral_definition', [])
+                # Check spectral_definition of expected length
+                if len(defined_extra_dimensions[dim_name]) != len(spectral_definitions):
+                    raise ValueError(
+                        f"spectral_definition should be the same length as values for extra_dim {m.get('extra_dim')}"
+                    )
+
+                # Check each spectral_definition has the same length for wavelength and response if both exists
+                for idx, spectral_definition in enumerate(spectral_definitions):
+                    if 'wavelength' in spectral_definition and 'response' in spectral_definition:
+                        if len(spectral_definition.get('wavelength')) != len(spectral_definition.get('response')):
+                            raise ValueError(
+                                f"spectral_definition_map: wavelength should be the same length as response "
+                                f"in the product definition for spectral definition at index {idx}."
+                            )
 
     def canonical_measurement(self, measurement: str) -> str:
         """ resolve measurement alias into canonical name
         """
-        mm = self.measurements
+        m = self._resolve_aliases().get(measurement, None)
+        if m is None:
+            raise ValueError(f"No such band/alias {measurement}")
 
-        if measurement in mm:
-            return measurement
+        return m.canonical_name
 
-        for real_name, m in mm.items():
-            if measurement in m.get('aliases', ()):
-                return real_name
-        raise ValueError(f"No such band/alias {measurement}")
-
-    def lookup_measurements(self, measurements: Optional[List[str]] = None) -> Mapping[str, Measurement]:
+    def lookup_measurements(
+        self, measurements: Optional[Union[Iterable[str], str]] = None
+    ) -> Mapping[str, Measurement]:
         """
         Find measurements by name
 
-        :param measurements: list of measurement names
+        :param measurements: list of measurement names or a single measurement name, or None to get all
         """
-        my_measurements = self.measurements
         if measurements is None:
-            return my_measurements
+            return self.measurements
+        if isinstance(measurements, str):
+            measurements = [measurements]
 
-        def fix_alias(measurement):
-            result = my_measurements[self.canonical_measurement(measurement)].copy()
-            result['name'] = measurement
-            return result
+        mm = self._resolve_aliases()
+        return OrderedDict((m, mm[m]) for m in measurements)
 
-        return OrderedDict((measurement, fix_alias(measurement))
-                           for measurement in measurements)
+    def _extract_load_hints(self) -> Optional[Dict[str, Any]]:
+        _load = self.definition.get('load')
+        if _load is None:
+            # Check for partial "storage" definition
+            storage = self.definition.get('storage', {})
+
+            if 'crs' in storage and 'resolution' in storage:
+                if 'tile_size' in storage:
+                    # Fully defined GridSpec, ignore it
+                    return None
+
+                # TODO: warn user to use `load:` instead of `storage:`??
+                _load = storage
+            else:
+                return None
+
+        crs = geometry.CRS(_load['crs'])
+
+        def extract_point(name):
+            xx = _load.get(name, None)
+            return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
+
+        params = {name: extract_point(name) for name in ('resolution', 'align')}
+        params = {name: v for name, v in params.items() if v is not None}
+        return dict(crs=crs, **params)
+
+    @property
+    def default_crs(self) -> Optional[geometry.CRS]:
+        return self.load_hints().get('output_crs', None)
+
+    @property
+    def default_resolution(self) -> Optional[Tuple[float, float]]:
+        return self.load_hints().get('resolution', None)
+
+    @property
+    def default_align(self) -> Optional[Tuple[float, float]]:
+        return self.load_hints().get('align', None)
+
+    def load_hints(self) -> Dict[str, Any]:
+        """
+        Returns dictionary with keys compatible with ``dc.load(..)`` named arguments:
+
+          output_crs - CRS
+          resolution - Tuple[float, float]
+          align      - Tuple[float, float] (if defined)
+
+        Returns {} if load hints are not defined on this product, or defined with errors.
+        """
+        if self._load_hints is not None:
+            return self._load_hints
+
+        hints = None
+        try:
+            hints = self._extract_load_hints()
+        except Exception:
+            pass
+
+        if hints is None:
+            self._load_hints = {}
+        else:
+            crs = hints.pop('crs')
+            self._load_hints = dict(output_crs=crs, **hints)
+
+        return self._load_hints
 
     def dataset_reader(self, dataset_doc):
         return self.metadata_type.dataset_reader(dataset_doc)
@@ -502,12 +680,12 @@ class DatasetType:
         """
         Convert to a dictionary representation of the available fields
         """
-        row = {
-            'id': self.id,
-            'name': self.name,
-            'description': self.definition['description'],
-        }
-        row.update(self.fields)
+        row = dict(**self.fields)
+        row.update(id=self.id,
+                   name=self.name,
+                   license=self.license,
+                   description=self.description)
+
         if self.grid_spec is not None:
             row.update({
                 'crs': str(self.grid_spec.crs),
@@ -612,7 +790,7 @@ class GridSpec:
 
     def tile_coords(self, tile_index: Tuple[int, int]) -> Tuple[float, float]:
         """
-        Tile coordinates in (Y,X) order
+        Coordinate of the top-left corner of the tile in (Y,X) order
 
         :param tile_index: in X,Y order
         """
@@ -744,3 +922,183 @@ def metadata_from_doc(doc: Mapping[str, Any]) -> MetadataType:
     from .fields import get_dataset_fields
     MetadataType.validate(doc)  # type: ignore
     return MetadataType(doc, get_dataset_fields(doc))
+
+
+class ExtraDimensions:
+    """
+    Definition for the additional dimensions between (t) and (y, x)
+
+    It allows the creation of a subsetted ExtraDimensions that contains slicing information relative to
+    the original dimension coordinates.
+    """
+
+    def __init__(self, extra_dim: Mapping[str, Any]):
+        """Init function
+
+        :param extra_dim: Dimension definition dict, typically retrieved from the product definition's
+            `extra_dimensions` field.
+        """
+        import xarray
+
+        # Dict of information about each dimension
+        self._dims = extra_dim
+        # Dimension slices that results in this ExtraDimensions object
+        self._dim_slice = {
+            name: (0, len(dim['values'])) for name, dim in extra_dim.items()
+        }
+        # Coordinate information
+        self._coords = {
+            name: xarray.DataArray(
+                data=dim['values'],
+                coords={name: dim['values']},
+                dims=(name,),
+                name=name,
+            ).astype(dim['dtype'])
+            for name, dim in extra_dim.items()
+        }
+
+    def has_empty_dim(self) -> bool:
+        """Return True if ExtraDimensions has an empty dimension, otherwise False.
+
+        :return: A boolean if ExtraDimensions has an empty dimension, otherwise False.
+        """
+        for value in self._coords.values():
+            if value.shape[0] == 0:
+                return True
+        return False
+
+    def __getitem__(self, dim_slices: Dict[str, Union[float, Tuple[float, float]]]) -> "ExtraDimensions":
+        """Return a ExtraDimensions subsetted by dim_slices
+
+        :param dim_slices: Dict of dimension slices to subset by.
+        :return: An ExtraDimensions object subsetted by `dim_slices`
+        """
+        # Check all dimensions specified in dim_slices exists
+        unknown_keys = set(dim_slices.keys()) - set(self._dims.keys())
+        if unknown_keys:
+            raise KeyError(f"Found unknown keys {unknown_keys} in dim_slices")
+
+        from copy import deepcopy
+
+        ed = ExtraDimensions(deepcopy(self._dims))
+        ed._dim_slice = self._dim_slice
+
+        # Convert to integer index
+        for dim_name, dim_slice in dim_slices.items():
+            dim_slices[dim_name] = self.coord_slice(dim_name, dim_slice)
+
+        for dim_name, dim_slice in dim_slices.items():
+            # Adjust slices relative to original.
+            if dim_name in ed._dim_slice:
+                ed._dim_slice[dim_name] = (    # type: ignore[assignment]
+                    ed._dim_slice[dim_name][0] + dim_slice[0],  # type: ignore[index]
+                    ed._dim_slice[dim_name][0] + dim_slice[1],  # type: ignore[index]
+                )
+
+            # Subset dimension values.
+            if dim_name in ed._dims:
+                ed._dims[dim_name]['values'] = ed._dims[dim_name]['values'][slice(*dim_slice)]  # type: ignore[misc]
+
+            # Subset dimension coordinates.
+            if dim_name in ed._coords:
+                slice_dict = {k: slice(*v) for k, v in dim_slices.items()}  # type: ignore[misc]
+                ed._coords[dim_name] = ed._coords[dim_name].isel(slice_dict)
+
+        return ed
+
+    @property
+    def dims(self) -> Mapping[str, dict]:
+        """Returns stored dimension information
+
+        :return: A dict of information about each dimension
+        """
+        return self._dims
+
+    @property
+    def dim_slice(self) -> Mapping[str, Tuple[int, int]]:
+        """Returns dimension slice for this ExtraDimensions object
+
+        :return: A dict of dimension slices that results in this ExtraDimensions object
+        """
+        return self._dim_slice
+
+    def measurements_values(self, dim: str) -> List[Any]:
+        """Returns the dimension values after slicing
+
+        :param dim: The name of the dimension
+        :return: A list of dimension values for the requested dimension.
+        """
+        if dim not in self._dims:
+            raise ValueError(f"Dimension {dim} not found.")
+        return self._dims[dim]['values']
+
+    def measurements_slice(self, dim: str) -> slice:
+        """Returns the index for slicing on a dimension
+
+        :param dim: The name of the dimension
+        :return: A slice for the the requested dimension.
+        """
+        dim_slice = self.measurements_index(dim)
+        return slice(*dim_slice)
+
+    def measurements_index(self, dim: str) -> Tuple[int, int]:
+        """Returns the index for slicing on a dimension as a tuple.
+
+        :param dim: The name of the dimension
+        :return: A tuple for the the requested dimension.
+        """
+        if dim not in self._dim_slice:
+            raise ValueError(f"Dimension {dim} not found.")
+
+        dim_slice = self._dim_slice[dim]
+        return dim_slice
+
+    def index_of(self, dim: str, value: Any) -> int:
+        """Find index for value in the dimension dim
+
+        :param dim: The name of the dimension
+        :param value: The coordinate value.
+        :return: The integer index of `value`
+        """
+        if dim not in self._coords:
+            raise ValueError(f"Dimension {dim} not found.")
+        return self._coords[dim].searchsorted(value)
+
+    def coord_slice(self, dim: str, coord_range: Union[float, Tuple[float, float]]) -> Tuple[int, int]:
+        """Returns the Integer index for a coordinate (min, max) range.
+
+        :param dim: The name of the dimension
+        :param coord_range: The coordinate range.
+        :return: A tuple containing the integer indexes of `coord_range.
+        """
+        # Convert to Tuple if it's an int or float
+        if isinstance(coord_range, int) or isinstance(coord_range, float):
+            coord_range = (coord_range, coord_range)
+
+        start_index = self.index_of(dim, coord_range[0])
+        stop_index = self.index_of(dim, coord_range[1] + 1)
+        return start_index, stop_index
+
+    def chunk_size(self) -> Tuple[Tuple[str, ...], Tuple[int, ...]]:
+        """Returns the names and shapes of dimenions in dimension order
+
+        :return: A tuple containing the names and max sizes of each dimension
+        """
+        names = ()
+        shapes = ()
+        if self.dims is not None:
+            for dim in self.dims.values():
+                name = dim.get('name')
+                names += (name,)   # type: ignore[assignment]
+                shapes += (len(self.measurements_values(name)),)   # type: ignore[assignment,arg-type]
+        return names, shapes
+
+    def __str__(self) -> str:
+        return (
+            f"ExtraDimensions(extra_dim={dict(self._dims)}, dim_slice={self._dim_slice} "
+            f"coords={self._coords} "
+            f")"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()

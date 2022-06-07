@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 
 # We often have one-arg-per column, so these checks aren't so useful.
 # pylint: disable=too-many-arguments,too-many-public-methods,too-many-lines
@@ -303,6 +306,22 @@ class PostgresDbAPI(object):
             )
         ).fetchall()
 
+    def all_dataset_ids(self, archived: bool):
+        query = select(
+            DATASET.c.id  # type: ignore[arg-type]
+        ).select_from(
+            DATASET
+        )
+        if archived:
+            query = query.where(
+                DATASET.c.archived != None
+            )
+        else:
+            query = query.where(
+                DATASET.c.archived == None
+            )
+        return self._connection.execute(query).fetchall()
+
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
         try:
             r = self._connection.execute(
@@ -340,6 +359,16 @@ class PostgresDbAPI(object):
         )
 
     def delete_dataset(self, dataset_id):
+        self._connection.execute(
+            DATASET_LOCATION.delete().where(
+                DATASET_LOCATION.c.dataset_ref == dataset_id
+            )
+        )
+        self._connection.execute(
+            DATASET_SOURCE.delete().where(
+                DATASET_SOURCE.c.dataset_ref == dataset_id
+            )
+        )
         self._connection.execute(
             DATASET.delete().where(
                 DATASET.c.id == dataset_id

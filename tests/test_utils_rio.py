@@ -1,5 +1,9 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import pytest
-import mock
+from unittest import mock
 import os
 
 from datacube.testutils import write_files
@@ -178,5 +182,9 @@ def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client):
     assert 'AWS_REGION' in ee
     assert 'AWS_SESSION_TOKEN' not in ee
 
-    ee = client.submit(get_rio_env, sanitize=False).result()
+    def _activate_and_get(sanitize=True):
+        activate_from_config()
+        return get_rio_env(sanitize=sanitize)
+
+    ee = client.submit(_activate_and_get, sanitize=False).result()
     assert ee == ee_local

@@ -5,6 +5,111 @@
 What's New
 **********
 
+v1.8.next
+=========
+
+v1.8.7 (7 June 2022)
+====================
+
+- Cleanup mypy typechecking compliance. (:pull:`1266`)
+- When dataset add operations fail due to lineage issues, the produced error message now clearly indicates that
+  the problem was due to lineage issues. (:pull:`1260`)
+- Added support for group-by financial years to virtual products. (:pull:`1257`, :pull:`1261`)
+- Remove reference to `rasterio.path`. (:pull:`1255`)
+- Cleaner separation of postgis and postgres drivers, and suppress SQLAlchemy cache warnings. (:pull:`1254`)
+- Prevent Shapely deprecation warning. (:pull:`1253`)
+- Fix `DATACUBE_DB_URL` parsing to understand syntax like: `postgresql:///datacube?host=/var/run/postgresql` (:pull:`1256`)
+- Clearer error message when local metadata file does not exist. (:pull:`1252`)
+- Address upstream security alerts and update upstream library versions. (:pull:`1250`)
+- Clone ``postgres`` index driver as ``postgis``, and flag as experimental. (:pull:`1248`)
+- Implement a local non-persistent in-memory index driver, with maximal backwards-compatibility
+  with default postgres index driver. Doesn't work with CLI interface, as every invocation
+  will receive a new, empty index, but useful for testing and small scale proof-of-concept
+  work. (:pull:`1247`)
+- Performance and correctness fixes backported from ``odc-geo``. (:pull:`1242`)
+- Deprecate use of the celery executor. Update numpy pin in rtd-requirements.txt to suppress
+  Dependabot warnings. (:pull:`1239`)
+- Implement a minimal "null" index driver that provides an always-empty index. Mainly intended
+  to validate the recent abstraction work around the index driver layer, but may be useful
+  for some testing scenarios, and ODC use cases that do not require an index. (:pull:`1236')
+- Regularise some minor API inconsistencies and restore redis-server to Docker image. (:pull:`1234`)
+- Move (default) postgres driver-specific files from `datacube.index` to `datacube.index.postgres`.
+  `datacube.index.Index` is now an alias for the abstract base class index interface definition
+  rather than postgres driver-specific implementation of that interface. (:pull:`1231`)
+- Update numpy and netcdf4 version in docker build (:pull:`1229`)
+  rather than postgres driver-specific implementation of that interface. (:pull:`1227`)
+- Migrate test docker image from `datacube/geobase` to `osgeo/gdal`. (:pull:`1233`)
+- Separate index driver interface definition from default index driver implementation. (:pull:`1226`)
+- Prefer WKT over EPSG when guessing CRS strings. (:pull:`1223`, :pull:`1262`)
+- Updates to documentation. (:pull:`1208`, :pull:`1212`, :pull:`1215`, :pull:`1218`, :pull:`1240`, :pull:`1244`)
+- Tweak to segmented in geometry to suppress Shapely warning. (:pull:`1207`)
+- Fix to ensure ``skip_broken_datasets`` is correctly propagated in virtual products (:pull:`1259`)
+- Deprecate `Rename`, `Select` and `ToFloat` built-in transforms in virtual products (:pull:`1263`)
+
+v1.8.6 (30 September 2021)
+==========================
+
+- Fix for searching for multiple products, now works with ``product="product_name"``
+  as well as ``product=["product_name1", "product_name2"]`` (:pull:`1201`)
+- Added ``dataset purge`` command for hard deletion of archived datasets.
+  ``--all`` option deletes all archived datasets.  (N.B. will fail if there
+  are unarchived datasets that depend on the archived datasets.)
+
+  ``--all`` option also added to ``dataset archive`` and ``dataset restore``
+  commands, to archive all unarchived datasets, and restore all archived
+  datasets, respectively.
+  (:pull:`1199`)
+- Trivial fixes to CLI help output (:pull:`1197`)
+
+v1.8.5 (18 August 2021)
+=======================
+
+- Fix unguarded dependencies on boto libraries (:pull:`1174`, :issue:`1172`)
+- Various documentation fixes (:pull:`1175`)
+- Address import problems on Windows due to use of Unix only functions (:issue:`1176`)
+- Address ``numpy.bool`` deprecation warnings (:pull:`1184`)
+
+
+v1.8.4 (6 August 2021)
+=======================
+
+- Removed example and contributed notebooks from the repository. Better `notebook examples`_ exist.
+- Removed datacube_apps, as these are not used and not maintained.
+- Add ``cloud_cover`` to EO3 metadata
+- Add ``erosion`` functionality to Virtual products' ``ApplyMask`` to supplement existing ``dilation`` functionality (:pull:`1049`)
+- Fix numeric precision issues in ``compute_reproject_roi`` when pixel size is small. (:issue:`1047`)
+- Follow up fix to (:issue:`1047`) to round scale to nearest integer if very close.
+- Add support for 3D Datasets. (:pull:`1099`)
+- New feature: search by URI from the command line ``datacube dataset uri-search``.
+- Added new "license" and "description" properties to `DatasetType` to enable easier access to product information. (:pull:`1143`, :pull:`1144`)
+- Revised the ``Datacube.list_products`` function to produce a simpler and more useful product list table (:pull:`1145`)
+- Refactor docs, making them more up to date and simpler (:pull `1137`) (:pull `1128`)
+- Add new ``dataset_predicate`` param to ``dc.load`` and ``dc.find_datasets`` for more flexible temporal filtering (e.g. loading data for non-contiguous time ranges such as specific months or seasons over multiple years). (:pull:`1148`, :pull:`1156`)
+- Fix to ``GroupBy`` to ensure output output axes are correctly labelled when sorting observations using ``sort_key`` (:pull:`1157`)
+- ``GroupBy`` is now its own class to allow easier custom grouping and sorting of data (:pull:`1157`)
+- add support for IAM authentication for RDS databases in AWS. (:pull:`1168`)
+
+.. _`notebook examples`: https://github.com/GeoscienceAustralia/dea-notebooks/
+
+
+v1.8.3 (18 August 2020)
+=======================
+
+- More efficient band alias handling
+- More documentation cleanups
+- Bug fixes in ``datacube.utils.aws``, credentials handling when ``AWS_UNSIGNED`` is set
+- Product definition can now optionally include per-band scaling factors (:pull:`1002`, :issue:`1003`)
+- Fix issue where new ``updated`` columns aren't created on a fresh database (:pull:`994`, :issue:`993`)
+- Fix bug around adding ``updated`` columns locking up active databases (:pull:`1001`, :issue:`997`)
+
+v1.8.2 (10 July 2020)
+=====================
+
+- Fix regressions in ``.geobox`` (:pull:`982`)
+- Expand list of supported ``dtype`` values to include complex values (:pull:`989`)
+- Can now specify dataset location directly in the yaml document (:issue:`990`, :pull:`989`)
+- Better error reporting in ``datacube dataset update`` (:pull:`983`)
+
 v1.8.1 (2 July 2020)
 ====================
 
@@ -492,7 +597,7 @@ v1.4.0 (17 May 2017)
 
 - Adds more convenient year/date range search expressions (see :pull:`226`)
 
-- Adds a :ref:`simple replication utility <replication>` (see :pull:`223`)
+- Adds a **simple replication utility** (see :pull:`223`)
 
 - Fixed issue reading products without embedded CRS info, such as ``bom_rainfall_grid`` (see :issue:`224`)
 
@@ -585,7 +690,7 @@ v1.1.17 Happy Festivus Continues (12 January 2017)
 
  - Added more operations to the geometry utils
 
- - Updated :ref:`recipes` to use geometry utils
+ - Updated `recipes` to use geometry utils
 
  - Enabled Windows CI (python 3 only)
 
@@ -636,7 +741,7 @@ v1.1.13 Black Goat (15 November 2016)
 
   - Merged several bug-fixes from CEOS-SEO branch
 
-  - Added Polygon Drill recipe to :ref:`recipes`
+  - Added Polygon Drill recipe to `recipes`
 
 v1.1.12 Unnamed Unknown (1 November 2016)
 =========================================

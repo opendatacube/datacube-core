@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 from datacube.storage import BandInfo
 from datacube.testutils import mk_sample_dataset
@@ -64,3 +68,13 @@ def test_band_info():
     ds.uris = None
     with pytest.raises(ValueError):
         BandInfo(ds, 'a')
+
+    ds_none_fmt = mk_sample_dataset(bands,
+                                    uri='file:///tmp/datataset.yml',
+                                    format=None)
+    assert ds_none_fmt.format is None
+    assert BandInfo(ds_none_fmt, 'a').format == ''
+
+    ds = mk_sample_dataset(bands, uri='/not/a/uri')
+    band = BandInfo(ds, 'a')
+    assert(band.uri_scheme is '')

@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Common functions for click-based cli scripts.
 """
@@ -12,7 +16,7 @@ import click
 from datacube import config, __version__
 from datacube.api.core import Datacube
 
-from datacube.executor import get_executor, mk_celery_executor
+from datacube.executor import get_executor, mk_celery_executor  # type: ignore[attr-defined]
 from datacube.index import index_connect
 
 from datacube.ui.expression import parse_expressions
@@ -146,9 +150,9 @@ verbose_option = click.option('--verbose', '-v', count=True, callback=_init_logg
 logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile,
                               is_eager=True, expose_value=False, help="Specify log file")
 #: pylint: disable=invalid-name
-config_option = click.option('--config', '--config_file', '-C', multiple=True, default='', callback=_set_config,
+config_option = click.option('--config', '--config_file', '-C', multiple=True, default=[], callback=_set_config,
                              expose_value=False)
-config_option_exposed = click.option('--config', '--config_file', '-C', multiple=True, default='', callback=_set_config)
+config_option_exposed = click.option('--config', '--config_file', '-C', multiple=True, default=[], callback=_set_config)
 
 environment_option = click.option('--env', '-E', callback=_set_environment,
                                   expose_value=False)
@@ -281,7 +285,7 @@ def _setup_executor(ctx, param, value):
 
 executor_cli_options = click.option('--executor',  # type: ignore
                                     type=(click.Choice(list(EXECUTOR_TYPES)), str),
-                                    default=('serial', None),
+                                    default=['serial', None],
                                     help="Run parallelized, either locally or distributed. eg:\n"
                                          "--executor multiproc 4 (OR)\n"
                                          "--executor distributed 10.0.0.8:8888",

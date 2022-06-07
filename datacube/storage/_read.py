@@ -1,8 +1,12 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """ Dataset -> Raster
 """
 from affine import Affine
 import numpy as np
-from typing import Tuple
+from typing import Optional, Tuple
 
 from ..utils.math import is_almost_int, valid_mask
 
@@ -109,7 +113,8 @@ def read_time_slice(rdr,
                     dst: np.ndarray,
                     dst_gbox: GeoBox,
                     resampling: Resampling,
-                    dst_nodata: Nodata) -> Tuple[slice, slice]:
+                    dst_nodata: Nodata,
+                    extra_dim_index: Optional[int] = None) -> Tuple[slice, slice]:
     """ From opened reader object read into `dst`
 
     :returns: affected destination region
@@ -127,21 +132,31 @@ def read_time_slice(rdr,
 
     paste_ok, _ = can_paste(rr, ttol=0.9 if is_nn else 0.01)
 
-    def norm_read_args(roi, shape):
+    def norm_read_args(roi, shape, extra_dim_index):
         if roi_is_full(roi, rdr.shape):
             roi = None
 
         if roi is None and shape == rdr.shape:
             shape = None
 
-        return w_[roi], shape
+        w = w_[roi]
+
+        # Build 3D read window
+        # Note: Might be a good idea to natively support nD read windows.
+        if extra_dim_index is not None:
+            if w is None:
+                w = ()
+            return (extra_dim_index,) + w, shape
+        else:
+            # 2D read window
+            return w, shape
 
     if paste_ok:
         A = rr.transform.linear
         sx, sy = A.a, A.e
 
         dst = dst[rr.roi_dst]
-        pix = rdr.read(*norm_read_args(rr.roi_src, dst.shape))
+        pix = rdr.read(*norm_read_args(rr.roi_src, dst.shape, extra_dim_index))
 
         if sx < 0:
             pix = pix[:, ::-1]
@@ -165,7 +180,7 @@ def read_time_slice(rdr,
         if scale > 1:
             src_gbox = gbx.zoom_out(src_gbox, scale)
 
-        pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape))
+        pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape, extra_dim_index))
 
         if rr.transform.linear is not None:
             A = (~src_gbox.transform)*dst_gbox.transform
@@ -181,7 +196,7 @@ def read_time_slice(rdr,
 def read_time_slice_v2(rdr,
                        dst_gbox: GeoBox,
                        resampling: Resampling,
-                       dst_nodata: Nodata) -> Tuple[np.ndarray,
+                       dst_nodata: Nodata) -> Tuple[Optional[np.ndarray],
                                                     Tuple[slice, slice]]:
     """ From opened reader object read into `dst`
 

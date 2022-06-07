@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Test database methods.
 
@@ -15,7 +18,7 @@ from dateutil import tz
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.index.exceptions import MissingRecordError
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.model import Dataset, MetadataType
 
 _telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
@@ -101,6 +104,101 @@ def test_archive_datasets(index, initialised_postgres_db, local_config, default_
     indexed_dataset = index.datasets.get(_telemetry_uuid)
     assert indexed_dataset.is_active
     assert not indexed_dataset.is_archived
+
+
+def test_purge_datasets(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
+    # Create dataset
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
+    with initialised_postgres_db.begin() as transaction:
+        was_inserted = transaction.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+
+    assert was_inserted
+    assert index.datasets.has(_telemetry_uuid)
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 1
+    assert datasets[0].is_active
+
+    # Archive dataset
+    index.datasets.archive([_telemetry_uuid])
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 0
+
+    # The model should show it as archived now.
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+    assert not indexed_dataset.is_active
+
+    # Purge dataset
+    index.datasets.purge([_telemetry_uuid])
+    assert index.datasets.get(_telemetry_uuid) is None
+
+
+def test_purge_datasets_cli(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
+
+    # Attempt to purge non-existent dataset should fail
+    clirunner(['dataset', 'purge', str(_telemetry_uuid)], expect_success=False)
+
+    # Create dataset
+    with initialised_postgres_db.begin() as transaction:
+        was_inserted = transaction.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+    assert was_inserted
+
+    # Attempt to purge non-archived dataset should fail
+    clirunner(['dataset', 'purge', str(_telemetry_uuid)], expect_success=False)
+
+    # Archive dataset
+    index.datasets.archive([_telemetry_uuid])
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+
+    # Test CLI dry run
+    clirunner(['dataset', 'purge', '--dry-run', str(_telemetry_uuid)])
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+
+    # Test CLI purge
+    clirunner(['dataset', 'purge', str(_telemetry_uuid)])
+    assert index.datasets.get(_telemetry_uuid) is None
+
+
+def test_purge_all_datasets_cli(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
+
+    # Create dataset
+    with initialised_postgres_db.begin() as transaction:
+        was_inserted = transaction.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+    assert was_inserted
+
+    # archive all datasets
+    clirunner(['dataset', 'archive', '--all'])
+
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+
+    # Restore all datasets
+    clirunner(['dataset', 'restore', '--all'])
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert not indexed_dataset.is_archived
+
+    # Archive again
+    clirunner(['dataset', 'archive', '--all'])
+
+    # and purge
+    clirunner(['dataset', 'purge', '--all'])
+    assert index.datasets.get(_telemetry_uuid) is None
 
 
 @pytest.fixture
@@ -249,7 +347,6 @@ def test_index_dataset_with_sources(index, default_metadata_type):
         index.datasets.add(child, sources_policy=p)
 
 
-@pytest.mark.parametrize('datacube_env_name', ('datacube', ), indirect=True)
 def test_index_dataset_with_location(index: Index, default_metadata_type: MetadataType):
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()

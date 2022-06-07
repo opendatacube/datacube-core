@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import math
 
 import toolz
@@ -8,6 +12,7 @@ from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
 from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files, dataset_maker
 from datacube.utils import SimpleDocNav
+from datacube.scripts.dataset import _resolve_uri
 
 
 def check_skip_lineage_test(clirunner, index):
@@ -36,13 +41,15 @@ def check_no_product_match(clirunner, index):
     r = clirunner(['dataset', 'add',
                    '--product', 'A',
                    str(prefix)])
-    assert 'ERROR Dataset metadata did not match product signature' in r.output
+    assert 'ERROR' in r.output
+    assert 'Dataset metadata did not match product signature' in r.output
 
     r = clirunner(['dataset', 'add',
                    '--product', 'A',
                    '--product', 'B',
                    str(prefix)])
-    assert 'ERROR No matching Product found for dataset' in r.output
+    assert 'ERROR' in r.output
+    assert 'No matching Product found for dataset' in r.output
 
     ds_ = index.datasets.get(ds.id, include_sources=True)
     assert ds_ is None
@@ -53,7 +60,8 @@ def check_no_product_match(clirunner, index):
                    '--confirm-ignore-lineage',
                    str(prefix)])
 
-    assert 'ERROR Dataset metadata did not match product signature' in r.output
+    assert 'ERROR' in r.output
+    assert 'Dataset metadata did not match product signature' in r.output
     assert index.datasets.has(ds.id) is False
 
 
@@ -259,11 +267,15 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert r.exit_code == 0
 
     ds_eo3 = load_dataset_definition(p.datasets_eo3)
+    assert ds_eo3.location is not None
+
     _ds = index.datasets.get(ds_eo3.id, include_sources=True)
     assert sorted(_ds.sources) == ['a', 'bc1', 'bc2']
     assert _ds.crs == 'EPSG:3857'
     assert _ds.extent is not None
     assert _ds.extent.crs == _ds.crs
+    assert _ds.uris == [ds_eo3.location]
+    assert 'location' not in _ds.metadata_doc
 
 
 def test_dataset_add_ambgious_products(dataset_add_configs, index_empty, clirunner):
@@ -428,7 +440,7 @@ measurements:
     assert ds5.id in r.output
 
 
-def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
+def dataset_archive_prep(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
 
@@ -440,16 +452,91 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
 
     assert index.datasets.has(ds.id) is True
 
-    # First do dry run
-    r = clirunner(['dataset', 'archive', '--dry-run', ds.id])
-    r = clirunner(['dataset', 'archive',
-                   '--dry-run',
-                   '--archive-derived',
-                   ds.sources['ae'].id])
-    assert ds.id in r.output
-    assert ds.sources['ae'].id in r.output
+    return p, index, ds
 
+
+def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
+    p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
+
+    non_existent_uuid = '00000000-1036-5607-a62f-fde5e3fec985'
+
+    # Single valid UUID is detected and not archived
+    single_valid_uuid = clirunner(['dataset', 'archive', '--dry-run', ds.id])
+    assert ds.id in single_valid_uuid.output
     assert index.datasets.has(ds.id) is True
+
+    # Single invalid UUID is detected
+    single_invalid_uuid = clirunner(['dataset', 'archive', '--dry-run', non_existent_uuid], expect_success=False)
+    assert single_invalid_uuid.exit_code is -1
+    assert non_existent_uuid in single_invalid_uuid.output
+    assert index.datasets.has(ds.id) is True
+
+    # Valid and invalid UUIDs
+    # The single invalid UUID should halt all operations
+    valid_and_invalid_uuid = clirunner(['dataset',
+                                        'archive',
+                                        '--dry-run',
+                                        ds.id,
+                                        non_existent_uuid],
+                                       expect_success=False)
+    assert non_existent_uuid in valid_and_invalid_uuid.output
+    assert single_invalid_uuid.exit_code is -1
+    assert index.datasets.has(ds.id) is True
+
+    valid_and_invalid_uuid = clirunner(['dataset',
+                                        'archive',
+                                        '--dry-run',
+                                        '--archive-derived',
+                                        ds.id,
+                                        non_existent_uuid
+                                        ],
+                                       expect_success=False)
+    assert single_invalid_uuid.exit_code is -1
+    assert non_existent_uuid in valid_and_invalid_uuid.output
+    assert index.datasets.has(ds.id) is True
+
+    # Multiple Valid UUIDs
+    # Not archived in the database and are shown in output
+    multiple_valid_uuid = clirunner(['dataset', 'archive', '--dry-run', ds.sources['ae'].id, ds.sources['ab'].id])
+    assert ds.sources['ae'].id in multiple_valid_uuid.output
+    assert ds.sources['ab'].id in multiple_valid_uuid.output
+    assert index.datasets.has(ds.sources['ae'].id) is True
+    assert index.datasets.has(ds.sources['ab'].id) is True
+
+    archive_derived = clirunner(['dataset',
+                                 'archive',
+                                 '--dry-run',
+                                 '--archive-derived',
+                                 ds.sources['ae'].id,
+                                 ds.sources['ab'].id
+                                 ])
+    assert ds.id in archive_derived.output
+    assert ds.sources['ae'].id in archive_derived.output
+    assert index.datasets.has(ds.id) is True
+
+
+def test_dataset_archive_restore_invalid(dataset_add_configs, index_empty, clirunner):
+    p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
+
+    non_existent_uuid = '00000000-1036-5607-a62f-fde5e3fec985'
+
+    # With non-existent uuid, operations should halt.
+    r = clirunner(['dataset', 'archive', ds.id, non_existent_uuid], expect_success=False)
+    r = clirunner(['dataset', 'info', ds.id])
+    assert 'status: archived' not in r.output
+    assert index.datasets.has(ds.id) is True
+
+    # With non-existent uuid, operations should halt.
+    d_id = ds.sources['ac'].sources['cd'].id
+    r = clirunner(['dataset', 'archive', '--archive-derived', d_id, non_existent_uuid], expect_success=False)
+    r = clirunner(['dataset', 'info', ds.id, ds.sources['ab'].id, ds.sources['ac'].id])
+    assert 'status: active' in r.output
+    assert 'status: archived' not in r.output
+    assert index.datasets.has(ds.id) is True
+
+
+def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
+    p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     # Run for real
     r = clirunner(['dataset', 'archive', ds.id])
@@ -469,7 +556,6 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
     # archive derived
     d_id = ds.sources['ac'].sources['cd'].id
     r = clirunner(['dataset', 'archive', '--archive-derived', d_id])
-
     r = clirunner(['dataset', 'info', ds.id, ds.sources['ab'].id, ds.sources['ac'].id])
     assert 'status: active' not in r.output
     assert 'status: archived' in r.output
@@ -504,3 +590,19 @@ def test_dataset_add_http(dataset_add_configs, index: Index, default_metadata_ty
 def xtest_dataset_add_fails(clirunner, index):
     result = clirunner(['dataset', 'add', 'bad_path.yaml'], expect_success=False)
     assert result.exit_code != 0, "Surely not being able to add a dataset when requested should return an error."
+
+
+def test_resolve_uri():
+    def doc(loc=None):
+        return SimpleDocNav(dict(location=loc, id='4d9fd75c-1309-4712-93b5-f0d9c6fdd8ab'))
+
+    uri = "file:///a"
+    override = 'https://a.com/b.yaml'
+    assert _resolve_uri(uri, doc()) is uri
+    assert _resolve_uri(uri, doc([])) is uri
+    assert _resolve_uri(uri, doc({})) is uri
+    assert _resolve_uri(uri, doc(object())) is uri
+    assert _resolve_uri(uri, doc(override)) is override
+    assert _resolve_uri(uri, doc([override])) is override
+    assert _resolve_uri(uri, doc([override, "something"])) is override
+    assert _resolve_uri(uri, doc((override, "something"))) is override

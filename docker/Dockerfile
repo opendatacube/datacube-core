@@ -1,76 +1,59 @@
-ARG ORG=opendatacube
-ARG V_BASE=-3.0.4
-FROM ${ORG}/geobase:wheels${V_BASE} as env_builder
+##
+## This file is part of the Open Data Cube, see https://opendatacube.org for more information
+##
+## Copyright (c) 2015-2020 ODC Contributors
+## SPDX-License-Identifier: Apache-2.0
+##
+ARG V_PG=12
+FROM osgeo/gdal:ubuntu-small-3.4.1
+
+# Update and install Ubuntu packages
+
+USER root
+RUN apt-get update -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-change-held-packages --fix-missing --no-install-recommends \
+        git \
+        libpq-dev libudunits2-dev \
+        python3-dev python3-distutils python3-pip \
+        build-essential \
+        postgresql \
+        redis-server \
+        postgresql-client-${V_PG} \
+        postgresql-${V_PG} \
+        sudo make graphviz \
+        tini \
+    && apt-get clean
+
+# Build constrained python environment
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 
-COPY requirements.txt /conf/requirements.txt
-COPY ./dist/datacube-*.whl /conf/
-
-RUN find /wheels -type f -name '*whl' > /tmp/constraints.txt \
-  && find /conf -type f -name 'datacube-*.whl' | head -1 >> /tmp/constraints.txt \
-  && mkdir -p /wheels-tmp \
-  && echo "Constraints:" \
-  && cat /tmp/constraints.txt \
-  && echo "..." \
-  && pip3 wheel \
-     --no-cache \
-     --no-cache-dir \
-     --wheel-dir=/wheels-tmp \
-     --find-links=/wheels/ \
-     --find-links=/conf/ \
-     --constraint=/tmp/constraints.txt \
-     --requirement=/conf/requirements.txt \
-  && rm /tmp/constraints.txt \
-  && find /wheels-tmp/ -type f -name "datacube-*whl" -delete \
-  && ls -lh /wheels-tmp/ \
-  && rm -rf /root/.cache/pip \
-  && echo "================================================================================" \
-  && find /wheels-tmp/ -type f -name "*whl" > /tmp/reqs.txt \
-# make env root:users with write permissions for group
-  && (umask 002 \
-  && mkdir -p /env \
-  && chgrp users /env \
-  && chmod g+s /env \
-  && env-build-tool new_no_index /tmp/reqs.txt /env /wheels-tmp ) \
-  && rm -rf /wheels-tmp \
-  && rm -rf /root/.cache/pip \
-  && echo done
+COPY docker/constraints.in /conf/requirements.txt
+COPY docker/constraints.txt docker/nobinary.txt /conf/
 
 
-#################################################################################
-# Runner stage
-#################################################################################
-FROM opendatacube/geobase:runner${V_BASE}
+RUN python3 -m pip install \
+       -r /conf/requirements.txt \
+       -c /conf/constraints.txt
 
-# Set the locale, this is required for some of the Python packages
-ENV LC_ALL C.UTF-8
-RUN apt-get update \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-missing --no-install-recommends \
-  # datacube tests need redis
-  redis-server \
-  # include db for running tests
-  postgresql \
-  postgresql-client-10 \
-  postgresql-10 \
-  # to become test user
-  sudo \
-  # git is needed for sdist|bdist_wheel
-  git \
-  # for docs
-  make \
-  graphviz \
-  && rm -rf /var/lib/apt/lists/*
+# Copy datacube-core source code into container and install from source (with addons for tests).
+COPY . /code
 
-# if using binary rasterio package, to support https
-RUN mkdir -p /etc/pki/tls/certs \
-&& ln -s /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt;
+RUN python3 -m pip install '/code/[all]' \
+    && python3 -m pip install /code/examples/io_plugin \
+    && python3 -m pip install /code/tests/drivers/fail_drivers
+
+# Copy bootstrap script into image.
+COPY docker/assets/with_bootstrap /usr/local/bin/
 
 # prep db
 RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/postgresql \
-  && sudo -u postgres "/usr/lib/postgresql/10/bin/initdb" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
+  && sudo -u postgres "$(find /usr/lib/postgresql/ -type f -name initdb)" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
 
+# users and groups.
 RUN groupadd --gid 1000 odc \
   && useradd --gid 1000 \
   --uid 1000 \
@@ -79,14 +62,12 @@ RUN groupadd --gid 1000 odc \
   && adduser odc users \
   && adduser odc sudo \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+  && install -d -o odc -g odc /env \
+  && install -d -o odc -g odc /code \
   && true
 
-COPY --from=env_builder --chown=odc:users /env /env
-COPY --from=env_builder /bin/tini /bin/tini
-
-COPY assets/with_bootstrap /usr/local/bin/
-
-VOLUME /src/datacube-core
-WORKDIR /src/datacube-core
+USER root
+VOLUME /code
+WORKDIR /code
 
 ENTRYPOINT ["/bin/tini", "-s", "--", "/usr/local/bin/with_bootstrap"]

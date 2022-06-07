@@ -1,10 +1,14 @@
-from typing import Mapping, Any
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
+from typing import Mapping, Any, cast
 import copy
 
 from .impl import VirtualProduct, Transformation, VirtualProductException
 from .impl import from_validated_recipe, virtual_product_kind
 from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select, Expressions
-from .transformations import XarrayReduction, year, month, week, day, earliest_time
+from .transformations import XarrayReduction, year, month, week, day, earliest_time, fiscal_year
 from .catalog import Catalog
 from .utils import reject_keys
 
@@ -61,7 +65,7 @@ class NameResolver:
 
         if kind == 'transform':
             cls_name = recipe['transform']
-            input_product = get('input')
+            input_product = cast(Mapping, get('input'))
 
             self._assert(input_product is not None, "no input for transformation in {}".format(recipe))
 
@@ -83,7 +87,7 @@ class NameResolver:
 
         if kind == 'aggregate':
             cls_name = recipe['aggregate']
-            input_product = get('input')
+            input_product = cast(Mapping, get('input'))
             group_by = get('group_by')
 
             self._assert(input_product is not None, "no input for aggregate in {}".format(recipe))
@@ -95,7 +99,7 @@ class NameResolver:
                                               **reject_keys(recipe, ['aggregate', 'input', 'group_by'])))
 
         if kind == 'reproject':
-            input_product = get('input')
+            input_product = cast(Mapping, get('input'))
             output_crs = recipe['reproject'].get('output_crs')
             resolution = recipe['reproject'].get('resolution')
             align = recipe['reproject'].get('align')
@@ -132,7 +136,8 @@ DEFAULT_RESOLVER = NameResolver({'transform': dict(make_mask=MakeMask,
                                                             month=month,
                                                             week=week,
                                                             day=day,
-                                                            earliest_time=earliest_time)})
+                                                            earliest_time=earliest_time,
+                                                            fiscal_year=fiscal_year)})
 
 
 def construct(name_resolver=None, **recipe: Mapping[str, Any]) -> VirtualProduct:

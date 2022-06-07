@@ -1,11 +1,15 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Date and time utility functions
 
 Includes sequence generation functions to be used by statistics apps
 
 """
-from typing import Union, Optional, Callable
-from datetime import datetime
+from typing import Union, Callable
+from datetime import datetime, tzinfo
 
 import dateutil
 import dateutil.parser
@@ -107,6 +111,14 @@ def normalise_dt(dt: Union[str, datetime]) -> datetime:
     return dt
 
 
+def tz_aware(dt: datetime, default: tzinfo = tzutc()) -> datetime:
+    """ Ensure a datetime is timezone aware, defaulting to UTC or a user-selected default
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=default)
+    return dt
+
+
 def mk_time_coord(dts, name='time', units=None):
     """ List[datetime] -> time coordinate for xarray
     """
@@ -120,11 +132,13 @@ def mk_time_coord(dts, name='time', units=None):
                         dims=(name,),
                         attrs=attrs)
 
-def _mk_parse_time()->Callable[[Union[str, datetime]], datetime]:
+
+def _mk_parse_time() -> Callable[[Union[str, datetime]], datetime]:
     try:
         import ciso8601             # pylint: disable=wrong-import-position
         return _parse_time_ciso8601
     except ImportError:             # pragma: no cover
         return _parse_time_generic  # pragma: no cover
+
 
 parse_time = _mk_parse_time()  # pylint: disable=invalid-name

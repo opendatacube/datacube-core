@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 User configuration.
 """
@@ -6,11 +9,12 @@ User configuration.
 import os
 from pathlib import Path
 import configparser
-from urllib.parse import unquote_plus, urlparse
-from typing import Optional, Iterable, Union, Any, Tuple, Dict
+from urllib.parse import unquote_plus, urlparse, parse_qsl
+from typing import Any, Dict, Iterable, MutableMapping, Optional, Tuple, Union, cast
 
 PathLike = Union[str, 'os.PathLike[Any]']
 
+ConfigDict = Dict[str, Union[str, int, bool]]
 
 ENVIRONMENT_VARNAME = 'DATACUBE_CONFIG_PATH'
 #: Config locations in order. Properties found in latter locations override
@@ -158,7 +162,7 @@ class LocalConfig(object):
 DB_KEYS = ('hostname', 'port', 'database', 'username', 'password')
 
 
-def parse_connect_url(url: str) -> Dict[str, str]:
+def parse_connect_url(url: str) -> ConfigDict:
     """ Extract database,hostname,port,username,password from db URL.
 
     Example: postgresql://username:password@hostname:port/database
@@ -169,7 +173,7 @@ def parse_connect_url(url: str) -> Dict[str, str]:
         i = s.find(separator)
         return (s, '') if i < 0 else (s[:i], s[i+1:])
 
-    _, netloc, path, *_ = urlparse(url)
+    _, netloc, path, _, query, *_ = urlparse(url)
 
     db = path[1:] if path else ''
     if '@' in netloc:
@@ -178,7 +182,7 @@ def parse_connect_url(url: str) -> Dict[str, str]:
         user, password = '', ''
         host, port = split2(netloc, ':')
 
-    oo = dict(hostname=host, database=db)
+    oo: ConfigDict = dict(hostname=host, database=db)
 
     if port:
         oo['port'] = port
@@ -186,34 +190,64 @@ def parse_connect_url(url: str) -> Dict[str, str]:
         oo['password'] = unquote_plus(password)
     if user:
         oo['username'] = user
+
+    supported_keys = {
+        'user': 'username',
+        'host': 'hostname',
+        'dbname': 'database',
+        'password': 'password',
+        'port': 'port',
+    }
+    oo.update({supported_keys[k]: v for k, v in parse_qsl(query) if k in supported_keys})
+
     return oo
 
 
-def parse_env_params() -> Dict[str, str]:
+def parse_env_params() -> ConfigDict:
     """
+    - Read DATACUBE_IAM_* environment variables.
     - Extract parameters from DATACUBE_DB_URL if present
     - Else look for DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE
     - Return {} otherwise
     """
+    # Handle environment vars that cannot fit in the DB URL
+    non_url_params: MutableMapping[str, Union[bool, int]] = {}
+    iam_auth = os.environ.get('DATACUBE_IAM_AUTHENTICATION')
+    if iam_auth is not None and iam_auth.lower() in ['y', 'yes']:
+        non_url_params["iam_authentication"] = True
+        iam_auth_timeout = os.environ.get('DATACUBE_IAM_TIMEOUT')
+        if iam_auth_timeout:
+            non_url_params["iam_timeout"] = int(iam_auth_timeout)
 
+    # Handle environment vars that may fit in the DB URL
     db_url = os.environ.get('DATACUBE_DB_URL', None)
     if db_url is not None:
-        return parse_connect_url(db_url)
+        params = parse_connect_url(db_url)
+    else:
+        raw_params = {k: os.environ.get('DB_{}'.format(k.upper()), None)
+                      for k in DB_KEYS}
+        params = {k: v
+                  for k, v in raw_params.items()
+                  if v is not None and v != ""}
+    params.update(non_url_params)
+    return params
 
-    params = {k: os.environ.get('DB_{}'.format(k.upper()), None)
-              for k in DB_KEYS}
-    return {k: v
-            for k, v in params.items()
-            if v is not None and v != ""}
 
-
-def _cfg_from_env_opts(opts: Dict[str, str],
+def _cfg_from_env_opts(opts: ConfigDict,
                        base: configparser.ConfigParser) -> LocalConfig:
-    base['default'] = {'db_'+k: v for k, v in opts.items()}
+    def stringify(vin: Union[int, str, bool]) -> str:
+        if isinstance(vin, bool):
+            if vin:
+                return "yes"
+            else:
+                return "no"
+        else:
+            return str(vin)
+    base['default'] = {'db_'+k: stringify(v) for k, v in opts.items()}
     return LocalConfig(base, files_loaded=[], env='default')
 
 
-def render_dc_config(params: Dict[str, Any],
+def render_dc_config(params: ConfigDict,
                      section_name: str = 'default') -> str:
     """ Render output of parse_env_params to a string that can be written to config file.
     """
@@ -238,7 +272,7 @@ def auto_config() -> str:
     option3:
        default config
     """
-    cfg_path = os.environ.get('DATACUBE_CONFIG_PATH', None)
+    cfg_path: Optional[PathLike] = os.environ.get('DATACUBE_CONFIG_PATH', None)
     cfg_path = Path(cfg_path) if cfg_path else Path.home()/'.datacube.conf'
 
     if cfg_path.exists():

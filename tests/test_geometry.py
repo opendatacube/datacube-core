@@ -1,6 +1,10 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import math
 import numpy as np
-from mock import MagicMock
+from unittest.mock import MagicMock
 from affine import Affine
 import pytest
 from pytest import approx
@@ -39,12 +43,12 @@ from datacube.utils.geometry._base import (
     bounding_box_in_pixel_domain,
     geobox_intersection_conservative,
     geobox_union_conservative,
-    _guess_crs_str,
     force_2d,
     _align_pix,
     _round_to_res,
     _norm_crs,
     _norm_crs_or_error,
+    _make_crs_key,
 )
 from datacube.testutils.geom import (
     epsg4326,
@@ -69,7 +73,6 @@ def test_pickleable():
 
 
 def test_geobox_simple():
-    from affine import Affine
     t = geometry.GeoBox(4000, 4000,
                         Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0),
                         epsg4326)
@@ -94,6 +97,14 @@ def test_geobox_simple():
     assert isinstance(geometry.GeoBox(4000, 4000,
                                       Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0),
                                       'epsg:4326').crs, CRS)
+
+    # Check GeoBox class is hashable
+    t_copy = GeoBox(t.width, t.height, t.transform, t.crs)
+    t_other = GeoBox(t.width+1, t.height, t.transform, t.crs)
+    assert t_copy is not t
+    assert t == t_copy
+    assert len(set([t, t, t_copy])) == 1
+    assert len(set([t, t_copy, t_other])) == 2
 
 
 def test_props():
@@ -259,13 +270,13 @@ def test_ops():
 
     # test sides
     box = geometry.box(1, 2, 11, 22, epsg4326)
-    ll = list(geometry.sides(box))
-    assert all(l.crs is epsg4326 for l in ll)
-    assert len(ll) == 4
-    assert ll[0] == geometry.line([(1, 2), (1, 22)], epsg4326)
-    assert ll[1] == geometry.line([(1, 22), (11, 22)], epsg4326)
-    assert ll[2] == geometry.line([(11, 22), (11, 2)], epsg4326)
-    assert ll[3] == geometry.line([(11, 2), (1, 2)], epsg4326)
+    lines = list(geometry.sides(box))
+    assert all(line.crs is epsg4326 for line in lines)
+    assert len(lines) == 4
+    assert lines[0] == geometry.line([(1, 2), (1, 22)], epsg4326)
+    assert lines[1] == geometry.line([(1, 22), (11, 22)], epsg4326)
+    assert lines[2] == geometry.line([(11, 22), (11, 2)], epsg4326)
+    assert lines[3] == geometry.line([(11, 2), (1, 2)], epsg4326)
 
 
 def test_geom_split():
@@ -351,8 +362,8 @@ def test_shapely_wrappers():
     assert x.typecode == y.typecode
     assert x.typecode == 'd'
 
-    assert (poly | poly) == poly
-    assert (poly & poly) == poly
+    assert ((poly | poly) ^ poly).is_empty
+    assert ((poly & poly) ^ poly).is_empty
     assert (poly ^ poly).is_empty
     assert (poly - poly).is_empty
 
@@ -735,7 +746,7 @@ def test_geobox_xr_coords():
 
     cc = gbox.xr_coords(with_crs=True)
     assert list(cc) == ['y', 'x', 'spatial_ref']
-    assert cc['spatial_ref'].shape is ()
+    assert cc['spatial_ref'].shape == ()
     assert cc['spatial_ref'].attrs['spatial_ref'] == gbox.crs.wkt
     assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
 
@@ -747,7 +758,7 @@ def test_geobox_xr_coords():
     gbox = GeoBox(w, h, A, 'epsg:4326')
     cc = gbox.xr_coords(with_crs=True)
     assert list(cc) == ['latitude', 'longitude', 'spatial_ref']
-    assert cc['spatial_ref'].shape is ()
+    assert cc['spatial_ref'].shape == ()
     assert cc['spatial_ref'].attrs['spatial_ref'] == gbox.crs.wkt
     assert isinstance(cc['spatial_ref'].attrs['grid_mapping_name'], str)
 
@@ -938,7 +949,7 @@ def test_crs():
 
     crs2 = CRS(crs)
     assert crs2 == crs
-    assert crs.proj is crs2.proj
+    assert crs.proj == crs2.proj
 
     assert epsg4326.valid_region == geometry.box(-180, -90, 180, 90, epsg4326)
     assert epsg3857.valid_region.crs == epsg4326
@@ -1354,6 +1365,24 @@ def test_compute_reproject_roi_issue647():
     assert roi_is_empty(rr.roi_dst)
 
 
+def test_compute_reproject_roi_issue1047():
+    """ `compute_reproject_roi(geobox, geobox[roi])` sometimes returns
+    `src_roi != roi`, when `geobox` has (1) tiny pixels and (2) oddly
+    sized `alignment`.
+
+    Test this issue is resolved.
+    """
+    geobox = GeoBox(3000, 3000,
+                    Affine(0.00027778, 0.0, 148.72673054908861,
+                           0.0, -0.00027778, -34.98825802556622), "EPSG:4326")
+    src_roi = np.s_[2800:2810, 10:30]
+    rr = compute_reproject_roi(geobox, geobox[src_roi])
+
+    assert rr.is_st is True
+    assert rr.roi_src == src_roi
+    assert rr.roi_dst == np.s_[0:10, 0:20]
+
+
 def test_window_from_slice():
     from numpy import s_
 
@@ -1430,6 +1459,7 @@ def test_crs_compat():
     with pytest.raises(geometry.CRSError):
         CRS(("random", "tuple"))
 
+    crs = CRS("epsg:3857")
     with pytest.warns(UserWarning):
         crs_dict = crs.proj.to_dict()
 
@@ -1445,9 +1475,9 @@ def test_crs_hash():
 
 
 def test_base_internals():
-    assert _guess_crs_str(CRS("epsg:3577")) == 'EPSG:3577'
+    assert _make_crs_key("epsg:3577") == "EPSG:3577"
     no_epsg_crs = CRS(SAMPLE_WKT_WITHOUT_AUTHORITY)
-    assert _guess_crs_str(no_epsg_crs) == no_epsg_crs.to_wkt()
+    assert _make_crs_key(no_epsg_crs.proj) == no_epsg_crs.proj.to_wkt()
 
     gjson_bad = {'type': 'a', 'coordinates': [1, [2, 3, 4]]}
     assert force_2d(gjson_bad) == {'type': 'a', 'coordinates': [1, [2, 3]]}
@@ -1485,6 +1515,20 @@ def test_crs_units_per_degree():
     assert crs_units_per_degree('EPSG:3857', -180, 0) == approx(111319.49, 0.5)
 
 
+def test_rio_crs__no_epsg():
+    import rasterio.crs
+    rio_crs = rasterio.crs.CRS.from_wkt(
+        'PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",'
+        'DATUM["Not specified (based on custom spheroid)",'
+        'SPHEROID["Custom spheroid",6371007.181,0]],'
+        'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],'
+        'PROJECTION["Sinusoidal"],PARAMETER["longitude_of_center",0],'
+        'PARAMETER["false_easting",0],PARAMETER["false_northing",0],'
+        'UNIT["Meter",1],AXIS["Easting",EAST],AXIS["Northing",NORTH]]'
+    )
+    assert CRS(rio_crs).epsg is None
+
+
 @pytest.mark.parametrize("left, right, off, res, expect", [
     (20, 30, 10, 0, (20, 1)),
     (20, 30.5, 10, 0, (20, 1)),
@@ -1517,6 +1561,22 @@ def test_lonlat_bounds():
 
     with pytest.raises(ValueError):
         geometry.lonlat_bounds(geometry.box(0, 0, 1, 1, None))
+
+    multi = {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [[[174, 52], [174, 53], [175, 53], [174, 52]]],
+            [[[168, 54], [167, 55], [167, 54], [168, 54]]]
+        ]
+    }
+
+    multi_geom = geometry.Geometry(multi, "epsg:4326")
+    multi_geom_projected = multi_geom.to_crs('epsg:32659', math.inf)
+
+    ll_bounds = geometry.lonlat_bounds(multi_geom)
+    ll_bounds_projected = geometry.lonlat_bounds(multi_geom_projected)
+
+    assert ll_bounds == approx(ll_bounds_projected)
 
 
 @pytest.mark.xfail(True, reason="Bounds computation for large geometries in safe mode is broken")

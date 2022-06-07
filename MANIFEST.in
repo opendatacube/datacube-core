@@ -1,1 +1,4 @@
 include datacube/_version.py
+prune docs/
+prune docker/
+prune .github/

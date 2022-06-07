@@ -1,11 +1,16 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 from collections import OrderedDict
 from datetime import datetime
 from copy import deepcopy
 import warnings
 
 import pytest
-import mock
+from unittest import mock
 import numpy
+import xarray as xr
 
 from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
 from datacube.utils import geometry
@@ -13,9 +18,29 @@ from datacube.virtual import construct_from_yaml, catalog_from_yaml, VirtualProd
 from datacube.virtual import DEFAULT_RESOLVER, Transformation
 from datacube.virtual.impl import Datacube
 
+from datacube.virtual.expr import formula_parser, FormulaEvaluator, evaluate_data
+from datacube.virtual.transformations import fiscal_year
+
 
 ##########################################
 # Set up some common test data and fixtures
+
+
+def test_formula_parsing():
+    parser = formula_parser()
+    evaluator = FormulaEvaluator
+    env = dict(x=4, y=2, true=True, false=False)
+
+    assert evaluate_data('x', env, parser, evaluator) == 4
+    assert evaluate_data('-y', env, parser, evaluator) == -2
+    assert evaluate_data('x / y', env, parser, evaluator) == 2
+    assert evaluate_data('(x + y) * 3', env, parser, evaluator) == 18
+    assert not evaluate_data('x == y', env, parser, evaluator)
+    assert not evaluate_data('true == false', env, parser, evaluator)
+    assert evaluate_data('not (true == false)', env, parser, evaluator)
+    assert evaluate_data('x > y', env, parser, evaluator)
+    assert not evaluate_data('(x > y) & (x < y)', env, parser, evaluator)
+
 
 PRODUCT_LIST = ['ls7_pq_albers', 'ls8_pq_albers', 'ls7_nbar_albers', 'ls8_nbar_albers']
 
@@ -156,6 +181,18 @@ def catalog():
                                 measurements: [blue]
                               - product: ls8_nbar_albers
                                 measurements: [blue]
+
+            reproject_utm:
+                recipe:
+                    reproject:
+                        output_crs: EPSG:32755
+                        resolution: [30, -30]
+                    input:
+                        collate:
+                          - product: ls7_nbar_albers
+                            measurements: [blue]
+                          - product: ls8_nbar_albers
+                            measurements: [blue]
     """)
 
 
@@ -195,7 +232,7 @@ def dc():
         result.center_time = center_time
         return result
 
-    def search(*args, **kwargs):
+    def find_datasets(*args, **kwargs):
         product = kwargs['product']
         if product == 'ls8_nbar_albers':
             return [example_dataset(product, ids[0], datetime(2014, 2, 7, 23, 57, 26)),
@@ -211,7 +248,7 @@ def dc():
 
     result.index.products.get_all = lambda: [example_product(x) for x in PRODUCT_LIST]
     result.index.products.get_by_name = example_product
-    result.index.datasets.search = search
+    result.find_datasets = find_datasets
     return result
 
 
@@ -487,3 +524,80 @@ def test_register(dc, query):
         data = bluegreen.load(dc, **query)
 
     assert 'bluegreen' in data
+
+
+def test_reproject(dc, query, catalog):
+    reproject_utm = catalog['reproject_utm']
+
+    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
+        mock_datacube.load_data = load_data
+        mock_datacube.group_datasets = group_datasets
+        data = reproject_utm.load(dc, **query)
+
+    assert data.crs == geometry.CRS('EPSG:32755')
+    assert data.geobox.crs == geometry.CRS('EPSG:32755')
+    assert data.coords['x'].attrs['resolution'] == -30
+    assert data.coords['y'].attrs['resolution'] == 30
+
+
+def test_fiscal_year():
+    """
+    Test fiscal year function
+    """
+    times = ['2015-07-02T11:59:59.999999000',
+             '2015-07-02T11:59:59.999999000',
+             '2016-07-01T23:59:59.999999000',
+             '2016-07-01T23:59:59.999999']
+
+    times = [numpy.datetime64(x) for x in times]
+    coords = ({'time': times})
+    attribs = {'units': 'seconds since 1970-01-01 00:00:00'}
+    dimension = ('time',)
+    da = xr.DataArray(times, name='time',
+                      attrs=attribs,
+                      coords=coords,
+                      dims=dimension)
+
+    fy = fiscal_year(da)
+
+    expected = ['2016-01-01', '2016-01-01', '2017-01-01', '2017-01-01']
+    expected = [numpy.datetime64(x) for x in expected]
+
+    assert (expected == fy.data).all()
+    assert (expected == fy.time).all()
+
+
+def test_fiscal_year_multi_time_dimensions():
+    """
+    Test the fiscal year is applied to every
+    input time dimension
+    """
+
+    times_mock_1 = ['2015-06-30T11:59:59.999999000',
+                    '2015-12-31T11:59:59.999999000',
+                    '2016-01-01T23:59:59.999999000',
+                    '2016-07-01T23:59:59.999999']
+
+    times_mock_2 = ['2019-06-30T11:59:59.999999000',
+                    '2019-12-31T11:59:59.999999000',
+                    '2020-01-01T23:59:59.999999000',
+                    '2020-05-31T23:59:59.999999']
+
+    times_mock_1 = [numpy.datetime64(x) for x in times_mock_1]
+    times_mock_2 = [numpy.datetime64(x) for x in times_mock_2]
+    data = numpy.array([times_mock_1, times_mock_2])
+    attribs = {'units': 'seconds since 1970-01-01 00:00:00'}
+    da = xr.DataArray(data, name='time',
+                      attrs=attribs,
+                      coords={'x': [1, 2], 'time': times_mock_1},
+                      dims=('x', 'time'))
+    fy = fiscal_year(da)
+
+    expected_times_mock_1 = ['2015-01-01', '2016-01-01', '2016-01-01', '2017-01-01']
+    expected_times_mock_2 = ['2019-01-01', '2020-01-01', '2020-01-01', '2020-01-01']
+    expected_times_mock_1 = [numpy.datetime64(x) for x in expected_times_mock_1]
+    expected_times_mock_2 = [numpy.datetime64(x) for x in expected_times_mock_2]
+    expected_data = numpy.array([expected_times_mock_1, expected_times_mock_2])
+
+    assert (expected_data == fy.data).all()
+    assert (expected_times_mock_1 == fy.time).all()

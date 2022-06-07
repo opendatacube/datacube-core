@@ -1,8 +1,12 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import importlib
 import logging
 from contextlib import contextmanager
 
-import toolz
+import toolz  # type: ignore[import]
 
 _LOG = logging.getLogger(__name__)
 
@@ -68,5 +72,7 @@ def sorted_items(d, key=None, reverse=False):
     :param bool reverse: If True return in descending order instead of default ascending
 
     """
+    if d is None:
+        return []
     key = toolz.first if key is None else toolz.comp(key, toolz.first)
     return sorted(d.items(), key=key, reverse=reverse)

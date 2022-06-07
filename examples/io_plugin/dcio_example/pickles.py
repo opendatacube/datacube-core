@@ -1,8 +1,15 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """ Example reader plugin
 """
-from contextlib import contextmanager
 import pickle
+from contextlib import contextmanager
+from pathlib import Path
+from urllib.parse import urlsplit
 
+from datacube.utils.uris import normalise_path
 
 PROTOCOL = 'file'
 FORMAT = 'pickle'
@@ -99,12 +106,33 @@ class PickleWriterDriver(object):
     def uri_scheme(self):
         return PROTOCOL
 
-    def write_dataset_to_storage(self, dataset, filename,
+    def mk_uri(self, file_path, storage_config):
+        """
+        Constructs a URI from the file_path and storage config.
+
+        A typical implementation should return f'{scheme}://{file_path}'
+
+        Example:
+            file_path = '/path/to/my_file.pickled'
+            storage_config = {'driver': 'pickles'}
+
+            mk_uri(file_path, storage_config) should return 'file:///path/to/my_file.pickled'
+
+        :param Path file_path: The file path of the file to be converted into a URI.
+        :param dict storage_config: The dict holding the storage config found in the ingest definition.
+        :return: file_path as a URI that the Driver understands.
+        :rtype: str
+        """
+        return normalise_path(file_path).as_uri()
+
+    def write_dataset_to_storage(self, dataset, file_uri,
                                  global_attributes=None,
                                  variable_params=None,
                                  storage_config=None,
                                  **kwargs):
-        with open(filename, 'wb') as f:
+        filepath = Path(urlsplit(file_uri).path)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        with filepath.open('wb') as f:
             pickle.dump(dataset, f)
         return {}
 

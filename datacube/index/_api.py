@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Access methods for indexing datasets & products.
 """
@@ -6,17 +9,16 @@ Access methods for indexing datasets & products.
 import logging
 
 from datacube.config import LocalConfig
-from datacube.drivers import index_driver_by_name, index_drivers
-from .index import Index
+from datacube.index.abstract import AbstractIndex
 
 _LOG = logging.getLogger(__name__)
 
 
 def index_connect(local_config: LocalConfig = None,
                   application_name: str = None,
-                  validate_connection: bool = True) -> Index:
+                  validate_connection: bool = True) -> AbstractIndex:
     """
-    Create a Data Cube Index that can connect to a PostgreSQL server
+    Create a Data Cube Index (as per config)
 
     It contains all the required connection parameters, but doesn't actually
     check that the server is available.
@@ -26,6 +28,8 @@ def index_connect(local_config: LocalConfig = None,
     :param validate_connection: Validate database connection and schema immediately
     :raises datacube.index.Exceptions.IndexSetupError:
     """
+    from datacube.drivers import index_driver_by_name, index_drivers
+
     if local_config is None:
         local_config = LocalConfig.find()
 

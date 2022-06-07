@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Useful methods for tests (particularly: reading/writing and checking files)
 """
@@ -157,7 +160,8 @@ def mk_sample_product(name,
                       measurements=('red', 'green', 'blue'),
                       with_grid_spec=False,
                       metadata_type=None,
-                      storage=None):
+                      storage=None,
+                      load=None):
 
     if storage is None and with_grid_spec is True:
         storage = {'crs': 'EPSG:3577',
@@ -199,6 +203,9 @@ def mk_sample_product(name,
 
     if storage is not None:
         definition['storage'] = storage
+
+    if load is not None:
+        definition['load'] = load
 
     return DatasetType(metadata_type, definition)
 

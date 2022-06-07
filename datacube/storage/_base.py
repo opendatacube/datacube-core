@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 from typing import Optional, Dict, Any, Tuple
 from urllib.parse import urlparse
 
@@ -44,6 +48,7 @@ def _get_band_and_layer(b: Dict[str, Any]) -> Tuple[Optional[int], Optional[str]
 def _extract_driver_data(ds: Dataset) -> Optional[Any]:
     return ds.metadata_doc.get('driver_data', None)
 
+
 def measurement_paths(ds: Dataset) -> Dict[str, str]:
     """
     Returns a dictionary mapping from band name to url pointing to band storage
@@ -76,16 +81,16 @@ class BandInfo:
     def __init__(self,
                  ds: Dataset,
                  band: str,
-                 uri_scheme: Optional[str] = None):
+                 uri_scheme: Optional[str] = None,
+                 extra_dim_index: Optional[int] = None):
         try:
-            canonical_name = ds.type.canonical_measurement(band)
+            mp, = ds.type.lookup_measurements([band]).values()
         except KeyError:
             raise ValueError('No such band: {}'.format(band))
 
-        mm = ds.measurements.get(canonical_name)
-        mp = ds.type.measurements.get(canonical_name)
+        mm = ds.measurements.get(mp.canonical_name)
 
-        if mm is None or mp is None:
+        if mm is None:
             raise ValueError('No such band: {}'.format(band))
 
         if ds.uris is None:
@@ -104,9 +109,9 @@ class BandInfo:
         self.units = mp.units
         self.crs = ds.crs
         self.transform = ds.transform
-        self.format = ds.format
+        self.format = ds.format or ''
         self.driver_data = _extract_driver_data(ds)
 
     @property
     def uri_scheme(self) -> str:
-        return urlparse(self.uri).scheme
+        return urlparse(self.uri).scheme or ''

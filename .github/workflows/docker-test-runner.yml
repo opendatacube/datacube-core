@@ -20,7 +20,6 @@ on:
 env:
   ORG: opendatacube
   IMAGE: datacube-tests
-  BUILDER_TAG: _build_cache
   DOCKER_USER: gadockersvc
 
 
@@ -33,59 +32,61 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Set up Python
-      uses: actions/setup-python@v1
+    - name: Config
+      id: cfg
+      run: |
+        echo ::set-output name=docker_image::${ORG}/${IMAGE}:latest
+
+    # This is the a separate action that sets up buildx runner
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Cache Docker layers
+      uses: pat-s/always-upload-cache@v2.1.5
       with:
-        python-version: '3.6'
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
 
-    # This is just to get dependencies right, we do not keep datacube in the final image
-    - name: Install packaging dependencies
+    - name: Build Docker
+      uses: docker/build-push-action@v2
+      with:
+        file: docker/Dockerfile
+        context: .
+        tags: ${{ steps.cfg.outputs.docker_image }}
+        outputs: type=docker
+        build-args: |
+          V_BASE=3.3.0
+          V_PG=12
+        cache-from: |
+          type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+    # This ugly bit is necessary if you don't want your cache to grow forever
+    # till it hits GitHub's limit of 5GB.
+    # Temp fix
+    # https://github.com/docker/build-push-action/issues/252
+    # https://github.com/moby/buildkit/issues/1896
+    - name: Move cache
       run: |
-        # needed for version getting
-        git fetch --prune --unshallow 2> /dev/null || true
-
-        python -m pip install -U --force \
-          "setuptools>=42" \
-          "setuptools_scm[toml]>=3.4" \
-          wheel \
-          twine
-
-    # This is just to get dependencies right, we do not keep datacube in the final image
-    - name: Build datacube wheel
-      run: |
-        mkdir -p ./docker/dist/
-        find ./docker/dist/ -type f -delete
-
-        python setup.py bdist_wheel --dist-dir ./docker/dist/
-        ls -lh ./docker/dist/
-        twine check ./docker/dist/*
-
-    - name: Pull docker cache
-      run: |
-        docker pull ${ORG}/${IMAGE}:latest         || true
-        docker pull ${ORG}/${IMAGE}:${BUILDER_TAG} || true
-
-    - name: Build Test Runner Docker
-      run: |
-        # build and cache first stage (env_builder)
-        docker build \
-          --target env_builder \
-          --cache-from ${ORG}/${IMAGE}:${BUILDER_TAG} \
-          --tag        ${ORG}/${IMAGE}:${BUILDER_TAG} \
-          ./docker/
-
-        # now build second stage making sure first stage is from cache
-        docker build \
-          --cache-from ${ORG}/${IMAGE}:${BUILDER_TAG} \
-          --cache-from ${ORG}/${IMAGE}:latest \
-          --tag        ${ORG}/${IMAGE}:latest \
-          ./docker/
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
     - name: Verify Docker Image
       run: |
+        # Make sure we test docker image we built
+        if [[ "${{ steps.cfg.outputs.docker_image }}" != "opendatacube/datacube-tests:latest" ]]; then
+            docker tag "${{ steps.cfg.outputs.docker_image }}" opendatacube/datacube-tests:latest
+        fi
+
         ./check-code.sh --with-docker integration_tests
 
-    - name: DockerHub Push
+        echo "Verify that twine is installed"
+        docker run --rm opendatacube/datacube-tests:latest twine --version
+
+    - name: DockerHub Login
+      id: dkr
       if: |
         github.event_name == 'push' && (
           github.ref == 'refs/heads/develop'
@@ -94,8 +95,17 @@ jobs:
         if [ -n "${{ secrets.DockerPassword }}" ]; then
            echo "Login to DockerHub as ${DOCKER_USER}"
            echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
-           docker push ${ORG}/${IMAGE}:${BUILDER_TAG}
-           docker push ${ORG}/${IMAGE}:latest
+           echo "::set-output name=logged_in::yes"
         else
            echo "Set DockerPassword secret to push to docker"
+        fi
+
+    - name: DockerHub Push
+      if: |
+        github.event_name == 'push' && (
+          github.ref == 'refs/heads/develop'
+          ) && steps.dkr.outputs.logged_in == 'yes'
+      run: |
+        if [ -n "${{ secrets.DockerPassword }}" ]; then
+           docker push "${{ steps.cfg.outputs.docker_image }}"
         fi

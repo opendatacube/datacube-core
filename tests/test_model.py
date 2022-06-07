@@ -1,10 +1,18 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 import numpy
+from copy import deepcopy
 from datacube.testutils import mk_sample_dataset, mk_sample_product
-from datacube.model import GridSpec, Measurement, MetadataType
+from datacube.model import (DatasetType, GridSpec, Measurement,
+                            MetadataType, Range, ranges_overlap)
 from datacube.utils import geometry
+from datacube.utils.documents import InvalidDocException
 from datacube.storage import measurement_paths
+from datacube.testutils.geom import AlbersGS
+from datacube.api.core import output_geobox
 
 
 def test_gridspec():
@@ -18,8 +26,8 @@ def test_gridspec():
     # check geobox_cache
     cache = {}
     poly = gs.tile_geobox((3, 4)).extent
-    (c1, gbox1),  = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
-    (c2, gbox2),  = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
+    (c1, gbox1), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
+    (c2, gbox2), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
 
     assert c1 == (3, 4) and c2 == c1
     assert gbox1 is gbox2
@@ -101,6 +109,9 @@ def test_product_basics():
     assert hash(product) == hash(mk_sample_product('test_product'))
     assert 'time' in dir(product.metadata)
 
+    assert product.measurements == product.lookup_measurements()
+    assert product.lookup_measurements(['red']) == product.lookup_measurements('red')
+
 
 def test_product_dimensions():
     product = mk_sample_product('test_product')
@@ -110,6 +121,121 @@ def test_product_dimensions():
     product = mk_sample_product('test_product', with_grid_spec=True)
     assert product.grid_spec is not None
     assert product.dimensions == ('time', 'y', 'x')
+
+    partial_storage = product.definition['storage']
+    partial_storage.pop('tile_size')
+    product = mk_sample_product('tt', storage=partial_storage)
+    assert product.grid_spec is None
+
+
+def test_product_nodata_nan():
+    # When storing .nan to JSON in DB it becomes a string with value "NaN"
+    # Make sure it is converted back to real NaN
+    product = mk_sample_product('test', measurements=[dict(name='_nan',
+                                                           dtype='float32',
+                                                           nodata='NaN'),
+                                                      dict(name='_inf',
+                                                           dtype='float32',
+                                                           nodata='Infinity'),
+                                                      dict(name='_neg_inf',
+                                                           dtype='float32',
+                                                           nodata='-Infinity'),
+                                                      ])
+    for m in product.measurements.values():
+        assert isinstance(m.nodata, float)
+
+    assert numpy.isnan(product.measurements['_nan'].nodata)
+    assert product.measurements['_inf'].nodata == numpy.inf
+    assert product.measurements['_neg_inf'].nodata == -numpy.inf
+
+
+def test_product_scale_factor():
+    product = mk_sample_product('test', measurements=[dict(name='red',
+                                                           scale_factor=33,
+                                                           add_offset=-5)])
+    assert product.validate(product.definition) is None
+    assert product.measurements['red'].scale_factor == 33
+    assert product.measurements['red'].add_offset == -5
+    attrs = product.measurements['red'].dataarray_attrs()
+    assert attrs['scale_factor'] == 33
+    assert attrs['add_offset'] == -5
+
+
+def test_product_load_hints():
+    product = mk_sample_product('test_product',
+                                load=dict(crs='epsg:3857',
+                                          resolution={'x': 10, 'y': -10}))
+
+    assert 'load' in product.definition
+    assert DatasetType.validate(product.definition) is None
+
+    hints = product._extract_load_hints()
+    assert hints['crs'] == geometry.CRS('epsg:3857')
+    assert hints['resolution'] == (-10, 10)
+    assert 'align' not in hints
+
+    product = mk_sample_product('test_product',
+                                load=dict(crs='epsg:3857',
+                                          align={'x': 5, 'y': 6},
+                                          resolution={'x': 10, 'y': -10}))
+
+    hints = product.load_hints()
+    assert hints['output_crs'] == geometry.CRS('epsg:3857')
+    assert hints['resolution'] == (-10, 10)
+    assert hints['align'] == (6, 5)
+    assert product.default_crs == geometry.CRS('epsg:3857')
+    assert product.default_resolution == (-10, 10)
+    assert product.default_align == (6, 5)
+
+    product = mk_sample_product('test_product',
+                                load=dict(crs='epsg:4326',
+                                          align={'longitude': 0.5, 'latitude': 0.6},
+                                          resolution={'longitude': 1.2, 'latitude': -1.1}))
+
+    hints = product.load_hints()
+    assert hints['output_crs'] == geometry.CRS('epsg:4326')
+    assert hints['resolution'] == (-1.1, 1.2)
+    assert hints['align'] == (0.6, 0.5)
+
+    # check it's cached
+    assert product.load_hints() is product.load_hints()
+
+    # check schema: crs and resolution are compulsory
+    for k in ('resolution', 'crs'):
+        doc = deepcopy(product.definition)
+        assert DatasetType.validate(doc) is None
+
+        doc['load'].pop(k)
+        assert k not in doc['load']
+
+        with pytest.raises(InvalidDocException):
+            DatasetType.validate(doc)
+
+    # check GridSpec leakage doesn't happen for fully defined gridspec
+    product = mk_sample_product('test', with_grid_spec=True)
+    assert product.grid_spec is not None
+    assert product.load_hints() == {}
+
+    # check for fallback into partially defined `storage:`
+    product = mk_sample_product('test', storage=dict(
+        crs='EPSG:3857',
+        resolution={'x': 10, 'y': -10}))
+    assert product.grid_spec is None
+    assert product.default_resolution == (-10, 10)
+    assert product.default_crs == geometry.CRS('EPSG:3857')
+
+    # check for fallback into partially defined `storage:`
+    # no resolution -- no hints
+    product = mk_sample_product('test', storage=dict(
+        crs='EPSG:3857'))
+    assert product.grid_spec is None
+    assert product.load_hints() == {}
+
+    # check misspelled load hints
+    product = mk_sample_product('test_product',
+                                load=dict(crs='epsg:4326',
+                                          resolution={'longtude': 1.2, 'latitude': -1.1}))
+    assert product.load_hints() == {}
 
 
 def test_measurement():
@@ -152,19 +278,21 @@ def test_measurement():
     assert 'dtype' in str(e.value)
 
 
-def test_like_geobox():
-    from datacube.testutils.geom import AlbersGS
-    from datacube.api.core import output_geobox
+def test_output_geobox_load_hints():
+    geobox0 = AlbersGS.tile_geobox((15, -40))
 
+    geobox = output_geobox(load_hints={'output_crs': geobox0.crs,
+                                       'resolution': geobox0.resolution},
+                           geopolygon=geobox0.extent)
+    assert geobox == geobox0
+
+
+def test_like_geobox():
     geobox = AlbersGS.tile_geobox((15, -40))
     assert output_geobox(like=geobox) is geobox
 
 
 def test_output_geobox_fail_paths():
-    from datacube.api.core import output_geobox
-    gs_nores = GridSpec(crs=geometry.CRS('EPSG:4326'),
-                        tile_size=None,
-                        resolution=None)
 
     with pytest.raises(ValueError):
         output_geobox()
@@ -172,8 +300,9 @@ def test_output_geobox_fail_paths():
     with pytest.raises(ValueError):
         output_geobox(output_crs='EPSG:4326')  # need resolution as well
 
+    # need bounds
     with pytest.raises(ValueError):
-        output_geobox(grid_spec=gs_nores)  # GridSpec with missing resolution
+        output_geobox(output_crs='EPSG:4326', resolution=(1, 1))
 
 
 def test_metadata_type():
@@ -200,3 +329,38 @@ def test_metadata_type():
     assert m.name == 'eo'
     assert m.description is None
     assert m.dataset_reader({}) is not None
+
+
+def test_ranges_overlap():
+    assert not ranges_overlap(
+        Range(begin=1, end=5),
+        Range(begin=11, end=15)
+    )
+    assert not ranges_overlap(
+        Range(begin=1, end=5),
+        Range(begin=5, end=11)
+    )
+    assert not ranges_overlap(
+        Range(begin=5, end=11),
+        Range(begin=1, end=5)
+    )
+    assert ranges_overlap(
+        Range(begin=1, end=5),
+        Range(begin=1, end=5)
+    )
+    assert ranges_overlap(
+        Range(begin=1, end=15),
+        Range(begin=10, end=25)
+    )
+    assert ranges_overlap(
+        Range(begin=10, end=25),
+        Range(begin=1, end=15)
+    )
+    assert ranges_overlap(
+        Range(begin=1, end=25),
+        Range(begin=10, end=15)
+    )
+    assert ranges_overlap(
+        Range(begin=10, end=15),
+        Range(begin=1, end=25)
+    )

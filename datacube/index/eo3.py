@@ -1,8 +1,15 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# type: ignore
+# TODO: typehints need attention
 """ Tools for working with EO3 metadata
 """
 from types import SimpleNamespace
 from affine import Affine
-import toolz
+import toolz  # type: ignore[import]
 from typing import Dict, Any, Optional
 
 from datacube.utils.geometry import (
@@ -195,6 +202,8 @@ def prep_eo3(doc: Dict[str, Any],
         """
         if len(uuids) == 0:
             return {}
+        if isinstance(uuids, dict) or isinstance(uuids[0], dict):
+            raise ValueError("Embedded lineage not supported for eo3 metadata types")
         if len(uuids) == 1:
             return {name: {'id': uuids[0]}}
 

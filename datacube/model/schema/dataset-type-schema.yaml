@@ -19,8 +19,15 @@ properties:
         pattern: '^[\w\-.+]+$'
     metadata:
         type: object
+    extra_dimensions:
+        type: array
+        description: Describes extra dimenions between (t) and (y, x)
+        items:
+            "$ref": "#/definitions/extra_dimensions"
     storage:
         "$ref": "#/definitions/storage"
+    load:
+        "$ref": "#/definitions/load"
     measurements:
         type: array
         additionalProperties: false
@@ -45,7 +52,40 @@ patternProperties:
 
 definitions:
     dtype:
-        enum: ["float16", "float32", "float64", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
+        enum: ["float16", "float32", "float64", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "complex64", "complex128"]
+    extra_dimensions:
+        type: object
+        description: Describes how the 3rd dimension is stored
+        properties:
+            name:
+                type: string
+                description: Name of the dimension
+            values:
+                type: array
+                description: Coordinate values of the dimension
+                items:
+                    type: number
+            dtype:
+                "$ref": "#/definitions/dtype"
+        required:
+        - name
+        - values
+        - dtype
+        additionalProperties: false
+    spectral_definition:
+        description: A structured measured relative spectral response with sample intervals
+        type: object
+        properties:
+            wavelength:
+                description: List of comma delimited wavelength values
+                type: array
+                items:
+                    type: number
+            response:
+                description: The relative spectral response of the sensor band at a given wavelength
+                type: array
+                items:
+                    type: number
     measurement:
         type: object
         properties:
@@ -58,6 +98,12 @@ definitions:
               oneOf:
                 - type: number
                 - enum: [NaN, Inf, -Inf]
+            scale_factor:
+              description: 'Defines mapping to some "real" space like so: real_value = pixel_value*scale_factor + add_offset'
+              type: number
+            add_offset:
+              description: 'Defines mapping to some "real" space like so: real_value = pixel*scale_factor + add_offset'
+              type: number
             units:
                 type: string
             aliases:
@@ -66,20 +112,12 @@ definitions:
                 items:
                     type: string
             spectral_definition:
-                description: A structured measured relative spectral response with sample intervals
-                type: object
-                properties:
-                  wavelength:
-                    description: List of comma delimited wavelength values
-                    type: array
-                    items:
-                      type: number
-                  response:
-                    description: The relative spectral response of the sensor band at a given wavelength
-                    type: array
-                    items:
-                      type: number
-
+                oneOf:
+                    - "$ref": "#/definitions/spectral_definition"
+                    - description: List of spectral definitions, one per coordinate.
+                      type: array
+                      items:
+                        "$ref": "#/definitions/spectral_definition"
             flags_definition:
                 description: A structured definition of bit flags and meanings
                 type: object
@@ -98,6 +136,8 @@ definitions:
                       description:
                         description: A string describing this flag
                         type: string
+            extra_dim:
+                type: string
         required:
           - name
           - dtype
@@ -122,4 +162,17 @@ definitions:
                 type: object
             driver:
                 type: string
+        additionalProperties: false
+    load:
+        type: object
+        properties:
+            crs:
+                type: string
+            resolution:
+                type: object
+            align:
+                type: object
+        required:
+          - crs
+          - resolution
         additionalProperties: false

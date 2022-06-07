@@ -1,8 +1,11 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import csv
 import json
 import logging
 import sys
-from pathlib import Path
 from typing import List
 
 import click
@@ -12,7 +15,7 @@ import yaml
 import yaml.resolver
 from click import echo, style
 
-from datacube.index.index import Index
+from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
@@ -107,12 +110,12 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
 
             if can_update:
                 echo('Can update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                              len(unsafe_changes),
-                                                                              len(safe_changes)))
+                                                                              len(list(unsafe_changes)),
+                                                                              len(list(safe_changes))))
             else:
                 echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                                 len(unsafe_changes),
-                                                                                 len(safe_changes)))
+                                                                                 len(list(unsafe_changes)),
+                                                                                 len(list(safe_changes))))
     sys.exit(failures)
 
 

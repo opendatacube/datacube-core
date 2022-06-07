@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 
 # We often have one-arg-per column, so these checks aren't so useful.
 # pylint: disable=too-many-arguments,too-many-public-methods
@@ -14,14 +17,16 @@ import logging
 import os
 import re
 from contextlib import contextmanager
-from typing import Optional
+from typing import Callable, Optional, Union
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import event, create_engine, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL as EngineUrl
 
 import datacube
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
+
 from . import _api
 from . import _core
 
@@ -37,6 +42,8 @@ except (ImportError, KeyError):
     # No default on Windows and some other systems
     DEFAULT_DB_USER = None
 DEFAULT_DB_PORT = 5432
+DEFAULT_IAM_AUTH = False
+DEFAULT_IAM_TIMEOUT = 600
 
 
 class PostgresDb(object):
@@ -53,6 +60,8 @@ class PostgresDb(object):
     processes. You can call close() before forking if you know no other threads currently hold connections,
     or else use a separate instance of this class in each process.
     """
+
+    driver_name = 'postgres'   # Mostly to support parametised tests
 
     def __init__(self, engine):
         # We don't recommend using this constructor directly as it may change.
@@ -71,19 +80,28 @@ class PostgresDb(object):
             config.get('db_port', DEFAULT_DB_PORT),
             application_name=app_name,
             validate=validate_connection,
-            pool_timeout=int(config.get('db_connection_timeout', 60))
+            iam_rds_auth=bool(config.get("db_iam_authentication", DEFAULT_IAM_AUTH)),
+            iam_rds_timeout=int(config.get("db_iam_timeout", DEFAULT_IAM_TIMEOUT)),
+            pool_timeout=int(config.get('db_connection_timeout', 60)),
+            # pass config?
         )
 
     @classmethod
     def create(cls, hostname, database, username=None, password=None, port=None,
-               application_name=None, validate=True, pool_timeout=60):
+               application_name=None, validate=True,
+               iam_rds_auth=False, iam_rds_timeout=600,
+               # pass config?
+               pool_timeout=60):
+        mk_url = getattr(EngineUrl, 'create', EngineUrl)
         engine = cls._create_engine(
-            EngineUrl(
+            mk_url(
                 'postgresql',
                 host=hostname, database=database, port=port,
                 username=username, password=password,
             ),
             application_name=application_name,
+            iam_rds_auth=iam_rds_auth,
+            iam_rds_timeout=iam_rds_timeout,
             pool_timeout=pool_timeout)
         if validate:
             if not _core.database_exists(engine):
@@ -100,8 +118,8 @@ class PostgresDb(object):
         return PostgresDb(engine)
 
     @staticmethod
-    def _create_engine(url, application_name=None, pool_timeout=60):
-        return create_engine(
+    def _create_engine(url, application_name=None, iam_rds_auth=False, iam_rds_timeout=600, pool_timeout=60):
+        engine = create_engine(
             url,
             echo=False,
             echo_pool=False,
@@ -109,7 +127,6 @@ class PostgresDb(object):
             # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
             # When a transaction is needed we will do an explicit begin/commit.
             isolation_level='AUTOCOMMIT',
-
             json_serializer=_to_json,
             # If a connection is idle for this many seconds, SQLAlchemy will renew it rather
             # than assuming it's still open. Allows servers to close idle connections without clients
@@ -118,8 +135,14 @@ class PostgresDb(object):
             connect_args={'application_name': application_name}
         )
 
+        if iam_rds_auth:
+            from datacube.utils.aws import obtain_new_iam_auth_token
+            handle_dynamic_token_authentication(engine, obtain_new_iam_auth_token, timeout=iam_rds_timeout, url=url)
+
+        return engine
+
     @property
-    def url(self) -> str:
+    def url(self) -> EngineUrl:
         return self._engine.url
 
     @staticmethod
@@ -238,6 +261,27 @@ class PostgresDb(object):
 
     def __repr__(self):
         return "PostgresDb<engine={!r}>".format(self._engine)
+
+
+def handle_dynamic_token_authentication(engine: Engine,
+                                        new_token: Callable[..., str],
+                                        timeout: Union[float, int] = 600,
+                                        **kwargs) -> None:
+    last_token = [None]
+    last_token_time = [0.0]
+
+    @event.listens_for(engine, "do_connect")
+    def override_new_connection(dialect, conn_rec, cargs, cparams):
+        # Handle IAM authentication
+        # Importing here because the function `clock_gettime` is not available on Windows
+        # which shouldn't be a problem, because boto3 auth is mostly used on AWS.
+        from time import clock_gettime, CLOCK_REALTIME
+
+        now = clock_gettime(CLOCK_REALTIME)
+        if now - last_token_time[0] > timeout:
+            last_token[0] = new_token(**kwargs)
+            last_token_time[0] = now
+        cparams["password"] = last_token[0]
 
 
 def _to_json(o):

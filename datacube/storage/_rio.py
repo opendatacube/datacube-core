@@ -1,4 +1,7 @@
-# coding=utf-8
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Driver implementation for Rasterio based reader.
 """
@@ -9,7 +12,7 @@ from contextlib import contextmanager
 from threading import RLock
 import numpy as np
 from affine import Affine
-import rasterio
+import rasterio  # type: ignore[import]
 from urllib.parse import urlparse
 from typing import Optional, Iterator
 
@@ -17,7 +20,8 @@ from datacube.utils import geometry
 from datacube.utils.math import num2numpy
 from datacube.utils import uri_to_local_path, get_part_from_uri, is_vsipath
 from datacube.utils.rio import activate_from_config
-from . import DataSource, GeoRasterReader, RasterShape, RasterWindow, BandInfo
+from ..drivers.datasource import DataSource, GeoRasterReader, RasterShape, RasterWindow
+from ._base import BandInfo
 from ._hdf5 import HDF5_LOCK
 
 _LOG = logging.getLogger(__name__)
@@ -160,7 +164,7 @@ class RasterioDataSource(DataSource):
 
         try:
             _LOG.debug("opening %s", self.filename)
-            with rasterio.open(self.filename, sharing=False) as src:
+            with rasterio.open(str(self.filename), sharing=False) as src:
                 override = False
 
                 transform = src.transform
@@ -245,7 +249,10 @@ class RasterDatasetDataSource(RasterioDataSource):
         raise DeprecationWarning("Stacked netcdf without explicit time index is not supported anymore")
 
     def get_transform(self, shape: RasterShape) -> Affine:
-        return self._band_info.transform * Affine.scale(1 / shape[1], 1 / shape[0])
+        return self._band_info.transform * Affine.scale(   # type: ignore[type-var, return-value]
+            1 / shape[1],
+            1 / shape[0]
+        )
 
     def get_crs(self):
         return self._band_info.crs

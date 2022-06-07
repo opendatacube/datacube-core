@@ -1,4 +1,7 @@
-
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2020 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 import logging
 import numpy
 import xarray
@@ -150,9 +153,20 @@ class GridWorkflow(object):
         """
         self.index = index
         if grid_spec is None:
+            if product is None:
+                raise ValueError("Have to supply either grid_spec or product")
+
             product = self.index.products.get_by_name(product)
-            grid_spec = product and product.grid_spec
+            if product is None:
+                raise ValueError(f"No such product: {product}")
+
+            if product.grid_spec is None:
+                raise ValueError(f"Supplied product `{product}` does not have a gridspec")
+
+            grid_spec = product.grid_spec
         self.grid_spec = grid_spec
+
+        assert self.grid_spec is not None
 
     def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=None, **indexers):
         """
