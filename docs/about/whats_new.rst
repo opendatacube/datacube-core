@@ -8,6 +8,8 @@ What's New
 v1.8.next
 =========
 
+- Fix readthedocs build. (:pull:`1269`)
+
 v1.8.7 (7 June 2022)
 ====================
 
