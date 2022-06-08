@@ -28,8 +28,7 @@ class DatasetResource(AbstractDatasetResource):
         return [False for id_ in ids_]
 
     def add(self, dataset: Dataset,
-            with_lineage: Optional[bool] = None,
-            **kwargs) -> Dataset:
+            with_lineage: bool = True) -> Dataset:
         raise NotImplementedError()
 
     def search_product_duplicates(self, product: DatasetType, *args):

@@ -72,8 +72,7 @@ class DatasetResource(AbstractDatasetResource):
         return (self.has(id_) for id_ in ids_)
 
     def add(self, dataset: Dataset,
-            with_lineage: Optional[bool] = None,
-            **kwargs) -> Dataset:
+            with_lineage: bool = True) -> Dataset:
         if with_lineage is None:
             with_lineage = True
         _LOG.info('indexing %s', dataset.id)

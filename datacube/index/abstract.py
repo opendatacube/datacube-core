@@ -539,9 +539,8 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def add(self,
-            dataset: Dataset,
-            with_lineage: Optional[bool] = None
+    def add(self, dataset: Dataset,
+            with_lineage: bool = True
            ) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
@@ -549,7 +548,7 @@ class AbstractDatasetResource(ABC):
         :param dataset: Unpersisted dataset model
 
         :param with_lineage:
-           - ``True|None`` attempt adding lineage datasets if missing
+           - ``True (default)`` attempt adding lineage datasets if missing
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
 

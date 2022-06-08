@@ -154,19 +154,17 @@ class DatasetResource(AbstractDatasetResource):
                 map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
     def add(self, dataset: Dataset,
-            with_lineage: Optional[bool] = None,
-            **kwargs) -> Dataset:
+            with_lineage: bool = True) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
         :param dataset: dataset to add
 
         :param with_lineage:
-           - ``True|None`` attempt adding lineage datasets if missing
+           - ``True (default)`` attempt adding lineage datasets if missing
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
 
-        :param kwargs: only used to support deprecated behaviour
         :rtype: Dataset
         """
 
@@ -188,16 +186,6 @@ class DatasetResource(AbstractDatasetResource):
             # Finally update location for top-level dataset only
             if main_ds.uris is not None:
                 self._ensure_new_locations(main_ds, transaction=transaction)
-
-        if with_lineage is None:
-            policy = kwargs.pop('sources_policy', None)
-            if policy is not None:
-                _LOG.debug('Use of sources_policy is deprecated')
-                with_lineage = (policy != "skip")
-                if policy == 'verify':
-                    _LOG.debug('Verify is no longer done inside add')
-            else:
-                with_lineage = True
 
         _LOG.info('Indexing %s', dataset.id)
 
