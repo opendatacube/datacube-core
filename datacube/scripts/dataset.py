@@ -143,8 +143,6 @@ def load_datasets_for_update(doc_stream, index):
                     'specified with this option, '
                     'you can supply several by repeating this option with a new product name'),
               multiple=True)
-@click.option('--auto-match', '-a', help="Deprecated don't use it, it's a no-op",
-              is_flag=True, default=False, hidden=True)
 @click.option('--auto-add-lineage/--no-auto-add-lineage', is_flag=True, default=True,
               help=('Default behaviour is to automatically add lineage datasets if they are missing from the database, '
                     'but this can be disabled if lineage is expected to be present in the DB, '
@@ -164,7 +162,6 @@ def load_datasets_for_update(doc_stream, index):
 @ui.pass_index()
 def index_cmd(index, product_names,
               exclude_product_names,
-              auto_match,
               auto_add_lineage,
               verify_lineage,
               dry_run,
@@ -182,9 +179,6 @@ def index_cmd(index, product_names,
             sys.exit(1)
 
         confirm_ignore_lineage = True
-
-    if auto_match is True:
-        _LOG.warning("--auto-match option is deprecated, update your scripts, behaviour is the same without it")
 
     try:
         ds_resolve = Doc2Dataset(index,
