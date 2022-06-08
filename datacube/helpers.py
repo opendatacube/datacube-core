@@ -22,55 +22,6 @@ DEFAULT_PROFILE = {
     'tiled': True}
 
 
-def write_geotiff(filename, dataset, profile_override=None):
-    """
-    DEPRECATED: use datacube.utils.cog.write_cog instead.
-
-    Write an ODC style xarray.Dataset to a GeoTIFF file.
-
-    :param filename: Output filename
-    :param dataset: xarray dataset containing one or more bands to write to a file.
-    :param profile_override: option dict, overrides rasterio file creation options.
-    :param time_index: DEPRECATED
-    """
-    warnings.warn("""Function datacube.helpers.write_geotiff is deprecated,
-please use datacube.utils.cog.write_cog instead""",
-                  category=DeprecationWarning)
-
-    profile_override = profile_override or {}
-
-    geobox = getattr(dataset, 'geobox', None)
-
-    if geobox is None:
-        raise ValueError('Can only write datasets with specified `crs` attribute')
-
-    try:
-        dtypes = {val.dtype for val in dataset.data_vars.values()}
-        assert len(dtypes) == 1  # Check for multiple dtypes
-    except AttributeError:
-        dtypes = [dataset.dtype]
-
-    profile = DEFAULT_PROFILE.copy()
-    height, width = geobox.shape
-
-    profile.update({
-        'width': width,
-        'height': height,
-        'transform': geobox.affine,
-        'crs': str(geobox.crs),
-        'count': len(dataset.data_vars),
-        'dtype': str(dtypes.pop())
-    })
-    profile.update(profile_override)
-
-    _calculate_blocksize(profile)
-
-    with rasterio.open(str(filename), 'w', **profile) as dest:
-        if hasattr(dataset, 'data_vars'):
-            for bandnum, data in enumerate(dataset.data_vars.values(), start=1):
-                dest.write(data.data, bandnum)
-
-
 def _calculate_blocksize(profile):
     # Block size must be smaller than the image size, and for geotiffs must be divisible by 16
     # Fix for small images.
