@@ -26,7 +26,6 @@ extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
     'distributed': ['distributed', 'dask[distributed]'],
     'doc': doc_require,
-    'celery': ['celery>=4,<5', 'redis', 'kombu'],
     's3': ['boto3', 'botocore'],
     'test': tests_require,
     'cf': ['compliance-checker>=4.0.0'],

@@ -16,7 +16,7 @@ import click
 from datacube import config, __version__
 from datacube.api.core import Datacube
 
-from datacube.executor import get_executor, mk_celery_executor  # type: ignore[attr-defined]
+from datacube.executor import get_executor  # type: ignore[attr-defined]
 from datacube.index import index_connect
 
 from datacube.ui.expression import parse_expressions
@@ -270,7 +270,6 @@ EXECUTOR_TYPES = {
     'serial': lambda _: get_executor(None, None),
     'multiproc': lambda workers: get_executor(None, int(workers)),
     'distributed': lambda addr: get_executor(addr, True),
-    'celery': lambda addr: mk_celery_executor(*parse_endpoint(addr))
 }
 
 EXECUTOR_TYPES['dask'] = EXECUTOR_TYPES['distributed']  # Add alias "dask" for distributed

@@ -258,10 +258,6 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert "ERROR Supplied product name" in r.output
     assert r.exit_code != 0
 
-    # Check that deprecated option is accepted
-    r = clirunner(['dataset', 'add', '--auto-match', p.datasets])
-    assert 'WARNING --auto-match option is deprecated' in r.output
-
     # test dataset add eo3
     r = clirunner(['dataset', 'add', p.datasets_eo3])
     assert r.exit_code == 0
