@@ -29,7 +29,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
     def get_by_name_unsafe(self, name):
         raise KeyError(name)
 
-    def check_field_indexes(self, allow_table_lock=False, rebuild_all=None,
+    def check_field_indexes(self, allow_table_lock=False,
                             rebuild_views=False, rebuild_indexes=False):
         raise NotImplementedError
 

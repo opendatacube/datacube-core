@@ -181,7 +181,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
             raise KeyError('%s is not a valid MetadataType name' % name)
         return self._make_from_query_row(record)
 
-    def check_field_indexes(self, allow_table_lock=False, rebuild_all=None,
+    def check_field_indexes(self, allow_table_lock=False,
                             rebuild_views=False, rebuild_indexes=False):
         """
         Create or replace per-field indexes and views.
@@ -191,13 +191,6 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
 
             If false, creation will be slightly slower and cannot be done in a transaction.
         """
-        if rebuild_all is not None:
-            warnings.warn(
-                "The rebuild_all option of check_field_indexes() is deprecated.",
-                "Instead, use rebuild_views=True or rebuild_indexes=True as needed.",
-                DeprecationWarning)
-            rebuild_views = rebuild_indexes = rebuild_all
-
         with self._db.connect() as connection:
             connection.check_dynamic_fields(
                 concurrently=not allow_table_lock,
