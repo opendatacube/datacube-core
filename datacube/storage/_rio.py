@@ -84,55 +84,6 @@ class BandDataSource(GeoRasterReader):
             return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
 
-class OverrideBandDataSource(GeoRasterReader):
-    """Wrapper for a rasterio.Band object that overrides nodata, CRS and transform
-
-    This is useful for files with malformed or missing properties.
-
-
-    :type source: rasterio.Band
-    """
-
-    def __init__(self,
-                 source: rasterio.Band,
-                 nodata,
-                 crs: geometry.CRS,
-                 transform: Affine,
-                 lock: Optional[RLock] = None):
-        self.source = source
-        self._nodata = num2numpy(nodata, source.dtype)
-        self._crs = crs
-        self._transform = transform
-        self._lock = lock
-
-    @property
-    def crs(self) -> geometry.CRS:
-        return self._crs
-
-    @property
-    def transform(self) -> Affine:
-        return self._transform
-
-    @property
-    def nodata(self):
-        return self._nodata
-
-    @property
-    def dtype(self) -> np.dtype:
-        return np.dtype(self.source.dtype)
-
-    @property
-    def shape(self) -> RasterShape:
-        return self.source.shape
-
-    def read(self, window: Optional[RasterWindow] = None,
-             out_shape: Optional[RasterShape] = None) -> Optional[np.ndarray]:
-        """Read data in the native format, returning a native array
-        """
-        with maybe_lock(self._lock):
-            return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
-
-
 class RasterioDataSource(DataSource):
     """
     Abstract class used by fuse_sources and :func:`read_from_source`
@@ -188,14 +139,8 @@ class RasterioDataSource(DataSource):
                     lock.release()
 
                 if override:
-                    warnings.warn(f"""Broken/missing geospatial data was found in file:
-"{self.filename}"
-Will use approximate metadata for backwards compatibility reasons (#673).
-This behaviour is deprecated. Future versions will raise an error.""",
-                                  category=DeprecationWarning)
-                    yield OverrideBandDataSource(band, nodata=nodata, crs=crs, transform=transform, lock=lock)
-                else:
-                    yield BandDataSource(band, nodata=nodata, lock=lock)
+                    raise RuntimeError(f'Broken/missing geospatial data was found in file "{self.filename}"')
+                yield BandDataSource(band, nodata=nodata, lock=lock)
 
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", self.filename)

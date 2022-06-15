@@ -231,28 +231,6 @@ class Dataset:
         crs = projection.get('spatial_reference', None)
         if crs:
             return geometry.CRS(str(crs))
-
-        # Try to infer CRS
-        zone_ = projection.get('zone')
-        datum_ = projection.get('datum')
-        if zone_ and datum_:
-            warnings.warn("Using zone/datum to specify CRS is deprecated",
-                          category=DeprecationWarning)
-            try:
-                # TODO: really need CRS specified properly in agdc-metadata.yaml
-                if datum_ == 'GDA94':
-                    return geometry.CRS('EPSG:283' + str(abs(zone_)))
-                if datum_ == 'WGS84':
-                    if zone_[-1] == 'S':
-                        return geometry.CRS('EPSG:327' + str(abs(int(zone_[:-1]))))
-                    else:
-                        return geometry.CRS('EPSG:326' + str(abs(int(zone_[:-1]))))
-            except geometry.CRSError:
-                # We still return None, as they didn't specify a CRS explicitly...
-                _LOG.warning(
-                    "Can't figure out projection: possibly invalid zone (%r) for datum (%r).", zone_, datum_
-                )
-
         return None
 
     @cached_property

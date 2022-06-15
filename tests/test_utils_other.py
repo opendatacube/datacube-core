@@ -21,7 +21,6 @@ from hypothesis import given
 from hypothesis.strategies import integers, text
 from pandas import to_datetime
 
-from datacube.helpers import write_geotiff
 from datacube.utils import gen_password, write_user_secret_file, slurp
 from datacube.model.utils import xr_apply
 from datacube.utils.dates import date_sequence
@@ -185,47 +184,6 @@ def test_write_user_secret_file(txt):
     os.remove(fname)
     assert txt == txt_back
     assert slurp(fname) is None
-
-
-def test_write_geotiff(tmpdir, odc_style_xr_dataset):
-    """Ensure the geotiff helper writer works, and supports datasets smaller than 256x256."""
-    filename = tmpdir + '/test.tif'
-
-    assert len(odc_style_xr_dataset.latitude) < 256
-
-    with pytest.warns(DeprecationWarning):
-        write_geotiff(filename, odc_style_xr_dataset)
-
-    assert filename.exists()
-
-    with rasterio.open(str(filename)) as src:
-        written_data = src.read(1)
-
-        assert (written_data == odc_style_xr_dataset['B10']).all()
-
-
-def test_write_geotiff_str_crs(tmpdir, odc_style_xr_dataset):
-    """Ensure the geotiff helper writer works, and supports crs as a string."""
-    filename = tmpdir + '/test.tif'
-
-    original_crs = odc_style_xr_dataset.crs
-
-    odc_style_xr_dataset.attrs['crs'] = str(original_crs)
-
-    with pytest.warns(DeprecationWarning):
-        write_geotiff(filename, odc_style_xr_dataset)
-
-    assert filename.exists()
-
-    with rasterio.open(str(filename)) as src:
-        written_data = src.read(1)
-
-        assert (written_data == odc_style_xr_dataset['B10']).all()
-
-    odc_style_xr_dataset = remove_crs(odc_style_xr_dataset)
-    with pytest.raises(ValueError):
-        with pytest.warns(DeprecationWarning):
-            write_geotiff(filename, odc_style_xr_dataset)
 
 
 def test_testutils_mk_sample():

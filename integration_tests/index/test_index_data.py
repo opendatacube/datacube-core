@@ -342,10 +342,6 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     index.datasets.add(child, with_lineage=True)
     index.datasets.add(child, with_lineage=False)
 
-    # backwards compatibility code path checks, don't use this in normal code
-    for p in ('skip', 'ensure', 'verify'):
-        index.datasets.add(child, sources_policy=p)
-
 
 def test_index_dataset_with_location(index: Index, default_metadata_type: MetadataType):
     first_file = Path('/tmp/first/something.yaml').absolute()

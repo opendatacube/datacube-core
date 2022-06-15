@@ -494,22 +494,6 @@ class TestRasterDataReading(object):
 
         assert np.all(dest == -999)
 
-    def test_read_from_file_with_missing_crs(self, no_crs_gdal_path):
-        """
-        We need to be able to read from data files even when GDAL can't automatically gather all the metdata.
-
-        The :class:`RasterFileDataSource` is able to override the nodata, CRS and transform attributes if necessary.
-        """
-        crs = epsg4326
-        nodata = -999
-        transform = Affine(0.01, 0.0, 111.975,
-                           0.0, 0.01, -9.975)
-        data_source = RasterFileDataSource(no_crs_gdal_path, bandnumber=1, nodata=nodata, crs=crs, transform=transform)
-        with pytest.warns(DeprecationWarning):
-            with data_source.open() as src:
-                dest1 = src.read()
-                assert dest1.shape == (10, 10)
-
 
 @pytest.fixture
 def make_sample_netcdf(tmpdir):
