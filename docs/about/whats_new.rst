@@ -9,6 +9,7 @@ v1.8.next
 =========
 
 - Remove several features that had been deprecated in previous releases. (:pull:`1275`)
+- Fix broken paths in api docs. (:pull:`???`)
 - Fix readthedocs build. (:pull:`1269`)
 
 v1.8.7 (7 June 2022)
