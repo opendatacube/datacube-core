@@ -29,7 +29,7 @@ jobs:
                   -v $(pwd):/code \
                   -e SKIP_DB=yes \
                   ${DKR} bash -
-        sudo apt-get update && sudo apt-get install -y plantuml make
+        sudo apt-get update && sudo apt-get install -y plantuml make pandoc
         cd docs
         pip install -r requirements.txt
         make html
