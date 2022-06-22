@@ -77,3 +77,8 @@ def setup(app):
     app.add_config_value('click_utils_commands', {}, 'html')
 
     app.add_domain(DatacubeDomain)
+    return {
+        'parallel_read_safe': False,
+        'parallel_write_safe': False,
+    }
+
