@@ -5,6 +5,8 @@
 """
 Validation of document/dictionary changes.
 """
+import numpy
+
 from itertools import zip_longest
 from typing import Any, Callable, List, Mapping, Sequence, Tuple, Union
 
@@ -13,6 +15,7 @@ from typing import Any, Callable, List, Mapping, Sequence, Tuple, Union
 Changable = Union[str, int, None, Sequence[Any], Mapping[str, Any]]
 # More accurate recursive definition:
 # Changable = Union[str, int, None, Sequence["Changable"], Mapping[str, "Changable"]]
+
 
 def contains(v1: Changable, v2: Changable, case_sensitive: bool = False) -> bool:
     """
@@ -59,7 +62,7 @@ Change = Tuple[Offset, ChangedValue, ChangedValue]
 def get_doc_changes(original: Changable,
                     new: Changable,
                     base_prefix: Offset = ()
-                   ) -> List[Change]:
+                    ) -> List[Change]:
     """
     Return a list of `changed fields` between two dict structures.
 
@@ -89,6 +92,9 @@ def get_doc_changes(original: Changable,
     elif isinstance(original, list) and isinstance(new, list):
         for idx, (orig_item, new_item) in enumerate(zip_longest(original, new)):
             changed_fields.extend(get_doc_changes(orig_item, new_item, base_prefix + (idx, )))
+    elif isinstance(original, tuple) or isinstance(new, tuple):
+        if not numpy.array_equal(original, new):
+            changed_fields.append((base_prefix, original, new))
     else:
         changed_fields.append((base_prefix, original, new))
 
@@ -120,6 +126,7 @@ def check_doc_unchanged(original: Changable, new: Changable, doc_name: str) -> N
 
 AllowPolicy = Callable[[Offset, Offset, ChangedValue, ChangedValue], bool]
 
+
 def allow_truncation(key: Offset, offset: Offset,
                      old_value: ChangedValue, new_value: ChangedValue) -> bool:
     return bool(offset) and key == offset[:-1] and new_value == MISSING
@@ -146,7 +153,7 @@ def allow_any(key: Offset, offset: Offset,
 
 
 def classify_changes(changes: List[Change], allowed_changes: Mapping[Offset, AllowPolicy]
-                    ) -> Tuple[List[Change], List[Change]]:
+                     ) -> Tuple[List[Change], List[Change]]:
     """
     Classify list of changes into good(allowed) and bad(not allowed) based on allowed changes.
 
