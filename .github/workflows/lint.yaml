@@ -25,12 +25,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
+      # ignore list as per setup.cfg
       - name: flake8
         uses: liskin/gh-problem-matcher-wrap@v1.0.1
         with:
           linters: flake8
           run: |
-            # ignore list as per setup.cfg
             flake8 . --exclude Dockerfile --ignore=E711,E226,W503,W504
 
   pylint:
