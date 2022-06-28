@@ -54,14 +54,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-      - run: python -m pip install pycodestyle
-      - name: pycodestyle
-        uses: liskin/gh-problem-matcher-wrap@v1
-        with:
-          linters: pycodestyle
-          run: |
-            pycodestyle tests integration_tests examples --max-line-length 120
+      - name: Run pycodestyle
+        run: |
+          pip install --upgrade -e '.[test]'
+          pip install pycodestyle
+          pycodestyle tests integration_tests examples --max-line-length 120
