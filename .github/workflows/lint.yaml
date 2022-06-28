@@ -47,3 +47,15 @@ jobs:
           pip install --upgrade -e '.[test]'
           pip install pylint
           pylint -j 2 --reports no datacube
+
+
+  pycodestyle:
+    name: pycodestyle
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: pycodestyle
+      uses: ankitvgupta/pycodestyle-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PRECOMMAND_MESSAGE: You have style errors. See them below.
