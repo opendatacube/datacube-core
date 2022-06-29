@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
 from .fields import Field, get_dataset_fields
-from ._base import Range
+from ._base import Range, ranges_overlap  # noqa: F401
 
 _LOG = logging.getLogger(__name__)
 

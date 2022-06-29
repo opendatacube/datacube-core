@@ -5,7 +5,7 @@
 
 from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, DatasetType
-from collections import Iterable
+from typing import Iterable
 
 
 class DatasetResource(AbstractDatasetResource):
