@@ -5,7 +5,6 @@
 """ Utilities to facilitate virtual product implementation. """
 
 import warnings
-import math
 
 
 def select_unique(things):

@@ -27,7 +27,7 @@ from ..index import index_connect
 from ..drivers import new_datasource
 
 
-class TerminateCurrentLoad(Exception):
+class TerminateCurrentLoad(Exception):  # noqa: N818
     """ This exception is raised by user code from `progress_cbk`
         to terminate currently running `.load`
     """
@@ -126,16 +126,16 @@ class Datacube(object):
 
         # Optionally compute dataset count for each product and add to row/cols
         # Product lists are sorted by product name to ensure 1:1 match
-        if dataset_count:            
-           
+        if dataset_count:
+
             # Load counts
             counts = [(p.name, c) for p, c in self.index.datasets.count_by_product()]
-            
+
             # Sort both rows and counts by product name
             from operator import itemgetter
             rows = sorted(rows, key=itemgetter(0))
             counts = sorted(counts, key=itemgetter(0))
-            
+
             # Add sorted count to each existing row
             rows = [row + [count[1]] for row, count in zip(rows, counts)]
             cols = cols + ['dataset_count']
@@ -181,10 +181,11 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
-         skip_broken_datasets=False, dask_chunks=None, like=None, fuse_func=None, align=None,
-         datasets=None, dataset_predicate=None, progress_cbk=None, **query):
+             skip_broken_datasets=False, dask_chunks=None, like=None, fuse_func=None, align=None,
+             datasets=None, dataset_predicate=None, progress_cbk=None, **query):
         """
-        Load data as an ``xarray.Dataset`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
+        Load data as an ``xarray.Dataset`` object.
+        Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
         See the `xarray documentation <http://xarray.pydata.org/en/stable/data-structures.html>`_ for usage of the
         :class:`xarray.Dataset` and :class:`xarray.DataArray` objects.
@@ -279,7 +280,8 @@ class Datacube(object):
 
         :param list(str) measurements:
             Measurements name or list of names to be included, as listed in :meth:`list_measurements`.
-            These will be loaded as individual ``xr.DataArray`` variables in the output ``xarray.Dataset`` object.
+            These will be loaded as individual ``xr.DataArray`` variables in
+            the output ``xarray.Dataset`` object.
 
             If a list is specified, the measurements will be returned in the order requested.
             By default all available measurements are included.
@@ -289,8 +291,8 @@ class Datacube(object):
             For example: ``'x', 'y', 'time', 'crs'``.
 
         :param str output_crs:
-            The CRS of the returned data, for example ``EPSG:3577``. If no CRS is supplied, the CRS of the stored data is used
-            if available.
+            The CRS of the returned data, for example ``EPSG:3577``.
+            If no CRS is supplied, the CRS of the stored data is used if available.
 
             This differs from the ``crs`` parameter desribed above, which is used to define the CRS
             of the coordinates in the query itself.
@@ -358,7 +360,8 @@ class Datacube(object):
 
         :param function dataset_predicate:
             Optional. A function that can be passed to restrict loaded datasets. A predicate function should
-            take a :class:`datacube.model.Dataset` object (e.g. as returned from :meth:`find_datasets`) and return a boolean.
+            take a :class:`datacube.model.Dataset` object (e.g. as returned from :meth:`find_datasets`) and
+            return a boolean.
             For example, loaded data could be filtered to January observations only by passing the following
             predicate function that returns True for datasets acquired in January::
 

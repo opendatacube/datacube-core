@@ -6,7 +6,6 @@
 Driver implementation for Rasterio based reader.
 """
 import logging
-import warnings
 import contextlib
 from contextlib import contextmanager
 from threading import RLock

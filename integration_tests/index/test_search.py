@@ -986,7 +986,7 @@ def test_cli_info(index: Index,
         '    sat_path: {begin: 116, end: 116}',
         '    sat_row: {begin: 74, end: 84}',
         "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
-        ]
+    ]
     assert expected_lines == output_lines
 
     # Check indexed time separately, as we don't care what timezone it's displayed in.

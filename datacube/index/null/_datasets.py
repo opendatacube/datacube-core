@@ -2,10 +2,10 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Iterable, Union, Optional
 
 from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, DatasetType
+from collections import Iterable
 
 
 class DatasetResource(AbstractDatasetResource):

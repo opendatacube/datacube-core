@@ -9,7 +9,7 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, Tuple, Union, List, Optional
+from typing import Iterable, Union, List
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -29,8 +29,6 @@ _LOG = logging.getLogger(__name__)
 
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
-
-
 class DatasetResource(AbstractDatasetResource):
     """
     :type _db: datacube.drivers.postgres._connections.PostgresDb
@@ -163,7 +161,6 @@ class DatasetResource(AbstractDatasetResource):
             # Finally update location for top-level dataset only
             if main_ds.uris is not None:
                 self._ensure_new_locations(main_ds, transaction=transaction)
-
 
         _LOG.info('Indexing %s', dataset.id)
 

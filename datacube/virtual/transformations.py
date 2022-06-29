@@ -439,6 +439,7 @@ class Expressions(Transformation):
 def year(time):
     return time.astype('datetime64[Y]')
 
+
 def fiscal_year(time):
     """"
     This function supports group-by financial years
@@ -448,10 +449,10 @@ def fiscal_year(time):
         return df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
 
     ds = xarray.apply_ufunc(convert_to_quarters,
-                       time,
-                       input_core_dims=[["time"]],
-                       output_core_dims=[["time"]],
-                       vectorize=True)
+                            time,
+                            input_core_dims=[["time"]],
+                            output_core_dims=[["time"]],
+                            vectorize=True)
 
     df = time['time'].to_series()
     years = df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values

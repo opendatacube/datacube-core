@@ -53,7 +53,7 @@ def test_rio_rd_entry():
 
 
 def test_rd_internals_crs():
-    from rasterio.crs import CRS as RioCRS
+    from rasterio.crs import CRS as RioCRS  # noqa: N811
 
     assert _dc_crs(None) is None
     assert _dc_crs(RioCRS()) is None

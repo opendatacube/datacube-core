@@ -8,7 +8,6 @@ Core classes used across modules.
 
 import logging
 import math
-import warnings
 from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
@@ -21,7 +20,7 @@ from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
 from .fields import Field, get_dataset_fields
-from ._base import Range, ranges_overlap
+from ._base import Range
 
 _LOG = logging.getLogger(__name__)
 

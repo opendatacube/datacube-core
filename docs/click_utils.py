@@ -81,4 +81,3 @@ def setup(app):
         'parallel_read_safe': False,
         'parallel_write_safe': False,
     }
-

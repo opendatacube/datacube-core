@@ -5,6 +5,7 @@
 from typing import Iterable, Optional, Tuple
 from datacube.index.abstract import AbstractUserResource
 
+
 class UserResource(AbstractUserResource):
     def __init__(self) -> None:
         pass

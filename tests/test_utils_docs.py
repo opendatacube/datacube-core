@@ -324,7 +324,7 @@ def test_simple_doc_nav():
     def node(name, **kwargs):
         return dict(id=name, lineage=dict(source_datasets=kwargs))
 
-    A, _, C, _, _ = make_graph_abcde(node)
+    A, _, C, _, _ = make_graph_abcde(node)  # noqa: N806
     rdr = SimpleDocNav(A)
 
     assert rdr.doc == A

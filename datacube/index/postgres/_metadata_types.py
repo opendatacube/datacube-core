@@ -3,7 +3,6 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-import warnings
 
 from cachetools.func import lru_cache
 
@@ -13,6 +12,7 @@ from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
 _LOG = logging.getLogger(__name__)
+
 
 class MetadataTypeResource(AbstractMetadataTypeResource):
     def __init__(self, db):

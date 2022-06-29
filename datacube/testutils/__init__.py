@@ -27,8 +27,6 @@ from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
 from datacube.utils.geometry import GeoBox, CRS
 
-from datacube.model.fields import parse_search_field
-
 _DEFAULT = object()
 
 

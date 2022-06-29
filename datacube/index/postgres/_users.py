@@ -6,6 +6,7 @@ from typing import Iterable, Optional, Tuple
 from datacube.index.abstract import AbstractUserResource
 from datacube.drivers.postgres import PostgresDb
 
+
 class UserResource(AbstractUserResource):
     def __init__(self, db: PostgresDb) -> None:
         """

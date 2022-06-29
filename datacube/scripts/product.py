@@ -42,7 +42,7 @@ def add_products(index, allow_exclusive_lock, files):
     Add or update products in the generic index.
     """
     def on_ctrlc(sig, frame):
-        echo(f'''Can not abort `product add` without leaving database in bad state.
+        echo('''Can not abort `product add` without leaving database in bad state.
 
 This operation requires constructing a bunch of indexes and this takes time, the
 bigger your database the longer it will take. Just wait a bit.''')
@@ -151,15 +151,15 @@ def _write_tab(products):
         echo('No products discovered :(')
         return
 
-    output_columns=('id', 'name', 'description', 'ancillary_quality',
-                    'product_type', 'gqa_abs_iterative_mean_xy',
-                    'gqa_ref_source', 'sat_path',
-                    'gqa_iterative_stddev_xy', 'time', 'sat_row',
-                    'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
-                    'resolution', 'tile_size', 'spatial_dimensions')
+    output_columns = ('id', 'name', 'description', 'ancillary_quality',
+                      'product_type', 'gqa_abs_iterative_mean_xy',
+                      'gqa_ref_source', 'sat_path',
+                      'gqa_iterative_stddev_xy', 'time', 'sat_row',
+                      'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
+                      'resolution', 'tile_size', 'spatial_dimensions')
     # If the intersection of desired columns with available columns is empty, just use whatever IS in df
-    output_columns=tuple(col for col in output_columns if col in df.columns) or df.columns
-    echo(df.to_string(columns=output_columns,justify='left',index=False))
+    output_columns = tuple(col for col in output_columns if col in df.columns) or df.columns
+    echo(df.to_string(columns=output_columns, justify='left', index=False))
 
 
 def _default_lister(products):

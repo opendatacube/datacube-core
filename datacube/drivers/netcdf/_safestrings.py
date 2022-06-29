@@ -75,7 +75,7 @@ class _NC4DatasetProxy(object):
         return _VariableProxy(var)
 
     #: pylint: disable=invalid-name
-    def createVariable(self, *args, **kwargs):
+    def createVariable(self, *args, **kwargs):  # noqa: N802
         new_var = super(_NC4DatasetProxy, self).createVariable(*args, **kwargs)
         return _VariableProxy(new_var)
 

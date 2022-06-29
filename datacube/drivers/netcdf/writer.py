@@ -192,7 +192,7 @@ def _write_lcc2_params(crs_var, crs):
 
     # e.g. http://spatialreference.org/ref/sr-org/mexico-inegi-lambert-conformal-conic/
     crs_var.grid_mapping_name = cf['grid_mapping_name']
-    crs_var.standard_parallel =  cf['standard_parallel']
+    crs_var.standard_parallel = cf['standard_parallel']
     crs_var.latitude_of_projection_origin = cf['latitude_of_projection_origin']
     crs_var.longitude_of_central_meridian = cf['longitude_of_central_meridian']
     crs_var.false_easting = cf['false_easting']

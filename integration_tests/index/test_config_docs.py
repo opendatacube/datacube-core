@@ -474,8 +474,8 @@ def test_update_metadata_type(index, default_metadata_type):
     index.metadata_types.update_document(different_mt_doc, allow_unsafe_updates=True)
     updated_type = index.metadata_types.get_by_name(mt_doc['name'])
     assert (
-            isinstance(updated_type.dataset_fields['time'], PgrNumericRangeDocField)
-            or isinstance(updated_type.dataset_fields['time'], PgsNumericRangeDocField)
+        isinstance(updated_type.dataset_fields['time'], PgrNumericRangeDocField)
+        or isinstance(updated_type.dataset_fields['time'], PgsNumericRangeDocField)
     )
 
 

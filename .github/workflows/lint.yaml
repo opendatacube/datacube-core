@@ -32,7 +32,7 @@ jobs:
         with:
           linters: flake8
           run: |
-            flake8 . --exclude Dockerfile --ignore=E711,E226,W503,W504 --ignore-names=W,H,A,S,R,T,WS,X,Y,Z,XX,YY,XY,B,M,N,L,NX,NY
+            flake8 . --exclude Dockerfile --ignore=E711,E226,W503,W504,E124,F841,W605 --ignore-names=W,H,A,S,R,T,WS,X,Y,Z,XX,YY,XY,B,M,N,L,NX,NY
 
   pylint:
     runs-on: ubuntu-latest

@@ -25,7 +25,7 @@ except ImportError:
     from yaml import SafeDumper  # type: ignore
 
 
-class BadMatch(Exception):
+class BadMatch(Exception):  # noqa: N818
     pass
 
 

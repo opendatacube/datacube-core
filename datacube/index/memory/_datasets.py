@@ -329,9 +329,9 @@ class DatasetResource(AbstractDatasetResource):
             raise ValueError(f"Unsupported query mode: {mode}")
         ids: Set[DSID] = set()
         if mode == "exact":
-            test: Callable[[str], bool] = lambda l: l == uri
+            test: Callable[[str], bool] = lambda l: l == uri  # noqa: E741
         else:
-            test = lambda l: l.startswith(uri)
+            test = lambda l: l.startswith(uri)  # noqa: E731
         for id_, locs in self.locations.items():
             for loc in locs:
                 if test(loc):
@@ -400,9 +400,10 @@ class DatasetResource(AbstractDatasetResource):
             if not product_queries:
                 raise ValueError(f"No products match source filter: {source_filter}")
             if len(product_queries) > 1:
-                raise RuntimeError(f"Multiproduct source_filters are not supported. Try adding 'product' field.")
+                raise RuntimeError("Multiproduct source_filters are not supported. Try adding 'product' field.")
             source_queries, source_product = product_queries[0]
-            source_exprs = tuple(fields.to_expressions(source_product.metadata_type.dataset_fields.get, **source_queries))
+            source_exprs = tuple(fields.to_expressions(source_product.metadata_type.dataset_fields.get,
+                                                       **source_queries))
         else:
             source_product = None
             source_exprs = ()
@@ -461,10 +462,10 @@ class DatasetResource(AbstractDatasetResource):
             **query: QueryField
     ) -> Iterable[Dataset]:
         return cast(Iterable[Dataset], self._search(
-                return_format=self.RET_FORMAT_DATASETS,
-                limit=limit,
-                source_filter=source_filter,
-                **query)
+                    return_format=self.RET_FORMAT_DATASETS,
+                    limit=limit,
+                    source_filter=source_filter,
+                    **query)
         )
 
     def _search_grouped(
@@ -474,10 +475,10 @@ class DatasetResource(AbstractDatasetResource):
             **query: QueryField
     ) -> Iterable[Tuple[Iterable[Dataset], Product]]:
         return cast(Iterable[Tuple[Iterable[Dataset], Product]], self._search(
-                return_format=self.RET_FORMAT_PRODUCT_GROUPED,
-                limit=limit,
-                source_filter=source_filter,
-                **query)
+                    return_format=self.RET_FORMAT_PRODUCT_GROUPED,
+                    limit=limit,
+                    source_filter=source_filter,
+                    **query)
         )
 
     def _get_prod_queries(self, **query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
@@ -502,8 +503,8 @@ class DatasetResource(AbstractDatasetResource):
         for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
             ds_fields = get_dataset_fields(ds.type.metadata_type.definition)
             result_vals = {
-                 fn: ds_fields[fn].extract(ds.metadata_doc)  # type: ignore[attr-defined]
-                 for fn in field_names
+                fn: ds_fields[fn].extract(ds.metadata_doc)  # type: ignore[attr-defined]
+                for fn in field_names
             }
             yield result_type(**result_vals)
 
@@ -515,8 +516,8 @@ class DatasetResource(AbstractDatasetResource):
             yield (prod, len(list(datasets)))
 
     def count_by_product_through_time(self,
-            period: str,
-            **query: QueryField
+                                      period: str,
+                                      **query: QueryField
     ) -> Iterable[
         Tuple[
             Product,
@@ -542,6 +543,7 @@ class DatasetResource(AbstractDatasetResource):
         if precision <= 0:
             raise ValueError('Invalid period string. Must specify a natural number of days, weeks, months or years')
         unit = match.group("unit")
+
         def next_period(prev: datetime.datetime) -> datetime.datetime:
             if unit == 'day':
                 return prev + datetime.timedelta(days=precision)
@@ -597,19 +599,19 @@ class DatasetResource(AbstractDatasetResource):
             ],
         ]
     ]:
-        YieldType = Tuple[Product, Iterable[Tuple[Range, int]]]
+        yieldtype = Tuple[Product, Iterable[Tuple[Range, int]]]
         query = dict(query)
         try:
             start, end = cast(Range, query.pop('time'))
         except KeyError:
             raise ValueError('Must specify "time" range in period-counting query')
         periods = self._expand_period(period, start, end)
-        last_product: Optional[YieldType] = None
+        last_product: Optional[yieldtype] = None
         for dss, product in self._search_grouped(**query):  # type: ignore[arg-type]
             if last_product and single_product_only:
                 raise ValueError(f"Multiple products match single query search: {repr(query)}")
             if last_product:
-                yield cast(YieldType, last_product)
+                yield cast(yieldtype, last_product)
             period_counts = []
             for p in periods:
                 count = 0
@@ -664,7 +666,7 @@ class DatasetResource(AbstractDatasetResource):
                 min_time = dsmin
             if max_time is None or dsmax > max_time:
                 max_time = dsmax
-        return (cast(datetime.datetime, min_time), cast(datetime.datetime,max_time))
+        return (cast(datetime.datetime, min_time), cast(datetime.datetime, max_time))
 
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(
@@ -678,6 +680,7 @@ class DatasetResource(AbstractDatasetResource):
             custom_fields = build_custom_fields(custom_offsets)
         else:
             custom_fields = {}
+
         def make_ds_light(ds: Dataset) -> Tuple:
             fields = {
                 fname: ds.metadata_type.dataset_fields[fname]

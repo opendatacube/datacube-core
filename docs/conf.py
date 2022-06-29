@@ -5,7 +5,7 @@
 import os
 import sys
 
-from bs4 import BeautifulSoup as bs
+from bs4 import BeautifulSoup as bs  # noqa: N813
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -171,6 +171,7 @@ latex_documents = [
 
 numfig = True
 
+
 def custom_page_funcs(app, pagename, templatename, context, doctree):
 
     def get_autosummary_toc():
@@ -230,11 +231,11 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
                 'title': '',
                 'menu_items': []
             }
-            out_section['title'] = section.find_previous_sibling('p').text.replace(':','')
+            out_section['title'] = section.find_previous_sibling('p').text.replace(':', '')
             matches = section.find_all('tr')
             for match in matches:
                 link = match.find(class_="internal")
-                
+
                 if link != None:
                     title = link['title']
                     if title != None:
@@ -251,7 +252,6 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
 
     context['get_class_toc'] = get_class_toc
     context['get_autosummary_toc'] = get_autosummary_toc
-
 
 
 def setup(app):

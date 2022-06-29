@@ -18,6 +18,7 @@ SCHEMA_NAME = 'agdc'
 
 class CreateView(Executable, ClauseElement):
     inherit_cache = True
+
     def __init__(self, name, select):
         self.name = name
         self.select = select

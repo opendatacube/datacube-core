@@ -433,7 +433,7 @@ def telemetry_metadata_type_doc():
 
 @pytest.fixture
 def ga_metadata_type_doc():
-    _FULL_EO_METADATA = Path(__file__).parent.joinpath('extensive-eo-metadata.yaml')
+    _FULL_EO_METADATA = Path(__file__).parent.joinpath('extensive-eo-metadata.yaml')  # noqa: N806
     [(path, eo_md_type)] = datacube.utils.read_documents(_FULL_EO_METADATA)
     return eo_md_type
 

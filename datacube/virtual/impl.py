@@ -10,7 +10,7 @@ products implementing the same interface.
 
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from functools import reduce
+
 from typing import Any, Dict, List, Optional, cast
 from typing import Mapping as TypeMapping
 
@@ -22,7 +22,7 @@ from dask.core import flatten
 import yaml
 
 from datacube import Datacube
-from datacube.api.core import select_datasets_inside_polygon, output_geobox
+from datacube.api.core import output_geobox
 from datacube.api.grid_workflow import _fast_slice
 from datacube.api.query import Query, query_group_by
 from datacube.model import Measurement, DatasetType
@@ -38,7 +38,7 @@ from .utils import qualified_name, merge_dicts
 from .utils import select_unique, select_keys, reject_keys, merge_search_terms
 
 
-class VirtualProductException(Exception):
+class VirtualProductException(Exception):  # noqa: N818
     """ Raised if the construction of the virtual product cannot be validated. """
 
 

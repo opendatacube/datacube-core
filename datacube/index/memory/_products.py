@@ -10,7 +10,7 @@ from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.model import DatasetType as Product
 from datacube.utils import changes, jsonify_document, _readable_offset
 from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes, classify_changes
-from typing import Iterable, Iterator, Mapping, Tuple, Union, cast
+from typing import Iterable, Iterator, Mapping, Tuple, cast
 
 _LOG = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class ProductResource(AbstractProductResource):
             if mdt is None:
                 _LOG.warning(f'Adding metadata_type "{product.metadata_type.name}" as it doesn\'t exist')
                 product.metadata_type = self.metadata_type_resource.add(product.metadata_type,
-                                                      allow_table_lock=allow_table_lock)
+                                                                        allow_table_lock=allow_table_lock)
             clone = self.clone(product)
             clone.id = self.next_id
             self.next_id += 1

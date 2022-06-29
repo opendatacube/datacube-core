@@ -14,7 +14,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import rasterio
 import xarray as xr
 from dateutil.parser import parse
 from hypothesis import given
@@ -44,7 +43,7 @@ from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_u
                                  pick_uri, uri_resolve, is_vsipath,
                                  normalise_path, default_base_dir)
 from datacube.utils.io import check_write_path
-from datacube.testutils import mk_sample_product, remove_crs
+from datacube.testutils import mk_sample_product
 
 
 def test_stats_dates():

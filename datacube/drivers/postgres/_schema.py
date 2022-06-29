@@ -72,7 +72,7 @@ DATASET = Table(
     #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),  # type: ignore[call-overload]
     #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
-    Column('dataset_type_ref', None, ForeignKey(PRODUCT.c.id), index=True, nullable=False),  # type: ignore[call-overload]
+    Column('dataset_type_ref', None, ForeignKey(PRODUCT.c.id), index=True, nullable=False),  # type: ignore[call-overload] # noqa: E501
 
     Column('metadata', postgres.JSONB, index=False, nullable=False),
 

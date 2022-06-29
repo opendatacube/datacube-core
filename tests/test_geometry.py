@@ -922,7 +922,7 @@ def test_3d_point_converted_to_2d_point():
 
 
 def test_crs():
-    CRS = geometry.CRS
+    CRS = geometry.CRS  # noqa: N806
     custom_crs = geometry.CRS("""PROJCS["unnamed",
                            GEOGCS["Unknown datum based upon the custom spheroid",
                            DATUM["Not specified (based on custom spheroid)", SPHEROID["Custom spheroid",6371007.181,0]],
@@ -1217,8 +1217,8 @@ def test_fit():
     def run_test(A, n, tol=1e-5):
         X = [(uniform(0, 1), uniform(0, 1))
              for _ in range(n)]
-        Y = [A*x for x in X]
-        A_ = affine_from_pts(X, Y)
+        Y = [A*x for x in X]  # noqa: N806
+        A_ = affine_from_pts(X, Y)  # noqa: N806
 
         assert get_diff(A, A_) < tol
 

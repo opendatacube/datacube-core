@@ -21,7 +21,7 @@ from typing import Callable, Optional, Union
 
 from sqlalchemy import event, create_engine, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.engine.url import URL as EngineUrl
+from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
 
 import datacube
 from datacube.index.exceptions import IndexSetupError
