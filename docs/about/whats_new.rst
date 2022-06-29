@@ -12,6 +12,7 @@ v1.8.next
 - Fix broken paths in api docs. (:pull:`1277`)
 - Fix readthedocs build. (:pull:`1269`)
 - Added doc change comparison for tuple and list types with identical values (:pull:`1281`)
+- Added flake8 to Github action workflow and correct code base per flake8 rules (:pull:`1285`)
 
 v1.8.7 (7 June 2022)
 ====================
