@@ -1,0 +1,13 @@
+# Generated with `yaml.safe_dump_all(gen_dataset_test_dag(ii, force_tree=True) for ii in range(1,3))`
+#   A -> B
+#   |    |
+#   |    v
+#   +--> C -> D
+#   |
+#   +--> E
+#
+---
+creation_dt: '2017-11-05T00:00:00'
+label: A0001
+n: 1
+product_type: A

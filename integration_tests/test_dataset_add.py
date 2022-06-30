@@ -195,6 +195,20 @@ def check_bad_yaml(clirunner, index):
     assert 'ERROR Failed reading documents from ' in r.output
 
 
+def test_dataset_add_no_id(dataset_add_configs, index_empty, clirunner):
+    p = dataset_add_configs
+    index = index_empty
+    ds_no_id = load_dataset_definition(p.datasets_no_id)
+
+    clirunner(['metadata', 'add', p.metadata])
+    clirunner(['product', 'add', p.products])
+
+    # Check .hl.Doc2Dataset
+    doc2ds = Doc2Dataset(index)
+    _ds, _err = doc2ds(ds_no_id, 'file:///something')
+    assert _err == 'No id defined in dataset doc'
+
+
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
