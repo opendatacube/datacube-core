@@ -149,6 +149,9 @@ def dataset_resolver(index,
 
         main_uuid = main_ds.id
 
+        if not main_uuid:
+            return None, "No id defined in dataset doc"
+
         ds_by_uuid = toolz.valmap(toolz.first, flatten_datasets(main_ds))
         all_uuid = list(ds_by_uuid)
         db_dss = {str(ds.id): ds for ds in index.datasets.bulk_get(all_uuid)}
