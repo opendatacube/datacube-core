@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 import configparser
 from urllib.parse import unquote_plus, urlparse, parse_qsl
-from typing import Any, Dict, Iterable, MutableMapping, Optional, Tuple, Union, cast
+from typing import Any, Dict, Iterable, MutableMapping, Optional, Tuple, Union
 
 PathLike = Union[str, 'os.PathLike[Any]']
 

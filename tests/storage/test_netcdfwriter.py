@@ -238,35 +238,39 @@ def test_chunksizes(tmpnetcdf_filename):
 
 
 EXAMPLE_FLAGS_DEF = {
-        'band_1_saturated': {
-            'bits': 0,
-            'values': {
-                0: True,
-                1: False
-            },
-            'description': 'Band 1 is saturated'},
-        'band_2_saturated': {
-            'bits': 1,
-            'values': {
-                0: True,
-                1: False
-            },
-            'description': 'Band 2 is saturated'},
-        'band_3_saturated': {
-            'bits': 2,
-            'values': {
-                0: True,
-                1: False
-            },
-            'description': 'Band 3 is saturated'},
-        'land_sea': {
-            'bits': 9,
-            'values': {
-                0: 'sea',
-                1: 'land'
-            },
-            'description': 'Land/Sea observation'},
-    }
+    'band_1_saturated': {
+        'bits': 0,
+        'values': {
+            0: True,
+            1: False
+        },
+        'description': 'Band 1 is saturated'
+    },
+    'band_2_saturated': {
+        'bits': 1,
+        'values': {
+            0: True,
+            1: False
+        },
+        'description': 'Band 2 is saturated'
+    },
+    'band_3_saturated': {
+        'bits': 2,
+        'values': {
+            0: True,
+            1: False
+        },
+        'description': 'Band 3 is saturated'
+    },
+    'land_sea': {
+        'bits': 9,
+        'values': {
+            0: 'sea',
+            1: 'land'
+        },
+        'description': 'Land/Sea observation'
+    },
+}
 
 
 def test_measurements_model_netcdfflags():

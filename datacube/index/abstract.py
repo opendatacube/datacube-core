@@ -238,8 +238,10 @@ class AbstractMetadataTypeResource(ABC):
         :returns: All available MetadataType models
         """
 
+
 QueryField = Union[str, float, int, Range, datetime.datetime]
 QueryDict = Mapping[str, QueryField]
+
 
 class AbstractProductResource(ABC):
     """
@@ -909,23 +911,28 @@ class AbstractIndex(ABC):
 
     @property
     @abstractmethod
-    def url(self) -> str: pass
+    def url(self) -> str:
+        pass
 
     @property
     @abstractmethod
-    def users(self) -> AbstractUserResource: pass
+    def users(self) -> AbstractUserResource:
+        pass
 
     @property
     @abstractmethod
-    def metadata_types(self) -> AbstractMetadataTypeResource: pass
+    def metadata_types(self) -> AbstractMetadataTypeResource:
+        pass
 
     @property
     @abstractmethod
-    def products(self) -> AbstractProductResource: pass
+    def products(self) -> AbstractProductResource:
+        pass
 
     @property
     @abstractmethod
-    def datasets(self) -> AbstractDatasetResource: pass
+    def datasets(self) -> AbstractDatasetResource:
+        pass
 
     @classmethod
     @abstractmethod
@@ -946,10 +953,12 @@ class AbstractIndex(ABC):
     @abstractmethod
     def init_db(self,
                 with_default_types: bool = True,
-                with_permissions: bool = True) -> bool: pass
+                with_permissions: bool = True) -> bool:
+        pass
 
     @abstractmethod
-    def close(self) -> None: pass
+    def close(self) -> None:
+        pass
 
     def __enter__(self):
         return self
@@ -973,8 +982,7 @@ class AbstractIndexDriver(ABC):
 
     @staticmethod
     @abstractmethod
-    def metadata_type_from_doc(
-                               definition: dict
+    def metadata_type_from_doc(definition: dict
                               ) -> MetadataType:
         pass
 

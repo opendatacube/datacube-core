@@ -46,7 +46,7 @@ class GroupBy:
         self.sort_key = sort_key
 
         if group_key is None:
-            group_key = lambda datasets: group_by_func(datasets[0])
+            group_key = lambda datasets: group_by_func(datasets[0])  # noqa: E731
         self.group_key = group_key
 
 

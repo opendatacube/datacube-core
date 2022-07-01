@@ -262,7 +262,7 @@ class NoDatesSafeLoader(SafeLoader):  # pylint: disable=too-many-ancestors
 NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
 
 
-class InvalidDocException(Exception):
+class InvalidDocException(Exception):  # noqa: N818
     pass
 
 

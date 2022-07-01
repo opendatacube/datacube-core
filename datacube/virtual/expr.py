@@ -67,11 +67,11 @@ def formula_parser():
 
 @lark.v_args(inline=True)
 class FormulaEvaluator(lark.Transformer):
-    from operator import not_, or_, and_, xor             # type: ignore[misc]
-    from operator import eq, ne, le, ge, lt, gt           # type: ignore[misc]
-    from operator import add, sub, mul, truediv, floordiv # type: ignore[misc]
-    from operator import neg, pos, inv                    # type: ignore[misc]
-    from operator import mod, pow, lshift, rshift         # type: ignore[misc]
+    from operator import not_, or_, and_, xor              # type: ignore[misc]
+    from operator import eq, ne, le, ge, lt, gt            # type: ignore[misc]
+    from operator import add, sub, mul, truediv, floordiv  # type: ignore[misc]
+    from operator import neg, pos, inv                     # type: ignore[misc]
+    from operator import mod, pow, lshift, rshift          # type: ignore[misc]
 
     float_literal = float
     int_literal = int
@@ -113,6 +113,7 @@ def evaluate_type(formula, env, parser, evaluator):
             return numpy.array([], dtype=env[key.value].dtype)
 
     return TypeEvaluator().transform(parser.parse(formula))
+
 
 def evaluate_data(formula, env, parser, evaluator):
     """

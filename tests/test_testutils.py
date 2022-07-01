@@ -3,9 +3,8 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
-from datacube.model import Dataset
 from datacube.testutils.threads import FakeThreadPoolExecutor
-from datacube.testutils import mk_sample_xr_dataset, mk_sample_product, mk_sample_dataset
+from datacube.testutils import mk_sample_xr_dataset, mk_sample_dataset
 from datacube.testutils.io import native_geobox
 
 

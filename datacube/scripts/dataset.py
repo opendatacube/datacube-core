@@ -235,7 +235,7 @@ def parse_update_rules(keys_that_can_change):
               default='keep',
               help=dedent('''
               What to do with previously recorded dataset location(s)
-              
+
               \b
               - 'keep': keep as alternative location [default]
               - 'archive': mark as archived
@@ -487,7 +487,8 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
 @click.option('--archive-derived', '-d', help='Also recursively archive derived datasets', is_flag=True, default=False)
 @click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
               is_flag=True, default=False)
-@click.option('--all', "all_ds", help="Ignore id list - archive ALL non-archived datasets  (warning: may be slow on large databases)",
+@click.option('--all', "all_ds",
+              help="Ignore id list - archive ALL non-archived datasets  (warning: may be slow on large databases)",
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
@@ -496,7 +497,8 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=False)}
     else:
-        datasets_for_archive = {UUID(dataset_id): exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
+        datasets_for_archive = {UUID(dataset_id): exists
+                                for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
 
         if False in datasets_for_archive.values():
             for dataset_id, exists in datasets_for_archive.items():
@@ -528,11 +530,13 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
               help="Only restore derived datasets that were archived "
                    "this recently to the original dataset",
               default=10 * 60)
-@click.option('--all', "all_ds", help="Ignore id list - restore ALL archived datasets  (warning: may be slow on large databases)",
+@click.option('--all', "all_ds",
+              help="Ignore id list - restore ALL archived datasets  (warning: may be slow on large databases)",
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int, dry_run: bool, all_ds: bool, ids: List[str]):
+def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int,
+                dry_run: bool, all_ds: bool, ids: List[str]):
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
     if all_ds:
         ids = index.datasets.get_all_dataset_ids(archived=True)  # type: ignore[assignment]
@@ -570,7 +574,8 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 @dataset_cmd.command('purge', help="Purge archived datasets")
 @click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
               is_flag=True, default=False)
-@click.option('--all', "all_ds", help="Ignore id list - purge ALL archived datasets  (warning: may be slow on large databases)",
+@click.option('--all', "all_ds",
+              help="Ignore id list - purge ALL archived datasets  (warning: may be slow on large databases)",
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
@@ -578,7 +583,8 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
     else:
-        datasets_for_archive = {UUID(dataset_id): exists for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
+        datasets_for_archive = {UUID(dataset_id): exists
+                                for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
 
         # Check for non-existent datasets
         if False in datasets_for_archive.values():

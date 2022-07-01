@@ -14,7 +14,7 @@ from datacube.drivers.postgres.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                            ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
                                            UPDATE_TIMESTAMP_SQL,
                                            escape_pg_identifier,
-                                           pg_column_exists, pg_exists)
+                                           pg_column_exists)
 from sqlalchemy import MetaData
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
@@ -40,7 +40,7 @@ _LOG = logging.getLogger(__name__)
 
 def install_timestamp_trigger(connection):
     from . import _schema
-    TABLE_NAMES = [
+    TABLE_NAMES = [  # noqa: N806
         _schema.METADATA_TYPE.name,
         _schema.PRODUCT.name,
         _schema.DATASET.name,
@@ -53,9 +53,10 @@ def install_timestamp_trigger(connection):
         connection.execute(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
         connection.execute(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
 
+
 def install_added_column(connection):
     from . import _schema
-    TABLE_NAME = _schema.DATASET_LOCATION.name
+    TABLE_NAME = _schema.DATASET_LOCATION.name  # noqa: N806
     connection.execute(ADDED_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=TABLE_NAME))
 
 
@@ -113,7 +114,7 @@ def ensure_db(engine, with_permissions=True):
             _LOG.info("Creating added column.")
             install_added_column(c)
             c.execute('commit')
-        except:
+        except:  # noqa: E722
             c.execute('rollback')
             raise
         finally:

@@ -41,7 +41,7 @@ SAMPLE_WKT_WITHOUT_AUTHORITY = '''PROJCS["unnamed",
 '''
 
 
-def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):
+def mkA(rot=0, scale=(1, 1), shear=0, translation=(0, 0)):  # noqa: N802
     return Affine.translation(*translation)*Affine.rotation(rot)*Affine.shear(shear)*Affine.scale(*scale)
 
 
@@ -85,7 +85,7 @@ def xy_norm(x: np.ndarray, y: np.ndarray,
 
         return (s, -vmin*s)
 
-    A_rot = Affine.rotation(deg)
+    A_rot = Affine.rotation(deg)   # noqa: N806
     x, y = apply_affine(A_rot, x, y)
 
     sx, tx = norm_v(x)

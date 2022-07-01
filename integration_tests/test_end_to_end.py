@@ -11,7 +11,7 @@ import rasterio
 from datacube.api.query import query_group_by
 from datacube.api.core import Datacube
 
-from integration_tests.utils import assert_click_command, prepare_test_ingestion_configuration
+from integration_tests.utils import prepare_test_ingestion_configuration
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'

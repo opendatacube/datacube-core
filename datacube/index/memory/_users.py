@@ -5,6 +5,7 @@
 from typing import Iterable, Optional, Tuple
 from datacube.index.abstract import AbstractUserResource
 
+
 class User:
     def __init__(self, username: str, password: str, role: str,
                  description: Optional[str] = None):
@@ -29,7 +30,7 @@ class UserResource(AbstractUserResource):
             "agdc_ingest",
             "agdc_manage",
             "agdc_admin",
-            
+
             # For forwards compatibility with future driver(s)
             "odc_user",
             "odc_ingest",

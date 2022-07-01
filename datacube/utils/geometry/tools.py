@@ -380,7 +380,7 @@ def _same_crs_pix_transform(src, dst):
     return pt_tr
 
 
-def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> Tuple[slice, slice]:
+def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> Tuple[slice, slice]:  # noqa: N803
     """
     s, t define linear transform from destination coordinate space to source
     >>  x_s = s * x_d + t
@@ -435,7 +435,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> Tuple[slice, s
     return (src, dst)
 
 
-def box_overlap(src_shape, dst_shape, ST, tol):
+def box_overlap(src_shape, dst_shape, ST, tol):  # noqa: N803
     """
     Given two image planes whose coordinate systems are related via scale and
     translation only, find overlapping regions within both.

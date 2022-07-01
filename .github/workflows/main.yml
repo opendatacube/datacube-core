@@ -81,22 +81,6 @@ jobs:
         fi
         EOF
 
-    - name: Check Code Style
-      run: |
-        docker run --rm  \
-          -v $(pwd):/code \
-          -e SKIP_DB=yes \
-          ${{ matrix.docker_image }} \
-          pycodestyle tests integration_tests examples --max-line-length 120
-
-    - name: Lint Code
-      run: |
-        docker run --rm  \
-          -v $(pwd):/code \
-          -e SKIP_DB=yes \
-          ${{ matrix.docker_image }} \
-          pylint -j 2 --reports no datacube
-
     - name: Run Tests
       run: |
         cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ matrix.docker_image }} bash -

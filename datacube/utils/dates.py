@@ -135,7 +135,7 @@ def mk_time_coord(dts, name='time', units=None):
 
 def _mk_parse_time() -> Callable[[Union[str, datetime]], datetime]:
     try:
-        import ciso8601             # pylint: disable=wrong-import-position
+        import ciso8601             # pylint: disable=wrong-import-position # noqa: F401
         return _parse_time_ciso8601
     except ImportError:             # pragma: no cover
         return _parse_time_generic  # pragma: no cover

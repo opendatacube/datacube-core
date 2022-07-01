@@ -8,7 +8,7 @@ Utility functions
 import os
 
 
-class DatacubeException(Exception):
+class DatacubeException(Exception):  # noqa: N818
     """Your Data Cube has malfunctioned"""
     pass
 

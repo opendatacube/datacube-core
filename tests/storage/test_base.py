@@ -77,4 +77,4 @@ def test_band_info():
 
     ds = mk_sample_dataset(bands, uri='/not/a/uri')
     band = BandInfo(ds, 'a')
-    assert(band.uri_scheme is '')
+    assert(band.uri_scheme is '')  # noqa: F632

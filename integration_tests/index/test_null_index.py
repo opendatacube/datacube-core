@@ -32,7 +32,7 @@ def test_null_user_resource(null_config):
             dc.index.users.grant_role("role1", "user1", "user2")
 
 
-def test_null_user_resource(null_config):
+def test_null_metadata_types_resource(null_config):
     with Datacube(config=null_config, validate_connection=True) as dc:
         assert dc.index.metadata_types.get_all() == []
         with pytest.raises(NotImplementedError) as e:

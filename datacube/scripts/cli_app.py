@@ -10,12 +10,12 @@ Datacube command-line interface
 
 
 from datacube.ui.click import cli
-import datacube.scripts.dataset
-import datacube.scripts.ingest
-import datacube.scripts.product
-import datacube.scripts.metadata
-import datacube.scripts.system
-import datacube.scripts.user
+import datacube.scripts.dataset   # noqa: F401
+import datacube.scripts.ingest    # noqa: F401
+import datacube.scripts.product   # noqa: F401
+import datacube.scripts.metadata  # noqa: F401
+import datacube.scripts.system    # noqa: F401
+import datacube.scripts.user      # noqa: F401
 
 
 if __name__ == '__main__':
