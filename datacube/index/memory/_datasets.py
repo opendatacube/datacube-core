@@ -599,7 +599,7 @@ class DatasetResource(AbstractDatasetResource):
             ],
         ]
     ]:
-        YieldType = Tuple[Product, Iterable[Tuple[Range, int]]]
+        YieldType = Tuple[Product, Iterable[Tuple[Range, int]]]  # noqa: N806
         query = dict(query)
         try:
             start, end = cast(Range, query.pop('time'))
