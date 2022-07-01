@@ -599,19 +599,19 @@ class DatasetResource(AbstractDatasetResource):
             ],
         ]
     ]:
-        yieldtype = Tuple[Product, Iterable[Tuple[Range, int]]]
+        YieldType = Tuple[Product, Iterable[Tuple[Range, int]]]
         query = dict(query)
         try:
             start, end = cast(Range, query.pop('time'))
         except KeyError:
             raise ValueError('Must specify "time" range in period-counting query')
         periods = self._expand_period(period, start, end)
-        last_product: Optional[yieldtype] = None
+        last_product: Optional[YieldType] = None
         for dss, product in self._search_grouped(**query):  # type: ignore[arg-type]
             if last_product and single_product_only:
                 raise ValueError(f"Multiple products match single query search: {repr(query)}")
             if last_product:
-                yield cast(yieldtype, last_product)
+                yield cast(YieldType, last_product)
             period_counts = []
             for p in periods:
                 count = 0

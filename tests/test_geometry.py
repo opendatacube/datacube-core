@@ -922,7 +922,6 @@ def test_3d_point_converted_to_2d_point():
 
 
 def test_crs():
-    CRS = geometry.CRS  # noqa: N806
     custom_crs = geometry.CRS("""PROJCS["unnamed",
                            GEOGCS["Unknown datum based upon the custom spheroid",
                            DATUM["Not specified (based on custom spheroid)", SPHEROID["Custom spheroid",6371007.181,0]],
@@ -947,7 +946,7 @@ def test_crs():
     assert crs.dimensions == ('latitude', 'longitude')
     assert crs.epsg == 4326
 
-    crs2 = CRS(crs)
+    crs2 = geometry.CRS(crs)
     assert crs2 == crs
     assert crs.proj == crs2.proj
 
