@@ -66,9 +66,9 @@ Developer setup
 
    (this script approximates what is run by Travis. You can
    alternatively run ``pytest`` yourself). Some test dependencies may need to be installed, attempt to install these using:
-   
+
    ``pip install --upgrade -e '.[test]'``
-   
+
    If install for these fails please lodge them as issues.
 
 6. **(or)** Run all tests, including integration tests.
@@ -91,6 +91,12 @@ to ``./check-code.sh`` script.
 ::
 
    ./check-code.sh --with-docker integration_tests
+
+
+To run individual test in docker container
+
+::
+    docker run -ti -v /home/ubuntu/datacube-core:/code opendatacube/datacube-tests:latest pytest integration_tests/test_filename.py::test_function_name
 
 
 Developer setup on Ubuntu
