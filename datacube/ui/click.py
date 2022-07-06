@@ -360,3 +360,8 @@ def parsed_search_expressions(f):
 
     f = click.argument('expressions', callback=my_parse, nargs=-1)(f)
     return f
+
+
+def print_help_msg(command):
+    with click.Context(command) as ctx:
+        click.echo(command.get_help(ctx))

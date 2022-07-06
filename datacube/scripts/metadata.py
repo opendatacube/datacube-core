@@ -14,7 +14,7 @@ from click import echo, style
 
 from datacube.index import Index
 from datacube.ui import click as ui
-from datacube.ui.click import cli
+from datacube.ui.click import cli, print_help_msg
 from datacube.utils import read_documents, InvalidDocException
 from datacube.utils.serialise import SafeDatacubeDumper
 
@@ -38,6 +38,10 @@ def add_metadata_types(index, allow_exclusive_lock, files):
     """
     Add or update metadata types in the index
     """
+    if not files:
+        print_help_msg(add_metadata_types)
+        sys.exit(0)
+
     for descriptor_path, parsed_doc in read_documents(*files):
         try:
             type_ = index.metadata_types.from_doc(parsed_doc)
@@ -68,6 +72,10 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
     (An unsafe change is anything that may potentially make the metadata type
     incompatible with existing types of the same name)
     """
+    if not files:
+        print_help_msg(update_metadata_types)
+        sys.exit(0)
+
     for descriptor_path, parsed_doc in read_documents(*files):
         try:
             type_ = index.metadata_types.from_doc(parsed_doc)
