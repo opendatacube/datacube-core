@@ -6,7 +6,7 @@
 ##  metadata:
 ##  product_type: {{name}}
 ##  {% endfor %}''').render(products='ABCDE')
-##  
+##
 ---
 name: A
 description: test product A
