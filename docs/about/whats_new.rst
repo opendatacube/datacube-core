@@ -14,6 +14,7 @@ v1.8.next
 - Added doc change comparison for tuple and list types with identical values (:pull:`1281`)
 - Added flake8 to Github action workflow and correct code base per flake8 rules (:pull:`1285`)
 - Add `dataset id` check to dataset doc resolve to prevent `uuid` returning error when `id` used in `None`  (:pull:`1287`)
+- Add `help message` for all `dataset`, `product` and `metadata` subcommands when required arg is not passed in (:pull:`1292`)
 
 v1.8.7 (7 June 2022)
 ====================
