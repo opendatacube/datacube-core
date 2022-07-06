@@ -201,7 +201,7 @@ def test_db_init(clirunner, initialised_postgres_db):
 
 
 def test_add_no_such_product(clirunner, initialised_postgres_db):
-    result = clirunner(['dataset', 'add', '--dtype', 'no_such_product'], expect_success=False)
+    result = clirunner(['dataset', 'add', '--dtype', 'no_such_product', '/tmp'], expect_success=False)
     assert result.exit_code != 0
     assert "DEPRECATED option detected" in result.output
     assert "ERROR Supplied product name" in result.output
