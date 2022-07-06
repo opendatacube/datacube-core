@@ -22,7 +22,7 @@ from datacube.index.eo3 import prep_eo3  # type: ignore[attr-defined]
 from datacube.index import Index
 from datacube.model import Dataset
 from datacube.ui import click as ui
-from datacube.ui.click import cli
+from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
 from datacube.utils import changes, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
@@ -168,6 +168,11 @@ def index_cmd(index, product_names,
               ignore_lineage,
               confirm_ignore_lineage,
               dataset_paths):
+
+    if not dataset_paths:
+        print_help_msg(index_cmd)
+        sys.exit(0)
+
     if confirm_ignore_lineage is False and ignore_lineage is True:
         if sys.stdin.isatty():
             confirmed = click.confirm("Requested to skip lineage information, Are you sure?", default=False)
@@ -243,6 +248,10 @@ def parse_update_rules(keys_that_can_change):
 @click.argument('dataset-paths', nargs=-1)
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
+    if not dataset_paths:
+        print_help_msg(update_cmd)
+        sys.exit(0)
+
     def loc_action(action, new_ds, existing_ds, action_name):
         if len(existing_ds.uris) == 0:
             return None
@@ -406,6 +415,10 @@ def info_cmd(index: Index, show_sources: bool, show_derived: bool,
              f: str,
              max_depth: int,
              ids: Iterable[str]) -> None:
+    if not ids:
+        print_help_msg(info_cmd)
+        sys.exit(0)
+
     # Using an array wrapper to get around the lack of "nonlocal" in py2
     missing_datasets = [0]
 
@@ -472,6 +485,10 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
 
     PATHS may be either file paths or URIs
     """
+    if not paths:
+        print_help_msg(uri_search_cmd)
+        sys.exit(0)
+
     if search_mode == 'guess':
         # This is what the API expects. I think it should be changed.
         search_mode = None
@@ -493,6 +510,10 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
+    if not ids and not all_ds:
+        print_help_msg(archive_cmd)
+        sys.exit(0)
+
     derived_dataset_ids: List[UUID] = []
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=False)}
@@ -537,6 +558,10 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
 @ui.pass_index()
 def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int,
                 dry_run: bool, all_ds: bool, ids: List[str]):
+    if not ids and not all_ds:
+        print_help_msg(restore_cmd)
+        sys.exit(0)
+
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
     if all_ds:
         ids = index.datasets.get_all_dataset_ids(archived=True)  # type: ignore[assignment]
@@ -580,6 +605,10 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
+    if not ids and not all_ds:
+        print_help_msg(purge_cmd)
+        sys.exit(0)
+
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
     else:

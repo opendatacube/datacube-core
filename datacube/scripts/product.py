@@ -17,7 +17,7 @@ from click import echo, style
 
 from datacube.index import Index
 from datacube.ui import click as ui
-from datacube.ui.click import cli
+from datacube.ui.click import cli, print_help_msg
 from datacube.utils import read_documents, InvalidDocException
 from datacube.utils.serialise import SafeDatacubeDumper
 
@@ -41,6 +41,9 @@ def add_products(index, allow_exclusive_lock, files):
     """
     Add or update products in the generic index.
     """
+    if not files:
+        print_help_msg(add_products)
+
     def on_ctrlc(sig, frame):
         echo('''Can not abort `product add` without leaving database in bad state.
 
@@ -81,6 +84,10 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
     (An unsafe change is anything that may potentially make the product
     incompatible with existing datasets of that type)
     """
+    if not files:
+        print_help_msg(update_products)
+        sys.exit(0)
+
     failures = 0
     for descriptor_path, parsed_doc in read_documents(*files):
         try:
