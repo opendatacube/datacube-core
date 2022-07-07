@@ -43,6 +43,7 @@ def add_products(index, allow_exclusive_lock, files):
     """
     if not files:
         print_help_msg(add_products)
+        sys.exit(1)
 
     def on_ctrlc(sig, frame):
         echo('''Can not abort `product add` without leaving database in bad state.
@@ -86,7 +87,7 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
     """
     if not files:
         print_help_msg(update_products)
-        sys.exit(0)
+        sys.exit(1)
 
     failures = 0
     for descriptor_path, parsed_doc in read_documents(*files):

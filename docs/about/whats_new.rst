@@ -16,6 +16,7 @@ v1.8.next
 - Add `dataset id` check to dataset doc resolve to prevent `uuid` returning error when `id` used in `None`  (:pull:`1287`)
 - Add how to run targeted single test case in docker guide to README (:pull:`1288`)
 - Add `help message` for all `dataset`, `product` and `metadata` subcommands when required arg is not passed in (:pull:`1292`)
+- Add `error code 1` to all incomplete `dataset`, `product` and `metadata` subcommands (:pull:`1293`)
 
 v1.8.7 (7 June 2022)
 ====================
