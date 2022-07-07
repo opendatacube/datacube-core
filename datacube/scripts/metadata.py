@@ -14,7 +14,7 @@ from click import echo, style
 
 from datacube.index import Index
 from datacube.ui import click as ui
-from datacube.ui.click import cli, print_help_msg
+from datacube.ui.click import cli, print_help_msg, exit_on_empty_file
 from datacube.utils import read_documents, InvalidDocException
 from datacube.utils.serialise import SafeDatacubeDumper
 
@@ -41,6 +41,8 @@ def add_metadata_types(index, allow_exclusive_lock, files):
     if not files:
         print_help_msg(add_metadata_types)
         sys.exit(1)
+
+    exit_on_empty_file(list(read_documents(*files)))
 
     for descriptor_path, parsed_doc in read_documents(*files):
         try:
@@ -75,6 +77,8 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
     if not files:
         print_help_msg(update_metadata_types)
         sys.exit(1)
+
+    exit_on_empty_file(list(read_documents(*files)))
 
     for descriptor_path, parsed_doc in read_documents(*files):
         try:

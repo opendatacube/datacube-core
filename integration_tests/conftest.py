@@ -539,4 +539,5 @@ def dataset_add_configs():
                            datasets_bad1=str(B / 'datasets_bad1.yml'),
                            datasets_no_id=str(B / 'datasets_no_id.yml'),
                            datasets_eo3=str(B / 'datasets_eo3.yml'),
-                           datasets=str(B / 'datasets.yml'))
+                           datasets=str(B / 'datasets.yml'),
+                           empty_file=str(B / 'empty_file.yml'))

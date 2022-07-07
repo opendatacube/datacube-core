@@ -1,7 +1,11 @@
-def test_cli_product_subcommand(index_empty, clirunner):
+def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs):
     runner = clirunner(['product', 'update'], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [FILES]" in runner.output
     assert "Update existing products." in runner.output
+    assert runner.exit_code == 1
+
+    runner = clirunner(['product', 'update', dataset_add_configs.empty_file], verbose_flag=False, expect_success=False)
+    assert "All files are empty, exit" in runner.output
     assert runner.exit_code == 1
 
     runner = clirunner(['product', 'add'], verbose_flag=False, expect_success=False)
@@ -9,16 +13,28 @@ def test_cli_product_subcommand(index_empty, clirunner):
     assert "Add or update products in" in runner.output
     assert runner.exit_code == 1
 
+    runner = clirunner(['product', 'add', dataset_add_configs.empty_file], verbose_flag=False, expect_success=False)
+    assert "All files are empty, exit" in runner.output
+    assert runner.exit_code == 1
 
-def test_cli_metadata_subcommand(index_empty, clirunner):
+
+def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs):
     runner = clirunner(['metadata', 'update'], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [FILES]" in runner.output
     assert "Update existing metadata types." in runner.output
     assert runner.exit_code == 1
 
+    runner = clirunner(['metadata', 'update', dataset_add_configs.empty_file], verbose_flag=False, expect_success=False)
+    assert "All files are empty, exit" in runner.output
+    assert runner.exit_code == 1
+
     runner = clirunner(['metadata', 'add'], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [FILES]" in runner.output
     assert "Add or update metadata types in" in runner.output
+    assert runner.exit_code == 1
+
+    runner = clirunner(['metadata', 'add', dataset_add_configs.empty_file], verbose_flag=False, expect_success=False)
+    assert "All files are empty, exit" in runner.output
     assert runner.exit_code == 1
 
 
