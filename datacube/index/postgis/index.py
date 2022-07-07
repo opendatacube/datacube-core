@@ -39,6 +39,11 @@ class Index(AbstractIndex):
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
 
+    # Postgis driver does not need to support pre-EO3 metadata formats
+    supports_legacy = False
+    # Hopefully can reinstate non-geo support, but dropping for now will make progress easier.
+    supports_nongeo = False
+
     def __init__(self, db: PostGisDb) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
         _LOG.warning("""WARNING: The POSTGIS index driver implementation is considered EXPERIMENTAL.
@@ -116,6 +121,7 @@ class DefaultIndexDriver(AbstractIndexDriver):
         """
         :param definition:
         """
+        # TODO: Validate metadata is ODCv2 compliant - e.g. either non-raster or EO3.
         MetadataType.validate(definition)  # type: ignore
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))

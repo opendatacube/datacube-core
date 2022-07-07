@@ -909,6 +909,16 @@ class AbstractIndex(ABC):
     inherit from this base class and implement all abstract methods.
     """
 
+    # Interface contracts
+    #   supports add() update() remove() etc methods.
+    supports_persistance = True
+    #   supports legacy ODCv1 EO style metadata types.
+    supports_legacy = True
+    #   supports EO3 style metadata types.
+    supports_eo3 = True
+    #   supports non-geospatial (e.g. telemetry) metadata types
+    supports_nongeo = True
+
     @property
     @abstractmethod
     def url(self) -> str:
