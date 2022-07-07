@@ -40,7 +40,7 @@ def add_metadata_types(index, allow_exclusive_lock, files):
     """
     if not files:
         print_help_msg(add_metadata_types)
-        sys.exit(0)
+        sys.exit(1)
 
     for descriptor_path, parsed_doc in read_documents(*files):
         try:
@@ -74,7 +74,7 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
     """
     if not files:
         print_help_msg(update_metadata_types)
-        sys.exit(0)
+        sys.exit(1)
 
     for descriptor_path, parsed_doc in read_documents(*files):
         try:

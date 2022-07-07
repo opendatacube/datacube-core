@@ -171,7 +171,7 @@ def index_cmd(index, product_names,
 
     if not dataset_paths:
         print_help_msg(index_cmd)
-        sys.exit(0)
+        sys.exit(1)
 
     if confirm_ignore_lineage is False and ignore_lineage is True:
         if sys.stdin.isatty():
@@ -250,7 +250,7 @@ def parse_update_rules(keys_that_can_change):
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
     if not dataset_paths:
         print_help_msg(update_cmd)
-        sys.exit(0)
+        sys.exit(1)
 
     def loc_action(action, new_ds, existing_ds, action_name):
         if len(existing_ds.uris) == 0:
@@ -417,7 +417,7 @@ def info_cmd(index: Index, show_sources: bool, show_derived: bool,
              ids: Iterable[str]) -> None:
     if not ids:
         print_help_msg(info_cmd)
-        sys.exit(0)
+        sys.exit(1)
 
     # Using an array wrapper to get around the lack of "nonlocal" in py2
     missing_datasets = [0]
@@ -487,7 +487,7 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
     """
     if not paths:
         print_help_msg(uri_search_cmd)
-        sys.exit(0)
+        sys.exit(1)
 
     if search_mode == 'guess':
         # This is what the API expects. I think it should be changed.
@@ -512,7 +512,7 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
 def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
         print_help_msg(archive_cmd)
-        sys.exit(0)
+        sys.exit(1)
 
     derived_dataset_ids: List[UUID] = []
     if all_ds:
@@ -560,7 +560,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
                 dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
         print_help_msg(restore_cmd)
-        sys.exit(0)
+        sys.exit(1)
 
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
     if all_ds:
@@ -607,7 +607,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
         print_help_msg(purge_cmd)
-        sys.exit(0)
+        sys.exit(1)
 
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
