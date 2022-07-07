@@ -365,3 +365,9 @@ def parsed_search_expressions(f):
 def print_help_msg(command):
     with click.Context(command) as ctx:
         click.echo(command.get_help(ctx))
+
+
+def exit_on_empty_file(read_files_list):
+    if len(read_files_list) == 0:
+        click.echo("All files are empty, exit")
+        sys.exit(1)

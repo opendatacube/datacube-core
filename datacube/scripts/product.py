@@ -17,7 +17,7 @@ from click import echo, style
 
 from datacube.index import Index
 from datacube.ui import click as ui
-from datacube.ui.click import cli, print_help_msg
+from datacube.ui.click import cli, print_help_msg, exit_on_empty_file
 from datacube.utils import read_documents, InvalidDocException
 from datacube.utils.serialise import SafeDatacubeDumper
 
@@ -52,6 +52,8 @@ This operation requires constructing a bunch of indexes and this takes time, the
 bigger your database the longer it will take. Just wait a bit.''')
 
     signal.signal(signal.SIGINT, on_ctrlc)
+
+    exit_on_empty_file(list(read_documents(*files)))
 
     for descriptor_path, parsed_doc in read_documents(*files):
         try:
@@ -88,6 +90,8 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
     if not files:
         print_help_msg(update_products)
         sys.exit(1)
+
+    exit_on_empty_file(list(read_documents(*files)))
 
     failures = 0
     for descriptor_path, parsed_doc in read_documents(*files):

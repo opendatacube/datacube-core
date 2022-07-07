@@ -11,12 +11,13 @@ v1.8.next
 - Remove several features that had been deprecated in previous releases. (:pull:`1275`)
 - Fix broken paths in api docs. (:pull:`1277`)
 - Fix readthedocs build. (:pull:`1269`)
-- Added doc change comparison for tuple and list types with identical values (:pull:`1281`)
-- Added flake8 to Github action workflow and correct code base per flake8 rules (:pull:`1285`)
+- Add doc change comparison for tuple and list types with identical values (:pull:`1281`)
+- Add flake8 to Github action workflow and correct code base per flake8 rules (:pull:`1285`)
 - Add `dataset id` check to dataset doc resolve to prevent `uuid` returning error when `id` used in `None`  (:pull:`1287`)
 - Add how to run targeted single test case in docker guide to README (:pull:`1288`)
 - Add `help message` for all `dataset`, `product` and `metadata` subcommands when required arg is not passed in (:pull:`1292`)
 - Add `error code 1` to all incomplete `dataset`, `product` and `metadata` subcommands (:pull:`1293`)
+- Add `exit_on_empty_file` message to `product` and `dataset` subcommands instead of returning no output when file is empty (:pull:`1294`)
 
 v1.8.7 (7 June 2022)
 ====================
