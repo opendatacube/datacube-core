@@ -9,10 +9,10 @@ from datacube.testutils import mk_sample_product
 from datacube.model import Dataset
 
 from datacube.index.eo3 import (
+    EO3Grid,
     prep_eo3,
     add_eo3_parts,
     is_doc_eo3,
-    grid2points,
 )
 
 SAMPLE_DOC = '''---
@@ -66,28 +66,34 @@ def eo3_product(eo3_metadata):
     return mk_sample_product("eo3_product", metadata_type=eo3_metadata)
 
 
-def test_grid2points():
+def test_grid_points():
     identity = list(Affine.translation(0, 0))
-    grid = dict(shape=(11, 22),
-                transform=identity)
+    grid = EO3Grid({
+        "shape": (11, 22),
+        "transform": identity
+    })
 
-    pts = grid2points(grid)
+    pts = grid.points()
     assert len(pts) == 4
     assert pts == [(0, 0), (22, 0), (22, 11), (0, 11)]
-    pts_ = grid2points(grid, ring=True)
+    pts_ = grid.points(ring=True)
     assert len(pts_) == 5
     assert pts == pts_[:4]
     assert pts_[0] == pts_[-1]
 
-    grid['transform'] = tuple(Affine.translation(100, 0))
-    pts = grid2points(grid)
+
+    grid = EO3Grid({
+        "shape": (11, 22),
+        "transform": tuple(Affine.translation(100, 0))
+    })
+    pts = grid.points()
     assert pts == [(100, 0), (122, 0), (122, 11), (100, 11)]
 
     for bad in [{},
                 dict(shape=(1, 1)),
                 dict(transform=identity)]:
         with pytest.raises(ValueError):
-            grid2points(bad)
+            grid = EO3Grid(bad)
 
 
 def test_is_eo3(sample_doc, sample_doc_180):

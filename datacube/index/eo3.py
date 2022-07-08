@@ -63,19 +63,6 @@ class EO3Grid:
         return polygon(self.points(ring=True), crs=crs)
 
 
-def grid2points(grid: Dict[str, Any],
-                ring: bool = False) -> CoordList:
-    return EO3Grid(grid).points(ring)
-
-
-def grid2ref_points(grid: Dict[str, Any]) -> Dict[str, Any]:
-    return EO3Grid(grid).ref_points()
-
-
-def grid2polygon(grid: Dict[str, Any], crs: SomeCRS) -> Geometry:
-    return EO3Grid(grid).polygon(crs)
-
-
 def eo3_lonlat_bbox(grids: Iterable[EO3Grid],
                     crs: CRS,
                     valid_data: Optional[Geometry] = None,
