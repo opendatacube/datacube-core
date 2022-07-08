@@ -20,7 +20,7 @@ from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin
 from datacube.model import Dataset, DatasetType
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
-from datacube.utils import jsonify_document, _readable_offset, changes, cached_property
+from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
 from datacube.index import fields
 
