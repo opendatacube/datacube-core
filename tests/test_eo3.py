@@ -10,7 +10,6 @@ from datacube.model import Dataset
 
 from datacube.index.eo3 import (
     prep_eo3,
-    eo3_lonlat_bbox,
     add_eo3_parts,
     is_doc_eo3,
     grid2points,
@@ -144,9 +143,6 @@ def test_add_eo3(sample_doc, sample_doc_180, eo3_product):
     doc.pop('grids')
     with pytest.raises(ValueError):
         add_eo3_parts(doc)
-
-    with pytest.raises(ValueError):
-        eo3_lonlat_bbox({})
 
 
 def test_prep_eo3(sample_doc, sample_doc_180, eo3_metadata):
