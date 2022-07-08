@@ -81,7 +81,6 @@ def test_grid_points():
     assert pts == pts_[:4]
     assert pts_[0] == pts_[-1]
 
-
     grid = EO3Grid({
         "shape": (11, 22),
         "transform": tuple(Affine.translation(100, 0))
