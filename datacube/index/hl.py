@@ -27,9 +27,9 @@ class ProductRule:
 def load_rules_from_types(index: AbstractIndex,
                           product_names: Optional[Iterable[str]] = None,
                           excluding: Optional[Iterable[str]] = None) -> Union[
-                    Tuple[List[ProductRule], None],
-                    Tuple[None, str]
-                                         ]:
+                                        Tuple[List[ProductRule], None],
+                                        Tuple[None, str]
+                         ]:
     products: List[Product] = []
     if product_names:
         for name in product_names:

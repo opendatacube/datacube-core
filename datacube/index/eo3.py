@@ -7,10 +7,8 @@
 # TODO: typehints need attention
 """ Tools for working with EO3 metadata
 """
-from types import SimpleNamespace
 from affine import Affine
 from functools import reduce
-import toolz  # type: ignore[import]
 from typing import Dict, Any, Iterable, Optional, Tuple
 
 from datacube.utils.geometry import (
@@ -18,7 +16,6 @@ from datacube.utils.geometry import (
     CRS,
     Geometry,
     polygon,
-    bbox_union,
     CoordList,
     BoundingBox,
     lonlat_bounds,
@@ -203,7 +200,6 @@ def is_doc_geo(doc: Dict[str, Any], check_eo3: bool = True) -> bool:
         return True
     # Does this cover EO legacy datasets ok? at all??
     return "extent" in doc or "grid_spatial" in doc
-
 
 
 def prep_eo3(doc: Dict[str, Any],
