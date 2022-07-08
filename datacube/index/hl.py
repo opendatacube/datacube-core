@@ -7,17 +7,30 @@ High level indexing operations/utilities
 """
 import json
 import toolz
-from types import SimpleNamespace
+from uuid import UUID
+from typing import cast, Any, Callable, Optional, Iterable, List, Mapping, Sequence, Tuple, Union, MutableMapping
 
-from datacube.model import Dataset
+from datacube.model import Dataset, DatasetType as Product
+from datacube.index.abstract import AbstractIndex
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
-from .eo3 import prep_eo3, is_doc_eo3  # type: ignore[attr-defined]
+from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo  # type: ignore[attr-defined]
 
 
-def load_rules_from_types(index, product_names=None, excluding=None):
-    products = []
+class ProductRule:
+    def __init__(self, product: Product, signature: Mapping[str, Any]):
+        self.product = product
+        self.signature = signature
+
+
+def load_rules_from_types(index: AbstractIndex,
+                          product_names: Optional[Iterable[str]] = None,
+                          excluding: Optional[Iterable[str]] = None) -> Union[
+                    Tuple[List[ProductRule], None],
+                    Tuple[None, str]
+                                         ]:
+    products: List[Product] = []
     if product_names:
         for name in product_names:
             product = index.products.get_by_name(name)
@@ -32,23 +45,23 @@ def load_rules_from_types(index, product_names=None, excluding=None):
         products = [p for p in products if p.name not in excluding]
 
     if len(products) == 0:
-        return None, 'Found no products in the database'
+        return None, 'Found no matching products in the database'
 
-    return [SimpleNamespace(product=p, signature=p.metadata_doc) for p in products], None
+    return [ProductRule(p, p.metadata_doc) for p in products], None
 
 
-def product_matcher(rules):
+def product_matcher(rules: Sequence[ProductRule]) -> Callable[[Mapping[str, Any]], Product]:
     """Given product matching rules return a function mapping a document to a
     matching product.
 
     """
     assert len(rules) > 0
 
-    def matches(doc, rule):
+    def matches(doc: Mapping[str, Any], rule: ProductRule) -> bool:
         return changes.contains(doc, rule.signature)
 
     def single_product_matcher(rule):
-        def match(doc):
+        def match(doc: Mapping[str, Any]) -> bool:
             if matches(doc, rule):
                 return rule.product
 
@@ -64,7 +77,7 @@ def product_matcher(rules):
     if len(rules) == 1:
         return single_product_matcher(rules[0])
 
-    def match(doc):
+    def match(doc: Mapping[str, Any]) -> Product:
         matched = [rule.product for rule in rules if changes.contains(doc, rule.signature)]
 
         if len(matched) == 1:
@@ -82,7 +95,7 @@ def product_matcher(rules):
     return match
 
 
-def check_dataset_consistent(dataset):
+def check_dataset_consistent(dataset: Dataset) -> Tuple[bool, Optional[str]]:
     """
     :type dataset: datacube.model.Dataset
     :return: (Is consistent, [error message|None])
@@ -113,7 +126,7 @@ def check_dataset_consistent(dataset):
     return True, None
 
 
-def check_consistent(a, b):
+def check_consistent(a: Mapping[str, Any], b: Mapping[str, Any]) -> Tuple[bool, Optional[str]]:
     diffs = get_doc_changes(a, b)
     if len(diffs) == 0:
         return True, None
@@ -124,15 +137,20 @@ def check_consistent(a, b):
 
     return False, ", ".join([render_diff(offset, a, b) for offset, a, b in diffs])
 
+DatasetOrError = Union[
+    Tuple[Dataset, None],
+    Tuple[None, Union[str, Exception]]
+]
 
-def dataset_resolver(index,
-                     product_matching_rules,
-                     fail_on_missing_lineage=False,
-                     verify_lineage=True,
-                     skip_lineage=False):
+def dataset_resolver(index: AbstractIndex,
+                     product_matching_rules: Sequence[ProductRule],
+                     fail_on_missing_lineage: bool = False,
+                     verify_lineage:bool = True,
+                     skip_lineage: bool = False) -> Callable[
+                        [SimpleDocNav, str], DatasetOrError]:
     match_product = product_matcher(product_matching_rules)
 
-    def resolve_no_lineage(ds, uri):
+    def resolve_no_lineage(ds: SimpleDocNav, uri: str) -> DatasetOrError:
         doc = ds.doc_without_lineage_sources
         try:
             product = match_product(doc)
@@ -141,9 +159,9 @@ def dataset_resolver(index,
 
         return Dataset(product, doc, uris=[uri], sources={}), None
 
-    def resolve(main_ds, uri):
+    def resolve(main_ds_doc: SimpleDocNav, uri: str) -> DatasetOrError:
         try:
-            main_ds = SimpleDocNav(dedup_lineage(main_ds))
+            main_ds = SimpleDocNav(dedup_lineage(main_ds_doc))
         except InvalidDocException as e:
             return None, e
 
@@ -162,26 +180,35 @@ def dataset_resolver(index,
         if missing_lineage and fail_on_missing_lineage:
             return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
 
-        if verify_lineage and not is_doc_eo3(main_ds.doc):
-            bad_lineage = []
+        if not is_doc_eo3(main_ds.doc):
+            if is_doc_geo(main_ds.doc, check_eo3=False):
+                if not index.supports_legacy:
+                    return None, "Legacy metadata formats not supported by the current index driver."
+            else:
+                if not index.supports_nongeo:
+                    return None, "Non-geospatial metadata formats not supported by the current index driver."
+            if verify_lineage:
+                bad_lineage = []
 
-            for uuid in lineage_uuids:
-                if uuid in db_dss:
-                    ok, err = check_consistent(jsonify_document(ds_by_uuid[uuid].doc_without_lineage_sources),
-                                               db_dss[uuid].metadata_doc)
-                    if not ok:
-                        bad_lineage.append((uuid, err))
+                for uuid in lineage_uuids:
+                    if uuid in db_dss:
+                        ok, err = check_consistent(jsonify_document(ds_by_uuid[uuid].doc_without_lineage_sources),
+                                                   db_dss[uuid].metadata_doc)
+                        if not ok:
+                            bad_lineage.append((uuid, err))
 
-            if len(bad_lineage) > 0:
-                error_report = '\n'.join('Inconsistent lineage dataset {}:\n> {}'.format(uuid, err)
-                                         for uuid, err in bad_lineage)
-                return None, error_report
+                if len(bad_lineage) > 0:
+                    error_report = '\n'.join('Inconsistent lineage dataset {}:\n> {}'.format(uuid, err)
+                                             for uuid, err in bad_lineage)
+                    return None, error_report
 
-        def with_cache(v, k, cache):
+        def with_cache(v: Dataset, k: UUID, cache: MutableMapping[UUID, Dataset]) -> Dataset:
             cache[k] = v
             return v
 
-        def resolve_ds(ds, sources, cache=None):
+        def resolve_ds(ds: SimpleDocNav,
+                       sources: Optional[Mapping[str, Dataset]],
+                       cache: MutableMapping[UUID, Dataset]) -> Dataset:
             cached = cache.get(ds.id)
             if cached is not None:
                 return cached
@@ -197,12 +224,10 @@ def dataset_resolver(index,
                 product = match_product(doc)
 
             return with_cache(Dataset(product, doc, uris=uris, sources=sources), ds.id, cache)
-
         try:
             return remap_lineage_doc(main_ds, resolve_ds, cache={}), None
         except BadMatch as e:
             return None, e
-
     return resolve_no_lineage if skip_lineage else resolve
 
 
@@ -241,13 +266,17 @@ class Doc2Dataset:
     :param eo3: 'auto'/True/False by default auto-detect EO3 datasets and pre-process them
     """
     def __init__(self,
-                 index,
-                 products=None,
-                 exclude_products=None,
-                 fail_on_missing_lineage=False,
-                 verify_lineage=True,
-                 skip_lineage=False,
-                 eo3='auto'):
+                 index: AbstractIndex,
+                 products: Optional[Sequence[str]] = None,
+                 exclude_products: Optional[Sequence[str]] = None,
+                 fail_on_missing_lineage: bool = False,
+                 verify_lineage: bool = True,
+                 skip_lineage: bool = False,
+                 eo3: Union[bool, str] = 'auto'):
+        if not index.supports_legacy:
+            if not eo3:
+                raise ValueError("EO3 cannot be set to False for a non-legacy index.")
+            eo3 = True
         rules, err_msg = load_rules_from_types(index,
                                                product_names=products,
                                                excluding=exclude_products)
@@ -261,7 +290,7 @@ class Doc2Dataset:
                                             verify_lineage=verify_lineage,
                                             skip_lineage=skip_lineage)
 
-    def __call__(self, doc, uri):
+    def __call__(self, doc_in: Union[SimpleDocNav, Mapping[str, Any]], uri: str) -> DatasetOrError:
         """Attempt to construct dataset from metadata document and a uri.
 
         :param doc: Dictionary or SimpleDocNav object
@@ -270,8 +299,10 @@ class Doc2Dataset:
         :return: (dataset, None) is successful,
         :return: (None, ErrorMessage) on failure
         """
-        if not isinstance(doc, SimpleDocNav):
-            doc = SimpleDocNav(doc)
+        if isinstance(doc_in, SimpleDocNav):
+            doc: SimpleDocNav = doc_in
+        else:
+            doc = SimpleDocNav(doc_in)
 
         if self._eo3:
             auto_skip = self._eo3 == 'auto'
@@ -279,10 +310,10 @@ class Doc2Dataset:
 
         dataset, err = self._ds_resolve(doc, uri)
         if dataset is None:
-            return None, err
+            return None, cast(Union[str,Exception], err)
 
         is_consistent, reason = check_dataset_consistent(dataset)
         if not is_consistent:
-            return None, reason
+            return None, cast(Union[str, Exception], reason)
 
         return dataset, None

@@ -914,35 +914,28 @@ class AbstractIndex(ABC):
     supports_persistance = True
     #   supports legacy ODCv1 EO style metadata types.
     supports_legacy = True
-    #   supports EO3 style metadata types.
-    supports_eo3 = True
     #   supports non-geospatial (e.g. telemetry) metadata types
     supports_nongeo = True
 
     @property
     @abstractmethod
-    def url(self) -> str:
-        pass
+    def url(self) -> str: ...
 
     @property
     @abstractmethod
-    def users(self) -> AbstractUserResource:
-        pass
+    def users(self) -> AbstractUserResource: ...
 
     @property
     @abstractmethod
-    def metadata_types(self) -> AbstractMetadataTypeResource:
-        pass
+    def metadata_types(self) -> AbstractMetadataTypeResource: ...
 
     @property
     @abstractmethod
-    def products(self) -> AbstractProductResource:
-        pass
+    def products(self) -> AbstractProductResource: ...
 
     @property
     @abstractmethod
-    def datasets(self) -> AbstractDatasetResource:
-        pass
+    def datasets(self) -> AbstractDatasetResource: ...
 
     @classmethod
     @abstractmethod
@@ -951,24 +944,24 @@ class AbstractIndex(ABC):
                     application_name: Optional[str] = None,
                     validate_connection: bool = True
                    ) -> "AbstractIndex":
-        pass
+        ...
 
     @classmethod
     @abstractmethod
     def get_dataset_fields(cls,
                            doc: dict
                           ) -> Mapping[str, Field]:
-        pass
+        ...
 
     @abstractmethod
     def init_db(self,
                 with_default_types: bool = True,
                 with_permissions: bool = True) -> bool:
-        pass
+        ...
 
     @abstractmethod
     def close(self) -> None:
-        pass
+        ...
 
     def __enter__(self):
         return self
