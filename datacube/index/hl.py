@@ -27,8 +27,8 @@ class ProductRule:
 def load_rules_from_types(index: AbstractIndex,
                           product_names: Optional[Iterable[str]] = None,
                           excluding: Optional[Iterable[str]] = None) -> Union[
-                                        Tuple[List[ProductRule], None],
-                                        Tuple[None, str]
+                                Tuple[List[ProductRule], None],
+                                Tuple[None, str]
                          ]:
     products: List[Product] = []
     if product_names:
@@ -137,17 +137,18 @@ def check_consistent(a: Mapping[str, Any], b: Mapping[str, Any]) -> Tuple[bool, 
 
     return False, ", ".join([render_diff(offset, a, b) for offset, a, b in diffs])
 
+
 DatasetOrError = Union[
     Tuple[Dataset, None],
     Tuple[None, Union[str, Exception]]
 ]
 
+
 def dataset_resolver(index: AbstractIndex,
                      product_matching_rules: Sequence[ProductRule],
                      fail_on_missing_lineage: bool = False,
-                     verify_lineage:bool = True,
-                     skip_lineage: bool = False) -> Callable[
-                        [SimpleDocNav, str], DatasetOrError]:
+                     verify_lineage: bool = True,
+                     skip_lineage: bool = False) -> Callable[[SimpleDocNav, str], DatasetOrError]:
     match_product = product_matcher(product_matching_rules)
 
     def resolve_no_lineage(ds: SimpleDocNav, uri: str) -> DatasetOrError:
