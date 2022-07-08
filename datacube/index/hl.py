@@ -27,8 +27,8 @@ class ProductRule:
 def load_rules_from_types(index: AbstractIndex,
                           product_names: Optional[Iterable[str]] = None,
                           excluding: Optional[Iterable[str]] = None) -> Union[
-                                Tuple[List[ProductRule], None],
-                                Tuple[None, str]
+                            Tuple[List[ProductRule], None],
+                            Tuple[None, str]
                          ]:
     products: List[Product] = []
     if product_names:
@@ -311,7 +311,7 @@ class Doc2Dataset:
 
         dataset, err = self._ds_resolve(doc, uri)
         if dataset is None:
-            return None, cast(Union[str,Exception], err)
+            return None, cast(Union[str, Exception], err)
 
         is_consistent, reason = check_dataset_consistent(dataset)
         if not is_consistent:

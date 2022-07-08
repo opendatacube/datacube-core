@@ -919,23 +919,28 @@ class AbstractIndex(ABC):
 
     @property
     @abstractmethod
-    def url(self) -> str: ...
+    def url(self) -> str:
+        ...
 
     @property
     @abstractmethod
-    def users(self) -> AbstractUserResource: ...
+    def users(self) -> AbstractUserResource:
+        ...
 
     @property
     @abstractmethod
-    def metadata_types(self) -> AbstractMetadataTypeResource: ...
+    def metadata_types(self) -> AbstractMetadataTypeResource:
+        ...
 
     @property
     @abstractmethod
-    def products(self) -> AbstractProductResource: ...
+    def products(self) -> AbstractProductResource:
+        ...
 
     @property
     @abstractmethod
-    def datasets(self) -> AbstractDatasetResource: ...
+    def datasets(self) -> AbstractDatasetResource:
+        ...
 
     @classmethod
     @abstractmethod
@@ -981,13 +986,13 @@ class AbstractIndexDriver(ABC):
                          application_name: Optional[str] = None,
                          validate_connection: bool = True
                         ) -> "AbstractIndex":
-        pass
+        ...
 
     @staticmethod
     @abstractmethod
     def metadata_type_from_doc(definition: dict
                               ) -> MetadataType:
-        pass
+        ...
 
 
 # The special handling of grid_spatial, etc appears to NOT apply to EO3.
