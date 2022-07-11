@@ -95,6 +95,59 @@ def test_grid_points():
             grid = EO3Grid(bad)
 
 
+def test_bad_grids():
+    identity = list(Affine.translation(0, 0))
+    bad_grids = [
+        # No Shape
+        {
+            "transform": identity,
+        },
+        # Non 2-d Shape (NB: geospatial dimensions only.  Other dimensions are handled elsewhere.)
+        {
+            "shape": (1024,),
+            "transform": identity,
+        },
+        {
+            "shape": (1024, 564, 256),
+            "transform": identity,
+        },
+        # No Transform
+        {
+            "shape": (1024, 256),
+        },
+        # Formally invalid affine transform (must be 6 or 9 elements)
+        {
+            "shape": (1024, 256),
+            "transform": [343.3],
+        },
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3],
+        },
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3, 1, 0],
+        },
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3, 1, 0, 7435.24563, 0.0001234, 888.888, 3, 3, 2],
+        },
+        # Formally invalid affine transform (all elements must be numbers)
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3, "six"]
+        },
+        # Formally invalid affine transform (in 9 element form, last 3 numbers must be 0,0,1)
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3, 1, 0, 7435.24563, 0.0001234, 888.888, 3, 3, 2],
+        },
+    ]
+    for bad_grid in bad_grids:
+        with pytest.raises(ValueError):
+            grid = EO3Grid(bad_grid)
+
+
 def test_is_eo3(sample_doc, sample_doc_180):
     identity = list(Affine.translation(0, 0))
     assert is_doc_eo3(sample_doc) is True
