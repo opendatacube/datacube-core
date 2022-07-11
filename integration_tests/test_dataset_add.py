@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import math
 
+import pytest
 import toolz
 import yaml
 
@@ -195,6 +196,8 @@ def check_bad_yaml(clirunner, index):
     assert 'ERROR Failed reading documents from ' in r.output
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_add_no_id(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
@@ -209,12 +212,14 @@ def test_dataset_add_no_id(dataset_add_configs, index_empty, clirunner):
     assert _err == 'No id defined in dataset doc'
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
     r = clirunner(['dataset', 'add', p.datasets], expect_success=False)
     assert r.exit_code != 0
-    assert 'Found no products' in r.output
+    assert 'Found no matching products' in r.output
 
     clirunner(['metadata', 'add', p.metadata])
     clirunner(['product', 'add', p.products])
@@ -233,7 +238,6 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert _ds.metadata_doc == ds.doc
 
     # Check dataset search
-
     r = clirunner(['dataset', 'search'], expect_success=True)
     assert ds.id in r.output
     assert ds_bad1.id not in r.output
@@ -288,7 +292,9 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert 'location' not in _ds.metadata_doc
 
 
-def test_dataset_add_ambgious_products(dataset_add_configs, index_empty, clirunner):
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
+def test_dataset_add_ambiguous_products(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
 
@@ -348,6 +354,8 @@ metadata:
     assert index.datasets.has(ds.id) is True
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
@@ -387,6 +395,8 @@ def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner):
     assert c_doc['val_is_neginf'] == '-Infinity'
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_add_inconsistent_measurements(dataset_add_configs, index_empty, clirunner):
     p = dataset_add_configs
     index = index_empty
@@ -465,6 +475,8 @@ def dataset_archive_prep(dataset_add_configs, index_empty, clirunner):
     return p, index, ds
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
@@ -525,6 +537,8 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
     assert index.datasets.has(ds.id) is True
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_archive_restore_invalid(dataset_add_configs, index_empty, clirunner):
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
@@ -545,6 +559,8 @@ def test_dataset_archive_restore_invalid(dataset_add_configs, index_empty, cliru
     assert index.datasets.has(ds.id) is True
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
@@ -577,6 +593,8 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
     assert 'status: archived' not in r.output
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_add_http(dataset_add_configs, index: Index, default_metadata_type: MetadataType, httpserver,
                           clirunner):
     # pytest-localserver also looks good, it's been around for ages, but httpserver is the new cool

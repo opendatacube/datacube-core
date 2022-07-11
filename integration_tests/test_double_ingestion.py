@@ -15,6 +15,8 @@ from integration_tests.test_full_ingestion import (check_open_with_api, check_da
 from integration_tests.test_end_to_end import INGESTER_CONFIGS
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_double_ingestion(clirunner, index, tmpdir, ingest_configs, example_ls5_dataset_paths):
@@ -23,8 +25,6 @@ def test_double_ingestion(clirunner, index, tmpdir, ingest_configs, example_ls5_
     but should re-use an existing target product.
 
     """
-    if not index.supports_legacy:
-        pytest.skip("Test uses legacy datasets - cannot be run against a non-legacy index driver.")
     # Make a test ingestor configuration
     config = INGESTER_CONFIGS / ingest_configs['ls5_nbar_albers']
     config_path, config = prepare_test_ingestion_configuration(tmpdir, None,

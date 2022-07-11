@@ -15,6 +15,8 @@ from integration_tests.utils import prepare_test_ingestion_configuration
 import netCDF4
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 @pytest.mark.timeout(20)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
