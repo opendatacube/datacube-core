@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs):
     runner = clirunner(['product', 'update'], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [FILES]" in runner.output
@@ -64,7 +67,15 @@ def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
     assert "Search by dataset locations" in runner.output
     assert runner.exit_code == 1
 
-    clirunner(['dataset', 'add', dataset_add_configs.datasets])
+    if index_empty.supports_legacy:
+        clirunner(['dataset', 'add', dataset_add_configs.datasets])
+    else:
+        # Does not support legacy datasets
+        with pytest.raises(ValueError):
+            # Expect to fail with legacy datasets
+            clirunner(['dataset', 'add', dataset_add_configs.datasets])
+        # Use EO3 datasets to allow subsequent tests to run.
+        clirunner(['dataset', 'add', dataset_add_configs.datasets_eo3])
 
     runner = clirunner(['dataset', 'archive'], verbose_flag=False, expect_success=False)
     assert "Completed dataset archival." not in runner.output
