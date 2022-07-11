@@ -23,6 +23,8 @@ def test_double_ingestion(clirunner, index, tmpdir, ingest_configs, example_ls5_
     but should re-use an existing target product.
 
     """
+    if not index.supports_legacy:
+        pytest.skip("Test uses legacy datasets - cannot be run against a non-legacy index driver.")
     # Make a test ingestor configuration
     config = INGESTER_CONFIGS / ingest_configs['ls5_nbar_albers']
     config_path, config = prepare_test_ingestion_configuration(tmpdir, None,
