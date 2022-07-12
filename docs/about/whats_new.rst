@@ -18,6 +18,8 @@ v1.8.next
 - Add `help message` for all `dataset`, `product` and `metadata` subcommands when required arg is not passed in (:pull:`1292`)
 - Add `error code 1` to all incomplete `dataset`, `product` and `metadata` subcommands (:pull:`1293`)
 - Add `exit_on_empty_file` message to `product` and `dataset` subcommands instead of returning no output when file is empty (:pull:`1294`)
+- Add flags to index drivers advertising what format datasets they support (eo/eo3/non-geo (e.g. telemetry only))
+  and validate in the high-level API. General refactor and cleanup of eo3.py and hl.py. (:pull: `1296`)
 
 v1.8.7 (7 June 2022)
 ====================
