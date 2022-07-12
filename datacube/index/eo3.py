@@ -183,6 +183,25 @@ def is_doc_eo3(doc: Dict[str, Any]) -> bool:
     raise ValueError(f'Unsupported dataset schema: {schema!r}')
 
 
+def is_doc_geo(doc: Dict[str, Any], check_eo3: bool = True) -> bool:
+    """ Is this document geospatial?
+
+    :param doc: Parsed ODC Dataset metadata document
+    :param check_url: Set to false to skip the EO3 check and assume doc isn't EO3.
+
+    :returns:
+        True if this document specifies geospatial dimensions
+        False if this document does not specify geospatial dimensions (e.g. telemetry only)
+
+    :raises ValueError: For an unsupported document
+    """
+    # EO3 is geospatial
+    if check_eo3 and is_doc_eo3(doc):
+        return True
+    # Does this cover EO legacy datasets ok? at all??
+    return "extent" in doc or "grid_spatial" in doc
+
+
 def prep_eo3(doc: Dict[str, Any],
              auto_skip: bool = False,
              resolution: Optional[float] = None) -> Dict[str, Any]:

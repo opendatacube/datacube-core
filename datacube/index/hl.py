@@ -15,7 +15,7 @@ from datacube.index.abstract import AbstractIndex
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
-from .eo3 import prep_eo3, is_doc_eo3  # type: ignore[attr-defined]
+from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo  # type: ignore[attr-defined]
 
 
 class ProductRule:
@@ -180,6 +180,12 @@ def dataset_resolver(index: AbstractIndex,
             return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
 
         if not is_doc_eo3(main_ds.doc):
+            if is_doc_geo(main_ds.doc, check_eo3=False):
+                if not index.supports_legacy:
+                    return None, "Legacy metadata formats not supported by the current index driver."
+            else:
+                if not index.supports_nongeo:
+                    return None, "Non-geospatial metadata formats not supported by the current index driver."
             if verify_lineage:
                 bad_lineage = []
 
@@ -266,9 +272,9 @@ class Doc2Dataset:
                  verify_lineage: bool = True,
                  skip_lineage: bool = False,
                  eo3: Union[bool, str] = 'auto'):
-        if not index.supports_legacy:
+        if not index.supports_legacy and not index.supports_nongeo:
             if not eo3:
-                raise ValueError("EO3 cannot be set to False for a non-legacy index.")
+                raise ValueError("EO3 cannot be set to False for a non-legacy geo-only index.")
             eo3 = True
         rules, err_msg = load_rules_from_types(index,
                                                product_names=products,
