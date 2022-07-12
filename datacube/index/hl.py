@@ -180,12 +180,6 @@ def dataset_resolver(index: AbstractIndex,
             return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
 
         if not is_doc_eo3(main_ds.doc):
-            if is_doc_geo(main_ds.doc, check_eo3=False):
-                if not index.supports_legacy:
-                    return None, "Legacy metadata formats not supported by the current index driver."
-            else:
-                if not index.supports_nongeo:
-                    return None, "Non-geospatial metadata formats not supported by the current index driver."
             if verify_lineage:
                 bad_lineage = []
 
