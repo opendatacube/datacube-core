@@ -2,7 +2,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from datacube.index.abstract import AbstractIndex
 from datacube.index.hl import Doc2Dataset
 
 

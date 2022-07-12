@@ -150,7 +150,8 @@ def test_bad_grids():
 
 def test_eo3_grid_spatial_nogrids():
     with pytest.raises(ValueError, match="grids.foo"):
-        oo = eo3_grid_spatial({
+        oo = eo3_grid_spatial(
+            {
                 "crs": "EPSG:4326",
                 "grids": {
                     "default": {
@@ -159,7 +160,8 @@ def test_eo3_grid_spatial_nogrids():
                     }
                 }
             },
-            grid_name="foo")
+            grid_name="foo"
+        )
 
 
 def test_is_eo3(sample_doc, sample_doc_180):
