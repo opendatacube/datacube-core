@@ -12,7 +12,7 @@ from datacube.index.eo3 import (
     EO3Grid,
     prep_eo3,
     add_eo3_parts,
-    is_doc_eo3,
+    is_doc_eo3, eo3_grid_spatial,
 )
 
 SAMPLE_DOC = '''---
@@ -140,12 +140,26 @@ def test_bad_grids():
         # Formally invalid affine transform (in 9 element form, last 3 numbers must be 0,0,1)
         {
             "shape": (1024, 256),
-            "transform": [343, 23345, 234, 9, -65.3, 1, 0, 7435.24563, 0.0001234, 888.888, 3, 3, 2],
+            "transform": [343, 23345, 234, 9, -65.3, 1, 3, 3, 2],
         },
     ]
     for bad_grid in bad_grids:
         with pytest.raises(ValueError):
             grid = EO3Grid(bad_grid)
+
+
+def test_eo3_grid_spatial_nogrids():
+    with pytest.raises(ValueError, match="grids.foo"):
+        oo = eo3_grid_spatial({
+                "crs": "EPSG:4326",
+                "grids": {
+                    "default": {
+                        "shape": (1024, 256),
+                        "transform": [343, 23345, 234, 9, -65.3, 1],
+                    }
+                }
+            },
+            grid_name="foo")
 
 
 def test_is_eo3(sample_doc, sample_doc_180):
