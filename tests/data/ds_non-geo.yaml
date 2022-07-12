@@ -1,0 +1,19 @@
+creation_dt: '2017-11-05T00:00:00'
+id: f80c30a5-1036-5607-a62f-fde5e3fec985
+label: A0001
+ga_label: LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
+ga_level: P54
+checksum_path: package.sha1
+platform:
+    code: LANDSAT_5
+instrument:
+    name: TM
+acquisition:
+    aos: 1990-03-02 23:06:44
+    los: 1990-03-02 23:14:02
+    groundstation:
+        code: ASA
+        label: Alice Springs
+        eods_domain_code: '002'
+n: 1
+product_type: A

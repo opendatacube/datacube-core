@@ -12,7 +12,7 @@ from datacube.index.eo3 import (
     EO3Grid,
     prep_eo3,
     add_eo3_parts,
-    is_doc_eo3, eo3_grid_spatial,
+    is_doc_eo3, eo3_grid_spatial, is_doc_geo,
 )
 
 SAMPLE_DOC = '''---
@@ -165,7 +165,6 @@ def test_eo3_grid_spatial_nogrids():
 
 
 def test_is_eo3(sample_doc, sample_doc_180):
-    identity = list(Affine.translation(0, 0))
     assert is_doc_eo3(sample_doc) is True
     assert is_doc_eo3(sample_doc_180) is True
 
@@ -176,6 +175,15 @@ def test_is_eo3(sample_doc, sample_doc_180):
 
     with pytest.raises(ValueError, match="Unsupported dataset schema.*"):
         is_doc_eo3({'$schema': 'https://schemas.opendatacube.org/eo4'})
+
+
+def test_is_geo(sample_doc, sample_doc_180):
+    assert is_doc_geo(sample_doc) is True
+    assert is_doc_geo(sample_doc_180) is True
+
+    assert is_doc_geo({}) is False
+    assert is_doc_geo({'crs': 'EPSG:4326'}) is False
+    assert is_doc_geo({'crs': 'EPSG:4326', 'extent': "dummy_extent"}) is True
 
 
 def test_add_eo3(sample_doc, sample_doc_180, eo3_product):

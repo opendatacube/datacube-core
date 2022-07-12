@@ -1,0 +1,21 @@
+$schema: https://schemas.opendatacube.org/dataset
+id: 7d41a4d0-2ab3-4da1-a010-ef48662ae8ef
+product:
+  name: eo3_test
+
+location: "http://example.com/a.yml"
+
+crs: "epsg:3857"
+properties:
+    datetime: 2020-04-20 00:26:43Z
+    odc:processing_datetime: 2020-05-16 10:56:18Z
+
+grids:
+    default:
+       shape: [100, 200]
+       transform: [10, 0, 100000, 0, -10, 200000, 0, 0, 1]
+lineage:
+  a: [f80c30a5-1036-5607-a62f-fde5e3fec985]
+  bc:
+    - fb077e47-f62e-5869-9bd1-03584c2d7380
+    - 13d3d75a-1d90-5ec0-8b86-e8be78275660
