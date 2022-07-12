@@ -15,7 +15,7 @@ from datacube.index.abstract import AbstractIndex
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
-from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo  # type: ignore[attr-defined]
+from .eo3 import prep_eo3, is_doc_eo3  # type: ignore[attr-defined]
 
 
 class ProductRule:
