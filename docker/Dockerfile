@@ -14,7 +14,6 @@ RUN apt-get update -y \
     && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-change-held-packages --fix-missing --no-install-recommends \
-        git \
         libpq-dev libudunits2-dev \
         python3-dev python3-distutils python3-pip \
         build-essential \
