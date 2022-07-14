@@ -17,7 +17,7 @@ from sqlalchemy import select, func
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgis._schema import DATASET
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID
-from datacube.model import Dataset, DatasetType
+from datacube.model import Dataset, Product
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes
@@ -37,13 +37,14 @@ class DatasetResource(AbstractDatasetResource):
     :type types: datacube.index._products.ProductResource
     """
 
-    def __init__(self, db, dataset_type_resource):
+    def __init__(self, db, product_resource):
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
-        :type dataset_type_resource: datacube.index._products.ProductResource
+        :type product_resource: datacube.index._products.ProductResource
         """
         self._db = db
-        self.types = dataset_type_resource
+        self.types = product_resource
+        self.products = product_resource
 
     def get(self, id_: Union[str, UUID], include_sources=False):
         """
@@ -189,7 +190,7 @@ class DatasetResource(AbstractDatasetResource):
 
         return dataset
 
-    def search_product_duplicates(self, product: DatasetType, *args):
+    def search_product_duplicates(self, product: Product, *args):
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -464,7 +465,7 @@ class DatasetResource(AbstractDatasetResource):
         else:
             uris = []
 
-        product = product or self.types.get(dataset_res.dataset_type_ref)
+        product = product or self.types.get(dataset_res.product_ref)
 
         return Dataset(
             type_=product,
@@ -513,7 +514,7 @@ class DatasetResource(AbstractDatasetResource):
         Perform a search, returning datasets grouped by product type.
 
         :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[(DatasetType,  __generator[Dataset])]]
+        :rtype: __generator[(Product,  __generator[Dataset])]]
         """
         for product, datasets in self._do_search_by_product(query):
             yield product, self._make_many(datasets, product)
@@ -561,7 +562,7 @@ class DatasetResource(AbstractDatasetResource):
 
         :param dict[str,str|float|datacube.model.Range] query:
         :returns: Sequence of (product, count)
-        :rtype: __generator[(DatasetType,  int)]]
+        :rtype: __generator[(Product,  int)]]
         """
         return self._do_count_by_product(query)
 
@@ -573,7 +574,7 @@ class DatasetResource(AbstractDatasetResource):
         :param dict[str,str|float|datacube.model.Range] query:
         :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: __generator[(DatasetType, list[(datetime.datetime, datetime.datetime), int)]]
+        :rtype: __generator[(Product, list[(datetime.datetime, datetime.datetime), int)]]
         """
         return self._do_time_count(period, query)
 
@@ -591,7 +592,7 @@ class DatasetResource(AbstractDatasetResource):
         """
         return next(self._do_time_count(period, query, ensure_single=True))[1]
 
-    def _get_dataset_types(self, q):
+    def _get_products(self, q):
         types = set()
         if 'product' in q.keys():
             types.add(self.types.get_by_name(q['product']))
@@ -605,7 +606,7 @@ class DatasetResource(AbstractDatasetResource):
 
     def _get_product_queries(self, query):
         for product, q in self.types.search_robust(**query):
-            q['dataset_type_id'] = product.id
+            q['product_id'] = product.id
             yield q, product
 
     # pylint: disable=too-many-locals
@@ -737,7 +738,7 @@ class DatasetResource(AbstractDatasetResource):
                 select(
                     [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
                 ).where(
-                    DATASET.c.dataset_type_ref == product.id
+                    DATASET.c.product_ref == product.id
                 )
             ).first()
 

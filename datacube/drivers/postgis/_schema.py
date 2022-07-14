@@ -38,7 +38,7 @@ METADATA_TYPE = Table(
 )
 
 PRODUCT = Table(
-    'dataset_type', _core.METADATA,
+    'product', _core.METADATA,
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
 
     # A name/label for this type (eg. 'ls7_nbar'). Specified by users.
@@ -72,7 +72,7 @@ DATASET = Table(
     #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),  # type: ignore[call-overload]
     #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
-    Column('dataset_type_ref', None, ForeignKey(PRODUCT.c.id), index=True, nullable=False),  # type: ignore[call-overload]  # noqa: E501
+    Column('product_ref', None, ForeignKey(PRODUCT.c.id), index=True, nullable=False),  # type: ignore[call-overload]  # noqa: E501
 
     Column('metadata', postgres.JSONB, index=False, nullable=False),
 
@@ -98,8 +98,8 @@ DATASET_LOCATION = Table(
     # All paths in the dataset metadata can be computed relative to this.
     # (it is often the path of the source metadata file)
     #
-    # eg 'file:///g/data/datasets/LS8_NBAR/agdc-metadata.yaml' or 'ftp://eo.something.com/dataset'
-    # 'file' is a scheme, '///g/data/datasets/LS8_NBAR/agdc-metadata.yaml' is a body.
+    # eg 'file:///g/data/datasets/LS8_NBAR/odc-metadata.yaml' or 'ftp://eo.something.com/dataset'
+    # 'file' is a scheme, '///g/data/datasets/LS8_NBAR/odc-metadata.yaml' is a body.
     Column('uri_scheme', String, nullable=False),
     Column('uri_body', String, nullable=False),
 

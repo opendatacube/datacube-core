@@ -20,7 +20,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 
 
-USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
+USER_ROLES = ('odc_user', 'odc_ingest', 'odc_manage', 'odc_admin')
 
 SQL_NAMING_CONVENTIONS = {
     "ix": 'ix_%(column_0_label)s',
@@ -88,13 +88,13 @@ def ensure_db(engine, with_permissions=True):
 
     if with_permissions:
         _LOG.info('Ensuring user roles.')
-        _ensure_role(c, 'agdc_user')
-        _ensure_role(c, 'agdc_ingest', inherits_from='agdc_user')
-        _ensure_role(c, 'agdc_manage', inherits_from='agdc_ingest')
-        _ensure_role(c, 'agdc_admin', inherits_from='agdc_manage', add_user=True)
+        _ensure_role(c, 'odc_user')
+        _ensure_role(c, 'odc_ingest', inherits_from='odc_user')
+        _ensure_role(c, 'odc_manage', inherits_from='odc_ingest')
+        _ensure_role(c, 'odc_admin', inherits_from='odc_manage', add_user=True)
 
         c.execute("""
-        grant all on database {db} to agdc_admin;
+        grant all on database {db} to odc_admin;
         """.format(db=quoted_db_name))
 
     if not has_schema(engine, c):
@@ -102,8 +102,8 @@ def ensure_db(engine, with_permissions=True):
         try:
             c.execute('begin')
             if with_permissions:
-                # Switch to 'agdc_admin', so that all items are owned by them.
-                c.execute('set role agdc_admin')
+                # Switch to 'odc_admin', so that all items are owned by them.
+                c.execute('set role odc_admin')
             _LOG.info('Creating schema.')
             c.execute(CreateSchema(SCHEMA_NAME))
             _LOG.info('Creating tables.')
@@ -124,20 +124,21 @@ def ensure_db(engine, with_permissions=True):
     if with_permissions:
         _LOG.info('Adding role grants.')
         c.execute("""
-        grant usage on schema {schema} to agdc_user;
-        grant select on all tables in schema {schema} to agdc_user;
-        grant execute on function {schema}.common_timestamp(text) to agdc_user;
+        grant usage on schema {schema} to odc_user;
+        grant select on all tables in schema {schema} to odc_user;
+        grant execute on function {schema}.common_timestamp(text) to odc_user;
 
         grant insert on {schema}.dataset,
                         {schema}.dataset_location,
-                        {schema}.dataset_source to agdc_ingest;
-        grant usage, select on all sequences in schema {schema} to agdc_ingest;
+                        {schema}.dataset_source to odc_ingest;
+        grant usage, select on all sequences in schema {schema} to odc_ingest;
+        
 
         -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
-        grant insert, delete on {schema}.dataset_type,
-                                {schema}.metadata_type to agdc_manage;
+        grant insert, delete on {schema}.product,
+                                {schema}.metadata_type to odc_manage;
         -- Allow creation of indexes, views
-        grant create on schema {schema} to agdc_manage;
+        grant create on schema {schema} to odc_manage;
         """.format(schema=SCHEMA_NAME))
 
     c.close()
@@ -252,13 +253,13 @@ def to_pg_role(role):
     Why are we even doing this? Can't we use the same names internally and externally?
 
     >>> to_pg_role('ingest')
-    'agdc_ingest'
+    'odc_ingest'
     >>> to_pg_role('fake')
     Traceback (most recent call last):
     ...
     ValueError: Unknown role 'fake'. Expected one of ...
     """
-    pg_role = 'agdc_' + role.lower()
+    pg_role = 'odc_' + role.lower()
     if pg_role not in USER_ROLES:
         raise ValueError(
             'Unknown role %r. Expected one of %r' %
@@ -271,7 +272,7 @@ def from_pg_role(pg_role):
     """
     Convert a PostgreSQL role name back to an ODC name.
 
-    >>> from_pg_role('agdc_admin')
+    >>> from_pg_role('odc_admin')
     'admin'
     >>> from_pg_role('fake')
     Traceback (most recent call last):

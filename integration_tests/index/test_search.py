@@ -1187,9 +1187,13 @@ def test_csv_search_via_cli(clirunner: Any,
 
 
 # Headers are currently in alphabetical order.
-_EXPECTED_OUTPUT_HEADER = 'creation_time,dataset_type_id,format,gsi,id,indexed_by,indexed_time,' \
+_EXPECTED_OUTPUT_HEADER_LEGACY = 'creation_time,dataset_type_id,format,gsi,id,indexed_by,indexed_time,' \
                           'instrument,label,lat,lon,metadata_doc,metadata_type,metadata_type_id,' \
                           'orbit,platform,product,product_type,sat_path,sat_row,time,uri'
+
+_EXPECTED_OUTPUT_HEADER = 'creation_time,format,gsi,id,indexed_by,indexed_time,instrument,label,' \
+                          'lat,lon,metadata_doc,metadata_type,metadata_type_id,orbit,platform,' \
+                          'product,product_id,product_type,sat_path,sat_row,time,uri'
 
 
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
@@ -1198,8 +1202,8 @@ def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
     lines = [line.strip() for line in output.split('\n') if line]
     # A header and two dataset rows
     assert len(lines) == 3
-
-    assert lines[0] == _EXPECTED_OUTPUT_HEADER
+    header_line = lines[0]
+    assert header_line in (_EXPECTED_OUTPUT_HEADER, _EXPECTED_OUTPUT_HEADER_LEGACY)
 
 
 # Current formulation of this test relies on non-EO3 test data
