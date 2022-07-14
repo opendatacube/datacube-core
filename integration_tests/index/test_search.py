@@ -1188,12 +1188,12 @@ def test_csv_search_via_cli(clirunner: Any,
 
 # Headers are currently in alphabetical order.
 _EXPECTED_OUTPUT_HEADER_LEGACY = 'creation_time,dataset_type_id,format,gsi,id,indexed_by,indexed_time,' \
-        'instrument,label,lat,lon,metadata_doc,metadata_type,metadata_type_id,' \
-        'orbit,platform,product,product_type,sat_path,sat_row,time,uri'
+    'instrument,label,lat,lon,metadata_doc,metadata_type,metadata_type_id,' \
+    'orbit,platform,product,product_type,sat_path,sat_row,time,uri'
 
 _EXPECTED_OUTPUT_HEADER = 'creation_time,format,gsi,id,indexed_by,indexed_time,instrument,label,' \
-        'lat,lon,metadata_doc,metadata_type,metadata_type_id,orbit,platform,' \
-        'product,product_id,product_type,sat_path,sat_row,time,uri'
+    'lat,lon,metadata_doc,metadata_type,metadata_type_id,orbit,platform,' \
+    'product,product_id,product_type,sat_path,sat_row,time,uri'
 
 
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
