@@ -132,7 +132,6 @@ def ensure_db(engine, with_permissions=True):
                         {schema}.dataset_location,
                         {schema}.dataset_source to odc_ingest;
         grant usage, select on all sequences in schema {schema} to odc_ingest;
-        
 
         -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
         grant insert, delete on {schema}.product,
