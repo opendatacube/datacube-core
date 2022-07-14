@@ -12,7 +12,7 @@ from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
 from ..utils.geometry import GeoBox
 from ..utils.geometry import gbox as gbx
-from ..index.eo3 import is_doc_eo3, _norm_grid  # type: ignore[attr-defined]
+from ..index.eo3 import is_doc_eo3, EO3Grid  # type: ignore[attr-defined]
 from types import SimpleNamespace
 
 
@@ -68,11 +68,11 @@ def eo3_geobox(ds: Dataset, band: str) -> GeoBox:
     crs = ds.crs
     doc_path = ('grids', mm.get('grid', 'default'))
 
-    grid = toolz.get_in(doc_path, ds.metadata_doc)
-    if crs is None or grid is None:
+    grid_spec = toolz.get_in(doc_path, ds.metadata_doc)
+    if crs is None or grid_spec is None:
         raise ValueError('Not a valid EO3 dataset')
 
-    grid = _norm_grid(grid)
+    grid = EO3Grid(grid_spec)
     h, w = grid.shape
 
     return GeoBox(w, h, grid.transform, crs)

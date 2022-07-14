@@ -20,7 +20,6 @@ from datacube.utils.documents import read_documents
 from datacube.model import Measurement, MetadataType, DatasetType, Dataset
 from datacube.index.eo3 import prep_eo3
 
-
 AWS_ENV_VARS = (
     "AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"
     "AWS_DEFAULT_REGION AWS_DEFAULT_OUTPUT AWS_PROFILE "
@@ -55,6 +54,39 @@ def data_folder():
 def example_netcdf_path(request):
     """Return a string path to `sample_tile.nc` in the test data dir"""
     return str(request.fspath.dirpath("data/sample_tile.nc"))
+
+
+@pytest.fixture
+def non_geo_dataset_file(data_folder):
+    return os.path.join(data_folder, "ds_non-geo.yaml")
+
+
+@pytest.fixture
+def non_geo_dataset_doc(non_geo_dataset_file):
+    (_, doc), *_ = read_documents(non_geo_dataset_file)
+    return doc
+
+
+@pytest.fixture
+def eo_dataset_file(data_folder):
+    return os.path.join(data_folder, "ds_eo.yaml")
+
+
+@pytest.fixture
+def eo_dataset_doc(eo_dataset_file):
+    (_, doc), *_ = read_documents(eo_dataset_file)
+    return doc
+
+
+@pytest.fixture
+def eo3_dataset_file(data_folder):
+    return os.path.join(data_folder, "ds_eo3.yaml")
+
+
+@pytest.fixture
+def eo3_dataset_doc(eo3_dataset_file):
+    (_, doc), *_ = read_documents(eo3_dataset_file)
+    return doc
 
 
 @pytest.fixture

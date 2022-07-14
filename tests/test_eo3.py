@@ -9,11 +9,10 @@ from datacube.testutils import mk_sample_product
 from datacube.model import Dataset
 
 from datacube.index.eo3 import (
+    EO3Grid,
     prep_eo3,
-    eo3_lonlat_bbox,
     add_eo3_parts,
-    is_doc_eo3,
-    grid2points,
+    is_doc_eo3, eo3_grid_spatial, is_doc_geo,
 )
 
 SAMPLE_DOC = '''---
@@ -67,32 +66,105 @@ def eo3_product(eo3_metadata):
     return mk_sample_product("eo3_product", metadata_type=eo3_metadata)
 
 
-def test_grid2points():
+def test_grid_points():
     identity = list(Affine.translation(0, 0))
-    grid = dict(shape=(11, 22),
-                transform=identity)
+    grid = EO3Grid({
+        "shape": (11, 22),
+        "transform": identity
+    })
 
-    pts = grid2points(grid)
+    pts = grid.points()
     assert len(pts) == 4
     assert pts == [(0, 0), (22, 0), (22, 11), (0, 11)]
-    pts_ = grid2points(grid, ring=True)
+    pts_ = grid.points(ring=True)
     assert len(pts_) == 5
     assert pts == pts_[:4]
     assert pts_[0] == pts_[-1]
 
-    grid['transform'] = tuple(Affine.translation(100, 0))
-    pts = grid2points(grid)
+    grid = EO3Grid({
+        "shape": (11, 22),
+        "transform": tuple(Affine.translation(100, 0))
+    })
+    pts = grid.points()
     assert pts == [(100, 0), (122, 0), (122, 11), (100, 11)]
 
     for bad in [{},
                 dict(shape=(1, 1)),
                 dict(transform=identity)]:
         with pytest.raises(ValueError):
-            grid2points(bad)
+            grid = EO3Grid(bad)
+
+
+def test_bad_grids():
+    identity = list(Affine.translation(0, 0))
+    bad_grids = [
+        # No Shape
+        {
+            "transform": identity,
+        },
+        # Non 2-d Shape (NB: geospatial dimensions only.  Other dimensions are handled elsewhere.)
+        {
+            "shape": (1024,),
+            "transform": identity,
+        },
+        {
+            "shape": (1024, 564, 256),
+            "transform": identity,
+        },
+        # No Transform
+        {
+            "shape": (1024, 256),
+        },
+        # Formally invalid affine transform (must be 6 or 9 elements)
+        {
+            "shape": (1024, 256),
+            "transform": [343.3],
+        },
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3],
+        },
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3, 1, 0],
+        },
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3, 1, 0, 7435.24563, 0.0001234, 888.888, 3, 3, 2],
+        },
+        # Formally invalid affine transform (all elements must be numbers)
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3, "six"]
+        },
+        # Formally invalid affine transform (in 9 element form, last 3 numbers must be 0,0,1)
+        {
+            "shape": (1024, 256),
+            "transform": [343, 23345, 234, 9, -65.3, 1, 3, 3, 2],
+        },
+    ]
+    for bad_grid in bad_grids:
+        with pytest.raises(ValueError):
+            grid = EO3Grid(bad_grid)
+
+
+def test_eo3_grid_spatial_nogrids():
+    with pytest.raises(ValueError, match="grids.foo"):
+        oo = eo3_grid_spatial(
+            {
+                "crs": "EPSG:4326",
+                "grids": {
+                    "default": {
+                        "shape": (1024, 256),
+                        "transform": [343, 23345, 234, 9, -65.3, 1],
+                    }
+                }
+            },
+            grid_name="foo"
+        )
 
 
 def test_is_eo3(sample_doc, sample_doc_180):
-    identity = list(Affine.translation(0, 0))
     assert is_doc_eo3(sample_doc) is True
     assert is_doc_eo3(sample_doc_180) is True
 
@@ -103,6 +175,15 @@ def test_is_eo3(sample_doc, sample_doc_180):
 
     with pytest.raises(ValueError, match="Unsupported dataset schema.*"):
         is_doc_eo3({'$schema': 'https://schemas.opendatacube.org/eo4'})
+
+
+def test_is_geo(sample_doc, sample_doc_180):
+    assert is_doc_geo(sample_doc) is True
+    assert is_doc_geo(sample_doc_180) is True
+
+    assert is_doc_geo({}) is False
+    assert is_doc_geo({'crs': 'EPSG:4326'}) is False
+    assert is_doc_geo({'crs': 'EPSG:4326', 'extent': "dummy_extent"}) is True
 
 
 def test_add_eo3(sample_doc, sample_doc_180, eo3_product):
@@ -144,9 +225,6 @@ def test_add_eo3(sample_doc, sample_doc_180, eo3_product):
     doc.pop('grids')
     with pytest.raises(ValueError):
         add_eo3_parts(doc)
-
-    with pytest.raises(ValueError):
-        eo3_lonlat_bbox({})
 
 
 def test_prep_eo3(sample_doc, sample_doc_180, eo3_metadata):

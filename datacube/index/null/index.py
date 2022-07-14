@@ -19,6 +19,8 @@ class Index(AbstractIndex):
     """
     (Sub-)Minimal (non-)implementation of the Index API.
     """
+    # Supports everything but persistance
+    supports_persistance = False
 
     def __init__(self) -> None:
         self._users = UserResource()

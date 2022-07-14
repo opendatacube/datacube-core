@@ -1,0 +1,238 @@
+id: bbf3e21c-82b0-11e5-9ba1-a0000100fe80
+ga_label: LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
+ga_level: P54
+product_type: nbar
+creation_dt: 2015-03-22 01:49:21
+checksum_path: package.sha1
+platform:
+    code: LANDSAT_5
+instrument:
+    name: TM
+format:
+    name: GeoTiff
+acquisition:
+    aos: 1990-03-02 23:06:44
+    los: 1990-03-02 23:14:02
+    groundstation:
+        code: ASA
+        label: Alice Springs
+        eods_domain_code: '002'
+extent:
+    coord:
+        ul:
+            lat: -33.64690729375812
+            lon: 148.48815577279413
+        ur:
+            lat: -33.588046887860685
+            lon: 151.0941224695904
+        ll:
+            lat: -35.61237326356207
+            lon: 148.52368201445722
+        lr:
+            lat: -35.549061820028044
+            lon: 151.19156117169499
+    from_dt: 1990-03-02 23:11:04
+    center_dt: 1990-03-02 23:11:16
+    to_dt: 1990-03-02 23:11:28
+grid_spatial:
+    projection:
+        geo_ref_points:
+            ul:
+                x: 638000.0
+                y: 6276000.0
+            ur:
+                x: 880025.0
+                y: 6276000.0
+            ll:
+                x: 638000.0
+                y: 6057975.0
+            lr:
+                x: 880025.0
+                y: 6057975.0
+        zone: -55   # keeping zone for test_index_datasets_search_light
+        spatial_reference: "EPSG:28355"
+image:
+    satellite_ref_point_start:
+        x: 90
+        y: 84
+    satellite_ref_point_end:
+        x: 90
+        y: 84
+    bands:
+        '1':
+            path: product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B10.tif
+            number: '10'
+            shape:
+                x: 9681
+                y: 8721
+            cell_size:
+                x: 25.0
+                y: 25.0
+        '2':
+            path: product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B20.tif
+            number: '20'
+            shape:
+                x: 9681
+                y: 8721
+            cell_size:
+                x: 25.0
+                y: 25.0
+        '3':
+            path: product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B30.tif
+            number: '30'
+            shape:
+                x: 9681
+                y: 8721
+            cell_size:
+                x: 25.0
+                y: 25.0
+lineage:
+    machine: {}
+    source_datasets:
+        level1:
+            id: ee983642-1cd3-11e6-aaba-a0000100fe80
+            ga_label: LS5_TM_OTH_P51_GALPGS01-002_090_084_20110107
+            product_type: level1
+            product_level: L1T
+            creation_dt: 2016-05-18 08:24:02
+            size_bytes: 266897444
+            checksum_path: package.sha1
+            platform:
+                code: LANDSAT_5
+            instrument:
+                name: TM
+                operation_mode: BUMPER
+            format:
+                name: GeoTIFF
+            usgs:
+                scene_id: LT50900842011007ASA00
+            acquisition:
+                groundstation:
+                    code: ASA
+                    label: Alice Springs
+                    eods_domain_code: '002'
+            extent:
+                coord:
+                    ul:
+                        lat: -33.658988
+                        lon: 148.467739
+                    ur:
+                        lat: -33.599109
+                        lon: 151.117123
+                    ll:
+                        lat: -35.622441
+                        lon: 148.502756
+                    lr:
+                        lat: -35.558039
+                        lon: 151.215043
+                from_dt: 2011-01-07 23:40:00
+                center_dt: 2011-01-07 23:40:13
+                to_dt: 2011-01-07 23:40:26
+            grid_spatial:
+                projection:
+                    geo_ref_points:
+                        ul:
+                            x: 636087.5
+                            y: 6274687.5
+                        ur:
+                            x: 882112.5
+                            y: 6274687.5
+                        ll:
+                            x: 636087.5
+                            y: 6056887.5
+                        lr:
+                            x: 882112.5
+                            y: 6056887.5
+                    spatial_reference: "EPSG:28355"
+                    orientation: NORTH_UP
+                    resampling_option: CUBIC_CONVOLUTION
+                    zone: -55  # keeping zone for test_index_datasets_search_light
+            image:
+                satellite_ref_point_start:
+                    x: 90
+                    y: 84
+                bands:
+                    '1':
+                        path: product/LT50900842011007ASA00_B1.TIF
+                        type: reflective
+                        label: Visible Blue
+                        number: '1'
+                        cell_size: 25.0
+                    '2':
+                        path: product/LT50900842011007ASA00_B2.TIF
+                        type: reflective
+                        label: Visible Green
+                        number: '2'
+                        cell_size: 25.0
+                    '3':
+                        path: product/LT50900842011007ASA00_B3.TIF
+                        type: reflective
+                        label: Visible Red
+                        number: '3'
+                        cell_size: 25.0
+                    '4':
+                        path: product/LT50900842011007ASA00_B4.TIF
+                        type: reflective
+                        label: Near Infrared
+                        number: '4'
+                        cell_size: 25.0
+                    '5':
+                        path: product/LT50900842011007ASA00_B5.TIF
+                        type: reflective
+                        label: Middle Infrared 1
+                        number: '5'
+                        cell_size: 25.0
+                    '6':
+                        path: product/LT50900842011007ASA00_B6.TIF
+                        type: thermal
+                        label: Thermal Infrared
+                        number: '6'
+                        cell_size: 100.0
+                    '7':
+                        path: product/LT50900842011007ASA00_B7.TIF
+                        type: reflective
+                        label: Middle Infrared 2
+                        number: '7'
+                        cell_size: 25.0
+            lineage:
+                algorithm:
+                    name: LPGS
+                    version: 12.7.0
+                    parameters: {}
+                machine: {}
+                source_datasets:
+                    satellite_telemetry_data:
+                        id: 100a8412-6017-11e5-b4fe-ac162d791418
+                        ga_label: LS5_TM_STD-RCC_P00_L5TB2011007233607ASA114_0_0_20110107T233607Z20110107T234256
+                        ga_level: P00
+                        product_type: satellite_telemetry_data
+                        creation_dt: 2015-09-21 04:13:07
+                        size_bytes: 4334527032
+                        checksum_path: package.sha1
+                        platform:
+                            code: LANDSAT_5
+                        instrument:
+                            name: TM
+                            operation_mode: BUMPER
+                        format:
+                            name: RCC
+                        usgs:
+                            interval_id: L5TB2011007233607ASA114
+                        acquisition:
+                            aos: 2011-01-07 23:36:07
+                            los: 2011-01-07 23:42:56
+                            groundstation:
+                                code: ASA
+                                label: Alice Springs
+                                eods_domain_code: '002'
+                            platform_orbit: 142833
+                        image:
+                            bands: {}
+                        lineage:
+                            machine: {}
+                            source_datasets: {}
+ancillary_files:
+-   type: xml
+    path: product/metadata.xml
+-   type: txt
+    path: product/scene01/report.txt

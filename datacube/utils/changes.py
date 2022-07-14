@@ -8,7 +8,7 @@ Validation of document/dictionary changes.
 import numpy
 
 from itertools import zip_longest
-from typing import Any, Callable, List, Mapping, Sequence, Tuple, Union
+from typing import cast, Any, Callable, List, Mapping, Sequence, Tuple, Union
 
 # Type that can be checked for changes.
 # (MyPy approximation without recursive references)
@@ -93,7 +93,7 @@ def get_doc_changes(original: Changable,
         for idx, (orig_item, new_item) in enumerate(zip_longest(original, new)):
             changed_fields.extend(get_doc_changes(orig_item, new_item, base_prefix + (idx, )))
     elif isinstance(original, tuple) or isinstance(new, tuple):
-        if not numpy.array_equal(original, new):
+        if not numpy.array_equal(cast(Sequence[Any], original), cast(Sequence[Any], new)):
             changed_fields.append((base_prefix, original, new))
     else:
         changed_fields.append((base_prefix, original, new))

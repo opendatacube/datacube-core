@@ -909,30 +909,38 @@ class AbstractIndex(ABC):
     inherit from this base class and implement all abstract methods.
     """
 
+    # Interface contracts
+    #   supports add() update() remove() etc methods.
+    supports_persistance = True
+    #   supports legacy ODCv1 EO style metadata types.
+    supports_legacy = True
+    #   supports non-geospatial (e.g. telemetry) metadata types
+    supports_nongeo = True
+
     @property
     @abstractmethod
     def url(self) -> str:
-        pass
+        ...
 
     @property
     @abstractmethod
     def users(self) -> AbstractUserResource:
-        pass
+        ...
 
     @property
     @abstractmethod
     def metadata_types(self) -> AbstractMetadataTypeResource:
-        pass
+        ...
 
     @property
     @abstractmethod
     def products(self) -> AbstractProductResource:
-        pass
+        ...
 
     @property
     @abstractmethod
     def datasets(self) -> AbstractDatasetResource:
-        pass
+        ...
 
     @classmethod
     @abstractmethod
@@ -941,24 +949,24 @@ class AbstractIndex(ABC):
                     application_name: Optional[str] = None,
                     validate_connection: bool = True
                    ) -> "AbstractIndex":
-        pass
+        ...
 
     @classmethod
     @abstractmethod
     def get_dataset_fields(cls,
                            doc: dict
                           ) -> Mapping[str, Field]:
-        pass
+        ...
 
     @abstractmethod
     def init_db(self,
                 with_default_types: bool = True,
                 with_permissions: bool = True) -> bool:
-        pass
+        ...
 
     @abstractmethod
     def close(self) -> None:
-        pass
+        ...
 
     def __enter__(self):
         return self
@@ -978,13 +986,13 @@ class AbstractIndexDriver(ABC):
                          application_name: Optional[str] = None,
                          validate_connection: bool = True
                         ) -> "AbstractIndex":
-        pass
+        ...
 
     @staticmethod
     @abstractmethod
     def metadata_type_from_doc(definition: dict
                               ) -> MetadataType:
-        pass
+        ...
 
 
 # The special handling of grid_spatial, etc appears to NOT apply to EO3.
