@@ -21,6 +21,7 @@ v1.8.next
 - Add flags to index drivers advertising what format datasets they support (eo/eo3/non-geo (e.g. telemetry only))
   and validate in the high-level API. General refactor and cleanup of eo3.py and hl.py. (:pull: `1296`)
 - Replace references to 'agdc' and 'dataset_type' in postgis driver with 'odc' and 'product'. (:pull: `1298`)
+- Add warning message for product and metadata add when product and metadata is already in the database. (:pull: `1299`)
 
 v1.8.7 (7 June 2022)
 ====================
