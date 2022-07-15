@@ -42,14 +42,14 @@ class Dataset:
     """
 
     def __init__(self,
-                 type_: 'DatasetType',
+                 type_: 'Product',
                  metadata_doc: Dict[str, Any],
                  uris: Optional[List[str]] = None,
                  sources: Optional[Mapping[str, 'Dataset']] = None,
                  indexed_by: Optional[str] = None,
                  indexed_time: Optional[datetime] = None,
                  archived_time: Optional[datetime] = None):
-        assert isinstance(type_, DatasetType)
+        assert isinstance(type_, Product)
 
         self.type = type_
 
@@ -369,7 +369,7 @@ class MetadataType:
 
 
 @schema_validated(SCHEMA_PATH / 'dataset-type-schema.yaml')
-class DatasetType:
+class Product:
     """
     Product definition
 
@@ -673,7 +673,7 @@ class DatasetType:
         return row
 
     def __str__(self) -> str:
-        return "DatasetType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
+        return "Product(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -691,6 +691,10 @@ class DatasetType:
 
     def __hash__(self):
         return hash(self.name)
+
+
+# Type alias for backwards compatibility
+DatasetType = Product
 
 
 @schema_validated(SCHEMA_PATH / 'ingestor-config-type-schema.yaml')

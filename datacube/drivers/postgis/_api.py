@@ -100,10 +100,10 @@ def get_native_fields():
             'Product name',
             PRODUCT.c.name
         ),
-        'dataset_type_id': NativeField(
-            'dataset_type_id',
+        'product_id': NativeField(
+            'product_id',
             'ID of a dataset type',
-            DATASET.c.dataset_type_ref
+            DATASET.c.product_ref
         ),
         'metadata_type': NativeField(
             'metadata_type',
@@ -197,16 +197,16 @@ class PostgisDbAPI(object):
         :return: whether it was inserted
         :rtype: bool
         """
-        dataset_type_ref = bindparam('dataset_type_ref')
+        product_ref = bindparam('product_ref')
         ret = self._connection.execute(
             insert(DATASET).from_select(
-                ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
+                ['id', 'product_ref', 'metadata_type_ref', 'metadata'],
                 select([
-                    bindparam('id'), dataset_type_ref,
+                    bindparam('id'), product_ref,
                     select([
                         PRODUCT.c.metadata_type_ref
                     ]).where(
-                        PRODUCT.c.id == dataset_type_ref
+                        PRODUCT.c.id == product_ref
                     ).label('metadata_type_ref'),
                     bindparam('metadata', type_=JSONB)
                 ])
@@ -214,7 +214,7 @@ class PostgisDbAPI(object):
                 index_elements=['id']
             ),
             id=dataset_id,
-            dataset_type_ref=product_id,
+            product_ref=product_id,
             metadata=metadata_doc
         )
         return ret.rowcount > 0
@@ -230,7 +230,7 @@ class PostgisDbAPI(object):
             DATASET.update().returning(DATASET.c.id).where(
                 and_(
                     DATASET.c.id == dataset_id,
-                    DATASET.c.dataset_type_ref == product_id
+                    DATASET.c.product_ref == product_id
                 )
             ).values(
                 metadata=metadata_doc
@@ -821,7 +821,7 @@ class PostgisDbAPI(object):
 
             self._connection.execute(
                 DATASET.update().where(
-                    DATASET.c.dataset_type_ref == type_id
+                    DATASET.c.product_ref == type_id
                 ).values(
                     metadata_type_ref=metadata_type_id,
                 )
@@ -908,7 +908,7 @@ class PostgisDbAPI(object):
 
     def _setup_product_fields(self, id_, name, fields, metadata_doc,
                               rebuild_indexes=False, rebuild_view=False, concurrently=True):
-        dataset_filter = and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_)
+        dataset_filter = and_(DATASET.c.archived == None, DATASET.c.product_ref == id_)
         excluded_field_names = tuple(self._get_active_field_names(fields, metadata_doc))
 
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
@@ -1037,7 +1037,7 @@ class PostgisDbAPI(object):
             from pg_roles group_role
             inner join pg_auth_members am on am.roleid = group_role.oid
             inner join pg_roles user_role on am.member = user_role.oid
-            where (group_role.rolname like 'agdc_%%') and not (user_role.rolname like 'agdc_%%')
+            where (group_role.rolname like 'odc_%%') and not (user_role.rolname like 'odc_%%')
             order by group_role.oid asc, user_role.oid asc;
         """)
         for row in result:
