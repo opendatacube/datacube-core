@@ -62,6 +62,7 @@ class ProductResource(AbstractProductResource):
 
         existing = self.get_by_name(product.name)
         if existing:
+            _LOG.warning(f"Product {product.name} is already in the database, checking for differences")
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(product.definition),
@@ -148,7 +149,7 @@ class ProductResource(AbstractProductResource):
         can_update, safe_changes, unsafe_changes = self.can_update(product, allow_unsafe_updates)
 
         if not safe_changes and not unsafe_changes:
-            _LOG.info("No changes detected for product %s", product.name)
+            _LOG.warning("No changes detected for product %s", product.name)
             return self.get_by_name(product.name)
 
         if not can_update:

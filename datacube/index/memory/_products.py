@@ -26,6 +26,7 @@ class ProductResource(AbstractProductResource):
         Product.validate(product.definition)  # type: ignore[attr-defined]
         existing = self.get_by_name(product.name)
         if existing:
+            _LOG.warning(f"Product {product.name} is already in the database, checking for differences")
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(product.definition),
@@ -90,7 +91,7 @@ class ProductResource(AbstractProductResource):
         can_update, safe_changes, unsafe_changes = self.can_update(product, allow_unsafe_updates)
 
         if not safe_changes and not unsafe_changes:
-            _LOG.info(f"No changes detected for product {product.name}")
+            _LOG.warning(f"No changes detected for product {product.name}")
             return cast(Product, self.get_by_name(product.name))
 
         if not can_update:
@@ -100,7 +101,9 @@ class ProductResource(AbstractProductResource):
         existing = cast(Product, self.get_by_name(product.name))
         if product.metadata_type.name != existing.metadata_type.name:
             raise ValueError("Unsafe change: cannot (currently) switch metadata types for a product")
+
         _LOG.info(f"Updating product {product.name}")
+
         persisted = self.clone(product)
         persisted.id = existing.id
         self.by_id[persisted.id] = persisted

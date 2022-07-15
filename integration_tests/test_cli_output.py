@@ -110,3 +110,29 @@ def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
     assert "Completed dataset purge." in runner.output
     assert "Usage:  [OPTIONS] [IDS]" not in runner.output
     assert runner.exit_code == 0
+
+
+def test_readd_and_update_metadata_product_dataset_command(index_empty, clirunner, dataset_add_configs):
+    clirunner(['metadata', 'add', dataset_add_configs.metadata])
+    rerun_add = clirunner(['metadata', 'add', dataset_add_configs.metadata])
+    assert "WARNING Metadata Type" in rerun_add.output
+    assert "is already in the database" in rerun_add.output
+
+    update = clirunner(['metadata', 'update', dataset_add_configs.metadata])
+    assert "WARNING No changes detected for metadata type" in update.output
+
+    add = clirunner(['product', 'add', dataset_add_configs.products])
+    rerun_add = clirunner(['product', 'add', dataset_add_configs.products])
+    assert "WARNING Product" in rerun_add.output
+    assert "is already in the database" in rerun_add.output
+
+    update = clirunner(['product', 'update', dataset_add_configs.products])
+    assert "WARNING No changes detected for product" in update.output
+
+    clirunner(['dataset', 'add', dataset_add_configs.datasets_eo3])
+    rerun_add = clirunner(['dataset', 'add', dataset_add_configs.datasets_eo3])
+    assert "WARNING Dataset" in rerun_add.output
+    assert "is already in the database" in rerun_add.output
+
+    update = clirunner(['dataset', 'update', dataset_add_configs.datasets_eo3])
+    assert "1 successful, 0 failed" in update.output

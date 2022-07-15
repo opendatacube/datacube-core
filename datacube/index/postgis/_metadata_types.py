@@ -60,6 +60,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
         existing = self.get_by_name(metadata_type.name)
         if existing:
             # They've passed us the same one again. Make sure it matches what is stored.
+            _LOG.warning(f"Metadata Type {metadata_type.name} is already in the database, checking for differences")
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(metadata_type.definition),
@@ -127,7 +128,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
         can_update, safe_changes, unsafe_changes = self.can_update(metadata_type, allow_unsafe_updates)
 
         if not safe_changes and not unsafe_changes:
-            _LOG.info("No changes detected for metadata type %s", metadata_type.name)
+            _LOG.warning("No changes detected for metadata type %s", metadata_type.name)
             return self.get_by_name(metadata_type.name)
 
         if not can_update:
