@@ -12,6 +12,7 @@ from pathlib import Path
 from collections import OrderedDict
 from types import SimpleNamespace
 from typing import Tuple, Iterable
+from uuid import UUID, uuid4
 
 import numpy as np
 import pytest
@@ -237,7 +238,7 @@ def test_dataset_maker():
 
     assert a.id != b.id
     assert a.doc['creation_dt'] == b.doc['creation_dt']
-    assert isinstance(a.id, str)
+    assert isinstance(a.id, UUID)
     assert a.sources == {}
 
     a1, a2 = [dataset_maker(i)('A', product_type='eo') for i in (0, 1)]
@@ -321,8 +322,11 @@ def test_simple_doc_nav():
       +--> E
     """
 
+    nu_map = {n: uuid4() for n in ['A', 'B', 'C', 'D', 'E']}
+    un_map = {u: n for n, u in nu_map.items()}
+
     def node(name, **kwargs):
-        return dict(id=name, lineage=dict(source_datasets=kwargs))
+        return dict(id=nu_map[name], lineage=dict(source_datasets=kwargs))
 
     A, _, C, _, _ = make_graph_abcde(node)  # noqa: N806
     rdr = SimpleDocNav(A)
@@ -336,7 +340,7 @@ def test_simple_doc_nav():
     assert isinstance(rdr.sources_path, tuple)
 
     def visitor(node, name=None, depth=0, out=None):
-        s = '{}:{}:{:d}'.format(node.id, name if name else '..', depth)
+        s = '{}:{}:{:d}'.format(un_map[node.id], name if name else '..', depth)
         out.append(s)
 
     expect_preorder = '''
@@ -367,17 +371,17 @@ A:..:0
 
     fv = flatten_datasets(rdr)
 
-    assert len(fv['A']) == 1
-    assert len(fv['C']) == 2
-    assert len(fv['E']) == 1
-    assert set(fv.keys()) == set('ABCDE')
+    assert len(fv[nu_map['A']]) == 1
+    assert len(fv[nu_map['C']]) == 2
+    assert len(fv[nu_map['E']]) == 1
+    assert set(fv.keys()) == set(un_map.keys())
 
     fv, dg = flatten_datasets(rdr, with_depth_grouping=True)
 
-    assert len(fv['A']) == 1
-    assert len(fv['C']) == 2
-    assert len(fv['E']) == 1
-    assert set(fv.keys()) == set('ABCDE')
+    assert len(fv[nu_map['A']]) == 1
+    assert len(fv[nu_map['C']]) == 2
+    assert len(fv[nu_map['E']]) == 1
+    assert set(fv.keys()) == set(un_map.keys())
     assert isinstance(dg, list)
     assert len(dg) == 4
     assert [len(dss) for dss in dg] == [1, 3, 2, 1]
@@ -385,10 +389,9 @@ A:..:0
     def to_set(xx):
         return set(x.id for x in xx)
 
-    assert [set(s) for s in ('A',
-                             'BCE',
-                             'CD',
-                             'D')] == [to_set(xx) for xx in dg]
+    assert [set(nu_map[n] for n in s)
+            for s in ('A', 'BCE', 'CD', 'D')
+            ] == [to_set(xx) for xx in dg]
 
     with pytest.raises(ValueError):
         SimpleDocNav([])

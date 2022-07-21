@@ -353,7 +353,7 @@ def remap_lineage_doc(root, mk_node, **kwargs):
     try:
         return visit(root)
     except BadMatch as e:
-        if root.id not in str(e):
+        if str(root.id) not in str(e):
             raise BadMatch(f"Error loading lineage dataset: {e}") from None
         else:
             raise
