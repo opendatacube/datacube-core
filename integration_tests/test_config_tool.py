@@ -149,6 +149,7 @@ def test_db_init_noop(clirunner, local_config, ls5_telem_type):
     assert "eo3 " in result.output
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):
     if local_config._env == "datacube":
         from datacube.drivers.postgres import _dynamic

@@ -305,8 +305,9 @@ def test_get_missing_things(index: Index) -> None:
     missing_thing = index.datasets.get(uuid_, include_sources=False)
     assert missing_thing is None, "get() should return none when it doesn't exist"
 
-    missing_thing = index.datasets.get(uuid_, include_sources=True)
-    assert missing_thing is None, "get() should return none when it doesn't exist"
+    if index.supports_lineage:
+        missing_thing = index.datasets.get(uuid_, include_sources=True)
+        assert missing_thing is None, "get() should return none when it doesn't exist"
 
     id_ = sys.maxsize
     missing_thing = index.metadata_types.get(id_)
@@ -316,6 +317,7 @@ def test_get_missing_things(index: Index) -> None:
     assert missing_thing is None, "get() should return none when it doesn't exist"
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_index_dataset_with_sources(index, default_metadata_type):
     type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
 

@@ -53,6 +53,7 @@ _DATASET_METADATA = {
 }
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_metadata_indexes_views_exist(initialised_postgres_db, default_metadata_type):
     """
     :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
@@ -65,6 +66,7 @@ def test_metadata_indexes_views_exist(initialised_postgres_db, default_metadata_
     assert _object_exists(initialised_postgres_db, 'dv_eo_dataset')
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_indexes_views_exist(initialised_postgres_db, ls5_telem_type):
     """
     :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
@@ -87,6 +89,7 @@ def test_dataset_indexes_views_exist(initialised_postgres_db, ls5_telem_type):
                               'dix_ls5_telem_test_gsi'), "indexed=false field gsi shouldn't have an index"
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_composite_indexes_exist(initialised_postgres_db, ls5_telem_type):
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:
     # (following the naming conventions)
@@ -305,6 +308,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     doc['product_type'] = 'foobar'
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc):
     """
     :type ls5_telem_type: datacube.model.DatasetType
@@ -543,6 +547,7 @@ def test_filter_types_by_search(index, ls5_telem_type):
     assert res == []
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_update_metadata_type_doc(initialised_postgres_db, index, ls5_telem_type):
     type_doc = copy.deepcopy(ls5_telem_type.metadata_type.definition)
     type_doc['dataset']['search_fields']['test_indexed'] = {

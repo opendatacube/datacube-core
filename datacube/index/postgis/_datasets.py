@@ -15,7 +15,7 @@ from uuid import UUID
 from sqlalchemy import select, func
 
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
-from datacube.drivers.postgis._schema import DATASET
+from datacube.drivers.postgis._schema import Dataset as SQLDataset
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID
 from datacube.model import Dataset, Product
 from datacube.model.fields import Field
@@ -225,6 +225,8 @@ class DatasetResource(AbstractDatasetResource):
         :rtype: bool,list[change],list[change]
         """
         need_sources = dataset.sources is not None
+        # TODO: Source retrieval is broken.
+        need_sources = False
         existing = self.get(dataset.id, include_sources=need_sources)
         if not existing:
             raise ValueError('Unknown dataset %s, cannot update – did you intend to add it?' % dataset.id)
@@ -538,7 +540,6 @@ class DatasetResource(AbstractDatasetResource):
                                                      return_fields=True,
                                                      select_field_names=field_names,
                                                      limit=limit):
-
             for columns in results:
                 yield result_type(*columns)
 
@@ -613,20 +614,8 @@ class DatasetResource(AbstractDatasetResource):
     def _do_search_by_product(self, query, return_fields=False, select_field_names=None,
                               with_source_ids=False, source_filter=None,
                               limit=None):
-        if source_filter:
-            product_queries = list(self._get_product_queries(source_filter))
-            if not product_queries:
-                # No products match our source filter, so there will be no search results regardless.
-                raise ValueError('No products match source filter: ' % source_filter)
-            if len(product_queries) > 1:
-                raise RuntimeError("Multi-product source filters are not supported. Try adding 'product' field")
-
-            source_queries, source_product = product_queries[0]
-            dataset_fields = source_product.metadata_type.dataset_fields
-            source_exprs = tuple(fields.to_expressions(dataset_fields.get, **source_queries))
-        else:
-            source_exprs = None
-
+        assert not with_source_ids
+        assert source_filter is None
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
             product = query.get('product', None)
@@ -636,6 +625,7 @@ class DatasetResource(AbstractDatasetResource):
                 raise ValueError(f"No such product: {product}")
 
         for q, product in product_queries:
+            _LOG.warning("Querying product %s", product)
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             select_fields = None
@@ -651,7 +641,6 @@ class DatasetResource(AbstractDatasetResource):
                 yield (product,
                        connection.search_datasets(
                            query_exprs,
-                           source_exprs,
                            select_fields=select_fields,
                            limit=limit,
                            with_source_ids=with_source_ids
@@ -706,7 +695,9 @@ class DatasetResource(AbstractDatasetResource):
         """
         for _, results in self._do_search_by_product(query, return_fields=True):
             for columns in results:
-                yield dict(columns)
+                output = dict(columns)
+                _LOG.warning("search results: %s (%s)", output["id"], output["product"])
+                yield output
 
     def get_product_time_bounds(self, product: str):
         """
@@ -721,14 +712,14 @@ class DatasetResource(AbstractDatasetResource):
 
         time_min = DateDocField('aquisition_time_min',
                                 'Min of time when dataset was acquired',
-                                DATASET.c.metadata,
+                                SQLDataset.metadata_doc,
                                 False,  # is it indexed
                                 offset=min_offset,
                                 selection='least')
 
         time_max = DateDocField('aquisition_time_max',
                                 'Max of time when dataset was acquired',
-                                DATASET.c.metadata,
+                                SQLDataset.metadata_doc,
                                 False,  # is it indexed
                                 offset=max_offset,
                                 selection='greatest')
@@ -738,7 +729,7 @@ class DatasetResource(AbstractDatasetResource):
                 select(
                     [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
                 ).where(
-                    DATASET.c.product_ref == product.id
+                    SQLDataset.product_ref == product.id
                 )
             ).first()
 
@@ -825,13 +816,13 @@ class DatasetResource(AbstractDatasetResource):
                     grid_spatial = dataset_section.get('grid_spatial')
                     if grid_spatial:
                         select_fields.append(SimpleDocField(
-                            'grid_spatial', 'grid_spatial', DATASET.c.metadata,
+                            'grid_spatial', 'grid_spatial', SQLDataset.metadata_doc,
                             False,
                             offset=grid_spatial
                         ))
                 elif custom_offsets and field_name in custom_offsets:
                     select_fields.append(SimpleDocField(
-                        field_name, field_name, DATASET.c.metadata,
+                        field_name, field_name, SQLDataset.metadata_doc,
                         False,
                         offset=custom_offsets[field_name]
                     ))

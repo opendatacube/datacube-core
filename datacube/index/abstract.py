@@ -916,6 +916,9 @@ class AbstractIndex(ABC):
     supports_legacy = True
     #   supports non-geospatial (e.g. telemetry) metadata types
     supports_nongeo = True
+    #   supports lineage
+    supports_lineage = True
+    supports_source_filters = True
 
     @property
     @abstractmethod
