@@ -16,11 +16,11 @@ Persistence API implementation for postgis.
 import logging
 import uuid  # noqa: F401
 from sqlalchemy import cast
-from sqlalchemy import delete, insert, update
+from sqlalchemy import delete, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, text, and_, or_, func, literal
 from sqlalchemy.dialects.postgresql import INTERVAL
 from typing import Iterable, Tuple
-
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from . import _core
