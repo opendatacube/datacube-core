@@ -22,6 +22,11 @@ v1.8.next
   and validate in the high-level API. General refactor and cleanup of eo3.py and hl.py. (:pull: `1296`)
 - Replace references to 'agdc' and 'dataset_type' in postgis driver with 'odc' and 'product'. (:pull: `1298`)
 - Add warning message for product and metadata add when product and metadata is already in the database. (:pull: `1299`)
+- Ensure SimpleDocNav.id is of type UUID, to improve lineage resolution (:pull: `1304`)
+- Replace SQLAlchemy schema and query definitions in experimental postgis driver with newer "declarative" style ORM.
+  Portions of API dealing with lineage handling, locations, and dynamic indexes are currently broken in the postgis
+  driver. As per the warning message, the postgis driver is currently flagged as "experimental" and is not considered
+  stable. (:pull: `1305`)
 
 v1.8.7 (7 June 2022)
 ====================
