@@ -17,6 +17,8 @@ from .sql import pg_exists, CreateView
 
 _LOG = logging.getLogger(__name__)
 
+# TODO: Dynamic indexes currently disable in postgis driver.
+
 
 def contains_all(d_, *keys):
     """

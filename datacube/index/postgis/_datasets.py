@@ -869,7 +869,7 @@ class DatasetResource(AbstractDatasetResource):
         for key in custom_query:
             # for now we assume all custom query fields are SimpleDocFields
             custom_field = SimpleDocField(
-                custom_query[key], custom_query[key], DATASET.c.metadata,
+                custom_query[key], custom_query[key], Dataset.metadata,
                 False, offset=custom_offsets[key]
             )
             custom_exprs.append(fields.as_expression(custom_field, custom_query[key]))

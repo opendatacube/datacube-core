@@ -375,58 +375,10 @@ class PostgisDbAPI(object):
         ).fetchall()
 
     def get_derived_datasets(self, dataset_id):
-        return self._connection.execute(
-            select(
-                # TODO
-                _DATASET_SELECT_FIELDS
-            ).select_from(
-                DATASET.join(DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref)
-            ).where(
-                DATASET_SOURCE.c.source_dataset_ref == dataset_id
-            )
-        ).fetchall()
+        raise NotImplementedError
 
     def get_dataset_sources(self, dataset_id):
-        # recursively build the list of (dataset_ref, source_dataset_ref) pairs starting from dataset_id
-        # include (dataset_ref, NULL) [hence the left join]
-        # TODO
-        sources = select(
-            [DATASET.c.id.label('dataset_ref'),
-             DATASET_SOURCE.c.source_dataset_ref,
-             DATASET_SOURCE.c.classifier]
-        ).select_from(
-            DATASET.join(DATASET_SOURCE,
-                         DATASET.c.id == DATASET_SOURCE.c.dataset_ref,
-                         isouter=True)
-        ).where(
-            DATASET.c.id == dataset_id
-        ).cte(name="sources", recursive=True)
-
-        sources = sources.union_all(
-            select(
-                [sources.c.source_dataset_ref.label('dataset_ref'),
-                 DATASET_SOURCE.c.source_dataset_ref,
-                 DATASET_SOURCE.c.classifier]
-            ).select_from(
-                sources.join(DATASET_SOURCE,
-                             sources.c.source_dataset_ref == DATASET_SOURCE.c.dataset_ref,
-                             isouter=True)
-            ).where(sources.c.source_dataset_ref != None))
-
-        # turn the list of pairs into adjacency list (dataset_ref, [source_dataset_ref, ...])
-        # some source_dataset_ref's will be NULL
-        aggd = select(
-            [sources.c.dataset_ref,
-             func.array_agg(sources.c.source_dataset_ref).label('sources'),
-             func.array_agg(sources.c.classifier).label('classes')]
-        ).group_by(sources.c.dataset_ref).alias('aggd')
-
-        # join the adjacency list with datasets table
-        query = select(
-            _DATASET_SELECT_FIELDS + (aggd.c.sources, aggd.c.classes)
-        ).select_from(aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref))
-
-        return self._connection.execute(query).fetchall()
+        raise NotImplementedError
 
     def search_datasets_by_metadata(self, metadata):
         """
@@ -506,60 +458,8 @@ class PostgisDbAPI(object):
         in dataset_location per dataset basis if required. It returns the construted
         query.
         """
-
-        # expressions involving DATASET_SOURCE cannot not done for now
         # TODO
-        for expression in expressions:
-            assert expression.field.required_alchemy_table != DATASET_SOURCE, \
-                'Joins with dataset_source cannot be done for this query'
-
-        # expressions involving 'uri' and 'uris' will be handled different
-        expressions = [expression for expression in expressions
-                       if expression.field.required_alchemy_table != DATASET_LOCATION]
-
-        if select_fields:
-            select_columns = []
-            for field in select_fields:
-                if field.name in {'uri', 'uris'}:
-                    # All active URIs, from newest to oldest
-                    uris_field = func.array(
-                        select([
-                            _dataset_uri_field(SELECTED_DATASET_LOCATION)
-                        ]).where(
-                            and_(
-                                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-                                SELECTED_DATASET_LOCATION.c.archived == None
-                            )
-                        ).order_by(
-                            SELECTED_DATASET_LOCATION.c.added.desc(),
-                            SELECTED_DATASET_LOCATION.c.id.desc()
-                        ).label('uris')
-                    ).label('uris')
-                    select_columns.append(uris_field)
-                else:
-                    select_columns.append(field.alchemy_expression.label(field.name))
-        else:
-            select_columns = _DATASET_SELECT_FIELDS
-
-        raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
-
-        # We don't need 'DATASET_LOCATION table in the from expression
-        select_fields_ = [field for field in select_fields if field.name not in {'uri', 'uris'}]
-
-        from_expression = PostgisDbAPI._from_expression(DATASET, expressions, select_fields_)
-        where_expr = and_(DATASET.c.archived == None, *raw_expressions)
-
-        return (
-            select(
-                select_columns
-            ).select_from(
-                from_expression
-            ).where(
-                where_expr
-            ).limit(
-                limit
-            )
-        )
+        raise NotImplementedError()
 
     def search_unique_datasets(self, expressions, select_fields=None, limit=None):
         """
@@ -579,19 +479,22 @@ class PostgisDbAPI(object):
         # TODO
         # type: (Tuple[PgField], Tuple[PgExpression]) -> Iterable[tuple]
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
+        join_tables = PostgisDbAPI._join_tables(Dataset, expressions, group_expressions)
 
-        select_query = select(
-            (func.array_agg(DATASET.c.id),) + group_expressions
-        ).select_from(
-            PostgisDbAPI._from_expression(DATASET, expressions, match_fields)
-        ).where(
-            and_(DATASET.c.archived == None, *(PostgisDbAPI._alchemify_expressions(expressions)))
+        query = select(
+            (func.array_agg(Dataset.id),) + group_expressions
+        ).select_from(Dataset)
+        for join in join_tables:
+            query = query.join(join)
+
+        query = query.where(
+            and_(Dataset.archived == None, *(PostgisDbAPI._alchemify_expressions(expressions)))
         ).group_by(
             *group_expressions
         ).having(
-            func.count(DATASET.c.id) > 1
+            func.count(Dataset.id) > 1
         )
-        return self._connection.execute(select_query)
+        return self._connection.execute(query)
 
     def count_datasets(self, expressions):
         """
