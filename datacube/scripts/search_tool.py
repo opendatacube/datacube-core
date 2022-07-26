@@ -51,15 +51,12 @@ def write_pretty(out_f, field_names, search_results, terminal_size=shutil.get_te
 
         record_num += 1
 
-import logging
-_LOG = logging.getLogger(__name__)
 
 def write_csv(out_f, field_names, search_results):
     """
     Output as a CSV.
     """
     search_results = list(search_results)
-    _LOG.warning("search_results len=%d", len(search_results))
     writer = csv.DictWriter(out_f, tuple(sorted(field_names)))
     writer.writeheader()
     writer.writerows(

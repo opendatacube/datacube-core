@@ -9,10 +9,9 @@ Methods for managing dynamic dataset field indexes and views.
 import logging
 
 from sqlalchemy import Index
-from sqlalchemy import select, join
+from sqlalchemy import select
 
 from ._core import schema_qualified
-from ._schema import Dataset, Product, MetadataType
 from .sql import pg_exists, CreateView
 
 _LOG = logging.getLogger(__name__)
@@ -87,8 +86,7 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
 
 
 def old_check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names, fields, name,
-                         rebuild_indexes=False, rebuild_view=False):
-
+                             rebuild_indexes=False, rebuild_view=False):
     # If this type has time/space fields, create composite indexes (as they are often searched together)
     # We will probably move these into product configuration in the future.
     composite_indexes = (

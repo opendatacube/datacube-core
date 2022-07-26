@@ -17,13 +17,10 @@ import logging
 import uuid  # noqa: F401
 from sqlalchemy import cast
 from sqlalchemy import delete, insert, update
-from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
+from sqlalchemy import select, text, and_, or_, func, literal
 from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.dialects.postgresql import JSONB, insert
-from sqlalchemy.exc import IntegrityError
 from typing import Iterable, Tuple
 
-from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from . import _core
@@ -198,7 +195,7 @@ class PostgisDbAPI(object):
         :return: whether it was inserted
         :rtype: bool
         """
-        metadata_subquery = select(Product.metadata_type_ref).where(Product.id==product_id).scalar_subquery()
+        metadata_subquery = select(Product.metadata_type_ref).where(Product.id == product_id).scalar_subquery()
         ret = self._connection.execute(
             insert(Dataset).values(
                 id=dataset_id,
@@ -220,9 +217,9 @@ class PostgisDbAPI(object):
         """
         res = self._connection.execute(
             update(Dataset).returning(Dataset.id).where(
-                    Dataset.id == dataset_id
+                Dataset.id == dataset_id
             ).where(
-                    Dataset.product_ref == product_id
+                Dataset.product_ref == product_id
             ).values(
                 metadata=metadata_doc
             )
@@ -562,11 +559,11 @@ class PostgisDbAPI(object):
         for join in join_tables:
             count_query = count_query.join(join)
         count_query = count_query.where(
-                and_(
-                    time_field.alchemy_expression.overlaps(time_ranges.c.time_period),
-                    Dataset.archived == None,
-                    *raw_expressions
-                )
+            and_(
+                time_field.alchemy_expression.overlaps(time_ranges.c.time_period),
+                Dataset.archived == None,
+                *raw_expressions
+            )
         )
 
         return select((time_ranges.c.time_period, count_query.label('dataset_count')))

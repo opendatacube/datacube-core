@@ -11,7 +11,6 @@ import logging
 from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                           SCHEMA_NAME, TYPES_INIT_SQL,
                                           UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
-                                          ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
                                           UPDATE_TIMESTAMP_SQL,
                                           escape_pg_identifier,
                                           pg_column_exists)

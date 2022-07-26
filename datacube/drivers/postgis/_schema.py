@@ -10,7 +10,7 @@ import logging
 
 from sqlalchemy.orm import aliased, registry, relationship
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text
-from sqlalchemy import Table, Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
 
@@ -59,8 +59,9 @@ class Product:
     name = Column(String, unique=True, nullable=False, comment="A human-friendly name/label for this product")
     # DB column named metadata for (temporary) backwards compatibility,
     # but is forbidden by SQLAlchemy declarative style
-    metadata_doc = Column(name="metadata", type_=postgres.JSONB, nullable=False,
-                      comment="""The product metadata document (subset of the full definition)
+    metadata_doc = Column(name="metadata",
+                          type_=postgres.JSONB, nullable=False,
+                          comment="""The product metadata document (subset of the full definition)
 All datasets of this type should contain these fields.
 (newly-ingested datasets may be matched against these fields to determine the dataset type)""")
     metadata_type_ref = Column(SmallInteger, ForeignKey(MetadataType.id), nullable=False,
@@ -86,11 +87,11 @@ class Dataset:
     metadata_type_ref = Column(SmallInteger, ForeignKey(MetadataType.id), nullable=False,
                                comment="The metadata type - how to interpret the metadata")
     product_ref = Column(SmallInteger, ForeignKey(Product.id), nullable=False,
-                               comment="The product this dataset belongs to")
+                         comment="The product this dataset belongs to")
     # DB column named metadata for (temporary) backwards compatibility,
     # but is forbidden by SQLAlchemy declarative style
     metadata_doc = Column(name="metadata", type_=postgres.JSONB, index=False, nullable=False,
-                      comment="The dataset metadata document")
+                          comment="The dataset metadata document")
     archived = Column(DateTime(timezone=True), default=None, nullable=True,
                       comment="when archived, null if active")
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
@@ -129,7 +130,9 @@ eg 'file:///g/data/datasets/LS8_NBAR/odc-metadata.yaml' or 'ftp://eo.something.c
     archived = Column(DateTime(timezone=True), default=None, nullable=True,
                       comment="when archived, null for the active location")
 
+
 SelectedDatasetLocation = aliased(DatasetLocation, name="sel_loc")
+
 
 @orm_registry.mapped
 class DatasetSource:
@@ -145,9 +148,10 @@ class DatasetSource:
     )
     dataset_ref = Column(postgres.UUID(as_uuid=True), nullable=False, index=True,
                          comment="The downstream derived dataset produced from the upstream source dataset.")
-    source_dataset_ref = Column(postgres.UUID(as_uuid=True), nullable=False, index=True,
-                         comment="An upstream source dataset that the downstream derived dataset was produced from.")
-    classifier = Column(String, nullable=False, comment = """An identifier for this source dataset.
+    source_dataset_ref = Column(
+        postgres.UUID(as_uuid=True), nullable=False, index=True,
+        comment="An upstream source dataset that the downstream derived dataset was produced from."
+    )
+    classifier = Column(String, nullable=False, comment="""An identifier for this source dataset.
 E.g. the dataset type ('ortho', 'nbar'...) if there's only one source of each type, or a datestamp
 for a time-range summary.""")
-

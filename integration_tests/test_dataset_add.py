@@ -211,6 +211,7 @@ def test_dataset_add_no_id(dataset_add_configs, index_empty, clirunner):
     _ds, _err = doc2ds(ds_no_id, 'file:///something')
     assert _err == 'No id defined in dataset doc'
 
+
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_add(dataset_add_configs, index_empty, clirunner):
