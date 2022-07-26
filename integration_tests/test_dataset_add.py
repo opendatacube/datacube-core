@@ -25,7 +25,7 @@ def check_skip_lineage_test(clirunner, index):
 
     ds_ = index.datasets.get(ds.id, include_sources=True)
     assert ds_ is not None
-    assert str(ds_.id) == ds.id
+    assert ds_.id == ds.id
     assert ds_.sources == {}
 
     assert index.datasets.get(ds.sources['ab'].id) is None
@@ -234,31 +234,31 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     doc2ds = Doc2Dataset(index)
     _ds, _err = doc2ds(ds.doc, 'file:///something')
     assert _err is None
-    assert str(_ds.id) == ds.id
+    assert _ds.id == ds.id
     assert _ds.metadata_doc == ds.doc
 
     # Check dataset search
     r = clirunner(['dataset', 'search'], expect_success=True)
-    assert ds.id in r.output
-    assert ds_bad1.id not in r.output
-    assert ds.sources['ab'].id in r.output
-    assert ds.sources['ac'].sources['cd'].id in r.output
+    assert str(ds.id) in r.output
+    assert str(ds_bad1.id) not in r.output
+    assert str(ds.sources['ab'].id) in r.output
+    assert str(ds.sources['ac'].sources['cd'].id) in r.output
 
-    r = clirunner(['dataset', 'info', '-f', 'csv', ds.id])
-    assert ds.id in r.output
+    r = clirunner(['dataset', 'info', '-f', 'csv', str(ds.id)])
+    assert str(ds.id) in r.output
 
-    r = clirunner(['dataset', 'info', '-f', 'yaml', '--show-sources', ds.id])
-    assert ds.sources['ae'].id in r.output
+    r = clirunner(['dataset', 'info', '-f', 'yaml', '--show-sources', str(ds.id)])
+    assert str(ds.sources['ae'].id) in r.output
 
-    r = clirunner(['dataset', 'info', '-f', 'yaml', '--show-derived', ds.sources['ae'].id])
-    assert ds.id in r.output
+    r = clirunner(['dataset', 'info', '-f', 'yaml', '--show-derived', str(ds.sources['ae'].id)])
+    assert str(ds.id) in r.output
 
     ds_ = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
     assert ds_.id == ds.id
 
     x = index.datasets.get(ds.id, include_sources=True)
-    assert str(x.sources['ab'].id) == ds.sources['ab'].id
-    assert str(x.sources['ac'].sources['cd'].id) == ds.sources['ac'].sources['cd'].id
+    assert x.sources['ab'].id == ds.sources['ab'].id
+    assert x.sources['ac'].sources['cd'].id == ds.sources['ac'].sources['cd'].id
 
     check_skip_lineage_test(clirunner, index)
     check_no_product_match(clirunner, index)
@@ -453,11 +453,11 @@ measurements:
     print(r.output)
 
     r = clirunner(['dataset', 'search', '-f', 'csv'])
-    assert ds1.id not in r.output
-    assert ds2.id not in r.output
-    assert ds3.id not in r.output
-    assert ds4.id in r.output
-    assert ds5.id in r.output
+    assert str(ds1.id) not in r.output
+    assert str(ds2.id) not in r.output
+    assert str(ds3.id) not in r.output
+    assert str(ds4.id) in r.output
+    assert str(ds5.id) in r.output
 
 
 def dataset_archive_prep(dataset_add_configs, index_empty, clirunner):
@@ -483,8 +483,8 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
     non_existent_uuid = '00000000-1036-5607-a62f-fde5e3fec985'
 
     # Single valid UUID is detected and not archived
-    single_valid_uuid = clirunner(['dataset', 'archive', '--dry-run', ds.id])
-    assert ds.id in single_valid_uuid.output
+    single_valid_uuid = clirunner(['dataset', 'archive', '--dry-run', str(ds.id)])
+    assert str(ds.id) in single_valid_uuid.output
     assert index.datasets.has(ds.id) is True
 
     # Single invalid UUID is detected
@@ -498,7 +498,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
     valid_and_invalid_uuid = clirunner(['dataset',
                                         'archive',
                                         '--dry-run',
-                                        ds.id,
+                                        str(ds.id),
                                         non_existent_uuid],
                                        expect_success=False)
     assert non_existent_uuid in valid_and_invalid_uuid.output
@@ -509,7 +509,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
                                         'archive',
                                         '--dry-run',
                                         '--archive-derived',
-                                        ds.id,
+                                        str(ds.id),
                                         non_existent_uuid
                                         ],
                                        expect_success=False)
@@ -519,9 +519,11 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
 
     # Multiple Valid UUIDs
     # Not archived in the database and are shown in output
-    multiple_valid_uuid = clirunner(['dataset', 'archive', '--dry-run', ds.sources['ae'].id, ds.sources['ab'].id])
-    assert ds.sources['ae'].id in multiple_valid_uuid.output
-    assert ds.sources['ab'].id in multiple_valid_uuid.output
+    multiple_valid_uuid = clirunner([
+        'dataset', 'archive', '--dry-run',
+        str(ds.sources['ae'].id), str(ds.sources['ab'].id)])
+    assert str(ds.sources['ae'].id) in multiple_valid_uuid.output
+    assert str(ds.sources['ab'].id) in multiple_valid_uuid.output
     assert index.datasets.has(ds.sources['ae'].id) is True
     assert index.datasets.has(ds.sources['ab'].id) is True
 
@@ -529,11 +531,11 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
                                  'archive',
                                  '--dry-run',
                                  '--archive-derived',
-                                 ds.sources['ae'].id,
-                                 ds.sources['ab'].id
+                                 str(ds.sources['ae'].id),
+                                 str(ds.sources['ab'].id)
                                  ])
-    assert ds.id in archive_derived.output
-    assert ds.sources['ae'].id in archive_derived.output
+    assert str(ds.id) in archive_derived.output
+    assert str(ds.sources['ae'].id) in archive_derived.output
     assert index.datasets.has(ds.id) is True
 
 
@@ -545,15 +547,15 @@ def test_dataset_archive_restore_invalid(dataset_add_configs, index_empty, cliru
     non_existent_uuid = '00000000-1036-5607-a62f-fde5e3fec985'
 
     # With non-existent uuid, operations should halt.
-    r = clirunner(['dataset', 'archive', ds.id, non_existent_uuid], expect_success=False)
-    r = clirunner(['dataset', 'info', ds.id])
+    r = clirunner(['dataset', 'archive', str(ds.id), non_existent_uuid], expect_success=False)
+    r = clirunner(['dataset', 'info', str(ds.id)])
     assert 'status: archived' not in r.output
     assert index.datasets.has(ds.id) is True
 
     # With non-existent uuid, operations should halt.
     d_id = ds.sources['ac'].sources['cd'].id
-    r = clirunner(['dataset', 'archive', '--archive-derived', d_id, non_existent_uuid], expect_success=False)
-    r = clirunner(['dataset', 'info', ds.id, ds.sources['ab'].id, ds.sources['ac'].id])
+    r = clirunner(['dataset', 'archive', '--archive-derived', str(d_id), non_existent_uuid], expect_success=False)
+    r = clirunner(['dataset', 'info', str(ds.id), str(ds.sources['ab'].id), str(ds.sources['ac'].id)])
     assert 'status: active' in r.output
     assert 'status: archived' not in r.output
     assert index.datasets.has(ds.id) is True
@@ -565,30 +567,30 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     # Run for real
-    r = clirunner(['dataset', 'archive', ds.id])
-    r = clirunner(['dataset', 'info', ds.id])
+    r = clirunner(['dataset', 'archive', str(ds.id)])
+    r = clirunner(['dataset', 'info', str(ds.id)])
     assert 'status: archived' in r.output
 
     # restore dry run
-    r = clirunner(['dataset', 'restore', '--dry-run', ds.id])
-    r = clirunner(['dataset', 'info', ds.id])
+    r = clirunner(['dataset', 'restore', '--dry-run', str(ds.id)])
+    r = clirunner(['dataset', 'info', str(ds.id)])
     assert 'status: archived' in r.output
 
     # restore for real
-    r = clirunner(['dataset', 'restore', ds.id])
-    r = clirunner(['dataset', 'info', ds.id])
+    r = clirunner(['dataset', 'restore', str(ds.id)])
+    r = clirunner(['dataset', 'info', str(ds.id)])
     assert 'status: active' in r.output
 
     # archive derived
     d_id = ds.sources['ac'].sources['cd'].id
-    r = clirunner(['dataset', 'archive', '--archive-derived', d_id])
-    r = clirunner(['dataset', 'info', ds.id, ds.sources['ab'].id, ds.sources['ac'].id])
+    r = clirunner(['dataset', 'archive', '--archive-derived', str(d_id)])
+    r = clirunner(['dataset', 'info', str(ds.id), str(ds.sources['ab'].id), str(ds.sources['ac'].id)])
     assert 'status: active' not in r.output
     assert 'status: archived' in r.output
 
     # restore derived
-    r = clirunner(['dataset', 'restore', '--restore-derived', d_id])
-    r = clirunner(['dataset', 'info', ds.id, ds.sources['ab'].id, ds.sources['ac'].id])
+    r = clirunner(['dataset', 'restore', '--restore-derived', str(d_id)])
+    r = clirunner(['dataset', 'info', str(ds.id), str(ds.sources['ab'].id), str(ds.sources['ac'].id)])
     assert 'status: active' in r.output
     assert 'status: archived' not in r.output
 

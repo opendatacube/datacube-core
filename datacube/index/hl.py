@@ -171,13 +171,14 @@ def dataset_resolver(index: AbstractIndex,
 
         ds_by_uuid = toolz.valmap(toolz.first, flatten_datasets(main_ds))
         all_uuid = list(ds_by_uuid)
-        db_dss = {str(ds.id): ds for ds in index.datasets.bulk_get(all_uuid)}
+        db_dss = {ds.id: ds for ds in index.datasets.bulk_get(all_uuid)}
 
         lineage_uuids = set(filter(lambda x: x != main_uuid, all_uuid))
         missing_lineage = lineage_uuids - set(db_dss)
 
         if missing_lineage and fail_on_missing_lineage:
-            return None, "Following lineage datasets are missing from DB: %s" % (','.join(missing_lineage))
+            return None, "Following lineage datasets are missing from DB: %s" % (
+                ','.join(str(m) for m in missing_lineage))
 
         if not is_doc_eo3(main_ds.doc):
             if is_doc_geo(main_ds.doc, check_eo3=False):
@@ -206,7 +207,7 @@ def dataset_resolver(index: AbstractIndex,
             return v
 
         def resolve_ds(ds: SimpleDocNav,
-                       sources: Optional[Mapping[str, Dataset]],
+                       sources: Optional[Mapping[UUID, Dataset]],
                        cache: MutableMapping[UUID, Dataset]) -> Dataset:
             cached = cache.get(ds.id)
             if cached is not None:

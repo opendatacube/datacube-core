@@ -18,6 +18,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 from typing import Dict, Any, Mapping
 from copy import deepcopy
+from uuid import UUID
 
 import numpy
 import toolz  # type: ignore[import]
@@ -372,6 +373,7 @@ class SimpleDocNav(object):
         self._doc_without = None
         self._sources_path = ('lineage', 'source_datasets')
         self._sources = None
+        self._doc_uuid = None
 
     @property
     def doc(self):
@@ -386,7 +388,11 @@ class SimpleDocNav(object):
 
     @property
     def id(self):
-        return self._doc.get('id', None)
+        if not self._doc_uuid:
+            doc_id = self._doc.get('id', None)
+            if doc_id:
+                self._doc_uuid = doc_id if isinstance(doc_id, UUID) else UUID(doc_id)
+        return self._doc_uuid
 
     @property
     def sources(self):
