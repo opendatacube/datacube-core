@@ -298,8 +298,8 @@ class Datacube(object):
             of the coordinates in the query itself.
 
         :param (float,float) resolution:
-            A tuple of the spatial resolution of the returned data. Units are in the coordinate
-            space of ``output_crs``.
+            A tuple of the spatial resolution of the returned data: (y_resolution, x_resolution).
+            Units are in the coordinate space of ``output_crs``.
 
             This includes the direction (as indicated by a positive or negative number).
             For most CRSs, the first number will be negative, e.g. ``(-30, 30)``.
@@ -321,7 +321,7 @@ class Datacube(object):
                :meth:`load_data`
 
         :param (float,float) align:
-            Load data such that point 'align' lies on the pixel boundary.
+            Load data such that point 'align' (y_align, x_align) lies on the pixel boundary.
             Units are in the coordinate space of ``output_crs``.
 
             Default is ``(0, 0)``
@@ -399,11 +399,15 @@ class Datacube(object):
 
         ds, *_ = datasets
         datacube_product = ds.type
+        load_hints = None
+        grid_spec = None
 
         # Retrieve extra_dimension from product definition
         extra_dims = None
         if datacube_product:
             extra_dims = datacube_product.extra_dimensions
+            load_hints = datacube_product.load_hints()
+            grid_spec = datacube_product.grid_spec
 
             # Extract extra_dims slice information
             extra_dims_slice = {
@@ -416,9 +420,46 @@ class Datacube(object):
             if extra_dims.has_empty_dim():
                 return xarray.Dataset()
 
+            if load_hints:
+                if output_crs is None:
+                    output_crs = load_hints.get('output_crs', None)
+
+                if resolution is None:
+                    resolution = load_hints.get('resolution', None)
+
+                if align is None:
+                    align = load_hints.get('align', None)
+
+        if like is None and grid_spec is None:
+            if output_crs is None:
+                # Maybe all datasets share the same CRS?
+                ds_crs = set(ds.crs for ds in datasets)
+                if (len(ds_crs) == 1):
+                    # Use the shared CRS as output CRS
+                    (output_crs,) = ds_crs
+
+            if output_crs is not None and resolution is None:
+                ds_res = set(
+                    (t[4], t[0]) for t in (
+                        ds.metadata_doc.get('grids', {}).get('default', {}).get('transform')
+                        for ds in datasets
+                    ) if t
+                )
+                if (len(ds_res) == 1):
+                    # Use the shared resolution as output resolution
+                    (resolution,) = ds_res
+
+            if output_crs is not None and resolution is not None and align is None:
+                ds_aln = set(
+                    (ds.bounds.top % abs(resolution[0]), ds.bounds.left % abs(resolution[1]))
+                    for ds in datasets
+                )
+                if (len(ds_aln) == 1):
+                    (align,) = ds_aln
+
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
-                               grid_spec=datacube_product.grid_spec,
-                               load_hints=datacube_product.load_hints(),
+                               grid_spec=grid_spec,
+                               load_hints=load_hints,
                                datasets=datasets, **query)
         group_by = query_group_by(**query)
         grouped = self.group_datasets(datasets, group_by)
@@ -426,7 +467,7 @@ class Datacube(object):
         measurement_dicts = datacube_product.lookup_measurements(measurements)
 
         # `extra_dims` put last for backwards compability, but should really be the second position
-        # betwween `grouped` and `geobox`
+        # between `grouped` and `geobox`
         result = self.load_data(grouped, geobox,
                                 measurement_dicts,
                                 resampling=resampling,
