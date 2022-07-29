@@ -32,10 +32,6 @@ from ._schema import MetadataType, Product,  \
 from .sql import escape_pg_identifier
 
 
-def _selectable_url(table):
-    return table.uri_scheme + literal(':') + table.uri_body
-
-
 # Make a function because it's broken
 def _dataset_select_fields():
     return (
@@ -43,7 +39,7 @@ def _dataset_select_fields():
         # All active URIs, from newest to oldest
         func.array(
             select(
-                _selectable_url(SelectedDatasetLocation)
+                SelectedDatasetLocation.uri
             ).where(
                 and_(
                     SelectedDatasetLocation.dataset_ref == Dataset.id,
@@ -126,7 +122,7 @@ def get_native_fields():
             'uri',
             "Dataset URI",
             DatasetLocation.uri_body,
-            alchemy_expression=_selectable_url(DatasetLocation),
+            alchemy_expression=DatasetLocation.uri,
             affects_row_selection=True
         ),
     }
@@ -773,7 +769,7 @@ class PostgisDbAPI(object):
             record[0]
             for record in self._connection.execute(
                 select(
-                    _selectable_url(DatasetLocation)
+                    DatasetLocation.uri
                 ).where(
                     DatasetLocation.dataset_ref == dataset_id
                 ).where(
@@ -793,7 +789,7 @@ class PostgisDbAPI(object):
             (location_uri, archived_time)
             for location_uri, archived_time in self._connection.execute(
                 select(
-                    _selectable_url(DatasetLocation), DatasetLocation.archived
+                    DatasetLocation.uri, DatasetLocation.archived
                 ).where(
                     DatasetLocation.dataset_ref == dataset_id
                 ).where(

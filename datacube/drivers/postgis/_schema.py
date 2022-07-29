@@ -8,7 +8,7 @@ Tables for indexing the datasets which were ingested into the AGDC.
 
 import logging
 
-from sqlalchemy.orm import aliased, registry, relationship
+from sqlalchemy.orm import aliased, registry, relationship, column_property
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgresql as postgres
@@ -129,6 +129,7 @@ eg 'file:///g/data/datasets/LS8_NBAR/odc-metadata.yaml' or 'ftp://eo.something.c
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
     archived = Column(DateTime(timezone=True), default=None, nullable=True,
                       comment="when archived, null for the active location")
+    uri = column_property(uri_scheme + ':' + uri_body)
 
 
 SelectedDatasetLocation = aliased(DatasetLocation, name="sel_loc")
