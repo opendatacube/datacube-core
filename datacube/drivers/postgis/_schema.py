@@ -98,6 +98,14 @@ class Dataset:
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
 
     locations = relationship("DatasetLocation")
+    active_locations = relationship("DatasetLocation",
+                                    primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
+                                                "DatasetLocation.archived==None)",
+                                    order_by="desc(DatasetLocation.added)")
+    archived_locations = relationship("DatasetLocation",
+                                    primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
+                                                "DatasetLocation.archived!=None)"
+                                     )
     # TODO: active location?
 
 
@@ -130,6 +138,7 @@ eg 'file:///g/data/datasets/LS8_NBAR/odc-metadata.yaml' or 'ftp://eo.something.c
     archived = Column(DateTime(timezone=True), default=None, nullable=True,
                       comment="when archived, null for the active location")
     uri = column_property(uri_scheme + ':' + uri_body)
+    dataset = relationship("Dataset")
 
 
 SelectedDatasetLocation = aliased(DatasetLocation, name="sel_loc")

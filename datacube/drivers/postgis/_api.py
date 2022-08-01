@@ -357,13 +357,11 @@ class PostgisDbAPI(object):
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
-            # TODO
             select(_dataset_select_fields()).where(Dataset.id == dataset_id)
         ).first()
 
     def get_datasets(self, dataset_ids):
         return self._connection.execute(
-            # TODO
             select(_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
         ).fetchall()
 
