@@ -56,6 +56,7 @@ def write_csv(out_f, field_names, search_results):
     """
     Output as a CSV.
     """
+    search_results = list(search_results)
     writer = csv.DictWriter(out_f, tuple(sorted(field_names)))
     writer.writeheader()
     writer.writerows(

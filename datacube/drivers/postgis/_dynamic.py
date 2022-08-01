@@ -12,10 +12,11 @@ from sqlalchemy import Index
 from sqlalchemy import select
 
 from ._core import schema_qualified
-from ._schema import DATASET, PRODUCT, METADATA_TYPE
 from .sql import pg_exists, CreateView
 
 _LOG = logging.getLogger(__name__)
+
+# TODO: Dynamic indexes currently disable in postgis driver.
 
 
 def contains_all(d_, *keys):
@@ -36,6 +37,11 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
     """
     Ensure a view exists for the given fields
     """
+    view_name = schema_qualified('dv_{}_dataset'.format(name))
+    _LOG.warning("Skipping dynamic Index %s ", view_name)
+
+
+def _old_ensure_view(conn, fields, name, replace_existing, where_expression):
     # Create a view of search fields (for debugging convenience).
     # 'dv_' prefix: dynamic view. To distinguish from views that are created as part of the schema itself.
     view_name = schema_qualified('dv_{}_dataset'.format(name))
@@ -47,14 +53,18 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
         exists = False
     if not exists:
         _LOG.debug('Creating view: %s', view_name)
+        # old_query = select(
+        #         [field.alchemy_expression.label(field.name) for field in fields.values()
+        #          if not field.affects_row_selection]
+        #     ).select_from(
+        #         Dataset.join(Product).join(MetadataType)
+        #     ).where(where_expression)
         conn.execute(
             CreateView(
                 view_name,
                 select(
-                    [field.alchemy_expression.label(field.name) for field in fields.values()
+                    [field.alchemy_expression for field in fields.values()
                      if not field.affects_row_selection]
-                ).select_from(
-                    DATASET.join(PRODUCT).join(METADATA_TYPE)
                 ).where(where_expression)
             )
         )
@@ -71,7 +81,12 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
     """
     Check that we have expected indexes and views for the given fields
     """
+    _LOG.warning("Skipping all dynamic indexes for %s", name)
+    return
 
+
+def old_check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names, fields, name,
+                             rebuild_indexes=False, rebuild_view=False):
     # If this type has time/space fields, create composite indexes (as they are often searched together)
     # We will probably move these into product configuration in the future.
     composite_indexes = (

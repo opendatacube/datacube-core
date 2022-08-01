@@ -16,48 +16,46 @@ Persistence API implementation for postgis.
 import logging
 import uuid  # noqa: F401
 from sqlalchemy import cast
-from sqlalchemy import delete
-from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
+from sqlalchemy import delete, update
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import select, text, and_, or_, func, literal
 from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.dialects.postgresql import JSONB, insert
-from sqlalchemy.exc import IntegrityError
 from typing import Iterable, Tuple
-
-from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from . import _core
 from . import _dynamic as dynamic
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField
-from ._schema import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, PRODUCT
+from ._schema import MetadataType, Product,  \
+    Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation
 from .sql import escape_pg_identifier
 
 
-def _dataset_uri_field(table):
-    return table.c.uri_scheme + ':' + table.c.uri_body
+def _selectable_url(table):
+    return table.uri_scheme + literal(':') + table.uri_body
 
 
-# Fields for selecting dataset with uris
-# Need to alias the table, as queries may join the location table for filtering.
-SELECTED_DATASET_LOCATION = DATASET_LOCATION.alias('selected_dataset_location')
-_DATASET_SELECT_FIELDS = (
-    DATASET,
-    # All active URIs, from newest to oldest
-    func.array(
-        select([
-            _dataset_uri_field(SELECTED_DATASET_LOCATION)
-        ]).where(
-            and_(
-                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-                SELECTED_DATASET_LOCATION.c.archived == None
-            )
-        ).order_by(
-            SELECTED_DATASET_LOCATION.c.added.desc(),
-            SELECTED_DATASET_LOCATION.c.id.desc()
+# Make a function because it's broken
+def _dataset_select_fields():
+    return (
+        Dataset,
+        # All active URIs, from newest to oldest
+        func.array(
+            select(
+                _selectable_url(SelectedDatasetLocation)
+            ).where(
+                and_(
+                    SelectedDatasetLocation.dataset_ref == Dataset.id,
+                    SelectedDatasetLocation.archived == None
+                )
+            ).order_by(
+                SelectedDatasetLocation.added.desc(),
+                SelectedDatasetLocation.id.desc()
+            ).label('uris')
         ).label('uris')
-    ).label('uris')
-)
+    )
+
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 PGCODE_FOREIGN_KEY_VIOLATION = '23503'
@@ -83,42 +81,42 @@ def get_native_fields():
         'id': NativeField(
             'id',
             'Dataset UUID',
-            DATASET.c.id
+            Dataset.id
         ),
         'indexed_time': NativeField(
             'indexed_time',
             'When dataset was indexed',
-            DATASET.c.added
+            Dataset.added
         ),
         'indexed_by': NativeField(
             'indexed_by',
             'User who indexed the dataset',
-            DATASET.c.added_by
+            Dataset.added_by
         ),
         'product': NativeField(
             'product',
             'Product name',
-            PRODUCT.c.name
+            Product.name
         ),
         'product_id': NativeField(
             'product_id',
             'ID of a dataset type',
-            DATASET.c.product_ref
+            Dataset.product_ref
         ),
         'metadata_type': NativeField(
             'metadata_type',
             'Metadata type name of dataset',
-            METADATA_TYPE.c.name
+            MetadataType.name
         ),
         'metadata_type_id': NativeField(
             'metadata_type_id',
             'ID of a metadata type',
-            DATASET.c.metadata_type_ref
+            Dataset.metadata_type_ref
         ),
         'metadata_doc': NativeField(
             'metadata_doc',
             'Full metadata document',
-            DATASET.c.metadata
+            Dataset.metadata_doc
         ),
         # Fields that can affect row selection
 
@@ -127,8 +125,8 @@ def get_native_fields():
         'uri': NativeField(
             'uri',
             "Dataset URI",
-            DATASET_LOCATION.c.uri_body,
-            alchemy_expression=_dataset_uri_field(DATASET_LOCATION),
+            DatasetLocation.uri_body,
+            alchemy_expression=_selectable_url(DatasetLocation),
             affects_row_selection=True
         ),
     }
@@ -144,21 +142,21 @@ def get_dataset_fields(metadata_type_definition):
         creation_time=DateDocField(
             'creation_time',
             'Time when dataset was created (processed)',
-            DATASET.c.metadata,
+            Dataset.metadata_doc,
             False,
             offset=dataset_section.get('creation_dt') or ['creation_dt']
         ),
         format=SimpleDocField(
             'format',
             'File format (GeoTiff, NetCDF)',
-            DATASET.c.metadata,
+            Dataset.metadata_doc,
             False,
             offset=dataset_section.get('format') or ['format', 'name']
         ),
         label=SimpleDocField(
             'label',
             'Label',
-            DATASET.c.metadata,
+            Dataset.metadata_doc,
             False,
             offset=dataset_section.get('label') or ['label']
         ),
@@ -168,7 +166,7 @@ def get_dataset_fields(metadata_type_definition):
     fields.update(
         parse_fields(
             dataset_section['search_fields'],
-            DATASET.c.metadata
+            Dataset.metadata_doc
         )
     )
     return fields
@@ -197,25 +195,16 @@ class PostgisDbAPI(object):
         :return: whether it was inserted
         :rtype: bool
         """
-        product_ref = bindparam('product_ref')
+        metadata_subquery = select(Product.metadata_type_ref).where(Product.id == product_id).scalar_subquery()
         ret = self._connection.execute(
-            insert(DATASET).from_select(
-                ['id', 'product_ref', 'metadata_type_ref', 'metadata'],
-                select([
-                    bindparam('id'), product_ref,
-                    select([
-                        PRODUCT.c.metadata_type_ref
-                    ]).where(
-                        PRODUCT.c.id == product_ref
-                    ).label('metadata_type_ref'),
-                    bindparam('metadata', type_=JSONB)
-                ])
+            insert(Dataset).values(
+                id=dataset_id,
+                product_ref=product_id,
+                metadata=metadata_doc,
+                metadata_type_ref=metadata_subquery
             ).on_conflict_do_nothing(
                 index_elements=['id']
-            ),
-            id=dataset_id,
-            product_ref=product_id,
-            metadata=metadata_doc
+            )
         )
         return ret.rowcount > 0
 
@@ -227,11 +216,10 @@ class PostgisDbAPI(object):
         :type product_id: int
         """
         res = self._connection.execute(
-            DATASET.update().returning(DATASET.c.id).where(
-                and_(
-                    DATASET.c.id == dataset_id,
-                    DATASET.c.product_ref == product_id
-                )
+            update(Dataset).returning(Dataset.id).where(
+                Dataset.id == dataset_id
+            ).where(
+                Dataset.product_ref == product_id
             ).values(
                 metadata=metadata_doc
             )
@@ -252,12 +240,13 @@ class PostgisDbAPI(object):
         scheme, body = _split_uri(uri)
 
         r = self._connection.execute(
-            insert(DATASET_LOCATION).on_conflict_do_nothing(
+            insert(DatasetLocation).on_conflict_do_nothing(
                 index_elements=['uri_scheme', 'uri_body', 'dataset_ref']
-            ),
-            dataset_ref=dataset_id,
-            uri_scheme=scheme,
-            uri_body=body,
+            ).values(
+                dataset_ref=dataset_id,
+                uri_scheme=scheme,
+                uri_body=body,
+            )
         )
 
         return r.rowcount > 0
@@ -265,10 +254,8 @@ class PostgisDbAPI(object):
     def contains_dataset(self, dataset_id):
         return bool(
             self._connection.execute(
-                select(
-                    [DATASET.c.id]
-                ).where(
-                    DATASET.c.id == dataset_id
+                select(Dataset.id).where(
+                    Dataset.id == dataset_id
                 )
             ).fetchone()
         )
@@ -276,12 +263,14 @@ class PostgisDbAPI(object):
     def datasets_intersection(self, dataset_ids):
         """ Compute set intersection: db_dataset_ids & dataset_ids
         """
-        return [r[0]
-                for r in self._connection.execute(select(
-                    [DATASET.c.id]
+        return [ds.id for ds in self._connection.execute(
+                select(
+                    Dataset.id
                 ).where(
-                    DATASET.c.id.in_(dataset_ids)
-                )).fetchall()]
+                    Dataset.id.in_(dataset_ids)
+                )
+            ).fetchall()
+        ]
 
     def get_datasets_for_location(self, uri, mode=None):
         scheme, body = _split_uri(uri)
@@ -290,152 +279,103 @@ class PostgisDbAPI(object):
             mode = 'exact' if body.count('#') > 0 else 'prefix'
 
         if mode == 'exact':
-            body_query = DATASET_LOCATION.c.uri_body == body
+            body_query = DatasetLocation.uri_body == body
         elif mode == 'prefix':
-            body_query = DATASET_LOCATION.c.uri_body.startswith(body)
+            body_query = DatasetLocation.uri_body.startswith(body)
         else:
             raise ValueError('Unsupported query mode {}'.format(mode))
 
         return self._connection.execute(
             select(
-                _DATASET_SELECT_FIELDS
-            ).select_from(
-                DATASET_LOCATION.join(DATASET)
+                _dataset_select_fields()
+            ).join(
+                Dataset.locations
             ).where(
-                and_(DATASET_LOCATION.c.uri_scheme == scheme, body_query)
+                and_(DatasetLocation.uri_scheme == scheme, body_query)
             )
         ).fetchall()
 
     def all_dataset_ids(self, archived: bool):
-        query = select(
-            DATASET.c.id  # type: ignore[arg-type]
-        ).select_from(
-            DATASET
-        )
+        query = select(Dataset.id)
         if archived:
             query = query.where(
-                DATASET.c.archived != None
+                Dataset.archived != None
             )
         else:
             query = query.where(
-                DATASET.c.archived == None
+                Dataset.archived == None
             )
         return self._connection.execute(query).fetchall()
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
-        try:
-            r = self._connection.execute(
-                insert(DATASET_SOURCE).on_conflict_do_nothing(
-                    index_elements=['classifier', 'dataset_ref']
-                ),
+        r = self._connection.execute(
+            insert(DatasetSource).on_conflict_do_nothing(
+                index_elements=['classifier', 'dataset_ref']
+            ).values(
                 classifier=classifier,
                 dataset_ref=dataset_id,
                 source_dataset_ref=source_dataset_id
             )
-            return r.rowcount > 0
-        except IntegrityError as e:
-            if e.orig.pgcode == PGCODE_FOREIGN_KEY_VIOLATION:
-                raise MissingRecordError("Referenced source dataset doesn't exist")
-            raise
+        )
+        return r.rowcount > 0
 
     def archive_dataset(self, dataset_id):
-        self._connection.execute(
-            DATASET.update().where(
-                DATASET.c.id == dataset_id
+        r = self._connection.execute(
+            update(Dataset).where(
+                Dataset.id == dataset_id
             ).where(
-                DATASET.c.archived == None
+                Dataset.archived == None
             ).values(
                 archived=func.now()
             )
         )
+        return r.rowcount > 0
 
     def restore_dataset(self, dataset_id):
-        self._connection.execute(
-            DATASET.update().where(
-                DATASET.c.id == dataset_id
+        r = self._connection.execute(
+            update(Dataset).where(
+                Dataset.id == dataset_id
             ).values(
                 archived=None
             )
         )
+        return r.rowcount > 0
 
     def delete_dataset(self, dataset_id):
         self._connection.execute(
-            DATASET_LOCATION.delete().where(
-                DATASET_LOCATION.c.dataset_ref == dataset_id
+            delete(DatasetLocation).where(
+                DatasetLocation.dataset_ref == dataset_id
             )
         )
         self._connection.execute(
-            DATASET_SOURCE.delete().where(
-                DATASET_SOURCE.c.dataset_ref == dataset_id
+            delete(DatasetSource).where(
+                DatasetSource.dataset_ref == dataset_id
             )
         )
-        self._connection.execute(
-            DATASET.delete().where(
-                DATASET.c.id == dataset_id
+        r = self._connection.execute(
+            delete(Dataset).where(
+                Dataset.id == dataset_id
             )
         )
+        return r.rowcount > 0
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
-            select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
+            # TODO
+            select(_dataset_select_fields()).where(Dataset.id == dataset_id)
         ).first()
 
     def get_datasets(self, dataset_ids):
         return self._connection.execute(
-            select(_DATASET_SELECT_FIELDS).where(DATASET.c.id.in_(dataset_ids))
+            # TODO
+            select(_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
         ).fetchall()
 
     def get_derived_datasets(self, dataset_id):
-        return self._connection.execute(
-            select(
-                _DATASET_SELECT_FIELDS
-            ).select_from(
-                DATASET.join(DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref)
-            ).where(
-                DATASET_SOURCE.c.source_dataset_ref == dataset_id
-            )
-        ).fetchall()
+        raise NotImplementedError
 
     def get_dataset_sources(self, dataset_id):
-        # recursively build the list of (dataset_ref, source_dataset_ref) pairs starting from dataset_id
-        # include (dataset_ref, NULL) [hence the left join]
-        sources = select(
-            [DATASET.c.id.label('dataset_ref'),
-             DATASET_SOURCE.c.source_dataset_ref,
-             DATASET_SOURCE.c.classifier]
-        ).select_from(
-            DATASET.join(DATASET_SOURCE,
-                         DATASET.c.id == DATASET_SOURCE.c.dataset_ref,
-                         isouter=True)
-        ).where(
-            DATASET.c.id == dataset_id
-        ).cte(name="sources", recursive=True)
-
-        sources = sources.union_all(
-            select(
-                [sources.c.source_dataset_ref.label('dataset_ref'),
-                 DATASET_SOURCE.c.source_dataset_ref,
-                 DATASET_SOURCE.c.classifier]
-            ).select_from(
-                sources.join(DATASET_SOURCE,
-                             sources.c.source_dataset_ref == DATASET_SOURCE.c.dataset_ref,
-                             isouter=True)
-            ).where(sources.c.source_dataset_ref != None))
-
-        # turn the list of pairs into adjacency list (dataset_ref, [source_dataset_ref, ...])
-        # some source_dataset_ref's will be NULL
-        aggd = select(
-            [sources.c.dataset_ref,
-             func.array_agg(sources.c.source_dataset_ref).label('sources'),
-             func.array_agg(sources.c.classifier).label('classes')]
-        ).group_by(sources.c.dataset_ref).alias('aggd')
-
-        # join the adjacency list with datasets table
-        query = select(
-            _DATASET_SELECT_FIELDS + (aggd.c.sources, aggd.c.classes)
-        ).select_from(aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref))
-
-        return self._connection.execute(query).fetchall()
+        raise NotImplementedError
 
     def search_datasets_by_metadata(self, metadata):
         """
@@ -446,7 +386,7 @@ class PostgisDbAPI(object):
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
-            select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
+            select(_dataset_select_fields()).where(Dataset.metadata_doc.contains(metadata))
         ).fetchall()
 
     @staticmethod
@@ -469,6 +409,9 @@ class PostgisDbAPI(object):
         :type limit: int
         :rtype: sqlalchemy.Expression
         """
+        # TODO: lineage handling and source search
+        assert source_exprs is None
+        assert not with_source_ids
 
         if select_fields:
             select_columns = tuple(
@@ -476,80 +419,17 @@ class PostgisDbAPI(object):
                 for f in select_fields
             )
         else:
-            select_columns = _DATASET_SELECT_FIELDS
-
-        if with_source_ids:
-            # Include the IDs of source datasets
-            select_columns += (
-                select(
-                    (func.array_agg(DATASET_SOURCE.c.source_dataset_ref),)
-                ).select_from(
-                    DATASET_SOURCE
-                ).where(
-                    DATASET_SOURCE.c.dataset_ref == DATASET.c.id
-                ).group_by(
-                    DATASET_SOURCE.c.dataset_ref
-                ).label('dataset_refs'),
-            )
+            select_columns = _dataset_select_fields()
 
         raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
-        from_expression = PostgisDbAPI._from_expression(DATASET, expressions, select_fields)
-        where_expr = and_(DATASET.c.archived == None, *raw_expressions)
+        join_tables = PostgisDbAPI._join_tables(Dataset, expressions, select_fields)
+        where_expr = and_(Dataset.archived == None, *raw_expressions)
 
-        if not source_exprs:
-            return (
-                select(
-                    select_columns
-                ).select_from(
-                    from_expression
-                ).where(
-                    where_expr
-                ).limit(
-                    limit
-                )
-            )
-        base_query = (
-            select(
-                select_columns + (DATASET_SOURCE.c.source_dataset_ref,
-                                  literal(1).label('distance'),
-                                  DATASET_SOURCE.c.classifier.label('path'))
-            ).select_from(
-                from_expression.join(DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref)
-            ).where(
-                where_expr
-            )
-        ).cte(name="base_query", recursive=True)
-
-        recursive_query = base_query.union_all(
-            select(
-                [col for col in base_query.columns
-                 if col.name not in ['source_dataset_ref', 'distance', 'path']
-                 ] + [
-                    DATASET_SOURCE.c.source_dataset_ref,
-                    (base_query.c.distance + 1).label('distance'),
-                    (base_query.c.path + '.' + DATASET_SOURCE.c.classifier).label('path')
-                ]
-            ).select_from(
-                base_query.join(
-                    DATASET_SOURCE, base_query.c.source_dataset_ref == DATASET_SOURCE.c.dataset_ref
-                )
-            )
-        )
-
-        return (
-            select(
-                [distinct(recursive_query.c.id)
-                 ] + [
-                    col for col in recursive_query.columns
-                    if col.name not in ['id', 'source_dataset_ref', 'distance', 'path']]
-            ).select_from(
-                recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
-            ).where(
-                and_(DATASET.c.archived == None, *PostgisDbAPI._alchemify_expressions(source_exprs))
-            ).limit(
-                limit
-            )
-        )
+        query = select(select_columns).select_from(Dataset)
+        for join in join_tables:
+            query = query.join(join)
+        query = query.where(where_expr).limit(limit)
+        return query
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
@@ -561,6 +441,7 @@ class PostgisDbAPI(object):
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids, limit)
+        _LOG.debug("search_datasets SQL: %s", str(select_query))
         return self._connection.execute(select_query)
 
     @staticmethod
@@ -574,59 +455,8 @@ class PostgisDbAPI(object):
         in dataset_location per dataset basis if required. It returns the construted
         query.
         """
-
-        # expressions involving DATASET_SOURCE cannot not done for now
-        for expression in expressions:
-            assert expression.field.required_alchemy_table != DATASET_SOURCE, \
-                'Joins with dataset_source cannot be done for this query'
-
-        # expressions involving 'uri' and 'uris' will be handled different
-        expressions = [expression for expression in expressions
-                       if expression.field.required_alchemy_table != DATASET_LOCATION]
-
-        if select_fields:
-            select_columns = []
-            for field in select_fields:
-                if field.name in {'uri', 'uris'}:
-                    # All active URIs, from newest to oldest
-                    uris_field = func.array(
-                        select([
-                            _dataset_uri_field(SELECTED_DATASET_LOCATION)
-                        ]).where(
-                            and_(
-                                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-                                SELECTED_DATASET_LOCATION.c.archived == None
-                            )
-                        ).order_by(
-                            SELECTED_DATASET_LOCATION.c.added.desc(),
-                            SELECTED_DATASET_LOCATION.c.id.desc()
-                        ).label('uris')
-                    ).label('uris')
-                    select_columns.append(uris_field)
-                else:
-                    select_columns.append(field.alchemy_expression.label(field.name))
-        else:
-            select_columns = _DATASET_SELECT_FIELDS
-
-        raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
-
-        # We don't need 'DATASET_LOCATION table in the from expression
-        select_fields_ = [field for field in select_fields if field.name not in {'uri', 'uris'}]
-
-        from_expression = PostgisDbAPI._from_expression(DATASET, expressions, select_fields_)
-        where_expr = and_(DATASET.c.archived == None, *raw_expressions)
-
-        return (
-            select(
-                select_columns
-            ).select_from(
-                from_expression
-            ).where(
-                where_expr
-            ).limit(
-                limit
-            )
-        )
+        # TODO
+        raise NotImplementedError()
 
     def search_unique_datasets(self, expressions, select_fields=None, limit=None):
         """
@@ -643,21 +473,25 @@ class PostgisDbAPI(object):
         return self._connection.execute(select_query)
 
     def get_duplicates(self, match_fields, expressions):
+        # TODO
         # type: (Tuple[PgField], Tuple[PgExpression]) -> Iterable[tuple]
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
+        join_tables = PostgisDbAPI._join_tables(Dataset, expressions, group_expressions)
 
-        select_query = select(
-            (func.array_agg(DATASET.c.id),) + group_expressions
-        ).select_from(
-            PostgisDbAPI._from_expression(DATASET, expressions, match_fields)
-        ).where(
-            and_(DATASET.c.archived == None, *(PostgisDbAPI._alchemify_expressions(expressions)))
+        query = select(
+            (func.array_agg(Dataset.id),) + group_expressions
+        ).select_from(Dataset)
+        for join in join_tables:
+            query = query.join(join)
+
+        query = query.where(
+            and_(Dataset.archived == None, *(PostgisDbAPI._alchemify_expressions(expressions)))
         ).group_by(
             *group_expressions
         ).having(
-            func.count(DATASET.c.id) > 1
+            func.count(Dataset.id) > 1
         )
-        return self._connection.execute(select_query)
+        return self._connection.execute(query)
 
     def count_datasets(self, expressions):
         """
@@ -669,14 +503,13 @@ class PostgisDbAPI(object):
 
         select_query = (
             select(
-                [func.count('*')]
-            ).select_from(
-                self._from_expression(DATASET, expressions)
+                func.count(Dataset.id)
             ).where(
-                and_(DATASET.c.archived == None, *raw_expressions)
+                Dataset.archived == None
+            ).where(
+                *raw_expressions
             )
         )
-
         return self._connection.scalar(select_query)
 
     def count_datasets_through_time(self, start, end, period, time_field, expressions):
@@ -721,57 +554,55 @@ class PostgisDbAPI(object):
             )
         ).alias('time_ranges')
 
-        count_query = (
-            select(
-                (func.count('*'),)
-            ).select_from(
-                self._from_expression(DATASET, expressions)
-            ).where(
-                and_(
-                    time_field.alchemy_expression.overlaps(time_ranges.c.time_period),
-                    DATASET.c.archived == None,
-                    *raw_expressions
-                )
+        count_query = select(func.count('*'))
+        join_tables = self._join_tables(Dataset, expressions)
+        for join in join_tables:
+            count_query = count_query.join(join)
+        count_query = count_query.where(
+            and_(
+                time_field.alchemy_expression.overlaps(time_ranges.c.time_period),
+                Dataset.archived == None,
+                *raw_expressions
             )
         )
 
         return select((time_ranges.c.time_period, count_query.label('dataset_count')))
 
     @staticmethod
-    def _from_expression(source_table, expressions=None, fields=None):
+    def _join_tables(source_table, expressions=None, fields=None):
         join_tables = set()
         if expressions:
             join_tables.update(expression.field.required_alchemy_table for expression in expressions)
         if fields:
             join_tables.update(field.required_alchemy_table for field in fields)
-        join_tables.discard(source_table)
-
-        table_order_hack = [DATASET_SOURCE, DATASET_LOCATION, DATASET, PRODUCT, METADATA_TYPE]
-
-        from_expression = source_table
-        for table in table_order_hack:
-            if table in join_tables:
-                from_expression = from_expression.join(table)
-        return from_expression
+        join_tables.discard(source_table.__table__)
+        # TODO: Current architecture must sort-hack.  Better join awareness required at field level.
+        sort_order_hack = [DatasetLocation, SelectedDatasetLocation,
+                           Dataset, Product, MetadataType]
+        return [
+            orm_table
+            for orm_table in sort_order_hack
+            if orm_table.__table__ in join_tables
+        ]
 
     def get_product(self, id_):
         return self._connection.execute(
-            PRODUCT.select().where(PRODUCT.c.id == id_)
+            select(Product).where(Product.id == id_)
         ).first()
 
     def get_metadata_type(self, id_):
         return self._connection.execute(
-            METADATA_TYPE.select().where(METADATA_TYPE.c.id == id_)
+            select(MetadataType).where(MetadataType.id == id_)
         ).first()
 
     def get_product_by_name(self, name):
         return self._connection.execute(
-            PRODUCT.select().where(PRODUCT.c.name == name)
+            select(Product).where(Product.name == name)
         ).first()
 
     def get_metadata_type_by_name(self, name):
         return self._connection.execute(
-            METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
+            select(MetadataType).where(MetadataType.name == name)
         ).first()
 
     def insert_product(self,
@@ -783,7 +614,7 @@ class PostgisDbAPI(object):
                        concurrently=True):
 
         res = self._connection.execute(
-            PRODUCT.insert().values(
+            insert(Product).values(
                 name=name,
                 metadata=metadata,
                 metadata_type_ref=metadata_type_id,
@@ -794,6 +625,7 @@ class PostgisDbAPI(object):
         type_id = res.inserted_primary_key[0]
 
         # Initialise search fields.
+        # TODO: Isn't definition['metadata'] the same as metadata?
         self._setup_product_fields(type_id, name, search_fields, definition['metadata'],
                                    concurrently=concurrently)
         return type_id
@@ -803,39 +635,42 @@ class PostgisDbAPI(object):
                        metadata,
                        metadata_type_id,
                        search_fields,
-                       definition, update_metadata_type=False, concurrently=False):
+                       definition,
+                       update_metadata_type=False, concurrently=False):
+        # TODO: Isn't definition['metadata'] the same as metadata?
         res = self._connection.execute(
-            PRODUCT.update().returning(PRODUCT.c.id).where(
-                PRODUCT.c.name == name
+            update(Product).returning(Product.id).where(
+                Product.name == name
             ).values(
                 metadata=metadata,
                 metadata_type_ref=metadata_type_id,
                 definition=definition
             )
         )
-        type_id = res.first()[0]
+        prod_id = res.first()[0]
 
         if update_metadata_type:
             if not self._connection.in_transaction():
                 raise RuntimeError('Must update metadata types in transaction')
 
             self._connection.execute(
-                DATASET.update().where(
-                    DATASET.c.product_ref == type_id
+                update(Dataset).where(
+                    Dataset.product_ref == prod_id
                 ).values(
                     metadata_type_ref=metadata_type_id,
                 )
             )
 
         # Initialise search fields.
-        self._setup_product_fields(type_id, name, search_fields, definition['metadata'],
+        # TODO: Isn't definition['metadata'] the same as metadata?
+        self._setup_product_fields(prod_id, name, search_fields, definition['metadata'],
                                    concurrently=concurrently,
                                    rebuild_view=True)
-        return type_id
+        return prod_id
 
     def insert_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(
-            METADATA_TYPE.insert().values(
+            insert(MetadataType).values(
                 name=name,
                 definition=definition
             )
@@ -849,8 +684,8 @@ class PostgisDbAPI(object):
 
     def update_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(
-            METADATA_TYPE.update().returning(METADATA_TYPE.c.id).where(
-                METADATA_TYPE.c.name == name
+            update(MetadataType).returning(MetadataType.id).where(
+                MetadataType.name == name
             ).values(
                 name=name,
                 definition=definition
@@ -886,15 +721,6 @@ class PostgisDbAPI(object):
 
     def _setup_metadata_type_fields(self, id_, name, fields,
                                     rebuild_indexes=False, rebuild_views=False, concurrently=True):
-        # Metadata fields are no longer used (all queries are per-dataset-type): exclude all.
-        # This will have the effect of removing any old indexes that still exist.
-        exclude_fields = tuple(fields)
-
-        dataset_filter = and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == id_)
-        dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
-                                     exclude_fields, fields, name,
-                                     rebuild_indexes=rebuild_indexes, rebuild_view=rebuild_views)
-
         for product in self._get_products_for_metadata_type(id_):
             self._setup_product_fields(
                 product['id'],
@@ -908,7 +734,7 @@ class PostgisDbAPI(object):
 
     def _setup_product_fields(self, id_, name, fields, metadata_doc,
                               rebuild_indexes=False, rebuild_view=False, concurrently=True):
-        dataset_filter = and_(DATASET.c.archived == None, DATASET.c.product_ref == id_)
+        dataset_filter = and_(Dataset.archived == None, Dataset.product_ref == id_)
         excluded_field_names = tuple(self._get_active_field_names(fields, metadata_doc))
 
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
@@ -928,32 +754,33 @@ class PostgisDbAPI(object):
 
     def get_all_products(self):
         return self._connection.execute(
-            PRODUCT.select().order_by(PRODUCT.c.name.asc())
+            select(Product).order_by(Product.name.asc())
         ).fetchall()
 
     def _get_products_for_metadata_type(self, id_):
         return self._connection.execute(
-            PRODUCT.select(
-            ).where(
-                PRODUCT.c.metadata_type_ref == id_
+            select(Product).where(
+                Product.metadata_type_ref == id_
             ).order_by(
-                PRODUCT.c.name.asc()
+                Product.name.asc()
             )).fetchall()
 
     def get_all_metadata_types(self):
-        return self._connection.execute(METADATA_TYPE.select().order_by(METADATA_TYPE.c.name.asc())).fetchall()
+        return self._connection.execute(select(MetadataType).order_by(MetadataType.name.asc())).fetchall()
 
     def get_locations(self, dataset_id):
         return [
             record[0]
             for record in self._connection.execute(
-                select([
-                    _dataset_uri_field(DATASET_LOCATION)
-                ]).where(
-                    and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived == None)
+                select(
+                    _selectable_url(DatasetLocation)
+                ).where(
+                    DatasetLocation.dataset_ref == dataset_id
+                ).where(
+                    DatasetLocation.archived == None
                 ).order_by(
-                    DATASET_LOCATION.c.added.desc(),
-                    DATASET_LOCATION.c.id.desc()
+                    DatasetLocation.added.desc(),
+                    DatasetLocation.id.desc()
                 )
             ).fetchall()
         ]
@@ -965,12 +792,14 @@ class PostgisDbAPI(object):
         return [
             (location_uri, archived_time)
             for location_uri, archived_time in self._connection.execute(
-                select([
-                    _dataset_uri_field(DATASET_LOCATION), DATASET_LOCATION.c.archived
-                ]).where(
-                    and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived != None)
+                select(
+                    _selectable_url(DatasetLocation), DatasetLocation.archived
+                ).where(
+                    DatasetLocation.dataset_ref == dataset_id
+                ).where(
+                    DatasetLocation.archived != None
                 ).order_by(
-                    DATASET_LOCATION.c.added.desc()
+                    DatasetLocation.added.desc()
                 )
             ).fetchall()
         ]
@@ -983,12 +812,12 @@ class PostgisDbAPI(object):
         """
         scheme, body = _split_uri(uri)
         res = self._connection.execute(
-            delete(DATASET_LOCATION).where(
-                and_(
-                    DATASET_LOCATION.c.dataset_ref == dataset_id,
-                    DATASET_LOCATION.c.uri_scheme == scheme,
-                    DATASET_LOCATION.c.uri_body == body,
-                )
+            delete(DatasetLocation).where(
+                DatasetLocation.dataset_ref == dataset_id
+            ).where(
+                DatasetLocation.uri_scheme == scheme
+            ).where(
+                DatasetLocation.uri_body == body
             )
         )
         return res.rowcount > 0
@@ -996,13 +825,14 @@ class PostgisDbAPI(object):
     def archive_location(self, dataset_id, uri):
         scheme, body = _split_uri(uri)
         res = self._connection.execute(
-            DATASET_LOCATION.update().where(
-                and_(
-                    DATASET_LOCATION.c.dataset_ref == dataset_id,
-                    DATASET_LOCATION.c.uri_scheme == scheme,
-                    DATASET_LOCATION.c.uri_body == body,
-                    DATASET_LOCATION.c.archived == None,
-                )
+            update(DatasetLocation).where(
+                DatasetLocation.dataset_ref == dataset_id
+            ).where(
+                DatasetLocation.uri_scheme == scheme
+            ).where(
+                DatasetLocation.uri_body == body
+            ).where(
+                DatasetLocation.archived == None
             ).values(
                 archived=func.now()
             )
@@ -1012,13 +842,14 @@ class PostgisDbAPI(object):
     def restore_location(self, dataset_id, uri):
         scheme, body = _split_uri(uri)
         res = self._connection.execute(
-            DATASET_LOCATION.update().where(
-                and_(
-                    DATASET_LOCATION.c.dataset_ref == dataset_id,
-                    DATASET_LOCATION.c.uri_scheme == scheme,
-                    DATASET_LOCATION.c.uri_body == body,
-                    DATASET_LOCATION.c.archived != None,
-                )
+            update(DatasetLocation).where(
+                DatasetLocation.dataset_ref == dataset_id
+            ).where(
+                DatasetLocation.uri_scheme == scheme
+            ).where(
+                DatasetLocation.uri_body == body
+            ).where(
+                DatasetLocation.archived != None
             ).values(
                 archived=None
             )

@@ -31,21 +31,26 @@ from datacube.utils.aws import (
 
 
 def test_compute_tasks():
-    client = start_local_dask(threads_per_worker=1,
-                              dashboard_address=None)
+    try:
+        client = start_local_dask(threads_per_worker=1,
+                                  dashboard_address=None)
 
-    tasks = (dask.delayed(x) for x in range(100))
-    xx = [x for x in compute_tasks(tasks, client)]
-    assert xx == [x for x in range(100)]
-
-    client.close()
-    del client
+        tasks = (dask.delayed(x) for x in range(100))
+        xx = [x for x in compute_tasks(tasks, client)]
+        assert xx == [x for x in range(100)]
+    finally:
+        client.close()
+        del client
 
 
 def test_start_local_dask_dashboard_link(monkeypatch):
     monkeypatch.setenv('JUPYTERHUB_SERVICE_PREFIX', 'user/test/')
-    client = start_local_dask()
-    assert client.dashboard_link.startswith('user/test/proxy/')
+    try:
+        client = start_local_dask()
+        assert client.dashboard_link.startswith('user/test/proxy/')
+    finally:
+        client.close()
+        del client
 
 
 def test_partition_map():
@@ -61,16 +66,17 @@ def test_partition_map():
 
 
 def test_pmap():
-    client = start_local_dask(threads_per_worker=1,
-                              dashboard_address=None)
+    try:
+        client = start_local_dask(threads_per_worker=1,
+                                  dashboard_address=None)
 
-    xx_it = pmap(str, range(101), client=client)
-    xx = [x for x in xx_it]
+        xx_it = pmap(str, range(101), client=client)
+        xx = [x for x in xx_it]
 
-    assert xx == [str(x) for x in range(101)]
-
-    client.close()
-    del client
+        assert xx == [str(x) for x in range(101)]
+    finally:
+        client.close()
+        del client
 
 
 @pytest.mark.parametrize("blob", [

@@ -11,7 +11,6 @@ import logging
 from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                           SCHEMA_NAME, TYPES_INIT_SQL,
                                           UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
-                                          ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
                                           UPDATE_TIMESTAMP_SQL,
                                           escape_pg_identifier,
                                           pg_column_exists)
@@ -41,9 +40,9 @@ _LOG = logging.getLogger(__name__)
 def install_timestamp_trigger(connection):
     from . import _schema
     TABLE_NAMES = [  # noqa: N806
-        _schema.METADATA_TYPE.name,
-        _schema.PRODUCT.name,
-        _schema.DATASET.name,
+        _schema.MetadataType.__tablename__,
+        _schema.Product.__tablename__,
+        _schema.Dataset.__tablename__,
     ]
     # Create trigger capture function
     connection.execute(UPDATE_TIMESTAMP_SQL)
@@ -52,12 +51,6 @@ def install_timestamp_trigger(connection):
         # Add update columns
         connection.execute(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
         connection.execute(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
-
-
-def install_added_column(connection):
-    from . import _schema
-    TABLE_NAME = _schema.DATASET_LOCATION.name  # noqa: N806
-    connection.execute(ADDED_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=TABLE_NAME))
 
 
 def schema_qualified(name):
@@ -108,13 +101,15 @@ def ensure_db(engine, with_permissions=True):
             c.execute(CreateSchema(SCHEMA_NAME))
             _LOG.info('Creating tables.')
             c.execute(TYPES_INIT_SQL)
-            METADATA.create_all(c)
+            from . import _schema
+            base = _schema.orm_registry.generate_base()
+            _LOG.info("Dataset indexes: %s", repr(base.metadata.tables["odc.dataset"].indexes))
+            base.metadata.create_all(c)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
-            _LOG.info("Creating added column.")
-            install_added_column(c)
             c.execute('commit')
         except:  # noqa: E722
+            _LOG.error("Unhandled SQLAlchemy error.")
             c.execute('rollback')
             raise
         finally:
@@ -129,8 +124,8 @@ def ensure_db(engine, with_permissions=True):
         grant execute on function {schema}.common_timestamp(text) to odc_user;
 
         grant insert on {schema}.dataset,
-                        {schema}.dataset_location,
-                        {schema}.dataset_source to odc_ingest;
+                        {schema}.location,
+                        {schema}.dataset_lineage to odc_ingest;
         grant usage, select on all sequences in schema {schema} to odc_ingest;
 
         -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
@@ -198,7 +193,6 @@ def update_schema(engine: Engine):
         c = engine.connect()
         c.execute('begin')
         install_timestamp_trigger(c)
-        install_added_column(c)
         c.execute('commit')
         c.close()
     else:

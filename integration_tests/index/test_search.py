@@ -1236,4 +1236,4 @@ def _csv_search_raw(args, clirunner):
     result = clirunner(['-f', 'csv'] + list(args), cli_method=datacube.scripts.search_tool.cli, verbose_flag=False)
     output = result.output
     output_lines = output.split("\n")
-    return "\n".join(line for line in output_lines if "WARNING:" not in line)
+    return "\n".join(line for line in output_lines if "WARNING" not in line)

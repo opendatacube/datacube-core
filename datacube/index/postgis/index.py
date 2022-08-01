@@ -43,6 +43,9 @@ class Index(AbstractIndex):
     supports_legacy = False
     # Hopefully can reinstate non-geo support, but dropping for now will make progress easier.
     supports_nongeo = False
+    # Hopefully can reinstate a simpler form of lineage support, but leave for now
+    supports_lineage = False
+    supports_source_filters = False
 
     def __init__(self, db: PostGisDb) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
