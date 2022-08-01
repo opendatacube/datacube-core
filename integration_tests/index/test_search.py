@@ -234,6 +234,27 @@ def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
         raise RuntimeError("LS5 type was not among types")
 
 
+@pytest.fixture
+def ls8_eo3_dataset(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset_doc):
+    index.metadata_types.add(extended_eo3_metadata_type_doc)
+    index.products.add_document(extended_eo3_product_doc)
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index)
+    ds, err = resolver(*eo3_ls8_dataset_doc)
+    index.datasets.add(ds)
+    return index.datasets.get(ds.id)
+
+
+@pytest.fixture
+def wo_eo3_dataset(index, base_eo3_product_doc, eo3_wo_dataset_doc):
+    index.products.add_document(base_eo3_product_doc)
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index)
+    ds, err = resolver(*eo3_wo_dataset_doc)
+    index.datasets.add(ds)
+    return index.datasets.get(ds.id)
+
+
 def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
     datasets = index.datasets.search_eager(
         platform='LANDSAT_8'

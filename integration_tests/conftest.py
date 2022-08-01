@@ -122,6 +122,24 @@ def dataset_with_lineage_doc():
 
 
 @pytest.fixture
+def eo3_ls8_dataset_doc():
+    return (
+        get_eo3_test_data_doc("ls8_dataset.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/12/'
+        'ga_ls8c_ard_3-0-0_090086_2016-05-12_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def eo3_wo_dataset_doc():
+    return (
+        get_eo3_test_data_doc("wo_dataset.yaml"),
+        's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+        'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+    )
+
+
+@pytest.fixture
 def datasets_with_unembedded_lineage_doc():
     return [
         (
@@ -267,8 +285,9 @@ def remove_postgis_dynamic_indexes():
     Clear any dynamically created postgis indexes from the schema.
     """
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-    for table in pgis_core.METADATA.tables.values():
-        table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
+    # for table in pgis_core.METADATA.tables.values():
+    #    table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
+    # Dynamic indexes disabled.
 
 
 @pytest.fixture
