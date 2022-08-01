@@ -56,28 +56,28 @@ settings.register_profile(
 )
 settings.load_profile('opendatacube')
 
-MEMORY_DRIVER_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'memory'
+EO3_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'eo3'
 
 
-def get_memory_test_data_doc(path):
+def get_eo3_test_data_doc(path):
     from datacube.utils import read_documents
-    for path, doc in read_documents(MEMORY_DRIVER_TESTDIR / path):
+    for path, doc in read_documents(EO3_TESTDIR / path):
         return doc
 
 
 @pytest.fixture
 def extended_eo3_metadata_type_doc():
-    return get_memory_test_data_doc("eo3_landsat_ard.odc-type.yaml")
+    return get_eo3_test_data_doc("eo3_landsat_ard.odc-type.yaml")
 
 
 @pytest.fixture
 def extended_eo3_product_doc():
-    return get_memory_test_data_doc("ard_ls8.odc-product.yaml")
+    return get_eo3_test_data_doc("ard_ls8.odc-product.yaml")
 
 
 @pytest.fixture
 def base_eo3_product_doc():
-    return get_memory_test_data_doc("ga_ls_wo_3.odc-product.yaml")
+    return get_eo3_test_data_doc("ga_ls_wo_3.odc-product.yaml")
 
 
 @pytest.fixture
@@ -115,7 +115,7 @@ def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
 @pytest.fixture
 def dataset_with_lineage_doc():
     return (
-        get_memory_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
+        get_eo3_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
         's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
         'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
     )
@@ -125,12 +125,12 @@ def dataset_with_lineage_doc():
 def datasets_with_unembedded_lineage_doc():
     return [
         (
-            get_memory_test_data_doc("ls8_dataset.yaml"),
+            get_eo3_test_data_doc("ls8_dataset.yaml"),
             's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/12/'
             'ga_ls8c_ard_3-0-0_090086_2016-05-12_final.stac-item.json'
         ),
         (
-            get_memory_test_data_doc("wo_dataset.yaml"),
+            get_eo3_test_data_doc("wo_dataset.yaml"),
             's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
             'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
         ),
