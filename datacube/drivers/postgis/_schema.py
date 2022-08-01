@@ -106,7 +106,6 @@ class Dataset:
                                     primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
                                                 "DatasetLocation.archived!=None)"
                                      )
-    # TODO: active location?
 
 
 @orm_registry.mapped
