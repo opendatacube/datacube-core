@@ -96,14 +96,14 @@ setup(
         'netcdf4',
         'numpy',
         'psycopg2',
-        'lark-parser>=0.6.7',
+        'lark',
         'pandas',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=1.0.2',  # Multi-band re-project fixed in that version
+        'rasterio>=1.0.2,!=1.3.0',  # Multi-band re-project fixed in 1.0.2; warping broken in 1.3.0
         'sqlalchemy',
         'toolz',
-        'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
+        'xarray>=0.9,!=2022.6.0',  # >0.9 fixes most problems with `crs` attributes being lost
     ],
     extras_require=extras_require,
     tests_require=tests_require,

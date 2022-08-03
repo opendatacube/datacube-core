@@ -10,54 +10,52 @@ affine==2.3.1
     #   rasterio
 alabaster==0.7.12
     # via sphinx
-amqp==2.6.1
-    # via kombu
 antlr4-python3-runtime==4.7.2
     # via cf-units
 astroid==2.3.3
     # via pylint
 async-timeout==4.0.2
     # via redis
-attrs==21.4.0
+attrs==22.1.0
     # via
     #   fiona
     #   hypothesis
     #   jsonschema
     #   pytest
     #   rasterio
-babel==2.10.1
+babel==2.10.3
     # via sphinx
-bleach==5.0.0
+bleach==5.0.1
     # via readme-renderer
-boto3==1.22.12
+boto3==1.24.44
     # via
     #   -r constraints.in
     #   moto
-botocore==1.25.12
+botocore==1.27.44
     # via
     #   boto3
     #   moto
     #   s3transfer
-bottleneck==1.3.4
+bottleneck==1.3.5
     # via -r constraints.in
-cachetools==5.0.0
+cachetools==5.2.0
     # via -r constraints.in
-certifi==2021.10.8
+certifi==2022.6.15
     # via
     #   fiona
     #   pyproj
     #   rasterio
     #   requests
-cf-units==3.0.1.post0
+cf-units==3.1.1
     # via compliance-checker
-cffi==1.15.0
+cffi==1.15.1
     # via cryptography
-cftime==1.6.0
+cftime==1.6.1
     # via
     #   cf-units
     #   compliance-checker
     #   netcdf4
-charset-normalizer==2.0.12
+charset-normalizer==2.1.0
     # via requests
 ciso8601==2.2.0
     # via -r constraints.in
@@ -78,7 +76,7 @@ cligj==0.7.2
     # via
     #   fiona
     #   rasterio
-cloudpickle==2.0.0
+cloudpickle==2.1.0
     # via
     #   -r constraints.in
     #   dask
@@ -89,15 +87,15 @@ commonmark==0.9.1
     #   rich
 compliance-checker==4.3.4
     # via -r constraints.in
-coverage==6.3.2
+coverage==6.4.2
     # via pytest-cov
-cryptography==37.0.2
+cryptography==37.0.4
     # via
     #   moto
     #   secretstorage
 cycler==0.11.0
     # via matplotlib
-dask==2022.5.0
+dask==2022.7.1
     # via
     #   -r constraints.in
     #   distributed
@@ -105,7 +103,7 @@ decorator==5.1.1
     # via validators
 deprecated==1.2.13
     # via redis
-distributed==2022.5.0
+distributed==2022.7.1
     # via -r constraints.in
 docutils==0.17.1
     # via
@@ -114,28 +112,30 @@ docutils==0.17.1
     #   sphinx
     #   sphinx-click
     #   sphinx-rtd-theme
+exceptiongroup==1.0.0rc8
+    # via hypothesis
 fiona==1.8.21
     # via -r constraints.in
-fonttools==4.33.3
+fonttools==4.34.4
     # via matplotlib
-fsspec==2022.3.0
+fsspec==2022.7.1
     # via dask
 greenlet==1.1.2
     # via sqlalchemy
 heapdict==1.0.1
     # via zict
-hypothesis==6.46.3
+hypothesis==6.54.1
     # via -r constraints.in
 idna==3.3
     # via requests
-imagesize==1.3.0
+imagesize==1.4.1
     # via sphinx
-importlib-metadata==4.11.3
+importlib-metadata==4.12.0
     # via
     #   keyring
     #   sphinx
     #   twine
-importlib-resources==5.7.1
+importlib-resources==5.9.0
     # via jsonschema
 iniconfig==1.1.1
     # via pytest
@@ -154,17 +154,17 @@ jinja2==3.1.2
     #   distributed
     #   moto
     #   sphinx
-jmespath==1.0.0
+jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonschema==4.5.1
+jsonschema==4.9.0
     # via -r constraints.in
-keyring==23.5.0
+keyring==23.7.0
     # via twine
-kiwisolver==1.4.2
+kiwisolver==1.4.4
     # via matplotlib
-lark-parser==0.12.0
+lark==1.1.2
     # via -r constraints.in
 lazy-object-proxy==1.4.3
     # via astroid
@@ -172,27 +172,28 @@ locket==1.0.0
     # via
     #   distributed
     #   partd
-lxml==4.8.0
+lxml==4.9.1
     # via compliance-checker
 markupsafe==2.1.1
     # via
     #   jinja2
     #   moto
+    #   werkzeug
 matplotlib==3.5.2
     # via -r constraints.in
 mccabe==0.6.1
     # via pylint
-moto==3.1.8
+moto==3.1.16
     # via -r constraints.in
-msgpack==1.0.3
+msgpack==1.0.4
     # via distributed
 munch==2.5.0
     # via fiona
-netcdf4==1.5.8
+netcdf4==1.6.0
     # via
     #   -r constraints.in
     #   compliance-checker
-numpy==1.22.3
+numpy==1.23.1
     # via
     #   -r constraints.in
     #   bottleneck
@@ -204,7 +205,7 @@ numpy==1.22.3
     #   rasterio
     #   snuggs
     #   xarray
-owslib==0.25.0
+owslib==0.26.0
     # via compliance-checker
 packaging==21.3
     # via
@@ -216,19 +217,21 @@ packaging==21.3
     #   setuptools-scm
     #   sphinx
     #   xarray
-pandas==1.4.2
+pandas==1.4.3
     # via xarray
 partd==1.2.0
     # via dask
 pendulum==2.1.2
     # via compliance-checker
-pillow==9.1.0
+pillow==9.2.0
     # via matplotlib
-pkginfo==1.8.2
+pkginfo==1.8.3
     # via twine
+pkgutil-resolve-name==1.3.10
+    # via jsonschema
 pluggy==0.13.1
     # via pytest
-psutil==5.9.0
+psutil==5.9.1
     # via distributed
 psycopg2==2.9.3
     # via -r constraints.in
@@ -252,7 +255,7 @@ pyparsing==3.0.9
     #   matplotlib
     #   packaging
     #   snuggs
-pyproj==3.3.1
+pyproj==3.2.1
     # via
     #   -r constraints.in
     #   compliance-checker
@@ -266,7 +269,7 @@ pytest==6.1.2
     #   pytest-timeout
 pytest-cov==2.10.1
     # via -r constraints.in
-pytest-httpserver==1.0.4
+pytest-httpserver==1.0.5
     # via -r constraints.in
 pytest-timeout==2.1.0
     # via -r constraints.in
@@ -299,11 +302,11 @@ readme-renderer==35.0
     # via twine
 recommonmark==0.7.1
     # via -r constraints.in
-redis==4.3.1
+redis==4.3.4
     # via -r constraints.in
-regex==2022.4.24
+regex==2022.7.25
     # via compliance-checker
-requests==2.27.1
+requests==2.28.1
     # via
     #   compliance-checker
     #   moto
@@ -314,17 +317,17 @@ requests==2.27.1
     #   twine
 requests-toolbelt==0.9.1
     # via twine
-responses==0.20.0
+responses==0.21.0
     # via moto
 rfc3986==2.0.0
     # via twine
-rich==12.4.1
+rich==12.5.1
     # via twine
-s3transfer==0.5.2
+s3transfer==0.6.0
     # via boto3
 secretstorage==3.3.2
     # via keyring
-setuptools-scm==6.4.2
+setuptools-scm==7.0.5
     # via -r constraints.in
 shapely==1.8.2
     # via -r constraints.in
@@ -344,16 +347,16 @@ sortedcontainers==2.4.0
     # via
     #   distributed
     #   hypothesis
-sphinx==4.5.0
+sphinx==5.1.1
     # via
     #   -r constraints.in
     #   recommonmark
     #   sphinx-autodoc-typehints
     #   sphinx-click
     #   sphinx-rtd-theme
-sphinx-autodoc-typehints==1.18.1
+sphinx-autodoc-typehints==1.19.1
     # via -r constraints.in
-sphinx-click==4.0.3
+sphinx-click==4.3.0
     # via -r constraints.in
 sphinx-rtd-theme==1.0.0
     # via -r constraints.in
@@ -369,7 +372,7 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
-sqlalchemy==1.4.36
+sqlalchemy==1.4.39
     # via -r constraints.in
 tblib==1.7.0
     # via distributed
@@ -379,7 +382,7 @@ toml==0.10.2
     #   pytest
 tomli==2.0.1
     # via setuptools-scm
-toolz==0.11.2
+toolz==0.12.0
     # via
     #   -r constraints.in
     #   dask
@@ -387,25 +390,24 @@ toolz==0.11.2
     #   partd
 tornado==6.1
     # via distributed
-twine==4.0.0
+twine==4.0.1
     # via -r constraints.in
-typing-extensions==4.2.0
-    # via rich
-urllib3==1.26.9
+typing-extensions==4.3.0
+    # via
+    #   rich
+    #   setuptools-scm
+urllib3==1.26.11
     # via
     #   botocore
     #   distributed
     #   requests
     #   responses
     #   twine
-validators==0.19.0
+validators==0.20.0
     # via compliance-checker
-vine==1.3.0
-    # via
-    #   amqp
 webencodings==0.5.1
     # via bleach
-werkzeug==2.1.2
+werkzeug==2.2.1
     # via
     #   moto
     #   pytest-httpserver
@@ -421,7 +423,7 @@ xmltodict==0.13.0
     # via moto
 zict==2.2.0
     # via distributed
-zipp==3.8.0
+zipp==3.8.1
     # via
     #   importlib-metadata
     #   importlib-resources
