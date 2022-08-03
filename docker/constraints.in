@@ -13,7 +13,8 @@ dask>=2021.10.1
 distributed>=2021.10.0
 fiona
 jsonschema
-lark-parser>=0.6.7
+# Was lark-parser>=0.6.7
+lark
 matplotlib
 moto
 netcdf4>=1.5.8
@@ -24,7 +25,7 @@ pylint
 pyproj>=2.5
 python-dateutil
 pyyaml
-rasterio>=1.2.4
+rasterio>=1.2.4,!=1.3.0
 recommonmark
 redis
 shapely>=1.7.1
@@ -33,7 +34,8 @@ sphinx_autodoc_typehints
 sphinx_rtd_theme
 sqlalchemy
 toolz
-xarray>=0.18
+# FOR INVESTIGATION: xarray 2022.6.0 breaks virtual products tests.
+xarray>=0.18,!=2022.6.0
 
 # pytest
 pytest==6.1.2

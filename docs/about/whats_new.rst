@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- Dependency updates. (:pull:`1308`)
 - Remove several features that had been deprecated in previous releases. (:pull:`1275`)
 - Fix broken paths in api docs. (:pull:`1277`)
 - Fix readthedocs build. (:pull:`1269`)
