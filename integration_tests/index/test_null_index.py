@@ -18,7 +18,7 @@ def test_init_null(null_config):
     assert "default" in idxs._drivers
     assert "null" in idxs._drivers
     with Datacube(config=null_config, validate_connection=True) as dc:
-        assert(dc.index.url) == "null"
+        assert dc.index.url == "null"
 
 
 def test_null_user_resource(null_config):
