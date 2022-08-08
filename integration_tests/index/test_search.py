@@ -26,7 +26,7 @@ from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._connections import DEFAULT_DB_USER
 from datacube.index import Index
 from datacube.model import Dataset
-from datacube.model import DatasetType
+from datacube.model import Product
 from datacube.model import MetadataType
 from datacube.model import Range
 
@@ -166,7 +166,7 @@ def pseudo_ls8_dataset2(index, initialised_postgres_db, pseudo_ls8_type):
 @pytest.fixture
 def pseudo_ls8_dataset3(index: Index,
                         initialised_postgres_db: PostgresDb,
-                        pseudo_ls8_type: DatasetType,
+                        pseudo_ls8_type: Product,
                         pseudo_ls8_dataset: Dataset) -> Dataset:
     # Same as 1, but a different path/row
     id_ = str(uuid.uuid4())
@@ -193,7 +193,7 @@ def pseudo_ls8_dataset3(index: Index,
 @pytest.fixture
 def pseudo_ls8_dataset4(index: Index,
                         initialised_postgres_db: PostgresDb,
-                        pseudo_ls8_type: DatasetType,
+                        pseudo_ls8_type: Product,
                         pseudo_ls8_dataset2: Dataset) -> Dataset:
     # Same as 2, but a different path/row
     id_ = str(uuid.uuid4())
@@ -226,7 +226,7 @@ def ls5_dataset_w_children(index, clirunner, example_ls5_dataset_path, indexed_l
 
 @pytest.fixture
 def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
-                          indexed_ls5_scene_products: List[DatasetType]) -> DatasetType:
+                          indexed_ls5_scene_products: List[Product]) -> Product:
     for dataset_type in indexed_ls5_scene_products:
         if dataset_type.name == ls5_dataset_w_children.type.name:
             return dataset_type
@@ -236,11 +236,30 @@ def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
 
 @pytest.fixture
 def ls8_eo3_dataset(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset_doc):
-    index.metadata_types.add(extended_eo3_metadata_type_doc)
+    index.metadata_types.add(
+        index.metadata_types.from_doc(
+            extended_eo3_metadata_type_doc
+        )
+    )
     index.products.add_document(extended_eo3_product_doc)
     from datacube.index.hl import Doc2Dataset
     resolver = Doc2Dataset(index)
     ds, err = resolver(*eo3_ls8_dataset_doc)
+    index.datasets.add(ds)
+    return index.datasets.get(ds.id)
+
+
+@pytest.fixture
+def ls8_eo3_dataset2(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset2_doc):
+    index.metadata_types.add(
+        index.metadata_types.from_doc(
+            extended_eo3_metadata_type_doc
+        )
+    )
+    index.products.add_document(extended_eo3_product_doc)
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index)
+    ds, err = resolver(*eo3_ls8_dataset2_doc)
     index.datasets.add(ds)
     return index.datasets.get(ds.id)
 
@@ -277,6 +296,28 @@ def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
         )
 
 
+def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset):
+    datasets = index.datasets.search_eager(
+        platform='landsat-8'
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    datasets = index.datasets.search_eager(
+        platform='landsat-8',
+        instrument='OLI_TIRS'
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    # Wrong product family
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            platform='landsat-8',
+            product_family='splunge',
+        )
+
+
 def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     datasets = index.datasets.search_by_metadata(
         {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}}
@@ -287,6 +328,21 @@ def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -
 
     datasets = index.datasets.search_by_metadata(
         {"platform": {"code": "LANDSAT_5"}, "instrument": {"name": "TM"}}
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 0
+
+
+def test_search_dataset_by_metadata_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
+    datasets = index.datasets.search_by_metadata(
+        {"properties": {"eo:platform": "landsat-8"}, "properties": {"eo:instrument": "OLI_TIRS"}}
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    datasets = index.datasets.search_by_metadata(
+        {"properties": {"eo:platform": "landsat-5"}, "properties": {"eo:instrument": "TM"}}
     )
     datasets = list(datasets)
     assert len(datasets) == 0
@@ -303,6 +359,21 @@ def test_search_day(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # Different day: no match
     datasets = index.datasets.search_eager(
         time=datetime.date(2014, 7, 27)
+    )
+    assert len(datasets) == 0
+
+
+def test_search_day_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
+    # Matches day
+    datasets = index.datasets.search_eager(
+        time=datetime.date(2016, 5, 12)
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    # Different day: no match
+    datasets = index.datasets.search_eager(
+        time=datetime.date(2016, 5, 13)
     )
     assert len(datasets) == 0
 
@@ -384,7 +455,15 @@ def test_search_dataset_ranges(index: Index, pseudo_ls8_dataset: Dataset) -> Non
 
 
 def test_search_globally(index: Index, pseudo_ls8_dataset: Dataset) -> None:
-    # Insert dataset. It should be matched to the telemetry collection.
+    # No expressions means get all.
+    results = list(index.datasets.search())
+    assert len(results) == 1
+
+    # Dataset sources aren't loaded by default
+    assert results[0].sources is None
+
+
+def test_search_globally_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
     # No expressions means get all.
     results = list(index.datasets.search())
     assert len(results) == 1
@@ -394,7 +473,7 @@ def test_search_globally(index: Index, pseudo_ls8_dataset: Dataset) -> None:
 
 
 def _load_product_query(
-        lazy_results: Iterable[Tuple[DatasetType, Iterable[Dataset]]]
+        lazy_results: Iterable[Tuple[Product, Iterable[Dataset]]]
 ) -> Dict[str, List[Dataset]]:
     """
     search_by_product() returns two levels of laziness. load them all into memory
@@ -410,7 +489,7 @@ def _load_product_query(
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_by_product(index: Index,
-                           pseudo_ls8_type: DatasetType,
+                           pseudo_ls8_type: Product,
                            pseudo_ls8_dataset: Dataset,
                            indexed_ls5_scene_products,
                            ls5_dataset_w_children: Dataset) -> None:
@@ -428,6 +507,26 @@ def test_search_by_product(index: Index,
     assert len(products) == 1
     [dataset] = products[pseudo_ls8_type.name]
     assert dataset.id == pseudo_ls8_dataset.id
+
+
+def test_search_by_product_eo3(index: Index,
+                           base_eo3_product_doc: Product,
+                           ls8_eo3_dataset: Dataset,
+                           wo_eo3_dataset: Dataset) -> None:
+    # Query all the test data, the counts should match expected
+    results = _load_product_query(index.datasets.search_by_product())
+    assert len(results) == 2
+    dataset_count = sum(len(ds) for ds in results.values())
+    assert dataset_count == 2
+
+    # Query one product
+    products = _load_product_query(index.datasets.search_by_product(
+        platform='landsat-8',
+        product_family='wo'
+    ))
+    assert len(products) == 1
+    [dataset] = products[base_eo3_product_doc["name"]]
+    assert dataset.id == wo_eo3_dataset.id
 
 
 def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
@@ -450,12 +549,54 @@ def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
     assert len(datasets) == 2
 
 
+def test_search_limit_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset):
+    prod = ls8_eo3_dataset.type.name
+    datasets = list(index.datasets.search(product=prod))
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search(limit=1, product=prod))
+    ids = [ds.id for ds in datasets]
+    assert len(ids) == 1
+    assert len(datasets) == 1
+    datasets = list(index.datasets.search(limit=0, product=prod))
+    assert len(datasets) == 0
+    datasets = list(index.datasets.search(limit=5, product=prod))
+    assert len(datasets) == 2
+
+    datasets = list(index.datasets.search_returning(('id',), product=prod))
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search_returning(('id',), limit=1, product=prod))
+    assert len(datasets) == 1
+    datasets = list(index.datasets.search_returning(('id',), limit=0, product=prod))
+    assert len(datasets) == 0
+    datasets = list(index.datasets.search_returning(('id',), limit=5, product=prod))
+    assert len(datasets) == 2
+
+    # Limit is per product not overall.  (But why?!?)
+    datasets = list(index.datasets.search())
+    assert len(datasets) == 3
+    datasets = list(index.datasets.search(limit=1))
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search(limit=0))
+    assert len(datasets) == 0
+    datasets = list(index.datasets.search(limit=5))
+    assert len(datasets) == 3
+
+    datasets = list(index.datasets.search_returning(('id',)))
+    assert len(datasets) == 3
+    datasets = list(index.datasets.search_returning(('id',), limit=1))
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search_returning(('id',), limit=0))
+    assert len(datasets) == 0
+    datasets = list(index.datasets.search_returning(('id',), limit=5))
+    assert len(datasets) == 3
+
+
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_or_expressions(index: Index,
-                               pseudo_ls8_type: DatasetType,
+                               pseudo_ls8_type: Product,
                                pseudo_ls8_dataset: Dataset,
-                               ls5_dataset_nbar_type: DatasetType,
+                               ls5_dataset_nbar_type: Product,
                                ls5_dataset_w_children: Dataset,
                                default_metadata_type: MetadataType,
                                telemetry_metadata_type: MetadataType) -> None:
@@ -517,11 +658,68 @@ def test_search_or_expressions(index: Index,
     assert datasets[0].id == pseudo_ls8_dataset.id
 
 
+def test_search_or_expressions_eo3(index: Index,
+                                   ls8_eo3_dataset: Dataset,
+                                   ls8_eo3_dataset2: Dataset,
+                                   wo_eo3_dataset: Dataset) -> None:
+    # Three EO3 datasets:
+    # - two landsat8 ard
+    # - one wo
+
+    all_datasets = index.datasets.search_eager()
+    assert len(all_datasets) == 3
+    all_ids = set(dataset.id for dataset in all_datasets)
+
+    # OR all instruments: should return all datasets
+    datasets = index.datasets.search_eager(
+        instrument=['WOOLI_TIRS', 'OLI_TIRS', 'OLI_TIRS2']
+    )
+    assert len(datasets) == 3
+    ids = set(dataset.id for dataset in datasets)
+    assert ids == all_ids
+
+    # OR expression with only one clause.
+    datasets = index.datasets.search_eager(
+        instrument=['OLI_TIRS']
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    # OR both products: return all
+    datasets = index.datasets.search_eager(
+        product=[ls8_eo3_dataset.type.name, wo_eo3_dataset.type.name]
+    )
+    assert len(datasets) == 3
+    ids = set(dataset.id for dataset in datasets)
+    assert ids == all_ids
+
+    # eo OR eo3: return all
+    datasets = index.datasets.search_eager(
+        metadata_type=[
+            # LS5 + children
+            ls8_eo3_dataset.metadata_type.name,
+            # Nothing
+            # LS8 dataset
+            wo_eo3_dataset.metadata_type.name
+        ]
+    )
+    assert len(datasets) == 3
+    ids = set(dataset.id for dataset in datasets)
+    assert ids == all_ids
+
+    # Redundant ORs should have no effect.
+    datasets = index.datasets.search_eager(
+        product=[wo_eo3_dataset.type.name, wo_eo3_dataset.type.name, wo_eo3_dataset.type.name]
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == wo_eo3_dataset.id
+
+
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_returning(index: Index,
                           local_config: LocalConfig,
-                          pseudo_ls8_type: DatasetType,
+                          pseudo_ls8_type: Product,
                           pseudo_ls8_dataset: Dataset,
                           ls5_dataset_w_children) -> None:
 
@@ -569,6 +767,57 @@ def test_search_returning(index: Index,
     expected_time = creation_time.astimezone(tz.tzutc()).replace(tzinfo=None)
     assert expected_time.isoformat() == pseudo_ls8_dataset.metadata_doc['creation_dt']
     assert label == pseudo_ls8_dataset.metadata_doc['ga_label']
+
+
+def test_search_returning_eo3(index: Index,
+                              local_config: LocalConfig,
+                              ls8_eo3_dataset: Dataset,
+                              ls8_eo3_dataset2: Dataset,
+                              wo_eo3_dataset: Dataset) -> None:
+    assert index.datasets.count() == 3, "Expected three test datasets"
+
+    # Expect one product with our one dataset.
+    results = list(index.datasets.search_returning(
+        ('id', 'region_code', 'dataset_maturity'),
+        platform='landsat-8',
+        instrument ='OLI_TIRS',
+    ))
+    assert len(results) == 1
+    id_, region_code, maturity = results[0]
+    assert id_ == ls8_eo3_dataset.id
+    assert region_code == '090086'
+    assert maturity == 'final'
+
+    results = list(index.datasets.search_returning(
+        ('id', 'metadata_doc',),
+        platform='landsat-8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 1
+    id_, document = results[0]
+    assert id_ == ls8_eo3_dataset.id
+    assert document == ls8_eo3_dataset.metadata_doc
+
+    my_username = local_config.get('db_username', DEFAULT_DB_USER)
+
+    # Mixture of document and native fields
+    results = list(index.datasets.search_returning(
+        ('id', 'creation_time', 'format', 'label'),
+        platform='landsat-8',
+        instrument ='OLI_TIRS',
+        indexed_by=my_username,
+    ))
+    assert len(results) == 1
+
+    id_, creation_time, format_, label = results[0]
+
+    assert id_ == ls8_eo3_dataset.id
+    assert format_ == 'GeoTIFF'
+
+    # It's always UTC in the document
+    expected_time = creation_time.astimezone(tz.tzutc()).replace(tzinfo=None)
+    assert expected_time.isoformat() == ls8_eo3_dataset.metadata.creation_dt
+    assert label == ls8_eo3_dataset.metadata.label
 
 
 def test_search_returning_rows(index, pseudo_ls8_type,
@@ -629,7 +878,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
 
 
 def test_searches_only_type(index: Index,
-                            pseudo_ls8_type: DatasetType,
+                            pseudo_ls8_type: Product,
                             pseudo_ls8_dataset: Dataset,
                             ls5_telem_type) -> None:
     # The dataset should have been matched to the telemetry type.
@@ -682,7 +931,7 @@ def test_searches_only_type(index: Index,
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_special_fields(index: Index,
-                               pseudo_ls8_type: DatasetType,
+                               pseudo_ls8_type: Product,
                                pseudo_ls8_dataset: Dataset,
                                ls5_dataset_w_children) -> None:
     # 'product' is a special case
@@ -697,6 +946,24 @@ def test_search_special_fields(index: Index,
         datasets = index.datasets.search_eager(
             platform='LANDSAT_8',
             flavour='chocolate',
+        )
+
+
+def test_search_special_fields_eo3(index: Index,
+                               ls8_eo3_dataset: Dataset,
+                               wo_eo3_dataset: Dataset) -> None:
+    # 'product' is a special case
+    datasets = index.datasets.search_eager(
+        product=ls8_eo3_dataset.type.name
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    # Unknown field: no results
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            platform='landsat-8',
+            flavour='vanilla',
         )
 
 
@@ -745,7 +1012,7 @@ def test_fetch_all_of_md_type(index: Index, pseudo_ls8_dataset: Dataset) -> None
 
 
 def test_count_searches(index: Index,
-                        pseudo_ls8_type: DatasetType,
+                        pseudo_ls8_type: Product,
                         pseudo_ls8_dataset: Dataset,
                         ls5_telem_type) -> None:
     # The dataset should have been matched to the telemetry type.
@@ -818,9 +1085,9 @@ def test_get_dataset_with_children(index: Index, ls5_dataset_w_children: Dataset
 
 
 def test_count_by_product_searches(index: Index,
-                                   pseudo_ls8_type: DatasetType,
+                                   pseudo_ls8_type: Product,
                                    pseudo_ls8_dataset: Dataset,
-                                   ls5_telem_type: DatasetType) -> None:
+                                   ls5_telem_type: Product) -> None:
     # The dataset should have been matched to the telemetry type.
     assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
     assert index.datasets.search_eager()
@@ -868,7 +1135,7 @@ def test_count_by_product_searches(index: Index,
 
 
 def test_count_time_groups(index: Index,
-                           pseudo_ls8_type: DatasetType,
+                           pseudo_ls8_type: Product,
                            pseudo_ls8_dataset: Dataset) -> None:
     # 'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
     # 'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
@@ -934,7 +1201,7 @@ def test_source_filter(clirunner, index, example_ls5_dataset_path):
 
 
 def test_count_time_groups_cli(clirunner: Any,
-                               pseudo_ls8_type: DatasetType,
+                               pseudo_ls8_type: Product,
                                pseudo_ls8_dataset: Dataset) -> None:
     result = clirunner(
         [
@@ -1066,7 +1333,7 @@ def test_cli_missing_info(clirunner, initialised_postgres_db):
 def test_find_duplicates(index, pseudo_ls8_type,
                          pseudo_ls8_dataset, pseudo_ls8_dataset2, pseudo_ls8_dataset3, pseudo_ls8_dataset4,
                          ls5_dataset_w_children):
-    # type: (Index, DatasetType, Dataset, Dataset, Dataset, Dataset, Dataset) -> None
+    # type: (Index, Product, Dataset, Dataset, Dataset, Dataset, Dataset) -> None
 
     # Our four ls8 datasets and three ls5.
     all_datasets = index.datasets.search_eager()
@@ -1139,7 +1406,7 @@ def test_find_duplicates(index, pseudo_ls8_type,
 
 
 def test_csv_search_via_cli(clirunner: Any,
-                            pseudo_ls8_type: DatasetType,
+                            pseudo_ls8_type: Product,
                             pseudo_ls8_dataset: Dataset,
                             pseudo_ls8_dataset2: Dataset) -> None:
     """

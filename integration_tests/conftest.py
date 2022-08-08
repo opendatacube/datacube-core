@@ -131,6 +131,15 @@ def eo3_ls8_dataset_doc():
 
 
 @pytest.fixture
+def eo3_ls8_dataset2_doc():
+    return (
+        get_eo3_test_data_doc("ls8_dataset2.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/28/'
+        'ga_ls8c_ard_3-0-0_090086_2016-05-28_final.stac-item.json'
+    )
+
+
+@pytest.fixture
 def eo3_wo_dataset_doc():
     return (
         get_eo3_test_data_doc("wo_dataset.yaml"),

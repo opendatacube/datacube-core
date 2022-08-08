@@ -71,7 +71,7 @@ properties:
   landsat:wrs_row: 86
   odc:dataset_version: 3.0.0
   odc:file_format: GeoTIFF
-  odc:processing_datetime: 2019-10-07 20:19:19.218290Z
+  odc:processing_datetime: 2019-10-07T20:19:19.218290
   odc:producer: ga.gov.au
   odc:product_family: ard
   odc:region_code: '090086'
