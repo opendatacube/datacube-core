@@ -97,12 +97,14 @@ class Dataset:
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
 
-    locations = relationship("DatasetLocation")
+    locations = relationship("DatasetLocation", viewonly=True)
     active_locations = relationship("DatasetLocation",
                                     primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
                                                 "DatasetLocation.archived==None)",
+                                    viewonly=True,
                                     order_by="desc(DatasetLocation.added)")
     archived_locations = relationship("DatasetLocation",
+                                    viewonly=True,
                                     primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
                                                 "DatasetLocation.archived!=None)"
                                      )

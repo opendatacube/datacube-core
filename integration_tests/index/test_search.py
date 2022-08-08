@@ -979,6 +979,16 @@ def test_search_by_uri(index, ls5_dataset_w_children):
     assert len(datasets) == 0
 
 
+def test_search_by_uri_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dataset_doc):
+    datasets = index.datasets.search_eager(product=ls8_eo3_dataset.type.name,
+                                           uri=eo3_ls8_dataset_doc[1])
+    assert len(datasets) == 1
+
+    datasets = index.datasets.search_eager(product=ls8_eo3_dataset.type.name,
+                                           uri='file:///x/yz')
+    assert len(datasets) == 0
+
+
 def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
     # Should return no results.
     with pytest.raises(ValueError):

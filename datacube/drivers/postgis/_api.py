@@ -571,8 +571,7 @@ class PostgisDbAPI(object):
             join_tables.update(field.required_alchemy_table for field in fields)
         join_tables.discard(source_table.__table__)
         # TODO: Current architecture must sort-hack.  Better join awareness required at field level.
-        sort_order_hack = [DatasetLocation, SelectedDatasetLocation,
-                           Dataset, Product, MetadataType]
+        sort_order_hack = [DatasetLocation, Dataset, Product, MetadataType]
         return [
             orm_table
             for orm_table in sort_order_hack
