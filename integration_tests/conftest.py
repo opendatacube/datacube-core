@@ -80,6 +80,54 @@ def base_eo3_product_doc():
     return get_eo3_test_data_doc("ga_ls_wo_3.odc-product.yaml")
 
 
+def docs_to_ds(index, mdt_doc, product_doc, ds_doc, ds_path):
+    if mdt_doc is not None:
+        index.metadata_types.add(
+            index.metadata_types.from_doc(mdt_doc)
+        )
+    prod = index.products.add_document(product_doc)
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index, products=[prod])
+    ds, err = resolver(ds_doc, ds_path)
+    index.datasets.add(ds)
+    return index.datasets.get(ds.id)
+
+
+@pytest.fixture
+def ls8_eo3_dataset(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset_doc):
+    return docs_to_ds(extended_eo3_metadata_type_doc,
+                      extended_eo3_product_doc,
+                      eo3_ls8_dataset_doc)
+
+
+@pytest.fixture
+def ls8_eo3_dataset2(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset2_doc):
+    return docs_to_ds(extended_eo3_metadata_type_doc,
+                      extended_eo3_product_doc,
+                      eo3_ls8_dataset2_doc)
+
+
+@pytest.fixture
+def ls8_eo3_dataset3(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset3_doc):
+    return docs_to_ds(extended_eo3_metadata_type_doc,
+                      extended_eo3_product_doc,
+                      eo3_ls8_dataset3_doc)
+
+
+@pytest.fixture
+def ls8_eo3_dataset4(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset4_doc):
+    return docs_to_ds(extended_eo3_metadata_type_doc,
+                      extended_eo3_product_doc,
+                      eo3_ls8_dataset4_doc)
+
+
+@pytest.fixture
+def wo_eo3_dataset(index, base_eo3_product_doc, eo3_wo_dataset_doc):
+    return docs_to_ds(None,
+                      base_eo3_product_doc,
+                      eo3_wo_dataset_doc)
+
+
 @pytest.fixture
 def mem_index_fresh(in_memory_config):
     from datacube import Datacube
@@ -138,6 +186,7 @@ def eo3_ls8_dataset2_doc():
         'ga_ls8c_ard_3-0-0_090086_2016-05-28_final.stac-item.json'
     )
 
+
 @pytest.fixture
 def eo3_ls8_dataset3_doc():
     return (
@@ -145,6 +194,7 @@ def eo3_ls8_dataset3_doc():
         's3://dea-public-data/baseline/ga_ls8c_ard_3/101/077/2013/04/04/'
         'ga_ls8c_ard_3-0-0_101077_2013-04-04_final.stac-item.json'
     )
+
 
 @pytest.fixture
 def eo3_ls8_dataset4_doc():

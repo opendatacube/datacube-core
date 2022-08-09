@@ -234,76 +234,6 @@ def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
         raise RuntimeError("LS5 type was not among types")
 
 
-@pytest.fixture
-def ls8_eo3_dataset(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset_doc):
-    index.metadata_types.add(
-        index.metadata_types.from_doc(
-            extended_eo3_metadata_type_doc
-        )
-    )
-    index.products.add_document(extended_eo3_product_doc)
-    from datacube.index.hl import Doc2Dataset
-    resolver = Doc2Dataset(index)
-    ds, err = resolver(*eo3_ls8_dataset_doc)
-    index.datasets.add(ds)
-    return index.datasets.get(ds.id)
-
-
-@pytest.fixture
-def ls8_eo3_dataset2(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset2_doc):
-    index.metadata_types.add(
-        index.metadata_types.from_doc(
-            extended_eo3_metadata_type_doc
-        )
-    )
-    index.products.add_document(extended_eo3_product_doc)
-    from datacube.index.hl import Doc2Dataset
-    resolver = Doc2Dataset(index)
-    ds, err = resolver(*eo3_ls8_dataset2_doc)
-    index.datasets.add(ds)
-    return index.datasets.get(ds.id)
-
-
-@pytest.fixture
-def ls8_eo3_dataset3(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset3_doc):
-    index.metadata_types.add(
-        index.metadata_types.from_doc(
-            extended_eo3_metadata_type_doc
-        )
-    )
-    index.products.add_document(extended_eo3_product_doc)
-    from datacube.index.hl import Doc2Dataset
-    resolver = Doc2Dataset(index)
-    ds, err = resolver(*eo3_ls8_dataset3_doc)
-    index.datasets.add(ds)
-    return index.datasets.get(ds.id)
-
-
-@pytest.fixture
-def ls8_eo3_dataset4(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset4_doc):
-    index.metadata_types.add(
-        index.metadata_types.from_doc(
-            extended_eo3_metadata_type_doc
-        )
-    )
-    index.products.add_document(extended_eo3_product_doc)
-    from datacube.index.hl import Doc2Dataset
-    resolver = Doc2Dataset(index)
-    ds, err = resolver(*eo3_ls8_dataset4_doc)
-    index.datasets.add(ds)
-    return index.datasets.get(ds.id)
-
-
-@pytest.fixture
-def wo_eo3_dataset(index, base_eo3_product_doc, eo3_wo_dataset_doc):
-    index.products.add_document(base_eo3_product_doc)
-    from datacube.index.hl import Doc2Dataset
-    resolver = Doc2Dataset(index)
-    ds, err = resolver(*eo3_wo_dataset_doc)
-    index.datasets.add(ds)
-    return index.datasets.get(ds.id)
-
-
 def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
     datasets = index.datasets.search_eager(
         platform='LANDSAT_8'
@@ -540,9 +470,9 @@ def test_search_by_product(index: Index,
 
 
 def test_search_by_product_eo3(index: Index,
-                           base_eo3_product_doc: Product,
-                           ls8_eo3_dataset: Dataset,
-                           wo_eo3_dataset: Dataset) -> None:
+                               base_eo3_product_doc: Product,
+                               ls8_eo3_dataset: Dataset,
+                               wo_eo3_dataset: Dataset) -> None:
     # Query all the test data, the counts should match expected
     results = _load_product_query(index.datasets.search_by_product())
     assert len(results) == 2
@@ -810,7 +740,7 @@ def test_search_returning_eo3(index: Index,
     results = list(index.datasets.search_returning(
         ('id', 'region_code', 'dataset_maturity'),
         platform='landsat-8',
-        instrument ='OLI_TIRS',
+        instrument='OLI_TIRS',
     ))
     assert len(results) == 1
     id_, region_code, maturity = results[0]
@@ -834,7 +764,7 @@ def test_search_returning_eo3(index: Index,
     results = list(index.datasets.search_returning(
         ('id', 'creation_time', 'format', 'label'),
         platform='landsat-8',
-        instrument ='OLI_TIRS',
+        instrument='OLI_TIRS',
         indexed_by=my_username,
     ))
     assert len(results) == 1
@@ -980,8 +910,8 @@ def test_search_special_fields(index: Index,
 
 
 def test_search_special_fields_eo3(index: Index,
-                               ls8_eo3_dataset: Dataset,
-                               wo_eo3_dataset: Dataset) -> None:
+                                   ls8_eo3_dataset: Dataset,
+                                   wo_eo3_dataset: Dataset) -> None:
     # 'product' is a special case
     datasets = index.datasets.search_eager(
         product=ls8_eo3_dataset.type.name
