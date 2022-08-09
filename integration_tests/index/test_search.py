@@ -1598,6 +1598,23 @@ def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Datas
     assert len(datasets) == 2
 
 
+def test_query_dataset_multi_product_eo3(index: Index, ls8_eo3_dataset, wo_eo3_dataset):
+    # We have one ls5 level1 and its child nbar
+    dc = Datacube(index)
+
+    # Can we query a single product name?
+    datasets = dc.find_datasets(product="ga_ls8c_ard_3")
+    assert len(datasets) == 1
+
+    # Can we query multiple products?
+    datasets = dc.find_datasets(product=['ga_ls8c_ard_3', 'ga_ls_wo_3'])
+    assert len(datasets) == 2
+
+    # Can we query multiple products in a tuple
+    datasets = dc.find_datasets(product=('ga_ls8c_ard_3', 'ga_ls_wo_3'))
+    assert len(datasets) == 2
+
+
 def _cli_csv_search(args, clirunner):
     # Do a CSV search from the cli, returning results as a list of dictionaries
     output = _csv_search_raw(args, clirunner)
