@@ -106,7 +106,7 @@ class Dataset:
     archived_locations = relationship("DatasetLocation",
                                       viewonly=True,
                                       primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
-                                                "DatasetLocation.archived!=None)"
+                                                  "DatasetLocation.archived!=None)"
                                      )
 
 
