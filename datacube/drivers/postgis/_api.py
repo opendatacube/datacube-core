@@ -470,7 +470,7 @@ class PostgisDbAPI(object):
         # TODO
         # type: (Tuple[PgField], Tuple[PgExpression]) -> Iterable[tuple]
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
-        join_tables = PostgisDbAPI._join_tables(Dataset, expressions, group_expressions)
+        join_tables = PostgisDbAPI._join_tables(Dataset, expressions, match_fields)
 
         query = select(
             (func.array_agg(Dataset.id),) + group_expressions

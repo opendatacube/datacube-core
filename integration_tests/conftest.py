@@ -138,6 +138,22 @@ def eo3_ls8_dataset2_doc():
         'ga_ls8c_ard_3-0-0_090086_2016-05-28_final.stac-item.json'
     )
 
+@pytest.fixture
+def eo3_ls8_dataset3_doc():
+    return (
+        get_eo3_test_data_doc("ls8_dataset3.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/101/077/2013/04/04/'
+        'ga_ls8c_ard_3-0-0_101077_2013-04-04_final.stac-item.json'
+    )
+
+@pytest.fixture
+def eo3_ls8_dataset4_doc():
+    return (
+        get_eo3_test_data_doc("ls8_dataset4.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/101/077/2013/07/21/'
+        'ga_ls8c_ard_3-0-0_101077_2013-07-21_final.stac-item.json'
+    )
+
 
 @pytest.fixture
 def eo3_wo_dataset_doc():

@@ -265,6 +265,36 @@ def ls8_eo3_dataset2(index, extended_eo3_metadata_type_doc, extended_eo3_product
 
 
 @pytest.fixture
+def ls8_eo3_dataset3(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset3_doc):
+    index.metadata_types.add(
+        index.metadata_types.from_doc(
+            extended_eo3_metadata_type_doc
+        )
+    )
+    index.products.add_document(extended_eo3_product_doc)
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index)
+    ds, err = resolver(*eo3_ls8_dataset3_doc)
+    index.datasets.add(ds)
+    return index.datasets.get(ds.id)
+
+
+@pytest.fixture
+def ls8_eo3_dataset4(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset4_doc):
+    index.metadata_types.add(
+        index.metadata_types.from_doc(
+            extended_eo3_metadata_type_doc
+        )
+    )
+    index.products.add_document(extended_eo3_product_doc)
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index)
+    ds, err = resolver(*eo3_ls8_dataset4_doc)
+    index.datasets.add(ds)
+    return index.datasets.get(ds.id)
+
+
+@pytest.fixture
 def wo_eo3_dataset(index, base_eo3_product_doc, eo3_wo_dataset_doc):
     index.products.add_document(base_eo3_product_doc)
     from datacube.index.hl import Doc2Dataset
@@ -1070,6 +1100,7 @@ def test_count_searches(index: Index,
 
 
 # Current formulation of this test relies on non-EO3 test data
+# (But postgis implementation isn't handling lineage yet either)
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_get_dataset_with_children(index: Index, ls5_dataset_w_children: Dataset) -> None:
     id_ = ls5_dataset_w_children.id
@@ -1174,6 +1205,7 @@ def test_count_time_groups(index: Index,
 
 
 # Current formulation of this test relies on non-EO3 test data
+# (But postgis driver doesn't support lineage yet anyway.)
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 @pytest.mark.usefixtures('ga_metadata_type',
                          'indexed_ls5_scene_products')
@@ -1411,6 +1443,49 @@ def test_find_duplicates(index, pseudo_ls8_type,
     sat_res = sorted(index.datasets.search_product_duplicates(
         ls5_dataset_w_children.type,
         'sat_path', 'sat_row'
+    ))
+    assert sat_res == []
+
+
+def test_find_duplicates_eo3(index,
+                             ls8_eo3_dataset, ls8_eo3_dataset2,
+                             ls8_eo3_dataset3, ls8_eo3_dataset4,
+                             wo_eo3_dataset):
+    # Our four ls8 datasets and one wo.
+    all_datasets = index.datasets.search_eager()
+    assert len(all_datasets) == 5
+
+    # First two ls8 datasets have the same path/row, last two have a different row.
+    expected_ls8_path_row_duplicates = [
+        (
+            ('090086', 'final'),
+            {ls8_eo3_dataset.id, ls8_eo3_dataset2.id}
+        ),
+        (
+            ('101077', 'final'),
+            {ls8_eo3_dataset3.id, ls8_eo3_dataset4.id}
+        ),
+
+    ]
+
+    # Specifying groups as fields:
+    f = ls8_eo3_dataset.metadata_type.dataset_fields.get
+    field_res = sorted(index.datasets.search_product_duplicates(
+        ls8_eo3_dataset.type,
+        f('region_code'), f('dataset_maturity')
+    ))
+    assert field_res == expected_ls8_path_row_duplicates
+    # Field names as strings
+    product_res = sorted(index.datasets.search_product_duplicates(
+        ls8_eo3_dataset.type,
+        'region_code', 'dataset_maturity'
+    ))
+    assert product_res == expected_ls8_path_row_duplicates
+
+    # No WO duplicates: there's only one
+    sat_res = sorted(index.datasets.search_product_duplicates(
+        wo_eo3_dataset.type,
+        'region_code', 'dataset_maturity'
     ))
     assert sat_res == []
 
