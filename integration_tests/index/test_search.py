@@ -295,14 +295,14 @@ def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -
 
 def test_search_dataset_by_metadata_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
     datasets = index.datasets.search_by_metadata(
-        {"properties": {"eo:platform": "landsat-8"}, "properties": {"eo:instrument": "OLI_TIRS"}}
+        {"properties": {"eo:platform": "landsat-8", "eo:instrument": "OLI_TIRS"}}
     )
     datasets = list(datasets)
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
     datasets = index.datasets.search_by_metadata(
-        {"properties": {"eo:platform": "landsat-5"}, "properties": {"eo:instrument": "TM"}}
+        {"properties": {"eo:platform": "landsat-5", "eo:instrument": "TM"}}
     )
     datasets = list(datasets)
     assert len(datasets) == 0

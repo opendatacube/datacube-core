@@ -18,7 +18,7 @@ import uuid  # noqa: F401
 from sqlalchemy import cast
 from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy import select, text, and_, or_, func, literal
+from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from typing import Iterable, Tuple
 from datacube.index.fields import OrExpression

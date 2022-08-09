@@ -104,8 +104,8 @@ class Dataset:
                                     viewonly=True,
                                     order_by="desc(DatasetLocation.added)")
     archived_locations = relationship("DatasetLocation",
-                                    viewonly=True,
-                                    primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
+                                      viewonly=True,
+                                      primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
                                                 "DatasetLocation.archived!=None)"
                                      )
 
