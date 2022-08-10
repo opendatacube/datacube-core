@@ -414,6 +414,81 @@ def test_search_dataset_ranges(index: Index, pseudo_ls8_dataset: Dataset) -> Non
     assert len(datasets) == 0
 
 
+def test_search_dataset_ranges_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
+    # In the lat bounds.
+    datasets = index.datasets.search_eager(
+        lat=Range(-37.5, -36.5),
+        time=Range(
+            datetime.datetime(2016, 5, 12, 23, 0, 0),
+            datetime.datetime(2016, 5, 12, 23, 59, 59)
+        )
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    # Out of the lat bounds.
+    datasets = index.datasets.search_eager(
+        lat=Range(28, 32),
+        time=Range(
+            datetime.datetime(2016, 5, 12, 23, 0, 0),
+            datetime.datetime(2016, 5, 12, 23, 59, 59)
+        )
+    )
+    assert len(datasets) == 0
+
+    # Out of the time bounds
+    datasets = index.datasets.search_eager(
+        lat=Range(-37.5, -36.5),
+        time=Range(
+            datetime.datetime(2014, 7, 26, 21, 48, 0),
+            datetime.datetime(2014, 7, 26, 21, 50, 0)
+        )
+    )
+    assert len(datasets) == 0
+
+    # A dataset that overlaps but is not fully contained by the search bounds.
+    # Should we distinguish between 'contains' and 'overlaps'?
+    datasets = index.datasets.search_eager(
+        lat=Range(-40, -37.1)
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    # Single point search
+    datasets = index.datasets.search_eager(
+        lat=-37.0,
+        time=Range(
+            datetime.datetime(2016, 5, 12, 23, 0, 0),
+            datetime.datetime(2016, 5, 12, 23, 59, 59)
+        )
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    datasets = index.datasets.search_eager(
+        lat=30.0,
+        time=Range(
+            datetime.datetime(2016, 5, 12, 23, 0, 0),
+            datetime.datetime(2016, 5, 12, 23, 59, 59)
+        )
+    )
+    assert len(datasets) == 0
+
+    # Single timestamp search
+    datasets = index.datasets.search_eager(
+        lat=Range(-37.5, -36.5),
+        time=datetime.datetime(2016, 5, 12, 23, 50, 40),
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    datasets = index.datasets.search_eager(
+        lat=Range(-37.5, -36.5),
+        time=datetime.datetime(2016, 5, 12, 23, 0, 0)
+    )
+    assert len(datasets) == 0
+
+
 def test_search_globally(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # No expressions means get all.
     results = list(index.datasets.search())
@@ -837,6 +912,62 @@ def test_search_returning_rows(index, pseudo_ls8_type,
     }
 
 
+def test_search_returning_rows_eo3(index,
+                                   eo3_ls8_dataset_doc,
+                                   eo3_ls8_dataset2_doc,
+                                   ls8_eo3_dataset, ls8_eo3_dataset2):
+    dataset = ls8_eo3_dataset
+    uri = eo3_ls8_dataset_doc[1]
+    uri3 = eo3_ls8_dataset2_doc[1]
+    results = list(index.datasets.search_returning(
+        ('id', 'uri'),
+        platform='landsat-8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 1
+    assert results == [(dataset.id, uri)]
+
+    index.datasets.archive_location(dataset.id, uri)
+    index.datasets.remove_location(dataset.id, uri)
+
+    # If returning a field like uri, there will be one result per location.
+    # No locations
+    results = list(index.datasets.search_returning(
+        ('id', 'uri'),
+        platform='landsat-8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 0
+
+    # Add a second location and we should get two results
+    index.datasets.add_location(dataset.id, uri)
+    uri2 = 'file:///tmp/test2'
+    index.datasets.add_location(dataset.id, uri2)
+    results = set(index.datasets.search_returning(
+        ('id', 'uri'),
+        platform='landsat-8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 2
+    assert results == {
+        (dataset.id, uri),
+        (dataset.id, uri2)
+    }
+
+    # A second dataset already has a location:
+    results = set(index.datasets.search_returning(
+        ('id', 'uri'),
+        platform='landsat-8',
+        dataset_maturity='final',
+    ))
+    assert len(results) == 3
+    assert results == {
+        (dataset.id, uri),
+        (dataset.id, uri2),
+        (ls8_eo3_dataset2.id, uri3),
+    }
+
+
 def test_searches_only_type(index: Index,
                             pseudo_ls8_type: Product,
                             pseudo_ls8_dataset: Dataset,
@@ -885,6 +1016,49 @@ def test_searches_only_type(index: Index,
             metadata_type='telemetry',
             platform='LANDSAT_8',
             instrument='OLI_TIRS'
+        )
+
+
+def test_searches_only_type_eo3(index: Index,
+                                wo_eo3_dataset: Dataset,
+                                ls8_eo3_dataset: Dataset) -> None:
+    assert ls8_eo3_dataset.metadata_type.name != wo_eo3_dataset.metadata_type.name
+
+    # One result in the product
+    datasets = index.datasets.search_eager(
+        product=wo_eo3_dataset.type.name,
+        platform='landsat-8'
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == wo_eo3_dataset.id
+
+    # One result in the metadata type
+    datasets = index.datasets.search_eager(
+        metadata_type="eo3",
+        platform='landsat-8'
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == wo_eo3_dataset.id
+
+    # No results when searching for a different dataset type.
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            product="spam_and_eggs",
+            platform='landsat-8'
+        )
+
+    # Two result when no types specified.
+    datasets = index.datasets.search_eager(
+        platform='landsat-8'
+    )
+    assert len(datasets) == 2
+    assert set(ds.id for ds in datasets) == {ls8_eo3_dataset.id, wo_eo3_dataset.id}
+
+    # No results for different metadata type.
+    with pytest.raises(ValueError):
+        datasets = index.datasets.search_eager(
+            metadata_type='spam_type',
+            platform='landsat-8',
         )
 
 
@@ -949,6 +1123,7 @@ def test_search_by_uri_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dat
     assert len(datasets) == 0
 
 
+# TODO: Need EO3 version
 def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
     # Should return no results.
     with pytest.raises(ValueError):
@@ -959,6 +1134,7 @@ def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
         )
 
 
+# TODO: Need EO3 version
 def test_fetch_all_of_md_type(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # Get every dataset of the md type.
     assert pseudo_ls8_dataset.metadata_type is not None  # to shut up mypy
@@ -981,6 +1157,7 @@ def test_fetch_all_of_md_type(index: Index, pseudo_ls8_dataset: Dataset) -> None
         )
 
 
+# TODO: Need EO3 version
 def test_count_searches(index: Index,
                         pseudo_ls8_type: Product,
                         pseudo_ls8_dataset: Dataset,
@@ -1055,6 +1232,7 @@ def test_get_dataset_with_children(index: Index, ls5_dataset_w_children: Dataset
     assert list(level1.sources['satellite_telemetry_data'].sources) == []
 
 
+# TODO: Need EO3 version
 def test_count_by_product_searches(index: Index,
                                    pseudo_ls8_type: Product,
                                    pseudo_ls8_dataset: Dataset,
@@ -1105,6 +1283,7 @@ def test_count_by_product_searches(index: Index,
     assert products == ()
 
 
+# TODO: Need EO3 version
 def test_count_time_groups(index: Index,
                            pseudo_ls8_type: Product,
                            pseudo_ls8_dataset: Dataset) -> None:
@@ -1172,6 +1351,7 @@ def test_source_filter(clirunner, index, example_ls5_dataset_path):
         )
 
 
+# TODO: Need EO3 version
 def test_count_time_groups_cli(clirunner: Any,
                                pseudo_ls8_type: Product,
                                pseudo_ls8_dataset: Dataset) -> None:
@@ -1193,6 +1373,7 @@ def test_count_time_groups_cli(clirunner: Any,
     assert result.output.endswith(expected_out)
 
 
+# TODO: Need EO3 version
 def test_search_cli_basic(clirunner: Any,
                           telemetry_metadata_type: MetadataType,
                           pseudo_ls8_dataset: Dataset) -> None:
@@ -1212,6 +1393,7 @@ def test_search_cli_basic(clirunner: Any,
     assert result.exit_code == 0
 
 
+# TODO: Need EO3 version
 def test_cli_info(index: Index,
                   clirunner: Any,
                   pseudo_ls8_dataset: Dataset,
@@ -1420,6 +1602,7 @@ def test_find_duplicates_eo3(index,
     assert sat_res == []
 
 
+# TODO: Needs EO3 version
 def test_csv_search_via_cli(clirunner: Any,
                             pseudo_ls8_type: Product,
                             pseudo_ls8_dataset: Dataset,
@@ -1499,6 +1682,7 @@ _EXPECTED_OUTPUT_HEADER = 'creation_time,format,gsi,id,indexed_by,indexed_time,i
     'product,product_id,product_type,sat_path,sat_row,time,uri'
 
 
+# TODO: Needs EO3 version
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
                        pseudo_ls8_dataset, pseudo_ls8_dataset2):
     output = _csv_search_raw(['datasets', ' lat in [-40, -10]'], clirunner)

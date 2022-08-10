@@ -150,56 +150,64 @@ def base_eo3_product_doc():
     return get_eo3_test_data_doc("ga_ls_wo_3.odc-product.yaml")
 
 
-def docs_to_ds(index, mdt_doc, product_doc, ds_doc, ds_path):
-    if mdt_doc is not None:
-        index.metadata_types.add(
-            index.metadata_types.from_doc(mdt_doc)
-        )
-    prod = index.products.add_document(product_doc)
+def doc_to_ds(index, product_name, ds_doc, ds_path):
     from datacube.index.hl import Doc2Dataset
-    resolver = Doc2Dataset(index, products=[prod.name])
+    resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
     ds, err = resolver(ds_doc, ds_path)
+    assert err is None and ds is not None
     index.datasets.add(ds)
     return index.datasets.get(ds.id)
 
 
 @pytest.fixture
-def ls8_eo3_dataset(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset_doc):
-    return docs_to_ds(index,
-                      extended_eo3_metadata_type_doc,
-                      extended_eo3_product_doc,
+def extended_eo3_metadata_type(index, extended_eo3_metadata_type_doc):
+    return index.metadata_types.add(
+        index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
+    )
+
+
+@pytest.fixture
+def ls8_eo3_product(index, extended_eo3_metadata_type, extended_eo3_product_doc):
+    return index.products.add_document(extended_eo3_product_doc)
+
+
+@pytest.fixture
+def wo_eo3_product(index, base_eo3_product_doc):
+    return index.products.add_document(base_eo3_product_doc)
+
+
+@pytest.fixture
+def ls8_eo3_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset_doc):
+    return doc_to_ds(index,
+                      ls8_eo3_product.name,
                       *eo3_ls8_dataset_doc)
 
 
 @pytest.fixture
-def ls8_eo3_dataset2(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset2_doc):
-    return docs_to_ds(index,
-                      extended_eo3_metadata_type_doc,
-                      extended_eo3_product_doc,
+def ls8_eo3_dataset2(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset2_doc):
+    return doc_to_ds(index,
+                      ls8_eo3_product.name,
                       *eo3_ls8_dataset2_doc)
 
 
 @pytest.fixture
-def ls8_eo3_dataset3(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset3_doc):
-    return docs_to_ds(index,
-                      extended_eo3_metadata_type_doc,
-                      extended_eo3_product_doc,
-                      *eo3_ls8_dataset3_doc)
+def ls8_eo3_dataset3(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset3_doc):
+    return doc_to_ds(index,
+                     ls8_eo3_product.name,
+                     *eo3_ls8_dataset3_doc)
 
 
 @pytest.fixture
-def ls8_eo3_dataset4(index, extended_eo3_metadata_type_doc, extended_eo3_product_doc, eo3_ls8_dataset4_doc):
-    return docs_to_ds(index,
-                      extended_eo3_metadata_type_doc,
-                      extended_eo3_product_doc,
-                      *eo3_ls8_dataset4_doc)
+def ls8_eo3_dataset4(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset4_doc):
+    return doc_to_ds(index,
+                     ls8_eo3_product.name,
+                     *eo3_ls8_dataset4_doc)
 
 
 @pytest.fixture
-def wo_eo3_dataset(index, base_eo3_product_doc, eo3_wo_dataset_doc):
-    return docs_to_ds(index,
-                      None,
-                      base_eo3_product_doc,
+def wo_eo3_dataset(index, wo_eo3_product, eo3_wo_dataset_doc, ls8_eo3_dataset):
+    return doc_to_ds(index,
+                      wo_eo3_product.name,
                       *eo3_wo_dataset_doc)
 
 
