@@ -1123,37 +1123,35 @@ def test_search_by_uri_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dat
     assert len(datasets) == 0
 
 
-# TODO: Need EO3 version
-def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
+def test_search_conflicting_types(index, ls8_eo3_dataset):
     # Should return no results.
     with pytest.raises(ValueError):
         index.datasets.search_eager(
-            product=pseudo_ls8_type.name,
-            # The telemetry type is not of type storage_unit.
+            product=ls8_eo3_dataset.type.name,
+            # The ls8 type is not of type storage_unit.
             metadata_type='storage_unit'
         )
 
 
-# TODO: Need EO3 version
-def test_fetch_all_of_md_type(index: Index, pseudo_ls8_dataset: Dataset) -> None:
+def test_fetch_all_of_md_type(index: Index, ls8_eo3_dataset: Dataset) -> None:
     # Get every dataset of the md type.
-    assert pseudo_ls8_dataset.metadata_type is not None  # to shut up mypy
+    assert ls8_eo3_dataset.metadata_type is not None  # to shut up mypy
     results = index.datasets.search_eager(
-        metadata_type=pseudo_ls8_dataset.metadata_type.name
+        metadata_type=ls8_eo3_dataset.metadata_type.name
     )
     assert len(results) == 1
-    assert results[0].id == pseudo_ls8_dataset.id
+    assert results[0].id == ls8_eo3_dataset.id
     # Get every dataset of the type.
     results = index.datasets.search_eager(
-        product=pseudo_ls8_dataset.type.name
+        product=ls8_eo3_dataset.type.name
     )
     assert len(results) == 1
-    assert results[0].id == pseudo_ls8_dataset.id
+    assert results[0].id == ls8_eo3_dataset.id
 
     # No results for another.
     with pytest.raises(ValueError):
         results = index.datasets.search_eager(
-            metadata_type='telemetry'
+            metadata_type='spam_and_eggs'
         )
 
 

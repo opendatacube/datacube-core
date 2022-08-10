@@ -179,15 +179,15 @@ def wo_eo3_product(index, base_eo3_product_doc):
 @pytest.fixture
 def ls8_eo3_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset_doc):
     return doc_to_ds(index,
-                      ls8_eo3_product.name,
-                      *eo3_ls8_dataset_doc)
+                     ls8_eo3_product.name,
+                     *eo3_ls8_dataset_doc)
 
 
 @pytest.fixture
 def ls8_eo3_dataset2(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset2_doc):
     return doc_to_ds(index,
-                      ls8_eo3_product.name,
-                      *eo3_ls8_dataset2_doc)
+                     ls8_eo3_product.name,
+                     *eo3_ls8_dataset2_doc)
 
 
 @pytest.fixture
@@ -207,8 +207,8 @@ def ls8_eo3_dataset4(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3
 @pytest.fixture
 def wo_eo3_dataset(index, wo_eo3_product, eo3_wo_dataset_doc, ls8_eo3_dataset):
     return doc_to_ds(index,
-                      wo_eo3_product.name,
-                      *eo3_wo_dataset_doc)
+                     wo_eo3_product.name,
+                     *eo3_wo_dataset_doc)
 
 
 @pytest.fixture
