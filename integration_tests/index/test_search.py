@@ -1155,50 +1155,43 @@ def test_fetch_all_of_md_type(index: Index, ls8_eo3_dataset: Dataset) -> None:
         )
 
 
-# TODO: Need EO3 version
 def test_count_searches(index: Index,
-                        pseudo_ls8_type: Product,
-                        pseudo_ls8_dataset: Dataset,
-                        ls5_telem_type) -> None:
-    # The dataset should have been matched to the telemetry type.
-    assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
-    assert index.datasets.search_eager()
-
+                        ls8_eo3_dataset: Dataset) -> None:
     # One result in the telemetry type
     datasets = index.datasets.count(
-        product=pseudo_ls8_type.name,
-        platform='LANDSAT_8',
+        product=ls8_eo3_dataset.type.name,
+        platform='landsat-8',
         instrument='OLI_TIRS',
     )
     assert datasets == 1
 
     # One result in the metadata type
     datasets = index.datasets.count(
-        metadata_type=pseudo_ls8_type.metadata_type.name,
-        platform='LANDSAT_8',
+        metadata_type=ls8_eo3_dataset.metadata_type.name,
+        platform='landsat-8',
         instrument='OLI_TIRS',
     )
     assert datasets == 1
 
     # No results when searching for a different dataset type.
     datasets = index.datasets.count(
-        product=ls5_telem_type.name,
-        platform='LANDSAT_8',
+        product="spam_and_eggs",
+        platform='landsat-8',
         instrument='OLI_TIRS'
     )
     assert datasets == 0
 
     # One result when no types specified.
     datasets = index.datasets.count(
-        platform='LANDSAT_8',
+        platform='landsat-8',
         instrument='OLI_TIRS',
     )
     assert datasets == 1
 
     # No results for different metadata type.
     datasets = index.datasets.count(
-        metadata_type='telemetry',
-        platform='LANDSAT_8',
+        metadata_type='spam_and_eggs',
+        platform='landsat-8',
         instrument='OLI_TIRS'
     )
     assert datasets == 0
@@ -1230,7 +1223,6 @@ def test_get_dataset_with_children(index: Index, ls5_dataset_w_children: Dataset
     assert list(level1.sources['satellite_telemetry_data'].sources) == []
 
 
-# TODO: Need EO3 version
 def test_count_by_product_searches(index: Index,
                                    pseudo_ls8_type: Product,
                                    pseudo_ls8_dataset: Dataset,
@@ -1277,6 +1269,44 @@ def test_count_by_product_searches(index: Index,
     # No results for different metadata type.
     products = tuple(index.datasets.count_by_product(
         metadata_type='telemetry',
+    ))
+    assert products == ()
+
+
+def test_count_by_product_searches_eo3(index: Index,
+                                       ls8_eo3_dataset: Dataset,
+                                       ls8_eo3_dataset2: Dataset,
+                                       wo_eo3_dataset: Dataset) -> None:
+    # Two result in the ls8 type
+    products = tuple(index.datasets.count_by_product(
+        product=ls8_eo3_dataset.type.name,
+        platform='landsat-8'
+    ))
+    assert products == ((ls8_eo3_dataset.type, 2),)
+
+    # Two results in the metadata type
+    products = tuple(index.datasets.count_by_product(
+        metadata_type=ls8_eo3_dataset.metadata_type.name,
+        platform='landsat-8',
+    ))
+    assert products == ((ls8_eo3_dataset.type, 2),)
+
+    # No results when searching for a different dataset type.
+    products = tuple(index.datasets.count_by_product(
+        product="spam_and_eggs",
+        platform='landsat-8'
+    ))
+    assert products == ()
+
+    # Three results over 2 products when no types specified.
+    products = set(index.datasets.count_by_product(
+        platform='landsat-8',
+    ))
+    assert products == {(ls8_eo3_dataset.type, 2), (wo_eo3_dataset.type, 1)}
+
+    # No results for different metadata type.
+    products = tuple(index.datasets.count_by_product(
+        metadata_type='spam_and_eggs',
     ))
     assert products == ()
 
