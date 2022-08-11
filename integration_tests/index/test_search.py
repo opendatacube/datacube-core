@@ -1312,7 +1312,7 @@ def test_count_by_product_searches_eo3(index: Index,
 
 
 def test_count_time_groups(index: Index,
-                               ls8_eo3_dataset: Dataset) -> None:
+                           ls8_eo3_dataset: Dataset) -> None:
     timeline = list(index.datasets.count_product_through_time(
         '1 day',
         product=ls8_eo3_dataset.type.name,
@@ -1457,7 +1457,7 @@ def test_cli_info(index: Index,
         '    sat_path: {begin: 116, end: 116}',
         '    sat_row: {begin: 74, end: 84}',
         "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
-        ]
+    ]
     assert expected_lines == output_lines
 
     # Check indexed time separately, as we don't care what timezone it's displayed in.
@@ -1476,10 +1476,10 @@ def test_cli_info(index: Index,
 
 
 def test_cli_info_eo3(index: Index,
-                  clirunner: Any,
-                  ls8_eo3_dataset: Dataset,
-                  ls8_eo3_dataset2: Dataset,
-                  eo3_ls8_dataset_doc) -> None:
+                      clirunner: Any,
+                      ls8_eo3_dataset: Dataset,
+                      ls8_eo3_dataset2: Dataset,
+                      eo3_ls8_dataset_doc) -> None:
     """
     Search datasets using the cli.
     """
@@ -1752,8 +1752,8 @@ def test_csv_search_via_cli(clirunner: Any,
 
 
 def test_csv_search_via_cli_eo3(clirunner: Any,
-                            ls8_eo3_dataset: Dataset,
-                            ls8_eo3_dataset2: Dataset) -> None:
+                                ls8_eo3_dataset: Dataset,
+                                ls8_eo3_dataset2: Dataset) -> None:
     """
     Search datasets via the cli with csv output
     """
@@ -1822,19 +1822,19 @@ _EXT_AND_BASE_EO3_OUTPUT_HEADER = [
     'eo_gsd', 'eo_sun_azimuth', 'eo_sun_elevation',
     'cloud_cover', 'fmask_clear', 'fmask_cloud_shadow', 'fmask_snow', 'fmask_water',
     'format',
-    'gqa', 'gqa_abs_iterative_mean_x','gqa_abs_iterative_mean_xy','gqa_abs_iterative_mean_y',
-    'gqa_abs_x,gqa_abs_xy', 'gqa_abs_y','gqa_cep90',
-    'gqa_iterative_mean_x','gqa_iterative_mean_xy','gqa_iterative_mean_y',
-    'gqa_iterative_stddev_x','gqa_iterative_stddev_xy','gqa_iterative_stddev_y',
-    'gqa_mean_x','gqa_mean_xy',
-    'gqa_mean_y,gqa_stddev_x','gqa_stddev_xy','gqa_stddev_y',
-    'creation_time', 'indexed_by','indexed_time',
-    'instrument','label',
-    'landsat_product_id','landsat_scene_id',
-    'lat','lon',
-    'metadata_doc','metadata_type','metadata_type_id',
-    'platform','product','product_family',
-    'region_code','time','uri'
+    'gqa', 'gqa_abs_iterative_mean_x', 'gqa_abs_iterative_mean_xy', 'gqa_abs_iterative_mean_y',
+    'gqa_abs_x,gqa_abs_xy', 'gqa_abs_y', 'gqa_cep90',
+    'gqa_iterative_mean_x', 'gqa_iterative_mean_xy', 'gqa_iterative_mean_y',
+    'gqa_iterative_stddev_x', 'gqa_iterative_stddev_xy', 'gqa_iterative_stddev_y',
+    'gqa_mean_x', 'gqa_mean_xy',
+    'gqa_mean_y,gqa_stddev_x', 'gqa_stddev_xy', 'gqa_stddev_y',
+    'creation_time', 'indexed_by', 'indexed_time',
+    'instrument', 'label',
+    'landsat_product_id', 'landsat_scene_id',
+    'lat', 'lon',
+    'metadata_doc', 'metadata_type', 'metadata_type_id',
+    'platform', 'product', 'product_family',
+    'region_code', 'time', 'uri'
 ]
 
 
