@@ -1311,31 +1311,27 @@ def test_count_by_product_searches_eo3(index: Index,
     assert products == ()
 
 
-# TODO: Need EO3 version
 def test_count_time_groups(index: Index,
-                           pseudo_ls8_type: Product,
-                           pseudo_ls8_dataset: Dataset) -> None:
-    # 'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
-    # 'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
+                               ls8_eo3_dataset: Dataset) -> None:
     timeline = list(index.datasets.count_product_through_time(
         '1 day',
-        product=pseudo_ls8_type.name,
+        product=ls8_eo3_dataset.type.name,
         time=Range(
-            datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()),
-            datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())
+            datetime.datetime(2016, 5, 11, tzinfo=tz.tzutc()),
+            datetime.datetime(2016, 5, 13, tzinfo=tz.tzutc())
         )
     ))
 
     assert len(timeline) == 2
     assert timeline == [
         (
-            Range(datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()),
-                  datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc())),
+            Range(datetime.datetime(2016, 5, 11, tzinfo=tz.tzutc()),
+                  datetime.datetime(2016, 5, 12, tzinfo=tz.tzutc())),
             0
         ),
         (
-            Range(datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc()),
-                  datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())),
+            Range(datetime.datetime(2016, 5, 12, tzinfo=tz.tzutc()),
+                  datetime.datetime(2016, 5, 13, tzinfo=tz.tzutc())),
             1
         )
     ]
@@ -1379,32 +1375,26 @@ def test_source_filter(clirunner, index, example_ls5_dataset_path):
         )
 
 
-# TODO: Need EO3 version
 def test_count_time_groups_cli(clirunner: Any,
-                               pseudo_ls8_type: Product,
-                               pseudo_ls8_dataset: Dataset) -> None:
+                               ls8_eo3_dataset: Dataset) -> None:
     result = clirunner(
         [
             'product-counts',
             '1 day',
-            'time in [2014-07-25, 2014-07-27]'
+            'time in [2016-05-11, 2016-05-13]'
         ], cli_method=datacube.scripts.search_tool.cli,
         verbose_flag=''
     )
-
     expected_out = (
-        '{}\n'
-        '    2014-07-25: 0\n'
-        '    2014-07-26: 1\n'
-    ).format(pseudo_ls8_type.name)
-
+        f'{ls8_eo3_dataset.type.name}\n'
+        '    2016-05-11: 0\n'
+        '    2016-05-12: 1\n'
+    )
     assert result.output.endswith(expected_out)
 
 
-# TODO: Need EO3 version
 def test_search_cli_basic(clirunner: Any,
-                          telemetry_metadata_type: MetadataType,
-                          pseudo_ls8_dataset: Dataset) -> None:
+                          ls8_eo3_dataset: Dataset) -> None:
     """
     Search datasets using the cli.
     """
@@ -1414,14 +1404,11 @@ def test_search_cli_basic(clirunner: Any,
             'datasets'
         ], cli_method=datacube.scripts.search_tool.cli
     )
-
-    assert str(pseudo_ls8_dataset.id) in result.output
-    assert str(telemetry_metadata_type.name) in result.output
-
+    assert str(ls8_eo3_dataset.id) in result.output
+    assert str(ls8_eo3_dataset.metadata_type.name) in result.output
     assert result.exit_code == 0
 
 
-# TODO: Need EO3 version
 def test_cli_info(index: Index,
                   clirunner: Any,
                   pseudo_ls8_dataset: Dataset,
@@ -1470,7 +1457,7 @@ def test_cli_info(index: Index,
         '    sat_path: {begin: 116, end: 116}',
         '    sat_row: {begin: 74, end: 84}',
         "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
-    ]
+        ]
     assert expected_lines == output_lines
 
     # Check indexed time separately, as we don't care what timezone it's displayed in.
@@ -1486,6 +1473,71 @@ def test_cli_info(index: Index,
     assert len(yaml_docs) == 2, "Two datasets should produce two sets of info"
     assert yaml_docs[0]['id'] == str(pseudo_ls8_dataset.id)
     assert yaml_docs[1]['id'] == str(pseudo_ls8_dataset2.id)
+
+
+def test_cli_info_eo3(index: Index,
+                  clirunner: Any,
+                  ls8_eo3_dataset: Dataset,
+                  ls8_eo3_dataset2: Dataset,
+                  eo3_ls8_dataset_doc) -> None:
+    """
+    Search datasets using the cli.
+    """
+    index.datasets.add_location(ls8_eo3_dataset.id, 'file:///tmp/location1')
+
+    opts = [
+        'dataset', 'info', str(ls8_eo3_dataset.id)
+    ]
+    result = clirunner(opts, verbose_flag='')
+
+    output = result.output
+    # Remove WARNING messages for experimental driver
+    output_lines = [line for line in output.splitlines() if "WARNING:" not in line]
+    output = "\n".join(output_lines)
+
+    # Should be a valid yaml
+    yaml_docs = list(yaml.safe_load_all(output))
+    assert len(yaml_docs) == 1
+
+    # We output properties in order for readability:
+    output_lines = [line for line in output_lines]
+    expected_lines = [
+        "id: " + str(ls8_eo3_dataset.id),
+        'product: ga_ls8c_ard_3',
+        'status: active',
+        'locations:',
+        '- file:///tmp/location1',
+        f'- {eo3_ls8_dataset_doc[1]}',
+        'fields:',
+        '    creation_time: 2019-10-07 20:19:19.218290',
+        '    format: GeoTIFF',
+        '    instrument: OLI_TIRS',
+        '    label: ga_ls8c_ard_3-0-0_090086_2016-05-12_final',
+        '    landsat_product_id: LC08_L1TP_090086_20160512_20180203_01_T1',
+        '    landsat_scene_id: LC80900862016133LGN02',
+        '    lat: {begin: -38.53212258920183, end: -36.41608009831069}',
+        '    lon: {begin: 147.65752456283738, end: 150.29802500180026}',
+        '    platform: landsat-8',
+        '    product_family: ard',
+        '    region_code: 090086',
+        "    time: {begin: '2016-05-12T23:50:23.054165+00:00', end: '2016-05-12T23:50:52.031499+00:00'}",
+    ]
+    for line in expected_lines:
+        assert line in output_lines
+
+    # Check indexed time separately, as we don't care what timezone it's displayed in.
+    indexed_time = yaml_docs[0]['indexed']
+    assert isinstance(indexed_time, datetime.datetime)
+    assert assume_utc(indexed_time) == assume_utc(ls8_eo3_dataset.indexed_time)
+
+    # Request two, they should have separate yaml documents
+    opts.append(str(ls8_eo3_dataset2.id))
+
+    result = clirunner(opts)
+    yaml_docs = list(yaml.safe_load_all(result.output))
+    assert len(yaml_docs) == 2, "Two datasets should produce two sets of info"
+    assert yaml_docs[0]['id'] == str(ls8_eo3_dataset.id)
+    assert yaml_docs[1]['id'] == str(ls8_eo3_dataset2.id)
 
 
 def assume_utc(d):
