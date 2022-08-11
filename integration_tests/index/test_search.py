@@ -1682,7 +1682,6 @@ def test_find_duplicates_eo3(index,
     assert sat_res == []
 
 
-# TODO: Needs EO3 version
 def test_csv_search_via_cli(clirunner: Any,
                             pseudo_ls8_type: Product,
                             pseudo_ls8_dataset: Dataset,
@@ -1752,6 +1751,61 @@ def test_csv_search_via_cli(clirunner: Any,
     matches_both('time in [2005, 2015]')
 
 
+def test_csv_search_via_cli_eo3(clirunner: Any,
+                            ls8_eo3_dataset: Dataset,
+                            ls8_eo3_dataset2: Dataset) -> None:
+    """
+    Search datasets via the cli with csv output
+    """
+    def matches_both(*args):
+        rows = _cli_csv_search(('datasets',) + args, clirunner)
+        assert len(rows) == 2
+        assert {rows[0]['id'], rows[1]['id']} == {str(ls8_eo3_dataset.id), str(ls8_eo3_dataset2.id)}
+
+    def matches_1(*args):
+        rows = _cli_csv_search(('datasets',) + args, clirunner)
+        assert len(rows) == 1
+        assert rows[0]['id'] == str(ls8_eo3_dataset.id)
+
+    def matches_none(*args):
+        rows = _cli_csv_search(('datasets',) + args, clirunner)
+        assert len(rows) == 0
+
+    def no_such_product(*args):
+        with pytest.raises(ValueError):
+            _cli_csv_search(('datasets',) + args, clirunner)
+
+    matches_both('lat in [-40, -10]')
+    matches_both('product=' + ls8_eo3_dataset.type.name)
+
+    # Don't return on a mismatch
+    matches_none('lat in [150, 160]')
+
+    # Match only a single dataset using multiple fields
+    matches_1('platform=landsat-8', 'time in [2016-05-11, 2016-05-13]')
+
+    # One matching field, one non-matching
+    no_such_product('time in [2016-05-11, 2014-05-13]', 'platform=landsat-5')
+
+    # Test date shorthand
+    matches_both('time in [2016-05, 2016-05]')
+    matches_none('time in [2014-06, 2014-06]')
+
+    matches_both('time in 2016-05')
+    matches_none('time in 2014-08')
+    matches_both('time in 2016')
+    matches_none('time in 2015')
+
+    matches_both('time in [2016, 2016]')
+    matches_both('time in [2015, 2017]')
+    matches_none('time in [2015, 2015]')
+    matches_none('time in [2013, 2013]')
+
+    matches_both('time in [2016-4, 2016-8]')
+    matches_none('time in [2016-1, 2016-3]')
+    matches_both('time in [2005, 2017]')
+
+
 # Headers are currently in alphabetical order.
 _EXPECTED_OUTPUT_HEADER_LEGACY = 'creation_time,dataset_type_id,format,gsi,id,indexed_by,indexed_time,' \
     'instrument,label,lat,lon,metadata_doc,metadata_type,metadata_type_id,' \
@@ -1761,8 +1815,29 @@ _EXPECTED_OUTPUT_HEADER = 'creation_time,format,gsi,id,indexed_by,indexed_time,i
     'lat,lon,metadata_doc,metadata_type,metadata_type_id,orbit,platform,' \
     'product,product_id,product_type,sat_path,sat_row,time,uri'
 
+_EXT_AND_BASE_EO3_OUTPUT_HEADER = [
+    'id',
+    'crs_raw',
+    'dataset_maturity',
+    'eo_gsd', 'eo_sun_azimuth', 'eo_sun_elevation',
+    'cloud_cover', 'fmask_clear', 'fmask_cloud_shadow', 'fmask_snow', 'fmask_water',
+    'format',
+    'gqa', 'gqa_abs_iterative_mean_x','gqa_abs_iterative_mean_xy','gqa_abs_iterative_mean_y',
+    'gqa_abs_x,gqa_abs_xy', 'gqa_abs_y','gqa_cep90',
+    'gqa_iterative_mean_x','gqa_iterative_mean_xy','gqa_iterative_mean_y',
+    'gqa_iterative_stddev_x','gqa_iterative_stddev_xy','gqa_iterative_stddev_y',
+    'gqa_mean_x','gqa_mean_xy',
+    'gqa_mean_y,gqa_stddev_x','gqa_stddev_xy','gqa_stddev_y',
+    'creation_time', 'indexed_by','indexed_time',
+    'instrument','label',
+    'landsat_product_id','landsat_scene_id',
+    'lat','lon',
+    'metadata_doc','metadata_type','metadata_type_id',
+    'platform','product','product_family',
+    'region_code','time','uri'
+]
 
-# TODO: Needs EO3 version
+
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
                        pseudo_ls8_dataset, pseudo_ls8_dataset2):
     output = _csv_search_raw(['datasets', ' lat in [-40, -10]'], clirunner)
@@ -1771,6 +1846,16 @@ def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
     assert len(lines) == 3
     header_line = lines[0]
     assert header_line in (_EXPECTED_OUTPUT_HEADER, _EXPECTED_OUTPUT_HEADER_LEGACY)
+
+
+def test_csv_structure_eo3(clirunner, ls8_eo3_dataset, ls8_eo3_dataset2):
+    output = _csv_search_raw(['datasets', ' lat in [-40, -10]'], clirunner)
+    lines = [line.strip() for line in output.split('\n') if line]
+    # A header and two dataset rows
+    assert len(lines) == 3
+    header_line = lines[0]
+    for header in _EXT_AND_BASE_EO3_OUTPUT_HEADER:
+        assert header in header_line
 
 
 # Current formulation of this test relies on non-EO3 test data
