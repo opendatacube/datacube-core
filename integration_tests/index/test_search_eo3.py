@@ -840,4 +840,3 @@ def test_query_dataset_multi_product_eo3(index: Index, ls8_eo3_dataset, wo_eo3_d
     # Can we query multiple products in a tuple
     datasets = dc.find_datasets(product=('ga_ls8c_ard_3', 'ga_ls_wo_3'))
     assert len(datasets) == 2
-
