@@ -79,6 +79,8 @@ def ensure_db(engine, with_permissions=True):
 
     quoted_db_name, quoted_user = _get_quoted_connection_info(c)
 
+    _ensure_extension(c, 'POSTGIS')
+
     if with_permissions:
         _LOG.info('Ensuring user roles.')
         _ensure_role(c, 'odc_user')
@@ -197,6 +199,11 @@ def update_schema(engine: Engine):
         c.close()
     else:
         _LOG.info("No schema updates required.")
+
+
+def _ensure_extension(engine, extension_name="POSTGIS"):
+    sql = f'create extension if not exists {extension_name}'
+    engine.execute(sql)
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):

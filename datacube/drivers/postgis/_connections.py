@@ -206,6 +206,15 @@ class PostGisDb(object):
 
         return is_new
 
+    def create_spatiotemporal_index(self, crs_str: str) -> None:
+        """
+        Create a spatio-temporal index across the database, for the named CRS.
+
+        :param crs_str:
+        :return:
+        """
+        _LOG.warning("Spatio-temp index not implemented yet")
+
     @contextmanager
     def connect(self):
         """
