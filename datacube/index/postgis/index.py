@@ -110,6 +110,9 @@ WARNING: Database schema and internal APIs may change significantly between rele
         """
         self._db.close()
 
+    def create_spatiotemporal_index(self, crs_str: str) -> None:
+        _LOG.warning("Postgis driver spatio-temporal indexes coming very soon.")
+
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
 

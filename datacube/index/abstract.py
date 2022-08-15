@@ -971,6 +971,10 @@ class AbstractIndex(ABC):
     def close(self) -> None:
         ...
 
+    @abstractmethod
+    def create_spatiotemporal_index(self, crs_str: str) -> None:
+        ...
+
     def __enter__(self):
         return self
 

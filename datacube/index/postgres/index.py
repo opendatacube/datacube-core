@@ -98,6 +98,9 @@ class Index(AbstractIndex):
         """
         self._db.close()
 
+    def create_spatiotemporal_index(self, crs_str: str) -> None:
+        _LOG.warning("Postgres driver does not support spatio-temporal indexes")
+
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
 
