@@ -29,9 +29,8 @@ class OrExpression(Expression):
     def __init__(self, *exprs):
         super(OrExpression, self).__init__()
         self.exprs = exprs
-        for expr in self.exprs:
-            self.field = expr.field
-            break
+        # Or expressions built by dc.load are always made up of simple expressions that share the same field.
+        self.field = exprs[0].field
 
     def evaluate(self, ctx):
         return any(expr.evaluate(ctx) for expr in self.exprs)
