@@ -972,8 +972,23 @@ class AbstractIndex(ABC):
         ...
 
     @abstractmethod
-    def create_spatiotemporal_index(self, crs_str: str) -> None:
-        ...
+    def create_spatial_index(self, crs: "datacube.utils.geometry.CRS") -> bool:
+        """
+        Create a spatial index using the nominated CRS.
+
+        :param crs: The CRS to use in the spatial index.
+        :return: True is the index was successfully created or already exists.
+                 None if spatial indexes are not supported.
+        """
+
+    def spatial_indexes(self, refresh=False) -> Iterable["datacube.utils.geometry.CRS"]:
+        """
+        Return a list of CRSs for which spatiotemporal indexes exist in the database.
+
+        :param refresh:
+        :return:
+        """
+        return []
 
     def __enter__(self):
         return self

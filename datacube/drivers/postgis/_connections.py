@@ -17,7 +17,7 @@ import logging
 import os
 import re
 from contextlib import contextmanager
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Mapping, Optional, Union
 
 from sqlalchemy import event, create_engine, text
 from sqlalchemy.engine import Engine
@@ -26,9 +26,11 @@ from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
 import datacube
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
+from datacube.utils.geometry import CRS
 
 from . import _api
 from . import _core
+from . import _dynamic
 
 _LIB_ID = 'odc-' + str(datacube.__version__)
 
@@ -67,6 +69,7 @@ class PostGisDb(object):
         # We don't recommend using this constructor directly as it may change.
         # Use static methods PostGisDb.create() or PostGisDb.from_config()
         self._engine = engine
+        self.st_indexes: Mapping[CRS, Any] = {}
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
@@ -206,14 +209,24 @@ class PostGisDb(object):
 
         return is_new
 
-    def create_spatiotemporal_index(self, crs_str: str) -> None:
+    def create_spatial_index(self, crs: "datacube.utils.geometry.CRS") -> Any:
         """
         Create a spatio-temporal index across the database, for the named CRS.
 
         :param crs_str:
         :return:
         """
-        _LOG.warning("Spatio-temp index not implemented yet")
+        st_idx = self.st_indexes.get(crs)
+        if st_idx is None:
+            st_idx = _dynamic.spindex_for_crs(crs)
+            if st_idx is None:
+                _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)
+                return None
+            if not _dynamic.ensure_spindex(self._engine, st_idx):
+                _LOG.warning("Could not create a spatial index for CRS %s", crs._str)
+                return None
+            self.st_indexes[crs] = st_idx
+        return st_idx
 
     @contextmanager
     def connect(self):

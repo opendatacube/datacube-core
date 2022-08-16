@@ -8,11 +8,15 @@ Methods for managing dynamic dataset field indexes and views.
 
 import logging
 
-from sqlalchemy import Index
+from sqlalchemy import Index, CheckConstraint, Column, ForeignKey
 from sqlalchemy import select
+from sqlalchemy.dialects import postgresql as postgres
+from geoalchemy2 import Geometry
 
-from ._core import schema_qualified
-from .sql import pg_exists, CreateView
+from datacube.utils.geometry import CRS
+from ._core import schema_qualified, METADATA
+from ._schema import Dataset, orm_registry
+from .sql import pg_exists, CreateView, SCHEMA_NAME
 
 _LOG = logging.getLogger(__name__)
 
@@ -179,3 +183,48 @@ def _check_field_index(conn, fields, name_prefix, filter_expression,
             index.create(conn)
         else:
             _LOG.debug('Index exists: %s  (replace=%r)', index_name, replace_existing)
+
+
+class Any:
+    pass
+
+
+def spindex_for_crs(crs: CRS) -> Any:
+    if not (str(crs).startswith('EPSG') and crs.epsg):
+        _LOG.error("Cannot create a postgis spatial index for a non-EPSG-style CRS.")
+        return None
+    table_name = "spatial_{crs.epsg}"
+    attributes = {
+        '__tablename__': table_name,
+        '__table_args__': (
+            METADATA,
+            {
+                "schema": SCHEMA_NAME,
+                "comment": "A product or dataset type, family of related datasets."
+            }
+        ),
+        "dataset_ref": Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id),
+                              primary_key=True,
+                              nullable=False,
+                              comment="The dataset being indexed")
+    }
+    # Add geometry column
+    attributes["extent"] = Column(Geometry('MULTIPOLYGON', srid=crs.epsg), nullable=False, comment="The extent of the dataset")
+    SpIndex = orm_registry.mapped(type(f'SpatialIdx{crs.epsg}', tuple(), attributes))
+    return SpIndex
+
+
+def ensure_spindex(conn, st_idx):
+    base = orm_registry.generate_base()
+    base.metadata.create_all(conn, [st_idx.__table__])
+    return st_idx
+
+def spindexes(conn):
+    results = conn.execute(f"select name from pg_tables where schemaname='{SCHEMA_NAME}' and tablename like 'spatial_%'")
+    out = {}
+    for result in results:
+        epsg = int(result[0][8:])
+        crs = CRS('EPSG:{epsg}')
+        st_idx = spindex_for_crs(crs)
+        out[crs] = st_idx
+    return out

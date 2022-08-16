@@ -60,8 +60,9 @@ class Index(AbstractIndex):
     def close(self):
         pass
 
-    def create_spatiotemporal_index(self, crs_str: str) -> None:
-        _LOG.warning("Postgres driver does not support spatio-temporal indexes")
+    def create_spatial_index(self, crs: "datacube.utils.geometry.CRS") -> bool:
+        _LOG.warning("memory index driver does not support spatio-temporal indexes")
+        return False
 
     def __repr__(self):
         return "Index<memory>"

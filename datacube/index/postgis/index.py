@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from typing import Iterable
 
 from datacube.drivers.postgis import PostGisDb
 from datacube.index.postgis._datasets import DatasetResource  # type: ignore
@@ -110,8 +111,12 @@ WARNING: Database schema and internal APIs may change significantly between rele
         """
         self._db.close()
 
-    def create_spatiotemporal_index(self, crs_str: str) -> None:
-        self._db.create_spatiotemporal_index(crs_str)
+    def create_spatial_index(self, crs: "datacube.utils.geometry.CRS") -> bool:
+        st_idx = self._db.create_spatial_index(crs)
+        return st_idx is not None
+
+    def spatiotemporal_indexes(self, refresh=False) -> Iterable["datacube.utils.geometry.CRS"]:
+        return []
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
