@@ -33,7 +33,7 @@ properties:
   dtr:start_datetime: 2016-05-12 23:50:23.054165Z
   eo:cloud_cover: 58.910716655901616
   eo:gsd: 30.0  # Ground sample distance (m)
-  eo:instrument: OLI_TIRS
+  eo:instrument: WOOLI_TIRS
   eo:platform: landsat-8
   eo:sun_azimuth: 34.58516815
   eo:sun_elevation: 26.29614366

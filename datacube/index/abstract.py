@@ -757,7 +757,7 @@ class AbstractDatasetResource(ABC):
         """
         Perform a search, returning results as Dataset objects.
 
-        :param limit: Limit number of dataset (None/default = unlimited)
+        :param limit: Limit number of datasets per product (None/default = unlimited)
         :param query: search query parameters
         :return: Matching datasets
         """

@@ -10,9 +10,8 @@ metadata:
     name: ga_ls8c_ard_3
   properties:
      eo:platform: landsat-8
-     eo:instrument: OLI_TIRS
-     odc:product_family: ard
      odc:producer: ga.gov.au
+     odc:product_family: ard
 
 measurements:
   # NBART

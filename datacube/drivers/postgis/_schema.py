@@ -8,7 +8,7 @@ Tables for indexing the datasets which were ingested into the AGDC.
 
 import logging
 
-from sqlalchemy.orm import aliased, registry, relationship
+from sqlalchemy.orm import aliased, registry, relationship, column_property
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgresql as postgres
@@ -97,8 +97,17 @@ class Dataset:
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
 
-    locations = relationship("DatasetLocation")
-    # TODO: active location?
+    locations = relationship("DatasetLocation", viewonly=True)
+    active_locations = relationship("DatasetLocation",
+                                    primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
+                                                "DatasetLocation.archived==None)",
+                                    viewonly=True,
+                                    order_by="desc(DatasetLocation.added)")
+    archived_locations = relationship("DatasetLocation",
+                                      viewonly=True,
+                                      primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
+                                                  "DatasetLocation.archived!=None)"
+                                     )
 
 
 @orm_registry.mapped
@@ -129,6 +138,8 @@ eg 'file:///g/data/datasets/LS8_NBAR/odc-metadata.yaml' or 'ftp://eo.something.c
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
     archived = Column(DateTime(timezone=True), default=None, nullable=True,
                       comment="when archived, null for the active location")
+    uri = column_property(uri_scheme + ':' + uri_body)
+    dataset = relationship("Dataset")
 
 
 SelectedDatasetLocation = aliased(DatasetLocation, name="sel_loc")

@@ -18,7 +18,7 @@ import uuid  # noqa: F401
 from sqlalchemy import cast
 from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy import select, text, and_, or_, func, literal
+from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from typing import Iterable, Tuple
 from datacube.index.fields import OrExpression
@@ -32,10 +32,6 @@ from ._schema import MetadataType, Product,  \
 from .sql import escape_pg_identifier
 
 
-def _selectable_url(table):
-    return table.uri_scheme + literal(':') + table.uri_body
-
-
 # Make a function because it's broken
 def _dataset_select_fields():
     return (
@@ -43,7 +39,7 @@ def _dataset_select_fields():
         # All active URIs, from newest to oldest
         func.array(
             select(
-                _selectable_url(SelectedDatasetLocation)
+                SelectedDatasetLocation.uri
             ).where(
                 and_(
                     SelectedDatasetLocation.dataset_ref == Dataset.id,
@@ -126,7 +122,7 @@ def get_native_fields():
             'uri',
             "Dataset URI",
             DatasetLocation.uri_body,
-            alchemy_expression=_selectable_url(DatasetLocation),
+            alchemy_expression=DatasetLocation.uri,
             affects_row_selection=True
         ),
     }
@@ -361,13 +357,11 @@ class PostgisDbAPI(object):
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
-            # TODO
             select(_dataset_select_fields()).where(Dataset.id == dataset_id)
         ).first()
 
     def get_datasets(self, dataset_ids):
         return self._connection.execute(
-            # TODO
             select(_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
         ).fetchall()
 
@@ -476,7 +470,7 @@ class PostgisDbAPI(object):
         # TODO
         # type: (Tuple[PgField], Tuple[PgExpression]) -> Iterable[tuple]
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
-        join_tables = PostgisDbAPI._join_tables(Dataset, expressions, group_expressions)
+        join_tables = PostgisDbAPI._join_tables(Dataset, expressions, match_fields)
 
         query = select(
             (func.array_agg(Dataset.id),) + group_expressions
@@ -577,8 +571,7 @@ class PostgisDbAPI(object):
             join_tables.update(field.required_alchemy_table for field in fields)
         join_tables.discard(source_table.__table__)
         # TODO: Current architecture must sort-hack.  Better join awareness required at field level.
-        sort_order_hack = [DatasetLocation, SelectedDatasetLocation,
-                           Dataset, Product, MetadataType]
+        sort_order_hack = [DatasetLocation, Dataset, Product, MetadataType]
         return [
             orm_table
             for orm_table in sort_order_hack
@@ -773,7 +766,7 @@ class PostgisDbAPI(object):
             record[0]
             for record in self._connection.execute(
                 select(
-                    _selectable_url(DatasetLocation)
+                    DatasetLocation.uri
                 ).where(
                     DatasetLocation.dataset_ref == dataset_id
                 ).where(
@@ -793,7 +786,7 @@ class PostgisDbAPI(object):
             (location_uri, archived_time)
             for location_uri, archived_time in self._connection.execute(
                 select(
-                    _selectable_url(DatasetLocation), DatasetLocation.archived
+                    DatasetLocation.uri, DatasetLocation.archived
                 ).where(
                     DatasetLocation.dataset_ref == dataset_id
                 ).where(

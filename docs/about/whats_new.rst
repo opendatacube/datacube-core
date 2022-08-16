@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- EO3 data fixtures and tests. Fix SQLAlchemy bugs in postgis driver. (:pull:`1309`)
 - Dependency updates. (:pull:`1308`)
 - Remove several features that had been deprecated in previous releases. (:pull:`1275`)
 - Fix broken paths in api docs. (:pull:`1277`)

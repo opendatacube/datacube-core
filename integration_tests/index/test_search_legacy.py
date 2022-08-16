@@ -1,38 +1,35 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 """
 Module
 """
 import copy
-import csv
 import datetime
-import io
 import uuid
 from decimal import Decimal
 from uuid import UUID
-from typing import List, Iterable, Dict, Any, Tuple
+from typing import List, Any
 
 import pytest
 import yaml
 from dateutil import tz
 from psycopg2._range import NumericRange
 
-import datacube.scripts.cli_app
-import datacube.scripts.search_tool
 from datacube.config import LocalConfig
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._connections import DEFAULT_DB_USER
 from datacube.index import Index
 from datacube.model import Dataset
-from datacube.model import DatasetType
+from datacube.model import Product
 from datacube.model import MetadataType
 from datacube.model import Range
 
 from datacube.testutils import load_dataset_definition
 
 from datacube import Datacube
+from .search_utils import _load_product_query, assume_utc, _csv_search_raw, _cli_csv_search
 
 
 @pytest.fixture
@@ -166,7 +163,7 @@ def pseudo_ls8_dataset2(index, initialised_postgres_db, pseudo_ls8_type):
 @pytest.fixture
 def pseudo_ls8_dataset3(index: Index,
                         initialised_postgres_db: PostgresDb,
-                        pseudo_ls8_type: DatasetType,
+                        pseudo_ls8_type: Product,
                         pseudo_ls8_dataset: Dataset) -> Dataset:
     # Same as 1, but a different path/row
     id_ = str(uuid.uuid4())
@@ -193,7 +190,7 @@ def pseudo_ls8_dataset3(index: Index,
 @pytest.fixture
 def pseudo_ls8_dataset4(index: Index,
                         initialised_postgres_db: PostgresDb,
-                        pseudo_ls8_type: DatasetType,
+                        pseudo_ls8_type: Product,
                         pseudo_ls8_dataset2: Dataset) -> Dataset:
     # Same as 2, but a different path/row
     id_ = str(uuid.uuid4())
@@ -226,7 +223,7 @@ def ls5_dataset_w_children(index, clirunner, example_ls5_dataset_path, indexed_l
 
 @pytest.fixture
 def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
-                          indexed_ls5_scene_products: List[DatasetType]) -> DatasetType:
+                          indexed_ls5_scene_products: List[Product]) -> Product:
     for dataset_type in indexed_ls5_scene_products:
         if dataset_type.name == ls5_dataset_w_children.type.name:
             return dataset_type
@@ -363,7 +360,6 @@ def test_search_dataset_ranges(index: Index, pseudo_ls8_dataset: Dataset) -> Non
 
 
 def test_search_globally(index: Index, pseudo_ls8_dataset: Dataset) -> None:
-    # Insert dataset. It should be matched to the telemetry collection.
     # No expressions means get all.
     results = list(index.datasets.search())
     assert len(results) == 1
@@ -372,24 +368,10 @@ def test_search_globally(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     assert results[0].sources is None
 
 
-def _load_product_query(
-        lazy_results: Iterable[Tuple[DatasetType, Iterable[Dataset]]]
-) -> Dict[str, List[Dataset]]:
-    """
-    search_by_product() returns two levels of laziness. load them all into memory
-    for easy comparison/counts
-    """
-    products = {}  # type: Dict[str, List[Dataset]]
-    for product, datasets in lazy_results:
-        assert product.name not in products, "search_by_product() returned a product twice"
-        products[product.name] = list(datasets)
-    return products
-
-
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_by_product(index: Index,
-                           pseudo_ls8_type: DatasetType,
+                           pseudo_ls8_type: Product,
                            pseudo_ls8_dataset: Dataset,
                            indexed_ls5_scene_products,
                            ls5_dataset_w_children: Dataset) -> None:
@@ -432,9 +414,9 @@ def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_or_expressions(index: Index,
-                               pseudo_ls8_type: DatasetType,
+                               pseudo_ls8_type: Product,
                                pseudo_ls8_dataset: Dataset,
-                               ls5_dataset_nbar_type: DatasetType,
+                               ls5_dataset_nbar_type: Product,
                                ls5_dataset_w_children: Dataset,
                                default_metadata_type: MetadataType,
                                telemetry_metadata_type: MetadataType) -> None:
@@ -500,7 +482,7 @@ def test_search_or_expressions(index: Index,
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_returning(index: Index,
                           local_config: LocalConfig,
-                          pseudo_ls8_type: DatasetType,
+                          pseudo_ls8_type: Product,
                           pseudo_ls8_dataset: Dataset,
                           ls5_dataset_w_children) -> None:
 
@@ -608,7 +590,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
 
 
 def test_searches_only_type(index: Index,
-                            pseudo_ls8_type: DatasetType,
+                            pseudo_ls8_type: Product,
                             pseudo_ls8_dataset: Dataset,
                             ls5_telem_type) -> None:
     # The dataset should have been matched to the telemetry type.
@@ -661,7 +643,7 @@ def test_searches_only_type(index: Index,
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_special_fields(index: Index,
-                               pseudo_ls8_type: DatasetType,
+                               pseudo_ls8_type: Product,
                                pseudo_ls8_dataset: Dataset,
                                ls5_dataset_w_children) -> None:
     # 'product' is a special case
@@ -691,87 +673,8 @@ def test_search_by_uri(index, ls5_dataset_w_children):
     assert len(datasets) == 0
 
 
-def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
-    # Should return no results.
-    with pytest.raises(ValueError):
-        index.datasets.search_eager(
-            product=pseudo_ls8_type.name,
-            # The telemetry type is not of type storage_unit.
-            metadata_type='storage_unit'
-        )
-
-
-def test_fetch_all_of_md_type(index: Index, pseudo_ls8_dataset: Dataset) -> None:
-    # Get every dataset of the md type.
-    assert pseudo_ls8_dataset.metadata_type is not None  # to shut up mypy
-    results = index.datasets.search_eager(
-        metadata_type=pseudo_ls8_dataset.metadata_type.name
-    )
-    assert len(results) == 1
-    assert results[0].id == pseudo_ls8_dataset.id
-    # Get every dataset of the type.
-    results = index.datasets.search_eager(
-        product=pseudo_ls8_dataset.type.name
-    )
-    assert len(results) == 1
-    assert results[0].id == pseudo_ls8_dataset.id
-
-    # No results for another.
-    with pytest.raises(ValueError):
-        results = index.datasets.search_eager(
-            metadata_type='telemetry'
-        )
-
-
-def test_count_searches(index: Index,
-                        pseudo_ls8_type: DatasetType,
-                        pseudo_ls8_dataset: Dataset,
-                        ls5_telem_type) -> None:
-    # The dataset should have been matched to the telemetry type.
-    assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
-    assert index.datasets.search_eager()
-
-    # One result in the telemetry type
-    datasets = index.datasets.count(
-        product=pseudo_ls8_type.name,
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS',
-    )
-    assert datasets == 1
-
-    # One result in the metadata type
-    datasets = index.datasets.count(
-        metadata_type=pseudo_ls8_type.metadata_type.name,
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS',
-    )
-    assert datasets == 1
-
-    # No results when searching for a different dataset type.
-    datasets = index.datasets.count(
-        product=ls5_telem_type.name,
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS'
-    )
-    assert datasets == 0
-
-    # One result when no types specified.
-    datasets = index.datasets.count(
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS',
-    )
-    assert datasets == 1
-
-    # No results for different metadata type.
-    datasets = index.datasets.count(
-        metadata_type='telemetry',
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS'
-    )
-    assert datasets == 0
-
-
 # Current formulation of this test relies on non-EO3 test data
+# (But postgis implementation isn't handling lineage yet either)
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_get_dataset_with_children(index: Index, ls5_dataset_w_children: Dataset) -> None:
     id_ = ls5_dataset_w_children.id
@@ -797,9 +700,9 @@ def test_get_dataset_with_children(index: Index, ls5_dataset_w_children: Dataset
 
 
 def test_count_by_product_searches(index: Index,
-                                   pseudo_ls8_type: DatasetType,
+                                   pseudo_ls8_type: Product,
                                    pseudo_ls8_dataset: Dataset,
-                                   ls5_telem_type: DatasetType) -> None:
+                                   ls5_telem_type: Product) -> None:
     # The dataset should have been matched to the telemetry type.
     assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
     assert index.datasets.search_eager()
@@ -846,36 +749,8 @@ def test_count_by_product_searches(index: Index,
     assert products == ()
 
 
-def test_count_time_groups(index: Index,
-                           pseudo_ls8_type: DatasetType,
-                           pseudo_ls8_dataset: Dataset) -> None:
-    # 'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
-    # 'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
-    timeline = list(index.datasets.count_product_through_time(
-        '1 day',
-        product=pseudo_ls8_type.name,
-        time=Range(
-            datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()),
-            datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())
-        )
-    ))
-
-    assert len(timeline) == 2
-    assert timeline == [
-        (
-            Range(datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()),
-                  datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc())),
-            0
-        ),
-        (
-            Range(datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc()),
-                  datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())),
-            1
-        )
-    ]
-
-
 # Current formulation of this test relies on non-EO3 test data
+# (But postgis driver doesn't support lineage yet anyway.)
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 @pytest.mark.usefixtures('ga_metadata_type',
                          'indexed_ls5_scene_products')
@@ -910,46 +785,6 @@ def test_source_filter(clirunner, index, example_ls5_dataset_path):
             product='ls5_nbar_scene',
             source_filter={'gsi': 'ASA'}
         )
-
-
-def test_count_time_groups_cli(clirunner: Any,
-                               pseudo_ls8_type: DatasetType,
-                               pseudo_ls8_dataset: Dataset) -> None:
-    result = clirunner(
-        [
-            'product-counts',
-            '1 day',
-            'time in [2014-07-25, 2014-07-27]'
-        ], cli_method=datacube.scripts.search_tool.cli,
-        verbose_flag=''
-    )
-
-    expected_out = (
-        '{}\n'
-        '    2014-07-25: 0\n'
-        '    2014-07-26: 1\n'
-    ).format(pseudo_ls8_type.name)
-
-    assert result.output.endswith(expected_out)
-
-
-def test_search_cli_basic(clirunner: Any,
-                          telemetry_metadata_type: MetadataType,
-                          pseudo_ls8_dataset: Dataset) -> None:
-    """
-    Search datasets using the cli.
-    """
-    result = clirunner(
-        [
-            # No search arguments: return all datasets.
-            'datasets'
-        ], cli_method=datacube.scripts.search_tool.cli
-    )
-
-    assert str(pseudo_ls8_dataset.id) in result.output
-    assert str(telemetry_metadata_type.name) in result.output
-
-    assert result.exit_code == 0
 
 
 def test_cli_info(index: Index,
@@ -1018,13 +853,6 @@ def test_cli_info(index: Index,
     assert yaml_docs[1]['id'] == str(pseudo_ls8_dataset2.id)
 
 
-def assume_utc(d):
-    if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
-    else:
-        return d.astimezone(tz.tzutc())
-
-
 def test_cli_missing_info(clirunner, initialised_postgres_db):
     id_ = str(uuid.uuid4())
     result = clirunner(
@@ -1045,7 +873,7 @@ def test_cli_missing_info(clirunner, initialised_postgres_db):
 def test_find_duplicates(index, pseudo_ls8_type,
                          pseudo_ls8_dataset, pseudo_ls8_dataset2, pseudo_ls8_dataset3, pseudo_ls8_dataset4,
                          ls5_dataset_w_children):
-    # type: (Index, DatasetType, Dataset, Dataset, Dataset, Dataset, Dataset) -> None
+    # type: (Index, Product, Dataset, Dataset, Dataset, Dataset, Dataset) -> None
 
     # Our four ls8 datasets and three ls5.
     all_datasets = index.datasets.search_eager()
@@ -1118,7 +946,7 @@ def test_find_duplicates(index, pseudo_ls8_type,
 
 
 def test_csv_search_via_cli(clirunner: Any,
-                            pseudo_ls8_type: DatasetType,
+                            pseudo_ls8_type: Product,
                             pseudo_ls8_dataset: Dataset,
                             pseudo_ls8_dataset2: Dataset) -> None:
     """
@@ -1223,17 +1051,3 @@ def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Datas
     # Can we query multiple products in a tuple
     datasets = dc.find_datasets(product=('ls5_nbar_scene', 'ls5_level1_scene'))
     assert len(datasets) == 2
-
-
-def _cli_csv_search(args, clirunner):
-    # Do a CSV search from the cli, returning results as a list of dictionaries
-    output = _csv_search_raw(args, clirunner)
-    return list(csv.DictReader(io.StringIO(output)))
-
-
-def _csv_search_raw(args, clirunner):
-    # Do a CSV search from the cli, returning output as a string
-    result = clirunner(['-f', 'csv'] + list(args), cli_method=datacube.scripts.search_tool.cli, verbose_flag=False)
-    output = result.output
-    output_lines = output.split("\n")
-    return "\n".join(line for line in output_lines if "WARNING" not in line)

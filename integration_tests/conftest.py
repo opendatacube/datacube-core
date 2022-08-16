@@ -56,28 +56,159 @@ settings.register_profile(
 )
 settings.load_profile('opendatacube')
 
-MEMORY_DRIVER_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'memory'
+EO3_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'eo3'
 
 
-def get_memory_test_data_doc(path):
+def get_eo3_test_data_doc(path):
     from datacube.utils import read_documents
-    for path, doc in read_documents(MEMORY_DRIVER_TESTDIR / path):
+    for path, doc in read_documents(EO3_TESTDIR / path):
         return doc
 
 
 @pytest.fixture
+def dataset_with_lineage_doc():
+    return (
+        get_eo3_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
+        's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+        'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def eo3_ls8_dataset_doc():
+    return (
+        get_eo3_test_data_doc("ls8_dataset.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/12/'
+        'ga_ls8c_ard_3-0-0_090086_2016-05-12_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def eo3_ls8_dataset2_doc():
+    return (
+        get_eo3_test_data_doc("ls8_dataset2.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/28/'
+        'ga_ls8c_ard_3-0-0_090086_2016-05-28_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def eo3_ls8_dataset3_doc():
+    return (
+        get_eo3_test_data_doc("ls8_dataset3.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/101/077/2013/04/04/'
+        'ga_ls8c_ard_3-0-0_101077_2013-04-04_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def eo3_ls8_dataset4_doc():
+    return (
+        get_eo3_test_data_doc("ls8_dataset4.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/101/077/2013/07/21/'
+        'ga_ls8c_ard_3-0-0_101077_2013-07-21_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def eo3_wo_dataset_doc():
+    return (
+        get_eo3_test_data_doc("wo_dataset.yaml"),
+        's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+        'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def datasets_with_unembedded_lineage_doc():
+    return [
+        (
+            get_eo3_test_data_doc("ls8_dataset.yaml"),
+            's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/12/'
+            'ga_ls8c_ard_3-0-0_090086_2016-05-12_final.stac-item.json'
+        ),
+        (
+            get_eo3_test_data_doc("wo_dataset.yaml"),
+            's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
+            'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
+        ),
+    ]
+
+
+@pytest.fixture
 def extended_eo3_metadata_type_doc():
-    return get_memory_test_data_doc("eo3_landsat_ard.odc-type.yaml")
+    return get_eo3_test_data_doc("eo3_landsat_ard.odc-type.yaml")
 
 
 @pytest.fixture
 def extended_eo3_product_doc():
-    return get_memory_test_data_doc("ard_ls8.odc-product.yaml")
+    return get_eo3_test_data_doc("ard_ls8.odc-product.yaml")
 
 
 @pytest.fixture
 def base_eo3_product_doc():
-    return get_memory_test_data_doc("ga_ls_wo_3.odc-product.yaml")
+    return get_eo3_test_data_doc("ga_ls_wo_3.odc-product.yaml")
+
+
+def doc_to_ds(index, product_name, ds_doc, ds_path):
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
+    ds, err = resolver(ds_doc, ds_path)
+    assert err is None and ds is not None
+    index.datasets.add(ds)
+    return index.datasets.get(ds.id)
+
+
+@pytest.fixture
+def extended_eo3_metadata_type(index, extended_eo3_metadata_type_doc):
+    return index.metadata_types.add(
+        index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
+    )
+
+
+@pytest.fixture
+def ls8_eo3_product(index, extended_eo3_metadata_type, extended_eo3_product_doc):
+    return index.products.add_document(extended_eo3_product_doc)
+
+
+@pytest.fixture
+def wo_eo3_product(index, base_eo3_product_doc):
+    return index.products.add_document(base_eo3_product_doc)
+
+
+@pytest.fixture
+def ls8_eo3_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset_doc):
+    return doc_to_ds(index,
+                     ls8_eo3_product.name,
+                     *eo3_ls8_dataset_doc)
+
+
+@pytest.fixture
+def ls8_eo3_dataset2(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset2_doc):
+    return doc_to_ds(index,
+                     ls8_eo3_product.name,
+                     *eo3_ls8_dataset2_doc)
+
+
+@pytest.fixture
+def ls8_eo3_dataset3(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset3_doc):
+    return doc_to_ds(index,
+                     ls8_eo3_product.name,
+                     *eo3_ls8_dataset3_doc)
+
+
+@pytest.fixture
+def ls8_eo3_dataset4(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset4_doc):
+    return doc_to_ds(index,
+                     ls8_eo3_product.name,
+                     *eo3_ls8_dataset4_doc)
+
+
+@pytest.fixture
+def wo_eo3_dataset(index, wo_eo3_product, eo3_wo_dataset_doc, ls8_eo3_dataset):
+    return doc_to_ds(index,
+                     wo_eo3_product.name,
+                     *eo3_wo_dataset_doc)
 
 
 @pytest.fixture
@@ -110,31 +241,6 @@ def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
     ds_wo, err = resolver(doc_wo, loc_wo)
     mem_index_eo3.index.datasets.add(ds_wo)
     return mem_index_eo3, ds_ls8.id, ds_wo.id
-
-
-@pytest.fixture
-def dataset_with_lineage_doc():
-    return (
-        get_memory_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
-        's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
-        'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
-    )
-
-
-@pytest.fixture
-def datasets_with_unembedded_lineage_doc():
-    return [
-        (
-            get_memory_test_data_doc("ls8_dataset.yaml"),
-            's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/12/'
-            'ga_ls8c_ard_3-0-0_090086_2016-05-12_final.stac-item.json'
-        ),
-        (
-            get_memory_test_data_doc("wo_dataset.yaml"),
-            's3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/'
-            'ga_ls_wo_3_090086_2016-05-12_final.stac-item.json'
-        ),
-    ]
 
 
 @pytest.fixture
@@ -267,8 +373,9 @@ def remove_postgis_dynamic_indexes():
     Clear any dynamically created postgis indexes from the schema.
     """
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-    for table in pgis_core.METADATA.tables.values():
-        table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
+    # for table in pgis_core.METADATA.tables.values():
+    #    table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
+    # Dynamic indexes disabled.
 
 
 @pytest.fixture
