@@ -17,7 +17,7 @@ import logging
 import os
 import re
 from contextlib import contextmanager
-from typing import Any, Callable, Mapping, Optional, Union
+from typing import Any, Callable, Mapping, Optional, Union, Iterable
 
 from sqlalchemy import event, create_engine, text
 from sqlalchemy.engine import Engine
@@ -31,6 +31,7 @@ from datacube.utils.geometry import CRS
 from . import _api
 from . import _core
 from . import _dynamic
+from . import _spatial
 
 _LIB_ID = 'odc-' + str(datacube.__version__)
 
@@ -69,7 +70,7 @@ class PostGisDb(object):
         # We don't recommend using this constructor directly as it may change.
         # Use static methods PostGisDb.create() or PostGisDb.from_config()
         self._engine = engine
-        self.st_indexes: Mapping[CRS, Any] = {}
+        self._spindexes: Optional[Mapping[CRS, Any]] = None
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
@@ -209,24 +210,42 @@ class PostGisDb(object):
 
         return is_new
 
+    def _refresh_spindexes(self):
+        # TODO: Don't try to recreate everytime
+        self._spindexes = _spatial.spindexes(self._engine)
+
+    @property
+    def spindexes(self) -> Mapping[CRS, _spatial.SpatialIndex]:
+        if self._spindexes is None:
+            self._refresh_spindexes()
+        return self._spindexes
+
     def create_spatial_index(self, crs: "datacube.utils.geometry.CRS") -> Any:
         """
-        Create a spatio-temporal index across the database, for the named CRS.
+        Create a spatial index across the database, for the named CRS.
 
         :param crs_str:
         :return:
         """
-        st_idx = self.st_indexes.get(crs)
-        if st_idx is None:
-            st_idx = _dynamic.spindex_for_crs(crs)
-            if st_idx is None:
+        spidx = self.spindexes.get(crs)
+        if spidx is None:
+            spidx = _spatial.spindex_for_crs(crs)
+            if spidx is None:
                 _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)
                 return None
-            if not _dynamic.ensure_spindex(self._engine, st_idx):
+            if not _spatial.ensure_spindex(self._engine, spidx):
                 _LOG.warning("Could not create a spatial index for CRS %s", crs._str)
                 return None
-            self.st_indexes[crs] = st_idx
-        return st_idx
+            self.spindexes[crs] = spidx
+        return spidx
+
+    def spatial_index(self, crs: "datacube.utils.geometry.CRS") -> Optional[_spatial.SpatialIndex]:
+        return self.spindexes.get(CRS)
+
+    def spatial_indexes(self, refresh=False) -> Iterable[Any]:
+        if refresh:
+            self._refresh_spindexes()
+        return list(self.spindexes.keys())
 
     @contextmanager
     def connect(self):

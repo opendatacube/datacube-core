@@ -112,11 +112,11 @@ WARNING: Database schema and internal APIs may change significantly between rele
         self._db.close()
 
     def create_spatial_index(self, crs: "datacube.utils.geometry.CRS") -> bool:
-        st_idx = self._db.create_spatial_index(crs)
-        return st_idx is not None
+        sp_idx = self._db.create_spatial_index(crs)
+        return sp_idx is not None
 
-    def spatiotemporal_indexes(self, refresh=False) -> Iterable["datacube.utils.geometry.CRS"]:
-        return []
+    def spatial_indexes(self, refresh=False) -> Iterable["datacube.utils.geometry.CRS"]:
+        return self._db.spatial_indexes(refresh)
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)

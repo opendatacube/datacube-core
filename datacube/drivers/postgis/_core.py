@@ -103,10 +103,9 @@ def ensure_db(engine, with_permissions=True):
             c.execute(CreateSchema(SCHEMA_NAME))
             _LOG.info('Creating tables.')
             c.execute(TYPES_INIT_SQL)
-            from . import _schema
-            base = _schema.orm_registry.generate_base()
-            _LOG.info("Dataset indexes: %s", repr(base.metadata.tables["odc.dataset"].indexes))
-            base.metadata.create_all(c)
+            from ._schema import orm_registry, ALL_STATIC_TABLES
+            _LOG.info("Dataset indexes: %s", repr(orm_registry.metadata.tables["odc.dataset"].indexes))
+            orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             c.execute('commit')
@@ -182,23 +181,7 @@ def update_schema(engine: Engine):
     See the `schema_is_latest()` function above: this should apply updates
     that it requires.
     """
-    # This will typically check if something exists (like a newly added column), and
-    # run the SQL of the change inside a single transaction.
-
-    # Empty, as no schema changes have been made recently.
-    # -> If you need to write one, look at the Git history of this
-    #    function for some examples.
-
-    # Post 1.8 DB Incremental Sync triggers
-    if not pg_column_exists(engine, schema_qualified('dataset'), 'updated'):
-        _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
-        c = engine.connect()
-        c.execute('begin')
-        install_timestamp_trigger(c)
-        c.execute('commit')
-        c.close()
-    else:
-        _LOG.info("No schema updates required.")
+    # TODO: implement migrations
 
 
 def _ensure_extension(engine, extension_name="POSTGIS"):
