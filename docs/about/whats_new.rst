@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- Dynamically create tables to serve as spatial indexes in postgis driver. (:pull:`1312`)
 - EO3 data fixtures and tests. Fix SQLAlchemy bugs in postgis driver. (:pull:`1309`)
 - Dependency updates. (:pull:`1308`)
 - Remove several features that had been deprecated in previous releases. (:pull:`1275`)
