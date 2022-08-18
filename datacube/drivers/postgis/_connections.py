@@ -211,7 +211,6 @@ class PostGisDb(object):
         return is_new
 
     def _refresh_spindexes(self):
-        # TODO: Don't try to recreate everytime
         self._spindexes = spindexes(self._engine)
 
     @property
