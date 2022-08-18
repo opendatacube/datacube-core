@@ -146,21 +146,33 @@ class DatasetResource(AbstractDatasetResource):
         :rtype: Dataset
         """
 
+        sp_crses = self._db.spatial_indexes()
+
         def process_bunch(dss, main_ds, transaction):
             edges = []
-
-            # First insert all new datasets
+            extents = []
+            # 1: Loop over datasets
             for ds in dss:
+                # 1a. insert (if not already exists)
                 is_new = transaction.insert_dataset(ds.metadata_doc_without_lineage(), ds.id, ds.type.id)
                 sources = ds.sources
+                # 1b. Build edge graph for new datasets
                 if is_new and sources is not None:
                     edges.extend((name, ds.id, src.id)
                                  for name, src in sources.items())
-
-            # Second insert lineage graph edges
+                # 1c. Prepare spatial index extents
+                if is_new:
+                    native_extent = ds.extent
+                    extents.extend(
+                            (ds.id, crs, native_extent.to_crs(crs))
+                            for crs in sp_crses
+                    )
+            # 2: insert lineage graph edges
             for ee in edges:
                 transaction.insert_dataset_source(*ee)
-
+            # 3: insert spatial indexes
+            for dsid, crs, extent in extents:
+                transaction.insert_dataset_spatial(dsid, crs, extent)
             # Finally update location for top-level dataset only
             if main_ds.uris is not None:
                 self._ensure_new_locations(main_ds, transaction=transaction)

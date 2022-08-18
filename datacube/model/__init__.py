@@ -19,6 +19,7 @@ from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable
 from urllib.parse import urlparse
 from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
+from datacube.index.eo3 import is_doc_eo3
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap  # noqa: F401
 
@@ -71,6 +72,10 @@ class Dataset:
         self.indexed_time = indexed_time
         # When the dataset was archived. Null it not archived.
         self.archived_time = archived_time
+
+    @property
+    def is_eo3(self) -> bool:
+        return is_doc_eo3(self.metadata_doc)
 
     @property
     def metadata_type(self) -> 'MetadataType':

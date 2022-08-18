@@ -21,6 +21,9 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from typing import Iterable, Tuple
+
+from sqlalchemy.engine import Connection
+
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from . import _core
@@ -29,6 +32,7 @@ from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F4
 from ._fields import NativeField, DateDocField, SimpleDocField
 from ._schema import MetadataType, Product,  \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation
+from ._spatial import geom_alchemy
 from .sql import escape_pg_identifier
 
 
@@ -169,7 +173,8 @@ def get_dataset_fields(metadata_type_definition):
 
 
 class PostgisDbAPI(object):
-    def __init__(self, connection):
+    def __init__(self, parentDb, connection):
+        self._db = parentDb
         self._connection = connection
 
     @property
@@ -245,6 +250,28 @@ class PostgisDbAPI(object):
             )
         )
 
+        return r.rowcount > 0
+
+    def insert_dataset_spatial(self, dataset_id, crs, extent):
+        """
+        Add a spatial index entry for a dataset if it is not already recorded.
+
+        Returns True if success, False if this location already existed
+
+        :type dataset_id: str or uuid.UUID
+        :type crs: CRS
+        :type extent: Geometry
+        :rtype bool:
+        """
+        SpatialIndex = self._db.spatial_index(crs)
+        r = self._connection.execute(
+            insert(
+                SpatialIndex
+            ).values(
+                dataset_ref=dataset_id,
+                extent=geom_alchemy(extent),
+            )
+        )
         return r.rowcount > 0
 
     def contains_dataset(self, dataset_id):
@@ -348,6 +375,16 @@ class PostgisDbAPI(object):
                 DatasetSource.dataset_ref == dataset_id
             )
         )
+        for crs in self._db.spatial_indexes():
+            SpatialIndex = self._db.spatial_index(crs)
+            self._connection.execute(
+                delete(
+                    SpatialIndex
+                ).where(
+                    SpatialIndex.dataset_ref == dataset_id
+                )
+            )
+
         r = self._connection.execute(
             delete(Dataset).where(
                 Dataset.id == dataset_id
