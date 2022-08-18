@@ -179,4 +179,3 @@ def _check_field_index(conn, fields, name_prefix, filter_expression,
             index.create(conn)
         else:
             _LOG.debug('Index exists: %s  (replace=%r)', index_name, replace_existing)
-

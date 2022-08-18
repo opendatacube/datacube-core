@@ -7,6 +7,7 @@ Tables for indexing the datasets which were ingested into the AGDC.
 """
 
 import logging
+from typing import Type
 
 from sqlalchemy.orm import aliased, registry, relationship, column_property
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text
@@ -168,6 +169,12 @@ E.g. the dataset type ('ortho', 'nbar'...) if there's only one source of each ty
 for a time-range summary.""")
 
 
+class SpatialIndex:
+    """
+    Base class for dynamically SpatialIndex ORM models (See _spatial.py)
+    """
+
+
 @orm_registry.mapped
 class SpatialIndexRecord:
     __tablename__ = "spatial_indicies"
@@ -179,12 +186,14 @@ class SpatialIndexRecord:
         }
     )
     srid = Column(SmallInteger, primary_key=True, autoincrement=False)
-    table_name = Column(String, unique=True, nullable=True, comment="The name of the table implementing the index - DO NOT CHANGE")
+    table_name = Column(String,
+                        unique=True, nullable=True,
+                        comment="The name of the table implementing the index - DO NOT CHANGE")
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
 
     @classmethod
-    def from_spindex(cls, spindex: "Type[SpatialIndex]") -> "SpatialIndexRecord":
+    def from_spindex(cls, spindex: Type[SpatialIndex]) -> "SpatialIndexRecord":
         return cls(srid=spindex.__tablename__[8:],
                    table_name=spindex.__tablename__)
 
