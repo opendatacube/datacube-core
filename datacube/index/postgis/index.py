@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from typing import Iterable
 
 from datacube.drivers.postgis import PostGisDb
 from datacube.index.postgis._datasets import DatasetResource  # type: ignore
@@ -11,6 +12,7 @@ from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs
 from datacube.model import MetadataType
+from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
 
@@ -109,6 +111,13 @@ WARNING: Database schema and internal APIs may change significantly between rele
         (Connections are normally closed automatically when this object is deleted: ie. no references exist)
         """
         self._db.close()
+
+    def create_spatial_index(self, crs: CRS) -> bool:
+        sp_idx = self._db.create_spatial_index(crs)
+        return sp_idx is not None
+
+    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
+        return self._db.spatial_indexes(refresh)
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)

@@ -17,6 +17,7 @@ from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
 from datacube.utils import cached_property, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset
+from datacube.utils.geometry import CRS
 
 
 class AbstractUserResource(ABC):
@@ -970,6 +971,26 @@ class AbstractIndex(ABC):
     @abstractmethod
     def close(self) -> None:
         ...
+
+    @abstractmethod
+    def create_spatial_index(self, crs: CRS) -> bool:
+        """
+        Create a spatial index using the nominated CRS.
+
+        :param crs: The CRS to use in the spatial index.
+        :return: True is the index was successfully created or already exists.
+                 None if spatial indexes are not supported.
+        """
+
+    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
+        """
+        Return a list of CRSs for which spatiotemporal indexes exist in the database.
+
+        :param refresh: If true, re-read from database record (e.g. to catch spatial
+                        indexes recently created in another datacube session.
+        :return:
+        """
+        return []
 
     def __enter__(self):
         return self

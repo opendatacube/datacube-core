@@ -12,8 +12,7 @@ from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                           SCHEMA_NAME, TYPES_INIT_SQL,
                                           UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
                                           UPDATE_TIMESTAMP_SQL,
-                                          escape_pg_identifier,
-                                          pg_column_exists)
+                                          escape_pg_identifier)
 from sqlalchemy import MetaData
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
@@ -79,6 +78,8 @@ def ensure_db(engine, with_permissions=True):
 
     quoted_db_name, quoted_user = _get_quoted_connection_info(c)
 
+    _ensure_extension(c, 'POSTGIS')
+
     if with_permissions:
         _LOG.info('Ensuring user roles.')
         _ensure_role(c, 'odc_user')
@@ -101,10 +102,9 @@ def ensure_db(engine, with_permissions=True):
             c.execute(CreateSchema(SCHEMA_NAME))
             _LOG.info('Creating tables.')
             c.execute(TYPES_INIT_SQL)
-            from . import _schema
-            base = _schema.orm_registry.generate_base()
-            _LOG.info("Dataset indexes: %s", repr(base.metadata.tables["odc.dataset"].indexes))
-            base.metadata.create_all(c)
+            from ._schema import orm_registry, ALL_STATIC_TABLES
+            _LOG.info("Dataset indexes: %s", repr(orm_registry.metadata.tables["odc.dataset"].indexes))
+            orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             c.execute('commit')
@@ -180,23 +180,12 @@ def update_schema(engine: Engine):
     See the `schema_is_latest()` function above: this should apply updates
     that it requires.
     """
-    # This will typically check if something exists (like a newly added column), and
-    # run the SQL of the change inside a single transaction.
+    # TODO: implement migrations
 
-    # Empty, as no schema changes have been made recently.
-    # -> If you need to write one, look at the Git history of this
-    #    function for some examples.
 
-    # Post 1.8 DB Incremental Sync triggers
-    if not pg_column_exists(engine, schema_qualified('dataset'), 'updated'):
-        _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
-        c = engine.connect()
-        c.execute('begin')
-        install_timestamp_trigger(c)
-        c.execute('commit')
-        c.close()
-    else:
-        _LOG.info("No schema updates required.")
+def _ensure_extension(engine, extension_name="POSTGIS"):
+    sql = f'create extension if not exists {extension_name}'
+    engine.execute(sql)
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):

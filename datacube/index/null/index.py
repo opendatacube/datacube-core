@@ -11,6 +11,7 @@ from datacube.index.null._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver
 from datacube.model import MetadataType
 from datacube.model.fields import get_dataset_fields
+from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
 
@@ -61,6 +62,10 @@ class Index(AbstractIndex):
 
     def close(self):
         pass
+
+    def create_spatial_index(self, crs: CRS) -> bool:
+        _LOG.warning("null driver does not support spatio-temporal indexes")
+        return False
 
     def __repr__(self):
         return "Index<null>"

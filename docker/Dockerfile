@@ -4,8 +4,9 @@
 ## Copyright (c) 2015-2020 ODC Contributors
 ## SPDX-License-Identifier: Apache-2.0
 ##
-ARG V_PG=12
 FROM osgeo/gdal:ubuntu-small-3.4.1
+ARG V_PG=12
+ARG V_PGIS=12-postgis-3
 
 # Update and install Ubuntu packages
 
@@ -13,6 +14,7 @@ USER root
 RUN apt-get update -y \
     && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
+    && echo Doing postgresql-${PGIS} \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-change-held-packages --fix-missing --no-install-recommends \
         libpq-dev libudunits2-dev \
         git \
@@ -22,6 +24,7 @@ RUN apt-get update -y \
         redis-server \
         postgresql-client-${V_PG} \
         postgresql-${V_PG} \
+        postgresql-${V_PGIS} \
         sudo make graphviz \
         tini \
     && apt-get clean

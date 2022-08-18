@@ -7,6 +7,7 @@ Tables for indexing the datasets which were ingested into the AGDC.
 """
 
 import logging
+from typing import Type
 
 from sqlalchemy.orm import aliased, registry, relationship, column_property
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text
@@ -166,3 +167,38 @@ class DatasetSource:
     classifier = Column(String, nullable=False, comment="""An identifier for this source dataset.
 E.g. the dataset type ('ortho', 'nbar'...) if there's only one source of each type, or a datestamp
 for a time-range summary.""")
+
+
+class SpatialIndex:
+    """
+    Base class for dynamically SpatialIndex ORM models (See _spatial.py)
+    """
+
+
+@orm_registry.mapped
+class SpatialIndexRecord:
+    __tablename__ = "spatial_indicies"
+    __table_args__ = (
+        _core.METADATA,
+        {
+            "schema": sql.SCHEMA_NAME,
+            "comment": "Record of the existence of a Spatial Index Table for an SRID/CRS",
+        }
+    )
+    srid = Column(SmallInteger, primary_key=True, autoincrement=False)
+    table_name = Column(String,
+                        unique=True, nullable=True,
+                        comment="The name of the table implementing the index - DO NOT CHANGE")
+    added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
+    added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
+
+    @classmethod
+    def from_spindex(cls, spindex: Type[SpatialIndex]) -> "SpatialIndexRecord":
+        return cls(srid=spindex.__tablename__[8:],
+                   table_name=spindex.__tablename__)
+
+
+ALL_STATIC_TABLES = [
+    MetadataType.__table__, Product.__table__, Dataset.__table__,
+    DatasetLocation.__table__, DatasetSource.__table__, SpatialIndexRecord.__table__
+]
