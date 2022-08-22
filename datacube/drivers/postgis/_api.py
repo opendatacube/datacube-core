@@ -20,12 +20,13 @@ from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Optional, Sequence
 
 from sqlalchemy.engine import Connection
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
+from utils.geometry import CRS
 from . import _core
 from . import _dynamic as dynamic
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
@@ -598,6 +599,21 @@ class PostgisDbAPI(object):
         )
 
         return select((time_ranges.c.time_period, count_query.label('dataset_count')))
+
+    def update_spindex(self, crs: Optional[CRS] = None,
+                       product_names: Sequence[str]=[],
+                       dsids: Sequence[str] = []) -> int:
+        """
+        Update a spatial index
+        :param crs: CRS for Spatial Index to update, or None for all Spatial Indexes
+        :param product_names: Product names to update
+        :param dsids: Dataset IDs to update
+
+        if neither product_names nor dataset ids are supplied, update for all datasets.
+
+        :return:  Number of spatial index entries updated or verified as unindexed.
+        """
+        # TODO
 
     @staticmethod
     def _join_tables(source_table, expressions=None, fields=None):
