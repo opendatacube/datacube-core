@@ -27,11 +27,11 @@ babel==2.10.3
     # via sphinx
 bleach==5.0.1
     # via readme-renderer
-boto3==1.24.51
+boto3==1.24.56
     # via
     #   -r constraints.in
     #   moto
-botocore==1.27.51
+botocore==1.27.56
     # via
     #   boto3
     #   moto
@@ -55,7 +55,7 @@ cftime==1.6.1
     #   cf-units
     #   compliance-checker
     #   netcdf4
-charset-normalizer==2.1.0
+charset-normalizer==2.1.1
     # via requests
 ciso8601==2.2.0
     # via -r constraints.in
@@ -87,7 +87,7 @@ commonmark==0.9.1
     #   rich
 compliance-checker==4.3.4
     # via -r constraints.in
-coverage==6.4.3
+coverage==6.4.4
     # via pytest-cov
 cryptography==37.0.4
     # via
@@ -95,7 +95,7 @@ cryptography==37.0.4
     #   secretstorage
 cycler==0.11.0
     # via matplotlib
-dask==2022.8.0
+dask==2022.8.1
     # via
     #   -r constraints.in
     #   distributed
@@ -103,7 +103,7 @@ decorator==5.1.1
     # via validators
 deprecated==1.2.13
     # via redis
-distributed==2022.8.0
+distributed==2022.8.1
     # via -r constraints.in
 docutils==0.17.1
     # via
@@ -116,7 +116,7 @@ exceptiongroup==1.0.0rc8
     # via hypothesis
 fiona==1.8.21
     # via -r constraints.in
-fonttools==4.34.4
+fonttools==4.36.0
     # via matplotlib
 fsspec==2022.7.1
     # via dask
@@ -126,7 +126,7 @@ greenlet==1.1.2
     # via sqlalchemy
 heapdict==1.0.1
     # via zict
-hypothesis==6.54.3
+hypothesis==6.54.4
     # via -r constraints.in
 idna==3.3
     # via requests
@@ -160,7 +160,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonschema==4.9.1
+jsonschema==4.14.0
     # via -r constraints.in
 keyring==23.8.2
     # via twine
@@ -184,7 +184,7 @@ matplotlib==3.5.3
     # via -r constraints.in
 mccabe==0.6.1
     # via pylint
-moto==3.1.18
+moto==4.0.0
     # via -r constraints.in
 msgpack==1.0.4
     # via distributed
@@ -245,7 +245,7 @@ pycparser==2.21
     # via cffi
 pygeoif==0.7
     # via compliance-checker
-pygments==2.12.0
+pygments==2.13.0
     # via
     #   readme-renderer
     #   rich
@@ -298,15 +298,15 @@ pyyaml==6.0
     #   dask
     #   distributed
     #   owslib
-rasterio==1.2.10
+rasterio==1.3.2
     # via -r constraints.in
-readme-renderer==36.0
+readme-renderer==37.0
     # via twine
 recommonmark==0.7.1
     # via -r constraints.in
 redis==4.3.4
     # via -r constraints.in
-regex==2022.7.25
+regex==2022.8.17
     # via compliance-checker
 requests==2.28.1
     # via
@@ -331,7 +331,7 @@ secretstorage==3.3.3
     # via keyring
 setuptools-scm==7.0.5
     # via -r constraints.in
-shapely==1.8.2
+shapely==1.8.4
     # via -r constraints.in
 six==1.16.0
     # via
