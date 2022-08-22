@@ -4,9 +4,9 @@
 ## Copyright (c) 2015-2020 ODC Contributors
 ## SPDX-License-Identifier: Apache-2.0
 ##
-FROM osgeo/gdal:ubuntu-small-3.4.1
-ARG V_PG=12
-ARG V_PGIS=12-postgis-3
+FROM osgeo/gdal:ubuntu-small-latest
+ARG V_PG=14
+ARG V_PGIS=14-postgis-3
 
 # Update and install Ubuntu packages
 
@@ -14,10 +14,9 @@ USER root
 RUN apt-get update -y \
     && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
-    && echo Doing postgresql-${PGIS} \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-change-held-packages --fix-missing --no-install-recommends \
-        libpq-dev libudunits2-dev \
         git \
+        libpq-dev libudunits2-dev libproj-dev \
         python3-dev python3-distutils python3-pip \
         build-essential \
         postgresql \
