@@ -100,7 +100,7 @@ setup(
         'pandas',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=1.0.2,!=1.3.0',  # Multi-band re-project fixed in 1.0.2; warping broken in 1.3.0
+        'rasterio>=1.3.2',  # Warping broken in 1.3.0 and 1.3.1
         'sqlalchemy',
         'GeoAlchemy2',
         'toolz',
