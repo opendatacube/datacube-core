@@ -38,14 +38,15 @@ toolz
 # FOR INVESTIGATION: xarray 2022.6.0 breaks virtual products tests.
 xarray>=0.18,!=2022.6.0
 
-# pytest
-pytest==6.1.2
-pytest-cov==2.10.1
+# Previous pins were to very old versions
+# pytest Py3.10 requires >6.2.5
+pytest>=6.2.5
+pytest-cov>=3.0.0
 hypothesis>=6
 pytest-httpserver
 pytest-timeout
 
-# every new version finds new errors, so we pin it
+# every new version finds new errors, so we pin it (so old though!)
 pylint==2.4.4
 pycodestyle==2.5.0
 
