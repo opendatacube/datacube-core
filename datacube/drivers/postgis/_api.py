@@ -26,7 +26,8 @@ from sqlalchemy.engine import Connection
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
-from utils.geometry import CRS
+from datacube.utils import geometry
+from datacube.utils.geometry import CRS
 from . import _core
 from . import _dynamic as dynamic
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
@@ -265,12 +266,16 @@ class PostgisDbAPI(object):
         :rtype bool:
         """
         SpatialIndex = self._db.spatial_index(crs)
+        geom_alch = geom_alchemy(extent)
         r = self._connection.execute(
             insert(
                 SpatialIndex
             ).values(
                 dataset_ref=dataset_id,
-                extent=geom_alchemy(extent),
+                extent=geom_alch,
+            ).on_conflict_do_update(
+                index_elements=[SpatialIndex.dataset_ref],
+                set_=dict(extent=geom_alch)
             )
         )
         return r.rowcount > 0
@@ -600,20 +605,72 @@ class PostgisDbAPI(object):
 
         return select((time_ranges.c.time_period, count_query.label('dataset_count')))
 
-    def update_spindex(self, crs: Optional[CRS] = None,
+    def update_spindex(self, crs_seq: Sequence[CRS] = [],
                        product_names: Sequence[str]=[],
                        dsids: Sequence[str] = []) -> int:
         """
         Update a spatial index
-        :param crs: CRS for Spatial Index to update, or None for all Spatial Indexes
+        :param crs: CRSs for Spatial Indexes to update. Default=all indexes
         :param product_names: Product names to update
         :param dsids: Dataset IDs to update
 
         if neither product_names nor dataset ids are supplied, update for all datasets.
 
+        if both are supplied, both the named products and identified datasets are updated.
+
         :return:  Number of spatial index entries updated or verified as unindexed.
         """
-        # TODO
+        verified = 0
+        if crs_seq:
+            crses = [crs for crs in crs_seq]
+        else:
+            crses = self._db.spatial_indexes()
+
+        # Update implementation.
+        # Design will change, but this method should be fairly low level to be as efficient as possible
+        query = select(
+            Dataset.id,
+            Dataset.metadata_doc["grid_spatial"]["projection"]
+        ).select_from(Dataset)
+        if product_names:
+            query = query.join(Product)
+        if product_names and dsids:
+            query = query.where(
+                or_(
+                    Product.name.in_(product_names),
+                    Dataset.id.in_(dsids)
+                )
+            )
+        elif product_names:
+            query = query.where(
+                Product.name.in_(product_names)
+            )
+        elif dsids:
+            query = query.where(
+                Dataset.id.in_(dsids)
+            )
+        xytuple = lambda o: (o['x'], o['y'])
+        for result in self._connection.execute(query):
+            dsid = result[0]
+            native_crs = CRS(result[1]["spatial_reference"])
+            geom = None
+            valid_data = result[1].get('valid_data')
+            if valid_data:
+                geom = geometry.Geometry(valid_data, crs=native_crs)
+            else:
+                geo_ref_points = result[1].get('geo_ref_points')
+                if geo_ref_points:
+                    geom = geometry.polygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
+                                        crs=native_crs)
+            if not geom:
+                verified += 1
+                continue
+            for crs in crses:
+                project = geom.to_crs(crs)
+                self.insert_dataset_spatial(dsid, crs, project)
+                verified += 1
+
+        return verified
 
     @staticmethod
     def _join_tables(source_table, expressions=None, fields=None):

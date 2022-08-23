@@ -8,7 +8,7 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
                     List, Mapping, Optional,
-                    Tuple, Union)
+                    Tuple, Union, Sequence)
 from uuid import UUID
 
 from datacube.config import LocalConfig
@@ -991,6 +991,27 @@ class AbstractIndex(ABC):
         :return:
         """
         return []
+
+    def update_spatial_index(self,
+                             crses: Sequence[CRS] = [],
+                             product_names: Sequence[str] = [],
+                             dataset_ids: Sequence[DSID] = []
+                             ) -> int:
+        """
+        Update a spatial index
+        :param crs: CRSs for Spatial Indexes to update. Default=all indexes
+        :param product_names: Product names to update
+        :param dsids: Dataset IDs to update
+
+        If neither product_names nor dataset ids are supplied, update for all datasets.
+
+        If both are supplied, both the named products and identified datasets are updated.
+
+        If spatial indexes are not supported by the index driver, always return zero.
+
+        :return:  Number of spatial index entries updated or verified as unindexed.
+        """
+        return 0
 
     def __enter__(self):
         return self
