@@ -1,0 +1,114 @@
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/324fd220-388a-5501-bf2d-de00e78c93e6.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 324fd220-388a-5501-bf2d-de00e78c93e6
+
+label: S2A_MSIL2A_20220808T072631_N0400_R049_T37MCQ_20220808T111058
+product:
+  name: s2_l2a
+
+location: s3://deafrica-sentinel-2/sentinel-s2-l2a-cogs/37/M/CQ/2022/8/S2A_37MCQ_20220808_0_L2A/S2A_37MCQ_20220808_0_L2A.json
+
+crs: epsg:32737
+geometry:
+  type: Polygon
+  coordinates: [[[4.09799e+05, 9.390221e+06], [3.29704e+05, 9.390221e+06], [3.53943e+05,
+        9.500019e+06], [4.09799e+05, 9.500019e+06], [4.09799e+05, 9.390221e+06]]]
+grids:
+  g20m:
+    shape: [5490, 5490]
+    transform: [2.e+01, 0.e+00, 3.e+05, 0.e+00, -2.e+01, 9.50002e+06, 0.e+00, 0.e+00,
+      1.e+00]
+  g60m:
+    shape: [1830, 1830]
+    transform: [6.e+01, 0.e+00, 3.e+05, 0.e+00, -6.e+01, 9.50002e+06, 0.e+00, 0.e+00,
+      1.e+00]
+  g320m:
+    shape: [343, 343]
+    transform: [3.2e+02, 0.e+00, 3.e+05, 0.e+00, -3.2e+02, 9.50002e+06, 0.e+00, 0.e+00,
+      1.e+00]
+  default:
+    shape: [10980, 10980]
+    transform: [1.e+01, 0.e+00, 3.e+05, 0.e+00, -1.e+01, 9.50002e+06, 0.e+00, 0.e+00,
+      1.e+00]
+
+properties:
+  datetime: '2022-08-08T07:51:36Z'
+  eo:cloud_cover: 5.028e+01
+  eo:constellation: sentinel-2
+  eo:gsd: 10  # Ground sample distance (m)
+  eo:instrument: MSI
+  eo:off_nadir: 0
+  eo:platform: sentinel-2a
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2022-08-08T07:51:36Z'
+  odc:region_code: 37MCQ
+  proj:epsg: 32737
+  sentinel:boa_offset_applied: true
+  sentinel:data_coverage: 6.191e+01
+  sentinel:grid_square: CQ
+  sentinel:latitude_band: M
+  sentinel:processing_baseline: '04.00'
+  sentinel:product_id: S2A_MSIL2A_20220808T072631_N0400_R049_T37MCQ_20220808T111058
+  sentinel:sequence: '0'
+  sentinel:utm_zone: 37
+  sentinel:valid_cloud_cover: true
+
+measurements:
+  AOT:
+    grid: g60m
+    path: AOT.tif
+  B01:
+    grid: g60m
+    path: B01.tif
+  B02:
+    path: B02.tif
+  B03:
+    path: B03.tif
+  B04:
+    path: B04.tif
+  B05:
+    grid: g20m
+    path: B05.tif
+  B06:
+    grid: g20m
+    path: B06.tif
+  B07:
+    grid: g20m
+    path: B07.tif
+  B08:
+    path: B08.tif
+  B09:
+    grid: g60m
+    path: B09.tif
+  B11:
+    grid: g20m
+    path: B11.tif
+  B12:
+    grid: g20m
+    path: B12.tif
+  B8A:
+    grid: g20m
+    path: B8A.tif
+  SCL:
+    grid: g20m
+    path: SCL.tif
+  WVP:
+    path: WVP.tif
+  visual:
+    path: TCI.tif
+  overview:
+    grid: g320m
+    path: L2A_PVI.tif
+
+accessories:
+  info:
+    path: https://roda.sentinel-hub.com/sentinel-s2-l2a/tiles/37/M/CQ/2022/8/8/0/tileInfo.json
+  metadata:
+    path: https://roda.sentinel-hub.com/sentinel-s2-l2a/tiles/37/M/CQ/2022/8/8/0/metadata.xml
+  thumbnail:
+    path: https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/37/M/CQ/2022/8/8/0/preview.jpg
+
+lineage: {}
+...

@@ -254,6 +254,25 @@ class PostgisDbAPI(object):
 
         return r.rowcount > 0
 
+    @staticmethod
+    def _sanitise_extent(extent, crs):
+        if not crs.valid_region:
+            # No valid region on CRS, just reproject
+            return extent.to_crs(crs)
+        geo_extent = extent.to_crs(CRS("EPSG:4326"))
+        if crs.valid_region.contains(geo_extent):
+            # Valid region contains extent, just reproject
+            return extent.to_crs(crs)
+        if not crs.valid_region.intersects(geo_extent):
+            # Extent is entirely outside of valid region - return None
+            return None
+        # Clip to valid region and reproject
+        valid_extent = geo_extent & crs.valid_region
+        if valid_extent.wkt == "POLYGON EMPTY":
+            # Extent is entirely outside of valid region - return None
+            return None
+        return valid_extent.to_crs(crs)
+
     def insert_dataset_spatial(self, dataset_id, crs, extent):
         """
         Add a spatial index entry for a dataset if it is not already recorded.
@@ -265,6 +284,9 @@ class PostgisDbAPI(object):
         :type extent: Geometry
         :rtype bool:
         """
+        extent = self._sanitise_extent(extent, crs)
+        if extent is None:
+            return False
         SpatialIndex = self._db.spatial_index(crs)
         geom_alch = geom_alchemy(extent)
         r = self._connection.execute(
@@ -666,8 +688,7 @@ class PostgisDbAPI(object):
                 verified += 1
                 continue
             for crs in crses:
-                project = geom.to_crs(crs)
-                self.insert_dataset_spatial(dsid, crs, project)
+                self.insert_dataset_spatial(dsid, crs, geom)
                 verified += 1
 
         return verified

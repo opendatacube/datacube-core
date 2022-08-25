@@ -1,0 +1,144 @@
+---
+# Product
+# url: https://explorer.digitalearth.africa/products/s2_l2a.odc-product.yaml
+name: s2_l2a
+metadata_type: eo3
+description: Sentinel-2a and Sentinel-2b imagery, processed to Level 2A (Surface Reflectance)
+  and converted to Cloud Optimized GeoTIFFs
+metadata:
+  product:
+    name: s2_l2a
+measurements:
+- name: B01
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_01
+  - coastal_aerosol
+- name: B02
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_02
+  - blue
+- name: B03
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_03
+  - green
+- name: B04
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_04
+  - red
+- name: B05
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_05
+  - red_edge_1
+- name: B06
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_06
+  - red_edge_2
+- name: B07
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_07
+  - red_edge_3
+- name: B08
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_08
+  - nir
+  - nir_1
+- name: B8A
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_8a
+  - nir_narrow
+  - nir_2
+- name: B09
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_09
+  - water_vapour
+- name: B11
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_11
+  - swir_1
+  - swir_16
+- name: B12
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_12
+  - swir_2
+  - swir_22
+- name: SCL
+  dtype: uint8
+  units: '1'
+  nodata: 0
+  aliases:
+  - mask
+  - qa
+  flags_definition:
+    qa:
+      bits:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      values:
+        '0': no data
+        '1': saturated or defective
+        '2': dark area pixels
+        '3': cloud shadows
+        '4': vegetation
+        '5': bare soils
+        '6': water
+        '7': unclassified
+        '8': cloud medium probability
+        '9': cloud high probability
+        '10': thin cirrus
+        '11': snow or ice
+      description: Sen2Cor Scene Classification
+- name: AOT
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - aerosol_optical_thickness
+- name: WVP
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - scene_average_water_vapour
+...
