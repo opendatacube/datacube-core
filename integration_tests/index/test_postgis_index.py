@@ -81,7 +81,6 @@ def test_spatial_index_crs_santise():
     epsg3577 = CRS("EPSG:3577")
     from datacube.drivers.postgis._api import PostgisDbAPI
     from datacube.utils.geometry import polygon
-    from math import isclose
     # EPSG:4326 polygons to be converted in EPSG:3577
     # Equal to entire valid region
     entire = polygon((

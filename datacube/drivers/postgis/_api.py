@@ -20,7 +20,7 @@ from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
-from typing import Iterable, Tuple, Optional, Sequence
+from typing import Iterable, Tuple, Sequence
 
 from sqlalchemy.engine import Connection
 
@@ -175,8 +175,8 @@ def get_dataset_fields(metadata_type_definition):
 
 
 class PostgisDbAPI(object):
-    def __init__(self, parentDb, connection):
-        self._db = parentDb
+    def __init__(self, parentdb, connection):
+        self._db = parentdb
         self._connection = connection
 
     @property
@@ -628,7 +628,7 @@ class PostgisDbAPI(object):
         return select((time_ranges.c.time_period, count_query.label('dataset_count')))
 
     def update_spindex(self, crs_seq: Sequence[CRS] = [],
-                       product_names: Sequence[str]=[],
+                       product_names: Sequence[str] = [],
                        dsids: Sequence[str] = []) -> int:
         """
         Update a spatial index
@@ -671,7 +671,10 @@ class PostgisDbAPI(object):
             query = query.where(
                 Dataset.id.in_(dsids)
             )
-        xytuple = lambda o: (o['x'], o['y'])
+
+        def xytuple(o):
+            return (o['x'], o['y'])
+
         for result in self._connection.execute(query):
             dsid = result[0]
             native_crs = CRS(result[1]["spatial_reference"])
@@ -682,8 +685,10 @@ class PostgisDbAPI(object):
             else:
                 geo_ref_points = result[1].get('geo_ref_points')
                 if geo_ref_points:
-                    geom = geometry.polygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
-                                        crs=native_crs)
+                    geom = geometry.polygon(
+                        [xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
+                        crs=native_crs
+                    )
             if not geom:
                 verified += 1
                 continue
