@@ -84,15 +84,35 @@ def test_spatial_index_crs_santise():
     from math import isclose
     # EPSG:4326 polygons to be converted in EPSG:3577
     # Equal to entire valid region
-    entire = polygon(((112.85, -43.7), (112.85, -9.86), (153.69, -9.86), (153.69, -43.7), (112.85, -43.7)), crs=epsg4326)
+    entire = polygon((
+        (112.85, -43.7),
+        (112.85, -9.86),
+        (153.69, -9.86),
+        (153.69, -43.7),
+        (112.85, -43.7)), crs=epsg4326)
     # inside valid region
-    valid = polygon(((130.15, -25.7), (130.15, -19.86), (135.22, -19.86), (135.22, -25.7), (130.15, -25.7)), crs=epsg4326)
+    valid = polygon((
+        (130.15, -25.7),
+        (130.15, -19.86),
+        (135.22, -19.86),
+        (135.22, -25.7),
+        (130.15, -25.7)), crs=epsg4326)
     # completely outside valid region
-    invalid = polygon(((-10.15, 25.7), (-10.15, 33.86), (5.22, 33.86), (5.22, 25.7), (-10.15, 25.7)), crs=epsg4326)
+    invalid = polygon((
+        (-10.15, 25.7),
+        (-10.15, 33.86),
+        (5.22, 33.86),
+        (5.22, 25.7),
+        (-10.15, 25.7)), crs=epsg4326)
     # intersects valid region
-    partial = polygon(((103.15, -25.7), (103.15, -19.86), (135.22, -19.86), (135.22, -25.7), (103.15, -25.7)), crs=epsg4326)
+    partial = polygon((
+        (103.15, -25.7),
+        (103.15, -19.86),
+        (135.22, -19.86),
+        (135.22, -25.7),
+        (103.15, -25.7)), crs=epsg4326)
 
     assert PostgisDbAPI._sanitise_extent(entire, epsg3577) == entire.to_crs("EPSG:3577")
     assert PostgisDbAPI._sanitise_extent(valid, epsg3577) == valid.to_crs("EPSG:3577")
-    assert PostgisDbAPI._sanitise_extent(partial, epsg3577).area < partial.to_crs("EPSG:3577").area
     assert PostgisDbAPI._sanitise_extent(invalid, epsg3577) is None
+    assert PostgisDbAPI._sanitise_extent(partial, epsg3577).area < partial.to_crs("EPSG:3577").area
