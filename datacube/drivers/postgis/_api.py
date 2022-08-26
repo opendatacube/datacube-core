@@ -285,7 +285,7 @@ class PostgisDbAPI(object):
         extent = self._sanitise_extent(extent, crs)
         if extent is None:
             return False
-        SpatialIndex = self._db.spatial_index(crs) # noqa: N806
+        SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
         geom_alch = geom_alchemy(extent)
         r = self._connection.execute(
             insert(
@@ -402,7 +402,7 @@ class PostgisDbAPI(object):
             )
         )
         for crs in self._db.spatial_indexes():
-            SpatialIndex = self._db.spatial_index(crs) # noqa: N806
+            SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
             self._connection.execute(
                 delete(
                     SpatialIndex
