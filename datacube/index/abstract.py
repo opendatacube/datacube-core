@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
+import logging
 from pathlib import Path
 
 from abc import ABC, abstractmethod
@@ -19,6 +20,8 @@ from datacube.utils import cached_property, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset
 from datacube.utils.geometry import CRS
 
+
+_LOG = logging.getLogger(__name__)
 
 class AbstractUserResource(ABC):
     """
@@ -990,6 +993,7 @@ class AbstractIndex(ABC):
                         indexes recently created in another datacube session.
         :return:
         """
+        _LOG.warning("Spatial index API is unstable and may change between releases.")
         return []
 
     def update_spatial_index(self,
@@ -1011,6 +1015,7 @@ class AbstractIndex(ABC):
 
         :return:  Number of spatial index entries updated or verified as unindexed.
         """
+        _LOG.warning("Spatial index API is unstable and may change between releases.")
         return 0
 
     def __enter__(self):
