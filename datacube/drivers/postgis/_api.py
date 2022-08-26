@@ -22,8 +22,6 @@ from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from typing import Iterable, Tuple, Sequence
 
-from sqlalchemy.engine import Connection
-
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils import geometry
