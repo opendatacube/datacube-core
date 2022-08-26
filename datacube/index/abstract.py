@@ -23,6 +23,7 @@ from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
 
+
 class AbstractUserResource(ABC):
     """
     Abstract base class for the User portion of an index api.
