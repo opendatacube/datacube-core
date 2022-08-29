@@ -345,6 +345,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     index.datasets.add(child, with_lineage=False)
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_index_dataset_with_location(index: Index, default_metadata_type: MetadataType):
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()

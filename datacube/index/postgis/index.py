@@ -3,10 +3,10 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Iterable
+from typing import Iterable, Sequence
 
 from datacube.drivers.postgis import PostGisDb
-from datacube.index.postgis._datasets import DatasetResource  # type: ignore
+from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore
 from datacube.index.postgis._metadata_types import MetadataTypeResource
 from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
@@ -118,6 +118,14 @@ WARNING: Database schema and internal APIs may change significantly between rele
 
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
         return self._db.spatial_indexes(refresh)
+
+    def update_spatial_index(self,
+                             crses: Sequence[CRS] = [],
+                             product_names: Sequence[str] = [],
+                             dataset_ids: Sequence[DSID] = []
+                             ) -> int:
+        with self._db.connect() as conn:
+            return conn.update_spindex(crses, product_names, dataset_ids)
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)

@@ -236,10 +236,10 @@ class PostGisDb(object):
             self.spindexes[crs] = spidx
         return spidx
 
-    def spatial_index(self, crs: "datacube.utils.geometry.CRS") -> Optional[Type[SpatialIndex]]:
-        return self.spindexes.get(CRS)
+    def spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
+        return self.spindexes.get(crs)
 
-    def spatial_indexes(self, refresh=False) -> Iterable[Any]:
+    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
         if refresh:
             self._refresh_spindexes()
         return list(self.spindexes.keys())
@@ -260,7 +260,7 @@ class PostGisDb(object):
         connection from being reused while borrowed.
         """
         with self._engine.connect() as connection:
-            yield _api.PostgisDbAPI(connection)
+            yield _api.PostgisDbAPI(self, connection)
             connection.close()
 
     @contextmanager
@@ -282,7 +282,7 @@ class PostGisDb(object):
         with self._engine.connect() as connection:
             connection.execute(text('BEGIN'))
             try:
-                yield _api.PostgisDbAPI(connection)
+                yield _api.PostgisDbAPI(self, connection)
                 connection.execute(text('COMMIT'))
             except Exception:  # pylint: disable=broad-except
                 connection.execute(text('ROLLBACK'))

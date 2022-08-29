@@ -120,6 +120,15 @@ def eo3_wo_dataset_doc():
 
 
 @pytest.fixture
+def eo3_africa_dataset_doc():
+    return (
+        get_eo3_test_data_doc("s2_africa_dataset.yaml"),
+        's3://deafrica-sentinel-2/sentinel-s2-l2a-cogs/37/M/CQ/'
+        '2022/8/S2A_37MCQ_20220808_0_L2A/S2A_37MCQ_20220808_0_L2A.json'
+    )
+
+
+@pytest.fixture
 def datasets_with_unembedded_lineage_doc():
     return [
         (
@@ -150,6 +159,11 @@ def base_eo3_product_doc():
     return get_eo3_test_data_doc("ga_ls_wo_3.odc-product.yaml")
 
 
+@pytest.fixture
+def africa_s2_product_doc():
+    return get_eo3_test_data_doc("s2_africa_product.yaml")
+
+
 def doc_to_ds(index, product_name, ds_doc, ds_path):
     from datacube.index.hl import Doc2Dataset
     resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
@@ -174,6 +188,11 @@ def ls8_eo3_product(index, extended_eo3_metadata_type, extended_eo3_product_doc)
 @pytest.fixture
 def wo_eo3_product(index, base_eo3_product_doc):
     return index.products.add_document(base_eo3_product_doc)
+
+
+@pytest.fixture
+def africa_s2_eo3_product(index, africa_s2_product_doc):
+    return index.products.add_document(africa_s2_product_doc)
 
 
 @pytest.fixture
@@ -209,6 +228,13 @@ def wo_eo3_dataset(index, wo_eo3_product, eo3_wo_dataset_doc, ls8_eo3_dataset):
     return doc_to_ds(index,
                      wo_eo3_product.name,
                      *eo3_wo_dataset_doc)
+
+
+@pytest.fixture
+def africa_eo3_dataset(index, africa_s2_eo3_product, eo3_africa_dataset_doc):
+    return doc_to_ds(index,
+                     africa_s2_eo3_product.name,
+                     *eo3_africa_dataset_doc)
 
 
 @pytest.fixture

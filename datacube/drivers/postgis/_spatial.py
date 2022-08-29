@@ -18,7 +18,7 @@ from sqlalchemy.engine import Connectable
 from sqlalchemy import Column
 from sqlalchemy.orm import Session
 
-from datacube.utils.geometry import CRS
+from datacube.utils.geometry import CRS, Geometry as Geom, multipolygon
 from ._core import METADATA
 from .sql import SCHEMA_NAME
 from ._schema import orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
@@ -143,3 +143,13 @@ def spindexes(engine: Connectable) -> Mapping[CRS, Type[SpatialIndex]]:
             crs = CRS(f'EPSG:{epsg}')
             out[crs] = spindex
     return out
+
+
+def geom_alchemy(geom: Geom) -> str:
+    if geom.type == "Polygon":
+        # Promote to multipolygon (is there a more elegant way to do this??
+        polycoords = [list(geom.geom.exterior.coords)]
+        for interior in geom.geom.interiors:
+            polycoords.append(list(interior.coords))
+        geom = multipolygon([polycoords], crs=geom.crs)
+    return f"SRID={geom.crs.epsg};{geom.wkt}"

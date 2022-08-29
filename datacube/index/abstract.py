@@ -3,12 +3,13 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
+import logging
 from pathlib import Path
 
 from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
                     List, Mapping, Optional,
-                    Tuple, Union)
+                    Tuple, Union, Sequence)
 from uuid import UUID
 
 from datacube.config import LocalConfig
@@ -18,6 +19,9 @@ from datacube.model import DatasetType as Product
 from datacube.utils import cached_property, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset
 from datacube.utils.geometry import CRS
+
+
+_LOG = logging.getLogger(__name__)
 
 
 class AbstractUserResource(ABC):
@@ -990,7 +994,30 @@ class AbstractIndex(ABC):
                         indexes recently created in another datacube session.
         :return:
         """
+        _LOG.warning("Spatial index API is unstable and may change between releases.")
         return []
+
+    def update_spatial_index(self,
+                             crses: Sequence[CRS] = [],
+                             product_names: Sequence[str] = [],
+                             dataset_ids: Sequence[DSID] = []
+                             ) -> int:
+        """
+        Update a spatial index
+        :param crs: CRSs for Spatial Indexes to update. Default=all indexes
+        :param product_names: Product names to update
+        :param dsids: Dataset IDs to update
+
+        If neither product_names nor dataset ids are supplied, update for all datasets.
+
+        If both are supplied, both the named products and identified datasets are updated.
+
+        If spatial indexes are not supported by the index driver, always return zero.
+
+        :return:  Number of spatial index entries updated or verified as unindexed.
+        """
+        _LOG.warning("Spatial index API is unstable and may change between releases.")
+        return 0
 
     def __enter__(self):
         return self
