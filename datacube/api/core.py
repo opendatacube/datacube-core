@@ -182,7 +182,7 @@ class Datacube(object):
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
              skip_broken_datasets=False, dask_chunks=None, like=None, fuse_func=None, align=None,
-             datasets=None, dataset_predicate=None, progress_cbk=None, **query):
+             datasets=None, dataset_predicate=None, progress_cbk=None, patch_url=None, **query):
         """
         Load data as an ``xarray.Dataset`` object.
         Each measurement will be a data variable in the :class:`xarray.Dataset`.
@@ -376,6 +376,9 @@ class Datacube(object):
             if supplied will be called for every file read with ``files_processed_so_far, total_files``. This is
             only applicable to non-lazy loads, ignored when using dask.
 
+        :param Callable[[str], str], patch_url:
+            if supplied, will be used to patch/sign the url(s), as required to access some commercial archives.
+
         :return:
             Requested data in a :class:`xarray.Dataset`
 
@@ -434,7 +437,8 @@ class Datacube(object):
                                 dask_chunks=dask_chunks,
                                 skip_broken_datasets=skip_broken_datasets,
                                 progress_cbk=progress_cbk,
-                                extra_dims=extra_dims)
+                                extra_dims=extra_dims,
+                                patch_url=patch_url)
 
         return result
 
@@ -703,7 +707,8 @@ class Datacube(object):
             try:
                 _fuse_measurement(data_slice, datasets, geobox, m,
                                   skip_broken_datasets=skip_broken_datasets,
-                                  progress_cbk=_cbk, extra_dim_index=extra_dim_index)
+                                  progress_cbk=_cbk, extra_dim_index=extra_dim_index,
+                                  patch_url=patch_url)
             except (TerminateCurrentLoad, KeyboardInterrupt):
                 data.attrs['dc_partial_load'] = True
                 return data
@@ -713,7 +718,7 @@ class Datacube(object):
     @staticmethod
     def load_data(sources, geobox, measurements, resampling=None,
                   fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
-                  progress_cbk=None, extra_dims=None,
+                  progress_cbk=None, extra_dims=None, patch_url=None,
                   **extra):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
@@ -757,13 +762,18 @@ class Datacube(object):
         :param ExtraDimensions extra_dims:
             A ExtraDimensions describing the any additional dimensions on top of (t, y, x)
 
+        :param Callable[[str], str], patch_url:
+            if supplied, will be used to patch/sign the url(s), as required to access some commercial archives.
+
         :rtype: xarray.Dataset
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
         measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
 
+
         if dask_chunks is not None:
+            # TODO: url mangler for Dask?
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
                                        skip_broken_datasets=skip_broken_datasets,
                                        extra_dims=extra_dims)
@@ -771,7 +781,8 @@ class Datacube(object):
             return Datacube._xr_load(sources, geobox, measurements,
                                      skip_broken_datasets=skip_broken_datasets,
                                      progress_cbk=progress_cbk,
-                                     extra_dims=extra_dims)
+                                     extra_dims=extra_dims,
+                                     patch_url=patch_url)
 
     def __str__(self):
         return "Datacube<index={!r}>".format(self.index)
@@ -885,24 +896,29 @@ def select_datasets_inside_polygon(datasets, polygon):
             yield dataset
 
 
-def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, prepend_dims=0, extra_dim_index=None):
+def fuse_lazy(datasets, geobox, measurement,
+              skip_broken_datasets=False, prepend_dims=0, extra_dim_index=None, patch_url=None):
     prepend_shape = (1,) * prepend_dims
     data = numpy.full(geobox.shape, measurement.nodata, dtype=measurement.dtype)
     _fuse_measurement(data, datasets, geobox, measurement,
                       skip_broken_datasets=skip_broken_datasets,
-                      extra_dim_index=extra_dim_index)
+                      extra_dim_index=extra_dim_index,
+                      patch_url=patch_url)
     return data.reshape(prepend_shape + geobox.shape)
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
                       progress_cbk=None,
-                      extra_dim_index=None):
+                      extra_dim_index=None,
+                      patch_url=None):
     srcs = []
     for ds in datasets:
         src = None
         with ignore_exceptions_if(skip_broken_datasets):
-            src = new_datasource(BandInfo(ds, measurement.name, extra_dim_index=extra_dim_index))
+            src = new_datasource(
+                BandInfo(ds, measurement.name, extra_dim_index=extra_dim_index, patch_url=patch_url)
+            )
 
         if src is None:
             if not skip_broken_datasets:
