@@ -18,8 +18,7 @@ from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
 from datacube.utils import cached_property, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset
-from datacube.utils.geometry import CRS
-
+from datacube.utils.geometry import CRS, Geometry, MaybeCRS
 
 _LOG = logging.getLogger(__name__)
 
@@ -905,6 +904,20 @@ class AbstractDatasetResource(ABC):
                       product definitions and/or dataset table.
         :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
         property functions).
+        """
+
+    @abstractmethod
+    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+        """
+        Return the combined spatial extent of the nominated datasets.
+
+        Uses spatial index.
+        Returns None if no index for the CRS, or if no identified datasets are indexed in the relevant spatial index.
+        Result will not include extents of datasets that cannot be validly projected into the CRS.
+
+        :param ids: An iterable of dataset IDs
+        :param crs: A CRS (defaults to EPSG:4326)
+        :return: The combined spatial extents of the datasets.
         """
 
 

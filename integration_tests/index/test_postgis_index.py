@@ -102,7 +102,7 @@ def test_spatial_index_crs_santise():
         (-10.15, 25.7),
         (-10.15, 33.86),
         (5.22, 33.86),
-        (5.22, 25.7
+        (5.22, 25.7),
         (-10.15, 25.7)), crs=epsg4326)
     # intersects valid region
     partial = polygon((

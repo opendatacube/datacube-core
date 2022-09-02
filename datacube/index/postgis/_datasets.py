@@ -941,3 +941,6 @@ class DatasetResource(AbstractDatasetResource):
             custom_exprs.append(fields.as_expression(custom_field, custom_query[key]))
 
         return custom_exprs
+
+    def spatial_extent(self, ids, crs=None):
+        return None
