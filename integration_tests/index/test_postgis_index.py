@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import pytest
 
+from datacube.model import Range
 from datacube.index import Index
 from datacube.utils.geometry import CRS
 
@@ -101,7 +102,7 @@ def test_spatial_index_crs_santise():
         (-10.15, 25.7),
         (-10.15, 33.86),
         (5.22, 33.86),
-        (5.22, 25.7),
+        (5.22, 25.7
         (-10.15, 25.7)), crs=epsg4326)
     # intersects valid region
     partial = polygon((
@@ -115,3 +116,16 @@ def test_spatial_index_crs_santise():
     assert PostgisDbAPI._sanitise_extent(valid, epsg3577) == valid.to_crs("EPSG:3577")
     assert PostgisDbAPI._sanitise_extent(invalid, epsg3577) is None
     assert PostgisDbAPI._sanitise_extent(partial, epsg3577).area < partial.to_crs("EPSG:3577").area
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_spatial_search(index,
+                   ls8_eo3_dataset, ls8_eo3_dataset2,
+                   ls8_eo3_dataset3, ls8_eo3_dataset4):
+    index.create_spatial_index(CRS("EPSG:4326"))
+    index.create_spatial_index(CRS("EPSG:3577"))
+    dss = index.datasets.search_eager(lat=Range(begin=-37.5, end=37.0), lon=Range(begin=148.5, end=149.0))
+    dssids = [ds.id for ds in dss]
+    assert len(dssids) == 2
+    assert ls8_eo3_dataset.id in dssids
+    assert ls8_eo3_dataset2.id in dssids

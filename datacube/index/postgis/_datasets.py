@@ -9,7 +9,7 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, Union, List
+from typing import Iterable, Union, List, Optional
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -17,11 +17,12 @@ from sqlalchemy import select, func
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID
-from datacube.model import Dataset, Product
+from datacube.model import Dataset, Product, Range
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
+from datacube.utils.geometry import CRS, Geometry, box, line, point
 from datacube.index import fields
 
 _LOG = logging.getLogger(__name__)
@@ -633,6 +634,12 @@ class DatasetResource(AbstractDatasetResource):
 
         for q, product in product_queries:
             _LOG.warning("Querying product %s", product)
+            # Extract Geospatial search geometry
+            geom = self._extract_geom_from_query(q)
+
+            assert "lat" not in q
+            assert "lon" not in q
+
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             select_fields = None
@@ -650,8 +657,60 @@ class DatasetResource(AbstractDatasetResource):
                            query_exprs,
                            select_fields=select_fields,
                            limit=limit,
-                           with_source_ids=with_source_ids
+                           with_source_ids=with_source_ids,
+                           geom=geom
                        ))
+
+    def _extract_geom_from_query(self, q):
+        # TODO: promote to index/abstract.py?
+        geom: Optional[Geometry] = None
+        if "geometry" in q:
+            # New geometry-style spatial query
+            geom_term = q.pop("geometry")
+            try:
+                geom = Geometry(geom_term)
+            except ValueError:
+                # Can't convert to single Geometry. If it is an iterable of Geometries, return the union
+                for term in geom_term:
+                    if geom is None:
+                        geom = Geometry(term)
+                    else:
+                        geom = geom.union(Geometry(term))
+            if "lat" in q or "lon" in q:
+                    raise ValueError("Cannot specify lat/lon AND geometry in the same query")
+        else:
+            # Old lat/lon--style spatial query
+            lat = q.pop("lat", None)
+            lon = q.pop("lon", None)
+            if lat is None:
+                lat = Range(begin=-90, end=90)
+            if lon is None:
+                lon = Range(begin=-180, end=180)
+            if isinstance(lat, Range) and isinstance(lon, Range):
+                # ranges for both - build a box.
+                geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=CRS("EPSG:4326"))
+            elif isinstance(lat, Range):
+                if isinstance(lon, (int, float)):
+                    # lat is a range, but lon is scalar - geom is a line
+                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
+                    geom = line([(lon, lat.begin), (lon, lat.end)], crs=CRS("EPSG:4326"))
+                else:
+                    raise ValueError("lon search term must be a Range or a numeric scalar")
+            elif isinstance(lon, Range):
+                if isinstance(lat, (int, float)):
+                    # lon is a range, but lat is scalar - geom is a line
+                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
+                    geom = line([(lon.begin, lat), (lon.end, lat)], crs=CRS("EPSG:4326"))
+                else:
+                    raise ValueError("lat search term must be a Range or a numeric scalar")
+            else:
+                if isinstance(lon, (int, float)) and isinstance(lat, (int, float)):
+                    # Lat and Lon are both scalars - geom is a point
+                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
+                    geom = point(lon, lat, crs=CRS("EPSG:4326"))
+                else:
+                    raise ValueError("lat and lon search terms must be of type Range or a numeric scalar")
+        return geom
 
     def _do_count_by_product(self, query):
         product_queries = self._get_product_queries(query)

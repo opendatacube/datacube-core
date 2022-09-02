@@ -13,6 +13,7 @@
 Persistence API implementation for postgis.
 """
 
+import json
 import logging
 import uuid  # noqa: F401
 from sqlalchemy import cast
@@ -455,15 +456,17 @@ class PostgisDbAPI(object):
 
         return [raw_expr(expression) for expression in expressions]
 
-    @staticmethod
-    def search_datasets_query(expressions, source_exprs=None,
-                              select_fields=None, with_source_ids=False, limit=None):
+    def search_datasets_query(self,
+                              expressions, source_exprs=None,
+                              select_fields=None, with_source_ids=False,
+                              limit=None, geom=None):
         """
         :type expressions: Tuple[Expression]
         :type source_exprs: Tuple[Expression]
         :type select_fields: Iterable[PgField]
         :type with_source_ids: bool
         :type limit: int
+        :type geom: Geometry
         :rtype: sqlalchemy.Expression
         """
         # TODO: lineage handling and source search
@@ -478,26 +481,48 @@ class PostgisDbAPI(object):
         else:
             select_columns = _dataset_select_fields()
 
+        if geom:
+            # Check geom CRS - do we have a spatial index for this CRS?
+            #           Yes? Use it!
+            #           No? Convert to 4326?  Means we need to elevate 4326 spatial index to a default
+            #               So just raise an error for now.
+            if not geom.crs:
+                raise ValueError("Search geometry must have a CRS")
+            SpatialIndex = self._db.spatial_index(geom.crs)   # noqa: N806
+            if SpatialIndex is None:
+                raise ValueError(f"Search geometry CRS ({geom.crs}) does not have a spatial index")
+            geom_js = json.dumps(geom.json)
+            _LOG.warning("geom json=%s", geom_js)
+            spatialquery = func.ST_Intersects(SpatialIndex.extent, geom_js)
+        else:
+            spatialquery = None
+            SpatialIndex = None  # noqa: N806
+
         raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
         join_tables = PostgisDbAPI._join_tables(Dataset, expressions, select_fields)
         where_expr = and_(Dataset.archived == None, *raw_expressions)
-
         query = select(select_columns).select_from(Dataset)
         for join in join_tables:
             query = query.join(join)
+        if spatialquery is not None:
+            where_expr = and_(where_expr, spatialquery)
+            query = query.join(SpatialIndex)
         query = query.where(where_expr).limit(limit)
+        _LOG.warning("query: %s", query)
         return query
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
-                        with_source_ids=False, limit=None):
+                        with_source_ids=False, limit=None,
+                        geom=None):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgis._fields.PgField]
         :type expressions: tuple[datacube.drivers.postgis._fields.PgExpression]
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
-                                                  select_fields, with_source_ids, limit)
+                                                  select_fields, with_source_ids,
+                                                  limit, geom=geom)
         _LOG.debug("search_datasets SQL: %s", str(select_query))
         return self._connection.execute(select_query)
 
