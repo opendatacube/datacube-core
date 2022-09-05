@@ -26,7 +26,7 @@ from typing import Iterable, Tuple, Sequence
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils import geometry
-from datacube.utils.geometry import CRS
+from datacube.utils.geometry import CRS, Geometry
 from . import _core
 from . import _dynamic as dynamic
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
@@ -301,6 +301,26 @@ class PostgisDbAPI(object):
         )
         return r.rowcount > 0
 
+    def spatial_extent(self, ids, crs):
+        SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+        if SpatialIndex is None:
+            return None
+        result = self._connection.execute(
+            select([
+                func.ST_AsGeoJSON(func.ST_Union(SpatialIndex.extent))
+            ]).select_from(
+                SpatialIndex
+            ).where(
+                SpatialIndex.dataset_ref.in_(ids)
+            )
+        )
+        for r in result:
+            extent_json = r[0]
+            if extent_json is None:
+                return None
+            return Geometry(json.loads(extent_json), crs=crs)
+        return None
+
     def contains_dataset(self, dataset_id):
         return bool(
             self._connection.execute(
@@ -491,9 +511,9 @@ class PostgisDbAPI(object):
             SpatialIndex = self._db.spatial_index(geom.crs)   # noqa: N806
             if SpatialIndex is None:
                 raise ValueError(f"Search geometry CRS ({geom.crs}) does not have a spatial index")
-            geom_js = json.dumps(geom.json)
-            _LOG.warning("geom json=%s", geom_js)
-            spatialquery = func.ST_Intersects(SpatialIndex.extent, geom_js)
+            geom_sql = geom_alchemy(geom)
+            _LOG.warning("geom sql=%s", geom_sql)
+            spatialquery = func.ST_Intersects(SpatialIndex.extent, geom_sql)
         else:
             spatialquery = None
             SpatialIndex = None  # noqa: N806

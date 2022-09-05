@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
+from math import isclose
 
 from datacube.model import Range
 from datacube.index import Index
@@ -119,11 +120,47 @@ def test_spatial_index_crs_santise():
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_spatial_extent(index,
+                        ls8_eo3_dataset, ls8_eo3_dataset2,
+                        ls8_eo3_dataset3, ls8_eo3_dataset4,
+                        africa_s2_eo3_product, africa_eo3_dataset):
+    epsg4326 = CRS("EPSG:4326")
+    epsg3577 = CRS("EPSG:3577")
+    index.create_spatial_index(epsg4326)
+    index.create_spatial_index(epsg3577)
+    index.update_spatial_index(crses=[epsg4326])
+    index.update_spatial_index(crses=[epsg3577])
+    ext1 = index.datasets.spatial_extent([ls8_eo3_dataset.id], CRS("EPSG:4326"))
+    ext2 = index.datasets.spatial_extent([ls8_eo3_dataset2.id], CRS("EPSG:4326"))
+    ext12 = index.datasets.spatial_extent([ls8_eo3_dataset.id, ls8_eo3_dataset2.id], CRS("EPSG:4326"))
+    assert ext1 is not None and ext2 is not None and ext12 is not None
+    assert ext1 == ext2
+    assert ext12.difference(ext1).area < 0.001
+    extau12 = index.datasets.spatial_extent([ls8_eo3_dataset.id, ls8_eo3_dataset2.id], CRS("EPSG:3577"))
+    extau12africa = index.datasets.spatial_extent(
+        [ls8_eo3_dataset.id, ls8_eo3_dataset2.id, africa_eo3_dataset.id],
+        CRS("EPSG:3577")
+    )
+    assert extau12 == extau12africa
+    ext3 = index.datasets.spatial_extent([ls8_eo3_dataset3.id], CRS("EPSG:4326"))
+    ext1234 = index.datasets.spatial_extent([
+        ls8_eo3_dataset.id, ls8_eo3_dataset2.id,
+        ls8_eo3_dataset3.id, ls8_eo3_dataset4.id
+                                            ], CRS("EPSG:4326"))
+    assert ext1.difference(ext1234).area < 0.001
+    assert ext3.difference(ext1234).area < 0.001
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_spatial_search(index,
-                   ls8_eo3_dataset, ls8_eo3_dataset2,
-                   ls8_eo3_dataset3, ls8_eo3_dataset4):
-    index.create_spatial_index(CRS("EPSG:4326"))
-    index.create_spatial_index(CRS("EPSG:3577"))
+                        ls8_eo3_dataset, ls8_eo3_dataset2,
+                        ls8_eo3_dataset3, ls8_eo3_dataset4):
+    epsg4326 = CRS("EPSG:4326")
+    epsg3577 = CRS("EPSG:3577")
+    index.create_spatial_index(epsg4326)
+    index.create_spatial_index(epsg3577)
+    index.update_spatial_index(crses=[epsg4326])
+    index.update_spatial_index(crses=[epsg3577])
     dss = index.datasets.search_eager(lat=Range(begin=-37.5, end=37.0), lon=Range(begin=148.5, end=149.0))
     dssids = [ds.id for ds in dss]
     assert len(dssids) == 2

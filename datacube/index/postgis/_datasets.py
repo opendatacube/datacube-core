@@ -682,6 +682,7 @@ class DatasetResource(AbstractDatasetResource):
             # Old lat/lon--style spatial query
             lat = q.pop("lat", None)
             lon = q.pop("lon", None)
+            delta = 0.000001
             if lat is None:
                 lat = Range(begin=-90, end=90)
             if lon is None:
@@ -691,23 +692,23 @@ class DatasetResource(AbstractDatasetResource):
                 geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=CRS("EPSG:4326"))
             elif isinstance(lat, Range):
                 if isinstance(lon, (int, float)):
-                    # lat is a range, but lon is scalar - geom is a line
+                    # lat is a range, but lon is scalar - geom is ideally a line
                     # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = line([(lon, lat.begin), (lon, lat.end)], crs=CRS("EPSG:4326"))
+                    geom = box(lon - delta, lat.begin, lon + delta, lat.end, crs=CRS("EPSG:4326"))
                 else:
                     raise ValueError("lon search term must be a Range or a numeric scalar")
             elif isinstance(lon, Range):
                 if isinstance(lat, (int, float)):
-                    # lon is a range, but lat is scalar - geom is a line
+                    # lon is a range, but lat is scalar - geom is ideally a line
                     # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = line([(lon.begin, lat), (lon.end, lat)], crs=CRS("EPSG:4326"))
+                    geom = box(lon.begin, lat - delta, lon.end, lat + delta, crs=CRS("EPSG:4326"))
                 else:
                     raise ValueError("lat search term must be a Range or a numeric scalar")
             else:
                 if isinstance(lon, (int, float)) and isinstance(lat, (int, float)):
-                    # Lat and Lon are both scalars - geom is a point
+                    # Lat and Lon are both scalars - geom is ideally point
                     # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = point(lon, lat, crs=CRS("EPSG:4326"))
+                    geom = box(lon - delta, lat - delta, lon + delta, lat + delta, crs=CRS("EPSG:4326"))
                 else:
                     raise ValueError("lat and lon search terms must be of type Range or a numeric scalar")
         return geom
@@ -942,5 +943,6 @@ class DatasetResource(AbstractDatasetResource):
 
         return custom_exprs
 
-    def spatial_extent(self, ids, crs=None):
-        return None
+    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+        with self._db.connect() as connection:
+            return connection.spatial_extent(ids, crs)
