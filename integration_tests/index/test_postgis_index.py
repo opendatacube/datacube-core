@@ -12,13 +12,13 @@ from datacube.utils.geometry import CRS
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_create_spatial_index(index: Index):
-    assert list(index.spatial_indexes()) == []
+    # Default spatial index for 4326
+    assert list(index.spatial_indexes()) == [CRS("EPSG:4326")]
     # WKT CRS which cannot be mapped to an EPSG number.
     assert not index.create_spatial_index(CRS(
         'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]]'
         ',PRIMEM["Weird",22.3],UNIT["Degree",0.017453292519943295]]'
     ))
-    assert index.create_spatial_index(CRS("EPSG:4326"))
     assert list(index.spatial_indexes()) == [CRS("EPSG:4326")]
     assert index.create_spatial_index(CRS("EPSG:3577"))
     assert index.create_spatial_index(CRS("WGS-84"))
@@ -27,7 +27,6 @@ def test_create_spatial_index(index: Index):
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_spatial_index_maintain(index: Index, ls8_eo3_product, eo3_ls8_dataset_doc):
-    index.create_spatial_index(CRS("EPSG:4326"))
     index.create_spatial_index(CRS("EPSG:3577"))
     assert set(index.spatial_indexes(refresh=True)) == {CRS("EPSG:3577"), CRS("EPSG:4326")}
     from datacube.index.hl import Doc2Dataset
@@ -48,7 +47,6 @@ def test_spatial_index_populate(index: Index,
                                 ls8_eo3_dataset, ls8_eo3_dataset2,
                                 ls8_eo3_dataset3, ls8_eo3_dataset4,
                                 wo_eo3_dataset):
-    index.create_spatial_index(CRS("EPSG:4326"))
     index.create_spatial_index(CRS("EPSG:3577"))
     assert set(index.spatial_indexes(refresh=True)) == {CRS("EPSG:3577"), CRS("EPSG:4326")}
     assert index.update_spatial_index(
@@ -71,10 +69,8 @@ def test_spatial_index_crs_validity(index: Index,
                                     africa_s2_eo3_product, africa_eo3_dataset):
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg4326)
     index.create_spatial_index(epsg3577)
     assert set(index.spatial_indexes(refresh=True)) == {epsg4326, epsg3577}
-    assert index.update_spatial_index(crses=[epsg4326]) == 2
     assert index.update_spatial_index(crses=[epsg3577]) == 2
 
 
@@ -126,9 +122,7 @@ def test_spatial_extent(index,
                         africa_s2_eo3_product, africa_eo3_dataset):
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg4326)
     index.create_spatial_index(epsg3577)
-    index.update_spatial_index(crses=[epsg4326])
     index.update_spatial_index(crses=[epsg3577])
     ext1 = index.datasets.spatial_extent([ls8_eo3_dataset.id], CRS("EPSG:4326"))
     ext2 = index.datasets.spatial_extent([ls8_eo3_dataset2.id], CRS("EPSG:4326"))
@@ -157,9 +151,7 @@ def test_spatial_search(index,
                         ls8_eo3_dataset3, ls8_eo3_dataset4):
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg4326)
     index.create_spatial_index(epsg3577)
-    index.update_spatial_index(crses=[epsg4326])
     index.update_spatial_index(crses=[epsg3577])
     dss = index.datasets.search_eager(lat=Range(begin=-37.5, end=37.0), lon=Range(begin=148.5, end=149.0))
     dssids = [ds.id for ds in dss]

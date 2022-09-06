@@ -654,7 +654,7 @@ def test_cli_info_eo3(index: Index,
     assert len(yaml_docs) == 1
 
     # We output properties in order for readability:
-    output_lines = [line for line in output_lines]
+    output_lines = set(line for line in output_lines)
     expected_lines = [
         "id: " + str(ls8_eo3_dataset.id),
         'product: ga_ls8c_ard_3',
@@ -669,8 +669,8 @@ def test_cli_info_eo3(index: Index,
         '    label: ga_ls8c_ard_3-0-0_090086_2016-05-12_final',
         '    landsat_product_id: LC08_L1TP_090086_20160512_20180203_01_T1',
         '    landsat_scene_id: LC80900862016133LGN02',
-        '    lat: {begin: -38.53212258920183, end: -36.41608009831069}',
-        '    lon: {begin: 147.65752456283738, end: 150.29802500180026}',
+        '    lat: {begin: -38.53221689818913, end: -36.41618895501644}',
+        '    lon: {begin: 147.65992717003462, end: 150.3003802932316}',
         '    platform: landsat-8',
         '    product_family: ard',
         '    region_code: 090086',

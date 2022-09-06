@@ -91,13 +91,16 @@ WARNING: Database schema and internal APIs may change significantly between rele
     def get_dataset_fields(cls, doc):
         return PostGisDb.get_dataset_fields(doc)
 
-    def init_db(self, with_default_types=True, with_permissions=True):
+    def init_db(self, with_default_types=True, with_permissions=True, with_default_spatial_index=True):
         is_new = self._db.init(with_permissions=with_permissions)
 
         if is_new and with_default_types:
             _LOG.info('Adding default metadata types.')
             for doc in default_metadata_type_docs():
                 self.metadata_types.add(self.metadata_types.from_doc(doc), allow_table_lock=True)
+
+        if is_new and with_default_spatial_index:
+            self.create_spatial_index(CRS("EPSG:4326"))
 
         return is_new
 

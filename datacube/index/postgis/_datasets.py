@@ -679,10 +679,14 @@ class DatasetResource(AbstractDatasetResource):
             if "lat" in q or "lon" in q:
                     raise ValueError("Cannot specify lat/lon AND geometry in the same query")
         else:
-            # Old lat/lon--style spatial query
+            # Old lat/lon--style spatial query (or no spatial query)
             lat = q.pop("lat", None)
             lon = q.pop("lon", None)
             delta = 0.000001
+            if lat is None and lon is None:
+                # No spatial query
+                return None
+
             if lat is None:
                 lat = Range(begin=-90, end=90)
             if lon is None:
@@ -711,6 +715,7 @@ class DatasetResource(AbstractDatasetResource):
                     geom = box(lon - delta, lat - delta, lon + delta, lat + delta, crs=CRS("EPSG:4326"))
                 else:
                     raise ValueError("lat and lon search terms must be of type Range or a numeric scalar")
+            wholeworld = box(-180, -90, 180, 90, crs=CRS("EPSG:4326"))
         return geom
 
     def _do_count_by_product(self, query):

@@ -512,7 +512,6 @@ class PostgisDbAPI(object):
             if SpatialIndex is None:
                 raise ValueError(f"Search geometry CRS ({geom.crs}) does not have a spatial index")
             geom_sql = geom_alchemy(geom)
-            _LOG.warning("geom sql=%s", geom_sql)
             spatialquery = func.ST_Intersects(SpatialIndex.extent, geom_sql)
         else:
             spatialquery = None
@@ -528,7 +527,6 @@ class PostgisDbAPI(object):
             where_expr = and_(where_expr, spatialquery)
             query = query.join(SpatialIndex)
         query = query.where(where_expr).limit(limit)
-        _LOG.warning("query: %s", query)
         return query
 
     def search_datasets(self, expressions,
