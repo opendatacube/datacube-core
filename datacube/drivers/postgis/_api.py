@@ -504,14 +504,17 @@ class PostgisDbAPI(object):
         if geom:
             # Check geom CRS - do we have a spatial index for this CRS?
             #           Yes? Use it!
-            #           No? Convert to 4326?  Means we need to elevate 4326 spatial index to a default
-            #               So just raise an error for now.
+            #           No? Convert to 4326 which we should always have a spatial index for by default
             if not geom.crs:
                 raise ValueError("Search geometry must have a CRS")
             SpatialIndex = self._db.spatial_index(geom.crs)   # noqa: N806
             if SpatialIndex is None:
-                raise ValueError(f"Search geometry CRS ({geom.crs}) does not have a spatial index")
+                _LOG.info("No spatial index for crs %s - converting to 4326", geom.crs)
+                default_crs = CRS("EPSG:4326")
+                geom = geom.to_crs(default_crs)
+                SpatialIndex = self._db.spatial_index(default_crs)  # noqa: N806
             geom_sql = geom_alchemy(geom)
+            _LOG.info("query geometry = %s (%s)", geom.json, geom.crs)
             spatialquery = func.ST_Intersects(SpatialIndex.extent, geom_sql)
         else:
             spatialquery = None

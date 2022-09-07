@@ -636,7 +636,6 @@ class DatasetResource(AbstractDatasetResource):
             _LOG.warning("Querying product %s", product)
             # Extract Geospatial search geometry
             geom = self._extract_geom_from_query(q)
-
             assert "lat" not in q
             assert "lon" not in q
 
@@ -660,64 +659,6 @@ class DatasetResource(AbstractDatasetResource):
                            with_source_ids=with_source_ids,
                            geom=geom
                        ))
-
-    def _extract_geom_from_query(self, q):
-        # TODO: promote to index/abstract.py?
-        geom: Optional[Geometry] = None
-        if "geometry" in q:
-            # New geometry-style spatial query
-            geom_term = q.pop("geometry")
-            try:
-                geom = Geometry(geom_term)
-            except ValueError:
-                # Can't convert to single Geometry. If it is an iterable of Geometries, return the union
-                for term in geom_term:
-                    if geom is None:
-                        geom = Geometry(term)
-                    else:
-                        geom = geom.union(Geometry(term))
-            if "lat" in q or "lon" in q:
-                    raise ValueError("Cannot specify lat/lon AND geometry in the same query")
-        else:
-            # Old lat/lon--style spatial query (or no spatial query)
-            lat = q.pop("lat", None)
-            lon = q.pop("lon", None)
-            delta = 0.000001
-            if lat is None and lon is None:
-                # No spatial query
-                _LOG.info("No spatial query")
-                return None
-
-            if lat is None:
-                lat = Range(begin=-90, end=90)
-            if lon is None:
-                lon = Range(begin=-180, end=180)
-            if isinstance(lat, Range) and isinstance(lon, Range):
-                # ranges for both - build a box.
-                geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=CRS("EPSG:4326"))
-            elif isinstance(lat, Range):
-                if isinstance(lon, (int, float)):
-                    # lat is a range, but lon is scalar - geom is ideally a line
-                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = box(lon - delta, lat.begin, lon + delta, lat.end, crs=CRS("EPSG:4326"))
-                else:
-                    raise ValueError("lon search term must be a Range or a numeric scalar")
-            elif isinstance(lon, Range):
-                if isinstance(lat, (int, float)):
-                    # lon is a range, but lat is scalar - geom is ideally a line
-                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = box(lon.begin, lat - delta, lon.end, lat + delta, crs=CRS("EPSG:4326"))
-                else:
-                    raise ValueError("lat search term must be a Range or a numeric scalar")
-            else:
-                if isinstance(lon, (int, float)) and isinstance(lat, (int, float)):
-                    # Lat and Lon are both scalars - geom is ideally point
-                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = box(lon - delta, lat - delta, lon + delta, lat + delta, crs=CRS("EPSG:4326"))
-                else:
-                    raise ValueError("lat and lon search terms must be of type Range or a numeric scalar")
-        _LOG.info("Spatial Query Geometry: %s", geom.wkt)
-        return geom
 
     def _do_count_by_product(self, query):
         product_queries = self._get_product_queries(query)

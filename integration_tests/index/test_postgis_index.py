@@ -134,19 +134,21 @@ def test_spatial_extent(index,
     assert ls8_eo3_dataset.extent.to_crs(epsg4326).intersects(ext12)
     assert ls8_eo3_dataset2.extent.to_crs(epsg4326).intersects(ext2)
     assert ls8_eo3_dataset2.extent.to_crs(epsg4326).intersects(ext12)
-    extau12 = index.datasets.spatial_extent([ls8_eo3_dataset.id, ls8_eo3_dataset2.id], CRS("EPSG:3577"))
+    extau12 = index.datasets.spatial_extent([ls8_eo3_dataset.id, ls8_eo3_dataset2.id], epsg3577)
     extau12africa = index.datasets.spatial_extent(
         [ls8_eo3_dataset.id, ls8_eo3_dataset2.id, africa_eo3_dataset.id],
-        CRS("EPSG:3577")
+        epsg3577
     )
     assert extau12 == extau12africa
-    ext3 = index.datasets.spatial_extent([ls8_eo3_dataset3.id], CRS("EPSG:4326"))
+    ext3 = index.datasets.spatial_extent([ls8_eo3_dataset3.id], epsg4326)
     ext1234 = index.datasets.spatial_extent([
         ls8_eo3_dataset.id, ls8_eo3_dataset2.id,
         ls8_eo3_dataset3.id, ls8_eo3_dataset4.id
-                                            ], CRS("EPSG:4326"))
+                                            ], epsg4326)
     assert ext1.difference(ext1234).area < 0.001
     assert ext3.difference(ext1234).area < 0.001
+    ext1_3577 = index.datasets.spatial_extent([ls8_eo3_dataset.id], epsg3577)
+    assert ext1_3577.intersects(ls8_eo3_dataset.extent._to_crs(epsg3577))
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
@@ -158,7 +160,11 @@ def test_spatial_search(index,
     index.create_spatial_index(epsg3577)
     index.update_spatial_index(crses=[epsg3577])
     # Test old style lat/lon search
-    dss = index.datasets.search_eager(product=ls8_eo3_dataset.type.name, lat=Range(begin=-37.5, end=37.0), lon=Range(begin=148.5, end=149.0))
+    dss = index.datasets.search_eager(
+        product=ls8_eo3_dataset.type.name,
+        lat=Range(begin=-37.5, end=37.0),
+        lon=Range(begin=148.5, end=149.0)
+    )
     dssids = [ds.id for ds in dss]
     assert len(dssids) == 2
     assert ls8_eo3_dataset.id in dssids
@@ -172,29 +178,15 @@ def test_spatial_search(index,
     assert len(dssids) == 2
     assert ls8_eo3_dataset.id in dssids
     assert ls8_eo3_dataset2.id in dssids
-    dssids = [ds.id for ds in index.datasets.search(gproduct=ls8_eo3_dataset.type.name, eometry=exact1_3577)]
+    dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.type.name, geometry=exact1_3577)]
     assert len(dssids) == 2
     assert ls8_eo3_dataset.id in dssids
     assert ls8_eo3_dataset2.id in dssids
-    dssids = [ds.id for ds in index.datasets.search(gproduct=ls8_eo3_dataset.type.name, eometry=exact3_4326)]
+    dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.type.name, geometry=exact3_4326)]
     assert len(dssids) == 2
     assert ls8_eo3_dataset3.id in dssids
     assert ls8_eo3_dataset3.id in dssids
-    dssids = [ds.id for ds in index.datasets.search(gproduct=ls8_eo3_dataset.type.name, eometry=exact3_3577)]
+    dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.type.name, geometry=exact3_3577)]
     assert len(dssids) == 2
     assert ls8_eo3_dataset3.id in dssids
     assert ls8_eo3_dataset3.id in dssids
-
-
-@pytest.mark.parametrize('datacube_env_name', ('experimental',))
-def test_spatial_search_stupid(index,
-                        ls8_eo3_dataset, ls8_eo3_dataset2,
-                        ls8_eo3_dataset3, ls8_eo3_dataset4):
-    epsg4326 = CRS("EPSG:4326")
-    epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg3577)
-    index.update_spatial_index(crses=[epsg3577])
-    # Test old style lat/lon search
-    supposed_extent = ls8_eo3_dataset.extent.to_crs("EPSG:4326")
-    index_extent_4326 = index.datasets.spatial_extent([ls8_eo3_dataset.id, ls8_eo3_dataset2.id], crs=epsg4326)
-    assert supposed_extent.intersects(index_extent_4326)
