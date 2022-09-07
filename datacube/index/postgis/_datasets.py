@@ -685,6 +685,7 @@ class DatasetResource(AbstractDatasetResource):
             delta = 0.000001
             if lat is None and lon is None:
                 # No spatial query
+                _LOG.info("No spatial query")
                 return None
 
             if lat is None:
@@ -715,7 +716,7 @@ class DatasetResource(AbstractDatasetResource):
                     geom = box(lon - delta, lat - delta, lon + delta, lat + delta, crs=CRS("EPSG:4326"))
                 else:
                     raise ValueError("lat and lon search terms must be of type Range or a numeric scalar")
-            wholeworld = box(-180, -90, 180, 90, crs=CRS("EPSG:4326"))
+        _LOG.info("Spatial Query Geometry: %s", geom.wkt)
         return geom
 
     def _do_count_by_product(self, query):
