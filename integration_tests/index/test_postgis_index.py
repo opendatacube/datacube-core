@@ -3,11 +3,10 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
-from math import isclose
 
 from datacube.model import Range
 from datacube.index import Index
-from datacube.utils.geometry import CRS, box
+from datacube.utils.geometry import CRS
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
@@ -141,10 +140,11 @@ def test_spatial_extent(index,
     )
     assert extau12 == extau12africa
     ext3 = index.datasets.spatial_extent([ls8_eo3_dataset3.id], epsg4326)
-    ext1234 = index.datasets.spatial_extent([
-        ls8_eo3_dataset.id, ls8_eo3_dataset2.id,
-        ls8_eo3_dataset3.id, ls8_eo3_dataset4.id
-                                            ], epsg4326)
+    ext1234 = index.datasets.spatial_extent(
+        [
+            ls8_eo3_dataset.id, ls8_eo3_dataset2.id,
+            ls8_eo3_dataset3.id, ls8_eo3_dataset4.id
+        ], epsg4326)
     assert ext1.difference(ext1234).area < 0.001
     assert ext3.difference(ext1234).area < 0.001
     ext1_3577 = index.datasets.spatial_extent([ls8_eo3_dataset.id], epsg3577)

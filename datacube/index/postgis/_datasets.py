@@ -17,12 +17,12 @@ from sqlalchemy import select, func
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID
-from datacube.model import Dataset, Product, Range
+from datacube.model import Dataset, Product
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
-from datacube.utils.geometry import CRS, Geometry, box, line, point
+from datacube.utils.geometry import CRS, Geometry
 from datacube.index import fields
 
 _LOG = logging.getLogger(__name__)
