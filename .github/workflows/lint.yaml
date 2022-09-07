@@ -44,8 +44,8 @@ jobs:
           fetch-depth: 0
       - name: Install dependencies and run pylint
         run: |
+          apt-get remove python3-openssl
           pip install --upgrade -e '.[test]'
-          pip install pylint
           pylint -j 2 --reports no datacube
 
 
