@@ -57,6 +57,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Run pycodestyle
         run: |
+          sudo apt-get remove python3-openssl
           pip install --upgrade -e '.[test]'
-          pip install pycodestyle
           pycodestyle tests integration_tests examples --max-line-length 120
