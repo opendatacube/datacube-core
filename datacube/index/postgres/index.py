@@ -101,6 +101,10 @@ class Index(AbstractIndex):
         """
         self._db.close()
 
+    @property
+    def index_id(self) -> str:
+        return f"legacy_{self.url}"
+
     def transaction(self) -> AbstractTransaction:
         # TODO
         return None

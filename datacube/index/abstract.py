@@ -1071,10 +1071,6 @@ class AbstractTransaction(ABC):
     def _tls_purge(self) -> None:
         thread_local_cache(self.tls_id, purge=True)
 
-    @classmethod
-    def thread_transaction(cls, index_id: str) -> "AbstractTransaction":
-        return thread_local_cache(f"txn-{index_id}", None)
-
     # Commit/Rollback exceptions for Context Manager usage patterns
     def commit_exception(self, errmsg: str) -> TransactionException:
         return TransactionException(errmsg, commit=True)
@@ -1225,6 +1221,14 @@ class AbstractIndex(ABC):
         Close and cleanup the Index.
         """
 
+    @property
+    @abstractmethod
+    def index_id(self) -> str:
+        """
+        :return: Unique ID for this index
+                 (e.g. same database/dataset storage + same index driver implementation = same id)
+        """
+
     @abstractmethod
     def transaction(self) -> AbstractTransaction:
         """
@@ -1240,6 +1244,12 @@ class AbstractIndex(ABC):
         :return: True is the index was successfully created or already exists.
                  None if spatial indexes are not supported.
         """
+
+    def thread_transaction(self) -> Optional["AbstractTransaction"]:
+        """
+        :return: The existing Transaction object cached in thread-local storage for this index, if there is one.
+        """
+        return thread_local_cache(f"txn-{self.index_id}", None)
 
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
         """

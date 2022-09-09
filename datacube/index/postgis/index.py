@@ -116,6 +116,10 @@ WARNING: Database schema and internal APIs may change significantly between rele
         """
         self._db.close()
 
+    @property
+    def index_id(self) -> str:
+        return self.url
+
     def transaction(self) -> AbstractTransaction:
         # TODO
         return None

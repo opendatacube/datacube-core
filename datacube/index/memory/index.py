@@ -56,8 +56,12 @@ class Index(AbstractIndex):
     def url(self) -> str:
         return "memory"
 
+    @property
+    def index_id(self) -> str:
+        return self._index_id
+
     def transaction(self) -> UnhandledTransaction:
-        return UnhandledTransaction(self._index_id)
+        return UnhandledTransaction(self.index_id)
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
