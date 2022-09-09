@@ -182,6 +182,9 @@ class PostgisDbAPI(object):
     def in_transaction(self):
         return self._connection.in_transaction()
 
+    def commit(self):
+        self._connection.execute(text('COMMIT'))
+
     def rollback(self):
         self._connection.execute(text('ROLLBACK'))
 

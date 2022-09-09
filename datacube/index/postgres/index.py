@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from typing import Any
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.index.postgres._datasets import DatasetResource  # type: ignore
@@ -14,6 +15,24 @@ from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
+
+
+class PostgresTransaction(AbstractTransaction):
+    def __init__(self, db: PostgresDb, idx_id: str) -> None:
+        super().__init__(idx_id)
+        self._db = db
+
+    def _new_connection(self) -> Any:
+        return self._db.begin()
+
+    def _commit(self) -> None:
+        self._connection.commit()
+
+    def _rollback(self) -> None:
+        self._connection.rollback()
+
+    def _release_connection(self) -> None:
+        self._connection.close()
 
 
 class Index(AbstractIndex):
@@ -106,8 +125,7 @@ class Index(AbstractIndex):
         return f"legacy_{self.url}"
 
     def transaction(self) -> AbstractTransaction:
-        # TODO
-        return None
+        return PostgresTransaction(self._db, self.index_id)
 
     def create_spatial_index(self, crs: CRS) -> None:
         _LOG.warning("postgres driver does not support spatio-temporal indexes")

@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Sequence
 
 from datacube.drivers.postgis import PostGisDb
 from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore
@@ -15,6 +15,24 @@ from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
+
+
+class PostgisTransaction(AbstractTransaction):
+    def __init__(self, db: PostGisDb, idx_id: str) -> None:
+        super().__init__(idx_id)
+        self._db = db
+
+    def _new_connection(self) -> Any:
+        return self._db.begin()
+
+    def _commit(self) -> None:
+        self._connection.commit()
+
+    def _rollback(self) -> None:
+        self._connection.rollback()
+
+    def _release_connection(self) -> None:
+        self._connection.close()
 
 
 class Index(AbstractIndex):
@@ -121,8 +139,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
         return self.url
 
     def transaction(self) -> AbstractTransaction:
-        # TODO
-        return None
+        return PostgisTransaction(self._db, self.index_id)
 
     def create_spatial_index(self, crs: CRS) -> bool:
         sp_idx = self._db.create_spatial_index(crs)

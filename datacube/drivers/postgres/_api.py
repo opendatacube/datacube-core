@@ -185,6 +185,9 @@ class PostgresDbAPI(object):
     def rollback(self):
         self._connection.execute(text('ROLLBACK'))
 
+    def commit(self):
+        self._connection.execute(text('COMMIT'))
+
     def execute(self, command):
         return self._connection.execute(command)
 
