@@ -5,6 +5,7 @@
 import datetime
 import logging
 from pathlib import Path
+from threading import Lock
 
 from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
@@ -13,11 +14,13 @@ from typing import (Any, Iterable, Iterator,
 from uuid import UUID
 
 from datacube.config import LocalConfig
+from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
 from datacube.utils import cached_property, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset
+from datacube.utils.generic import thread_local_cache
 from datacube.utils.geometry import CRS, Geometry, box
 
 _LOG = logging.getLogger(__name__)
@@ -988,6 +991,162 @@ class AbstractDatasetResource(ABC):
         return geom
 
 
+class AbstractTransaction(ABC):
+    """
+    Abstract base class for a Transaction Manager.  All index implementations should extend this base class.
+
+    Thread-local storage and locks ensures one active transaction per index per thread.
+    """
+
+    def __init__(self, index_id: str):
+        self._connection: Any = None
+        self.tls_id = f"txn-{index_id}"
+        self.obj_lock = Lock()
+
+    # Main Transaction API
+    def begin(self) -> None:
+        """
+        Start a new transaction.
+
+        Raises an error if a transaction is already active for this thread.
+
+        Calls implementation-specific _new_connection() method and manages thread local storage and locks.
+        """
+        with self.obj_lock:
+            if self._connection is not None:
+                raise ValueError("Cannot start a new transaction as one is already active")
+            self._tls_stash()
+
+    def commit(self) -> None:
+        """
+        Commit the transaction.
+
+        Raises an error if transaction is not active.
+
+        Calls implementation-specific _commit() method, and manages thread local storage and locks.
+        """
+        with self.lock:
+            if self._connection is not None:
+                raise ValueError("Cannot commit inactive transaction")
+            self._commit()
+            self._release_connection()
+            self._connection = None
+            self._tls_purge()
+
+    def rollback(self) -> None:
+        """
+        Rollback the transaction.
+
+        Raises an error if transaction is not active.
+
+        Calls implementation-specific _rollback() method, and manages thread local storage and locks.
+        """
+        with self.lock:
+            if self._connection is not None:
+                raise ValueError("Cannot rollback inactive transaction")
+            self._rollback()
+            self._release_connection()
+            self._connection = None
+            self._tls_purge()
+
+    @property
+    def active(self):
+        """
+        :return:  True if the transaction is active.
+        """
+        return self._connection is not None
+
+    # Manage thread-local storage
+    def _tls_stash(self) -> None:
+        """
+        Check TLS is empty, create a new connection and stash it.
+        :return:
+        """
+        stored_val = thread_local_cache(self.tls_id)
+        if stored_val is not None:
+            raise ValueError("Cannot start a new transaction as one is already active for this thread")
+        self._connection = self._new_connection()
+        thread_local_cache(self.tls_id, self, purge=True)
+
+    def _tls_purge(self) -> None:
+        thread_local_cache(self.tls_id, purge=True)
+
+    @classmethod
+    def thread_transaction(cls, index_id: str) -> "AbstractTransaction":
+        return thread_local_cache(f"txn-{index_id}", None)
+
+    # Commit/Rollback exceptions for Context Manager usage patterns
+    def commit_exception(self, errmsg: str) -> TransactionException:
+        return TransactionException(errmsg, commit=True)
+
+    def rollback_exception(self, errmsg: str) -> TransactionException:
+        return TransactionException(errmsg, commit=False)
+
+    # Context Manager Interface
+    def __enter__(self):
+        self.begin()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if issubclass(exc_type, TransactionException):
+            # User raised a TransactionException,  Commit or rollback as per exception
+            if exc_value.commit:
+                self.commit()
+            else:
+                self.rollback()
+            # Tell runtime exception is caught and handled.
+            return True
+        elif exc_value is not None:
+            # Any other exception - rollback
+            self.rollback()
+            # Instruct runtime to rethrow exception
+            return False
+        else:
+            # Exited without exception - commit and continue
+            self.commit()
+            return True
+
+    # Internal abstract methods for implementation-specific functionality
+    @abstractmethod
+    def _new_connection(self) -> Any:
+        """
+        :return: a new index driver object representing a database connection or equivalent against which transactions
+        will be executed.
+        """
+
+    @abstractmethod
+    def _commit(self) -> None:
+        """
+        Commit the transaction.
+        """
+
+    @abstractmethod
+    def _rollback(self) -> None:
+        """
+        Rollback the transaction.
+        """
+
+    @abstractmethod
+    def _release_connection(self) -> None:
+        """
+        Release the connection object stored in self._connection
+        """
+
+
+class UnhandledTransaction(AbstractTransaction):
+    # Minimal implementation for index drivers with no transaction handling.
+    def _new_connection(self) -> Any:
+        return True
+
+    def _commit(self) -> None:
+        pass
+
+    def _rollback(self) -> None:
+        pass
+
+    def _release_connection(self) -> None:
+        pass
+
+
 class AbstractIndex(ABC):
     """
     Abstract base class for an Index.  All Index implementations should
@@ -1004,31 +1163,33 @@ class AbstractIndex(ABC):
     #   supports lineage
     supports_lineage = True
     supports_source_filters = True
+    # Supports ACID transactions
+    supports_transactions = False
 
     @property
     @abstractmethod
     def url(self) -> str:
-        ...
+        """A string representing the index"""
 
     @property
     @abstractmethod
     def users(self) -> AbstractUserResource:
-        ...
+        """A User Resource instance for the index"""
 
     @property
     @abstractmethod
     def metadata_types(self) -> AbstractMetadataTypeResource:
-        ...
+        """A MetadataType Resource instance for the index"""
 
     @property
     @abstractmethod
     def products(self) -> AbstractProductResource:
-        ...
+        """A Product Resource instance for the index"""
 
     @property
     @abstractmethod
     def datasets(self) -> AbstractDatasetResource:
-        ...
+        """A Dataset Resource instance for the index"""
 
     @classmethod
     @abstractmethod
@@ -1037,24 +1198,38 @@ class AbstractIndex(ABC):
                     application_name: Optional[str] = None,
                     validate_connection: bool = True
                    ) -> "AbstractIndex":
-        ...
+        """Instantiate a new index from a LocalConfig object"""
 
     @classmethod
     @abstractmethod
     def get_dataset_fields(cls,
                            doc: dict
                           ) -> Mapping[str, Field]:
-        ...
+        """Return dataset search fields from a metadata type document"""
 
     @abstractmethod
     def init_db(self,
                 with_default_types: bool = True,
                 with_permissions: bool = True) -> bool:
-        ...
+        """
+        Initialise an empty database.
+
+        :param with_default_types: Whether to create default metadata types
+        :param with_permissions: Whether to create db permissions
+        :return: true if the database was created, false if already exists
+        """
 
     @abstractmethod
     def close(self) -> None:
-        ...
+        """
+        Close and cleanup the Index.
+        """
+
+    @abstractmethod
+    def transaction(self) -> AbstractTransaction:
+        """
+        :return: a Transaction context manager for this index.
+        """
 
     @abstractmethod
     def create_spatial_index(self, crs: CRS) -> bool:

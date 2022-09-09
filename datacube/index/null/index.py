@@ -8,7 +8,7 @@ from datacube.index.null._datasets import DatasetResource  # type: ignore
 from datacube.index.null._metadata_types import MetadataTypeResource
 from datacube.index.null._products import ProductResource
 from datacube.index.null._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction
 from datacube.model import MetadataType
 from datacube.model.fields import get_dataset_fields
 from datacube.utils.geometry import CRS
@@ -48,6 +48,9 @@ class Index(AbstractIndex):
     @property
     def url(self) -> str:
         return "null"
+
+    def transaction(self) -> UnhandledTransaction:
+        return UnhandledTransaction("null")
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):

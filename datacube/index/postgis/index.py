@@ -10,7 +10,7 @@ from datacube.index.postgis._datasets import DatasetResource, DSID  # type: igno
 from datacube.index.postgis._metadata_types import MetadataTypeResource
 from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs, AbstractTransaction
 from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
@@ -48,6 +48,7 @@ class Index(AbstractIndex):
     # Hopefully can reinstate a simpler form of lineage support, but leave for now
     supports_lineage = False
     supports_source_filters = False
+    supports_transactions = True
 
     def __init__(self, db: PostGisDb) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
@@ -114,6 +115,10 @@ WARNING: Database schema and internal APIs may change significantly between rele
         (Connections are normally closed automatically when this object is deleted: ie. no references exist)
         """
         self._db.close()
+
+    def transaction(self) -> AbstractTransaction:
+        # TODO
+        return None
 
     def create_spatial_index(self, crs: CRS) -> bool:
         sp_idx = self._db.create_spatial_index(crs)

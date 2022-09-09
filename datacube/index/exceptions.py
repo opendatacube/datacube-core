@@ -14,3 +14,9 @@ class MissingRecordError(Exception):
 
 class IndexSetupError(Exception):
     pass
+
+
+class TransactionException(Exception):
+    def __init__(self, *args, commit=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.commit = commit
