@@ -1025,8 +1025,8 @@ class AbstractTransaction(ABC):
 
         Calls implementation-specific _commit() method, and manages thread local storage and locks.
         """
-        with self.lock:
-            if self._connection is not None:
+        with self.obj_lock:
+            if self._connection is None:
                 raise ValueError("Cannot commit inactive transaction")
             self._commit()
             self._release_connection()
@@ -1041,8 +1041,8 @@ class AbstractTransaction(ABC):
 
         Calls implementation-specific _rollback() method, and manages thread local storage and locks.
         """
-        with self.lock:
-            if self._connection is not None:
+        with self.obj_lock:
+            if self._connection is None:
                 raise ValueError("Cannot rollback inactive transaction")
             self._rollback()
             self._release_connection()
@@ -1066,7 +1066,8 @@ class AbstractTransaction(ABC):
         if stored_val is not None:
             raise ValueError("Cannot start a new transaction as one is already active for this thread")
         self._connection = self._new_connection()
-        thread_local_cache(self.tls_id, self, purge=True)
+        thread_local_cache(self.tls_id, purge=True)
+        thread_local_cache(self.tls_id, self)
 
     def _tls_purge(self) -> None:
         thread_local_cache(self.tls_id, purge=True)
