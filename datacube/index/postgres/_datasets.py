@@ -35,13 +35,14 @@ class DatasetResource(AbstractDatasetResource):
     :type types: datacube.index._products.ProductResource
     """
 
-    def __init__(self, db, dataset_type_resource):
+    def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
         :type dataset_type_resource: datacube.index._products.ProductResource
         """
         self._db = db
-        self.types = dataset_type_resource
+        self._index = index
+        self.types = self._index.products
 
     def get(self, id_: Union[str, UUID], include_sources=False):
         """

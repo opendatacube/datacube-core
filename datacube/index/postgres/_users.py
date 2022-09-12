@@ -8,11 +8,12 @@ from datacube.drivers.postgres import PostgresDb
 
 
 class UserResource(AbstractUserResource):
-    def __init__(self, db: PostgresDb) -> None:
+    def __init__(self, db: PostgresDb, index: "datacube.index.postgres.index.Index") -> None:
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
         """
         self._db = db
+        self._index = index
 
     def grant_role(self, role: str, *usernames: str) -> None:
         """

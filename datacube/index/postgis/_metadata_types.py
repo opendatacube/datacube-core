@@ -15,11 +15,12 @@ _LOG = logging.getLogger(__name__)
 
 
 class MetadataTypeResource(AbstractMetadataTypeResource):
-    def __init__(self, db):
+    def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
         """
         self._db = db
+        self._index = index
 
         self.get_unsafe = lru_cache()(self.get_unsafe)
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)

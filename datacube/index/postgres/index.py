@@ -64,10 +64,10 @@ class Index(AbstractIndex):
     def __init__(self, db: PostgresDb) -> None:
         self._db = db
 
-        self._users = UserResource(db)
-        self._metadata_types = MetadataTypeResource(db)
-        self._products = ProductResource(db, self.metadata_types)
-        self._datasets = DatasetResource(db, self.products)
+        self._users = UserResource(db, self)
+        self._metadata_types = MetadataTypeResource(db, self)
+        self._products = ProductResource(db, self)
+        self._datasets = DatasetResource(db, self)
 
     @property
     def users(self) -> UserResource:

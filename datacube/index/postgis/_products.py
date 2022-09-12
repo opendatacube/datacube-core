@@ -23,13 +23,14 @@ class ProductResource(AbstractProductResource):
     :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
     """
 
-    def __init__(self, db, metadata_type_resource):
+    def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
         :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
         """
         self._db = db
-        self.metadata_type_resource = metadata_type_resource
+        self._index = index
+        self.metadata_type_resource = self._index.metadata_types
 
         self.get_unsafe = lru_cache()(self.get_unsafe)
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)

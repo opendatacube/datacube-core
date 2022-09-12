@@ -75,10 +75,10 @@ WARNING:
 WARNING: Database schema and internal APIs may change significantly between releases. Use at your own risk.""")
         self._db = db
 
-        self._users = UserResource(db)
-        self._metadata_types = MetadataTypeResource(db)
-        self._products = ProductResource(db, self.metadata_types)
-        self._datasets = DatasetResource(db, self.products)
+        self._users = UserResource(db, self)
+        self._metadata_types = MetadataTypeResource(db, self)
+        self._products = ProductResource(db, self)
+        self._datasets = DatasetResource(db, self)
 
     @property
     def users(self) -> UserResource:

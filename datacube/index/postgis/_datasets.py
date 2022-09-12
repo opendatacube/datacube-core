@@ -38,14 +38,15 @@ class DatasetResource(AbstractDatasetResource):
     :type types: datacube.index._products.ProductResource
     """
 
-    def __init__(self, db, product_resource):
+    def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
         :type product_resource: datacube.index._products.ProductResource
         """
         self._db = db
-        self.types = product_resource
-        self.products = product_resource
+        self._index = index
+        self.types = self._index.products   # types is a compatibility alias for products.
+        self.products = self._index.products
 
     def get(self, id_: Union[str, UUID], include_sources=False):
         """
