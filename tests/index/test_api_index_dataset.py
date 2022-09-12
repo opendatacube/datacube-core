@@ -214,6 +214,9 @@ class MockIndex:
         self._db = db
         self.products = MockTypesResource(product)
 
+    def thread_transaction(self):
+        return None
+
 
 def test_index_dataset():
     mock_db = MockDb()
