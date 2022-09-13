@@ -78,3 +78,23 @@ def test_band_info():
     ds = mk_sample_dataset(bands, uri='/not/a/uri')
     band = BandInfo(ds, 'a')
     assert band.uri_scheme is ''  # noqa: F632
+
+
+def test_band_info_with_url_mangling():
+    def url_mangler(raw):
+        return raw.replace("tmp", "tmp/mangled")
+
+    bands = [dict(name=n,
+                  dtype='uint8',
+                  units='K',
+                  nodata=33,
+                  path=n+'.tiff')
+             for n in 'a b c'.split(' ')]
+
+    ds = mk_sample_dataset(bands,
+                           uri='file:///tmp/datataset.yml',
+                           format='GeoTIFF')
+
+    binfo = BandInfo(ds, 'b', patch_url=url_mangler)
+    assert binfo.name == 'b'
+    assert binfo.uri == 'file:///tmp/mangled/b.tiff'

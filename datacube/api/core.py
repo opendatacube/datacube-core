@@ -662,7 +662,8 @@ class Datacube(object):
     @staticmethod
     def _xr_load(sources, geobox, measurements,
                  skip_broken_datasets=False,
-                 progress_cbk=None, extra_dims=None):
+                 progress_cbk=None, extra_dims=None,
+                 patch_url=None):
 
         def mk_cbk(cbk):
             if cbk is None:

@@ -383,6 +383,7 @@ def gen_tiff_dataset(bands,
                      base_folder,
                      prefix='',
                      timestamp='2018-07-19',
+                     base_folder_of_record=None,
                      **kwargs):
     """
        each band:
@@ -394,6 +395,9 @@ def gen_tiff_dataset(bands,
     """
     from .io import write_gtiff
     from pathlib import Path
+
+    if base_folder_of_record is None:
+        base_folder_of_record = base_folder
 
     if not isinstance(bands, Sequence):
         bands = (bands,)
@@ -416,7 +420,7 @@ def gen_tiff_dataset(bands,
                        layer=1,
                        dtype=meta.dtype))
 
-    uri = Path(base_folder/'metadata.yaml').absolute().as_uri()
+    uri = Path(base_folder_of_record/'metadata.yaml').absolute().as_uri()
     ds = mk_sample_dataset(mm,
                            uri=uri,
                            timestamp=timestamp,
