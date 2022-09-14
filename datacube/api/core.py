@@ -773,7 +773,6 @@ class Datacube(object):
         """
         measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
 
-
         if dask_chunks is not None:
             # TODO: url mangler for Dask?
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
