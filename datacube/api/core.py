@@ -377,7 +377,8 @@ class Datacube(object):
             only applicable to non-lazy loads, ignored when using dask.
 
         :param Callable[[str], str], patch_url:
-            if supplied, will be used to patch/sign the url(s), as required to access some commercial archives.
+            if supplied, will be used to patch/sign the url(s), as required to access some commercial archives
+            (e.g. Microsoft Planetary Computer).
 
         :return:
             Requested data in a :class:`xarray.Dataset`
