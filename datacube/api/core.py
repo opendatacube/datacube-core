@@ -774,7 +774,9 @@ class Datacube(object):
         measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
 
         if dask_chunks is not None:
-            # TODO: url mangler for Dask?
+            if patch_url is not None:
+                # TODO: url mangler for Dask?
+                raise ValueError("The patch_url arguments is not currently supported for Dask loading.")
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
                                        skip_broken_datasets=skip_broken_datasets,
                                        extra_dims=extra_dims)
