@@ -78,6 +78,7 @@ def test_load_data(tmpdir):
 def test_load_data_with_url_mangling(tmpdir):
     actual_tmpdir = Path(str(tmpdir))
     recorded_tmpdir = Path(str(tmpdir / "not" / "actual" / "location"))
+
     def url_mangler(raw):
         actual_uri_root = actual_tmpdir.absolute().as_uri()
         recorded_uri_root = recorded_tmpdir.absolute().as_uri()
