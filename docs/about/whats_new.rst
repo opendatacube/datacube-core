@@ -33,6 +33,10 @@ v1.8.next
   Portions of API dealing with lineage handling, locations, and dynamic indexes are currently broken in the postgis
   driver. As per the warning message, the postgis driver is currently flagged as "experimental" and is not considered
   stable. (:pull: `1305`)
+- Implement `patch_url` argument to `dc.load()` and `dc.load_data()` to provide a way to sign dataset URIs, as
+  is required to access some commercial archives (e.g. Microsoft Planetary Computer).  API is based on the `odc-stac`
+  implementation. Only works for direct loading.  More work required for deferred (i.e. Dask) loading. (:pull: `1317`)
+
 
 v1.8.7 (7 June 2022)
 ====================

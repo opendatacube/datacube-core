@@ -58,7 +58,7 @@ jobs:
         outputs: type=docker
         build-args: |
           V_BASE=3.3.0
-          V_PG=12
+          V_PG=14
         cache-from: |
           type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new
