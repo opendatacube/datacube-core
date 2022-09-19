@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, Callable
 from urllib.parse import urlparse
 
 from datacube.model import Dataset
@@ -82,7 +82,8 @@ class BandInfo:
                  ds: Dataset,
                  band: str,
                  uri_scheme: Optional[str] = None,
-                 extra_dim_index: Optional[int] = None):
+                 extra_dim_index: Optional[int] = None,
+                 patch_url: Optional[Callable[[str], str]] = None):
         try:
             mp, = ds.type.lookup_measurements([band]).values()
         except KeyError:
@@ -97,11 +98,13 @@ class BandInfo:
             raise ValueError('No uris defined on a dataset')
 
         base_uri = pick_uri(ds.uris, uri_scheme)
+        uri = uri_resolve(base_uri, mm.get('path'))
+        if patch_url is not None:
+            uri = patch_url(uri)
 
         bint, layer = _get_band_and_layer(mm)
-
+        self.uri = uri
         self.name = band
-        self.uri = uri_resolve(base_uri, mm.get('path'))
         self.band = bint
         self.layer = layer
         self.dtype = mp.dtype
