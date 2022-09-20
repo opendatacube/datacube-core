@@ -379,7 +379,7 @@ def index_empty(local_config, uninitialised_postgres_db: PostgresDb):
 @pytest.fixture
 def initialised_postgres_db(index):
     """
-    Return a connection to an PostgreSQL database, initialised with the default schema
+    Return a connection to an PostgreSQL (or Postgis) database, initialised with the default schema
     and tables.
     """
     return index._db

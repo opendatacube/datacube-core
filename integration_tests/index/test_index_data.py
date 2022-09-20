@@ -273,10 +273,10 @@ def test_get_dataset(index: Index, telemetry_dataset: Dataset) -> None:
                                     'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
 
 
-def test_transactions(index: Index,
-                      initialised_postgres_db: PostgresDb,
-                      local_config,
-                      default_metadata_type) -> None:
+def test_transactions_internal_api(index: Index,
+                                   initialised_postgres_db: PostgresDb,
+                                   local_config,
+                                   default_metadata_type) -> None:
     assert not index.datasets.has(_telemetry_uuid)
 
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
@@ -295,6 +295,97 @@ def test_transactions(index: Index,
 
     # Should have been rolled back.
     assert not index.datasets.has(_telemetry_uuid)
+
+
+def test_transactions_api_ctx_mgr(index,
+                                  extended_eo3_metadata_type_doc,
+                                  ls8_eo3_product,
+                                  eo3_ls8_dataset_doc,
+                                  eo3_ls8_dataset2_doc):
+    from datacube.index.hl import Doc2Dataset
+    import logging
+    _LOG = logging.getLogger(__name__)
+    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
+    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    with pytest.raises(Exception) as e:
+        with index.transaction() as trans:
+            assert index.datasets.get(ds1.id) is None
+            index.datasets.add(ds1)
+            assert index.datasets.get(ds1.id) is not None
+            raise Exception("Rollback!")
+    assert "Rollback!" in str(e.value)
+    assert index.datasets.get(ds1.id) is None
+    with index.transaction() as trans:
+        assert index.datasets.get(ds1.id) is None
+        index.datasets.add(ds1)
+        assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds1.id) is not None
+    with index.transaction() as trans:
+        index.datasets.add(ds2)
+        assert index.datasets.get(ds2.id) is not None
+        raise trans.rollback_exception("Rollback")
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is None
+
+
+def test_transactions_api_manual(index,
+                          extended_eo3_metadata_type_doc,
+                          ls8_eo3_product,
+                          eo3_ls8_dataset_doc,
+                          eo3_ls8_dataset2_doc):
+    from datacube.index.hl import Doc2Dataset
+    import logging
+    _LOG = logging.getLogger(__name__)
+    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
+    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    trans = index.transaction()
+    index.datasets.add(ds1)
+    assert index.datasets.get(ds1.id) is not None
+    trans.begin()
+    index.datasets.add(ds2)
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is not None
+    trans.rollback()
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is None
+    trans.begin()
+    index.datasets.add(ds2)
+    trans.commit()
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is not None
+
+
+def test_transactions_api_hybrid(index,
+                                  extended_eo3_metadata_type_doc,
+                                  ls8_eo3_product,
+                                  eo3_ls8_dataset_doc,
+                                  eo3_ls8_dataset2_doc):
+    from datacube.index.hl import Doc2Dataset
+    import logging
+    _LOG = logging.getLogger(__name__)
+    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
+    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    with index.transaction() as trans:
+        assert index.datasets.get(ds1.id) is None
+        index.datasets.add(ds1)
+        assert index.datasets.get(ds1.id) is not None
+        trans.rollback()
+        assert index.datasets.get(ds1.id) is None
+        trans.begin()
+        assert index.datasets.get(ds1.id) is None
+        index.datasets.add(ds1)
+        assert index.datasets.get(ds1.id) is not None
+        trans.commit()
+        assert index.datasets.get(ds1.id) is not None
+        trans.begin()
+        index.datasets.add(ds2)
+        assert index.datasets.get(ds2.id) is not None
+        trans.rollback()
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is None
 
 
 def test_get_missing_things(index: Index) -> None:

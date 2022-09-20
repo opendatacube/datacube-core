@@ -3,14 +3,17 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 
 from contextlib import contextmanager
+from sqlalchemy import text
 from typing import Any
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._api import PostgresDbAPI
 from datacube.index.abstract import AbstractTransaction
 
+_LOG = logging.getLogger(__name__)
 
 class PostgresTransaction(AbstractTransaction):
     def __init__(self, db: PostgresDb, idx_id: str) -> None:
@@ -18,7 +21,10 @@ class PostgresTransaction(AbstractTransaction):
         self._db = db
 
     def _new_connection(self) -> Any:
-        return self._db.begin()
+        dbconn = self._db.give_me_a_connection()
+        dbconn.execute(text('BEGIN'))
+        conn = PostgresDbAPI(dbconn)
+        return conn
 
     def _commit(self) -> None:
         self._connection.commit()
@@ -27,12 +33,13 @@ class PostgresTransaction(AbstractTransaction):
         self._connection.rollback()
 
     def _release_connection(self) -> None:
-        self._connection.close()
+        self._connection._connection.close()
+        self._connection._connection = None
 
 
 class IndexResourceAddIn:
     @contextmanager
-    def db_connection(self, transaction=False) -> PostgresDbAPI:
+    def db_connection(self, transaction: bool = False) -> PostgresDbAPI:
         """
         Context manager representing a database connection.
 
@@ -55,14 +62,16 @@ class IndexResourceAddIn:
         :return: A PostgresDbAPI object, with the specified transaction semantics.
         """
         trans = self._index.thread_transaction()
+        closing = False
         if trans is not None:
             # Use active transaction
             yield trans._connection
         elif transaction:
+            closing = True
             with self._db.begin() as conn:
                 yield conn
         else:
+            closing = True
             # Autocommit behaviour:
             with self._db.connect() as conn:
                 yield conn
-

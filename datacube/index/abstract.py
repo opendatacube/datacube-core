@@ -1000,8 +1000,8 @@ class AbstractTransaction(ABC):
 
     def __init__(self, index_id: str):
         self._connection: Any = None
-        self.tls_id = f"txn-{index_id}"
-        self.obj_lock = Lock()
+        self._tls_id = f"txn-{index_id}"
+        self._obj_lock = Lock()
 
     # Main Transaction API
     def begin(self) -> None:
@@ -1012,7 +1012,7 @@ class AbstractTransaction(ABC):
 
         Calls implementation-specific _new_connection() method and manages thread local storage and locks.
         """
-        with self.obj_lock:
+        with self._obj_lock:
             if self._connection is not None:
                 raise ValueError("Cannot start a new transaction as one is already active")
             self._tls_stash()
@@ -1025,7 +1025,7 @@ class AbstractTransaction(ABC):
 
         Calls implementation-specific _commit() method, and manages thread local storage and locks.
         """
-        with self.obj_lock:
+        with self._obj_lock:
             if self._connection is None:
                 raise ValueError("Cannot commit inactive transaction")
             self._commit()
@@ -1041,7 +1041,7 @@ class AbstractTransaction(ABC):
 
         Calls implementation-specific _rollback() method, and manages thread local storage and locks.
         """
-        with self.obj_lock:
+        with self._obj_lock:
             if self._connection is None:
                 raise ValueError("Cannot rollback inactive transaction")
             self._rollback()
@@ -1062,15 +1062,15 @@ class AbstractTransaction(ABC):
         Check TLS is empty, create a new connection and stash it.
         :return:
         """
-        stored_val = thread_local_cache(self.tls_id)
+        stored_val = thread_local_cache(self._tls_id)
         if stored_val is not None:
             raise ValueError("Cannot start a new transaction as one is already active for this thread")
         self._connection = self._new_connection()
-        thread_local_cache(self.tls_id, purge=True)
-        thread_local_cache(self.tls_id, self)
+        thread_local_cache(self._tls_id, purge=True)
+        thread_local_cache(self._tls_id, self)
 
     def _tls_purge(self) -> None:
-        thread_local_cache(self.tls_id, purge=True)
+        thread_local_cache(self._tls_id, purge=True)
 
     # Commit/Rollback exceptions for Context Manager usage patterns
     def commit_exception(self, errmsg: str) -> TransactionException:
@@ -1082,9 +1082,13 @@ class AbstractTransaction(ABC):
     # Context Manager Interface
     def __enter__(self):
         self.begin()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if issubclass(exc_type, TransactionException):
+        if not self.active:
+            # User has already manually committed or rolled back.
+            return True
+        if exc_type is not None and issubclass(exc_type, TransactionException):
             # User raised a TransactionException,  Commit or rollback as per exception
             if exc_value.commit:
                 self.commit()
