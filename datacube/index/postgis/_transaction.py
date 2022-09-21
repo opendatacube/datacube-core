@@ -61,23 +61,5 @@ class IndexResourceAddIn:
         :param transaction: Use a transaction if one is not already active for the thread.
         :return: A PostgresDbAPI object, with the specified transaction semantics.
         """
-        trans = self._index.thread_transaction()
-        closing = False
-        if trans is not None:
-            # Use active transaction
-            yield trans._connection
-        elif transaction:
-            closing = True
-            with self._db._connect() as conn:
-                conn.begin()
-                try:
-                    yield conn
-                    conn.commit()
-                except Exception:  # pylint: disable=broad-except
-                    conn.rollback()
-                    raise
-        else:
-            closing = True
-            # Autocommit behaviour:
-            with self._db._connect() as conn:
-                yield conn
+        with self._index._active_connection(transaction=transaction) as conn:
+            yield conn

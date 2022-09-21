@@ -893,5 +893,5 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return custom_exprs
 
     def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)

@@ -155,11 +155,6 @@ DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref
                                              'added', 'added_by', 'archived'])
 
 
-class MockIndex(object):
-    def __init__(self, db):
-        self._db = db
-
-
 class MockDb(object):
     def __init__(self):
         self.dataset = {}
@@ -225,6 +220,10 @@ class MockIndex:
 
     def thread_transaction(self):
         return None
+
+    @contextmanager
+    def _active_connection(self, transaction=False):
+        yield self._db
 
 
 def test_index_dataset():

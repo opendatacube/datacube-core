@@ -9,5 +9,6 @@ This package tries to contain any SQLAlchemy and database-specific code.
 """
 
 from ._connections import PostgresDb
+from ._api import PostgresDbAPI
 
-__all__ = ['PostgresDb']
+__all__ = ['PostgresDb', 'PostgresDbAPI']

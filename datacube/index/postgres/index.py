@@ -6,7 +6,7 @@ import logging
 from contextlib import contextmanager
 from typing import Any
 
-from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
 from datacube.index.postgres._transaction import PostgresTransaction
 from datacube.index.postgres._datasets import DatasetResource  # type: ignore
 from datacube.index.postgres._metadata_types import MetadataTypeResource
@@ -116,6 +116,47 @@ class Index(AbstractIndex):
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
+
+    @contextmanager
+    def _active_connection(self, transaction: bool = False) -> PostgresDbAPI:
+        """
+        Context manager representing a database connection.
+
+        If there is an active transaction for this index in the current thread, the connection object from that
+        transaction is returned, with the active transaction remaining in control of commit and rollback.
+
+        If there is no active transaction and the transaction argument is True, a new transactionised connection
+        is returned, with this context manager handling commit and rollback.
+
+        If there is no active transaction and the transaction argument is False (the default), a new connection
+        is returned with autocommit semantics.
+
+        Note that autocommit behaviour is NOT available if there is an active transaction for the index
+        and the active thread.
+
+        :param transaction: Use a transaction if one is not already active for the thread.
+        :return: A PostgresDbAPI object, with the specified transaction semantics.
+        """
+        trans = self.thread_transaction()
+        closing = False
+        if trans is not None:
+            # Use active transaction
+            yield trans._connection
+        elif transaction:
+            closing = True
+            with self._db._connect() as conn:
+                conn.begin()
+                try:
+                    yield conn
+                    conn.commit()
+                except Exception:  # pylint: disable=broad-except
+                    conn.rollback()
+                    raise
+        else:
+            closing = True
+            # Autocommit behaviour:
+            with self._db._connect() as conn:
+                yield conn
 
 
 class DefaultIndexDriver(AbstractIndexDriver):
