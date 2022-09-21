@@ -55,9 +55,9 @@ def pseudo_ls8_type(index, ga_metadata_type):
 
 
 @pytest.fixture
-def pseudo_ls8_dataset(index, initialised_postgres_db, pseudo_ls8_type):
+def pseudo_ls8_dataset(index, pseudo_ls8_type):
     id_ = str(uuid.uuid4())
-    with initialised_postgres_db.connect() as connection:
+    with index._db._connect() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
@@ -107,10 +107,10 @@ def pseudo_ls8_dataset(index, initialised_postgres_db, pseudo_ls8_type):
 
 
 @pytest.fixture
-def pseudo_ls8_dataset2(index, initialised_postgres_db, pseudo_ls8_type):
+def pseudo_ls8_dataset2(index, pseudo_ls8_type):
     # Like the previous dataset, but a day later in time.
     id_ = str(uuid.uuid4())
-    with initialised_postgres_db.connect() as connection:
+    with index._db._connect() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
@@ -162,7 +162,6 @@ def pseudo_ls8_dataset2(index, initialised_postgres_db, pseudo_ls8_type):
 # Datasets 3 and 4 mirror 1 and 2 but have a different path/row.
 @pytest.fixture
 def pseudo_ls8_dataset3(index: Index,
-                        initialised_postgres_db: PostgresDb,
                         pseudo_ls8_type: Product,
                         pseudo_ls8_dataset: Dataset) -> Dataset:
     # Same as 1, but a different path/row
@@ -174,7 +173,7 @@ def pseudo_ls8_dataset3(index: Index,
         'satellite_ref_point_end': {'x': 116, 'y': 87},
     }
 
-    with initialised_postgres_db.connect() as connection:
+    with index._db._connect() as connection:
         was_inserted = connection.insert_dataset(
             dataset_doc,
             id_,
@@ -189,7 +188,6 @@ def pseudo_ls8_dataset3(index: Index,
 
 @pytest.fixture
 def pseudo_ls8_dataset4(index: Index,
-                        initialised_postgres_db: PostgresDb,
                         pseudo_ls8_type: Product,
                         pseudo_ls8_dataset2: Dataset) -> Dataset:
     # Same as 2, but a different path/row
@@ -201,7 +199,7 @@ def pseudo_ls8_dataset4(index: Index,
         'satellite_ref_point_end': {'x': 116, 'y': 87},
     }
 
-    with initialised_postgres_db.connect() as connection:
+    with index._db._connect() as connection:
         was_inserted = connection.insert_dataset(
             dataset_doc,
             id_,

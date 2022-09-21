@@ -182,6 +182,9 @@ class PostgisDbAPI(object):
     def in_transaction(self):
         return self._connection.in_transaction()
 
+    def begin(self):
+        self._connection.execute(text('BEGIN'))
+
     def commit(self):
         self._connection.execute(text('COMMIT'))
 

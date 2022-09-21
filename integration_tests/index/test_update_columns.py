@@ -58,7 +58,7 @@ def test_added_column(clirunner, uninitialised_postgres_db):
     result = clirunner(["system", "init"])
     assert "Created." in result.output
 
-    with uninitialised_postgres_db.connect() as connection:
+    with uninitialised_postgres_db._connect() as connection:
         assert check_column(connection, _schema.METADATA_TYPE.name, "updated")
         assert not check_column(connection, _schema.METADATA_TYPE.name, "fake_column")
         assert check_column(connection, _schema.PRODUCT.name, "updated")
@@ -81,7 +81,7 @@ def test_readd_column(clirunner, uninitialised_postgres_db):
     result = clirunner(["system", "init"])
     assert "Created." in result.output
 
-    with uninitialised_postgres_db.connect() as connection:
+    with uninitialised_postgres_db._connect() as connection:
         # Drop all the columns for an init rerun
         drop_column(connection, _schema.METADATA_TYPE.name, "updated")
         drop_column(connection, _schema.PRODUCT.name, "updated")
@@ -95,7 +95,7 @@ def test_readd_column(clirunner, uninitialised_postgres_db):
 
     result = clirunner(["system", "init"])
 
-    with uninitialised_postgres_db.connect() as connection:
+    with uninitialised_postgres_db._connect() as connection:
         assert check_column(connection, _schema.METADATA_TYPE.name, "updated")
         assert check_column(connection, _schema.PRODUCT.name, "updated")
         assert check_column(connection, _schema.DATASET.name, "updated")

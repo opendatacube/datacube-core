@@ -182,6 +182,9 @@ class PostgresDbAPI(object):
     def in_transaction(self):
         return self._connection.in_transaction()
 
+    def begin(self):
+        self._connection.execute(text('BEGIN'))
+
     def rollback(self):
         self._connection.execute(text('ROLLBACK'))
 

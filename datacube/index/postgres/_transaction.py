@@ -68,10 +68,16 @@ class IndexResourceAddIn:
             yield trans._connection
         elif transaction:
             closing = True
-            with self._db.begin() as conn:
-                yield conn
+            with self._db._connect() as conn:
+                conn.begin()
+                try:
+                    yield conn
+                    conn.commit()
+                except Exception:  # pylint: disable=broad-except
+                    conn.rollback()
+                    raise
         else:
             closing = True
             # Autocommit behaviour:
-            with self._db.connect() as conn:
+            with self._db._connect() as conn:
                 yield conn

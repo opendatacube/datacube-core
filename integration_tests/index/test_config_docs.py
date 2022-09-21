@@ -214,7 +214,7 @@ def _object_exists(db, index_name):
         schema_name = "odc"
     else:
         schema_name = "agdc"
-    with db.connect() as connection:
+    with db._connect() as connection:
         val = connection._connection.execute(f"SELECT to_regclass('{schema_name}.{index_name}')").scalar()
     return val in (index_name, f'{schema_name}.{index_name}')
 

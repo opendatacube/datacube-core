@@ -136,7 +136,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
                              product_names: Sequence[str] = [],
                              dataset_ids: Sequence[DSID] = []
                              ) -> int:
-        with self._db.connect() as conn:
+        with self.datasets._db_connection(transaction=True) as conn:
             return conn.update_spindex(crses, product_names, dataset_ids)
 
     def __repr__(self):

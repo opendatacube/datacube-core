@@ -166,12 +166,17 @@ class MockDb(object):
         self.dataset_source = set()
 
     @contextmanager
-    def begin(self):
+    def _connect(self):
         yield self
 
-    @contextmanager
-    def connect(self):
-        yield self
+    def begin(self):
+        pass
+
+    def commit(self):
+        pass
+
+    def rollback(self):
+        pass
 
     def get_dataset(self, id):
         return self.dataset.get(id, None)
@@ -207,6 +212,10 @@ class MockTypesResource:
 
     def get_by_name(self, *args, **kwargs):
         return self.type
+
+    @contextmanager
+    def _db_connection(self, transaction=False):
+        yield MockDb()
 
 
 class MockIndex:
