@@ -54,20 +54,20 @@ _DATASET_METADATA = {
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_metadata_indexes_views_exist(initialised_postgres_db, default_metadata_type):
+def test_metadata_indexes_views_exist(index, default_metadata_type):
     """
     :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     :type default_metadata_type: datacube.model.MetadataType
     """
     # Metadata indexes should no longer exist.
-    assert not _object_exists(initialised_postgres_db, 'dix_eo_platform')
+    assert not _object_exists(index, 'dix_eo_platform')
 
     # Ensure view was created (following naming conventions)
-    assert _object_exists(initialised_postgres_db, 'dv_eo_dataset')
+    assert _object_exists(index, 'dv_eo_dataset')
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_indexes_views_exist(initialised_postgres_db, ls5_telem_type):
+def test_dataset_indexes_views_exist(index, ls5_telem_type):
     """
     :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     :type ls5_telem_type: datacube.model.DatasetType
@@ -75,30 +75,30 @@ def test_dataset_indexes_views_exist(initialised_postgres_db, ls5_telem_type):
     assert ls5_telem_type.name == 'ls5_telem_test'
 
     # Ensure field indexes were created for the dataset type (following the naming conventions):
-    assert _object_exists(initialised_postgres_db, "dix_ls5_telem_test_orbit")
+    assert _object_exists(index, "dix_ls5_telem_test_orbit")
 
     # Ensure it does not create a 'platform' index, because that's a fixed field
     # (ie. identical in every dataset of the type)
-    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_platform")
+    assert not _object_exists(index, "dix_ls5_telem_test_platform")
 
     # Ensure view was created (following naming conventions)
-    assert _object_exists(initialised_postgres_db, 'dv_ls5_telem_test_dataset')
+    assert _object_exists(index, 'dv_ls5_telem_test_dataset')
 
     # Ensure view was created (following naming conventions)
-    assert not _object_exists(initialised_postgres_db,
+    assert not _object_exists(index,
                               'dix_ls5_telem_test_gsi'), "indexed=false field gsi shouldn't have an index"
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_composite_indexes_exist(initialised_postgres_db, ls5_telem_type):
+def test_dataset_composite_indexes_exist(index, ls5_telem_type):
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:
     # (following the naming conventions)
-    assert _object_exists(initialised_postgres_db, "dix_ls5_telem_test_sat_path_sat_row_time")
+    assert _object_exists(index, "dix_ls5_telem_test_sat_path_sat_row_time")
 
     # But no individual field indexes for these
-    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_sat_path")
-    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_sat_row")
-    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_time")
+    assert not _object_exists(index, "dix_ls5_telem_test_sat_path")
+    assert not _object_exists(index, "dix_ls5_telem_test_sat_row")
+    assert not _object_exists(index, "dix_ls5_telem_test_time")
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
@@ -209,12 +209,12 @@ def test_field_expression_unchanged_postgis(
     )
 
 
-def _object_exists(db, index_name):
-    if db.driver_name == "postgis":
+def _object_exists(index, index_name):
+    if index._db.driver_name == "postgis":
         schema_name = "odc"
     else:
         schema_name = "agdc"
-    with db._connect() as connection:
+    with index._active_connection() as connection:
         val = connection._connection.execute(f"SELECT to_regclass('{schema_name}.{index_name}')").scalar()
     return val in (index_name, f'{schema_name}.{index_name}')
 
@@ -337,11 +337,11 @@ def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_t
     index.products.update_document(full_doc)
 
     # Remove fixed field, forcing a new index to be created (as datasets can now differ for the field).
-    assert not _object_exists(index._db, 'dix_ls5_telem_test_product_type')
+    assert not _object_exists(index, 'dix_ls5_telem_test_product_type')
     del ls5_telem_doc['metadata']['product_type']
     index.products.update_document(ls5_telem_doc)
     # Ensure was updated
-    assert _object_exists(index._db, 'dix_ls5_telem_test_product_type')
+    assert _object_exists(index, 'dix_ls5_telem_test_product_type')
     updated_type = index.products.get_by_name(ls5_telem_type.name)
     assert updated_type.definition['metadata'] == ls5_telem_doc['metadata']
 
@@ -548,7 +548,7 @@ def test_filter_types_by_search(index, ls5_telem_type):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_update_metadata_type_doc(initialised_postgres_db, index, ls5_telem_type):
+def test_update_metadata_type_doc(index, ls5_telem_type):
     type_doc = copy.deepcopy(ls5_telem_type.metadata_type.definition)
     type_doc['dataset']['search_fields']['test_indexed'] = {
         'description': 'indexed test field',
@@ -563,5 +563,5 @@ def test_update_metadata_type_doc(initialised_postgres_db, index, ls5_telem_type
     index.metadata_types.update_document(type_doc)
 
     assert ls5_telem_type.name == 'ls5_telem_test'
-    assert _object_exists(initialised_postgres_db, "dix_ls5_telem_test_test_indexed")
-    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_test_not_indexed")
+    assert _object_exists(index, "dix_ls5_telem_test_test_indexed")
+    assert not _object_exists(index, "dix_ls5_telem_test_test_not_indexed")

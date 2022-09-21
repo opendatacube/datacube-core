@@ -57,7 +57,7 @@ def pseudo_ls8_type(index, ga_metadata_type):
 @pytest.fixture
 def pseudo_ls8_dataset(index, pseudo_ls8_type):
     id_ = str(uuid.uuid4())
-    with index._db._connect() as connection:
+    with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
@@ -110,7 +110,7 @@ def pseudo_ls8_dataset(index, pseudo_ls8_type):
 def pseudo_ls8_dataset2(index, pseudo_ls8_type):
     # Like the previous dataset, but a day later in time.
     id_ = str(uuid.uuid4())
-    with index._db._connect() as connection:
+    with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
@@ -173,7 +173,7 @@ def pseudo_ls8_dataset3(index: Index,
         'satellite_ref_point_end': {'x': 116, 'y': 87},
     }
 
-    with index._db._connect() as connection:
+    with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             dataset_doc,
             id_,
@@ -199,7 +199,7 @@ def pseudo_ls8_dataset4(index: Index,
         'satellite_ref_point_end': {'x': 116, 'y': 87},
     }
 
-    with index._db._connect() as connection:
+    with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             dataset_doc,
             id_,
@@ -853,7 +853,7 @@ def test_cli_info(index: Index,
     assert yaml_docs[1]['id'] == str(pseudo_ls8_dataset2.id)
 
 
-def test_cli_missing_info(clirunner, initialised_postgres_db):
+def test_cli_missing_info(clirunner, index):
     id_ = str(uuid.uuid4())
     result = clirunner(
         [
