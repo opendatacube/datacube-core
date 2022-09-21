@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
-from typing import Any, Iterable, Sequence
+from typing import Iterable, Sequence
 
 from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
 from datacube.index.postgis._transaction import PostgisTransaction

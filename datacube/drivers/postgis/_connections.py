@@ -19,7 +19,7 @@ import re
 from contextlib import contextmanager
 from typing import Any, Callable, Iterable, Mapping, Optional, Union, Type
 
-from sqlalchemy import event, create_engine, text
+from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
 

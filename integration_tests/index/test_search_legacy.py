@@ -18,7 +18,6 @@ from dateutil import tz
 from psycopg2._range import NumericRange
 
 from datacube.config import LocalConfig
-from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._connections import DEFAULT_DB_USER
 from datacube.index import Index
 from datacube.model import Dataset

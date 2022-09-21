@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
-from typing import Any
 
 from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
 from datacube.index.postgres._transaction import PostgresTransaction

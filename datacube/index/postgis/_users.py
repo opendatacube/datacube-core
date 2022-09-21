@@ -9,7 +9,10 @@ from datacube.drivers.postgis import PostGisDb
 
 
 class UserResource(AbstractUserResource, IndexResourceAddIn):
-    def __init__(self, db: PostGisDb, index: "datacube.index.postgis.index.Index") -> None:
+    def __init__(self,
+                 db: PostGisDb,
+                 index: "datacube.index.postgis.index.Index"  # noqa: F821
+                ) -> None:
         """
         :type db: datacube.drivers.postgis.PostGisDb
         """

@@ -9,7 +9,10 @@ from datacube.drivers.postgres import PostgresDb
 
 
 class UserResource(AbstractUserResource, IndexResourceAddIn):
-    def __init__(self, db: PostgresDb, index: "datacube.index.postgres.index.Index") -> None:
+    def __init__(self,
+                 db: PostgresDb,
+                 index: "datacube.index.postgres.index.Index"  # noqa: F821
+                ) -> None:
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
         """

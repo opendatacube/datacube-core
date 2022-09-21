@@ -16,7 +16,6 @@ from uuid import UUID
 import pytest
 from dateutil import tz
 
-from datacube.drivers.postgres import PostgresDb
 from datacube.index.exceptions import MissingRecordError
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType
@@ -279,8 +278,6 @@ def test_transactions_api_ctx_mgr(index,
                                   eo3_ls8_dataset_doc,
                                   eo3_ls8_dataset2_doc):
     from datacube.index.hl import Doc2Dataset
-    import logging
-    _LOG = logging.getLogger(__name__)
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
@@ -311,8 +308,6 @@ def test_transactions_api_manual(index,
                                  eo3_ls8_dataset_doc,
                                  eo3_ls8_dataset2_doc):
     from datacube.index.hl import Doc2Dataset
-    import logging
-    _LOG = logging.getLogger(__name__)
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
@@ -339,8 +334,6 @@ def test_transactions_api_hybrid(index,
                                  eo3_ls8_dataset_doc,
                                  eo3_ls8_dataset2_doc):
     from datacube.index.hl import Doc2Dataset
-    import logging
-    _LOG = logging.getLogger(__name__)
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
     ds2, err = resolver(*eo3_ls8_dataset2_doc)

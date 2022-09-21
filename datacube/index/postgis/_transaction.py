@@ -3,8 +3,6 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
-
 from contextlib import contextmanager
 from sqlalchemy import text
 from typing import Any
@@ -13,7 +11,6 @@ from datacube.drivers.postgis import PostGisDb
 from datacube.drivers.postgis._api import PostgisDbAPI
 from datacube.index.abstract import AbstractTransaction
 
-_LOG = logging.getLogger(__name__)
 
 class PostgisTransaction(AbstractTransaction):
     def __init__(self, db: PostGisDb, idx_id: str) -> None:
