@@ -12,6 +12,7 @@ v1.8.next
 - Migrate main test docker build to Ubuntu 22.04 and Python 3.10. (:pull:`1283`)
 - Dynamically create tables to serve as spatial indexes in postgis driver. (:pull:`1312`)
 - Populate spatial index tables, automatically and manually. (:pull:`1314`)
+- Perform spatial queries against spatial index tables in postgis driver. (:pull:`1316`)
 - EO3 data fixtures and tests. Fix SQLAlchemy bugs in postgis driver. (:pull:`1309`)
 - Dependency updates. (:pull:`1308`, :pull:`1313`)
 - Remove several features that had been deprecated in previous releases. (:pull:`1275`)

@@ -9,7 +9,7 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, Union, List
+from typing import Iterable, Union, List, Optional
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -22,6 +22,7 @@ from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
+from datacube.utils.geometry import CRS, Geometry
 from datacube.index import fields
 
 _LOG = logging.getLogger(__name__)
@@ -633,6 +634,11 @@ class DatasetResource(AbstractDatasetResource):
 
         for q, product in product_queries:
             _LOG.warning("Querying product %s", product)
+            # Extract Geospatial search geometry
+            geom = self._extract_geom_from_query(q)
+            assert "lat" not in q
+            assert "lon" not in q
+
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             select_fields = None
@@ -650,7 +656,8 @@ class DatasetResource(AbstractDatasetResource):
                            query_exprs,
                            select_fields=select_fields,
                            limit=limit,
-                           with_source_ids=with_source_ids
+                           with_source_ids=with_source_ids,
+                           geom=geom
                        ))
 
     def _do_count_by_product(self, query):
@@ -882,3 +889,7 @@ class DatasetResource(AbstractDatasetResource):
             custom_exprs.append(fields.as_expression(custom_field, custom_query[key]))
 
         return custom_exprs
+
+    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+        with self._db.connect() as connection:
+            return connection.spatial_extent(ids, crs)

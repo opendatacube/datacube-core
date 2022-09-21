@@ -13,6 +13,7 @@
 Persistence API implementation for postgis.
 """
 
+import json
 import logging
 import uuid  # noqa: F401
 from sqlalchemy import cast
@@ -25,7 +26,7 @@ from typing import Iterable, Tuple, Sequence
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils import geometry
-from datacube.utils.geometry import CRS
+from datacube.utils.geometry import CRS, Geometry
 from . import _core
 from . import _dynamic as dynamic
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
@@ -300,6 +301,26 @@ class PostgisDbAPI(object):
         )
         return r.rowcount > 0
 
+    def spatial_extent(self, ids, crs):
+        SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+        if SpatialIndex is None:
+            return None
+        result = self._connection.execute(
+            select([
+                func.ST_AsGeoJSON(func.ST_Union(SpatialIndex.extent))
+            ]).select_from(
+                SpatialIndex
+            ).where(
+                SpatialIndex.dataset_ref.in_(ids)
+            )
+        )
+        for r in result:
+            extent_json = r[0]
+            if extent_json is None:
+                return None
+            return Geometry(json.loads(extent_json), crs=crs)
+        return None
+
     def contains_dataset(self, dataset_id):
         return bool(
             self._connection.execute(
@@ -455,15 +476,17 @@ class PostgisDbAPI(object):
 
         return [raw_expr(expression) for expression in expressions]
 
-    @staticmethod
-    def search_datasets_query(expressions, source_exprs=None,
-                              select_fields=None, with_source_ids=False, limit=None):
+    def search_datasets_query(self,
+                              expressions, source_exprs=None,
+                              select_fields=None, with_source_ids=False,
+                              limit=None, geom=None):
         """
         :type expressions: Tuple[Expression]
         :type source_exprs: Tuple[Expression]
         :type select_fields: Iterable[PgField]
         :type with_source_ids: bool
         :type limit: int
+        :type geom: Geometry
         :rtype: sqlalchemy.Expression
         """
         # TODO: lineage handling and source search
@@ -478,26 +501,49 @@ class PostgisDbAPI(object):
         else:
             select_columns = _dataset_select_fields()
 
+        if geom:
+            # Check geom CRS - do we have a spatial index for this CRS?
+            #           Yes? Use it!
+            #           No? Convert to 4326 which we should always have a spatial index for by default
+            if not geom.crs:
+                raise ValueError("Search geometry must have a CRS")
+            SpatialIndex = self._db.spatial_index(geom.crs)   # noqa: N806
+            if SpatialIndex is None:
+                _LOG.info("No spatial index for crs %s - converting to 4326", geom.crs)
+                default_crs = CRS("EPSG:4326")
+                geom = geom.to_crs(default_crs)
+                SpatialIndex = self._db.spatial_index(default_crs)  # noqa: N806
+            geom_sql = geom_alchemy(geom)
+            _LOG.info("query geometry = %s (%s)", geom.json, geom.crs)
+            spatialquery = func.ST_Intersects(SpatialIndex.extent, geom_sql)
+        else:
+            spatialquery = None
+            SpatialIndex = None  # noqa: N806
+
         raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
         join_tables = PostgisDbAPI._join_tables(Dataset, expressions, select_fields)
         where_expr = and_(Dataset.archived == None, *raw_expressions)
-
         query = select(select_columns).select_from(Dataset)
         for join in join_tables:
             query = query.join(join)
+        if spatialquery is not None:
+            where_expr = and_(where_expr, spatialquery)
+            query = query.join(SpatialIndex)
         query = query.where(where_expr).limit(limit)
         return query
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
-                        with_source_ids=False, limit=None):
+                        with_source_ids=False, limit=None,
+                        geom=None):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgis._fields.PgField]
         :type expressions: tuple[datacube.drivers.postgis._fields.PgExpression]
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
-                                                  select_fields, with_source_ids, limit)
+                                                  select_fields, with_source_ids,
+                                                  limit, geom=geom)
         _LOG.debug("search_datasets SQL: %s", str(select_query))
         return self._connection.execute(select_query)
 

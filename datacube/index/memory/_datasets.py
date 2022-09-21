@@ -720,3 +720,6 @@ class DatasetResource(AbstractDatasetResource):
             indexed_time=datetime.datetime.now() if for_save and orig.indexed_time is None else orig.indexed_time,
             archived_time=None if for_save else orig.archived_time
         )
+
+    def spatial_extent(self, ids, crs=None):
+        return None

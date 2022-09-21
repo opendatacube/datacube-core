@@ -283,6 +283,8 @@ def test_search_day(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     assert len(datasets) == 0
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_dataset_ranges(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # In the lat bounds.
     datasets = index.datasets.search_eager(
@@ -945,6 +947,8 @@ def test_find_duplicates(index, pseudo_ls8_type,
     assert sat_res == []
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_csv_search_via_cli(clirunner: Any,
                             pseudo_ls8_type: Product,
                             pseudo_ls8_dataset: Dataset,
@@ -1024,6 +1028,8 @@ _EXPECTED_OUTPUT_HEADER = 'creation_time,format,gsi,id,indexed_by,indexed_time,i
     'product,product_id,product_type,sat_path,sat_row,time,uri'
 
 
+# Current formulation of this test relies on non-EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
                        pseudo_ls8_dataset, pseudo_ls8_dataset2):
     output = _csv_search_raw(['datasets', ' lat in [-40, -10]'], clirunner)

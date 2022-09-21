@@ -46,7 +46,6 @@ jobs:
         run: |
           sudo apt-get remove python3-openssl
           pip install --upgrade -e '.[test]'
-          pip install pylint
           pylint -j 2 --reports no datacube
 
 
@@ -60,5 +59,4 @@ jobs:
         run: |
           sudo apt-get remove python3-openssl
           pip install --upgrade -e '.[test]'
-          pip install pycodestyle
           pycodestyle tests integration_tests examples --max-line-length 120

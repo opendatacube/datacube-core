@@ -18,8 +18,7 @@ from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
 from datacube.utils import cached_property, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset
-from datacube.utils.geometry import CRS
-
+from datacube.utils.geometry import CRS, Geometry, box
 
 _LOG = logging.getLogger(__name__)
 
@@ -906,6 +905,87 @@ class AbstractDatasetResource(ABC):
         :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
         property functions).
         """
+
+    @abstractmethod
+    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+        """
+        Return the combined spatial extent of the nominated datasets.
+
+        Uses spatial index.
+        Returns None if no index for the CRS, or if no identified datasets are indexed in the relevant spatial index.
+        Result will not include extents of datasets that cannot be validly projected into the CRS.
+
+        :param ids: An iterable of dataset IDs
+        :param crs: A CRS (defaults to EPSG:4326)
+        :return: The combined spatial extents of the datasets.
+        """
+
+    def _extract_geom_from_query(self, q: Mapping[str, QueryField]) -> Optional[Geometry]:
+        """
+        Utility method for index drivers supporting spatial indexes.
+
+        Extract a Geometry from a dataset query.  Backwards compatible with old lat/lon style queries.
+
+        :param q: A query dictionary
+        :return: A polygon or multipolygon type Geometry.  None if no spatial query clauses.
+        """
+        geom: Optional[Geometry] = None
+        if "geometry" in q:
+            # New geometry-style spatial query
+            geom_term = q.pop("geometry")
+            try:
+                geom = Geometry(geom_term)
+            except ValueError:
+                # Can't convert to single Geometry. If it is an iterable of Geometries, return the union
+                for term in geom_term:
+                    if geom is None:
+                        geom = Geometry(term)
+                    else:
+                        geom = geom.union(Geometry(term))
+            if "lat" in q or "lon" in q:
+                raise ValueError("Cannot specify lat/lon AND geometry in the same query")
+            assert geom.crs
+        else:
+            # Old lat/lon--style spatial query (or no spatial query)
+            lat = q.pop("lat", None)
+            lon = q.pop("lon", None)
+            if lat is None and lon is None:
+                # No spatial query
+                _LOG.info("No spatial query")
+                return None
+
+            # Old lat/lon--style spatial query
+            if lat is None:
+                lat = Range(begin=-90, end=90)
+            if lon is None:
+                lon = Range(begin=-180, end=180)
+            delta = 0.000001
+            if isinstance(lat, Range) and isinstance(lon, Range):
+                # ranges for both - build a box.
+                geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=CRS("EPSG:4326"))
+            elif isinstance(lat, Range):
+                if isinstance(lon, (int, float)):
+                    # lat is a range, but lon is scalar - geom is ideally a line
+                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
+                    geom = box(lon - delta, lat.begin, lon + delta, lat.end, crs=CRS("EPSG:4326"))
+                else:
+                    raise ValueError("lon search term must be a Range or a numeric scalar")
+            elif isinstance(lon, Range):
+                if isinstance(lat, (int, float)):
+                    # lon is a range, but lat is scalar - geom is ideally a line
+                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
+                    geom = box(lon.begin, lat - delta, lon.end, lat + delta, crs=CRS("EPSG:4326"))
+                else:
+                    raise ValueError("lat search term must be a Range or a numeric scalar")
+            else:
+                if isinstance(lon, (int, float)) and isinstance(lat, (int, float)):
+                    # Lat and Lon are both scalars - geom is ideally point
+                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
+                    geom = box(lon - delta, lat - delta, lon + delta, lat + delta, crs=CRS("EPSG:4326"))
+                else:
+                    raise ValueError("lat and lon search terms must be of type Range or a numeric scalar")
+        _LOG.info("Spatial Query Geometry: %s", geom.wkt)
+        return geom
 
 
 class AbstractIndex(ABC):
