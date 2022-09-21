@@ -78,7 +78,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
                 metadata_type = self.metadata_type_resource.add(product.metadata_type,
                                                                 allow_table_lock=allow_table_lock)
-            with self.db_connection(transaction=allow_table_lock) as connection:
+            with self._db_connection(transaction=allow_table_lock) as connection:
                 connection.insert_product(
                     name=product.name,
                     metadata=product.metadata_doc,
@@ -190,7 +190,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         metadata_type = cast(MetadataType, self.metadata_type_resource.get_by_name(product.metadata_type.name))
         #     Given we cannot change metadata type because of the check above, and this is an
         #     update method, the metadata type is guaranteed to already exist.
-        with self.db_connection(transaction=allow_table_lock) as conn:
+        with self._db_connection(transaction=allow_table_lock) as conn:
             conn.update_product(
                 name=product.name,
                 metadata=product.metadata_doc,
@@ -228,7 +228,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_unsafe(self, id_):  # type: ignore
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             result = connection.get_product(id_)
         if not result:
             raise KeyError('"%s" is not a valid Product id' % id_)
@@ -237,7 +237,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_by_name_unsafe(self, name):  # type: ignore
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             result = connection.get_product_by_name(name)
         if not result:
             raise KeyError('"%s" is not a valid Product name' % name)
@@ -309,7 +309,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         Retrieve all Products
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             return (self._make(record) for record in connection.get_all_products())
 
     def _make_many(self, query_rows):

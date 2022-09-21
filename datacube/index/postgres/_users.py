@@ -20,7 +20,7 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         """
         Grant a role to users
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             connection.grant_role(role, usernames)
 
     def create_user(self, username: str, password: str,
@@ -28,14 +28,14 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         """
         Create a new user.
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             connection.create_user(username, password, role, description=description)
 
     def delete_user(self, *usernames: str) -> None:
         """
         Delete a user
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             connection.drop_users(usernames)
 
     def list_users(self) -> Iterable[Tuple[str, str, Optional[str]]]:
@@ -43,6 +43,6 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         :return: list of (role, user, description)
         :rtype: list[(str, str, str)]
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             for role, user, description in connection.list_users():
                 yield role, user, description

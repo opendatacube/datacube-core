@@ -56,7 +56,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if isinstance(id_, str):
             id_ = UUID(id_)
 
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             if not include_sources:
                 dataset = connection.get_dataset(id_)
                 return self._make(dataset, full_info=True) if dataset else None
@@ -85,7 +85,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         ids = [to_uuid(i) for i in ids]
 
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             rows = connection.get_datasets(ids)
             return [self._make(r, full_info=True) for r in rows]
 
@@ -98,7 +98,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         if not isinstance(id_, UUID):
             id_ = UUID(id_)
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             return [
                 self._make(result, full_info=True)
                 for result in connection.get_derived_datasets(id_)
@@ -111,7 +111,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: bool
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             return connection.contains_dataset(id_)
 
     def bulk_has(self, ids_):
@@ -124,7 +124,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :rtype: [bool]
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             existing = set(connection.datasets_intersection(ids_))
 
         return [x in existing for x in
@@ -184,7 +184,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
             dss = [dataset]
 
-        with self.db_connection(transaction=True) as transaction:
+        with self._db_connection(transaction=True) as transaction:
             process_bunch(dss, dataset, transaction)
 
         return dataset
@@ -209,7 +209,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         expressions = [product.metadata_type.dataset_fields.get('product') == product.name]
 
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             for record in connection.get_duplicates(group_fields, expressions):
                 dataset_ids = set(record[0])
                 grouped_fields = tuple(record[1:])
@@ -277,7 +277,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         _LOG.info("Updating dataset %s", dataset.id)
 
         product = self.types.get_by_name(dataset.type.name)
-        with self.db_connection(transaction=True) as transaction:
+        with self._db_connection(transaction=True) as transaction:
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
 
@@ -296,7 +296,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         # front of a stack
         for uri in new_uris[::-1]:
             if transaction is None:
-                with self.db_connection(transaction=True) as tr:
+                with self._db_connection(transaction=True) as tr:
                     insert_one(uri, tr)
             else:
                 insert_one(uri, transaction)
@@ -307,7 +307,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param Iterable[UUID] ids: list of dataset ids to archive
         """
-        with self.db_connection(transaction=True) as transaction:
+        with self._db_connection(transaction=True) as transaction:
             for id_ in ids:
                 transaction.archive_dataset(id_)
 
@@ -317,7 +317,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param Iterable[UUID] ids: list of dataset ids to restore
         """
-        with self.db_connection(transaction=True) as transaction:
+        with self._db_connection(transaction=True) as transaction:
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
@@ -327,7 +327,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param ids: iterable of dataset ids to purge
         """
-        with self.db_connection(transaction=True) as transaction:
+        with self._db_connection(transaction=True) as transaction:
             for id_ in ids:
                 transaction.delete_dataset(id_)
 
@@ -341,7 +341,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param archived:
         :rtype: list[UUID]
         """
-        with self.db_connection(transaction=True) as transaction:
+        with self._db_connection(transaction=True) as transaction:
             return [dsid[0] for dsid in transaction.all_dataset_ids(archived)]
 
     def get_field_names(self, product_name=None):
@@ -368,7 +368,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             return connection.get_locations(id_)
 
     def get_archived_locations(self, id_):
@@ -378,7 +378,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             return [uri for uri, archived_dt in connection.get_archived_locations(id_)]
 
     def get_archived_location_times(self, id_):
@@ -388,7 +388,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param typing.Union[UUID, str] id_: dataset id
         :rtype: List[Tuple[str, datetime.datetime]]
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             return list(connection.get_archived_locations(id_))
 
     def add_location(self, id_, uri):
@@ -403,7 +403,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             warnings.warn("Cannot add empty uri. (dataset %s)" % id_)
             return False
 
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             return connection.insert_dataset_location(id_, uri)
 
     def get_datasets_for_location(self, uri, mode=None):
@@ -414,7 +414,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param str mode: 'exact', 'prefix' or None (to guess)
         :return:
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             return (self._make(row) for row in connection.get_datasets_for_location(uri, mode=mode))
 
     def remove_location(self, id_, uri):
@@ -425,7 +425,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param str uri: fully qualified uri
         :returns bool: Was one removed?
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             was_removed = connection.remove_location(id_, uri)
             return was_removed
 
@@ -437,7 +437,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param str uri: fully qualified uri
         :return bool: location was able to be archived
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             was_archived = connection.archive_location(id_, uri)
             return was_archived
 
@@ -449,7 +449,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param str uri: fully qualified uri
         :return bool: location was able to be restored
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             was_restored = connection.restore_location(id_, uri)
             return was_restored
 
@@ -490,7 +490,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dict metadata:
         :rtype: list[Dataset]
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             for dataset in self._make_many(connection.search_datasets_by_metadata(metadata)):
                 yield dataset
 
@@ -646,7 +646,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 else:
                     select_fields = tuple(dataset_fields[field_name]
                                           for field_name in select_field_names)
-            with self.db_connection() as connection:
+            with self._db_connection() as connection:
                 yield (product,
                        connection.search_datasets(
                            query_exprs,
@@ -662,7 +662,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
-            with self.db_connection() as connection:
+            with self._db_connection() as connection:
                 count = connection.count_datasets(query_exprs)
             if count > 0:
                 yield product, count
@@ -687,7 +687,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
-            with self.db_connection() as connection:
+            with self._db_connection() as connection:
                 yield product, list(connection.count_datasets_through_time(
                     start,
                     end,
@@ -732,7 +732,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                 offset=max_offset,
                                 selection='greatest')
 
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             result = connection.execute(
                 select(
                     [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
@@ -786,7 +786,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 class DatasetLight(result_type):  # type: ignore
                     __slots__ = ()
 
-            with self.db_connection() as connection:
+            with self._db_connection() as connection:
                 results = connection.search_unique_datasets(
                     query_exprs,
                     select_fields=select_fields,

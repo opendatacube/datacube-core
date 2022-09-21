@@ -358,10 +358,10 @@ def test_transactions_api_manual(index,
 
 
 def test_transactions_api_hybrid(index,
-                                  extended_eo3_metadata_type_doc,
-                                  ls8_eo3_product,
-                                  eo3_ls8_dataset_doc,
-                                  eo3_ls8_dataset2_doc):
+                                 extended_eo3_metadata_type_doc,
+                                 ls8_eo3_product,
+                                 eo3_ls8_dataset_doc,
+                                 eo3_ls8_dataset2_doc):
     from datacube.index.hl import Doc2Dataset
     import logging
     _LOG = logging.getLogger(__name__)

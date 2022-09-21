@@ -4,10 +4,11 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Iterable, Optional, Tuple
 from datacube.index.abstract import AbstractUserResource
+from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.drivers.postgis import PostGisDb
 
 
-class UserResource(AbstractUserResource):
+class UserResource(AbstractUserResource, IndexResourceAddIn):
     def __init__(self, db: PostGisDb, index: "datacube.index.postgis.index.Index") -> None:
         """
         :type db: datacube.drivers.postgis.PostGisDb
@@ -19,7 +20,7 @@ class UserResource(AbstractUserResource):
         """
         Grant a role to users
         """
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             connection.grant_role(role, usernames)
 
     def create_user(self, username: str, password: str,
@@ -27,14 +28,14 @@ class UserResource(AbstractUserResource):
         """
         Create a new user.
         """
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             connection.create_user(username, password, role, description=description)
 
     def delete_user(self, *usernames: str) -> None:
         """
         Delete a user
         """
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             connection.drop_users(usernames)
 
     def list_users(self) -> Iterable[Tuple[str, str, Optional[str]]]:
@@ -42,6 +43,6 @@ class UserResource(AbstractUserResource):
         :return: list of (role, user, description)
         :rtype: list[(str, str, str)]
         """
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             for role, user, description in connection.list_users():
                 yield role, user, description

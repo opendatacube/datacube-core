@@ -70,7 +70,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                 'Metadata Type {}'.format(metadata_type.name)
             )
         else:
-            with self.db_connection(transaction=allow_table_lock) as connection:
+            with self._db_connection(transaction=allow_table_lock) as connection:
                 connection.insert_metadata_type(
                     name=metadata_type.name,
                     definition=metadata_type.definition,
@@ -144,7 +144,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         _LOG.info("Updating metadata type %s", metadata_type.name)
 
-        with self.db_connection(transaction=allow_table_lock) as connection:
+        with self._db_connection(transaction=allow_table_lock) as connection:
             connection.update_metadata_type(
                 name=metadata_type.name,
                 definition=metadata_type.definition,
@@ -170,7 +170,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_unsafe(self, id_):  # type: ignore
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             record = connection.get_metadata_type(id_)
         if record is None:
             raise KeyError('%s is not a valid MetadataType id')
@@ -179,7 +179,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_by_name_unsafe(self, name):  # type: ignore
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             record = connection.get_metadata_type_by_name(name)
         if not record:
             raise KeyError('%s is not a valid MetadataType name' % name)
@@ -195,7 +195,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
             If false, creation will be slightly slower and cannot be done in a transaction.
         """
-        with self.db_connection(transaction=allow_table_lock) as connection:
+        with self._db_connection(transaction=allow_table_lock) as connection:
             connection.check_dynamic_fields(
                 concurrently=not allow_table_lock,
                 rebuild_indexes=rebuild_indexes,
@@ -208,7 +208,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         :rtype: iter[datacube.model.MetadataType]
         """
-        with self.db_connection() as connection:
+        with self._db_connection() as connection:
             return self._make_many(connection.get_all_metadata_types())
 
     def _make_many(self, query_rows):

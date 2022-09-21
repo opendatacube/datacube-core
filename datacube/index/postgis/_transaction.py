@@ -9,21 +9,21 @@ from contextlib import contextmanager
 from sqlalchemy import text
 from typing import Any
 
-from datacube.drivers.postgres import PostgresDb
-from datacube.drivers.postgres._api import PostgresDbAPI
+from datacube.drivers.postgis import PostGisDb
+from datacube.drivers.postgis._api import PostgisDbAPI
 from datacube.index.abstract import AbstractTransaction
 
 _LOG = logging.getLogger(__name__)
 
-class PostgresTransaction(AbstractTransaction):
-    def __init__(self, db: PostgresDb, idx_id: str) -> None:
+class PostgisTransaction(AbstractTransaction):
+    def __init__(self, db: PostGisDb, idx_id: str) -> None:
         super().__init__(idx_id)
         self._db = db
 
     def _new_connection(self) -> Any:
         dbconn = self._db.give_me_a_connection()
         dbconn.execute(text('BEGIN'))
-        conn = PostgresDbAPI(dbconn)
+        conn = PostgisDbAPI(self._db, dbconn)
         return conn
 
     def _commit(self) -> None:
@@ -39,7 +39,7 @@ class PostgresTransaction(AbstractTransaction):
 
 class IndexResourceAddIn:
     @contextmanager
-    def _db_connection(self, transaction: bool = False) -> PostgresDbAPI:
+    def _db_connection(self, transaction: bool = False) -> PostgisDbAPI:
         """
         Context manager representing a database connection.
 

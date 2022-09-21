@@ -6,6 +6,7 @@ import logging
 from typing import Any, Iterable, Sequence
 
 from datacube.drivers.postgis import PostGisDb
+from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore
 from datacube.index.postgis._metadata_types import MetadataTypeResource
 from datacube.index.postgis._products import ProductResource
@@ -15,24 +16,6 @@ from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
-
-
-class PostgisTransaction(AbstractTransaction):
-    def __init__(self, db: PostGisDb, idx_id: str) -> None:
-        super().__init__(idx_id)
-        self._db = db
-
-    def _new_connection(self) -> Any:
-        return self._db.begin()
-
-    def _commit(self) -> None:
-        self._connection.commit()
-
-    def _rollback(self) -> None:
-        self._connection.rollback()
-
-    def _release_connection(self) -> None:
-        self._connection.close()
 
 
 class Index(AbstractIndex):
