@@ -221,7 +221,7 @@ class PostgresDb(object):
         as some servers will aggressively close idle connections (eg. DEA's NCI servers). It also prevents the
         connection from being reused while borrowed.
 
-        Low level context manager, user self._db_connection instead
+        Low level context manager, use <index_resource>._db_connection instead
         """
         with self._engine.connect() as connection:
             try:
