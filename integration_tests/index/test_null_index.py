@@ -120,3 +120,20 @@ def test_null_dataset_resource(null_config):
         assert dc.index.datasets.search_summaries(foo="bar", baz=12) == []
         assert dc.index.datasets.search_eager(foo="bar", baz=12) == []
         assert dc.index.datasets.search_returning_datasets_light(("foo", "baz"), foo="bar", baz=12) == []
+
+
+def test_null_transactions(null_config):
+    with Datacube(config=null_config, validate_connection=True) as dc:
+        trans = dc.index.transaction()
+        assert not trans.active
+        trans.begin()
+        assert trans.active
+        trans.commit()
+        assert not trans.active
+        trans.begin()
+        assert dc.index.thread_transaction() == trans
+        with pytest.raises(ValueError):
+            trans.begin()
+        trans.rollback()
+        assert not trans.active
+        assert dc.index.thread_transaction() is None

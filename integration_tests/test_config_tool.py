@@ -20,20 +20,18 @@ EXAMPLE_DATASET_TYPE_DOCS = map(str, Path(__file__).parent.parent.
 INVALID_MAPPING_DOCS = map(str, Path(__file__).parent.parent.joinpath('docs').glob('*'))
 
 
-def _dataset_type_count(db):
-    with db.connect() as connection:
+def _dataset_type_count(index):
+    with index._active_connection() as connection:
         return len(list(connection.get_all_products()))
 
 
-def test_add_example_dataset_types(clirunner, initialised_postgres_db, default_metadata_type):
+def test_add_example_dataset_types(clirunner, index, default_metadata_type):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
 
     We add them all to a single database to check for things like duplicate ids.
-
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     """
-    existing_mappings = _dataset_type_count(initialised_postgres_db)
+    existing_mappings = _dataset_type_count(index)
 
     print('{} mappings'.format(existing_mappings))
     for mapping_path in EXAMPLE_DATASET_TYPE_DOCS:
@@ -42,7 +40,7 @@ def test_add_example_dataset_types(clirunner, initialised_postgres_db, default_m
         result = clirunner(['-v', 'product', 'add', mapping_path])
         assert result.exit_code == 0
 
-        mappings_count = _dataset_type_count(initialised_postgres_db)
+        mappings_count = _dataset_type_count(index)
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
         existing_mappings = mappings_count
 
@@ -79,11 +77,8 @@ def test_add_example_dataset_types(clirunner, initialised_postgres_db, default_m
         assert result.exit_code == 0
 
 
-def test_error_returned_on_invalid(clirunner, initialised_postgres_db):
-    """
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
-    """
-    assert _dataset_type_count(initialised_postgres_db) == 0
+def test_error_returned_on_invalid(clirunner, index):
+    assert _dataset_type_count(index) == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
         result = clirunner(
@@ -95,10 +90,10 @@ def test_error_returned_on_invalid(clirunner, initialised_postgres_db):
             expect_success=False
         )
         assert result.exit_code != 0, "Success return code for invalid document."
-        assert _dataset_type_count(initialised_postgres_db) == 0, "Invalid document was added to DB"
+        assert _dataset_type_count(index) == 0, "Invalid document was added to DB"
 
 
-def test_config_check(clirunner, initialised_postgres_db, local_config):
+def test_config_check(clirunner, index, local_config):
     """
     :type local_config: datacube.config.LocalConfig
     """
@@ -119,7 +114,7 @@ def test_config_check(clirunner, initialised_postgres_db, local_config):
     assert user_regex.match(result.output)
 
 
-def test_list_users_does_not_fail(clirunner, local_config, initialised_postgres_db):
+def test_list_users_does_not_fail(clirunner, local_config, index):
     """
     :type local_config: datacube.config.LocalConfig
     """
@@ -178,30 +173,30 @@ def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):
     ) in result.output
 
 
-def test_db_init(clirunner, initialised_postgres_db):
-    if initialised_postgres_db.driver_name == "postgis":
+def test_db_init(clirunner, index):
+    if index._db.driver_name == "postgis":
         from datacube.drivers.postgis._core import drop_db, has_schema
     else:
         from datacube.drivers.postgres._core import drop_db, has_schema
 
-    with initialised_postgres_db.connect() as connection:
+    with index._db._connect() as connection:
         drop_db(connection._connection)
 
-        assert not has_schema(initialised_postgres_db._engine, connection._connection)
+        assert not has_schema(index._db._engine, connection._connection)
 
     # Run on an empty database.
-    if initialised_postgres_db.driver_name == "postgis":
+    if index._db.driver_name == "postgis":
         result = clirunner(['-E', 'experimental', 'system', 'init'])
     else:
         result = clirunner(['system', 'init'])
 
     assert 'Created.' in result.output
 
-    with initialised_postgres_db.connect() as connection:
-        assert has_schema(initialised_postgres_db._engine, connection._connection)
+    with index._db._connect() as connection:
+        assert has_schema(index._db._engine, connection._connection)
 
 
-def test_add_no_such_product(clirunner, initialised_postgres_db):
+def test_add_no_such_product(clirunner, index):
     result = clirunner(['dataset', 'add', '--dtype', 'no_such_product', '/tmp'], expect_success=False)
     assert result.exit_code != 0
     assert "DEPRECATED option detected" in result.output
@@ -214,13 +209,13 @@ def test_add_no_such_product(clirunner, initialised_postgres_db):
     # Test that names are escaped
     ('test_user_"invalid+_chars_{n}', None),
     ('test_user_invalid_desc_{n}', 'Invalid "\' chars in description')])
-def example_user(clirunner, initialised_postgres_db, request):
+def example_user(clirunner, index, request):
     username, description = request.param
 
     username = username.format(n=random.randint(111111, 999999))
 
     # test_roles = (user_name for role_name, user_name, desc in roles if user_name.startswith('test_'))
-    with initialised_postgres_db.connect() as connection:
+    with index._db._connect() as connection:
         users = (user_name for role_name, user_name, desc in connection.list_users())
         if username in users:
             connection.drop_users([username])
@@ -230,7 +225,7 @@ def example_user(clirunner, initialised_postgres_db, request):
 
     yield username, description
 
-    with initialised_postgres_db.connect() as connection:
+    with index._db._connect() as connection:
         users = (user_name for role_name, user_name, desc in connection.list_users())
         if username in users:
             connection.drop_users([username])

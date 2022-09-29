@@ -7,6 +7,7 @@ import logging
 from cachetools.func import lru_cache
 
 from datacube.index.abstract import AbstractMetadataTypeResource
+from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.model import MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
@@ -14,12 +15,13 @@ from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 _LOG = logging.getLogger(__name__)
 
 
-class MetadataTypeResource(AbstractMetadataTypeResource):
-    def __init__(self, db):
+class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
+    def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
         """
         self._db = db
+        self._index = index
 
         self.get_unsafe = lru_cache()(self.get_unsafe)
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
@@ -51,7 +53,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
-            If false, creation will be slightly slower and cannot be done in a transaction.
+            If false (and a transaction is not already active), creation will be slightly slower
+            and cannot be done in a transaction.
         :rtype: datacube.model.MetadataType
         """
         # This column duplication is getting out of hand:
@@ -67,7 +70,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
                 'Metadata Type {}'.format(metadata_type.name)
             )
         else:
-            with self._db.connect() as connection:
+            with self._db_connection(transaction=allow_table_lock) as connection:
                 connection.insert_metadata_type(
                     name=metadata_type.name,
                     definition=metadata_type.definition,
@@ -141,7 +144,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
 
         _LOG.info("Updating metadata type %s", metadata_type.name)
 
-        with self._db.connect() as connection:
+        with self._db_connection(transaction=allow_table_lock) as connection:
             connection.update_metadata_type(
                 name=metadata_type.name,
                 definition=metadata_type.definition,
@@ -167,7 +170,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_unsafe(self, id_):  # type: ignore
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             record = connection.get_metadata_type(id_)
         if record is None:
             raise KeyError('%s is not a valid MetadataType id')
@@ -176,7 +179,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_by_name_unsafe(self, name):  # type: ignore
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             record = connection.get_metadata_type_by_name(name)
         if not record:
             raise KeyError('%s is not a valid MetadataType name' % name)
@@ -192,7 +195,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
 
             If false, creation will be slightly slower and cannot be done in a transaction.
         """
-        with self._db.connect() as connection:
+        with self._db_connection(transaction=allow_table_lock) as connection:
             connection.check_dynamic_fields(
                 concurrently=not allow_table_lock,
                 rebuild_indexes=rebuild_indexes,
@@ -205,7 +208,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
 
         :rtype: iter[datacube.model.MetadataType]
         """
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             return self._make_many(connection.get_all_metadata_types())
 
     def _make_many(self, query_rows):

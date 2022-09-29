@@ -3,13 +3,15 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from contextlib import contextmanager
 
-from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
+from datacube.index.postgres._transaction import PostgresTransaction
 from datacube.index.postgres._datasets import DatasetResource  # type: ignore
 from datacube.index.postgres._metadata_types import MetadataTypeResource
 from datacube.index.postgres._products import ProductResource
 from datacube.index.postgres._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs, AbstractTransaction
 from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
@@ -40,13 +42,15 @@ class Index(AbstractIndex):
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
 
+    supports_transactions = True
+
     def __init__(self, db: PostgresDb) -> None:
         self._db = db
 
-        self._users = UserResource(db)
-        self._metadata_types = MetadataTypeResource(db)
-        self._products = ProductResource(db, self.metadata_types)
-        self._datasets = DatasetResource(db, self.products)
+        self._users = UserResource(db, self)
+        self._metadata_types = MetadataTypeResource(db, self)
+        self._products = ProductResource(db, self)
+        self._datasets = DatasetResource(db, self)
 
     @property
     def users(self) -> UserResource:
@@ -99,11 +103,59 @@ class Index(AbstractIndex):
         """
         self._db.close()
 
+    @property
+    def index_id(self) -> str:
+        return f"legacy_{self.url}"
+
+    def transaction(self) -> AbstractTransaction:
+        return PostgresTransaction(self._db, self.index_id)
+
     def create_spatial_index(self, crs: CRS) -> None:
         _LOG.warning("postgres driver does not support spatio-temporal indexes")
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
+
+    @contextmanager
+    def _active_connection(self, transaction: bool = False) -> PostgresDbAPI:
+        """
+        Context manager representing a database connection.
+
+        If there is an active transaction for this index in the current thread, the connection object from that
+        transaction is returned, with the active transaction remaining in control of commit and rollback.
+
+        If there is no active transaction and the transaction argument is True, a new transactionised connection
+        is returned, with this context manager handling commit and rollback.
+
+        If there is no active transaction and the transaction argument is False (the default), a new connection
+        is returned with autocommit semantics.
+
+        Note that autocommit behaviour is NOT available if there is an active transaction for the index
+        and the active thread.
+
+        :param transaction: Use a transaction if one is not already active for the thread.
+        :return: A PostgresDbAPI object, with the specified transaction semantics.
+        """
+        trans = self.thread_transaction()
+        closing = False
+        if trans is not None:
+            # Use active transaction
+            yield trans._connection
+        elif transaction:
+            closing = True
+            with self._db._connect() as conn:
+                conn.begin()
+                try:
+                    yield conn
+                    conn.commit()
+                except Exception:  # pylint: disable=broad-except
+                    conn.rollback()
+                    raise
+        else:
+            closing = True
+            # Autocommit behaviour:
+            with self._db._connect() as conn:
+                yield conn
 
 
 class DefaultIndexDriver(AbstractIndexDriver):

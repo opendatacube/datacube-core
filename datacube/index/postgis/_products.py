@@ -8,6 +8,7 @@ from cachetools.func import lru_cache
 
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
+from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
@@ -17,19 +18,20 @@ from typing import Iterable, cast
 _LOG = logging.getLogger(__name__)
 
 
-class ProductResource(AbstractProductResource):
+class ProductResource(AbstractProductResource, IndexResourceAddIn):
     """
     :type _db: datacube.drivers.postgis._connections.PostgresDb
     :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
     """
 
-    def __init__(self, db, metadata_type_resource):
+    def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
         :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
         """
         self._db = db
-        self.metadata_type_resource = metadata_type_resource
+        self._index = index
+        self.metadata_type_resource = self._index.metadata_types
 
         self.get_unsafe = lru_cache()(self.get_unsafe)
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
@@ -74,7 +76,7 @@ class ProductResource(AbstractProductResource):
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
                 metadata_type = self.metadata_type_resource.add(product.metadata_type,
                                                                 allow_table_lock=allow_table_lock)
-            with self._db.connect() as connection:
+            with self._db_connection() as connection:
                 connection.insert_product(
                     name=product.name,
                     metadata=product.metadata_doc,
@@ -183,7 +185,7 @@ class ProductResource(AbstractProductResource):
         metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
         # TODO: should we add metadata type here?
         assert metadata_type, "TODO: should we add metadata type here?"
-        with self._db.connect() as conn:
+        with self._db_connection() as conn:
             conn.update_product(
                 name=product.name,
                 metadata=product.metadata_doc,
@@ -221,7 +223,7 @@ class ProductResource(AbstractProductResource):
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_unsafe(self, id_):  # type: ignore
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             result = connection.get_product(id_)
         if not result:
             raise KeyError('"%s" is not a valid Product id' % id_)
@@ -230,7 +232,7 @@ class ProductResource(AbstractProductResource):
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_by_name_unsafe(self, name):  # type: ignore
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             result = connection.get_product_by_name(name)
         if not result:
             raise KeyError('"%s" is not a valid Product name' % name)
@@ -305,7 +307,7 @@ class ProductResource(AbstractProductResource):
         """
         Retrieve all Products
         """
-        with self._db.connect() as connection:
+        with self._db_connection() as connection:
             return (self._make(record) for record in connection.get_all_products())
 
     def _make_many(self, query_rows):

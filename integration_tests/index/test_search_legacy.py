@@ -18,7 +18,6 @@ from dateutil import tz
 from psycopg2._range import NumericRange
 
 from datacube.config import LocalConfig
-from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._connections import DEFAULT_DB_USER
 from datacube.index import Index
 from datacube.model import Dataset
@@ -55,9 +54,9 @@ def pseudo_ls8_type(index, ga_metadata_type):
 
 
 @pytest.fixture
-def pseudo_ls8_dataset(index, initialised_postgres_db, pseudo_ls8_type):
+def pseudo_ls8_dataset(index, pseudo_ls8_type):
     id_ = str(uuid.uuid4())
-    with initialised_postgres_db.connect() as connection:
+    with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
@@ -107,10 +106,10 @@ def pseudo_ls8_dataset(index, initialised_postgres_db, pseudo_ls8_type):
 
 
 @pytest.fixture
-def pseudo_ls8_dataset2(index, initialised_postgres_db, pseudo_ls8_type):
+def pseudo_ls8_dataset2(index, pseudo_ls8_type):
     # Like the previous dataset, but a day later in time.
     id_ = str(uuid.uuid4())
-    with initialised_postgres_db.connect() as connection:
+    with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
@@ -162,7 +161,6 @@ def pseudo_ls8_dataset2(index, initialised_postgres_db, pseudo_ls8_type):
 # Datasets 3 and 4 mirror 1 and 2 but have a different path/row.
 @pytest.fixture
 def pseudo_ls8_dataset3(index: Index,
-                        initialised_postgres_db: PostgresDb,
                         pseudo_ls8_type: Product,
                         pseudo_ls8_dataset: Dataset) -> Dataset:
     # Same as 1, but a different path/row
@@ -174,7 +172,7 @@ def pseudo_ls8_dataset3(index: Index,
         'satellite_ref_point_end': {'x': 116, 'y': 87},
     }
 
-    with initialised_postgres_db.connect() as connection:
+    with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             dataset_doc,
             id_,
@@ -189,7 +187,6 @@ def pseudo_ls8_dataset3(index: Index,
 
 @pytest.fixture
 def pseudo_ls8_dataset4(index: Index,
-                        initialised_postgres_db: PostgresDb,
                         pseudo_ls8_type: Product,
                         pseudo_ls8_dataset2: Dataset) -> Dataset:
     # Same as 2, but a different path/row
@@ -201,7 +198,7 @@ def pseudo_ls8_dataset4(index: Index,
         'satellite_ref_point_end': {'x': 116, 'y': 87},
     }
 
-    with initialised_postgres_db.connect() as connection:
+    with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             dataset_doc,
             id_,
@@ -855,7 +852,7 @@ def test_cli_info(index: Index,
     assert yaml_docs[1]['id'] == str(pseudo_ls8_dataset2.id)
 
 
-def test_cli_missing_info(clirunner, initialised_postgres_db):
+def test_cli_missing_info(clirunner, index):
     id_ = str(uuid.uuid4())
     result = clirunner(
         [

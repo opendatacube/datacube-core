@@ -552,3 +552,19 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh):
     ds_from_idx = idx.datasets.get(ds_.id, include_sources=True)
     assert ds_from_idx.sources['ab'].id == ds_.sources['ab'].id
     assert ds_from_idx.sources['ac'].sources["cd"].id == ds_.sources['ac'].sources['cd'].id
+
+
+def test_mem_transactions(mem_index_fresh):
+    trans = mem_index_fresh.index.transaction()
+    assert not trans.active
+    trans.begin()
+    assert trans.active
+    trans.commit()
+    assert not trans.active
+    trans.begin()
+    assert mem_index_fresh.index.thread_transaction() == trans
+    with pytest.raises(ValueError):
+        trans.begin()
+    trans.rollback()
+    assert not trans.active
+    assert mem_index_fresh.index.thread_transaction() is None

@@ -16,7 +16,6 @@ from uuid import UUID
 import pytest
 from dateutil import tz
 
-from datacube.drivers.postgres import PostgresDb
 from datacube.index.exceptions import MissingRecordError
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType
@@ -71,10 +70,10 @@ _pseudo_telemetry_dataset_type = {
 }
 
 
-def test_archive_datasets(index, initialised_postgres_db, local_config, default_metadata_type):
+def test_archive_datasets(index, local_config, default_metadata_type):
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    with initialised_postgres_db.begin() as transaction:
-        was_inserted = transaction.insert_dataset(
+    with index.transaction() as transaction:
+        was_inserted = transaction._connection.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
             dataset_type.id
@@ -106,11 +105,11 @@ def test_archive_datasets(index, initialised_postgres_db, local_config, default_
     assert not indexed_dataset.is_archived
 
 
-def test_purge_datasets(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
+def test_purge_datasets(index, local_config, default_metadata_type, clirunner):
     # Create dataset
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    with initialised_postgres_db.begin() as transaction:
-        was_inserted = transaction.insert_dataset(
+    with index.transaction() as transaction:
+        was_inserted = transaction._connection.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
             dataset_type.id
@@ -137,15 +136,15 @@ def test_purge_datasets(index, initialised_postgres_db, local_config, default_me
     assert index.datasets.get(_telemetry_uuid) is None
 
 
-def test_purge_datasets_cli(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
+def test_purge_datasets_cli(index, local_config, default_metadata_type, clirunner):
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
 
     # Attempt to purge non-existent dataset should fail
     clirunner(['dataset', 'purge', str(_telemetry_uuid)], expect_success=False)
 
     # Create dataset
-    with initialised_postgres_db.begin() as transaction:
-        was_inserted = transaction.insert_dataset(
+    with index.transaction() as transaction:
+        was_inserted = transaction._connection.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
             dataset_type.id
@@ -170,12 +169,12 @@ def test_purge_datasets_cli(index, initialised_postgres_db, local_config, defaul
     assert index.datasets.get(_telemetry_uuid) is None
 
 
-def test_purge_all_datasets_cli(index, initialised_postgres_db, local_config, default_metadata_type, clirunner):
+def test_purge_all_datasets_cli(index, local_config, default_metadata_type, clirunner):
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
 
     # Create dataset
-    with initialised_postgres_db.begin() as transaction:
-        was_inserted = transaction.insert_dataset(
+    with index.transaction() as transaction:
+        was_inserted = transaction._connection.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
             dataset_type.id
@@ -202,12 +201,12 @@ def test_purge_all_datasets_cli(index, initialised_postgres_db, local_config, de
 
 
 @pytest.fixture
-def telemetry_dataset(index: Index, initialised_postgres_db: PostgresDb, default_metadata_type) -> Dataset:
+def telemetry_dataset(index: Index, default_metadata_type) -> Dataset:
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
-    with initialised_postgres_db.begin() as transaction:
-        was_inserted = transaction.insert_dataset(
+    with index.transaction() as transaction:
+        was_inserted = transaction._connection.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
             dataset_type.id
@@ -217,14 +216,14 @@ def telemetry_dataset(index: Index, initialised_postgres_db: PostgresDb, default
     return index.datasets.get(_telemetry_uuid)
 
 
-def test_index_duplicate_dataset(index: Index, initialised_postgres_db: PostgresDb,
+def test_index_duplicate_dataset(index: Index,
                                  local_config,
                                  default_metadata_type) -> None:
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
-    with initialised_postgres_db.begin() as transaction:
-        was_inserted = transaction.insert_dataset(
+    with index.transaction() as transaction:
+        was_inserted = transaction._connection.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
             dataset_type.id
@@ -234,7 +233,7 @@ def test_index_duplicate_dataset(index: Index, initialised_postgres_db: Postgres
     assert index.datasets.has(_telemetry_uuid)
 
     # Insert again.
-    with initialised_postgres_db.connect() as connection:
+    with index._db._connect() as connection:
         was_inserted = connection.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
@@ -273,28 +272,89 @@ def test_get_dataset(index: Index, telemetry_dataset: Dataset) -> None:
                                     'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
 
 
-def test_transactions(index: Index,
-                      initialised_postgres_db: PostgresDb,
-                      local_config,
-                      default_metadata_type) -> None:
-    assert not index.datasets.has(_telemetry_uuid)
+def test_transactions_api_ctx_mgr(index,
+                                  extended_eo3_metadata_type_doc,
+                                  ls8_eo3_product,
+                                  eo3_ls8_dataset_doc,
+                                  eo3_ls8_dataset2_doc):
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
+    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    with pytest.raises(Exception) as e:
+        with index.transaction() as trans:
+            assert index.datasets.get(ds1.id) is None
+            index.datasets.add(ds1)
+            assert index.datasets.get(ds1.id) is not None
+            raise Exception("Rollback!")
+    assert "Rollback!" in str(e.value)
+    assert index.datasets.get(ds1.id) is None
+    with index.transaction() as trans:
+        assert index.datasets.get(ds1.id) is None
+        index.datasets.add(ds1)
+        assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds1.id) is not None
+    with index.transaction() as trans:
+        index.datasets.add(ds2)
+        assert index.datasets.get(ds2.id) is not None
+        raise trans.rollback_exception("Rollback")
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is None
 
-    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    with initialised_postgres_db.begin() as transaction:
-        was_inserted = transaction.insert_dataset(
-            _telemetry_dataset,
-            _telemetry_uuid,
-            dataset_type.id
-        )
-        assert was_inserted
-        assert transaction.contains_dataset(_telemetry_uuid)
-        # Normal DB uses a separate connection: No dataset visible yet.
-        assert not index.datasets.has(_telemetry_uuid)
 
-        transaction.rollback()
+def test_transactions_api_manual(index,
+                                 extended_eo3_metadata_type_doc,
+                                 ls8_eo3_product,
+                                 eo3_ls8_dataset_doc,
+                                 eo3_ls8_dataset2_doc):
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
+    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    trans = index.transaction()
+    index.datasets.add(ds1)
+    assert index.datasets.get(ds1.id) is not None
+    trans.begin()
+    index.datasets.add(ds2)
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is not None
+    trans.rollback()
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is None
+    trans.begin()
+    index.datasets.add(ds2)
+    trans.commit()
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is not None
 
-    # Should have been rolled back.
-    assert not index.datasets.has(_telemetry_uuid)
+
+def test_transactions_api_hybrid(index,
+                                 extended_eo3_metadata_type_doc,
+                                 ls8_eo3_product,
+                                 eo3_ls8_dataset_doc,
+                                 eo3_ls8_dataset2_doc):
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
+    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    with index.transaction() as trans:
+        assert index.datasets.get(ds1.id) is None
+        index.datasets.add(ds1)
+        assert index.datasets.get(ds1.id) is not None
+        trans.rollback()
+        assert index.datasets.get(ds1.id) is None
+        trans.begin()
+        assert index.datasets.get(ds1.id) is None
+        index.datasets.add(ds1)
+        assert index.datasets.get(ds1.id) is not None
+        trans.commit()
+        assert index.datasets.get(ds1.id) is not None
+        trans.begin()
+        index.datasets.add(ds2)
+        assert index.datasets.get(ds2.id) is not None
+        trans.rollback()
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is None
 
 
 def test_get_missing_things(index: Index) -> None:

@@ -3,14 +3,16 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from contextlib import contextmanager
 from typing import Iterable, Sequence
 
-from datacube.drivers.postgis import PostGisDb
+from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
+from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore
 from datacube.index.postgis._metadata_types import MetadataTypeResource
 from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs, AbstractTransaction
 from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
@@ -48,6 +50,7 @@ class Index(AbstractIndex):
     # Hopefully can reinstate a simpler form of lineage support, but leave for now
     supports_lineage = False
     supports_source_filters = False
+    supports_transactions = True
 
     def __init__(self, db: PostGisDb) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
@@ -56,10 +59,10 @@ WARNING:
 WARNING: Database schema and internal APIs may change significantly between releases. Use at your own risk.""")
         self._db = db
 
-        self._users = UserResource(db)
-        self._metadata_types = MetadataTypeResource(db)
-        self._products = ProductResource(db, self.metadata_types)
-        self._datasets = DatasetResource(db, self.products)
+        self._users = UserResource(db, self)
+        self._metadata_types = MetadataTypeResource(db, self)
+        self._products = ProductResource(db, self)
+        self._datasets = DatasetResource(db, self)
 
     @property
     def users(self) -> UserResource:
@@ -115,6 +118,13 @@ WARNING: Database schema and internal APIs may change significantly between rele
         """
         self._db.close()
 
+    @property
+    def index_id(self) -> str:
+        return self.url
+
+    def transaction(self) -> AbstractTransaction:
+        return PostgisTransaction(self._db, self.index_id)
+
     def create_spatial_index(self, crs: CRS) -> bool:
         sp_idx = self._db.create_spatial_index(crs)
         return sp_idx is not None
@@ -127,11 +137,52 @@ WARNING: Database schema and internal APIs may change significantly between rele
                              product_names: Sequence[str] = [],
                              dataset_ids: Sequence[DSID] = []
                              ) -> int:
-        with self._db.connect() as conn:
+        with self._active_connection(transaction=True) as conn:
             return conn.update_spindex(crses, product_names, dataset_ids)
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
+
+    @contextmanager
+    def _active_connection(self, transaction: bool = False) -> PostgisDbAPI:
+        """
+        Context manager representing a database connection.
+
+        If there is an active transaction for this index in the current thread, the connection object from that
+        transaction is returned, with the active transaction remaining in control of commit and rollback.
+
+        If there is no active transaction and the transaction argument is True, a new transactionised connection
+        is returned, with this context manager handling commit and rollback.
+
+        If there is no active transaction and the transaction argument is False (the default), a new connection
+        is returned with autocommit semantics.
+
+        Note that autocommit behaviour is NOT available if there is an active transaction for the index
+        and the active thread.
+
+        :param transaction: Use a transaction if one is not already active for the thread.
+        :return: A PostgresDbAPI object, with the specified transaction semantics.
+        """
+        trans = self.thread_transaction()
+        closing = False
+        if trans is not None:
+            # Use active transaction
+            yield trans._connection
+        elif transaction:
+            closing = True
+            with self._db._connect() as conn:
+                conn.begin()
+                try:
+                    yield conn
+                    conn.commit()
+                except Exception:  # pylint: disable=broad-except
+                    conn.rollback()
+                    raise
+        else:
+            closing = True
+            # Autocommit behaviour:
+            with self._db._connect() as conn:
+                yield conn
 
 
 class DefaultIndexDriver(AbstractIndexDriver):

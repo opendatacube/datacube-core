@@ -19,7 +19,7 @@ import re
 from contextlib import contextmanager
 from typing import Any, Callable, Iterable, Mapping, Optional, Union, Type
 
-from sqlalchemy import event, create_engine, text
+from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
 
@@ -245,7 +245,7 @@ class PostGisDb(object):
         return list(self.spindexes.keys())
 
     @contextmanager
-    def connect(self):
+    def _connect(self):
         """
         Borrow a connection from the pool.
 
@@ -258,35 +258,12 @@ class PostGisDb(object):
         The connection can raise errors if not following this advice ("server closed the connection unexpectedly"),
         as some servers will aggressively close idle connections (eg. DEA's NCI servers). It also prevents the
         connection from being reused while borrowed.
+
+        Low level context manager, use <index_resource>._db_connection instead
         """
         with self._engine.connect() as connection:
-            yield _api.PostgisDbAPI(self, connection)
-            connection.close()
-
-    @contextmanager
-    def begin(self):
-        """
-        Start a transaction.
-
-        Returns an instance that will maintain a single connection in a transaction.
-
-        Call commit() or rollback() to complete the transaction or use a context manager:
-
-            with db.begin() as trans:
-                trans.insert_dataset(...)
-
-        (Don't share an instance between threads)
-
-        :rtype: PostgresDBAPI
-        """
-        with self._engine.connect() as connection:
-            connection.execute(text('BEGIN'))
             try:
                 yield _api.PostgisDbAPI(self, connection)
-                connection.execute(text('COMMIT'))
-            except Exception:  # pylint: disable=broad-except
-                connection.execute(text('ROLLBACK'))
-                raise
             finally:
                 connection.close()
 

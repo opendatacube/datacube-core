@@ -155,23 +155,23 @@ DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref
                                              'added', 'added_by', 'archived'])
 
 
-class MockIndex(object):
-    def __init__(self, db):
-        self._db = db
-
-
 class MockDb(object):
     def __init__(self):
         self.dataset = {}
         self.dataset_source = set()
 
     @contextmanager
-    def begin(self):
+    def _connect(self):
         yield self
 
-    @contextmanager
-    def connect(self):
-        yield self
+    def begin(self):
+        pass
+
+    def commit(self):
+        pass
+
+    def rollback(self):
+        pass
 
     def get_dataset(self, id):
         return self.dataset.get(id, None)
@@ -198,7 +198,7 @@ class MockDb(object):
         self.dataset_source.add((classifier, dataset_id, source_dataset_id))
 
 
-class MockTypesResource(object):
+class MockTypesResource:
     def __init__(self, type_):
         self.type = type_
 
@@ -208,11 +208,28 @@ class MockTypesResource(object):
     def get_by_name(self, *args, **kwargs):
         return self.type
 
+    @contextmanager
+    def _db_connection(self, transaction=False):
+        yield MockDb()
+
+
+class MockIndex:
+    def __init__(self, db, product):
+        self._db = db
+        self.products = MockTypesResource(product)
+
+    def thread_transaction(self):
+        return None
+
+    @contextmanager
+    def _active_connection(self, transaction=False):
+        yield self._db
+
 
 def test_index_dataset():
     mock_db = MockDb()
-    mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
-    datasets = DatasetResource(mock_db, mock_types)
+    mock_index = MockIndex(mock_db, _EXAMPLE_DATASET_TYPE)
+    datasets = DatasetResource(mock_db, mock_index)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
 
     ids = {d.id for d in mock_db.dataset.values()}
@@ -237,8 +254,8 @@ def test_index_dataset():
 
 def test_index_already_ingested_source_dataset():
     mock_db = MockDb()
-    mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
-    datasets = DatasetResource(mock_db, mock_types)
+    mock_index = MockIndex(mock_db, _EXAMPLE_DATASET_TYPE)
+    datasets = DatasetResource(mock_db, mock_index)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'])
 
     assert len(mock_db.dataset) == 2
@@ -251,8 +268,8 @@ def test_index_already_ingested_source_dataset():
 
 def test_index_two_levels_already_ingested():
     mock_db = MockDb()
-    mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
-    datasets = DatasetResource(mock_db, mock_types)
+    mock_index = MockIndex(mock_db, _EXAMPLE_DATASET_TYPE)
+    datasets = DatasetResource(mock_db, mock_index)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'].sources['satellite_telemetry_data'])
 
     assert len(mock_db.dataset) == 1

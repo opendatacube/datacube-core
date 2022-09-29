@@ -376,15 +376,6 @@ def index_empty(local_config, uninitialised_postgres_db: PostgresDb):
     del index
 
 
-@pytest.fixture
-def initialised_postgres_db(index):
-    """
-    Return a connection to an PostgreSQL database, initialised with the default schema
-    and tables.
-    """
-    return index._db
-
-
 def remove_postgres_dynamic_indexes():
     """
     Clear any dynamically created postgresql indexes from the schema.

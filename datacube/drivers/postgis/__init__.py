@@ -9,5 +9,6 @@ This package tries to contain any SQLAlchemy and database-specific code.
 """
 
 from ._connections import PostGisDb
+from ._api import PostgisDbAPI
 
-__all__ = ['PostGisDb']
+__all__ = ['PostGisDb', 'PostgisDbAPI']

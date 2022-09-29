@@ -3,17 +3,22 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from threading import Lock
 
 from datacube.index.memory._datasets import DatasetResource  # type: ignore
 from datacube.index.memory._fields import get_dataset_fields
 from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.index.memory._products import ProductResource
 from datacube.index.memory._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction
 from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
+
+
+counter = 0
+counter_lock = Lock()
 
 
 class Index(AbstractIndex):
@@ -26,6 +31,10 @@ class Index(AbstractIndex):
         self._metadata_types = MetadataTypeResource()
         self._products = ProductResource(self.metadata_types)
         self._datasets = DatasetResource(self.products)
+        global counter
+        with counter_lock:
+            counter = counter + 1
+            self._index_id = f"memory={counter}"
 
     @property
     def users(self) -> UserResource:
@@ -46,6 +55,13 @@ class Index(AbstractIndex):
     @property
     def url(self) -> str:
         return "memory"
+
+    @property
+    def index_id(self) -> str:
+        return self._index_id
+
+    def transaction(self) -> UnhandledTransaction:
+        return UnhandledTransaction(self.index_id)
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
