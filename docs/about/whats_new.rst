@@ -40,6 +40,7 @@ v1.8.8 (5 October 2022)
 - Implement public-facing index-driver-independent API for managing database transactions, as per Enhancement Proposal
   EP07 (:pull: `1318`)
 - Update Conda environment to match dependencies in setup.py (:pull: `1319`)
+- Final updates to whats_new.rst for release (:pull: `1320`)
 
 
 v1.8.7 (7 June 2022)
