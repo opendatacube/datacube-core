@@ -5,9 +5,8 @@
 What's New
 **********
 
-v1.8.next
-=========
-
+v1.8.8 (5 October 2022)
+=======================
 
 - Migrate main test docker build to Ubuntu 22.04 and Python 3.10. (:pull:`1283`)
 - Dynamically create tables to serve as spatial indexes in postgis driver. (:pull:`1312`)
@@ -18,6 +17,7 @@ v1.8.next
 - Remove several features that had been deprecated in previous releases. (:pull:`1275`)
 - Fix broken paths in api docs. (:pull:`1277`)
 - Fix readthedocs build. (:pull:`1269`)
+- Add support for Jupyter Notebooks pages in documentation (:pull:`1279`)
 - Add doc change comparison for tuple and list types with identical values (:pull:`1281`)
 - Add flake8 to Github action workflow and correct code base per flake8 rules (:pull:`1285`)
 - Add `dataset id` check to dataset doc resolve to prevent `uuid` returning error when `id` used in `None`  (:pull:`1287`)
@@ -40,6 +40,7 @@ v1.8.next
 - Implement public-facing index-driver-independent API for managing database transactions, as per Enhancement Proposal
   EP07 (:pull: `1318`)
 - Update Conda environment to match dependencies in setup.py (:pull: `1319`)
+- Final updates to whats_new.rst for release (:pull: `1320`)
 
 
 v1.8.7 (7 June 2022)
