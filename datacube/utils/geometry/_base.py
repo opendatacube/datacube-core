@@ -116,25 +116,28 @@ class BoundingBox(_BoundingBox):
                                    (p1[1], p2[1]))
 
 
-def _make_crs_key(crs_spec: Union[str, _CRS]) -> str:
+def _make_crs_key(crs_spec: Union[str, int, _CRS]) -> str:
     if isinstance(crs_spec, str):
         normed_epsg = crs_spec.upper()
         if normed_epsg.startswith("EPSG:"):
             return normed_epsg
         return crs_spec
+    if isinstance(crs_spec, int):
+        return f"EPSG:{crs_spec}"
     return crs_spec.to_wkt()
 
 
 @cachetools.cached({}, key=_make_crs_key)  # type: ignore[misc]
-def _make_crs(crs: Union[str, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
-    if isinstance(crs, str):
+def _make_crs(crs: Union[str, int, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
+    epsg = None
+    if isinstance(crs, (str, int)):
         crs = _CRS.from_user_input(crs)
-    epsg = crs.to_epsg()
-    if epsg is not None:
-        crs_str = f"EPSG:{epsg}"
+    if isinstance(crs, int):
+        crs_str = f"EPSG:{crs}"
+        epsg = crs
     else:
         crs_str = crs.to_wkt()
-    return (crs, crs_str, crs.to_epsg())
+    return (crs, crs_str, epsg)
 
 
 def _make_crs_transform_key(from_crs, to_crs, always_xy):
@@ -172,18 +175,18 @@ class CRS:
             self._crs, self._str, self._epsg = _make_crs(_CRS.from_dict(crs_spec))
         else:
             try:
-                epsg = crs_spec.to_epsg()
-            except AttributeError:
-                epsg = None
-            if epsg is not None:
-                self._crs, self._str, self._epsg = _make_crs(f"EPSG:{epsg}")
-                return
-            try:
                 wkt = crs_spec.to_wkt()
             except AttributeError:
                 wkt = None
             if wkt is not None:
                 self._crs, self._str, self._epsg = _make_crs(wkt)
+                return
+            try:
+                epsg = crs_spec.to_epsg()
+            except AttributeError:
+                epsg = None
+            if epsg is not None:
+                self._crs, self._str, self._epsg = _make_crs(epsg)
                 return
 
             raise CRSError(
@@ -213,11 +216,16 @@ class CRS:
         """
         EPSG Code of the CRS or None
         """
+        if self._epsg is not False:
+            return self._epsg
+        self._epsg = self._crs.to_epsg()
+        if self._epsg is None:
+            self._epsg = False
         return self._epsg
 
     @property
     def epsg(self) -> Optional[int]:
-        return self._epsg
+        return self.to_epsg()
 
     @property
     def semi_major_axis(self):
