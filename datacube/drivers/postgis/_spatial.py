@@ -99,7 +99,7 @@ def spindex_for_epsg(epsg: int) -> Type[SpatialIndex]:
 
 def spindex_for_crs(crs: CRS) -> Type[SpatialIndex]:
     """Return ORM class of a SpatialIndex for CRS - dynamically creating if necessary"""
-    if not (str(crs).startswith('EPSG') and crs.epsg):
+    if not str(crs).startswith("EPSG:") and crs.epsg is None:
         # Postgis identifies CRSs by a numeric "SRID" which is equivalent to EPSG number.
         _LOG.error("Cannot create a postgis spatial index for a non-EPSG-style CRS.")
         return None
