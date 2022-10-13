@@ -129,14 +129,11 @@ def _make_crs_key(crs_spec: Union[str, int, _CRS]) -> str:
 
 @cachetools.cached({}, key=_make_crs_key)  # type: ignore[misc]
 def _make_crs(crs: Union[str, int, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
-    epsg = None
-    if isinstance(crs, (str, int)):
-        crs = _CRS.from_user_input(crs)
-    if isinstance(crs, int):
-        crs_str = f"EPSG:{crs}"
-        epsg = crs
-    else:
-        crs_str = crs.to_wkt()
+    epsg = False
+    crs = _CRS.from_user_input(crs)
+    crs_str = crs.srs
+    if crs_str.upper().startswith("EPSG:"):
+        epsg = int(crs_str.split(":", maxsplit=1)[-1])
     return (crs, crs_str, epsg)
 
 
@@ -219,8 +216,6 @@ class CRS:
         if self._epsg is not False:
             return self._epsg
         self._epsg = self._crs.to_epsg()
-        if self._epsg is None:
-            self._epsg = False
         return self._epsg
 
     @property
