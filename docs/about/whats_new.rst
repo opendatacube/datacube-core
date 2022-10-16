@@ -5,6 +5,12 @@
 What's New
 **********
 
+v1.8.next
+=========
+
+- Performance improvements to CRS geometry class (:pull:`#1322`)
+
+
 v1.8.8 (5 October 2022)
 =======================
 
