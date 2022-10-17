@@ -626,7 +626,7 @@ class Datacube(object):
 
     @staticmethod
     def _dask_load(sources, geobox, measurements, dask_chunks,
-                   skip_broken_datasets=False, extra_dims=None):
+                   skip_broken_datasets=False, extra_dims=None, patch_url=None):
         chunk_sizes = _calculate_chunk_sizes(sources, geobox, dask_chunks, extra_dims)
         needed_irr_chunks = chunk_sizes[0]
         if extra_dims:
@@ -656,7 +656,8 @@ class Datacube(object):
                                     measurement,
                                     chunks=chunks,
                                     skip_broken_datasets=skip_broken_datasets,
-                                    extra_dims=extra_dims)
+                                    extra_dims=extra_dims,
+                                    patch_url = patch_url)
 
         return Datacube.create_storage(sources.coords, geobox, measurements, data_func, extra_dims)
 
@@ -774,12 +775,10 @@ class Datacube(object):
         measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
 
         if dask_chunks is not None:
-            if patch_url is not None:
-                # TODO: url mangler for Dask?
-                raise ValueError("The patch_url arguments is not currently supported for Dask loading.")
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
                                        skip_broken_datasets=skip_broken_datasets,
-                                       extra_dims=extra_dims)
+                                       extra_dims=extra_dims,
+                                       patch_url=patch_url)
         else:
             return Datacube._xr_load(sources, geobox, measurements,
                                      skip_broken_datasets=skip_broken_datasets,
@@ -997,7 +996,8 @@ def _make_dask_array(chunked_srcs,
                      measurement,
                      chunks,
                      skip_broken_datasets=False,
-                     extra_dims=None):
+                     extra_dims=None,
+                     patch_url=None):
     dsk = dsk.copy()  # this contains mapping from dataset id to dataset object
 
     token = uuid.uuid4().hex
@@ -1052,11 +1052,11 @@ def _make_dask_array(chunked_srcs,
                     # Do extra_dim subsetting here
                     index_subset = extra_dims.measurements_index(measurement.extra_dim)
                     for result_index, extra_dim_index in enumerate(range(*index_subset)):
-                        dsk[key_prefix + (result_index,) + idx] = val + (extra_dim_index,)
+                        dsk[key_prefix + (result_index,) + idx] = val + (extra_dim_index, patch_url)
                 else:
                     # Get extra_dim index if available
                     extra_dim_index = measurement.get('extra_dim_index', None)
-                    dsk[key_prefix + idx] = val + (extra_dim_index,)
+                    dsk[key_prefix + idx] = val + (extra_dim_index, patch_url)
 
     y_shapes = [grid_chunks[0]]*gbt.shape[0]
     x_shapes = [grid_chunks[1]]*gbt.shape[1]
