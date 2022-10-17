@@ -5,6 +5,13 @@
 What's New
 **********
 
+v1.8.next
+=========
+
+- Performance improvements to CRS geometry class (:pull:`#1322`)
+- Extend `patch_url` argument to `dc.load()` and `dc.load_data()` to Dask loading.  (:pull: `1323`)
+
+
 v1.8.8 (5 October 2022)
 =======================
 

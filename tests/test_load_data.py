@@ -118,6 +118,10 @@ def test_load_data_with_url_mangling(tmpdir):
     assert ds_data.aa.nodata == nodata
     np.testing.assert_array_equal(aa, ds_data.aa.values[0])
 
+    ds_data = Datacube.load_data(sources, gbox, mm, dask_chunks={'x': 8, 'y': 8}, patch_url=url_mangler)
+    assert ds_data.aa.nodata == nodata
+    np.testing.assert_array_equal(aa, ds_data.aa.values[0])
+
     custom_fuser_call_count = 0
 
     def custom_fuser(dest, delta):
