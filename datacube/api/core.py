@@ -657,7 +657,7 @@ class Datacube(object):
                                     chunks=chunks,
                                     skip_broken_datasets=skip_broken_datasets,
                                     extra_dims=extra_dims,
-                                    patch_url = patch_url)
+                                    patch_url=patch_url)
 
         return Datacube.create_storage(sources.coords, geobox, measurements, data_func, extra_dims)
 
