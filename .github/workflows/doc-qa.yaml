@@ -31,4 +31,6 @@ jobs:
       - name: DOCtor-RST
         uses: OskarStark/doctor-rst@1.23.0
         with:
-            args: --short --error-format=github
+          args: --short --error-format=github
+        env:
+          DOCS_DIR: 'docs/'
