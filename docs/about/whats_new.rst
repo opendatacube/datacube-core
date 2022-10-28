@@ -329,7 +329,7 @@ Backwards Incompatible Changes
 
 - Removed `--match-rules` option from `datacube dataset add` (:pull:`447`)
 
-- The seldom-used `stack` keyword argument has been removed from `Datcube.load`.
+- The seldom-used `stack` keyword argument has been removed from `Datacube.load`.
   (:pull:`461`)
 
 - The behaviour of the time range queries has changed to be compatible with
@@ -647,7 +647,7 @@ v1.4.0 (17 May 2017)
 
 - Various documentation and bug fixes
 
-- Added CircleCI as a continuous build system, for previewing generated documenation on pull
+- Added CircleCI as a continuous build system, for previewing generated documentation on pull
 
 - Require ``xarray`` >= 0.9. Solves common problems caused by losing embedded ``flag_def`` and ``crs`` attributes.
 
@@ -900,9 +900,9 @@ v1.1.6 Lightning Roll (8 August 2016)
 v1.1.5 Untranslatable Sign (26 July 2016)
 =========================================
 
-  - Updated the way database indexes are patitioned. Use `datacube system init --rebuild` to rebuild indexes
+  - Updated the way database indexes are partitioned. Use `datacube system init --rebuild` to rebuild indexes
 
-  - Added `fuse_data` ingester configuration parameter to control overlaping data fusion
+  - Added `fuse_data` ingester configuration parameter to control overlapping data fusion
 
   - Added `--log-file` option to `datacube dataset add` command for saving logs to a file
 
