@@ -359,6 +359,7 @@ PyPEG
 PyPI
 pypi
 pyproj
+pyspellcheck
 pytest
 PythonAPI
 QGIS
