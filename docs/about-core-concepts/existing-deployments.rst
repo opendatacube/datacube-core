@@ -4,7 +4,7 @@ Existing Deployments
 Digital Earth Australia
 -----------------------
 If you are using `Digital Earth Australia`_, see the
-`Digital Earth Australia User Guide`_ for intructions on accessing data on the `NCI`_, `AWS`_ and the `DEA Sandbox`_.
+`Digital Earth Australia User Guide`_ for instructions on accessing data on the `NCI`_, `AWS`_ and the `DEA Sandbox`_.
 
 .. _`Digital Earth Australia`: https://www.ga.gov.au/dea
 .. _`Digital Earth Australia User Guide`: https://docs.dea.ga.gov.au/

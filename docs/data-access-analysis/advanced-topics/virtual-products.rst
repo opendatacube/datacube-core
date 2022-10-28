@@ -213,7 +213,7 @@ Here ``align`` and ``resampling`` are optional (defaults to edge-aligned and nea
 This combinator enables performing transformations to raster data in their native grids before aligning different
 rasters to a common grid.
 
-Transform (Data modifing)
+Transform (Data modifying)
 -------------------------
 
 This node applies an on-the-fly data transformation on the loaded data. The recipe

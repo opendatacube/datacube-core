@@ -1,0 +1,34 @@
+# This is workflow for spell checking using PySpelling lib (https://pypi.org/project/pyspelling/)
+name: Spellcheck
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches:
+      - 'develop'
+    # paths:
+    #   - 'docs/**'
+    #   - '.github/workflow/pyspellcheck.yaml'
+  pull_request:
+    branches:
+      - 'develop'
+    # paths:
+    #   - 'docs/**'
+    #   - '.github/workflow/pyspellcheck.yaml'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Spellcheck
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 0
+      - uses: igsekor/pyspelling-any@v0.0.2
+        name: Spellcheck

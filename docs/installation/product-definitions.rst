@@ -9,7 +9,7 @@ the product to a dataset. The simplest product definition is included below.
 This example uses only one measurement (equivalent to an ``asset`` in STAC)
 and some very basic information about the product
 
-.. code-block::yaml
+.. code-block:: yaml
    ---
    name: dem_srtm
    metadata_type: eo3
@@ -28,7 +28,7 @@ A slightly more complex product definition is shown below. This example uses
 the ``storage`` section to provide load hints, so that default parameters are
 known when loading data.
 
-.. code-block::yaml
+.. code-block:: yaml
 
   ---
    name: dem_srtm

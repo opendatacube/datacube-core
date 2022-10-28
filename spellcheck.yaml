@@ -1,0 +1,21 @@
+matrix:
+- name: Markdown
+  sources:
+  - 'docs/**/*.rst'
+  - 'docs/**/**/*.rst'
+  - 'docs/*.rst'
+  - '*.rst'
+  default_encoding: utf-8
+  aspell:
+    lang: en
+  dictionary:
+    wordlists:
+    - wordlist.txt
+    encoding: utf-8
+  pipeline:
+  - pyspelling.filters.text:
+  - pyspelling.filters.html:
+      comments: false
+      ignores:
+      - code
+      - pre
