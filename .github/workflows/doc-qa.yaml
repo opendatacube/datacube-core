@@ -25,10 +25,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: igsekor/pyspelling-any@v0.0.2
+      - uses: igsekor/pyspelling-any@v1.0.4
         name: Spellcheck
 
       - name: DOCtor-RST
-        uses: OskarStark/doctor-rst@v1.23.0
+        uses: OskarStark/doctor-rst@1.23.0
         with:
             args: --short --error-format=github
