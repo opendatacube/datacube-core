@@ -1,4 +1,5 @@
 AbstractDataSource
+AbstractDatasetResource
 AbstractProductResource
 AbstractReaderDriver
 AbstractWriterDriver
