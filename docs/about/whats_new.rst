@@ -73,7 +73,7 @@ v1.8.7 (7 June 2022)
   Dependabot warnings. (:pull:`1239`)
 - Implement a minimal "null" index driver that provides an always-empty index. Mainly intended
   to validate the recent abstraction work around the index driver layer, but may be useful
-  for some testing scenarios, and ODC use cases that do not require an index. (:pull:`1236')
+  for some testing scenarios, and ODC use cases that do not require an index. (:pull:`1236`)
 - Regularise some minor API inconsistencies and restore redis-server to Docker image. (:pull:`1234`)
 - Move (default) postgres driver-specific files from `datacube.index` to `datacube.index.postgres`.
   `datacube.index.Index` is now an alias for the abstract base class index interface definition
