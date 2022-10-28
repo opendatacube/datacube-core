@@ -29,6 +29,6 @@ jobs:
         name: Spellcheck
 
       - name: DOCtor-RST
-        uses: docker://oskarstark/doctor-rst
+        uses: OskarStark/doctor-rst@v1.23.0
         with:
             args: --short --error-format=github
