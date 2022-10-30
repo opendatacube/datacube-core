@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-   Open Data Cube Manual
+Open Data Cube Manual
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The Open Data Cube provides an integrated gridded data

@@ -130,7 +130,6 @@ as well as optional tools to write these files more easily.
    [1]   [ 0,  0,  1] [  1   ]
 
 
-
 .. _dataset-metadata-doc-3d:
 
 3D dataset metadata
