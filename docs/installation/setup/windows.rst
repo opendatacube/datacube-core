@@ -20,7 +20,6 @@ Postgres:
     Download and install from `here <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads>`_.
 
 
-
 Python and packages
 ===================
 
@@ -89,4 +88,3 @@ Build the documentation::
     pip install -r requirements.txt
     make html
     open _build/html/index.html
-

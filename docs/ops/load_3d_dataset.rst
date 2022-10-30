@@ -8,7 +8,7 @@ Uses
 :meth:`datacube.Datacube.load`
 
 Below are some examples of loading a 3D dataset, using small test dataset supplied in
-``tests/data/lbg/gedi/``. Support for 3D datasets requires a :ref:`3D read driver<extending-datacube-3d-reads>`
+``tests/data/lbg/gedi/``. Support for 3D datasets requires a :ref:`3D read driver <extending-datacube-3d-reads>`
 and :ref:`product-doc-extra-dim`.
 
 

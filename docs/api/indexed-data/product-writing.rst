@@ -10,10 +10,10 @@ When connected to an ODC Database, these methods are available for altering info
    dc.index.products.{method}
 
 
-
 .. currentmodule:: datacube.index.abstract.AbstractProductResource
 
 .. autosummary::
+
    :nosignatures:
    :toctree: generate/
 

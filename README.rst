@@ -1,7 +1,17 @@
 Open Data Cube Core
 ===================
 
-|Build Status| |Coverage Status| |Documentation Status|
+.. image::https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
+    :alt: Build Status
+    :target: https://github.com/opendatacube/datacube-core/actions
+
+.. image::https://codecov.io/gh/opendatacube/datacube-core/branch/develop/graph/badge.svg
+    :alt: Coverage Status
+    :target: https://codecov.io/gh/opendatacube/datacube-core
+
+.. image::https://readthedocs.org/projects/datacube-core/badge/?version=latest
+    :alt: Documentation Status
+    :target: http://datacube-core.readthedocs.org/en/latest/
 
 Overview
 ========
@@ -96,6 +106,7 @@ to ``./check-code.sh`` script.
 To run individual test in docker container
 
 ::
+
     docker run -ti -v /home/ubuntu/datacube-core:/code opendatacube/datacube-tests:latest pytest integration_tests/test_filename.py::test_function_name
 
 
@@ -108,34 +119,26 @@ Install dependencies:
 
 ::
 
-   sudo apt-get update
-   sudo apt-get install -y \
-     autoconf automake build-essential make cmake \
-     graphviz \
-     python3-venv \
-     python3-dev \
-     libpq-dev \
-     libyaml-dev \
-     libnetcdf-dev \
-     libudunits2-dev
+    sudo apt-get update
+    sudo apt-get install -y \
+        autoconf automake build-essential make cmake \
+        graphviz \
+        python3-venv \
+        python3-dev \
+        libpq-dev \
+        libyaml-dev \
+        libnetcdf-dev \
+        libudunits2-dev
 
 
 Build the python virtual environment:
 
 ::
 
-   pyenv="${HOME}/.envs/odc"  # Change to suit your needs
-   mkdir -p "${pyenv}"
-   python3 -m venv "${pyenv}"
-   source "${pyenv}/bin/activate"
-   pip install -U pip wheel cython numpy
-   pip install -e '.[dev]'
-   pip install flake8 mypy pylint autoflake black
-
-
-.. |Build Status| image:: https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
-   :target: https://github.com/opendatacube/datacube-core/actions
-.. |Coverage Status| image:: https://codecov.io/gh/opendatacube/datacube-core/branch/develop/graph/badge.svg
-   :target: https://codecov.io/gh/opendatacube/datacube-core
-.. |Documentation Status| image:: https://readthedocs.org/projects/datacube-core/badge/?version=latest
-   :target: http://datacube-core.readthedocs.org/en/latest/
+    pyenv="${HOME}/.envs/odc"  # Change to suit your needs
+    mkdir -p "${pyenv}"
+    python3 -m venv "${pyenv}"
+    source "${pyenv}/bin/activate"
+    pip install -U pip wheel cython numpy
+    pip install -e '.[dev]'
+    pip install flake8 mypy pylint autoflake black

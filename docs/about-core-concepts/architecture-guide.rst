@@ -3,13 +3,13 @@ Architectural Overview
 
 The modern paradigm that the Open Data Cube (ODC) operates under is the Cloud Native Geospatial
 concept, where data is available over vast areas and via HTTP, generally from
-`Cloud Optimised GeoTIFFs`_ (COGs). COGs, coupled with `SpatioTemporal Asset Catalog` metadata
+`Cloud Optimised GeoTIFFs`_ (COGs). COGs, coupled with `SpatioTemporal Asset Catalog`_ metadata
 is being used by Digital Earth Australia, Digital Earth Africa, Element 84's Sentinel-2 COGs,
 USGS's Landsat Collection 2, Planet and a wide range of other organisations.
 
 The ODC can index from STAC, although this process is not fully integrated, it is
 done in production. An example of this is captured in these `Sentinel-2 Indexing notes`_. And
-in addition to indexing from STAC, `Datacube Explorer` can present ODC metadata as STAC
+in addition to indexing from STAC, `Datacube Explorer`_ can present ODC metadata as STAC
 documents through a STAC API.
 
 The key design constraint that the ODC currently has is it's reliance on a direct

@@ -7,6 +7,7 @@ Introduction
 Once you have the Data Cube software installed and connected to a database, you can start to load in some data. This step is performed using the datacube command line tool.
 
 .. admonition:: Note
+
   :class: important
 
   When you load data into the Data Cube using indexing, all you are doing is recording the existence of and detailed metadata about the data into the index. None of the data itself is copied, moved or transformed. This is therefore a relatively safe and fast process.
@@ -49,13 +50,13 @@ To load Products into your ODC run:
 
 .. code-block:: bash
 
-  datacube product add <path-to-product-definition-yml>
+    datacube product add <path-to-product-definition-yml>
 
 If you made a mistake, you can update them with:
 
 .. code-block:: bash
 
-  datacube product update <path-to-product-definition-yml>
+    datacube product update <path-to-product-definition-yml>
 
 
 Step 2. Ensure Dataset Documents are complete
@@ -75,6 +76,7 @@ For third party datasets, see :ref:`prepare-scripts`.
 
 
 .. admonition:: Note
+
   :class: info
 
     Some metadata requires cleanup before they are ready to be loaded.

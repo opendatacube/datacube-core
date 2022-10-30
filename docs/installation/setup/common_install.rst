@@ -27,7 +27,7 @@ Python::
 Activate the ``odc_env`` conda environment::
 
     conda activate odc_env
-    
+
 Find out more about conda environments `here <https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/environments.html>`_.
 
 Install other packages::
@@ -44,12 +44,12 @@ If this is a new installation of Postgres on your system it is probably wise to 
 
 In a terminal, type::
 
-	sudo -u postgres psql postgres
+    sudo -u postgres psql postgres
 
 Set a password for the "postgres" database role using the command::
 
-	\password postgres
-	
+    \password postgres
+
 and set the password when prompted. The password text will be hidden from the console for security purposes.
 
 Type **Control+D** or **\q** to exit the posgreSQL prompt.
@@ -58,10 +58,10 @@ By default in Ubuntu, Postgresql is configured to use ``ident sameuser`` authent
 
 Since the only user who can connect to a fresh install is the postgres user, here is how to create yourself a database account (which is in this case also a database superuser) with the same name as your login name and then create a password for the user::
 
-     sudo -u postgres createuser --superuser $USER
-     sudo -u postgres psql
+    sudo -u postgres createuser --superuser $USER
+    sudo -u postgres psql
 
-     postgres=# \password $USER
+    postgres=# \password $USER
 
 Now we can create an ``agdcintegration`` database for testing::
 
@@ -93,7 +93,6 @@ Then edit the ``~/.datacube_integration.conf`` with a text editor and add the fo
     db_password: <foobar>
 
 
-
 Verify it all works
 ===================
 
@@ -109,4 +108,3 @@ Build the documentation::
     make html
 
 Then open :file:`_build/html/index.html` in your browser to view the Documentation.
-

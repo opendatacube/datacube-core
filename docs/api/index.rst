@@ -31,7 +31,6 @@ The following pages provide a full API reference for the ``datacube`` python lib
     indexed-data/masking
 
 
-
 .. toctree::
     :caption: Managing Data
 
@@ -54,5 +53,3 @@ The following pages provide a full API reference for the ``datacube`` python lib
     Writing GeoTIFFs <utilities/cogs>
     utilities/dask
     grid-processing/gridWorkflow
-
-

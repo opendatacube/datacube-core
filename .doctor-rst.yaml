@@ -1,5 +1,4 @@
 rules:
-    american_english: ~
     avoid_repetetive_words: ~
     blank_line_after_anchor: ~
     blank_line_after_directive: ~
@@ -35,7 +34,6 @@ rules:
     ordered_use_statements: ~
     php_prefix_before_bin_console: ~
     replace_code_block_types: ~
-    replacement: ~
     short_array_syntax: ~
     space_between_label_and_link_in_doc: ~
     space_between_label_and_link_in_ref: ~

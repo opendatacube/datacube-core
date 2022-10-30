@@ -27,7 +27,7 @@ and further detailed documentation for the tools used below in the
 
 .. code-block:: bash
 
-  pip install --extra-index-url="https://packages.dea.ga.gov.au" odc_apps_dc_tools
+    pip install --extra-index-url="https://packages.dea.ga.gov.au" odc_apps_dc_tools
 
 S3 Indexing Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -41,7 +41,7 @@ take some time, but will add a continental product to your local Datacube.
 
 .. code-block:: bash
 
-  datacube product add https://data.dea.ga.gov.au/geomedian-australia/v2.1.0/product-definition.yaml
-  s3-to-dc --no-sign-request 's3://dea-public-data/geomedian-australia/v2.1.0/L8/**/*.yaml' ls8_nbart_geomedian_annual
+    datacube product add https://data.dea.ga.gov.au/geomedian-australia/v2.1.0/product-definition.yaml
+    s3-to-dc --no-sign-request 's3://dea-public-data/geomedian-australia/v2.1.0/L8/**/*.yaml' ls8_nbart_geomedian_annual
 
 Congratulations, you've now indexed data from the Digital Earth Australia buckets 🎉

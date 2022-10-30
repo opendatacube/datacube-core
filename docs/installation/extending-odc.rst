@@ -132,7 +132,7 @@ Data Write Plug-ins
 ===================
 
 :Entry point group:
-   `datacube.plugins.io.write <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/setup.py#L107>`__
+    `datacube.plugins.io.write <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/setup.py#L107>`__
 
 Are selected based on their name. The ``storage.driver`` field has been
 added to the ingestion configuration file which specifies the name of
@@ -199,13 +199,13 @@ NetCDF Writer Driver
 :Name: ``netcdf``, ``NetCDF CF``
 :Format: ``NetCDF``
 :Implementation:
-   :py:class:`datacube.drivers.netcdf.driver.NetcdfWriterDriver`
+    :py:class:`datacube.drivers.netcdf.driver.NetcdfWriterDriver`
 
 Index Plug-ins
 ==============
 
 :Entry point group:
-   `datacube.plugins.index <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/setup.py#L112>`__
+    `datacube.plugins.index <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/setup.py#L112>`__
 
 A connection to an ``Index`` is required to find data in the Data Cube.
 Already implemented in the ``develop`` branch was the concept of
@@ -296,6 +296,7 @@ Data Cube Drivers API
 =====================
 
 .. automodule:: datacube.drivers
+
     :members:
     :imported-members:
 
