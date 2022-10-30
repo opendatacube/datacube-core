@@ -1,5 +1,3 @@
-.. _release_process:
-
 Release Process
 ***************
 

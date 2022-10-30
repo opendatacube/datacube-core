@@ -238,6 +238,7 @@ by ``xarray``/``dask`` library when real data is required to be loaded for the f
 time.
 
 .. note::
+
    **TODO**
 
    - Discuss chunks and how they relate to on-disk storage chunks
@@ -352,7 +353,6 @@ Data Read Process
    Current Data Read Process
 
 
-
 Storage Classes
 ---------------
 
@@ -360,7 +360,6 @@ Storage Classes
    :target: /_images/storage_drivers_old.svg
 
    Classes currently implementing the DataCube Data Read Functionality
-
 
 
 .. _rasterio: https://rasterio.readthedocs.io/en/latest/

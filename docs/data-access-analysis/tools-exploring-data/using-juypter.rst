@@ -1,5 +1,5 @@
 Using Juypter Notebooks
-=============================
+=======================
 
 One of the most common ways to use an Open Data Cube is through interactively writing Python code within a Jupyter Notebook. This allows dynamically loading data, performing analysis and developing scientific algorithms.
 
@@ -12,6 +12,7 @@ how to access data through ODC, along with example algorithms and visualisations
 
 Digital Earth Australia Notebooks
 ---------------------------------
+
 .. image:: https://raw.githubusercontent.com/GeoscienceAustralia/dea-notebooks/develop/Supplementary_data/dea_logo_wide.jpg
   :width: 900
   :alt: Digital Earth Australia Notebooks banner
@@ -31,6 +32,7 @@ Digital Earth Australia Notebooks
 
 Digital Earth Africa Notebooks
 ------------------------------
+
 .. image:: https://raw.githubusercontent.com/digitalearthafrica/deafrica-sandbox-notebooks/master/Supplementary_data/Github_banner.jpg
   :width: 900
   :alt: Digital Earth Africa Notebooks banner
