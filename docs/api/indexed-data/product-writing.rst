@@ -14,6 +14,7 @@ When connected to an ODC Database, these methods are available for altering info
 .. currentmodule:: datacube.index.abstract.AbstractProductResource
 
 .. autosummary::
+
    :nosignatures:
    :toctree: generate/
 

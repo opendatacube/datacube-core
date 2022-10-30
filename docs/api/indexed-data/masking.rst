@@ -48,4 +48,5 @@ How to Create Masks within code
 
 
 .. automethod:: describe_variable_flags
+
 .. automethod:: make_mask

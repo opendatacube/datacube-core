@@ -54,29 +54,29 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
     # db_username:
     # db_password:
 
-   [test]
-   # A "test" environment that accesses a separate test database.
-   index_driver: default
-   db_database: datacube_test
+    [test]
+    # A "test" environment that accesses a separate test database.
+    index_driver: default
+    db_database: datacube_test
 
-   [null]
-   # A "null" environment for working with no index.
-   index_driver: null
+    [null]
+    # A "null" environment for working with no index.
+    index_driver: null
 
-   [local_memory]
-   # A local non-persistent in-memory index.
-   #   Compatible with the default index driver, but resides purely in memory with no persistent database.
-   #   Note that each new invocation will receive a new, empty index.
-   index_driver: memory
+    [local_memory]
+    # A local non-persistent in-memory index.
+    #   Compatible with the default index driver, but resides purely in memory with no persistent database.
+    #   Note that each new invocation will receive a new, empty index.
+    index_driver: memory
 
 Uncomment and fill in lines as required.
 
 Alternately, you can configure the ODC connection to Postgres using environment variables:
 
-  DB_HOSTNAME
-  DB_USERNAME
-  DB_PASSWORD
-  DB_DATABASE
+    DB_HOSTNAME
+    DB_USERNAME
+    DB_PASSWORD
+    DB_DATABASE
 
 The desired environment can be specified:
 
@@ -92,4 +92,5 @@ The ``datacube system init`` tool can create and populate the Data Cube database
     datacube -v system init
 
 .. click:: datacube.scripts.system:database_init
+
    :prog: datacube system

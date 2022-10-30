@@ -10,19 +10,20 @@ This example uses only one measurement (equivalent to an ``asset`` in STAC)
 and some very basic information about the product
 
 .. code-block:: yaml
-   ---
-   name: dem_srtm
-   metadata_type: eo3
 
-   metadata:
-     product:
-       name: dem_srtm
+    ---
+    name: dem_srtm
+    metadata_type: eo3
 
-   measurements:
-     - name: elevation
-       dtype: int16
-       nodata: -32768.0
-       units: "metre"
+    metadata:
+        product:
+        name: dem_srtm
+
+    measurements:
+        - name: elevation
+        dtype: int16
+        nodata: -32768.0
+        units: "metre"
 
 A slightly more complex product definition is shown below. This example uses
 the ``storage`` section to provide load hints, so that default parameters are
@@ -30,28 +31,28 @@ known when loading data.
 
 .. code-block:: yaml
 
-  ---
-   name: dem_srtm
-   description: 1 second elevation model
-   metadata_type: eo3
+    ---
+    name: dem_srtm
+    description: 1 second elevation model
+    metadata_type: eo3
 
-   license: CC-BY-4.0
+    license: CC-BY-4.0
 
-   metadata:
-     product:
-       name: dem_srtm
+    metadata:
+        product:
+        name: dem_srtm
 
-   storage:
-     crs: EPSG:4326
-     resolution:
-       longitude: 0.000277777777780
-       latitude: -0.000277777777780
+    storage:
+        crs: EPSG:4326
+        resolution:
+        longitude: 0.000277777777780
+        latitude: -0.000277777777780
 
-   measurements:
-     - name: elevation
-       dtype: int16
-       nodata: -32768.0
-       units: "metre"
+    measurements:
+        - name: elevation
+        dtype: int16
+        nodata: -32768.0
+        units: "metre"
 
 
 You can add product definitions using the command line as follows: ``datacube product add <path-to-file>``

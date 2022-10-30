@@ -5,6 +5,7 @@ Data Loading
 .. currentmodule:: datacube
 
 .. autosummary::
+
    :nosignatures:
    :toctree: generate/
 
@@ -19,6 +20,7 @@ for example, to pre-filter the available datasets before loading.
 .. currentmodule:: datacube
 
 .. autosummary::
+
    :toctree: generate/
 
    Datacube.find_datasets
@@ -26,4 +28,3 @@ for example, to pre-filter the available datasets before loading.
    Datacube.load_data
 
 .. include:: ./../../ops/load_3d_dataset.rst
-
