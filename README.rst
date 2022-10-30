@@ -134,11 +134,17 @@ Build the python virtual environment:
     pip install flake8 mypy pylint autoflake black
 
 
-.. |Build Status| image:: https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
-   :target: https://github.com/opendatacube/datacube-core/actions
+.. |Build Status| image::
 
-.. |Coverage Status| image:: https://codecov.io/gh/opendatacube/datacube-core/branch/develop/graph/badge.svg
-   :target: https://codecov.io/gh/opendatacube/datacube-core
+    https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
+    :target: https://github.com/opendatacube/datacube-core/actions
 
-.. |Documentation Status| image:: https://readthedocs.org/projects/datacube-core/badge/?version=latest
-   :target: http://datacube-core.readthedocs.org/en/latest/
+.. |Coverage Status| image::
+
+    https://codecov.io/gh/opendatacube/datacube-core/branch/develop/graph/badge.svg
+    :target: https://codecov.io/gh/opendatacube/datacube-core
+
+.. |Documentation Status| image::
+
+    https://readthedocs.org/projects/datacube-core/badge/?version=latest
+    :target: http://datacube-core.readthedocs.org/en/latest/
