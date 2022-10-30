@@ -9,7 +9,6 @@ When connected to an ODC Database, these methods are available for discovering i
    dc.index.products.{method}
 
 
-
 .. currentmodule:: datacube.index.abstract.AbstractProductResource
 
 .. autosummary::

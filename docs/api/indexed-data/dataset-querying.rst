@@ -9,7 +9,6 @@ When connected to an ODC Database, these methods are available for searching and
    dc.index.datasets.{method}
 
 
-
 .. currentmodule:: datacube.index.abstract.AbstractDatasetResource
 
 .. autosummary::

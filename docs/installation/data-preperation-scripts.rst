@@ -79,7 +79,6 @@ For Landsat collection 1 level 1 product:
     Added "ls8_l1_pc_usgs"
 
 
-
 2. Preparing USGS Landsat Surface Reflectance - LEDAPS
 ======================================================
 
@@ -97,10 +96,10 @@ The following example generates the required Dataset Metadata files, named
     $ python USGS_precollection_oldscripts/usgslsprepare.py --help
     Usage: usgslsprepare.py [OPTIONS] [DATASETS]...
 
-      Prepare USGS LS dataset for ingestion into the Data Cube.
+        Prepare USGS LS dataset for ingestion into the Data Cube.
 
     Options:
-      --help  Show this message and exit.
+        --help  Show this message and exit.
 
     $ python usgslsprepare.py ~/USGS_LandsatLEDAPS/*/
     2016-06-09 15:32:51,641 INFO Processing ~/USGS_LandsatLEDAPS/LC80960852015365-SC20160211222236

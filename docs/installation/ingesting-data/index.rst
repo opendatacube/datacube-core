@@ -42,9 +42,9 @@ tile it up into a faster storage format or projection system.
 
 .. figure:: ../diagrams/f4.png
 
-  :name: ingest-data
+    :name: ingest-data
 
-    Ingest Data
+        Ingest Data
 
 .. _ingest-config:
 
@@ -90,7 +90,7 @@ An Ingestion Config is written in :term:`YAML` and contains the following:
         - Tile size
         - Tile Origin
 
-   - Details about **measurements**:
+    - Details about **measurements**:
 
         - Output measurement name
         - Source measurement name
@@ -172,7 +172,6 @@ A command line tool is used to ingest data
 .. click:: datacube.scripts.ingest:ingest_cmd
 
     :prog: datacube ingest
-
 
 
 `Configuration samples <https://github.com/opendatacube/datacube-core/tree/develop/docs/config_samples>`_ are available as part of the open source Github repository.
