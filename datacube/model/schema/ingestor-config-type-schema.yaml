@@ -57,8 +57,6 @@ properties:
                 type: string
             acknowkledgment:
                 type: string
-            references:
-                type: string
     ingestion_bounds:
         type: object
         properties:
