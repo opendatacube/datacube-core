@@ -12,6 +12,9 @@ v1.8.next
 - Extend `patch_url` argument to `dc.load()` and `dc.load_data()` to Dask loading.  (:pull:`1323`)
 - Add `sphinx.ext.autoselectionlabel` extension to readthedoc conf to support `:ref:` command (:pull:`1325`)
 - Add `pyspellcheck` for `.rst` documentation files and fix typos (:pull:`1327`)
+- Follow PEP561_ to make type hints available to other packages (:issue:`1330`)
+
+.. _PEP561: https://peps.python.org/pep-0561/
 
 v1.8.8 (5 October 2022)
 =======================
