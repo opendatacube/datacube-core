@@ -63,6 +63,7 @@ product from SR products for two sensors (``ls7_nbar_albers`` and ``ls8_nbar_alb
 PQ products (``ls7_pq_albers`` and ``ls8_pq_albers``):
 
 .. code-block:: yaml
+
    :caption: Sample Virtual Product Recipe
 
    collate:
@@ -338,5 +339,6 @@ for the required geo-spatial ``search_terms``. Note that the ``measurement`` met
 the ``compute`` method.
 
 .. note::
+
     The user-defined transformations should be dask-friendly, otherwise loading data using dask may
     be broken. Also, method names starting with ``_transform_`` are reserved for internal use.

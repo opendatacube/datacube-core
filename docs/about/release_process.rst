@@ -1,5 +1,3 @@
-.. _release_process:
-
 Release Process
 ***************
 
@@ -13,9 +11,9 @@ Release Process
 #. Wait for the `GitHub Action`_ to run and publish the new release to PyPI_
 
 #. Wait for the **conda-forge** bot to notice the new PyPI version and create a PR against
-   `the conda-forge datacube feedstock <odc-feedstock>`_
+   `the conda-forge datacube feedstock <https://github.com/conda-forge/datacube-feedstock/pulls>`_
 
-#. Merge the `PR created by the conda-forge <odc-feedstock>`_ bot to create a
+#. Merge the `PR created by the conda-forge <https://github.com/conda-forge/datacube-feedstock/pulls>`_ bot to create a
    new `conda-forge release <https://anaconda.org/conda-forge/datacube>`_.
 
 #. Manually update the ``stable`` branch via a PR from ``develop``.
@@ -25,4 +23,3 @@ Release Process
 .. _GitHub Releases Web UI: https://github.com/opendatacube/datacube-core/releases
 .. _GitHub Action: https://github.com/opendatacube/datacube-core/actions
 .. _PyPI: https://pypi.org/project/datacube/
-.. _odc-feedstock: https://github.com/conda-forge/datacube-feedstock/pulls

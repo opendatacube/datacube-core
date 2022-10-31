@@ -1,0 +1,54 @@
+# This is workflow for spell checking using PySpelling lib (https://pypi.org/project/pyspelling/)
+name: Doc QA
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches:
+      - 'develop'
+  pull_request:
+    branches:
+      - 'develop'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  pyspell:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Spellcheck
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 0
+
+      - uses: igsekor/pyspelling-any@v1.0.4
+        name: Spellcheck
+
+  doctor-rst:
+    name: Lint (DOCtor-RST)
+    runs-on: ubuntu-latest
+    steps:
+      -   name: "Checkout"
+          uses: actions/checkout@v2
+
+      -   name: "Create cache dir"
+          run: mkdir .cache
+
+      -   name: "Extract base branch name"
+          run: echo "##[set-output name=branch;]$(echo ${GITHUB_BASE_REF:=${GITHUB_REF##*/}})"
+          id: extract_base_branch
+
+      -   name: "Cache DOCtor-RST"
+          uses: actions/cache@v2
+          with:
+              path: .cache
+              key: ${{ runner.os }}-doctor-rst-${{ steps.extract_base_branch.outputs.branch }}
+
+      -   name: "Run DOCtor-RST"
+          uses: docker://oskarstark/doctor-rst
+          with:
+              args: --short --error-format=github --cache-file=/github/workspace/.cache/doctor-rst.cache

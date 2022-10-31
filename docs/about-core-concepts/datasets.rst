@@ -35,5 +35,3 @@ Example:
 
 - Tiled GA Landsat Data, ingested into Australian Albers Equal Area
   Projection (EPSG:3577) and stored in 100km tiles in NetCDF4
-
-
