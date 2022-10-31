@@ -182,7 +182,7 @@ extra_dimensions (required for 3D datasets)
 
 Example 3D product definition for GEDI L2B cover_z:
 
-.. literalinclude::
-
-    ../config_samples/dataset_types/gedi_l2b_cover_z.yaml
+.. literalinclude:: ../config_samples/dataset_types/gedi_l2b_cover_z.yaml
    :language: yaml
+
+/

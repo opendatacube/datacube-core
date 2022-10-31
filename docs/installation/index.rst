@@ -12,7 +12,6 @@ This section contains information on setting up and managing the Open Data Cube.
    This material is designed for people wanting to set up a new Open Data Cube instance.
 
 .. toctree::
-
     :caption: Setting up an Open Data Cube
     :maxdepth: 5
 
@@ -22,17 +21,15 @@ This section contains information on setting up and managing the Open Data Cube.
 
 
 .. toctree::
-
-    :maxdepth: 4
     :caption: Open Data Cube CLI
+    :maxdepth: 4
 
     cli
 
 
 .. toctree::
-
-    :maxdepth: 4
     :caption: Configuring the ODC Database
+    :maxdepth: 4
 
     database/setup
     metadata-types
@@ -41,7 +38,6 @@ This section contains information on setting up and managing the Open Data Cube.
 
 
 .. toctree::
-
     :caption: Indexing Data
 
     indexing-data/step-guide
@@ -49,14 +45,12 @@ This section contains information on setting up and managing the Open Data Cube.
 
 
 .. toctree::
-
     :caption: Advanced Topics
 
     extending-odc
 
 
 .. toctree::
-
     :caption: Legacy Approaches
 
     data-preperation-scripts

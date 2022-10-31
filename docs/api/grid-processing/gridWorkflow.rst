@@ -2,11 +2,8 @@
 Grid Workflow
 ============
 
-.. currentmodule::
+.. currentmodule:: datacube
 
-    datacube
+.. autoclass:: datacube.api.GridWorkflow
 
-.. autoclass::
-
-    datacube.api.GridWorkflow
     :members:

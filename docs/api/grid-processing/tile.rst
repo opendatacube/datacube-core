@@ -2,11 +2,8 @@
 Tile
 ====
 
-.. currentmodule::
+.. currentmodule:: datacube
 
-    datacube
+.. autoclass:: datacube.api.Tile
 
-.. autoclass::
-
-    datacube.api.Tile
     :members:
