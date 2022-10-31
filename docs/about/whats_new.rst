@@ -12,7 +12,7 @@ v1.8.next
 - Extend `patch_url` argument to `dc.load()` and `dc.load_data()` to Dask loading.  (:pull:`1323`)
 - Add `sphinx.ext.autoselectionlabel` extension to readthedoc conf to support `:ref:` command (:pull:`1325`)
 - Add `pyspellcheck` for `.rst` documentation files and fix typos (:pull:`1327`)
-- Add `rst` documentation linter github action and apply best practices (:pull:`1328`)
+- Add `rst` documentation lint github action and apply best practices (:pull:`1328`)
 
 v1.8.8 (5 October 2022)
 =======================
