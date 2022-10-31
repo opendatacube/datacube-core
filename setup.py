@@ -82,6 +82,7 @@ setup(
     ),
     package_data={
         '': ['*.yaml', '*/*.yaml'],
+        'datacube': ['py.typed'],
     },
     scripts=[],
     install_requires=[
