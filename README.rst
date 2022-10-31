@@ -1,7 +1,17 @@
 Open Data Cube Core
 ===================
 
-|Build Status| |Coverage Status| |Documentation Status|
+.. |build-status| image::https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
+    :alt: Build Status
+    :target: https://github.com/opendatacube/datacube-core/actions
+
+.. |coverage| image::https://codecov.io/gh/opendatacube/datacube-core/branch/develop/graph/badge.svg
+    :alt: Coverage Status
+    :target: https://codecov.io/gh/opendatacube/datacube-core
+
+.. |docs| image::https://readthedocs.org/projects/datacube-core/badge/?version=latest
+    :alt: Documentation Status
+    :target: http://datacube-core.readthedocs.org/en/latest/
 
 Overview
 ========
@@ -132,16 +142,3 @@ Build the python virtual environment:
     pip install -U pip wheel cython numpy
     pip install -e '.[dev]'
     pip install flake8 mypy pylint autoflake black
-
-
-.. |build-status| image::https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
-    :alt: Build Status
-    :target: https://github.com/opendatacube/datacube-core/actions
-
-.. |coverage| image::https://codecov.io/gh/opendatacube/datacube-core/branch/develop/graph/badge.svg
-    :alt: Coverage Status
-    :target: https://codecov.io/gh/opendatacube/datacube-core
-
-.. |docs| image::https://readthedocs.org/projects/datacube-core/badge/?version=latest
-    :alt: Documentation Status
-    :target: http://datacube-core.readthedocs.org/en/latest/
