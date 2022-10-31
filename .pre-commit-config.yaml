@@ -1,6 +1,6 @@
 repos:
     - repo: https://github.com/adrienverge/yamllint.git
-      rev: v1.19.0
+      rev: v1.28.0
       hooks:
         - id: yamllint
     - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -20,6 +20,6 @@ repos:
         - id: check-added-large-files
         - id: check-merge-conflict
     -   repo: https://github.com/pre-commit/mirrors-pylint
-        rev: v2.4.4  # Use the sha / tag you want to point at
+        rev: v3.0.0a5  # Use the sha / tag you want to point at
         hooks:
         -   id: pylint
