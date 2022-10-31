@@ -347,7 +347,7 @@ Supporting Diagrams
 Data Read Process
 -----------------
 
-.. figure:: ../diagrams/current_data_read_process.svg
+.. figure:: ../../diagrams/current_data_read_process.svg
    :target: /_images/current_data_read_process.svg
 
    Current Data Read Process
@@ -356,7 +356,7 @@ Data Read Process
 Storage Classes
 ---------------
 
-.. figure:: ../diagrams/storage_drivers_old.svg
+.. figure:: ../../diagrams/storage_drivers_old.svg
    :target: /_images/storage_drivers_old.svg
 
    Classes currently implementing the DataCube Data Read Functionality
