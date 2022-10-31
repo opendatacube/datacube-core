@@ -35,7 +35,7 @@ jobs:
     - name: Config
       id: cfg
       run: |
-        echo ::set-output name=docker_image::${ORG}/${IMAGE}:latest
+        echo "docker_image=${ORG}/${IMAGE}:latest" >> $GITHUB_OUTPUT
 
     # This is the a separate action that sets up buildx runner
     - name: Set up Docker Buildx
@@ -95,7 +95,7 @@ jobs:
         if [ -n "${{ secrets.DockerPassword }}" ]; then
            echo "Login to DockerHub as ${DOCKER_USER}"
            echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
-           echo "::set-output name=logged_in::yes"
+           echo "logged_in=yes" >> $GITHUB_OUTPUT
         else
            echo "Set DockerPassword secret to push to docker"
         fi
