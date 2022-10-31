@@ -15,6 +15,7 @@ repos:
         - id: debug-statements
         - id: name-tests-test
           args: ['--django']
+          exclude: ^tests/drivers/fail_drivers
         - id: requirements-txt-fixer
         - id: check-added-large-files
         - id: check-merge-conflict
