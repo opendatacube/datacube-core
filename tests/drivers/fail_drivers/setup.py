@@ -14,8 +14,8 @@ setup(
     entry_points={
         'datacube.plugins.io.read': [
             'bad_end_point=dc_tests_io.nosuch.module:init',
-            'failing_end_point_throw=dc_tests_io.test_dummy:fail_to_init',
-            'failing_end_point_none=dc_tests_io.test_dummy:init_to_none',
+            'failing_end_point_throw=dc_tests_io.dummy:fail_to_init',
+            'failing_end_point_none=dc_tests_io.dummy:init_to_none',
         ]
     }
 )
