@@ -73,4 +73,3 @@ Data Cube installation. It provides a command line application which uses a YAML
 data range and statistics to calculate.
 
 .. _`Data Cube Statistics`: https://github.com/opendatacube/datacube-stats
-
