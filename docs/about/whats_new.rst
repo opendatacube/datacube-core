@@ -14,6 +14,7 @@ v1.8.next
 - Add `pyspellcheck` for `.rst` documentation files and fix typos (:pull:`1327`)
 - Add `rst` documentation lint github action and apply best practices (:pull:`1328`)
 - Follow PEP561_ to make type hints available to other packages (:issue:`1330`)
+- Add what's new page link to menu and general doc fixes (:pull:`1335`)
 
 .. _PEP561: https://peps.python.org/pep-0561/
 
