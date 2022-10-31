@@ -59,7 +59,7 @@ jobs:
         esac
 
         for x in primary push_pypi push_test_pypi push_dea; do
-           echo "::set-output name=${x}::${!x}"
+           echo "${x}=${!x}" >> $GITHUB_OUTPUT
         done
 
     - name: Pull Docker

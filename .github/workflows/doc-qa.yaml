@@ -1,6 +1,4 @@
-# This is workflow for spell checking using PySpelling lib (https://pypi.org/project/pyspelling/)
 name: Doc QA
-# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
@@ -12,13 +10,10 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+
 jobs:
-  # This workflow contains a single job called "build"
   pyspell:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Spellcheck
       - uses: actions/checkout@v1
@@ -39,7 +34,7 @@ jobs:
           run: mkdir .cache
 
       -   name: "Extract base branch name"
-          run: echo "##[set-output name=branch;]$(echo ${GITHUB_BASE_REF:=${GITHUB_REF##*/}})"
+          run: echo "branch=${GITHUB_BASE_REF:-${GITHUB_REF##*/}}"
           id: extract_base_branch
 
       -   name: "Cache DOCtor-RST"
