@@ -71,7 +71,7 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
 
 Uncomment and fill in lines as required.
 
-Alternately, you can configure the ODC connection to Postgres using environment variables:
+Alternately, you can configure the ODC connection to Postgres using environment variables::
 
     DB_HOSTNAME
     DB_USERNAME

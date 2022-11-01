@@ -53,5 +53,5 @@ This section contains information on setting up and managing the Open Data Cube.
 .. toctree::
     :caption: Legacy Approaches
 
-    data-preperation-scripts
+    data-preparation-scripts
     ingesting-data/index
