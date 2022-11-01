@@ -1,6 +1,8 @@
 ---
 name: ls8_usgs_sr_scene
-description: Landsat 8 USGS Collection 1 Level2 Surface Reflectance LaSRC. 30m UTM based projection.
+description: >
+  Landsat 8 USGS Collection 1 Level2 Surface Reflectance LaSRC.
+  30m UTM based projection.
 metadata_type: eo
 
 metadata:
@@ -173,11 +175,11 @@ measurements:
             512: Band 9 Data Saturation Flag
             1024: Band 10 Data Saturation Flag
             2048: Band 11 Data Saturation Flag
-
 ---
-
 name: ls7_usgs_sr_scene
-description: Landsat 7 USGS Collection 1 Level2 Surface Reflectance LEDAPS. 30m UTM based projection.
+description: >
+  Landsat 7 USGS Collection 1 Level2 Surface Reflectance LEDAPS.
+  30m UTM based projection.
 metadata_type: eo
 
 metadata:
