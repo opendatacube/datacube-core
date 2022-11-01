@@ -53,6 +53,7 @@ properties:
             - creation_dt
             - label
             - sources
+            - search_fields
         additionalProperties: false
 required:
     - name
