@@ -1,9 +1,7 @@
 Masking
 =======
 
-.. py:module::
-
-    datacube.utils.masking
+.. py:module:: datacube.utils.masking
 
 .. _bit-masking:
 
@@ -13,13 +11,9 @@ Bit Masking
 Masking No Data Values
 ----------------------
 
-.. currentmodule::
+.. currentmodule:: datacube.utils.masking
 
-    datacube.utils.masking
-
-.. automethod::
-
-    mask_invalid_data
+.. automethod:: mask_invalid_data
 
 Masking with Bit-Flag Measurements
 ----------------------------------
@@ -46,18 +40,16 @@ Open Data Cube provides a way of describing the meanings that can be encoded
 in variables, which can then be used to give a readable method when using that
 variable.
 
+.. automethod:: describe_variable_flags
+
+.. automethod:: make_mask
+
 How to Define Meanings on Measurements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# TODO
 
 How to Create Masks within code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-.. automethod::
-
-    describe_variable_flags
-
-.. automethod::
-
-    make_mask
+# TODO

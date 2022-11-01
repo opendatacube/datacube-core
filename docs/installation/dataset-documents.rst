@@ -343,3 +343,5 @@ Reasons for deprecation
 #. Format does not capture per band resolution/image size
 
 .. _metadata-type-definition:
+
+    ## TODO

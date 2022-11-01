@@ -27,3 +27,4 @@ and related data from multiple sources.
     data-access-analysis/index
     installation/index
     api/index
+    about/index
