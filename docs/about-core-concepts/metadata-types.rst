@@ -6,6 +6,6 @@ Metadata Types
 
 .. note::
 
-    metadata type yaml file must contain: name, description and dataset.
+    Metadata type yaml file must contain name, description and dataset keys.
 
-    within dataset it must define: id, sources, creation_dt, label and search_fields.
+    Dataset key must contain id, sources, creation_dt, label and search_fields keys.
