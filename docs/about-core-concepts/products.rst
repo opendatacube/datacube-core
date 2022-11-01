@@ -187,4 +187,4 @@ Example 3D product definition for GEDI L2B cover_z:
 
 .. note::
 
-    `extra_dimensions` is defined the yaml
+    `extra_dimensions` is defined in the yaml
