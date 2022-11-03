@@ -17,6 +17,7 @@ v1.8.next
 - Add what's new page link to menu and general doc fixes (:pull:`1335`)
 - Add `search_fields` to required for metadata type schema and update doc (:pull:`1339`)
 - Fix typo and update metadata documentation (:pull:`1340`)
+- Add readthedoc preview github action (:pull:`1344`)
 
 .. _PEP561: https://peps.python.org/pep-0561/
 
