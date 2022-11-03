@@ -47,3 +47,10 @@ jobs:
           uses: docker://oskarstark/doctor-rst
           with:
               args: --short --error-format=github --cache-file=/github/workspace/.cache/doctor-rst.cache
+
+  documentation-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: readthedocs/actions/preview@v1
+        with:
+          project-slug: "datacube-core"
