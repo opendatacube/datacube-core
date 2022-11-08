@@ -166,11 +166,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 # 1c. Prepare spatial index extents
                 if is_new:
                     dsids_for_spatial_indexing.append(ds.id)
+                # 1d. Prepare search fields (TODO)
             # 2: insert lineage graph edges
             for ee in edges:
                 transaction.insert_dataset_source(*ee)
             # 3: insert spatial indexes
             transaction.update_spindex(dsids=dsids_for_spatial_indexing)
+            # 4: insert search fields (TODO)
             # Finally update location for top-level dataset only
             if main_ds.uris is not None:
                 self._ensure_new_locations(main_ds, transaction=transaction)
