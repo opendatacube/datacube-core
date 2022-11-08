@@ -9,8 +9,10 @@ Tables for indexing the datasets which were ingested into the AGDC.
 import logging
 from typing import Type
 
+from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.orm import aliased, registry, relationship, column_property
-from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text
+from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text, Index, \
+    Numeric
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
@@ -198,7 +200,131 @@ class SpatialIndexRecord:
                    table_name=spindex.__tablename__)
 
 
+    # Value fields by type.
+    # str: String (varchar)
+    # num, dbl, int: Numeric
+    # datetime: DateTime
+    # num_range, dbl_range, int_range, float_range: NUMRANGE
+    # datetimerangs: TSTZRANGE
+
+# In theory could put dataset_ref and search_key in shared parent class, but having a foreign key
+# in such a class requires weird and esoteric SQLAlchemy features.  Just leave as separate
+# classes with duped columns for now.
+
+@orm_registry.mapped
+class DatasetSearchString:
+    __tablename__ = "dataset_search_string"
+    __table_args__ = (
+        _core.METADATA,
+        PrimaryKeyConstraint("dataset_ref", "search_key"),
+        Index("ix_string_search", "search_key", "search_val"),
+        {
+            "schema": sql.SCHEMA_NAME,
+            "comment": "Index for searching datasets by search fields of string type"
+        }
+    )
+    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
+                         comment="The dataset indexed by this search field record.")
+    search_key = Column(String,
+                        nullable=False, index=True,
+                        comment="The name of the search field")
+    search_val = Column(String,
+                        unique=True, nullable=True,
+                        comment="The value of the string search field")
+
+
+@orm_registry.mapped
+class DatasetSearchNumeric:
+    __tablename__ = "dataset_search_num"
+    __table_args__ = (
+        _core.METADATA,
+        PrimaryKeyConstraint("dataset_ref", "search_key"),
+        Index("ix_numeric_search", "search_key", "search_val"),
+        {
+            "schema": sql.SCHEMA_NAME,
+            "comment": "Index for searching datasets by search fields of numeric type"
+        }
+    )
+    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
+                         comment="The dataset indexed by this search field record.")
+    search_key = Column(String,
+                        nullable=False, index=True,
+                        comment="The name of the search field")
+    search_val = Column(Numeric,
+                        unique=True, nullable=True,
+                        comment="The value of the numeric search field")
+
+
+@orm_registry.mapped
+class DatasetSearchNumericRange:
+    __tablename__ = "dataset_search_num_range"
+    __table_args__ = (
+        _core.METADATA,
+        PrimaryKeyConstraint("dataset_ref", "search_key"),
+        Index("ix_numrng_search", "search_key", "search_val"),
+        {
+            "schema": sql.SCHEMA_NAME,
+            "comment": "Index for searching datasets by search fields of numeric range type"
+        }
+    )
+    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
+                         comment="The dataset indexed by this search field record.")
+    search_key = Column(String,
+                        nullable=False, index=True,
+                        comment="The name of the search field")
+    search_val = Column(NUMRANGE,
+                        unique=True, nullable=True,
+                        comment="The value of the numeric range search field")
+
+
+@orm_registry.mapped
+class DatasetSearchDateTime:
+    __tablename__ = "dataset_search_datetime"
+    __table_args__ = (
+        _core.METADATA,
+        PrimaryKeyConstraint("dataset_ref", "search_key"),
+        Index("ix_datetime_search", "search_key", "search_val"),
+        {
+            "schema": sql.SCHEMA_NAME,
+            "comment": "Index for searching datasets by search fields of datetime type"
+        }
+    )
+    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
+                         comment="The dataset indexed by this search field record.")
+    search_key = Column(String,
+                        nullable=False, index=True,
+                        comment="The name of the search field")
+    search_val = Column(DateTime(timezone=True),
+                        unique=True, nullable=True,
+                        comment="The value of the datetime search field")
+
+
+@orm_registry.mapped
+class DatasetSearchDateTimeRange:
+    __tablename__ = "dataset_search_dt_range"
+    __table_args__ = (
+        _core.METADATA,
+        PrimaryKeyConstraint("dataset_ref", "search_key"),
+        Index("ix_dtrng_search", "search_key", "search_val"),
+        {
+            "schema": sql.SCHEMA_NAME,
+            "comment": "Index for searching datasets by search fields of datetime range type"
+        }
+    )
+    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
+                         comment="The dataset indexed by this search field record.")
+    search_key = Column(String,
+                        nullable=False, index=True,
+                        comment="The name of the search field")
+    search_val = Column(TSTZRANGE,
+                        unique=True, nullable=True,
+                        comment="The value of the datetime range search field")
+
+
 ALL_STATIC_TABLES = [
     MetadataType.__table__, Product.__table__, Dataset.__table__,
-    DatasetLocation.__table__, DatasetSource.__table__, SpatialIndexRecord.__table__
+    DatasetLocation.__table__, DatasetSource.__table__, SpatialIndexRecord.__table__,
+    DatasetSearchString.__table__, DatasetSearchNumeric.__table__,
+    DatasetSearchDateTime.__table__,
+    DatasetSearchNumericRange.__table__, DatasetSearchDateTimeRange.__table__,
 ]
