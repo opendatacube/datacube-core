@@ -13,7 +13,6 @@ from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import INT4RANGE
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.sql import ColumnElement
 
@@ -21,14 +20,13 @@ from datacube import utils
 from datacube.model.fields import Expression, Field
 from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
-from .sql import FLOAT8RANGE
 
 from typing import Any, Callable, Tuple, Union
 
 
 class PgField(Field):
     """
-    Postgres implementation of a searchable field. May be a value inside
+    Postgis implementation of a searchable field. May be a value inside
     a JSONB column.
     """
 
@@ -217,7 +215,7 @@ class IntDocField(SimpleDocField):
     type_name = 'integer'
 
     def value_to_alchemy(self, value):
-        return cast(value, postgres.INTEGER)
+        return cast(value, postgres.NUMERIC)
 
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
@@ -243,7 +241,7 @@ class DoubleDocField(SimpleDocField):
     type_name = 'double'
 
     def value_to_alchemy(self, value):
-        return cast(value, postgres.DOUBLE_PRECISION)
+        return cast(value, postgres.NUMERIC)
 
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
@@ -368,7 +366,7 @@ class IntRangeDocField(RangeDocField):
             low, high,
             # Inclusive on both sides.
             '[]',
-            type_=INT4RANGE,
+            type_=NUMRANGE,
         )
 
     def between(self, low, high):
@@ -384,11 +382,11 @@ class DoubleRangeDocField(RangeDocField):
 
     def value_to_alchemy(self, value):
         low, high = value
-        return func.odc.float8range(
+        return func.numrange(
             low, high,
             # Inclusive on both sides.
             '[]',
-            type_=FLOAT8RANGE,
+            type_=NUMRANGE,
         )
 
     def between(self, low, high):
