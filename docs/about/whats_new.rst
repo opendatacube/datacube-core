@@ -19,6 +19,7 @@ v1.8.next
 - Fix typo and update metadata documentation (:pull:`1340`)
 - Add readthedoc preview github action (:pull:`1344`)
 - Update `nodata` in readthedoc for products page (:pull:`1347`)
+- Add `eo-datasets` to extensions & related software doc page (:pull:`1349`)
 
 .. _PEP561: https://peps.python.org/pep-0561/
 

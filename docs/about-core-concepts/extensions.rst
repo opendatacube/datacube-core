@@ -73,3 +73,11 @@ Data Cube installation. It provides a command line application which uses a YAML
 data range and statistics to calculate.
 
 .. _`Data Cube Statistics`: https://github.com/opendatacube/datacube-stats
+
+
+EO Datasets
+------------
+
+`EO Datasets`_ is a tool to easily write, validate and convert ODC datasets and metadata.
+
+.. _`EO Datasets`: https://github.com/opendatacube/eo-datasets
