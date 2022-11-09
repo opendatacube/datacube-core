@@ -98,10 +98,14 @@ Product Definition API
          Units of the measurement
 
     dtype
-         Data type. One of ``(u)int(8,16,32,64), float32, float64``
+         Data type. One of ``(u)int(8,16,32,64), float(16, 32, 64), complex(64,128) ``
+
+        The allowed type can be found in schema file: ``datacube/model/schema/dataset-type-schema.yaml``
 
     nodata
-         No data value
+         No data value. One of `number` or `NaN`, `Inf`, `-Inf`.
+
+        The allowed type can be found in schema file: ``datacube/model/schema/dataset-type-schema.yaml``
 
     scale_factor,add_offset (optional)
          Mapping from pixel value to real value ``real = scale_factor*pixel_value + add_offset``.
