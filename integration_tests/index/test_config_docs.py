@@ -154,62 +154,6 @@ def test_field_expression_unchanged(default_metadata_type: MetadataType, telemet
     )
 
 
-@pytest.mark.parametrize('datacube_env_name', ('experimental', ))
-def test_field_expression_unchanged_postgis(
-        default_metadata_type: MetadataType,
-        telemetry_metadata_type: MetadataType) -> None:
-    # We're checking for accidental changes here in our field-to-SQL code
-    # Dubious test as it uses non-EO3 metadata types
-
-    # If we started outputting a different expression they would quietly no longer match the expression
-    # indexes that exist in our DBs.
-
-    # The time field on the default 'eo' metadata type.
-    field = default_metadata_type.dataset_fields['time']
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
-    assert field.sql_expression == (
-        "tstzrange("
-        "least("
-        "odc.common_timestamp(odc.dataset.metadata #>> '{extent, from_dt}'), "
-        "odc.common_timestamp(odc.dataset.metadata #>> '{extent, center_dt}')"
-        "), greatest("
-        "odc.common_timestamp(odc.dataset.metadata #>> '{extent, to_dt}'), "
-        "odc.common_timestamp(odc.dataset.metadata #>> '{extent, center_dt}')"
-        "), '[]')"
-    )
-
-    field = default_metadata_type.dataset_fields['lat']
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
-    assert field.sql_expression == (
-        "odc.float8range("
-        "least("
-        "CAST(odc.dataset.metadata #>> '{extent, coord, ur, lat}' AS DOUBLE PRECISION), "
-        "CAST(odc.dataset.metadata #>> '{extent, coord, lr, lat}' AS DOUBLE PRECISION), "
-        "CAST(odc.dataset.metadata #>> '{extent, coord, ul, lat}' AS DOUBLE PRECISION), "
-        "CAST(odc.dataset.metadata #>> '{extent, coord, ll, lat}' AS DOUBLE PRECISION)), "
-        "greatest("
-        "CAST(odc.dataset.metadata #>> '{extent, coord, ur, lat}' AS DOUBLE PRECISION), "
-        "CAST(odc.dataset.metadata #>> '{extent, coord, lr, lat}' AS DOUBLE PRECISION), "
-        "CAST(odc.dataset.metadata #>> '{extent, coord, ul, lat}' AS DOUBLE PRECISION), "
-        "CAST(odc.dataset.metadata #>> '{extent, coord, ll, lat}' AS DOUBLE PRECISION)"
-        "), '[]')"
-    )
-
-    # A single string value
-    field = default_metadata_type.dataset_fields['platform']
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
-    assert field.sql_expression == (
-        "odc.dataset.metadata #>> '{platform, code}'"
-    )
-
-    # A single integer value
-    field = telemetry_metadata_type.dataset_fields['orbit']
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
-    assert field.sql_expression == (
-        "CAST(odc.dataset.metadata #>> '{acquisition, platform_orbit}' AS INTEGER)"
-    )
-
-
 def _object_exists(index, index_name):
     if index._db.driver_name == "postgis":
         schema_name = "odc"

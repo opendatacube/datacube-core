@@ -27,12 +27,14 @@ from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils import geometry
 from datacube.utils.geometry import CRS, Geometry
+from datacube.index.abstract import DSID
 from . import _core
 from . import _dynamic as dynamic
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField
 from ._schema import MetadataType, Product,  \
-    Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation
+    Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
+    search_field_index_map, search_field_tables
 from ._spatial import geom_alchemy
 from .sql import escape_pg_identifier
 
@@ -173,6 +175,26 @@ def get_dataset_fields(metadata_type_definition):
     return fields
 
 
+def extract_dataset_search_fields(ds_metadata, mdt_metadata):
+    """
+    :param ds_metdata: A Dataset metadata document
+    :param mdt_metadata: The corresponding metadata-type definition document
+
+    :return: A dictionary mapping search field names to (type_name, value) tuples.
+    """
+    fields = get_dataset_fields(mdt_metadata)
+    result = {}
+    for field_name, field in fields.items():
+        if isinstance(field, NativeField):
+            continue
+        fld_type = field.type_name
+        fld_val = field.value_to_alchemy(field.extract(ds_metadata))
+        result[field_name] = (fld_type, fld_val)
+    for k, v in result.items():
+        _LOG.warning("field %s: %s", k, repr(v))
+    return result
+
+
 class PostgisDbAPI(object):
     def __init__(self, parentdb, connection):
         self._db = parentdb
@@ -278,11 +300,40 @@ class PostgisDbAPI(object):
             return None
         return valid_extent.to_crs(crs)
 
+    def insert_dataset_search(self, search_table, dataset_id, key, value):
+        """
+        Add/update a search field index entry for a dataset
+
+        Returns True on success
+
+        :type search_table: A DatasetSearch ORM table
+        :type dataset_id: str or uuid.UUID
+        :type key: The name of the search field
+        :type value: The value for the search field for this dataset.
+        :rtype bool:
+        """
+        if isinstance(value, Range):
+            value = list(value)
+        _LOG.warning("Inserting ds %s (%s): %s", dataset_id, key, repr(value))
+        r = self._connection.execute(
+            insert(
+                search_table
+            ).values(
+                dataset_ref=dataset_id,
+                search_key=key,
+                search_val=value,
+            ).on_conflict_do_update(
+                index_elements=[search_table.dataset_ref, search_table.search_key],
+                set_=dict(search_val=value)
+            )
+        )
+        return r.rowcount > 0
+
     def insert_dataset_spatial(self, dataset_id, crs, extent):
         """
-        Add a spatial index entry for a dataset if it is not already recorded.
+        Add/update a spatial index entry for a dataset
 
-        Returns True if success, False if this location already existed
+        Returns True on success
 
         :type dataset_id: str or uuid.UUID
         :type crs: CRS
@@ -428,6 +479,10 @@ class PostgisDbAPI(object):
                 DatasetSource.dataset_ref == dataset_id
             )
         )
+        for table in search_field_tables:
+            self._connection.execute(
+                delete(table).where(table.dataset_ref == dataset_id)
+            )
         for crs in self._db.spatial_indexes():
             SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
             self._connection.execute(
@@ -677,9 +732,57 @@ class PostgisDbAPI(object):
 
         return select((time_ranges.c.time_period, count_query.label('dataset_count')))
 
+    def update_search_index(self, product_names: Sequence[str] = [], dsids: Sequence[DSID] = []):
+        """
+        Update search indexes
+        :param product_names: Product names to update
+        :param dsids: Dataset IDs to update
+
+        if neither product_names nor dataset ids are supplied, update nothing (N.B. NOT all datasets)
+
+        if both are supplied, both the named products and identified datasets are updated.
+
+        :return:  Number of datasets whose search indexes have been updated.
+        """
+        if not product_names and not dsids:
+            return 0
+
+        ds_query = select(
+            Dataset.id,
+            Dataset.metadata_doc,
+            MetadataType.definition,
+        ).select_from(Dataset).join(MetadataType)
+        if product_names:
+            ds_query = ds_query.join(Product)
+        if product_names and dsids:
+            ds_query = ds_query.where(
+                or_(
+                    Product.name.in_(product_names),
+                    Dataset.id.in_(dsids)
+                )
+            )
+        elif product_names:
+            ds_query = ds_query.where(
+                Product.name.in_(product_names)
+            )
+        elif dsids:
+            ds_query = ds_query.where(
+                Dataset.id.in_(dsids)
+            )
+        rowcount = 0
+        for result in self._connection.execute(ds_query):
+            dsid, ds_metadata, mdt_def = result
+            search_field_vals = extract_dataset_search_fields(ds_metadata, mdt_def)
+            for field_name, field_info in search_field_vals.items():
+                fld_type, fld_val = field_info
+                search_idx = search_field_index_map[fld_type]
+                self.insert_dataset_search(search_idx, dsid, field_name, fld_val)
+            rowcount += 1
+        return rowcount
+
     def update_spindex(self, crs_seq: Sequence[CRS] = [],
                        product_names: Sequence[str] = [],
-                       dsids: Sequence[str] = []) -> int:
+                       dsids: Sequence[DSID] = []) -> int:
         """
         Update a spatial index
         :param crs: CRSs for Spatial Indexes to update. Default=all indexes

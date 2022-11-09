@@ -229,7 +229,7 @@ class DatasetSearchString:
                         nullable=False, index=True,
                         comment="The name of the search field")
     search_val = Column(String,
-                        unique=True, nullable=True,
+                        nullable=True,
                         comment="The value of the string search field")
 
 
@@ -251,7 +251,7 @@ class DatasetSearchNumeric:
                         nullable=False, index=True,
                         comment="The name of the search field")
     search_val = Column(Numeric,
-                        unique=True, nullable=True,
+                        nullable=True,
                         comment="The value of the numeric search field")
 
 
@@ -273,7 +273,7 @@ class DatasetSearchNumericRange:
                         nullable=False, index=True,
                         comment="The name of the search field")
     search_val = Column(NUMRANGE,
-                        unique=True, nullable=True,
+                        nullable=True,
                         comment="The value of the numeric range search field")
 
 
@@ -295,7 +295,7 @@ class DatasetSearchDateTime:
                         nullable=False, index=True,
                         comment="The name of the search field")
     search_val = Column(DateTime(timezone=True),
-                        unique=True, nullable=True,
+                        nullable=True,
                         comment="The value of the datetime search field")
 
 
@@ -317,9 +317,27 @@ class DatasetSearchDateTimeRange:
                         nullable=False, index=True,
                         comment="The name of the search field")
     search_val = Column(TSTZRANGE,
-                        unique=True, nullable=True,
+                        nullable=True,
                         comment="The value of the datetime range search field")
 
+
+search_field_index_map = {
+    'numeric-range': DatasetSearchNumericRange,
+    'double-range': DatasetSearchNumericRange,
+    'integer-range': DatasetSearchNumericRange,
+    'datetime-range': DatasetSearchDateTimeRange,
+
+    'string': DatasetSearchString,
+    'numeric': DatasetSearchNumeric,
+    'double': DatasetSearchNumeric,
+    'integer': DatasetSearchNumeric,
+    'datetime': DatasetSearchDateTime,
+
+    # For backwards compatibility (alias for numeric-range)
+    'float-range': DatasetSearchNumericRange,
+}
+
+search_field_tables = set(search_field_index_map.values())
 
 ALL_STATIC_TABLES = [
     MetadataType.__table__, Product.__table__, Dataset.__table__,
