@@ -18,6 +18,7 @@ v1.8.next
 - Add `search_fields` to required for metadata type schema and update doc (:pull:`1339`)
 - Fix typo and update metadata documentation (:pull:`1340`)
 - Add readthedoc preview github action (:pull:`1344`)
+- Update `nodata` in readthedoc for products page (:pull:`1347`)
 
 .. _PEP561: https://peps.python.org/pep-0561/
 
