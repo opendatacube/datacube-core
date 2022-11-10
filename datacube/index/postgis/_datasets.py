@@ -296,6 +296,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
             transaction.update_spindex(dsids=[dataset.id])
+            transaction.update_search_index(dsids=[dataset.id])
 
         self._ensure_new_locations(dataset, existing)
 
