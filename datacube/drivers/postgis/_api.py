@@ -32,9 +32,9 @@ from . import _core
 from . import _dynamic as dynamic
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField
-from ._schema import MetadataType, Product,  \
+from ._schema import MetadataType, Product, \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
-    search_field_index_map, search_field_tables
+    search_field_index_map, search_field_tables, rangable_scalar_types
 from ._spatial import geom_alchemy
 from .sql import escape_pg_identifier
 
@@ -188,7 +188,7 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata):
         if isinstance(field, NativeField):
             continue
         fld_type = field.type_name
-        fld_val = field.value_to_alchemy(field.extract(ds_metadata))
+        fld_val = field.search_value_to_alchemy(field.extract(ds_metadata))
         result[field_name] = (fld_type, fld_val)
     for k, v in result.items():
         _LOG.warning("field %s: %s", k, repr(v))
