@@ -104,7 +104,6 @@ class PgDocField(PgField):
     """
     A field extracted from inside a (jsonb) document.
     """
-
     def extract(self, document):
         """
         Extract a value from the given document in pure python (no postgres).
@@ -119,6 +118,15 @@ class PgDocField(PgField):
         """
         # Default do nothing (eg. string datatypes)
         return value
+
+    def search_value_to_alchemy(self, value):
+        """
+        Value to use in search tables.  Identical to value_to_alchemy, unless it needs to be promoted to range type.
+
+        :param value:
+        :return:
+        """
+        return self.value_to_alchemy(value)
 
     def parse_value(self, value):
         """
@@ -211,24 +219,19 @@ class SimpleDocField(PgDocField):
         return self.extract(ctx)
 
 
-class IntDocField(SimpleDocField):
-    type_name = 'integer'
-
-    def value_to_alchemy(self, value):
-        return cast(value, postgres.NUMERIC)
-
-    def between(self, low, high):
-        return ValueBetweenExpression(self, low, high)
-
-    def parse_value(self, value):
-        return int(value)
-
-
 class NumericDocField(SimpleDocField):
     type_name = 'numeric'
 
     def value_to_alchemy(self, value):
         return cast(value, postgres.NUMERIC)
+
+    def search_value_to_alchemy(self, value):
+        return func.numrange(
+            value, value,
+            # Inclusive on both sides.
+            '[]',
+            type_=NUMRANGE,
+        )
 
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
@@ -237,14 +240,15 @@ class NumericDocField(SimpleDocField):
         return Decimal(value)
 
 
-class DoubleDocField(SimpleDocField):
+class IntDocField(NumericDocField):
+    type_name = 'integer'
+
+    def parse_value(self, value):
+        return int(value)
+
+
+class DoubleDocField(NumericDocField):
     type_name = 'double'
-
-    def value_to_alchemy(self, value):
-        return cast(value, postgres.NUMERIC)
-
-    def between(self, low, high):
-        return ValueBetweenExpression(self, low, high)
 
     def parse_value(self, value):
         return float(value)
@@ -264,7 +268,15 @@ class DateDocField(SimpleDocField):
         elif isinstance(value, (ColumnElement, str)):
             return func.odc.common_timestamp(value)
         else:
-            raise ValueError("Value not readable as date: %r" % (value,))
+            raise ValueError("Value not readable as date: %r" % value)
+
+    def search_value_to_alchemy(self, value):
+        return func.tstzrange(
+            value, value,
+            # Inclusive on both sides.
+            '[]',
+            type_=TSTZRANGE,
+        )
 
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
@@ -356,44 +368,14 @@ class NumericRangeDocField(RangeDocField):
         return RangeBetweenExpression(self, low, high, _range_class=NumericRange)
 
 
-class IntRangeDocField(RangeDocField):
+class IntRangeDocField(NumericRangeDocField):
     FIELD_CLASS = IntDocField
     type_name = 'integer-range'
 
-    def value_to_alchemy(self, value):
-        low, high = value
-        return func.numrange(
-            low, high,
-            # Inclusive on both sides.
-            '[]',
-            type_=NUMRANGE,
-        )
 
-    def between(self, low, high):
-        """
-        :rtype: Expression
-        """
-        return RangeBetweenExpression(self, low, high, _range_class=NumericRange)
-
-
-class DoubleRangeDocField(RangeDocField):
+class DoubleRangeDocField(NumericRangeDocField):
     FIELD_CLASS = DoubleDocField
     type_name = 'double-range'
-
-    def value_to_alchemy(self, value):
-        low, high = value
-        return func.numrange(
-            low, high,
-            # Inclusive on both sides.
-            '[]',
-            type_=NUMRANGE,
-        )
-
-    def between(self, low, high):
-        """
-        :rtype: Expression
-        """
-        return RangeBetweenExpression(self, low, high, _range_class=NumericRange)
 
 
 class DateRangeDocField(RangeDocField):

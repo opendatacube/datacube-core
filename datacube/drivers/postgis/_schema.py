@@ -95,7 +95,7 @@ class Dataset:
     # but is forbidden by SQLAlchemy declarative style
     metadata_doc = Column(name="metadata", type_=postgres.JSONB, index=False, nullable=False,
                           comment="The dataset metadata document")
-    archived = Column(DateTime(timezone=True), default=None, nullable=True,
+    archived = Column(DateTime(timezone=True), default=None, nullable=True, index=True,
                       comment="when archived, null if active")
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
@@ -239,32 +239,10 @@ class DatasetSearchNumeric:
     __table_args__ = (
         _core.METADATA,
         PrimaryKeyConstraint("dataset_ref", "search_key"),
-        Index("ix_numeric_search", "search_key", "search_val"),
+        Index("ix_num_search", "search_key", "search_val"),
         {
             "schema": sql.SCHEMA_NAME,
             "comment": "Index for searching datasets by search fields of numeric type"
-        }
-    )
-    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
-                         comment="The dataset indexed by this search field record.")
-    search_key = Column(String,
-                        nullable=False, index=True,
-                        comment="The name of the search field")
-    search_val = Column(Numeric,
-                        nullable=True,
-                        comment="The value of the numeric search field")
-
-
-@orm_registry.mapped
-class DatasetSearchNumericRange:
-    __tablename__ = "dataset_search_num_range"
-    __table_args__ = (
-        _core.METADATA,
-        PrimaryKeyConstraint("dataset_ref", "search_key"),
-        Index("ix_numrng_search", "search_key", "search_val"),
-        {
-            "schema": sql.SCHEMA_NAME,
-            "comment": "Index for searching datasets by search fields of numeric range type"
         }
     )
     dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
@@ -283,7 +261,7 @@ class DatasetSearchDateTime:
     __table_args__ = (
         _core.METADATA,
         PrimaryKeyConstraint("dataset_ref", "search_key"),
-        Index("ix_datetime_search", "search_key", "search_val"),
+        Index("ix_dt_search", "search_key", "search_val"),
         {
             "schema": sql.SCHEMA_NAME,
             "comment": "Index for searching datasets by search fields of datetime type"
@@ -294,38 +272,16 @@ class DatasetSearchDateTime:
     search_key = Column(String,
                         nullable=False, index=True,
                         comment="The name of the search field")
-    search_val = Column(DateTime(timezone=True),
+    search_val = Column(TSTZRANGE,
                         nullable=True,
                         comment="The value of the datetime search field")
 
 
-@orm_registry.mapped
-class DatasetSearchDateTimeRange:
-    __tablename__ = "dataset_search_dt_range"
-    __table_args__ = (
-        _core.METADATA,
-        PrimaryKeyConstraint("dataset_ref", "search_key"),
-        Index("ix_dtrng_search", "search_key", "search_val"),
-        {
-            "schema": sql.SCHEMA_NAME,
-            "comment": "Index for searching datasets by search fields of datetime range type"
-        }
-    )
-    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
-                         comment="The dataset indexed by this search field record.")
-    search_key = Column(String,
-                        nullable=False, index=True,
-                        comment="The name of the search field")
-    search_val = Column(TSTZRANGE,
-                        nullable=True,
-                        comment="The value of the datetime range search field")
-
-
 search_field_index_map = {
-    'numeric-range': DatasetSearchNumericRange,
-    'double-range': DatasetSearchNumericRange,
-    'integer-range': DatasetSearchNumericRange,
-    'datetime-range': DatasetSearchDateTimeRange,
+    'numeric-range': DatasetSearchNumeric,
+    'double-range': DatasetSearchNumeric,
+    'integer-range': DatasetSearchNumeric,
+    'datetime-range': DatasetSearchDateTime,
 
     'string': DatasetSearchString,
     'numeric': DatasetSearchNumeric,
@@ -334,15 +290,18 @@ search_field_index_map = {
     'datetime': DatasetSearchDateTime,
 
     # For backwards compatibility (alias for numeric-range)
-    'float-range': DatasetSearchNumericRange,
+    'float-range': DatasetSearchNumeric,
 }
 
 search_field_tables = set(search_field_index_map.values())
+
+rangable_scalar_types = [
+    'numeric', 'double', 'integer', 'datetime'
+]
 
 ALL_STATIC_TABLES = [
     MetadataType.__table__, Product.__table__, Dataset.__table__,
     DatasetLocation.__table__, DatasetSource.__table__, SpatialIndexRecord.__table__,
     DatasetSearchString.__table__, DatasetSearchNumeric.__table__,
     DatasetSearchDateTime.__table__,
-    DatasetSearchNumericRange.__table__, DatasetSearchDateTimeRange.__table__,
 ]
