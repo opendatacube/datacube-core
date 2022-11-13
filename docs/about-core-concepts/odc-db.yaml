@@ -1,0 +1,96 @@
+definitions:
+  Identity:
+    type: integer
+    format: int64
+    minimum: 1
+
+  Dataset:
+    properties:
+      id:
+        $ref: '#/definitions/Identity'
+      metadata_type_ref:
+        $ref: '#/definitions/Identity'
+      dataset_type_ref:
+        $ref: '#/definitions/Identity'
+      metadata:
+        type: jsonb
+      archived:
+      added:
+        type: datetime
+      added_by:
+        type: nvarchar
+        maxLength: 255
+      updated:
+
+  Dataset_Location:
+    properties:
+      id:
+        $ref: '#/definitions/Identity'
+      dataset_ref:
+        $ref: '#/definitions/Identity'
+      uri_scheme:
+        type: nvarchar
+      uri_body:
+        type: nvarchar
+      added:
+        type: datetime
+      added_by:
+        type: nvarchar
+      archived:
+        type: datetime
+  Dataset_Type:
+    properties:
+      id:
+        $ref: '#/definitions/Identity'
+      name:
+        type: nvarchar
+      metadata:
+        type: jsonb
+      metadata_type_ref:
+        $ref: '#/definitions/Identity'
+      definition:
+      added:
+        type: datetime
+      added_by:
+        type: nvarchar
+      updated:
+  Metadata_Type:
+    properties:
+      id:
+        $ref: '#/definitions/Identity'
+      name:
+        type: nvarchar
+      definition:
+        type: jsonb
+      added:
+        type: datetime
+      added_by:
+        type: nvarchar
+      updated:
+tables:
+  dataset:
+    name: dataset
+    description: Table to store dataset information
+    columns:
+      $ref: '#/definitions/Dataset'
+  dataset_location:
+    name: dataset_location
+    description: Table to store dataset location information
+    columns:
+      $ref: '#/definitions/Dataset_Location'
+  dataset_type:
+    name: dataset_type
+    description: Table to store product information
+    columns:
+      $ref: '#/definitions/Dataset_Type'
+  metadata_type:
+    name: metadata_type
+    description: Table to store metadata type information
+    columns:
+      $ref: '#/definitions/Metadata_Type'
+
+relationships:
+
+- metadata_type ||--0< dataset_type
+- dataset_type ||--0< dataset
+- dataset ||--0< dataset_location
