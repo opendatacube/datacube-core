@@ -63,6 +63,7 @@ Sphinx==4.5.0
 sphinx-autodoc-typehints==1.18.1
 sphinx-click==4.0.3
 sphinxcontrib-applehelp==1.0.2
+sphinxcontrib-dd
 sphinxcontrib-devhelp==1.0.2
 sphinxcontrib-htmlhelp==2.0.0
 sphinxcontrib-jsmath==1.0.1
