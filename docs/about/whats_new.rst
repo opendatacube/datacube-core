@@ -20,6 +20,7 @@ v1.8.next
 - Add readthedoc preview github action (:pull:`1344`)
 - Update `nodata` in readthedoc for products page (:pull:`1347`)
 - Add `eo-datasets` to extensions & related software doc page (:pull:`1349`)
+- Fix bug affecting searches against range types of zero width (:pull:`1352`)
 
 .. _PEP561: https://peps.python.org/pep-0561/
 
