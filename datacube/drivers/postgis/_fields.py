@@ -491,7 +491,7 @@ class RangeBetweenExpression(PgExpression):
     @property
     def alchemy_expression(self):
         return self.field.alchemy_expression.overlaps(
-            self._range_class(self.low_value, self.high_value)
+            self._range_class(self.low_value, self.high_value, bounds='[]')
         )
 
 
