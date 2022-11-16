@@ -151,6 +151,27 @@ def test_search_dataset_ranges_eo3(index: Index, ls8_eo3_dataset: Dataset) -> No
     assert len(datasets) == 0
 
 
+def test_zero_width_range_search(index: Index, ls8_eo3_dataset4: Dataset) -> None:
+    # Test time search against zero-width time metadata
+    datasets = index.datasets.search_eager(time=Range(
+        begin=datetime.datetime(2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc),
+        end=datetime.datetime(2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc)
+    ))
+    assert len(datasets) == 1
+
+    datasets = index.datasets.search_eager(time=Range(
+        begin=datetime.datetime(2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc),
+        end=datetime.datetime(2013, 7, 21, 0, 57, 27, 432563, tzinfo=datetime.timezone.utc)
+    ))
+    assert len(datasets) == 1
+
+    datasets = index.datasets.search_eager(time=Range(
+        begin=datetime.datetime(2013, 7, 21, 0, 57, 25, 432563, tzinfo=datetime.timezone.utc),
+        end=datetime.datetime(2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc)
+    ))
+    assert len(datasets) == 1
+
+
 def test_search_globally_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
     # No expressions means get all.
     results = list(index.datasets.search())
