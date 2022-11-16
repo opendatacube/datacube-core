@@ -36,8 +36,6 @@ grids:
 properties:
   datetime: '2013-07-21T00:57:26.432563Z'
   dea:dataset_maturity: final
-  dtr:end_datetime: '2013-07-21T00:57:41.398421Z'
-  dtr:start_datetime: '2013-07-21T00:57:11.356786Z'
   eo:cloud_cover: 1.828773330949106e+01
   eo:gsd: 1.5e+01  # Ground sample distance (m)
   eo:instrument: OLI_TIRS
