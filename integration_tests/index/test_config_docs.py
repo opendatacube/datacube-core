@@ -159,6 +159,7 @@ def test_field_expression_unchanged_postgis(
         default_metadata_type: MetadataType,
         telemetry_metadata_type: MetadataType) -> None:
     # We're checking for accidental changes here in our field-to-SQL code
+    # Dubious test as it uses non-EO3 metadata types
 
     # If we started outputting a different expression they would quietly no longer match the expression
     # indexes that exist in our DBs.
