@@ -100,6 +100,7 @@ class Datacube(object):
             'license'
             'default_crs'
             'default_resolution'
+            'grid_spec'
             'dataset_count' (optional)
 
         :param bool with_pandas:
@@ -120,6 +121,7 @@ class Datacube(object):
             'license',
             'default_crs',
             'default_resolution',
+            'grid_spec',
         ]
         rows = [[getattr(pr, col, None) for col in cols]
                 for pr in self.index.products.get_all()]
@@ -870,7 +872,10 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
             resolution = grid_spec.resolution
         align = align or grid_spec.alignment
     else:
-        raise ValueError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
+        raise ValueError(
+            "Product has no default CRS nor grid_spec. \n"
+            "Must specify 'output_crs' and 'resolution' or 'grid_spec'"
+        )
 
     # Try figuring out bounds
     #  1. Explicitly defined with geopolygon
