@@ -34,3 +34,4 @@ Database Relationship
     :members:
     :undoc-members:
     :show-inheritance:
+    :special-members: __table__
