@@ -98,8 +98,8 @@ class Datacube(object):
             'name'
             'description'
             'license'
-            'default_crs'
-            'default_resolution'
+            'default_crs' or 'grid_spec.crs'
+            'default_resolution' or 'grid_spec.crs'
             'dataset_count' (optional)
 
         :param bool with_pandas:
@@ -123,7 +123,11 @@ class Datacube(object):
         ]
         rows = [[
             getattr(pr, col, None)
+            # if 'default_crs' and 'default_resolution' are not None
+            # return 'default_crs' and 'default_resolution'
             if getattr(pr, col, None) and 'default' not in col
+            # else try 'grid_spec.crs' and 'grid_spec.resolution'
+            # as per output_geobox() handling logic
             else getattr(pr.grid_spec, col.replace('default_', ''), None)
             for col in cols]
             for pr in self.index.products.get_all()]
