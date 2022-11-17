@@ -98,8 +98,8 @@ class Datacube(object):
             'name'
             'description'
             'license'
-            'default_crs'
-            'default_resolution'
+            'default_crs' or 'grid_spec.crs'
+            'default_resolution' or 'grid_spec.crs'
             'dataset_count' (optional)
 
         :param bool with_pandas:
@@ -121,8 +121,16 @@ class Datacube(object):
             'default_crs',
             'default_resolution',
         ]
-        rows = [[getattr(pr, col, None) for col in cols]
-                for pr in self.index.products.get_all()]
+        rows = [[
+            getattr(pr, col, None)
+            # if 'default_crs' and 'default_resolution' are not None
+            # return 'default_crs' and 'default_resolution'
+            if getattr(pr, col, None) and 'default' not in col
+            # else try 'grid_spec.crs' and 'grid_spec.resolution'
+            # as per output_geobox() handling logic
+            else getattr(pr.grid_spec, col.replace('default_', ''), None)
+            for col in cols]
+            for pr in self.index.products.get_all()]
 
         # Optionally compute dataset count for each product and add to row/cols
         # Product lists are sorted by product name to ensure 1:1 match
@@ -870,7 +878,10 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
             resolution = grid_spec.resolution
         align = align or grid_spec.alignment
     else:
-        raise ValueError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
+        raise ValueError(
+            "Product has no default CRS. \n"
+            "Must specify 'output_crs' and 'resolution'"
+        )
 
     # Try figuring out bounds
     #  1. Explicitly defined with geopolygon
