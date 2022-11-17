@@ -37,7 +37,8 @@ extensions = [
     'autodocsumm',
     'nbsphinx',
     'sphinx.ext.napoleon',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'sphinxcontrib.sqlalchemyviz'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
