@@ -30,5 +30,4 @@ components that make up an implementation, as well as the ecosystem around it.
 Database Relationship
 ---------------------
 
-.. sqlaviz::
-    :metadataobject: datacube.drivers.postgres._schema.PRODUCT
+.. automodule:: datacube.drivers.postgres._schema.PRODUCT
