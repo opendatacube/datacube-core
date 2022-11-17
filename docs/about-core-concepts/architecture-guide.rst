@@ -31,3 +31,6 @@ Database Relationship
 ---------------------
 
 .. automodule:: datacube.drivers.postgres._schema.PRODUCT
+    :members:
+    :undoc-members:
+    :show-inheritance:
