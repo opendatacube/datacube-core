@@ -7,12 +7,14 @@ definitions:
   Common:
     properties:
       archived:
+        type: boolean
       added:
         type: datetime
       added_by:
         type: nvarchar
         maxLength: 255
       updated:
+        type: boolean
 
   Dataset:
     allOf:
@@ -54,6 +56,7 @@ definitions:
           metadata_type_ref:
             $ref: '#/definitions/Identity'
           definition:
+            type: jsonb
 
   Metadata_Type:
     allOf:
