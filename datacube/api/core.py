@@ -875,8 +875,8 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
         align = align or grid_spec.alignment
     else:
         raise ValueError(
-            "Product has no default CRS nor grid_spec. \n"
-            "Must specify 'output_crs' and 'resolution' or 'grid_spec'"
+            "Product has no default CRS. \n"
+            "Must specify 'output_crs' and 'resolution'"
         )
 
     # Try figuring out bounds
