@@ -30,7 +30,7 @@ components that make up an implementation, as well as the ecosystem around it.
 Database Relationship
 ---------------------
 
-.. automodule:: datacube.drivers.postgres._schema.PRODUCT
+.. automodule:: datacube.drivers.postgres._schema
     :members:
     :undoc-members:
     :show-inheritance:
