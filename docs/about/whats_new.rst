@@ -8,12 +8,16 @@ What's New
 v1.8.next
 =========
 
+v1.8.9 (17 November 2022)
+=========================
+
 - Performance improvements to CRS geometry class (:pull:`1322`)
 - Extend `patch_url` argument to `dc.load()` and `dc.load_data()` to Dask loading.  (:pull:`1323`)
 - Add `sphinx.ext.autoselectionlabel` extension to readthedoc conf to support `:ref:` command (:pull:`1325`)
 - Add `pyspellcheck` for `.rst` documentation files and fix typos (:pull:`1327`)
 - Add `rst` documentation lint github action and apply best practices (:pull:`1328`)
-- Follow PEP561_ to make type hints available to other packages (:issue:`1330`)
+- Follow PEP561_ to make type hints available to other packages (:pull:`1331`)
+- Updated GitHub actions config to remove deprecated `set-output` (:pull:`1333`)
 - Add what's new page link to menu and general doc fixes (:pull:`1335`)
 - Add `search_fields` to required for metadata type schema and update doc (:pull:`1339`)
 - Fix typo and update metadata documentation (:pull:`1340`)
@@ -21,6 +25,7 @@ v1.8.next
 - Update `nodata` in readthedoc for products page (:pull:`1347`)
 - Add `eo-datasets` to extensions & related software doc page (:pull:`1349`)
 - Fix bug affecting searches against range types of zero width (:pull:`1352`)
+- Add 1.8.9 release date and missing PR to `whats_news.rst` (:pull:`1353`)
 
 .. _PEP561: https://peps.python.org/pep-0561/
 
