@@ -100,7 +100,6 @@ class Datacube(object):
             'license'
             'default_crs'
             'default_resolution'
-            'grid_spec'
             'dataset_count' (optional)
 
         :param bool with_pandas:
@@ -121,10 +120,13 @@ class Datacube(object):
             'license',
             'default_crs',
             'default_resolution',
-            'grid_spec',
         ]
-        rows = [[getattr(pr, col, None) for col in cols]
-                for pr in self.index.products.get_all()]
+        rows = [[
+            getattr(pr, col, None)
+            if getattr(pr, col, None) and 'default' not in col
+            else getattr(pr.grid_spec, col.replace('default_', ''), None)
+            for col in cols]
+            for pr in self.index.products.get_all()]
 
         # Optionally compute dataset count for each product and add to row/cols
         # Product lists are sorted by product name to ensure 1:1 match
