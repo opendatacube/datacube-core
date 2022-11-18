@@ -6,15 +6,11 @@ definitions:
 
   Common:
     properties:
-      archived:
-        type: boolean
       added:
         type: datetime
       added_by:
         type: nvarchar
         maxLength: 255
-      updated:
-        type: boolean
 
   Dataset:
     allOf:
@@ -28,6 +24,8 @@ definitions:
             $ref: '#/definitions/Identity'
           metadata:
             type: jsonb
+          archived:
+            type: datetime
 
 
   Dataset_Location:
@@ -42,6 +40,8 @@ definitions:
             type: nvarchar
           uri_body:
             type: nvarchar
+          archived:
+            type: datetime
 
   Dataset_Type:
     allOf:
@@ -69,12 +69,28 @@ definitions:
           definition:
             type: jsonb
 
+  Dataset_Source:
+    allOf:
+      - $ref: '#/definitions/Common'
+        properties:
+          classifier:
+            type: nvarchar
+          source_dataset_ref:
+            $ref: '#/definitions/Identity'
+          dataset_ref:
+            $ref: '#/definitions/Identity'
+
 tables:
   dataset:
     name: dataset
     description: Table to store dataset information
     columns:
       $ref: '#/definitions/Dataset'
+  dataset_source:
+    name: dataset_source
+    description: Table to store dataset lineage information
+    columns:
+      $ref: '#/definitions/Dataset_Source'
   dataset_location:
     name: dataset_location
     description: Table to store dataset location information
@@ -95,3 +111,4 @@ relationships:
   - metadata_type ||--0< dataset_type
   - dataset_type ||--0< dataset
   - dataset ||--0< dataset_location
+  - dataset ||--0< dataset_source
