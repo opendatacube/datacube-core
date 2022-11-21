@@ -29,7 +29,6 @@ from datacube.utils import geometry
 from datacube.utils.geometry import CRS, Geometry
 from datacube.index.abstract import DSID
 from . import _core
-from . import _dynamic as dynamic
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField
 from ._schema import MetadataType, Product, \
@@ -901,10 +900,6 @@ class PostgisDbAPI(object):
 
         type_id = res.inserted_primary_key[0]
 
-        # Initialise search fields.
-        # TODO: Isn't definition['metadata'] the same as metadata?
-        self._setup_product_fields(type_id, name, search_fields, definition['metadata'],
-                                   concurrently=concurrently)
         return type_id
 
     def update_product(self,
@@ -914,7 +909,6 @@ class PostgisDbAPI(object):
                        search_fields,
                        definition,
                        update_metadata_type=False, concurrently=False):
-        # TODO: Isn't definition['metadata'] the same as metadata?
         res = self._connection.execute(
             update(Product).returning(Product.id).where(
                 Product.name == name
@@ -938,11 +932,6 @@ class PostgisDbAPI(object):
                 )
             )
 
-        # Initialise search fields.
-        # TODO: Isn't definition['metadata'] the same as metadata?
-        self._setup_product_fields(prod_id, name, search_fields, definition['metadata'],
-                                   concurrently=concurrently,
-                                   rebuild_view=True)
         return prod_id
 
     def insert_metadata_type(self, name, definition, concurrently=False):
@@ -998,25 +987,7 @@ class PostgisDbAPI(object):
 
     def _setup_metadata_type_fields(self, id_, name, fields,
                                     rebuild_indexes=False, rebuild_views=False, concurrently=True):
-        for product in self._get_products_for_metadata_type(id_):
-            self._setup_product_fields(
-                product['id'],
-                product['name'],
-                fields,
-                product['definition']['metadata'],
-                rebuild_view=rebuild_views,
-                rebuild_indexes=rebuild_indexes,
-                concurrently=concurrently
-            )
-
-    def _setup_product_fields(self, id_, name, fields, metadata_doc,
-                              rebuild_indexes=False, rebuild_view=False, concurrently=True):
-        dataset_filter = and_(Dataset.archived == None, Dataset.product_ref == id_)
-        excluded_field_names = tuple(self._get_active_field_names(fields, metadata_doc))
-
-        dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
-                                     excluded_field_names, fields, name,
-                                     rebuild_indexes=rebuild_indexes, rebuild_view=rebuild_view)
+        pass
 
     @staticmethod
     def _get_active_field_names(fields, metadata_doc):
