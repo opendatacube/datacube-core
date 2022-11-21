@@ -582,11 +582,11 @@ class PostgisDbAPI(object):
             SpatialIndex = None  # noqa: N806
 
         raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
-        join_tables = PostgisDbAPI._join_tables(Dataset, expressions, select_fields)
+        join_tables = PostgisDbAPI._join_tables(expressions, select_fields)
         where_expr = and_(Dataset.archived == None, *raw_expressions)
         query = select(select_columns).select_from(Dataset)
-        for join in join_tables:
-            query = query.join(join)
+        for joins in join_tables:
+            query = query.join(*joins)
         if spatialquery is not None:
             where_expr = and_(where_expr, spatialquery)
             query = query.join(SpatialIndex)
@@ -640,13 +640,13 @@ class PostgisDbAPI(object):
         # TODO
         # type: (Tuple[PgField], Tuple[PgExpression]) -> Iterable[tuple]
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
-        join_tables = PostgisDbAPI._join_tables(Dataset, expressions, match_fields)
+        join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
 
         query = select(
             (func.array_agg(Dataset.id),) + group_expressions
         ).select_from(Dataset)
-        for join in join_tables:
-            query = query.join(join)
+        for joins in join_tables:
+            query = query.join(*joins)
 
         query = query.where(
             and_(Dataset.archived == None, *(PostgisDbAPI._alchemify_expressions(expressions)))
@@ -719,9 +719,9 @@ class PostgisDbAPI(object):
         ).alias('time_ranges')
 
         count_query = select(func.count('*'))
-        join_tables = self._join_tables(Dataset, expressions)
-        for join in join_tables:
-            count_query = count_query.join(join)
+        join_tables = self._join_tables(expressions)
+        for joins in join_tables:
+            count_query = count_query.join(*joins)
         count_query = count_query.where(
             and_(
                 time_field.alchemy_expression.overlaps(time_ranges.c.time_period),
@@ -852,20 +852,15 @@ class PostgisDbAPI(object):
         return verified
 
     @staticmethod
-    def _join_tables(source_table, expressions=None, fields=None):
-        join_tables = set()
+    def _join_tables(expressions=None, fields=None):
+        join_args = set()
         if expressions:
-            join_tables.update(expression.field.required_alchemy_table for expression in expressions)
+            join_args.update(expression.field.dataset_join_args for expression in expressions)
         if fields:
-            join_tables.update(field.required_alchemy_table for field in fields)
-        join_tables.discard(source_table.__table__)
-        # TODO: Current architecture must sort-hack.  Better join awareness required at field level.
-        sort_order_hack = [DatasetLocation, Dataset, Product, MetadataType]
-        return [
-            orm_table
-            for orm_table in sort_order_hack
-            if orm_table.__table__ in join_tables
-        ]
+            join_args.update((field.select_alchemy_table,) for field in fields)
+        join_args.discard((Dataset.__table__,))
+        # Sort simple joins before qualified joins
+        return sorted(join_args, key=len)
 
     def get_product(self, id_):
         return self._connection.execute(

@@ -30,6 +30,9 @@ from datacube.testutils import load_dataset_definition
 from datacube import Datacube
 from .search_utils import _load_product_query, assume_utc, _csv_search_raw, _cli_csv_search
 
+# These tests use non-EO3 metadata, so will not work with the experimental driver.
+# Mark all with @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
+
 
 @pytest.fixture
 def pseudo_ls8_type(index, ga_metadata_type):
@@ -228,6 +231,7 @@ def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
         raise RuntimeError("LS5 type was not among types")
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
     datasets = index.datasets.search_eager(
         platform='LANDSAT_8'
@@ -250,6 +254,7 @@ def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
         )
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     datasets = index.datasets.search_by_metadata(
         {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}}
@@ -265,6 +270,7 @@ def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -
     assert len(datasets) == 0
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_day(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # Matches day
     datasets = index.datasets.search_eager(
@@ -280,7 +286,6 @@ def test_search_day(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     assert len(datasets) == 0
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_dataset_ranges(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # In the lat bounds.
@@ -358,6 +363,7 @@ def test_search_dataset_ranges(index: Index, pseudo_ls8_dataset: Dataset) -> Non
     assert len(datasets) == 0
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_globally(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # No expressions means get all.
     results = list(index.datasets.search())
@@ -367,7 +373,6 @@ def test_search_globally(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     assert results[0].sources is None
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_by_product(index: Index,
                            pseudo_ls8_type: Product,
@@ -390,6 +395,7 @@ def test_search_by_product(index: Index,
     assert dataset.id == pseudo_ls8_dataset.id
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
     datasets = list(index.datasets.search())
     assert len(datasets) == 2
@@ -410,7 +416,6 @@ def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
     assert len(datasets) == 2
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_or_expressions(index: Index,
                                pseudo_ls8_type: Product,
@@ -477,7 +482,6 @@ def test_search_or_expressions(index: Index,
     assert datasets[0].id == pseudo_ls8_dataset.id
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_returning(index: Index,
                           local_config: LocalConfig,
@@ -531,6 +535,7 @@ def test_search_returning(index: Index,
     assert label == pseudo_ls8_dataset.metadata_doc['ga_label']
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_returning_rows(index, pseudo_ls8_type,
                                pseudo_ls8_dataset, pseudo_ls8_dataset2,
                                indexed_ls5_scene_products):
@@ -588,6 +593,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
     }
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_searches_only_type(index: Index,
                             pseudo_ls8_type: Product,
                             pseudo_ls8_dataset: Dataset,
@@ -639,7 +645,6 @@ def test_searches_only_type(index: Index,
         )
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_special_fields(index: Index,
                                pseudo_ls8_type: Product,
@@ -660,7 +665,6 @@ def test_search_special_fields(index: Index,
         )
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_by_uri(index, ls5_dataset_w_children):
     datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
@@ -672,8 +676,6 @@ def test_search_by_uri(index, ls5_dataset_w_children):
     assert len(datasets) == 0
 
 
-# Current formulation of this test relies on non-EO3 test data
-# (But postgis implementation isn't handling lineage yet either)
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_get_dataset_with_children(index: Index, ls5_dataset_w_children: Dataset) -> None:
     id_ = ls5_dataset_w_children.id
@@ -698,6 +700,7 @@ def test_get_dataset_with_children(index: Index, ls5_dataset_w_children: Dataset
     assert list(level1.sources['satellite_telemetry_data'].sources) == []
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_count_by_product_searches(index: Index,
                                    pseudo_ls8_type: Product,
                                    pseudo_ls8_dataset: Dataset,
@@ -748,8 +751,6 @@ def test_count_by_product_searches(index: Index,
     assert products == ()
 
 
-# Current formulation of this test relies on non-EO3 test data
-# (But postgis driver doesn't support lineage yet anyway.)
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 @pytest.mark.usefixtures('ga_metadata_type',
                          'indexed_ls5_scene_products')
@@ -786,6 +787,7 @@ def test_source_filter(clirunner, index, example_ls5_dataset_path):
         )
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_cli_info(index: Index,
                   clirunner: Any,
                   pseudo_ls8_dataset: Dataset,
@@ -852,6 +854,7 @@ def test_cli_info(index: Index,
     assert yaml_docs[1]['id'] == str(pseudo_ls8_dataset2.id)
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_cli_missing_info(clirunner, index):
     id_ = str(uuid.uuid4())
     result = clirunner(
@@ -867,7 +870,6 @@ def test_cli_missing_info(clirunner, index):
     assert result.output.endswith("{id} missing\n".format(id=id_))
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_find_duplicates(index, pseudo_ls8_type,
                          pseudo_ls8_dataset, pseudo_ls8_dataset2, pseudo_ls8_dataset3, pseudo_ls8_dataset4,
@@ -944,7 +946,6 @@ def test_find_duplicates(index, pseudo_ls8_type,
     assert sat_res == []
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_csv_search_via_cli(clirunner: Any,
                             pseudo_ls8_type: Product,
@@ -1025,7 +1026,6 @@ _EXPECTED_OUTPUT_HEADER = 'creation_time,format,gsi,id,indexed_by,indexed_time,i
     'product,product_id,product_type,sat_path,sat_row,time,uri'
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
                        pseudo_ls8_dataset, pseudo_ls8_dataset2):
@@ -1037,7 +1037,6 @@ def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
     assert header_line in (_EXPECTED_OUTPUT_HEADER, _EXPECTED_OUTPUT_HEADER_LEGACY)
 
 
-# Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Dataset):
     # We have one ls5 level1 and its child nbar

@@ -15,6 +15,7 @@ from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.sql import ColumnElement
+from sqlalchemy.orm import aliased
 
 from datacube import utils
 from datacube.model.fields import Expression, Field
@@ -22,6 +23,9 @@ from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
 
 from typing import Any, Callable, Tuple, Union
+
+from datacube.drivers.postgis._schema import Dataset, search_field_index_map
+from datacube.utils import cached_property
 
 
 class PgField(Field):
@@ -38,8 +42,29 @@ class PgField(Field):
         self.indexed = indexed
 
     @property
-    def required_alchemy_table(self):
+    def select_alchemy_table(self):
         return self.alchemy_column.table
+
+    @cached_property
+    def search_index_table(self):
+        if self.indexed:
+            search_table = search_field_index_map[self.type_name]
+            return aliased(search_table, name=f"{search_table.__tablename__}-{self.name}")
+        else:
+            return self.select_alchemy_table
+
+    @cached_property
+    def dataset_join_args(self):
+        if self.indexed:
+            return (
+                self.search_index_table,
+                and_(
+                    Dataset.id == self.search_index_table.dataset_ref,
+                    self.search_index_table.search_key == self.name
+                )
+            )
+        else:
+            return (self.search_index_table,)
 
     @property
     def alchemy_expression(self):
@@ -48,6 +73,13 @@ class PgField(Field):
         :return:
         """
         raise NotImplementedError('alchemy expression')
+
+    @property
+    def search_alchemy_expression(self):
+        if self.indexed:
+            return self.search_index_table.search_val
+        else:
+            return self.alchemy_expression
 
     @property
     def sql_expression(self):
@@ -59,10 +91,6 @@ class PgField(Field):
             dialect=postgres.dialect(),
             compile_kwargs={"literal_binds": True}
         ))
-
-    @property
-    def postgres_index_type(self):
-        return 'btree'
 
     def __eq__(self, value):
         """
@@ -93,11 +121,6 @@ class NativeField(PgField):
     def alchemy_expression(self):
         expression = self._expression if self._expression is not None else self.alchemy_column
         return expression.label(self.name)
-
-    @property
-    def postgres_index_type(self):
-        # Don't add extra indexes for native fields.
-        return None
 
 
 class PgDocField(PgField):
@@ -325,10 +348,6 @@ class RangeDocField(PgDocField):
         raise NotImplementedError('range type')
 
     @property
-    def postgres_index_type(self):
-        return 'gist'
-
-    @property
     def alchemy_expression(self):
         return self.value_to_alchemy((self.lower.alchemy_expression, self.greater.alchemy_expression))
 
@@ -451,13 +470,12 @@ class ValueBetweenExpression(PgExpression):
     @property
     def alchemy_expression(self):
         if self.low_value is not None and self.high_value is not None:
-            return and_(self.field.alchemy_expression >= self.low_value,
-                        self.field.alchemy_expression < self.high_value)
+            return and_(self.field.search_alchemy_expression >= self.low_value,
+                        self.field.search_alchemy_expression <= self.high_value)
         if self.low_value is not None:
-            return self.field.alchemy_expression >= self.low_value
+            return self.field.search_alchemy_expression >= self.low_value
         if self.high_value is not None:
-            return self.field.alchemy_expression < self.high_value
-
+            return self.field.search_alchemy_expression <= self.high_value
         raise ValueError('Expect at least one of [low,high] to be set')
 
 
@@ -467,12 +485,11 @@ class RangeBetweenExpression(PgExpression):
         self.low_value = low_value
         self.high_value = high_value
         self._range_class = _range_class
+        self._alc_val = self._range_class(self.low_value, self.high_value, bounds='[]')
 
     @property
     def alchemy_expression(self):
-        return self.field.alchemy_expression.overlaps(
-            self._range_class(self.low_value, self.high_value, bounds='[]')
-        )
+        return self.field.search_alchemy_expression.overlaps(self._alc_val)
 
 
 class RangeContainsExpression(PgExpression):
@@ -482,7 +499,7 @@ class RangeContainsExpression(PgExpression):
 
     @property
     def alchemy_expression(self):
-        return self.field.alchemy_expression.contains(self.value)
+        return self.field.search_alchemy_expression.contains(self.value)
 
 
 class EqualsExpression(PgExpression):
@@ -492,7 +509,7 @@ class EqualsExpression(PgExpression):
 
     @property
     def alchemy_expression(self):
-        return self.field.alchemy_expression == self.value
+        return self.field.search_alchemy_expression == self.value
 
     def evaluate(self, ctx):
         return self.field.evaluate(ctx) == self.value
