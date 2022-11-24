@@ -950,6 +950,9 @@ class AbstractDatasetResource(ABC):
             assert geom.crs
         else:
             # Old lat/lon--style spatial query (or no spatial query)
+            # TODO: latitude/longitude/x/y aliases for lat/lon
+            #       Also some stuff is precalced at the api.core.Datacube level.
+            #       THAT needs to offload to index driver when it can.
             lat = q.pop("lat", None)
             lon = q.pop("lon", None)
             if lat is None and lon is None:
