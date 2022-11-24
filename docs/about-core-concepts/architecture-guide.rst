@@ -31,7 +31,7 @@ components that make up an implementation, as well as the ecosystem around it.
 Database Diagram
 ----------------
 
-.. figure:: ../../diagrams/db-relation.svg
+.. figure:: ../diagrams/db-relationship-diagram.svg
     :target: /_images/db-relationship-diagram.svg
 
     Current database relationship diagram
