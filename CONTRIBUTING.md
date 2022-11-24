@@ -1,6 +1,6 @@
 # Contributing
 
-Firstly, thank you for contributing! We are very grateful for your assistance in improving the Open Data Cube. 
+Firstly, thank you for contributing! We are very grateful for your assistance in improving the Open Data Cube.
 
 When contributing to this repository, please first discuss the change you wish to make via an issue,
 Slack, or any other method with the owners of this repository before proposing a change.
@@ -10,6 +10,22 @@ We have a [code of conduct](code-of-conduct.md), so please follow it in all your
 ## Pull Request Process
 
 When you create a Pull Request, there is a template defined that has required information. Please complete this template to ensure that we can review the PR easily.
+
+### Updating database table diagrams
+
+##### Run SchemaSpy to generate database table diagrams
+
+**Using Docker**
+```
+docker run -it --rm -v "$PWD:/output" --network="host" schemaspy/schemaspy -u dra547 -host localhost -port 15432 -db datacube -t pgsql -schemas agdc,cubedash -norows -noviews -pfp -imageformat svg
+```
+
+**If SchemaSpy is downloaded Locally**
+```
+java -jar schemaspy-6.1.0.jar -o . -u dra547 -host localhost -port 15432 -db datacube -t pgsql -dp postgresql-42.5.0.jar -s agdc -norows -noviews
+```
+
+Grab the relationship diagram from ./diagrams/summary/relationships.real.large.svg
 
 ## Enhancement proposals
 

@@ -26,3 +26,16 @@ components that make up an implementation, as well as the ecosystem around it.
 .. _`SpatioTemporal Asset Catalog`: https://stacspec.org/
 .. _`Sentinel-2 Indexing notes`: https://github.com/opendatacube/datacube-dataset-config/blob/master/sentinel-2-l2a-cogs.md
 .. _`Datacube Explorer`: https://github.com/opendatacube/datacube-explorer
+
+
+Database Diagram
+----------------
+
+.. figure:: ../diagrams/db-relationship-diagram.svg
+    :target: /_images/db-relationship-diagram.svg
+
+    Current database relationship diagram
+
+.. note::
+
+    To update the diagram please refer to instruction in CONTRIBUTE.md

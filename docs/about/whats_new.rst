@@ -9,6 +9,7 @@ v1.8.next
 =========
 
 - Add `grid_spec` to `list_products` (:pull:`1357`)
+- Add database relationship diagram to doc (:pull:`1350`)
 
 v1.8.9 (17 November 2022)
 =========================
