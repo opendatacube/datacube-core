@@ -31,9 +31,11 @@ components that make up an implementation, as well as the ecosystem around it.
 Database Diagram
 ----------------
 
-.. database-diagram:: odc-db.yaml
+.. figure:: ../../diagrams/db-relation.svg
+    :target: /_images/db-relationship-diagram.svg
 
+    Current database relationship diagram
 
 .. note::
 
-    `dataset_type` table is storing product information.
+    To update the diagram please refer to instruction in CONTRIBUTE.md
