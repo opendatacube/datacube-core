@@ -17,7 +17,7 @@ import logging
 import os
 import re
 from contextlib import contextmanager
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
@@ -37,7 +37,7 @@ _LOG = logging.getLogger(__name__)
 try:
     import pwd
 
-    DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name  # type: Optional[str]
+    DEFAULT_DB_USER: Optional[str] = pwd.getpwuid(os.geteuid()).pw_name
 except (ImportError, KeyError):
     # No default on Windows and some other systems
     DEFAULT_DB_USER = None

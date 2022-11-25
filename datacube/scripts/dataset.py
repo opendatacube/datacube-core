@@ -8,7 +8,7 @@ import logging
 import sys
 from collections import OrderedDict
 from textwrap import dedent
-from typing import cast, Iterable, Mapping, Any, List, Set
+from typing import cast, Iterable, Mapping, MutableMapping, Any, List, Set
 from uuid import UUID
 
 import click
@@ -340,11 +340,11 @@ def build_dataset_info(index: Index, dataset: Dataset,
                        show_derived: bool = False,
                        depth: int = 1,
                        max_depth: int = 99) -> Mapping[str, Any]:
-    info = OrderedDict((
+    info: MutableMapping[str, Any] = OrderedDict((
         ('id', str(dataset.id)),
         ('product', dataset.type.name),
         ('status', 'archived' if dataset.is_archived else 'active')
-    ))  # type: MutableMapping[str, Any]
+    ))
 
     # Optional when loading a dataset.
     if dataset.indexed_time is not None:

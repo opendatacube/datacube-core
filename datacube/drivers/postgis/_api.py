@@ -21,7 +21,7 @@ from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
-from typing import Sequence
+from typing import Iterable, Sequence
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
@@ -635,9 +635,8 @@ class PostgisDbAPI(object):
 
         return self._connection.execute(select_query)
 
-    def get_duplicates(self, match_fields, expressions):
+    def get_duplicates(self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]) -> Iterable[tuple]:
         # TODO
-        # type: (Tuple[PgField], Tuple[PgExpression]) -> Iterable[tuple]
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
         join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
 
@@ -1133,8 +1132,7 @@ class PostgisDbAPI(object):
             self._connection.execute(sql,
                                      description=description)
 
-    def drop_users(self, users):
-        # type: (Iterable[str]) -> None
+    def drop_users(self, users: Iterable[str]) -> str:
         for username in users:
             sql = text('drop role {username}'.format(username=escape_pg_identifier(self._connection, username)))
             self._connection.execute(sql)
