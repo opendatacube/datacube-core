@@ -36,13 +36,22 @@ jobs:
 
   pylint:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
     name: Pylint
     steps:
       - name: checkout git
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Install dependencies and run pylint
+      - name: Setup conda
+        uses: s-weigand/setup-conda@v1
+        with:
+          update-conda: true
+          python-version: ${{ matrix.python-version }}
+          conda-channels: anaconda, conda-forge
+      - name: run pylint
         run: |
           sudo apt-get remove python3-openssl
           pip install --upgrade -e '.[test]'
@@ -52,9 +61,18 @@ jobs:
   pycodestyle:
     name: pycodestyle
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Setup conda
+        uses: s-weigand/setup-conda@v1
+        with:
+          update-conda: true
+          python-version: ${{ matrix.python-version }}
+          conda-channels: anaconda, conda-forge
       - name: Run pycodestyle
         run: |
           sudo apt-get remove python3-openssl
