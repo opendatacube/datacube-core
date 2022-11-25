@@ -279,6 +279,7 @@ class DoubleDocField(NumericDocField):
 
 DateFieldLike = Union[datetime, date, str, ColumnElement]
 
+
 class DateDocField(SimpleDocField):
     type_name = 'datetime'
 
