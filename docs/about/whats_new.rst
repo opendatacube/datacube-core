@@ -11,6 +11,7 @@ v1.8.next
 - Add `grid_spec` to `list_products` (:pull:`1357`)
 - Add database relationship diagram to doc (:pull:`1350`)
 - Change Github lint action to use ``conda`` and remove ``flake8`` from action (:pull:`1361`)
+- Fix database relationship diagram instruction for docker (:pull:`1362`)
 
 v1.8.9 (17 November 2022)
 =========================

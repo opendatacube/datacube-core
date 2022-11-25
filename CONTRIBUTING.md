@@ -17,8 +17,10 @@ When you create a Pull Request, there is a template defined that has required in
 
 **Using Docker**
 ```
-docker run -it --rm -v "$PWD:/output" --network="host" schemaspy/schemaspy -u dra547 -host localhost -port 15432 -db datacube -t pgsql -schemas agdc,cubedash -norows -noviews -pfp -imageformat svg
+docker run -it --rm -v "$PWD:/output" --network="host" schemaspy/schemaspy:snapshot -u $DB_USERNAME -host localhost -port $DB_PORT -db $DB_DATABASE -t pgsql11 -schemas agdc -norows -noviews -pfp -imageformat svg
 ```
+
+Grab the relationship diagram from agdc/diagrams/summary/relationships.real.large.svg
 
 **If SchemaSpy is downloaded Locally**
 ```
