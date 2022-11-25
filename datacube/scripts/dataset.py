@@ -8,7 +8,7 @@ import logging
 import sys
 from collections import OrderedDict
 from textwrap import dedent
-from typing import cast, Iterable, Mapping, MutableMapping, Any, List, Set
+from typing import cast, Iterable, Mapping, Any, List, Set
 from uuid import UUID
 
 import click

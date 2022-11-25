@@ -21,7 +21,6 @@ from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distin
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.exc import IntegrityError
-from typing import Iterable, Tuple
 
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import OrExpression
