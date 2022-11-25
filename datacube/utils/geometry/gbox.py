@@ -5,7 +5,7 @@
 """ Geometric operations on GeoBox class
 """
 
-from typing import Optional, Tuple, Iterable
+from typing import Dict, Optional, Tuple, Iterable
 import itertools
 import math
 from affine import Affine
@@ -151,7 +151,7 @@ class GeoboxTiles():
         self._tile_shape = tile_shape
         self._shape = tuple(math.ceil(float(N)/n)
                             for N, n in zip(box.shape, tile_shape))
-        self._cache = {}  # type: Dict[Tuple[int, int], GeoBox]
+        self._cache: Dict[Tuple[int, int], GeoBox] = {}
 
     @property
     def base(self) -> GeoBox:

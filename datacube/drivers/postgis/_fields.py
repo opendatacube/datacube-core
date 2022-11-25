@@ -6,8 +6,9 @@
 Build and index fields within documents.
 """
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
+from typing import Any, Callable, Tuple, Union
 
 from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
@@ -155,8 +156,9 @@ class PgDocField(PgField):
         """
         return value
 
-    def _alchemy_offset_value(self, doc_offsets, agg_function):
-        # type: (Tuple[Tuple[str]], Callable[[Any], ColumnElement]) -> ColumnElement
+    def _alchemy_offset_value(self,
+                              doc_offsets: Tuple[Tuple[str]],
+                              agg_function: Callable[[Any], ColumnElement]) -> ColumnElement:
         """
         Get an sqlalchemy value for the given offsets of this field's sqlalchemy column.
         If there are multiple they will be combined using the given aggregate function.
@@ -275,11 +277,12 @@ class DoubleDocField(NumericDocField):
         return float(value)
 
 
+DateFieldLike = Union[datetime, date, str, ColumnElement]
+
 class DateDocField(SimpleDocField):
     type_name = 'datetime'
 
-    def value_to_alchemy(self, value):
-        # type: (Union[datetime, date, str, ColumnElement]) -> Union[datetime, date, str, ColumnElement]
+    def value_to_alchemy(self, value: DateFieldLike) -> DateFieldLike:
         """
         Wrap a value as needed for this field type.
         """
@@ -427,8 +430,7 @@ class DateRangeDocField(RangeDocField):
                              "expecting datetimes, got: (%r, %r)" % (low, high))
 
 
-def _number_implies_year(v):
-    # type: (Union[int, datetime]) -> datetime
+def _number_implies_year(v: Union[int, datetime]) -> datetime:
     """
     >>> _number_implies_year(1994)
     datetime.datetime(1994, 1, 1, 0, 0)

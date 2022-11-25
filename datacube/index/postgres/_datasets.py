@@ -9,7 +9,7 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, Union
+from typing import Iterable, List, Union
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -204,7 +204,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
 
-        group_fields = [load_field(f) for f in args]  # type: List[fields.Field]
+        group_fields: List[fields.Field] = [load_field(f) for f in args]
         result_type = namedtuple('search_result', list(f.name for f in group_fields))  # type: ignore
 
         expressions = [product.metadata_type.dataset_fields.get('product') == product.name]

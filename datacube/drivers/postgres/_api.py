@@ -15,6 +15,7 @@ Persistence API implementation for postgres.
 
 import logging
 import uuid  # noqa: F401
+from typing import Iterable, Tuple
 from sqlalchemy import cast
 from sqlalchemy import delete
 from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
@@ -647,8 +648,7 @@ class PostgresDbAPI(object):
 
         return self._connection.execute(select_query)
 
-    def get_duplicates(self, match_fields, expressions):
-        # type: (Tuple[PgField], Tuple[PgExpression]) -> Iterable[tuple]
+    def get_duplicates(self, match_fields: Iterable[PgField], expressions: Iterable[PgExpression]) -> Iterable[Tuple]:
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
 
         select_query = select(
@@ -1059,14 +1059,12 @@ class PostgresDbAPI(object):
             self._connection.execute(sql,
                                      description=description)
 
-    def drop_users(self, users):
-        # type: (Iterable[str]) -> None
+    def drop_users(self, users: Iterable[str]) -> None:
         for username in users:
             sql = text('drop role {username}'.format(username=escape_pg_identifier(self._connection, username)))
             self._connection.execute(sql)
 
-    def grant_role(self, role, users):
-        # type: (str, Iterable[str]) -> None
+    def grant_role(self, role: str, users: Iterable[str]) -> None:
         """
         Grant a role to a user.
         """
