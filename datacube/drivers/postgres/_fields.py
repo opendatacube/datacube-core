@@ -6,7 +6,7 @@
 Build and index fields within documents.
 """
 from collections import namedtuple
-from datetime import datetime, date
+from datetime import datetime
 from decimal import Decimal
 
 from dateutil import tz
@@ -22,8 +22,6 @@ from datacube.model.fields import Expression, Field
 from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
 from .sql import FLOAT8RANGE
-
-from typing import Any, Callable, Tuple, Union
 
 
 class PgField(Field):

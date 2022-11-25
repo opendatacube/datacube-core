@@ -11,8 +11,7 @@ from typing import Type
 
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.orm import aliased, registry, relationship, column_property
-from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text, Index, \
-    Numeric
+from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text, Index
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
@@ -199,7 +198,6 @@ class SpatialIndexRecord:
         return cls(srid=spindex.__tablename__[8:],
                    table_name=spindex.__tablename__)
 
-
     # Value fields by type.
     # str: String (varchar)
     # num, dbl, int: Numeric
@@ -294,10 +292,6 @@ search_field_index_map = {
 }
 
 search_field_tables = set(search_field_index_map.values())
-
-rangable_scalar_types = [
-    'numeric', 'double', 'integer', 'datetime'
-]
 
 ALL_STATIC_TABLES = [
     MetadataType.__table__, Product.__table__, Dataset.__table__,

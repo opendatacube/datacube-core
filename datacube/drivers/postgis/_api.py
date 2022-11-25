@@ -21,7 +21,7 @@ from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
-from typing import Iterable, Tuple, Sequence
+from typing import Sequence
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
@@ -33,7 +33,7 @@ from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F4
 from ._fields import NativeField, DateDocField, SimpleDocField
 from ._schema import MetadataType, Product, \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
-    search_field_index_map, search_field_tables, rangable_scalar_types
+    search_field_index_map, search_field_tables
 from ._spatial import geom_alchemy
 from .sql import escape_pg_identifier
 

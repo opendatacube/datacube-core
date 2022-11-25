@@ -6,7 +6,7 @@
 Build and index fields within documents.
 """
 from collections import namedtuple
-from datetime import datetime, date
+from datetime import datetime
 from decimal import Decimal
 
 from dateutil import tz
@@ -21,8 +21,6 @@ from datacube import utils
 from datacube.model.fields import Expression, Field
 from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
-
-from typing import Any, Callable, Tuple, Union
 
 from datacube.drivers.postgis._schema import Dataset, search_field_index_map
 from datacube.utils import cached_property

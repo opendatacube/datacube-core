@@ -9,7 +9,7 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, Union, List
+from typing import Iterable, Union
 from uuid import UUID
 
 from sqlalchemy import select, func

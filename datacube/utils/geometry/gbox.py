@@ -5,7 +5,7 @@
 """ Geometric operations on GeoBox class
 """
 
-from typing import Optional, Tuple, Dict, Iterable
+from typing import Optional, Tuple, Iterable
 import itertools
 import math
 from affine import Affine
