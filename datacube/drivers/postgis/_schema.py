@@ -205,6 +205,7 @@ class SpatialIndexRecord:
     # num_range, dbl_range, int_range, float_range: NUMRANGE
     # datetimerangs: TSTZRANGE
 
+
 # In theory could put dataset_ref and search_key in shared parent class, but having a foreign key
 # in such a class requires weird and esoteric SQLAlchemy features.  Just leave as separate
 # classes with duped columns for now.

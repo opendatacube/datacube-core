@@ -331,7 +331,7 @@ class DatasetResource(AbstractDatasetResource):
         if mode == "exact":
             test: Callable[[str], bool] = lambda l: l == uri  # noqa: E741
         else:
-            test = lambda l: l.startswith(uri)  # noqa: E741
+            test = lambda l: l.startswith(uri)  # noqa: E741,E731
         for id_, locs in self.locations.items():
             for loc in locs:
                 if test(loc):
