@@ -42,3 +42,5 @@ Group by
    :toctree: generate/
 
    query_group_by
+   solar_day
+   GroupBy
