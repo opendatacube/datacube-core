@@ -190,10 +190,12 @@ def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
 
 
 def query_group_by(group_by='time', **kwargs):
-    """ Group by function for loading datasets
-        :param str group_by
-        :returns: Dictionary String -> GroupBy Object
-        :raises: LookupError when group_by string is not a valid dictionary key.
+    """
+    Group by function for loading datasets
+
+    :param str group_by
+    :returns: :class:`datacube.api.query.GroupBy
+    :raises: LookupError when group_by string is not a valid dictionary key.
     """
     if not isinstance(group_by, str):
         return group_by
