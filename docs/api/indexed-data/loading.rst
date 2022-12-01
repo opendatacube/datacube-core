@@ -11,6 +11,7 @@ Data Loading
 
    Datacube.load
 
+
 Internal Loading Functions
 --------------------------
 
@@ -27,4 +28,19 @@ for example, to pre-filter the available datasets before loading.
    Datacube.group_datasets
    Datacube.load_data
 
+
 .. include:: ./../../ops/load_3d_dataset.rst
+
+
+Group by
+---------
+
+.. currentmodule:: datacube.api.query
+
+.. autosummary::
+
+   :toctree: generate/
+
+   query_group_by
+   solar_day
+   GroupBy

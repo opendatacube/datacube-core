@@ -29,6 +29,8 @@ _LOG = logging.getLogger(__name__)
 class GroupBy:
     def __init__(self, group_by_func, dimension, units, sort_key=None, group_key=None):
         """
+        GroupBy Object
+
         :param group_by_func: Dataset -> group identifier
         :param dimension: dimension of the group key
         :param units: units of the group key
@@ -190,8 +192,27 @@ def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
 
 
 def query_group_by(group_by='time', **kwargs):
-    if not isinstance(group_by, str):
+    """
+    Group by function for loading datasets
+
+    :param group_by: group_by name, supported str are
+    ::
+
+        - time (default)
+        - solar_day, see :func:`datacube.api.query.solar_day`
+
+    or ::
+
+        - :class:`datacube.api.query.GroupBy` object
+
+    :return: :class:`datacube.api.query.GroupBy`
+    :raises LookupError: when group_by string is not a valid dictionary key.
+    """
+    if isinstance(group_by, GroupBy):
         return group_by
+
+    if not isinstance(group_by, str):
+        group_by = None
 
     time_grouper = GroupBy(group_by_func=_extract_time_from_ds,
                            dimension='time',
@@ -212,7 +233,9 @@ def query_group_by(group_by='time', **kwargs):
     try:
         return group_by_map[group_by]
     except KeyError:
-        raise LookupError('No group by function for', group_by)
+        raise LookupError(
+            f'No group by function for {group_by}, valid options are: {group_by_map.keys()}',
+        )
 
 
 def _range_to_geopolygon(**kwargs):

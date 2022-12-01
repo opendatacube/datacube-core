@@ -12,6 +12,7 @@ v1.8.next
 - Add database relationship diagram to doc (:pull:`1350`)
 - Change Github lint action to use ``conda`` and remove ``flake8`` from action (:pull:`1361`)
 - Fix database relationship diagram instruction for docker (:pull:`1362`)
+- Document ``group_by`` for ``dataset.load`` (:pull:`1364`)
 
 v1.8.9 (17 November 2022)
 =========================

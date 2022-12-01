@@ -262,6 +262,7 @@ class Datacube(object):
             a function can be provided to the merging into a single time slice.
 
             See :func:`datacube.helpers.ga_pq_fuser` for an example implementation.
+            see :func:`datacube.api.query.query_group_by` for `group_by` built-in functions.
 
 
         **Output**
