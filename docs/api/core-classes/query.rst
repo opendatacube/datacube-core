@@ -8,6 +8,7 @@ Query
 
    :members:
 
+
 .. autosummary:: query_group_by
 
     :nosignatures:
