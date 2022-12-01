@@ -30,3 +30,11 @@ for example, to pre-filter the available datasets before loading.
 
 
 .. include:: ./../../ops/load_3d_dataset.rst
+
+
+Group by
+---------
+
+.. currentmodule:: datacube.api.query
+
+.. autofunction:: query_group_by
