@@ -527,6 +527,18 @@ class PostgisDbAPI(object):
             select(_dataset_select_fields()).where(Dataset.metadata_doc.contains(metadata))
         ).fetchall()
 
+    def search_products_by_metadata(self, metadata):
+        """
+        Find any datasets that have the given metadata.
+
+        :type metadata: dict
+        :rtype: dict
+        """
+        # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
+        return self._connection.execute(
+            Product.select().where(Product.metadata.contains(metadata))
+        ).fetchall()
+
     @staticmethod
     def _alchemify_expressions(expressions):
         def raw_expr(expression):

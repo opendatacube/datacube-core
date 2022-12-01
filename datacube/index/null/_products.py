@@ -37,5 +37,8 @@ class ProductResource(AbstractProductResource):
     def search_robust(self, **query):
         return []
 
+    def search_by_metadata(self, metadata):
+        return []
+
     def get_all(self) -> Iterable[DatasetType]:
         return []

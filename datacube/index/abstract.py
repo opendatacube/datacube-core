@@ -465,6 +465,19 @@ class AbstractProductResource(ABC):
         """
 
     @abstractmethod
+    def search_by_metadata(self,
+                           metadata: Mapping[str, QueryField]
+                           ) -> Iterable[Dataset]:
+        """
+        Perform a search using arbitrary metadata, returning results as Product objects.
+
+        Caution – slow! This will usually not use indexes.
+
+        :param metadata: metadata dictionary representing arbitrary search query
+        :return: Matching product models
+        """
+
+    @abstractmethod
     def get_all(self) -> Iterable[Product]:
         """
         Retrieve all Products

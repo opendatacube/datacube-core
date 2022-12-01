@@ -303,12 +303,25 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             else:
                 yield type_, remaining_matchable
 
+    def search_by_metadata(self, metadata):
+        """
+        Perform a search using arbitrary metadata, returning results as Product objects.
+
+        Caution – slow! This will usually not use indexes.
+
+        :param dict metadata:
+        :rtype: list[Product]
+        """
+        with self._db_connection() as connection:
+            for dataset in self._make_many(connection.search_products_by_metadata(metadata)):
+                yield dataset
+
     def get_all(self) -> Iterable[Product]:
         """
         Retrieve all Products
         """
         with self._db_connection() as connection:
-            return (self._make(record) for record in connection.get_all_products())
+            return self._make_many(connection.get_all_products())
 
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)
