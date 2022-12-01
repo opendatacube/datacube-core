@@ -37,4 +37,8 @@ Group by
 
 .. currentmodule:: datacube.api.query
 
-.. autofunction:: query_group_by
+.. autosummary::
+
+   :toctree: generate/
+
+   query_group_by
