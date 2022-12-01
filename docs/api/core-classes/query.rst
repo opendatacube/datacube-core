@@ -15,6 +15,3 @@ Group by
 .. currentmodule:: datacube.api.query
 
 .. autofunction:: query_group_by
-
-    :nosignatures:
-    :toctree: generate/
