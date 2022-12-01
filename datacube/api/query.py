@@ -193,9 +193,9 @@ def query_group_by(group_by='time', **kwargs):
     """
     Group by function for loading datasets
 
-    :param str group_by
-    :returns: :class:`datacube.api.query.GroupBy
-    :raises: LookupError when group_by string is not a valid dictionary key.
+    :param group_by: str group_by name
+    :return: :class:`datacube.api.query.GroupBy
+    :raises LookupError: when group_by string is not a valid dictionary key.
     """
     if not isinstance(group_by, str):
         return group_by
