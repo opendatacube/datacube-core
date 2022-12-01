@@ -9,7 +9,7 @@ Query
    :members:
 
 
-.. autosummary:: query_group_by
+.. autofunction:: query_group_by
 
     :nosignatures:
     :toctree: generate/
