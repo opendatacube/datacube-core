@@ -195,14 +195,20 @@ def query_group_by(group_by='time', **kwargs):
     """
     Group by function for loading datasets
 
-    :param str group_by: group_by name, supported str are:
+    :param group_by: group_by name, supported str are:
         - time (default)
         - solar_day, see :func:`datacube.api.query.solar_day`
+        or
+        - :class:`datacube.api.query.GroupBy` object
+
     :return: :class:`datacube.api.query.GroupBy`
     :raises LookupError: when group_by string is not a valid dictionary key.
     """
-    if not isinstance(group_by, str):
+    if isinstance(group_by, GroupBy):
         return group_by
+
+    if not isinstance(group_by, str):
+        group_by = None
 
     time_grouper = GroupBy(group_by_func=_extract_time_from_ds,
                            dimension='time',
