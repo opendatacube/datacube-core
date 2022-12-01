@@ -190,6 +190,11 @@ def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
 
 
 def query_group_by(group_by='time', **kwargs):
+    """ Group by function for loading datasets
+        :param str group_by
+        :returns: Dictionary String -> GroupBy Object
+        :raises: LookupError when group_by string is not a valid dictionary key.
+    """
     if not isinstance(group_by, str):
         return group_by
 
@@ -212,7 +217,9 @@ def query_group_by(group_by='time', **kwargs):
     try:
         return group_by_map[group_by]
     except KeyError:
-        raise LookupError('No group by function for', group_by)
+        raise LookupError(
+            f'No group by function for {group_by}, valid options are: {group_by_map.keys()}',
+        )
 
 
 def _range_to_geopolygon(**kwargs):
