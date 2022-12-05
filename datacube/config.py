@@ -41,7 +41,7 @@ index_driver: default
 # If a connection is unused for this length of time, expect it to be invalidated.
 db_connection_timeout: 60
 
-[default]
+[datacube]
 
 [user]
 # Which environment to use when none is specified explicitly.
