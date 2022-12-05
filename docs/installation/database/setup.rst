@@ -95,4 +95,4 @@ The ``datacube system init`` tool can create and populate the Data Cube database
    :prog: datacube system
 
 This creates a database schema, tables, indexes and roles, so requires admin
-prvileges to the Database Cluster.
+privileges to the Database Cluster.
