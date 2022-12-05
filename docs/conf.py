@@ -90,8 +90,8 @@ autodoc_default_options = {
     'inherited-members': True
 }
 
-extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
-            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
+extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue %s'),
+            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR %s')}
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),

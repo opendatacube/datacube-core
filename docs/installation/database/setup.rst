@@ -91,6 +91,5 @@ The ``datacube system init`` tool can create and populate the Data Cube database
 
     datacube -v system init
 
-.. click:: datacube.scripts.system:database_init
-
+.. click::datacube.scripts.system:database_init
    :prog: datacube system

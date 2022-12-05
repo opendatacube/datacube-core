@@ -4,7 +4,7 @@ Product Writing
 
 When connected to an ODC Database, these methods are available for altering information about Products:
 
-.. code-block:: bash
+.. code-block::python
 
    dc = Datacube()
    dc.index.products.{method}

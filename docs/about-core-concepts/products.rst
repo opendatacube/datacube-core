@@ -1,5 +1,5 @@
 Products
-=============================
+========
 
 Products are collections of ``datasets`` that share the same set of measurements and some subset of metadata.
 
@@ -7,11 +7,11 @@ Products are collections of ``datasets`` that share the same set of measurements
 Product Definition
 ******************
 
-A product definition document describes the measurements and common metadata
+A Product Definition Document describes the measurements and common metadata
 for a collection of datasets.
 
 Example Product Definition
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. highlight:: language
 
@@ -20,7 +20,7 @@ Example Product Definition
 
 
 Product Definition API
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. bibliographic fields (which also require a transform):
 
@@ -188,9 +188,11 @@ extra_dimensions (required for 3D datasets)
 3D product definition
 ---------------------
 
+For example
 Example 3D product definition for GEDI L2B cover_z:
 
 .. literalinclude:: ../config_samples/dataset_types/gedi_l2b_cover_z.yaml
+   :emphasize-lines: 9-12
    :language: yaml
 
 .. note::

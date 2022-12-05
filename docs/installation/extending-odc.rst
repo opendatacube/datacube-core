@@ -93,30 +93,30 @@ Example code to implement a 3D read
         window: Optional[RasterWindow] = None,
         out_shape: Optional[RasterShape] = None,
     ) -> np.ndarray:
-    """
-    Reads a slice into the xr.DataArray.
+        """
+        Reads a slice into the xr.DataArray.
 
-    :param RasterWindow window: The slice to read
-    :param RasterShape out_shape: The desired output shape
-    :return: Requested data in a :class:`numpy.ndarray`
-    """
+        :param RasterWindow window: The slice to read
+        :param RasterShape out_shape: The desired output shape
+        :return: Requested data in a :class:`numpy.ndarray`
+        """
 
-    if window is None:
-        ix: Tuple = (...,)
-    else:
-        ix = tuple(slice(*w) if isinstance(w, tuple) else w for w in window)
+        if window is None:
+            ix: Tuple = (...,)
+        else:
+            ix = tuple(slice(*w) if isinstance(w, tuple) else w for w in window)
 
-    def fn() -> Any:
-        return self.da[ix].values
+        def fn() -> Any:
+            return self.da[ix].values
 
-    data = fn()
+        data = fn()
 
-    if out_shape and data.shape != out_shape:
-        raise ValueError(
-            f"Data shape does not match 'out_shape': {data.shape} != {out_shape}"
-        )
+        if out_shape and data.shape != out_shape:
+            raise ValueError(
+                f"Data shape does not match 'out_shape': {data.shape} != {out_shape}"
+            )
 
-    return data
+        return data
 
 Example Xarray Based 3D Driver
 ------------------------------

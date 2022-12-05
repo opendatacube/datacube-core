@@ -380,6 +380,7 @@ class Product:
 
     :param MetadataType metadata_type:
     :param dict definition:
+
     """
 
     def __init__(self,
@@ -524,6 +525,7 @@ class Product:
 
         :param definition: Dimension definition dict, typically retrieved from the product definition's
             `extra_dimensions` field.
+
         """
         # Dict of extra dimensions names and values in the product definition
         defined_extra_dimensions = OrderedDict(
@@ -581,6 +583,7 @@ class Product:
         Find measurements by name
 
         :param measurements: list of measurement names or a single measurement name, or None to get all
+
         """
         if measurements is None:
             return self.measurements
@@ -706,6 +709,7 @@ DatasetType = Product
 class IngestorConfig:
     """
     Ingestor configuration definition
+
     """
     pass
 

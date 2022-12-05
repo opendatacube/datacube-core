@@ -3,7 +3,7 @@ Dataset Querying
 ================
 When connected to an ODC Database, these methods are available for searching and querying:
 
-.. code-block:: bash
+.. code-block::python
 
    dc = Datacube()
    dc.index.datasets.{method}

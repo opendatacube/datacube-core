@@ -43,7 +43,7 @@ _EXAMPLE_LS5_NBAR_DATASET_FILE = INTEGRATION_TESTS_DIR / 'example-ls5-nbar.yaml'
 NUM_TIME_SLICES = 3
 
 PROJECT_ROOT = Path(__file__).parents[1]
-CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
+CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples'
 
 CONFIG_FILE_PATHS = [str(INTEGRATION_TESTS_DIR / 'agdcintegration.conf'),
                      os.path.expanduser('~/.datacube_integration.conf')]
@@ -56,7 +56,7 @@ settings.register_profile(
 )
 settings.load_profile('opendatacube')
 
-EO3_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'eo3'
+EO3_TESTDIR = INTEGRATION_TESTS_DIR / 'data/eo3'
 
 
 def get_eo3_test_data_doc(path):

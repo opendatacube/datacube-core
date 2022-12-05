@@ -1,26 +1,10 @@
 
+.. _ingestion:
 
 Ingesting Data
 **************
-.. _ingestion:
 
-.. note::
-
-    Ingestion is no longer recommended. While it was used as an optimised on-disk
-    storage mechanism, there are a range of reasons why this is no longer ideal. For example
-    the emergence of cloud optimised storage formats means that software such
-    as GDAL and Rasterio are optimised for reading many files over the network. Additionally
-    the limitation of NetCDF reading to a single thread means that reading from .TIF
-    files on disk could be faster in some situations.
-
-    In addition to limited performance improvements, ingestion leads to duplication
-    of data and opinionated decisions, such as reprojection of data, which can lead
-    to a loss of data fidelity.
-
-    The section below is being retained for completion, but should be considered optional.
-
-
-.. note::
+.. warning::
 
     Ingestion is no longer recommended. While it was used as an optimised on-disk
     storage mechanism, there are a range of reasons why this is no longer ideal. For example
@@ -41,10 +25,9 @@ you should already have some data :ref:`indexed <indexing>`, and want to
 tile it up into a faster storage format or projection system.
 
 .. figure:: ../../diagrams/f4.png
+   :name: ingest-data
 
-    :name: ingest-data
-
-        Ingest Data
+   Ingest Data
 
 .. _ingest-config:
 
@@ -71,6 +54,7 @@ different projections, resolutions, etc.
 
 Ingestion Config
 ================
+
 An ingestion config is a document which defines the way data should be prepared
 for high performance access. This can include  slicing the data into regular
 chunks, reprojecting into to the desired projection and compressing the data.
@@ -170,8 +154,7 @@ Ingest Some Data
 A command line tool is used to ingest data
 
 .. click:: datacube.scripts.ingest:ingest_cmd
-
-    :prog: datacube ingest
+   :prog: datacube ingest
 
 
 `Configuration samples <https://github.com/opendatacube/datacube-core/tree/develop/docs/config_samples>`_ are available as part of the open source Github repository.
