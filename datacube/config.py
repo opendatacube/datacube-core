@@ -41,6 +41,8 @@ index_driver: default
 # If a connection is unused for this length of time, expect it to be invalidated.
 db_connection_timeout: 60
 
+[default]
+
 [user]
 # Which environment to use when none is specified explicitly.
 #   note: will fail if default_environment points to non-existent section
