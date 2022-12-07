@@ -234,7 +234,7 @@ def query_group_by(group_by='time', **kwargs):
         return group_by_map[group_by]
     except KeyError:
         raise LookupError(
-            f'No group by function for {group_by}, valid options are: {group_by_map.keys()}',
+            f'No group by function for {group_by}, valid options are: {group_by_map.keys()}', # pylint: disable=W1655
         )
 
 

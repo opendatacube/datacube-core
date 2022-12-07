@@ -141,6 +141,14 @@ def test_mem_product_resource(mem_index_fresh,
             assert unmatched == {}
         else:
             assert unmatched["platform"] == 'landsat-8'
+    lds = list(mem_index_fresh.index.products.search_by_metadata({"product_family": "ard"}))
+    assert len(lds) == 0
+    lds = list(mem_index_fresh.index.products.search_by_metadata({"odc:product_family": "ard"}))
+    assert len(lds) == 1
+    lds = list(mem_index_fresh.index.products.search_by_metadata({"platform": "landsat-8"}))
+    assert len(lds) == 0
+    lds = list(mem_index_fresh.index.products.search_by_metadata({"eo:platform": "landsat-8"}))
+    assert len(lds) == 1
 
 
 # Hand crafted tests with recent real-world eo3 examples

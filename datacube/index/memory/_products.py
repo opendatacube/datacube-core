@@ -167,7 +167,7 @@ class ProductResource(AbstractProductResource):
                 yield prod, unmatched
 
     def search_by_metadata(self, metadata: Mapping[str, QueryField]):
-        for prod in self.active_by_id.values():
+        for prod in self.get_all():
             if metadata_subset(metadata, prod.metadata_doc):
                 yield prod
 
