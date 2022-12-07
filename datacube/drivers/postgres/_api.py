@@ -463,9 +463,9 @@ class PostgresDbAPI(object):
         :rtype: dict
         """
         # Find any products types whose metadata document contains the passed in metadata
-        return self._connection.execute(
-            PRODUCT.select().where(PRODUCT.c.metadata.contains(metadata))
-        ).fetchall()
+        norm_metadata = {"properties": metadata}
+        qry = PRODUCT.select().where(PRODUCT.c.metadata.contains(norm_metadata))
+        return self._connection.execute(qry).fetchall()
 
     @staticmethod
     def _alchemify_expressions(expressions):

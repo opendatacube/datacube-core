@@ -24,6 +24,17 @@ from datacube import Datacube
 from .search_utils import assume_utc, _cli_csv_search, _csv_search_raw, _load_product_query
 
 
+def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product):
+    lds = list(index.products.search_by_metadata({"product_family": "ard"}))
+    assert len(lds) == 0
+    lds = list(index.products.search_by_metadata({"odc:product_family": "ard"}))
+    assert len(lds) == 1
+    lds = list(index.products.search_by_metadata({"platform": "landsat-8"}))
+    assert len(lds) == 0
+    lds = list(index.products.search_by_metadata({"eo:platform": "landsat-8"}))
+    assert len(lds) == 1
+
+
 def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset):
     datasets = index.datasets.search_eager(
         platform='landsat-8'
