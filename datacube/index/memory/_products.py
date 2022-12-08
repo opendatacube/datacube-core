@@ -15,7 +15,6 @@ from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchan
 from datacube.utils.documents import metadata_subset
 
 
-
 _LOG = logging.getLogger(__name__)
 
 
