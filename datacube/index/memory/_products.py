@@ -167,8 +167,9 @@ class ProductResource(AbstractProductResource):
                 yield prod, unmatched
 
     def search_by_metadata(self, metadata: Mapping[str, QueryField]):
+        norm_meta = {"properties": metadata}
         for prod in self.get_all():
-            if metadata_subset(metadata, prod.metadata_doc):
+            if metadata_subset(norm_meta, prod.metadata_doc):
                 yield prod
 
     def get_all(self) -> Iterable[Product]:

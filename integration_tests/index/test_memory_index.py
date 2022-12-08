@@ -481,13 +481,13 @@ def test_mem_ds_search_returning_datasets_light(mem_eo3_data):
 
 def test_mem_ds_search_by_metadata(mem_eo3_data):
     dc, ls8_id, wo_id = mem_eo3_data
-    lds = list(dc.index.datasets.search_by_metadata({"product_family": "ard"}))
+    lds = list(dc.index.datasets.search_by_metadata({"properties": {"product_family": "ard"}}))
     assert len(lds) == 0
-    lds = list(dc.index.datasets.search_by_metadata({"odc:product_family": "ard"}))
+    lds = list(dc.index.datasets.search_by_metadata({"properties": {"odc:product_family": "ard"}}))
     assert len(lds) == 1
-    lds = list(dc.index.datasets.search_by_metadata({"platform": "landsat-8"}))
+    lds = list(dc.index.datasets.search_by_metadata({"properties": {"platform": "landsat-8"}}))
     assert len(lds) == 0
-    lds = list(dc.index.datasets.search_by_metadata({"eo:platform": "landsat-8"}))
+    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}))
     assert len(lds) == 2
 
 

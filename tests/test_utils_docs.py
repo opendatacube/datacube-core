@@ -613,23 +613,74 @@ def test_transform_object_tree():
 
 
 def test_document_subset():
+    # metadata_subset should emulate behaviour of postgres "contains" (@>) operator.
     assert metadata_subset(37, 37)
-    assert metadata_subset(37, {"b": 37})
-    assert metadata_subset(37, {"b": "foo", "a": {"d": 37}})
-    assert metadata_subset(37, {"b": [56, 36, 37]})
+    assert metadata_subset(37, [1, 111, 37])
+    assert metadata_subset(37, [1, 37, 444])
+    assert not metadata_subset(37, {"b": 37})
+    assert not metadata_subset(37, {"b": "foo", "a": {"d": 37}})
+    assert not metadata_subset(37, {"b": [56, 36, 37]})
     assert not metadata_subset(37, {"b": [56, 36, 57]})
 
     assert metadata_subset({"a": "foo"}, {"b": "blob", "a": "foo", "d": [76, 345, 34, 54]})
-    assert metadata_subset({"a": "foo"}, {"b": "blob", "d": [{"b": "glue", "a": "nope"}, {"a": "foo"}, 54]})
-    assert metadata_subset({"a": "foo"}, {"g": "goo", "h": {"f": "foo", "j": {"w": "who", "a": "foo"}}})
-    assert metadata_subset(
+    assert not metadata_subset({"a": "foo"}, {"b": "blob", "d": [{"b": "glue", "a": "nope"}, {"a": "foo"}, 54]})
+    assert not metadata_subset({"a": "foo"}, {"g": "goo", "h": {"f": "foo", "j": {"w": "who", "a": "foo"}}})
+    assert not metadata_subset(
         {"a": "foo", "k": {"b": [34, 11]}},
         {"g": "goo", "h": {"a": "foo", "k": {"b": [11, 234, 34, 35]}, "d": "doop"}}
+    )
+    assert metadata_subset(
+        {"a": "foo", "k": {"b": [34, 11]}},
+        {"a": "foo", "k": {"b": [11, 234, 34, 35]}, "d": "doop"}
     )
     assert not metadata_subset(
         {"a": "foo", "k": {"b": [34, 11]}},
         {"g": "goo", "h": {"a": "foo", "b": [11, 34], "k": {"b": [11, 234, 35]}, "d": "doop"}}
     )
+    assert not metadata_subset(
+        {"a": "foo", "k": {"b": [34, 11]}},
+        {"a": "foo", "b": [11, 34], "k": {"b": [11, 234, 35]}, "d": "doop"}
+    )
 
     assert metadata_subset([35, 47, 58], [0, 35, 47, 58, 102])
-    assert metadata_subset([35, 47, 58], {"a": "foo", "b": [35, 47, 52, 58]})
+    assert not metadata_subset([35, 47, 58], {"a": "foo", "b": [35, 47, 52, 58]})
+
+
+def test_document_subset_full_recursion():
+    # metadata_subset should emulate behaviour of postgres "contains" (@>) operator.
+    assert metadata_subset(37, 37, full_recursion=True)
+    assert metadata_subset(37, [1, 111, 37], full_recursion=True)
+    assert metadata_subset(37, [1, 37, 444], full_recursion=True)
+    assert metadata_subset(37, {"b": 37}, full_recursion=True)
+    assert metadata_subset(37, {"b": "foo", "a": {"d": 37}}, full_recursion=True)
+    assert metadata_subset(37, {"b": [56, 36, 37]}, full_recursion=True)
+    assert not metadata_subset(37, {"b": [56, 36, 57]}, full_recursion=True)
+
+    assert metadata_subset({"a": "foo"}, {"b": "blob", "a": "foo", "d": [76, 345, 34, 54]}, full_recursion=True)
+    assert metadata_subset({"a": "foo"}, {"b": "blob", "d": [{"b": "glue", "a": "nope"}, {"a": "foo"}, 54]},
+                           full_recursion=True)
+    assert metadata_subset({"a": "foo"}, {"g": "goo", "h": {"f": "foo", "j": {"w": "who", "a": "foo"}}},
+                           full_recursion=True)
+    assert metadata_subset(
+        {"a": "foo", "k": {"b": [34, 11]}},
+        {"g": "goo", "h": {"a": "foo", "k": {"b": [11, 234, 34, 35]}, "d": "doop"}},
+        full_recursion=True
+    )
+    assert metadata_subset(
+        {"a": "foo", "k": {"b": [34, 11]}},
+        {"a": "foo", "k": {"b": [11, 234, 34, 35]}, "d": "doop"},
+        full_recursion=True
+    )
+    assert not metadata_subset(
+        {"a": "foo", "k": {"b": [34, 11]}},
+        {"g": "goo", "h": {"a": "foo", "b": [11, 34], "k": {"b": [11, 234, 35]}, "d": "doop"}},
+        full_recursion=True
+    )
+    assert not metadata_subset(
+        {"a": "foo", "k": {"b": [34, 11]}},
+        {"a": "foo", "b": [11, 34], "k": {"b": [11, 234, 35]}, "d": "doop"},
+        full_recursion=True
+    )
+
+    assert metadata_subset([35, 47, 58], [0, 35, 47, 58, 102], full_recursion=True)
+    assert metadata_subset([35, 47, 58], {"a": "foo", "b": [35, 47, 52, 58]}, full_recursion=True)
