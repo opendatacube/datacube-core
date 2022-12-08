@@ -532,9 +532,8 @@ class PostgisDbAPI(object):
         :rtype: dict
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
-        norm_metadata = {"properties": metadata}
         return self._connection.execute(
-            select(Product).where(Product.metadata_doc.contains(norm_metadata))
+            select(Product).where(Product.metadata_doc.contains(metadata))
         ).fetchall()
 
     @staticmethod

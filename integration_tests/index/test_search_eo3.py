@@ -25,13 +25,13 @@ from .search_utils import assume_utc, _cli_csv_search, _csv_search_raw, _load_pr
 
 
 def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product):
-    lds = list(index.products.search_by_metadata({"product_family": "ard"}))
+    lds = list(index.products.search_by_metadata({"properties": {"product_family": "ard"}}))
     assert len(lds) == 0
-    lds = list(index.products.search_by_metadata({"odc:product_family": "ard"}))
+    lds = list(index.products.search_by_metadata({"properties": {"odc:product_family": "ard"}}))
     assert len(lds) == 1
-    lds = list(index.products.search_by_metadata({"platform": "landsat-8"}))
+    lds = list(index.products.search_by_metadata({"properties": {"platform": "landsat-8"}}))
     assert len(lds) == 0
-    lds = list(index.products.search_by_metadata({"eo:platform": "landsat-8"}))
+    lds = list(index.products.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}))
     assert len(lds) == 1
 
 
