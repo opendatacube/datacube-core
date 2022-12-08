@@ -189,8 +189,6 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata):
         fld_type = field.type_name
         fld_val = field.search_value_to_alchemy(field.extract(ds_metadata))
         result[field_name] = (fld_type, fld_val)
-    for k, v in result.items():
-        _LOG.warning("field %s: %s", k, repr(v))
     return result
 
 
@@ -313,7 +311,6 @@ class PostgisDbAPI(object):
         """
         if isinstance(value, Range):
             value = list(value)
-        _LOG.warning("Inserting ds %s (%s): %s", dataset_id, key, repr(value))
         r = self._connection.execute(
             insert(
                 search_table
@@ -525,6 +522,18 @@ class PostgisDbAPI(object):
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
             select(_dataset_select_fields()).where(Dataset.metadata_doc.contains(metadata))
+        ).fetchall()
+
+    def search_products_by_metadata(self, metadata):
+        """
+        Find any datasets that have the given metadata.
+
+        :type metadata: dict
+        :rtype: dict
+        """
+        # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
+        return self._connection.execute(
+            select(Product).where(Product.metadata_doc.contains(metadata))
         ).fetchall()
 
     @staticmethod

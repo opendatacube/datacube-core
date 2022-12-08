@@ -4,13 +4,16 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 
+from typing import Iterable, Iterator, Mapping, Tuple, cast
+
 from datacube.index.fields import as_expression
 from datacube.index.abstract import AbstractProductResource, QueryField
 from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.model import DatasetType as Product
 from datacube.utils import changes, jsonify_document, _readable_offset
 from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes, classify_changes
-from typing import Iterable, Iterator, Mapping, Tuple, cast
+from datacube.utils.documents import metadata_subset
+
 
 _LOG = logging.getLogger(__name__)
 
@@ -161,6 +164,12 @@ class ProductResource(AbstractProductResource):
                     break
             else:
                 yield prod, unmatched
+
+    def search_by_metadata(self, metadata: Mapping[str, QueryField]):
+        norm_meta = {"properties": metadata}
+        for prod in self.get_all():
+            if metadata_subset(norm_meta, prod.metadata_doc):
+                yield prod
 
     def get_all(self) -> Iterable[Product]:
         return (self.clone(prod) for prod in self.by_id.values())

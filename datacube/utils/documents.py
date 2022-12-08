@@ -314,9 +314,14 @@ def transform_object_tree(f, o, key_transform=lambda k: k):
     return f(o)
 
 
-def metadata_subset(element, document) -> bool:
+def metadata_subset(element, document, full_recursion=False) -> bool:
     """
     Recursively check if one metadata document/object is a subset of another
+
+    full_recursion=False emulates the jsonb "contains" operator used by the postgis and postgres driver.
+        (This is used by the in-memory driver to implement search_by_metadata.)
+
+    full_recursion=True allows arbitrary depth matching.
 
     :param element: The document/object to search for
     :param document: The document/object to search in
@@ -325,30 +330,35 @@ def metadata_subset(element, document) -> bool:
     if isinstance(element, dict) and isinstance(document, dict):
         matches = True
         for k in element.keys():
-            if k not in document or not metadata_subset(element[k], document[k]):
+            if k not in document or not metadata_subset(element[k], document[k], full_recursion=full_recursion):
                 matches = False
                 break
         if matches:
             return True
+        if full_recursion:
+            for k in document.keys():
+                if metadata_subset(element, document[k], full_recursion=full_recursion):
+                    return True
+    elif isinstance(document, dict) and full_recursion:
         for k in document.keys():
-            if metadata_subset(element, document[k]):
-                return True
-    elif isinstance(document, dict):
-        for k in document.keys():
-            if metadata_subset(element, document[k]):
+            if metadata_subset(element, document[k], full_recursion=full_recursion):
                 return True
     elif isinstance(element, list) or isinstance(element, tuple):
         matches = True
         for i in element:
-            if not metadata_subset(i, document):
+            if not metadata_subset(i, document, full_recursion=full_recursion):
                 matches = False
                 break
         if matches:
             return True
     elif isinstance(document, list) or isinstance(document, tuple):
         for i in document:
-            if metadata_subset(element, i):
-                return True
+            if full_recursion:
+                if metadata_subset(element, i, full_recursion=full_recursion):
+                    return True
+            else:
+                if element == i:
+                    return True
     else:
         return element == document
     return False

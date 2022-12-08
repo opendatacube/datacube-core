@@ -22,4 +22,5 @@ When connected to an ODC Database, these methods are available for discovering i
    get_with_fields
    search
    search_robust
+   search_by_metadata
    get_all

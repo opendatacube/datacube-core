@@ -455,6 +455,18 @@ class PostgresDbAPI(object):
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
         ).fetchall()
 
+    def search_products_by_metadata(self, metadata):
+        """
+        Find any products that have the given metadata.
+
+        :type metadata: dict
+        :rtype: dict
+        """
+        # Find any products types whose metadata document contains the passed in metadata
+        return self._connection.execute(
+            PRODUCT.select().where(PRODUCT.c.metadata.contains(metadata))
+        ).fetchall()
+
     @staticmethod
     def _alchemify_expressions(expressions):
         def raw_expr(expression):
