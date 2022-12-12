@@ -303,10 +303,10 @@ def test_transactions_api_ctx_mgr(index,
 
 
 def test_transactions_api_ctx_mgr_nested(index,
-                                  extended_eo3_metadata_type_doc,
-                                  ls8_eo3_product,
-                                  eo3_ls8_dataset_doc,
-                                  eo3_ls8_dataset2_doc):
+                                         extended_eo3_metadata_type_doc,
+                                         ls8_eo3_product,
+                                         eo3_ls8_dataset_doc,
+                                         eo3_ls8_dataset2_doc):
     from datacube.index.hl import Doc2Dataset
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
