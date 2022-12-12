@@ -37,10 +37,10 @@ class Dataset:
     """
     A Dataset. A container of metadata, and refers typically to a multi-band raster on disk.
 
-    Most important parts are the metadata_doc and uri.
+    The most important parts are the :attr:`metadata_doc` and :attr:`uris`.
 
-    :param metadata_doc: the document (typically a parsed json/yaml)
-    :param uris: All active uris for the dataset
+    :param metadata_doc: the source document (typically parsed JSON/YAML)
+    :param uris: All active URIs for the dataset
     """
 
     def __init__(self,
@@ -160,10 +160,7 @@ class Dataset:
             return None
 
     @cached_property
-    def key_time(self):
-        """
-        :rtype: datetime.datetime
-        """
+    def key_time(self) -> datetime:
         if 'key_time' in self.metadata.fields:
             return self.metadata.key_time
 
@@ -175,7 +172,7 @@ class Dataset:
 
     @property
     def bounds(self) -> Optional[geometry.BoundingBox]:
-        """ :returns: bounding box of the dataset in the native crs
+        """ Bounding box of the dataset in the native CRS
         """
         gs = self._gs
         if gs is None:
@@ -231,7 +228,7 @@ class Dataset:
 
     @property
     def crs(self) -> Optional[geometry.CRS]:
-        """ Return CRS if available
+        """ CRS (if available)
         """
         projection = self._gs
 
@@ -245,7 +242,7 @@ class Dataset:
 
     @cached_property
     def extent(self) -> Optional[geometry.Geometry]:
-        """ :returns: valid extent of the dataset or None
+        """Valid extent of the Dataset or None
         """
 
         def xytuple(obj):

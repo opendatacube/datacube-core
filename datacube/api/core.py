@@ -36,45 +36,38 @@ class TerminateCurrentLoad(Exception):  # noqa: N818
 
 class Datacube(object):
     """
-    Interface to search, read and write a datacube.
+    Create the interface for the query and storage access.
 
-    :type index: datacube.index.index.Index
+    If no index or config is given, the default configuration is used for database connection.
+
+    :param Index index: The database index to use.
+    :type index: :py:class:`datacube.index.Index` or None.
+
+    :param config: A config object or a path to a config file that defines the connection.
+
+        If an index is supplied, config is ignored.
+    :param str app: A short, alphanumeric name to identify this application.
+
+        The application name is used to track down problems with database queries, so it is strongly
+        advised that be used.  Required if an index is not supplied, otherwise ignored.
+
+    :param str env: Name of the datacube environment to use.
+        ie. the section name in any config files. Defaults to 'datacube' for backwards
+        compatibility with old config files.
+
+        Allows you to have multiple datacube instances in one configuration, specified on load,
+        eg. 'dev', 'test' or 'landsat', 'modis' etc.
+
+    :param bool validate_connection: Should we check that the database connection is available and valid
+
     """
 
     def __init__(self,
                  index=None,
-                 config=None,
+                 config: Optional[Union[LocalConfig, str]] = None,
                  app=None,
                  env=None,
                  validate_connection=True):
-        """
-        Create the interface for the query and storage access.
-
-        If no index or config is given, the default configuration is used for database connection.
-
-        :param Index index: The database index to use.
-        :type index: :py:class:`datacube.index.Index` or None.
-
-        :param Union[LocalConfig|str] config: A config object or a path to a config file that defines the connection.
-
-            If an index is supplied, config is ignored.
-        :param str app: A short, alphanumeric name to identify this application.
-
-            The application name is used to track down problems with database queries, so it is strongly
-            advised that be used.  Required if an index is not supplied, otherwise ignored.
-
-        :param str env: Name of the datacube environment to use.
-            ie. the section name in any config files. Defaults to 'datacube' for backwards
-            compatibility with old config files.
-
-            Allows you to have multiple datacube instances in one configuration, specified on load,
-            eg. 'dev', 'test' or 'landsat', 'modis' etc.
-
-        :param bool validate_connection: Should we check that the database connection is available and valid
-
-        :return: Datacube object
-
-        """
 
         def normalise_config(config):
             if config is None:
@@ -460,7 +453,7 @@ class Datacube(object):
         :return: list of datasets
         :rtype: list[:class:`datacube.model.Dataset`]
 
-        .. seealso:: :meth:`group_datasets` :meth:`load_data` :meth:`find_datasets_lazy`
+        .. seealso:: :meth:`group_datasets`, :meth:`load_data`, :meth:`find_datasets_lazy`
         """
         return list(self.find_datasets_lazy(**search_terms))
 
@@ -779,7 +772,7 @@ class Datacube(object):
 
         :rtype: xarray.Dataset
 
-        .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
+        .. seealso:: :meth:`find_datasets`, :meth:`group_datasets`
         """
         measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
 
