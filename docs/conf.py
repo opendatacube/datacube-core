@@ -70,7 +70,13 @@ release = version
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['README.rst', '.condaenv', '.direnv']
+exclude_patterns = [
+    'README.rst',
+    '.condaenv',
+    '.direnv',
+    '_build',  # Required with nbsphinx
+    '**.ipynb_checkpoints',  # Required with nbsphinx
+]
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
