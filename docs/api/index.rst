@@ -2,7 +2,7 @@
 API Reference
 *************
 
-The following pages provide a full API reference for the ``datacube`` python library.
+The following pages provide a full API reference for the ``datacube`` Python library.
 
 
 .. toctree::
@@ -11,7 +11,7 @@ The following pages provide a full API reference for the ``datacube`` python lib
 
     core-classes/datacube
     core-classes/dataset
-    core-classes/datasetType
+    core-classes/product
     core-classes/geometry
     core-classes/measurement
     core-classes/metadataType

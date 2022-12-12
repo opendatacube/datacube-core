@@ -5,8 +5,6 @@
 import os
 import sys
 
-from bs4 import BeautifulSoup as bs  # noqa: N813
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -37,7 +35,6 @@ extensions = [
     'autodocsumm',
     'nbsphinx',
     'sphinx.ext.napoleon',
-    'sphinx.ext.autosectionlabel'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -90,14 +87,14 @@ autodoc_default_options = {
     'inherited-members': True
 }
 
-extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
-            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
+extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue %s'),
+            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR %s')}
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
-    'xarray': ('https://xarray.pydata.org/en/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'xarray': ('https://docs.xarray.dev/en/stable/', None),
 }
 
 graphviz_output_format = 'svg'
@@ -106,23 +103,22 @@ graphviz_output_format = 'svg'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-if on_rtd:
-    html_theme = 'pydata_sphinx_theme'
-else:
-    html_theme = 'pydata_sphinx_theme'
+html_theme = 'pydata_sphinx_theme'
 
+html_sidebars = {
+    "**": [
+        "searchbox.html",
+        "sidebar-nav-bs.html",
+        "sidebar-ethical-ads.html"
+    ]
+}
 html_theme_options = {
     "navigation_depth": 1,
     "show_prev_next": False,
     "collapse_navigation": True,
     "use_edit_page_button": True,
     "footer_items": ["odc-footer"],
-    "page_sidebar_items": [
-        "page-toc",
-        "autoclass_page_toc",
-        "autosummary_page_toc",
-        "edit-this-page"
-    ],
+
     "icon_links": [
         {
             "name": "GitHub",
@@ -173,94 +169,12 @@ latex_documents = [
 numfig = True
 
 
-def custom_page_funcs(app, pagename, templatename, context, doctree):
-
-    def get_autosummary_toc():
-        soup = bs(context["body"], "html.parser")
-
-        class_sections = soup.find(class_='class')
-        if class_sections != None:
-            return ""
-
-        matches = soup.find_all('dl')
-        if matches == None or len(matches) == 0:
-            return ""
-
-        out = {
-            'title': '',
-            'menu_items': []
-        }
-
-        #  remove the class dt
-        pyclass = matches.pop(0)
-        pyclass = pyclass.find('dt')
-        if pyclass != None:
-            out['title'] = pyclass.get('id')
-
-        for match in matches:
-            match_dt = match.find('dt')
-            link = match.find(class_="headerlink")
-            if link != None:
-                out['menu_items'].append({
-                    'title': match_dt.get('id'),
-                    'link': link['href']
-                })
-
-        return out
-
-    def get_class_toc():
-        soup = bs(context["body"], "html.parser")
-
-        class_sections = soup.find_all(class_='autosummary')
-        if class_sections == None or len(class_sections) == 0:
-            return ""
-
-        out = {
-            'title': '',
-            'menu_items': []
-        }
-        class_title = soup.find(class_='class')
-        if class_title == None:
-            return ""
-
-        pyclass = class_title.find('dt')
-        if pyclass != None:
-            out['title'] = pyclass.get('id')
-
-        for section in class_sections:
-            out_section = {
-                'title': '',
-                'menu_items': []
-            }
-            out_section['title'] = section.find_previous_sibling('p').text.replace(':', '')
-            matches = section.find_all('tr')
-            for match in matches:
-                link = match.find(class_="internal")
-
-                if link != None:
-                    title = link['title']
-                    if title != None:
-                        title = title.replace(out['title'], '')
-                    out_section['menu_items'].append({
-                        'title': title,
-                        'link': link['href']
-                    })
-            if len(out_section['menu_items']) > 0:
-                out['menu_items'].append(out_section)
-
-        # print(out)
-        return out
-
-    context['get_class_toc'] = get_class_toc
-    context['get_autosummary_toc'] = get_autosummary_toc
-
-
 def setup(app):
     # Fix bug where code isn't being highlighted
     app.add_css_file('pygments.css')
     app.add_css_file('custom.css')
 
-    app.connect("html-page-context", custom_page_funcs)
+#    app.connect("html-page-context", custom_page_funcs)
 
 
 # Clean up generated documentation files that RTD seems to be having trouble with

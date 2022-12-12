@@ -58,7 +58,7 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
               'source_filter')
 
 
-class Query(object):
+class Query:
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
         """Parses search terms in preparation for querying the Data Cube Index.
 
@@ -82,12 +82,13 @@ class Query(object):
         :type geopolygon: geometry.Geometry or None
         :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
         :param search_terms:
-         * `measurements` - list of measurements to retrieve
-         * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
-         * 'extra_dimension_name' (e.g. `z`) - tuples (min, max) bounding extra \
-            dimensions specified by name for 3D datasets. E.g. z=(10, 30).
-         * `crs` - spatial coordinate reference system to interpret the spatial bounds
-         * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
+
+          * `measurements` - list of measurements to retrieve
+          * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
+          * 'extra_dimension_name' (e.g. `z`) - tuples (min, max) bounding extra \
+             dimensions specified by name for 3D datasets. E.g. z=(10, 30).
+          * `crs` - spatial coordinate reference system to interpret the spatial bounds
+          * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
         """
         self.product = product
         self.geopolygon = query_geopolygon(geopolygon=geopolygon, **search_terms)
@@ -196,17 +197,17 @@ def query_group_by(group_by='time', **kwargs):
     Group by function for loading datasets
 
     :param group_by: group_by name, supported str are
-    ::
 
         - time (default)
         - solar_day, see :func:`datacube.api.query.solar_day`
 
-    or ::
+        or
 
         - :class:`datacube.api.query.GroupBy` object
 
     :return: :class:`datacube.api.query.GroupBy`
     :raises LookupError: when group_by string is not a valid dictionary key.
+
     """
     if isinstance(group_by, GroupBy):
         return group_by

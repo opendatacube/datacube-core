@@ -14,12 +14,15 @@ tests_require = [
 ]
 doc_require = [
     'Sphinx',
-    'sphinx_rtd_theme',
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',
+    'nbsphinx',
+    'autodocsumm',
+    'pydata-sphinx-theme',
     'recommonmark',
     'setuptools',  # version related dependencies
     'setuptools_scm[toml]',
+    'beautifulsoup4',
 ]
 
 extras_require = {

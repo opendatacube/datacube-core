@@ -47,6 +47,7 @@ class BoundingBox(_BoundingBox):
         :param ybuff: Y dimension buffering amount
         :param xbuff: X dimension buffering amount
         :return: new BoundingBox
+
         """
         return BoundingBox(left=self.left - xbuff, right=self.right + xbuff,
                            top=self.top + ybuff, bottom=self.bottom - ybuff)
@@ -100,6 +101,7 @@ class BoundingBox(_BoundingBox):
 
         :param x: (left, right)
         :param y: (bottom, top)
+
         """
         x1, x2 = sorted(x)
         y1, y2 = sorted(y)
@@ -109,6 +111,7 @@ class BoundingBox(_BoundingBox):
     def from_points(p1: Tuple[float, float],
                     p2: Tuple[float, float]) -> 'BoundingBox':
         """ BoundingBox from 2 points
+
         :param p1: (x, y)
         :param p2: (x, y)
         """
@@ -149,6 +152,9 @@ def _make_crs_transform(from_crs, to_crs, always_xy):
 class CRS:
     """
     Wrapper around `pyproj.CRS` for backwards compatibility.
+
+    :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
+    :raises: `pyproj.exceptions.CRSError`
     """
     DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if LooseVersion(rasterio.__gdal_version__) < LooseVersion("3.0.0")
                            else WktVersion.WKT2_2019)
@@ -156,10 +162,6 @@ class CRS:
     __slots__ = ('_crs', '_epsg', '_str')
 
     def __init__(self, crs_spec: Any):
-        """
-        :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
-        :raises: `pyproj.exceptions.CRSError`
-        """
         if isinstance(crs_spec, str):
             self._crs, self._str, self._epsg = _make_crs(crs_spec)
         elif isinstance(crs_spec, CRS):
@@ -326,7 +328,7 @@ class CRS:
 
     def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[Any, Any], Tuple[Any, Any]]:
         """
-        Returns a function that maps x, y -> x', y' where x, y are coordinates in
+        Return a function that maps x, y -> x', y' where x, y are coordinates in
         this stored either as scalars or ndarray objects and x', y' are the same
         points in the `other` CRS.
         """

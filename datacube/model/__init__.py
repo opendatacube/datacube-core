@@ -40,6 +40,7 @@ class Dataset:
 
     :param metadata_doc: the document (typically a parsed json/yaml)
     :param uris: All active uris for the dataset
+
     """
 
     def __init__(self,

@@ -2,6 +2,7 @@
 Open Data Cube Docs
 ===================
 
+https://github.com/pydata/pydata-sphinx-theme
 
 Developing Locally
 ------------------

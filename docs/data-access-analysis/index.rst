@@ -23,20 +23,20 @@ This instance can be configured to index a selection Sentinel-2 level 2 data.
     :maxdepth: 4
     :caption: Data Access & Analysis
 
-    apis/datacube-class.rst
-    apis/product-discovery.ipynb
-    apis/data-searching.ipynb
-    apis/data-loading.ipynb
+    apis/datacube-class
+    apis/product-discovery
+    apis/data-searching
+    apis/data-loading
 
 .. toctree::
     :maxdepth: 4
     :caption: Advanced Topics
 
-    advanced-topics/virtual-products.rst
-    advanced-topics/data-loading.rst
+    advanced-topics/virtual-products
+    advanced-topics/data-loading
 
 .. toctree::
     :maxdepth: 4
     :caption: Examples
 
-    tools-exploring-data/using-juypter.rst
+    tools-exploring-data/using-juypter

@@ -3,6 +3,4 @@
 ODC License
 ***********
 
-.. literalinclude::
-
-    ../../LICENSE
+.. literalinclude:: ../../LICENSE

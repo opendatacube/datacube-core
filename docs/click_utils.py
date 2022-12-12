@@ -45,6 +45,7 @@ def generate_help_text(command, prefix):
     block = section(None,
                     title(None, full_cmd),
                     ids=[make_id(full_cmd)], names=[full_cmd])
+
     if help_opts:
         h = "$ {} {}\n".format(full_cmd, help_opts[0]) + command.get_help(ctx)
         block.append(literal_block(None, h, language='console'))
@@ -72,12 +73,18 @@ class DatacubeDomain(Domain):
         'click-help': ClickHelpDirective,
     }
 
+    def merge_domaindata(
+            self,
+            docnames,
+            otherdata) -> None:
+        pass
+
 
 def setup(app):
     app.add_config_value('click_utils_commands', {}, 'html')
 
     app.add_domain(DatacubeDomain)
     return {
-        'parallel_read_safe': False,
-        'parallel_write_safe': False,
+        'parallel_read_safe': True,
+        'parallel_write_safe': True,
     }

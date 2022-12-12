@@ -2,6 +2,7 @@
 
 Ingesting Data
 **************
+
 .. _ingestion:
 
 .. note::
@@ -41,10 +42,9 @@ you should already have some data :ref:`indexed <indexing>`, and want to
 tile it up into a faster storage format or projection system.
 
 .. figure:: ../../diagrams/f4.png
+   :name: ingest-data
 
-    :name: ingest-data
-
-        Ingest Data
+   Ingest Data
 
 .. _ingest-config:
 
@@ -170,8 +170,7 @@ Ingest Some Data
 A command line tool is used to ingest data
 
 .. click:: datacube.scripts.ingest:ingest_cmd
-
-    :prog: datacube ingest
+   :prog: datacube ingest
 
 
 `Configuration samples <https://github.com/opendatacube/datacube-core/tree/develop/docs/config_samples>`_ are available as part of the open source Github repository.

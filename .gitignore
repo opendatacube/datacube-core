@@ -82,3 +82,5 @@ datacube/_version.py
 global.lock
 purge.lock
 worker-*.dirlock
+
+.condaenv

@@ -27,7 +27,7 @@ def _fast_slice(array, indexers):
     return xarray.DataArray(variable, coords=coords, fastpath=True)
 
 
-class Tile(object):
+class Tile:
     """
     The Tile object holds a lightweight representation of a datacube result.
 
@@ -42,6 +42,7 @@ class Tile(object):
 
     This can be used to load small portions of data into memory, instead of having to access
     the entire `Tile` at once.
+
     """
 
     def __init__(self, sources, geobox):
@@ -50,6 +51,7 @@ class Tile(object):
         :param xarray.DataArray sources: An array of non-spatial dimensions of the request, holding lists of
             datacube.storage.DatasetSource objects.
         :param model.GeoBox geobox: The spatial footprint of the Tile
+
         """
         self.sources = sources
         self.geobox = geobox
@@ -57,21 +59,27 @@ class Tile(object):
     @property
     def dims(self):
         """Names of the dimensions, eg ``('time', 'y', 'x')``
+
         :return: tuple(str)
+
         """
         return self.sources.dims + self.geobox.dimensions
 
     @property
     def shape(self):
         """Lengths of each dimension, eg ``(285, 4000, 4000)``
+
         :return: tuple(int)
+
         """
         return self.sources.shape + self.geobox.shape
 
     @property
     def product(self):
         """
+
         :rtype: datacube.model.DatasetType
+
         """
         return self.sources.values[0][0].type
 
@@ -88,6 +96,7 @@ class Tile(object):
         :param dim: Name of the non-spatial dimension to split
         :param step: step size to split
         :return: tuple(key, Tile)
+
         """
         axis = self.dims.index(dim)
         indexer = [slice(None)] * len(self.dims)
@@ -100,15 +109,18 @@ class Tile(object):
         """
         Splits along the `time` dimension, into periods, using pandas offsets, such as:
         :
+
             'A': Annual
             'Q': Quarter
             'M': Month
+
         See: http://pandas.pydata.org/pandas-docs/stable/timeseries.html?highlight=rollback#timeseries-offset-aliases
 
         :param freq: time series frequency
         :param time_dim: name of the time dimension
         :param kwargs: other keyword arguments passed to ``pandas.period_range``
         :return: Generator[tuple(str, Tile)] generator of the key string (eg '1994') and the slice of Tile
+
         """
         # extract first and last timestamps from the time axis, note this will
         # work with 1 element arrays as well
@@ -128,7 +140,7 @@ class Tile(object):
         return self.__str__()
 
 
-class GridWorkflow(object):
+class GridWorkflow:
     """
     GridWorkflow deals with cell- and tile-based processing using a grid defining a projection and resolution.
 
@@ -148,6 +160,7 @@ class GridWorkflow(object):
         :param datacube.index.Index index: The database index to use.
         :param GridSpec grid_spec: The grid projection and resolution
         :param str product: The name of an existing product, if no grid_spec is supplied.
+
         """
         self.index = index
         if grid_spec is None:
