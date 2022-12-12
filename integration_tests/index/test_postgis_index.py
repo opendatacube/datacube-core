@@ -32,7 +32,7 @@ def test_spatial_index_maintain(index: Index, ls8_eo3_product, eo3_ls8_dataset_d
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds, err = resolver(*eo3_ls8_dataset_doc)
     assert err is None and ds is not None
-    ds = index.datasets.add(ds)
+    ds = index.datasets.add(ds, False)
     assert ds
     index.datasets.archive([ds.id])
     index.datasets.purge([ds.id])

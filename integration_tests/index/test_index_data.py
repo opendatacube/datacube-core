@@ -284,18 +284,18 @@ def test_transactions_api_ctx_mgr(index,
     with pytest.raises(Exception) as e:
         with index.transaction() as trans:
             assert index.datasets.get(ds1.id) is None
-            index.datasets.add(ds1)
+            index.datasets.add(ds1, False)
             assert index.datasets.get(ds1.id) is not None
             raise Exception("Rollback!")
     assert "Rollback!" in str(e.value)
     assert index.datasets.get(ds1.id) is None
     with index.transaction() as trans:
         assert index.datasets.get(ds1.id) is None
-        index.datasets.add(ds1)
+        index.datasets.add(ds1, False)
         assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds1.id) is not None
     with index.transaction() as trans:
-        index.datasets.add(ds2)
+        index.datasets.add(ds2, False)
         assert index.datasets.get(ds2.id) is not None
         raise trans.rollback_exception("Rollback")
     assert index.datasets.get(ds1.id) is not None
@@ -345,17 +345,17 @@ def test_transactions_api_manual(index,
     ds1, err = resolver(*eo3_ls8_dataset_doc)
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
     trans = index.transaction()
-    index.datasets.add(ds1)
+    index.datasets.add(ds1, False)
     assert index.datasets.get(ds1.id) is not None
     trans.begin()
-    index.datasets.add(ds2)
+    index.datasets.add(ds2, False)
     assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds2.id) is not None
     trans.rollback()
     assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds2.id) is None
     trans.begin()
-    index.datasets.add(ds2)
+    index.datasets.add(ds2, False)
     trans.commit()
     assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds2.id) is not None
@@ -372,18 +372,18 @@ def test_transactions_api_hybrid(index,
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
     with index.transaction() as trans:
         assert index.datasets.get(ds1.id) is None
-        index.datasets.add(ds1)
+        index.datasets.add(ds1, False)
         assert index.datasets.get(ds1.id) is not None
         trans.rollback()
         assert index.datasets.get(ds1.id) is None
         trans.begin()
         assert index.datasets.get(ds1.id) is None
-        index.datasets.add(ds1)
+        index.datasets.add(ds1, False)
         assert index.datasets.get(ds1.id) is not None
         trans.commit()
         assert index.datasets.get(ds1.id) is not None
         trans.begin()
-        index.datasets.add(ds2)
+        index.datasets.add(ds2, False)
         assert index.datasets.get(ds2.id) is not None
         trans.rollback()
     assert index.datasets.get(ds1.id) is not None

@@ -149,6 +149,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: Dataset
         """
 
+        if with_lineage:
+            raise ValueError("Lineage is not yet supported by the postgis driver")
+
         sp_crses = self._db.spatial_indexes()
 
         def process_bunch(dss, main_ds, transaction):

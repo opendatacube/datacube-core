@@ -75,7 +75,7 @@ def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
             # Expect to fail with legacy datasets
             clirunner(['dataset', 'add', dataset_add_configs.datasets])
         # Use EO3 datasets to allow subsequent tests to run.
-        clirunner(['dataset', 'add', dataset_add_configs.datasets_eo3])
+        result = clirunner(['dataset', 'add', "--confirm-ignore-lineage", dataset_add_configs.datasets_eo3])
 
     runner = clirunner(['dataset', 'archive'], verbose_flag=False, expect_success=False)
     assert "Completed dataset archival." not in runner.output
@@ -93,7 +93,6 @@ def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
     assert "Usage:  [OPTIONS] [IDS]" in runner.output
     assert "Restore datasets" in runner.output
     assert runner.exit_code == 1
-
     runner = clirunner(['dataset', 'restore', "--all"], verbose_flag=False)
     assert "restoring" in runner.output
     assert "Usage:  [OPTIONS] [IDS]" not in runner.output
@@ -129,10 +128,10 @@ def test_readd_and_update_metadata_product_dataset_command(index_empty, clirunne
     update = clirunner(['product', 'update', dataset_add_configs.products])
     assert "WARNING No changes detected for product" in update.output
 
-    clirunner(['dataset', 'add', dataset_add_configs.datasets_eo3])
-    rerun_add = clirunner(['dataset', 'add', dataset_add_configs.datasets_eo3])
+    clirunner(['dataset', 'add', '--confirm-ignore-lineage', dataset_add_configs.datasets_eo3])
+    rerun_add = clirunner(['dataset', 'add', '--confirm-ignore-lineage', dataset_add_configs.datasets_eo3])
     assert "WARNING Dataset" in rerun_add.output
     assert "is already in the database" in rerun_add.output
 
     update = clirunner(['dataset', 'update', dataset_add_configs.datasets_eo3])
-    assert "1 successful, 0 failed" in update.output
+    assert "2 successful, 0 failed" in update.output

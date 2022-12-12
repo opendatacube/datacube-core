@@ -183,6 +183,7 @@ def test_idempotent_add_dataset_type(index, ls5_telem_type, ls5_telem_doc):
         # TODO: Support for adding/changing search fields?
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     """
     :type index: datacube.index.Index
