@@ -20,7 +20,6 @@ from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product
 from datacube.model.fields import Field
-from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
 from datacube.utils.geometry import CRS, Geometry
@@ -159,15 +158,15 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return dataset
 
         with self._db_connection(transaction=True) as transaction:
-                # 1a. insert (if not already exists)
-                is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.type.id)
-                if is_new:
-                    # 1b. Prepare spatial index extents
-                    transaction.update_spindex(dsids=[dataset.id])
-                    transaction.update_search_index(dsids=[dataset.id])
-                    # 1c. Store locations
-                    if dataset.uris is not None:
-                        self._ensure_new_locations(dataset, transaction=transaction)
+            # 1a. insert (if not already exists)
+            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.type.id)
+            if is_new:
+                # 1b. Prepare spatial index extents
+                transaction.update_spindex(dsids=[dataset.id])
+                transaction.update_search_index(dsids=[dataset.id])
+                # 1c. Store locations
+                if dataset.uris is not None:
+                    self._ensure_new_locations(dataset, transaction=transaction)
 
         return dataset
 
