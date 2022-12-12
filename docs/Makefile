@@ -35,7 +35,7 @@ plantuml_diags: $(SVG_FILES)
 
 livehtml:
 #	sphinx-autobuild -b html --host 0.0.0.0 --port 8123 --watch "../datacube" --re-ignore "dev/api/generate/.*\.rst" $(SPHINXOPTS) . $(BUILDDIR)/html
-	sphinx-autobuild -b html --host 0.0.0.0 --port 8123 --watch "../datacube" --ignore build/ --ignore dev/api/generate $(SPHINXOPTS) . $(BUILDDIR)/html
+	sphinx-autobuild -b html --host 0.0.0.0 --port 8123 --watch "../datacube" --ignore _build/ --re-ignore ".*/generate/.*" $(SPHINXOPTS) . $(BUILDDIR)/html
 
 clean:
 	rm -rf _build/
