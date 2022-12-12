@@ -302,6 +302,39 @@ def test_transactions_api_ctx_mgr(index,
     assert index.datasets.get(ds2.id) is None
 
 
+def test_transactions_api_ctx_mgr_nested(index,
+                                  extended_eo3_metadata_type_doc,
+                                  ls8_eo3_product,
+                                  eo3_ls8_dataset_doc,
+                                  eo3_ls8_dataset2_doc):
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
+    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    with pytest.raises(Exception) as e:
+        with index.transaction() as trans_outer:
+            with index.transaction() as trans:
+                assert index.datasets.get(ds1.id) is None
+                index.datasets.add(ds1, False)
+                assert index.datasets.get(ds1.id) is not None
+                raise Exception("Rollback!")
+    assert "Rollback!" in str(e.value)
+    assert index.datasets.get(ds1.id) is None
+    with index.transaction() as trans_outer:
+        with index.transaction() as trans:
+            assert index.datasets.get(ds1.id) is None
+            index.datasets.add(ds1, False)
+            assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds1.id) is not None
+    with index.transaction() as trans_outer:
+        with index.transaction() as trans:
+            index.datasets.add(ds2, False)
+            assert index.datasets.get(ds2.id) is not None
+            raise trans.rollback_exception("Rollback")
+    assert index.datasets.get(ds1.id) is not None
+    assert index.datasets.get(ds2.id) is None
+
+
 def test_transactions_api_manual(index,
                                  extended_eo3_metadata_type_doc,
                                  ls8_eo3_product,

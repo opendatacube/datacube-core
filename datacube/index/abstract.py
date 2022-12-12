@@ -1018,6 +1018,7 @@ class AbstractTransaction(ABC):
         self._connection: Any = None
         self._tls_id = f"txn-{index_id}"
         self._obj_lock = Lock()
+        self._controlling_trans = None
 
     # Main Transaction API
     def begin(self) -> None:
@@ -1080,10 +1081,13 @@ class AbstractTransaction(ABC):
         """
         stored_val = thread_local_cache(self._tls_id)
         if stored_val is not None:
-            raise ValueError("Cannot start a new transaction as one is already active for this thread")
-        self._connection = self._new_connection()
-        thread_local_cache(self._tls_id, purge=True)
-        thread_local_cache(self._tls_id, self)
+            # stored_val is outermost transaction in a stack of nested transaction.
+            self._controlling_trans = stored_val
+            self._connection = stored_val._connection
+        else:
+            self._connection = self._new_connection()
+            thread_local_cache(self._tls_id, purge=True)
+            thread_local_cache(self._tls_id, self)
 
     def _tls_purge(self) -> None:
         thread_local_cache(self._tls_id, purge=True)
@@ -1105,7 +1109,11 @@ class AbstractTransaction(ABC):
             # User has already manually committed or rolled back.
             return True
         if exc_type is not None and issubclass(exc_type, TransactionException):
-            # User raised a TransactionException,  Commit or rollback as per exception
+            # User raised a TransactionException,
+            if self._controlling_trans:
+                # Nested transaction - reraise TransactionException
+                return False
+            # Commit or rollback as per exception
             if exc_value.commit:
                 self.commit()
             else:
@@ -1113,13 +1121,15 @@ class AbstractTransaction(ABC):
             # Tell runtime exception is caught and handled.
             return True
         elif exc_value is not None:
-            # Any other exception - rollback
-            self.rollback()
+            # Any other exception - reraise.  Rollback if outermost transaction
+            if not self._controlling_trans:
+                self.rollback()
             # Instruct runtime to rethrow exception
             return False
         else:
-            # Exited without exception - commit and continue
-            self.commit()
+            # Exited without exception.  Commit if outermost transaction
+            if not self._controlling_trans:
+                self.commit()
             return True
 
     # Internal abstract methods for implementation-specific functionality
