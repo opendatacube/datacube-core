@@ -5,7 +5,6 @@ Dask
 .. currentmodule:: datacube
 
 .. autosummary::
-
    :toctree: generate/
 
    utils.dask.start_local_dask

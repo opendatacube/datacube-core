@@ -11,7 +11,7 @@ The following pages provide a full API reference for the ``datacube`` python lib
 
     core-classes/datacube
     core-classes/dataset
-    core-classes/datasetType
+    core-classes/product
     core-classes/geometry
     core-classes/measurement
     core-classes/metadataType
@@ -52,4 +52,4 @@ The following pages provide a full API reference for the ``datacube`` python lib
     Amazon Web Services (AWS) <utilities/aws>
     Writing GeoTIFFs <utilities/cogs>
     utilities/dask
-    grid-processing/gridWorkflow
+    grid-processing/grid_workflow

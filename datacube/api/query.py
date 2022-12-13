@@ -195,8 +195,7 @@ def query_group_by(group_by='time', **kwargs):
     """
     Group by function for loading datasets
 
-    :param group_by: group_by name, supported str are
-    ::
+    :param group_by: group_by name, supported str are::
 
         - time (default)
         - solar_day, see :func:`datacube.api.query.solar_day`

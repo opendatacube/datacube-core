@@ -41,6 +41,7 @@ class Dataset:
 
     :param metadata_doc: the source document (typically parsed JSON/YAML)
     :param uris: All active URIs for the dataset
+
     """
 
     def __init__(self,
@@ -296,7 +297,7 @@ class Dataset:
 
 class Measurement(dict):
     """
-    Describes a single data variable of a Product or Dataset.
+    Describes a single data variable of a :class:`Product` or :class:`Dataset`.
 
     Must include, which can be used when loading and interpreting data:
 
@@ -761,7 +762,7 @@ class GridSpec:
     @property
     def dimensions(self) -> Tuple[str, str]:
         """
-        List of dimension names of the grid spec
+        List of dimension names of the Grid Spec
 
         """
         return self.crs.dimensions
@@ -777,14 +778,14 @@ class GridSpec:
     @property
     def tile_resolution(self) -> Tuple[int, int]:
         """
-        Tile size in pixels in CRS dimension order (Usually y,x or lat,lon)
+        Tile size in pixels in CRS dimension order (Usually Y, X or lat,lon)
         """
         y, x = (int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
         return (y, x)
 
     def tile_coords(self, tile_index: Tuple[int, int]) -> Tuple[float, float]:
         """
-        Coordinate of the top-left corner of the tile in (Y,X) order
+        Coordinate of the top-left corner of the tile in (Y, X) order
 
         :param tile_index: in X,Y order
         """
@@ -801,7 +802,7 @@ class GridSpec:
 
     def tile_geobox(self, tile_index: Tuple[int, int]) -> geometry.GeoBox:
         """
-        Tile geobox.
+        Return a :py:class:`geometry.GeoBox` for the specified Tile
 
         :param (int,int) tile_index:
         """
@@ -815,7 +816,7 @@ class GridSpec:
               geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
                                                                      geometry.GeoBox]]:
         """
-        Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
+        Return an iterator of (tile_index, :py:class:`geometry.GeoBox`) tuples across
         the grid and overlapping with the specified `bounds` rectangle.
 
         .. note::
@@ -824,8 +825,8 @@ class GridSpec:
            dimension order.
 
         :param BoundingBox bounds: Boundary coordinates of the required grid
-        :param dict geobox_cache: Optional cache to re-use geoboxes instead of creating new one each time
-        :return: iterator of grid cells with :py:class:`GeoBox` tiles
+        :param dict geobox_cache: Optional cache to re-use GeoBoxes instead of creating new ones each time
+        :return: iterator of grid cells with :py:class:`geometry.GeoBox` tiles
         """
         def geobox(tile_index):
             if geobox_cache is None:
@@ -849,7 +850,7 @@ class GridSpec:
                               geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
                                                                                      geometry.GeoBox]]:
         """
-        Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
+        Returns an iterator of tile_index, :py:class:`geometry.GeoBox` tuples across
         the grid and overlapping with the specified `geopolygon`.
 
         .. note::
@@ -860,8 +861,8 @@ class GridSpec:
         :param geometry.Geometry geopolygon: Polygon to tile
         :param tile_buffer: Optional <float,float> tuple, (extra padding for the query
                             in native units of this GridSpec)
-        :param dict geobox_cache: Optional cache to re-use geoboxes instead of creating new one each time
-        :return: iterator of grid cells with :py:class:`GeoBox` tiles
+        :param dict geobox_cache: Optional cache to re-use geoboxes instead of creating new ones each time
+        :return: iterator of grid cells with :py:class:`geometry.GeoBox` tiles
         """
         geopolygon = geopolygon.to_crs(self.crs)
         bbox = geopolygon.boundingbox
@@ -876,7 +877,7 @@ class GridSpec:
     @staticmethod
     def grid_range(lower: float, upper: float, step: float) -> range:
         """
-        Returns the indices along a 1D scale.
+        Return the indices along a 1D scale.
 
         Used for producing 2D grid indices.
 

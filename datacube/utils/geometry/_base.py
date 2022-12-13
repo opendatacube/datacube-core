@@ -148,7 +148,10 @@ def _make_crs_transform(from_crs, to_crs, always_xy):
 
 class CRS:
     """
-    Wrapper around `pyproj.CRS` for backwards compatibility.
+    Wrapper around :class:`pyproj.CRS` for backwards compatibility.
+
+    :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
+    :raises: `pyproj.exceptions.CRSError`
     """
     DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if Version(rasterio.__gdal_version__) < Version("3.0.0")
                            else WktVersion.WKT2_2019)
@@ -156,10 +159,6 @@ class CRS:
     __slots__ = ('_crs', '_epsg', '_str')
 
     def __init__(self, crs_spec: Any):
-        """
-        :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
-        :raises: `pyproj.exceptions.CRSError`
-        """
         if isinstance(crs_spec, str):
             self._crs, self._str, self._epsg = _make_crs(crs_spec)
         elif isinstance(crs_spec, CRS):

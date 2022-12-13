@@ -2,19 +2,24 @@
 Geometry Classes
 ================
 
+.. currentmodule:: datacube.utils.geometry
+
+.. autosummary::
+   :toctree: generate/
+
+   Coordinate
+   BoundingBox
+   CRS
+   Geometry
+   GeoBox
+   BoundingBox
+   gbox.GeoboxTiles
+   CRSError
+   CRSMismatchError
+
 .. currentmodule:: datacube
 
 .. autosummary::
-
    :toctree: generate/
 
-   utils.geometry.Coordinate
-   utils.geometry.BoundingBox
-   utils.geometry.CRS
-   utils.geometry.Geometry
-   utils.geometry.GeoBox
-   utils.geometry.BoundingBox
-   utils.geometry.gbox.GeoboxTiles
    model.GridSpec
-   utils.geometry.CRSError
-   utils.geometry.CRSMismatchError
