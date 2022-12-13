@@ -138,5 +138,5 @@ def test_readd_and_update_metadata_product_dataset_command(index_empty, clirunne
     assert "WARNING Dataset" in rerun_add.output
     assert "is already in the database" in rerun_add.output
 
-    update = clirunner(['dataset', 'update', dataset_add_configs.datasets_eo3])
+    update = clirunner(['dataset', 'update', '--allow-any', 'properties.datetime', dataset_add_configs.datasets_eo3_updated])
     assert "2 successful, 0 failed" in update.output
