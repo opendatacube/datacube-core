@@ -124,6 +124,26 @@ class AbstractMetadataTypeResource(ABC):
         :return: Persisted Metadatatype model.
         """
 
+    def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]]) -> Iterable[MetadataType]:
+        """
+        Add a group of Metadata Type documents in bulk.
+
+        :param metadata_docs: An sequence of metadata type metadata docs.
+        :param allow_table_lock:
+            Allow an exclusive lock to be taken on the table while creating the indexes.
+            This will halt other user's requests until completed.
+
+            If false, creation will be slightly slower and cannot be done in a transaction.
+
+            raise NotImplementedError if set to True, and this behaviour is not applicable
+            for the implementing driver.
+        :return:  A Sequence of (persisted) MetadataType objects
+
+        Default implementation simply calls from_doc and add in a loop in a transaction.
+        """
+        for doc in metadata_docs:
+            yield self.add(self.from_doc(doc), allow_table_lock=True)
+
     @abstractmethod
     def can_update(self,
                    metadata_type: MetadataType,
@@ -244,6 +264,17 @@ class AbstractMetadataTypeResource(ABC):
 
         :returns: All available MetadataType models
         """
+
+    def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
+        """
+        Retrieve all Metadata Types as documents only
+
+        :returns: All available MetadataType definition documents
+
+        Default implementation calls get_all()
+        """
+        for mdt in self.get():
+            yield mdt.definition
 
 
 QueryField = Union[str, float, int, Range, datetime.datetime]
@@ -1246,6 +1277,15 @@ class AbstractIndex(ABC):
         :return: true if the database was created, false if already exists
         """
 
+    def clone(self, origin_index: "AbstractIndexDriver") -> Sequence[str]:
+        """
+
+        :param origin_index:
+        :return:
+        """
+        errors = []
+        return errors
+
     @abstractmethod
     def close(self) -> None:
         """
@@ -1340,6 +1380,7 @@ class AbstractIndexDriver(ABC):
     def metadata_type_from_doc(definition: dict
                               ) -> MetadataType:
         ...
+
 
 
 # The special handling of grid_spatial, etc appears to NOT apply to EO3.
