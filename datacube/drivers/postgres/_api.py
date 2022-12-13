@@ -960,6 +960,14 @@ class PostgresDbAPI(object):
     def get_all_metadata_types(self):
         return self._connection.execute(METADATA_TYPE.select().order_by(METADATA_TYPE.c.name.asc())).fetchall()
 
+    def get_all_metadata_defs(self):
+        return [
+            r[0]
+            for r in self._connection.execute(
+                METADATA_TYPE.select(METADATA_TYPE.c.definition).order_by(METADATA_TYPE.c.name.asc())
+            ).fetchall()
+        ]
+
     def get_locations(self, dataset_id):
         return [
             record[0]
