@@ -924,6 +924,21 @@ class PostgisDbAPI(object):
             type_id, name, search_fields, concurrently=concurrently
         )
 
+    def insert_metadata_bulk(self, definitions):
+        res = self._connection.execute(
+            insert(MetadataType),
+            [
+                {"name": defn["name"], "definition": defn}
+                for defn in definitions
+            ]
+        )
+        type_ids = list(res.inserted_primary_key)
+        for type_id, definition in zip(type_ids, definitions):
+            search_fields = get_dataset_fields(definition)
+            self._setup_metadata_type_fields(
+                type_id, definition["name"], search_fields, concurrently=True
+            )
+
     def update_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(
             update(MetadataType).returning(MetadataType.id).where(
@@ -991,6 +1006,10 @@ class PostgisDbAPI(object):
 
     def get_all_metadata_types(self):
         return self._connection.execute(select(MetadataType).order_by(MetadataType.name.asc())).fetchall()
+
+    def get_all_metadata_type_defs(self):
+        for r in self._connection.execute(select(MetadataType.definition).order_by(MetadataType.name.asc())):
+            yield r[0]
 
     def get_locations(self, dataset_id):
         return [

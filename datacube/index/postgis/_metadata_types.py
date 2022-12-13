@@ -210,6 +210,11 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return self._make_many(connection.get_all_metadata_types())
 
+    def get_all_docs(self):
+        with self._db_connection() as connection:
+            for defn in connection.get_all_metadata_type_defs():
+                yield defn
+
     def _make_many(self, query_rows):
         """
         :rtype: list[datacube.model.MetadataType]

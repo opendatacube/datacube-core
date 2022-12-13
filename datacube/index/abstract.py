@@ -124,7 +124,7 @@ class AbstractMetadataTypeResource(ABC):
         :return: Persisted Metadatatype model.
         """
 
-    def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]]) -> Iterable[MetadataType]:
+    def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]]) -> Sequence[MetadataType]:
         """
         Add a group of Metadata Type documents in bulk.
 
@@ -141,8 +141,10 @@ class AbstractMetadataTypeResource(ABC):
 
         Default implementation simply calls from_doc and add in a loop in a transaction.
         """
-        for doc in metadata_docs:
-            yield self.add(self.from_doc(doc), allow_table_lock=True)
+        return [
+            self.add(self.from_doc(doc), allow_table_lock=True)
+            for doc in metadata_docs
+        ]
 
     @abstractmethod
     def can_update(self,
@@ -273,7 +275,7 @@ class AbstractMetadataTypeResource(ABC):
 
         Default implementation calls get_all()
         """
-        for mdt in self.get():
+        for mdt in self.get_all():
             yield mdt.definition
 
 
@@ -1277,13 +1279,18 @@ class AbstractIndex(ABC):
         :return: true if the database was created, false if already exists
         """
 
-    def clone(self, origin_index: "AbstractIndexDriver") -> Sequence[str]:
+    def clone(self, origin_index: "AbstractIndex") -> Sequence[str]:
         """
+        Clone an existing index into this one.
 
-        :param origin_index:
-        :return:
+        :param origin_index: Index whose contents we wish to clone.
+        :return: List of errors (strings). Empty sequence on successful clone.
         """
         errors = []
+        for mdt in self.metadata_types.get_all():
+            raise ValueError("clone can only be called on an empty index.")
+        self.metadata_types.bulk_add(list(origin_index.metadata_types.get_all_docs()))
+        # TODO Products and datasets
         return errors
 
     @abstractmethod
