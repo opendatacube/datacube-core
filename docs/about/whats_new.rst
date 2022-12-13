@@ -15,6 +15,7 @@ v1.8.next
 - Fix database relationship diagram instruction for docker (:pull:`1362`)
 - Document ``group_by`` for ``dataset.load`` (:pull:`1364`)
 - Add search_by_metadata facility for products (:pull:`1366`)
+- Add support for nested database transactions (:pull:`1369`)
 
 v1.8.9 (17 November 2022)
 =========================
