@@ -128,6 +128,11 @@ def test_readd_and_update_metadata_product_dataset_command(index_empty, clirunne
     update = clirunner(['product', 'update', dataset_add_configs.products])
     assert "WARNING No changes detected for product" in update.output
 
+    # Update before add
+    update = clirunner(['dataset', 'update', dataset_add_configs.datasets_eo3])
+    assert "No such dataset in the database" in update.output
+    assert "Failure while processing" in update.output
+
     clirunner(['dataset', 'add', '--confirm-ignore-lineage', dataset_add_configs.datasets_eo3])
     rerun_add = clirunner(['dataset', 'add', '--confirm-ignore-lineage', dataset_add_configs.datasets_eo3])
     assert "WARNING Dataset" in rerun_add.output
