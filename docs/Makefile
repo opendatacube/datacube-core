@@ -34,9 +34,10 @@ plantuml_diags: $(SVG_FILES)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 livehtml:
-#	sphinx-autobuild -b html --host 0.0.0.0 --port 8123 --watch "../datacube" --re-ignore "dev/api/generate/.*\.rst" $(SPHINXOPTS) . $(BUILDDIR)/html
-	sphinx-autobuild -b html --host 0.0.0.0 --port 8123 --watch "../datacube" --ignore _build/ --re-ignore ".*/generate/.*" $(SPHINXOPTS) . $(BUILDDIR)/html
+# --ignore uses either an absolute path prefix match, or glob patterns with python's fnmatch, and is much faster than --re-match
+	sphinx-autobuild -b html --port 8123 --watch "../datacube" --ignore '*_build/' --ignore "*/generate/*" $(SPHINXOPTS) . $(BUILDDIR)/html
 
 clean:
 	rm -rf _build/
 	rm -rf dev/api/generate data-access-analysis/apis/generate api/indexed-data/generate api/geometry/generate
+	find . -name generate -type d -exec rm -rf '{}' \;
