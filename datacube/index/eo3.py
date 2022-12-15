@@ -188,7 +188,7 @@ def is_doc_geo(doc: Dict[str, Any], check_eo3: bool = True) -> bool:
     """ Is this document geospatial?
 
     :param doc: Parsed ODC Dataset metadata document
-    :param check_url: Set to false to skip the EO3 check and assume doc isn't EO3.
+    :param check_eo3: Set to false to skip the EO3 check and assume doc isn't EO3.
 
     :returns:
         True if this document specifies geospatial dimensions

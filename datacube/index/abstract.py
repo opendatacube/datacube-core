@@ -79,9 +79,9 @@ class AbstractUserResource(ABC):
 _DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
 
-def default_metadata_type_docs() -> List[MetadataType]:
+def default_metadata_type_docs(path=_DEFAULT_METADATA_TYPES_PATH) -> List[MetadataType]:
     """A list of the bare dictionary format of default :class:`datacube.model.MetadataType`"""
-    return [doc for (path, doc) in read_documents(_DEFAULT_METADATA_TYPES_PATH)]
+    return [doc for (path, doc) in read_documents(path)]
 
 
 class AbstractMetadataTypeResource(ABC):
@@ -1340,6 +1340,8 @@ class AbstractIndexDriver(ABC):
     def metadata_type_from_doc(definition: dict
                               ) -> MetadataType:
         ...
+
+
 
 
 # The special handling of grid_spatial, etc appears to NOT apply to EO3.

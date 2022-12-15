@@ -41,6 +41,8 @@ def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs):
     assert runner.exit_code == 1
 
 
+# TODO Rewrite with EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
     clirunner(['metadata', 'add', dataset_add_configs.metadata])
     clirunner(['product', 'add', dataset_add_configs.products])
@@ -111,6 +113,8 @@ def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
     assert runner.exit_code == 0
 
 
+# TODO Rewrite with EO3 test data
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_readd_and_update_metadata_product_dataset_command(index_empty, clirunner, dataset_add_configs):
     clirunner(['metadata', 'add', dataset_add_configs.metadata])
     rerun_add = clirunner(['metadata', 'add', dataset_add_configs.metadata])

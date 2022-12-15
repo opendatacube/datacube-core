@@ -70,126 +70,88 @@ _pseudo_telemetry_dataset_type = {
 }
 
 
-def test_archive_datasets(index, local_config, default_metadata_type):
-    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    with index.transaction() as transaction:
-        was_inserted = transaction._connection.insert_dataset(
-            _telemetry_dataset,
-            _telemetry_uuid,
-            dataset_type.id
-        )
-
-    assert was_inserted
-    assert index.datasets.has(_telemetry_uuid)
-
+def test_archive_datasets(index, local_config, ls8_eo3_dataset):
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
     assert datasets[0].is_active
 
-    index.datasets.archive([_telemetry_uuid])
+    index.datasets.archive([ls8_eo3_dataset.id])
     datasets = index.datasets.search_eager()
     assert len(datasets) == 0
 
     # The model should show it as archived now.
-    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    indexed_dataset = index.datasets.get(ls8_eo3_dataset.id)
     assert indexed_dataset.is_archived
     assert not indexed_dataset.is_active
 
-    index.datasets.restore([_telemetry_uuid])
+    index.datasets.restore([ls8_eo3_dataset.id])
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
 
     # And now active
-    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    indexed_dataset = index.datasets.get(ls8_eo3_dataset.id)
     assert indexed_dataset.is_active
     assert not indexed_dataset.is_archived
 
 
-def test_purge_datasets(index, local_config, default_metadata_type, clirunner):
-    # Create dataset
-    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    with index.transaction() as transaction:
-        was_inserted = transaction._connection.insert_dataset(
-            _telemetry_dataset,
-            _telemetry_uuid,
-            dataset_type.id
-        )
-
-    assert was_inserted
-    assert index.datasets.has(_telemetry_uuid)
+def test_purge_datasets(index, local_config, ls8_eo3_dataset, clirunner):
+    assert index.datasets.has(ls8_eo3_dataset.id)
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
     assert datasets[0].is_active
 
     # Archive dataset
-    index.datasets.archive([_telemetry_uuid])
+    index.datasets.archive([ls8_eo3_dataset.id])
     datasets = index.datasets.search_eager()
     assert len(datasets) == 0
 
     # The model should show it as archived now.
-    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    indexed_dataset = index.datasets.get(ls8_eo3_dataset.id)
     assert indexed_dataset.is_archived
     assert not indexed_dataset.is_active
 
     # Purge dataset
-    index.datasets.purge([_telemetry_uuid])
-    assert index.datasets.get(_telemetry_uuid) is None
+    index.datasets.purge([ls8_eo3_dataset.id])
+    assert index.datasets.get(ls8_eo3_dataset.id) is None
 
 
-def test_purge_datasets_cli(index, local_config, default_metadata_type, clirunner):
-    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-
-    # Attempt to purge non-existent dataset should fail
-    clirunner(['dataset', 'purge', str(_telemetry_uuid)], expect_success=False)
-
-    # Create dataset
-    with index.transaction() as transaction:
-        was_inserted = transaction._connection.insert_dataset(
-            _telemetry_dataset,
-            _telemetry_uuid,
-            dataset_type.id
-        )
-    assert was_inserted
+def test_purge_datasets_cli(index, local_config, ls8_eo3_dataset, clirunner):
+    dsid = ls8_eo3_dataset.id
 
     # Attempt to purge non-archived dataset should fail
-    clirunner(['dataset', 'purge', str(_telemetry_uuid)], expect_success=False)
+    clirunner(['dataset', 'purge', str(dsid)], expect_success=False)
 
     # Archive dataset
-    index.datasets.archive([_telemetry_uuid])
-    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    index.datasets.archive([dsid])
+    indexed_dataset = index.datasets.get(dsid)
     assert indexed_dataset.is_archived
 
     # Test CLI dry run
-    clirunner(['dataset', 'purge', '--dry-run', str(_telemetry_uuid)])
-    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    clirunner(['dataset', 'purge', '--dry-run', str(dsid)])
+    indexed_dataset = index.datasets.get(dsid)
     assert indexed_dataset.is_archived
 
     # Test CLI purge
-    clirunner(['dataset', 'purge', str(_telemetry_uuid)])
-    assert index.datasets.get(_telemetry_uuid) is None
+    clirunner(['dataset', 'purge', str(dsid)])
+    assert index.datasets.get(dsid) is None
+
+    # Attempt to purge non-existent dataset should fail
+    clirunner(['dataset', 'purge', str(dsid)], expect_success=False)
 
 
-def test_purge_all_datasets_cli(index, local_config, default_metadata_type, clirunner):
-    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-
-    # Create dataset
-    with index.transaction() as transaction:
-        was_inserted = transaction._connection.insert_dataset(
-            _telemetry_dataset,
-            _telemetry_uuid,
-            dataset_type.id
-        )
-    assert was_inserted
+def test_purge_all_datasets_cli(index, local_config, ls8_eo3_dataset, clirunner):
+    product = ls8_eo3_dataset.product.id
+    dsid = ls8_eo3_dataset.id
 
     # archive all datasets
     clirunner(['dataset', 'archive', '--all'])
 
-    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    indexed_dataset = index.datasets.get(dsid)
     assert indexed_dataset.is_archived
 
     # Restore all datasets
     clirunner(['dataset', 'restore', '--all'])
-    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    indexed_dataset = index.datasets.get(dsid)
     assert not indexed_dataset.is_archived
 
     # Archive again
@@ -197,76 +159,47 @@ def test_purge_all_datasets_cli(index, local_config, default_metadata_type, clir
 
     # and purge
     clirunner(['dataset', 'purge', '--all'])
-    assert index.datasets.get(_telemetry_uuid) is None
-
-
-@pytest.fixture
-def telemetry_dataset(index: Index, default_metadata_type) -> Dataset:
-    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    assert not index.datasets.has(_telemetry_uuid)
-
-    with index.transaction() as transaction:
-        was_inserted = transaction._connection.insert_dataset(
-            _telemetry_dataset,
-            _telemetry_uuid,
-            dataset_type.id
-        )
-    assert was_inserted
-
-    return index.datasets.get(_telemetry_uuid)
+    assert index.datasets.get(dsid) is None
 
 
 def test_index_duplicate_dataset(index: Index,
                                  local_config,
-                                 default_metadata_type) -> None:
-    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    assert not index.datasets.has(_telemetry_uuid)
-
-    with index.transaction() as transaction:
-        was_inserted = transaction._connection.insert_dataset(
-            _telemetry_dataset,
-            _telemetry_uuid,
-            dataset_type.id
-        )
-
-    assert was_inserted
-    assert index.datasets.has(_telemetry_uuid)
+                                 ls8_eo3_dataset) -> None:
+    product = ls8_eo3_dataset.product
+    dsid = ls8_eo3_dataset.id
+    assert index.datasets.has(dsid)
 
     # Insert again.
-    with index._db._connect() as connection:
-        was_inserted = connection.insert_dataset(
-            _telemetry_dataset,
-            _telemetry_uuid,
-            dataset_type.id
-        )
-        assert was_inserted is False
+    ds = Dataset(product, ls8_eo3_dataset.metadata_doc,
+                 uris=ls8_eo3_dataset.uris)
+    index.datasets.add(ds, with_lineage=False)
 
-    assert index.datasets.has(_telemetry_uuid)
+    assert index.datasets.has(dsid)
 
 
-def test_has_dataset(index: Index, telemetry_dataset: Dataset) -> None:
-    assert index.datasets.has(_telemetry_uuid)
-    assert index.datasets.has(str(_telemetry_uuid))
+def test_has_dataset(index: Index, ls8_eo3_dataset: Dataset) -> None:
+    assert index.datasets.has(ls8_eo3_dataset.id)
+    assert index.datasets.has(str(ls8_eo3_dataset.id))
 
     assert not index.datasets.has(UUID('f226a278-e422-11e6-b501-185e0f80a5c0'))
     assert not index.datasets.has('f226a278-e422-11e6-b501-185e0f80a5c0')
 
-    assert index.datasets.bulk_has([_telemetry_uuid, UUID('f226a278-e422-11e6-b501-185e0f80a5c0')]) == [True, False]
-    assert index.datasets.bulk_has([str(_telemetry_uuid), 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
+    assert index.datasets.bulk_has([ls8_eo3_dataset.id, UUID('f226a278-e422-11e6-b501-185e0f80a5c0')]) == [True, False]
+    assert index.datasets.bulk_has([str(ls8_eo3_dataset.id), 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
 
 
-def test_get_dataset(index: Index, telemetry_dataset: Dataset) -> None:
-    assert index.datasets.has(_telemetry_uuid)
-    assert index.datasets.has(str(_telemetry_uuid))
+def test_get_dataset(index: Index, ls8_eo3_dataset: Dataset) -> None:
+    assert index.datasets.has(ls8_eo3_dataset.id)
+    assert index.datasets.has(str(ls8_eo3_dataset.id))
 
-    assert index.datasets.bulk_has([_telemetry_uuid, 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
+    assert index.datasets.bulk_has([ls8_eo3_dataset.id, 'f226a278-e422-11e6-b501-185e0f80a5c0']) == [True, False]
 
     for tr in (lambda x: x, lambda x: str(x)):
-        ds = index.datasets.get(tr(_telemetry_uuid))
-        assert ds.id == _telemetry_uuid
+        ds = index.datasets.get(tr(ls8_eo3_dataset.id))
+        assert ds.id == ls8_eo3_dataset.id
 
-        ds, = index.datasets.bulk_get([tr(_telemetry_uuid)])
-        assert ds.id == _telemetry_uuid
+        ds, = index.datasets.bulk_get([tr(ls8_eo3_dataset.id)])
+        assert ds.id == ls8_eo3_dataset.id
 
     assert index.datasets.bulk_get(['f226a278-e422-11e6-b501-185e0f80a5c0',
                                     'f226a278-e422-11e6-b501-185e0f80a5c1']) == []

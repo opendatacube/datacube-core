@@ -8,6 +8,7 @@ Functions for working with YAML documents and configurations
 import gzip
 import json
 import logging
+import math
 import sys
 import collections.abc
 from collections import OrderedDict
@@ -283,6 +284,30 @@ def get_doc_offset_safe(offset, document, value_if_missing=None):
 
     """
     return toolz.get_in(offset, document, default=value_if_missing)
+
+
+def documents_equal(d1, d2):
+    if d1.__class__ != d2.__class__:
+        return False
+    if isinstance(d1, str):
+        return d1 == d2
+    elif isinstance(d1, dict):
+        if set(d1.keys()) != set(d2.keys()):
+            return False
+        return all(documents_equal(d1[k], d2[k]) for k in d1)
+    elif isinstance(d1, list):
+        if len(d1) != len(d2):
+            return False
+        for i in range(len(d1)):
+            if not documents_equal(d1[i], d2[i]):
+                return False
+        return True
+    elif isinstance(d1, float):
+        if math.isnan(d1) and math.isnan(d2):
+            return True
+        return math.isclose(d1, d2, abs_tol=1e-10)
+    else:
+        return d1 == d2
 
 
 def transform_object_tree(f, o, key_transform=lambda k: k):

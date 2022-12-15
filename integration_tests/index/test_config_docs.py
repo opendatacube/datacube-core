@@ -10,6 +10,7 @@ import copy
 import pytest
 import yaml
 
+from ..conftest import sanitise_doc
 from datacube.drivers.postgres._fields import NumericRangeDocField as PgrNumericRangeDocField, PgField as PgrPgField
 from datacube.drivers.postgis._fields import NumericRangeDocField as PgsNumericRangeDocField, PgField as PgsPgField
 from datacube.index import Index
@@ -17,6 +18,7 @@ from datacube.index.abstract import default_metadata_type_docs
 from datacube.model import MetadataType, DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes
+from datacube.utils.documents import documents_equal
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',
@@ -164,21 +166,21 @@ def _object_exists(index, index_name):
     return val in (index_name, f'{schema_name}.{index_name}')
 
 
-def test_idempotent_add_dataset_type(index, ls5_telem_type, ls5_telem_doc):
+def test_idempotent_add_dataset_type(index, ls8_eo3_product, extended_eo3_product_doc):
     """
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
     """
-    assert index.products.get_by_name(ls5_telem_type.name) is not None
+    assert index.products.get_by_name(ls8_eo3_product.name) is not None
 
     # Re-add should have no effect, because it's equal to the current one.
-    index.products.add_document(ls5_telem_doc)
+    index.products.add_document(extended_eo3_product_doc)
 
     # But if we add the same type with differing properties we should get an error:
-    different_telemetry_type = copy.deepcopy(ls5_telem_doc)
-    different_telemetry_type['metadata']['ga_label'] = 'something'
+    different_product = copy.deepcopy(extended_eo3_product_doc)
+    different_product['metadata']['properties']["eo:platform"] = 'spamsat-13-and-a-half'
     with pytest.raises(changes.DocumentMismatchError):
-        index.products.add_document(different_telemetry_type)
+        index.products.add_document(different_product)
 
         # TODO: Support for adding/changing search fields?
 
@@ -309,9 +311,9 @@ def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_t
 
 def test_product_update_cli(index: Index,
                             clirunner,
-                            ls5_telem_type: DatasetType,
-                            ls5_telem_doc: dict,
-                            ga_metadata_type: MetadataType,
+                            ls8_eo3_product: DatasetType,
+                            extended_eo3_product_doc: dict,
+                            extended_eo3_metadata_type: MetadataType,
                             tmpdir) -> None:
     """
     Test updating products via cli
@@ -335,18 +337,18 @@ def test_product_update_cli(index: Index,
         # so we need to clear our local index object's cache to get the updated one.
         index.products.get_by_name_unsafe.cache_clear()
 
-        return index.products.get_by_name(product_doc['name']).definition
-
+        return sanitise_doc(index.products.get_by_name(product_doc['name']).definition)
     # Update an unchanged file, should be unchanged.
     file_path = tmpdir.join('unmodified-product.yaml')
-    file_path.write(_to_yaml(ls5_telem_doc))
+    file_path.write(_to_yaml(extended_eo3_product_doc))
     result = run_update_product(file_path)
-    assert str('Updated "ls5_telem_test"') in result.output
-    assert get_current(index, ls5_telem_doc) == ls5_telem_doc
+    assert str(f'Updated "{extended_eo3_product_doc["name"]}"') in result.output
+    fresh = get_current(index, extended_eo3_product_doc)
+    assert documents_equal(fresh, extended_eo3_product_doc)
     assert result.exit_code == 0
 
     # Try to add an unknown property: this should be forbidden by validation of dataset-type-schema.yaml
-    modified_doc = copy.deepcopy(ls5_telem_doc)
+    modified_doc = copy.deepcopy(extended_eo3_product_doc)
     modified_doc['newly_added_property'] = {}
     file_path = tmpdir.join('invalid-product.yaml')
     file_path.write(_to_yaml(modified_doc))
@@ -356,12 +358,13 @@ def test_product_update_cli(index: Index,
     assert "newly_added_property" in result.output
     # Return error code for failure!
     assert result.exit_code == 1
-    assert get_current(index, ls5_telem_doc) == ls5_telem_doc
+    fresh = get_current(index, extended_eo3_product_doc)
+    assert documents_equal(fresh, extended_eo3_product_doc)
 
     # Use of a numeric key in the document
     # (This has thrown errors in the past. all dict keys are strings after json conversion, but some old docs use
     # numbers as keys in yaml)
-    modified_doc = copy.deepcopy(ls5_telem_doc)
+    modified_doc = copy.deepcopy(extended_eo3_product_doc)
     modified_doc['metadata'][42] = 'hello'
     file_path = tmpdir.join('unsafe-change-to-product.yaml')
     file_path.write(_to_yaml(modified_doc))
@@ -370,16 +373,18 @@ def test_product_update_cli(index: Index,
     # Return error code for failure!
     assert result.exit_code == 1
     # Unchanged
-    assert get_current(index, ls5_telem_doc) == ls5_telem_doc
+    fresh = get_current(index, extended_eo3_product_doc)
+    assert documents_equal(fresh, extended_eo3_product_doc)
 
     # But if we set allow-unsafe==True, this one will work.
     result = run_update_product(file_path, allow_unsafe=True)
     assert "Unsafe change in metadata.42 from missing to 'hello'" in result.output
     assert result.exit_code == 0
     # Has changed, and our key is now a string (json only allows string keys)
-    modified_doc = copy.deepcopy(ls5_telem_doc)
+    modified_doc = copy.deepcopy(extended_eo3_product_doc)
     modified_doc['metadata']['42'] = 'hello'
-    assert get_current(index, ls5_telem_doc) == modified_doc
+    fresh = get_current(index, extended_eo3_product_doc)
+    assert documents_equal(fresh, modified_doc)
 
 
 def _to_yaml(ls5_telem_doc):
@@ -402,7 +407,7 @@ def test_update_metadata_type(index, default_metadata_type):
     # Add search field
     mt_doc['dataset']['search_fields']['testfield'] = {
         'description': "Field added for testing",
-        'offset': ['test']
+        'offset': ['properties', 'test'],
     }
 
     # TODO: Able to remove fields?
@@ -429,20 +434,20 @@ def test_update_metadata_type(index, default_metadata_type):
     )
 
 
-def test_filter_types_by_fields(index, ls5_telem_type):
+def test_filter_types_by_fields(index, wo_eo3_product):
     """
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
     """
     assert index.products
-    res = list(index.products.get_with_fields(['sat_path', 'sat_row', 'platform']))
-    assert res == [ls5_telem_type]
+    res = list(index.products.get_with_fields(['platform', 'instrument', 'region_code']))
+    assert res == [wo_eo3_product]
 
-    res = list(index.products.get_with_fields(['sat_path', 'sat_row', 'platform', 'favorite_icecream']))
+    res = list(index.products.get_with_fields(['platform', 'instrument', 'region_code', 'favorite_icecream']))
     assert len(res) == 0
 
 
-def test_filter_types_by_search(index, ls5_telem_type):
+def test_filter_types_by_search(index, wo_eo3_product):
     """
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
@@ -451,19 +456,19 @@ def test_filter_types_by_search(index, ls5_telem_type):
 
     # No arguments, return all.
     res = list(index.products.search())
-    assert res == [ls5_telem_type]
+    assert res == [wo_eo3_product]
 
     # Matching fields
     res = list(index.products.search(
-        product_type='satellite_telemetry_data',
-        product='ls5_telem_test'
+        product_family='wo',
+        product='ga_ls_wo_3'
     ))
-    assert res == [ls5_telem_type]
+    assert res == [wo_eo3_product]
 
     # Matching fields and non-available fields
     res = list(index.products.search(
-        product_type='satellite_telemetry_data',
-        product='ls5_telem_test',
+        product_family='wo',
+        product='ga_ls_wo_3',
         lat=Range(142.015625, 142.015625),
         lon=Range(-12.046875, -12.046875)
     ))
@@ -471,24 +476,24 @@ def test_filter_types_by_search(index, ls5_telem_type):
 
     # Matching fields and available fields
     [(res, q)] = list(index.products.search_robust(
-        product_type='satellite_telemetry_data',
-        product='ls5_telem_test',
-        sat_path=Range(142.015625, 142.015625),
-        sat_row=Range(-12.046875, -12.046875)
+        product_family='wo',
+        product='ga_ls_wo_3',
+        cloud_cover=Range(0.015625, 0.2015625),
+        dataset_maturity="final"
     ))
-    assert res == ls5_telem_type
-    assert 'sat_path' in q
-    assert 'sat_row' in q
+    assert res == wo_eo3_product
+    assert 'cloud_cover' in q
+    assert 'dataset_maturity' in q
 
     # Or expression test
     res = list(index.products.search(
-        product_type=['satellite_telemetry_data', 'nbar'],
+        product_family=['wo', 'spam'],
     ))
-    assert res == [ls5_telem_type]
+    assert res == [wo_eo3_product]
 
     # Mismatching fields
     res = list(index.products.search(
-        product_type='nbar',
+        product_family='spam',
     ))
     assert res == []
 
