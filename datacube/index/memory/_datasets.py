@@ -713,7 +713,7 @@ class DatasetResource(AbstractDatasetResource):
         else:
             uris = []
         return Dataset(
-            type_=self.product_resource.clone(orig.type),
+            product=self.product_resource.clone(orig.type),
             metadata_doc=jsonify_document(orig.metadata_doc_without_lineage()),
             uris=uris,
             indexed_by="user" if for_save and orig.indexed_by is None else orig.indexed_by,

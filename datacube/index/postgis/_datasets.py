@@ -452,7 +452,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         product = product or self.types.get(dataset_res.product_ref)
 
         return Dataset(
-            type_=product,
+            product=product,
             metadata_doc=dataset_res.metadata,
             uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,

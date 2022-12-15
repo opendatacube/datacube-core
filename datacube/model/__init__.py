@@ -22,6 +22,7 @@ from datacube.utils import geometry, without_lineage_sources, parse_time, cached
 from datacube.index.eo3 import is_doc_eo3
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap  # noqa: F401
+from .eo3 import validate_eo3_compatible_type
 
 _LOG = logging.getLogger(__name__)
 
@@ -43,16 +44,16 @@ class Dataset:
     """
 
     def __init__(self,
-                 type_: 'Product',
+                 product: "Product",
                  metadata_doc: Dict[str, Any],
                  uris: Optional[List[str]] = None,
                  sources: Optional[Mapping[str, 'Dataset']] = None,
                  indexed_by: Optional[str] = None,
                  indexed_time: Optional[datetime] = None,
                  archived_time: Optional[datetime] = None):
-        assert isinstance(type_, Product)
+        assert isinstance(product, Product)
 
-        self.type = type_
+        self.product = product
 
         #: The document describing the dataset as a dictionary. It is often serialised as YAML on disk
         #: or inside a NetCDF file, and as JSON-B inside the database index.
@@ -72,6 +73,11 @@ class Dataset:
         self.indexed_time = indexed_time
         # When the dataset was archived. Null it not archived.
         self.archived_time = archived_time
+
+    @property
+    def type(self) -> "Product":
+        # For compatibility
+        return self.product
 
     @property
     def is_eo3(self) -> bool:
@@ -365,6 +371,11 @@ class MetadataType:
 
     def dataset_reader(self, dataset_doc: Mapping[str, Field]) -> DocReader:
         return DocReader(self.definition['dataset'], self.dataset_fields, dataset_doc)
+
+    @classmethod
+    def validate_eo3(cls, doc):
+        cls.validate(doc)
+        validate_eo3_compatible_type(doc)
 
     def __str__(self) -> str:
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
