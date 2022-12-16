@@ -85,7 +85,7 @@ class BandInfo:
                  extra_dim_index: Optional[int] = None,
                  patch_url: Optional[Callable[[str], str]] = None):
         try:
-            mp, = ds.type.lookup_measurements([band]).values()
+            mp, = ds.product.lookup_measurements([band]).values()
         except KeyError:
             raise ValueError('No such band: {}'.format(band))
 

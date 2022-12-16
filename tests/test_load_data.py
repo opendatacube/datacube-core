@@ -48,7 +48,7 @@ def test_load_data(tmpdir):
     sources2 = Datacube.group_datasets([ds, ds2], group_by)
 
     mm = ['aa']
-    mm = [ds.type.measurements[k] for k in mm]
+    mm = [ds.product.measurements[k] for k in mm]
 
     ds_data = Datacube.load_data(sources, gbox, mm)
     assert ds_data.aa.nodata == nodata
@@ -112,7 +112,7 @@ def test_load_data_with_url_mangling(tmpdir):
     sources2 = Datacube.group_datasets([ds, ds2], group_by)
 
     mm = ['aa']
-    mm = [ds.type.measurements[k] for k in mm]
+    mm = [ds.product.measurements[k] for k in mm]
 
     ds_data = Datacube.load_data(sources, gbox, mm, patch_url=url_mangler)
     assert ds_data.aa.nodata == nodata
@@ -178,7 +178,7 @@ def test_load_data_cbk(tmpdir):
     def progress_cbk(n, nt):
         progress_call_data.append((n, nt))
 
-    ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
+    ds_data = Datacube.load_data(sources, gbox, ds.product.measurements,
                                  progress_cbk=progress_cbk)
 
     assert progress_call_data == [(1, 4), (2, 4), (3, 4), (4, 4)]
@@ -195,7 +195,7 @@ def test_load_data_cbk(tmpdir):
             raise KeyboardInterrupt()
 
     progress_call_data = []
-    ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
+    ds_data = Datacube.load_data(sources, gbox, ds.product.measurements,
                                  progress_cbk=progress_cbk_fail_early)
 
     assert progress_call_data == [(1, 4)]
@@ -204,7 +204,7 @@ def test_load_data_cbk(tmpdir):
     np.testing.assert_array_equal(nodata, ds_data.bb.values[0])
 
     progress_call_data = []
-    ds_data = Datacube.load_data(sources, gbox, ds.type.measurements,
+    ds_data = Datacube.load_data(sources, gbox, ds.product.measurements,
                                  progress_cbk=progress_cbk_fail_early2)
 
     assert ds_data.dc_partial_load is True

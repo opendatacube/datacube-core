@@ -383,7 +383,7 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
 
     assert stored.id == _telemetry_uuid
     # TODO: Dataset types?
-    assert stored.type.id == type_.id
+    assert stored.product.id == type_.id
     assert stored.metadata_type.id == default_metadata_type.id
     assert stored.local_path == Path(first_file)
 

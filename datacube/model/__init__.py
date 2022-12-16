@@ -85,7 +85,7 @@ class Dataset:
 
     @property
     def metadata_type(self) -> 'MetadataType':
-        return self.type.metadata_type
+        return self.product.metadata_type
 
     @property
     def local_uri(self) -> Optional[str]:
@@ -117,7 +117,7 @@ class Dataset:
 
     @property
     def managed(self) -> bool:
-        return self.type.managed
+        return self.product.managed
 
     @property
     def format(self) -> str:
@@ -281,7 +281,7 @@ class Dataset:
     def __str__(self):
         str_loc = 'not available' if not self.uris else self.uris[0]
         return "Dataset <id={id} product={type} location={loc}>".format(id=self.id,
-                                                                        type=self.type.name,
+                                                                        type=self.product.name,
                                                                         loc=str_loc)
 
     def __repr__(self) -> str:

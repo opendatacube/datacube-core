@@ -159,7 +159,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
-            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.type.id)
+            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
             if is_new:
                 # 1b. Prepare spatial index extents
                 transaction.update_spindex(dsids=[dataset.id])
@@ -211,9 +211,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if not existing:
             raise ValueError('Unknown dataset %s, cannot update – did you intend to add it?' % dataset.id)
 
-        if dataset.type.name != existing.type.name:
-            raise ValueError('Changing product is not supported. From %s to %s in %s' % (existing.type.name,
-                                                                                         dataset.type.name,
+        if dataset.product.name != existing.product.name:
+            raise ValueError('Changing product is not supported. From %s to %s in %s' % (existing.product.name,
+                                                                                         dataset.product.name,
                                                                                          dataset.id))
 
         # TODO: figure out (un)safe changes from metadata type?
@@ -259,7 +259,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         _LOG.info("Updating dataset %s", dataset.id)
 
-        product = self.types.get_by_name(dataset.type.name)
+        product = self.types.get_by_name(dataset.product.name)
         with self._db_connection(transaction=True) as transaction:
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)

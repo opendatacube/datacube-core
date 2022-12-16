@@ -73,7 +73,7 @@ class Tile(object):
         """
         :rtype: datacube.model.DatasetType
         """
-        return self.sources.values[0][0].type
+        return self.sources.values[0][0].product
 
     def __getitem__(self, chunk):
         sources = _fast_slice(self.sources, chunk[:len(self.sources.shape)])

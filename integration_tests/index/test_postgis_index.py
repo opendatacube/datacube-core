@@ -161,7 +161,7 @@ def test_spatial_search(index,
     index.update_spatial_index(crses=[epsg3577])
     # Test old style lat/lon search
     dss = index.datasets.search_eager(
-        product=ls8_eo3_dataset.type.name,
+        product=ls8_eo3_dataset.product.name,
         lat=Range(begin=-37.5, end=37.0),
         lon=Range(begin=148.5, end=149.0)
     )
@@ -174,19 +174,19 @@ def test_spatial_search(index,
     exact1_3577 = ls8_eo3_dataset.extent.to_crs(epsg3577)
     exact3_4326 = ls8_eo3_dataset3.extent.to_crs(epsg4326)
     exact3_3577 = ls8_eo3_dataset3.extent.to_crs(epsg3577)
-    dssids = set(ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.type.name, geometry=exact1_4326))
+    dssids = set(ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.product.name, geometry=exact1_4326))
     assert len(dssids) == 2
     assert ls8_eo3_dataset.id in dssids
     assert ls8_eo3_dataset2.id in dssids
-    dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.type.name, geometry=exact1_3577)]
+    dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.product.name, geometry=exact1_3577)]
     assert len(dssids) == 2
     assert ls8_eo3_dataset.id in dssids
     assert ls8_eo3_dataset2.id in dssids
-    dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.type.name, geometry=exact3_4326)]
+    dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.product.name, geometry=exact3_4326)]
     assert len(dssids) == 2
     assert ls8_eo3_dataset3.id in dssids
     assert ls8_eo3_dataset3.id in dssids
-    dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.type.name, geometry=exact3_3577)]
+    dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.product.name, geometry=exact3_3577)]
     assert len(dssids) == 2
     assert ls8_eo3_dataset3.id in dssids
     assert ls8_eo3_dataset3.id in dssids

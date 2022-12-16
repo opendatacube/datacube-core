@@ -213,7 +213,7 @@ def test_search_by_product_eo3(index: Index,
 
 
 def test_search_limit_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset):
-    prod = ls8_eo3_dataset.type.name
+    prod = ls8_eo3_dataset.product.name
     datasets = list(index.datasets.search(product=prod))
     assert len(datasets) == 2
     datasets = list(index.datasets.search(limit=1, product=prod))
@@ -283,7 +283,7 @@ def test_search_or_expressions_eo3(index: Index,
 
     # OR both products: return all
     datasets = index.datasets.search_eager(
-        product=[ls8_eo3_dataset.type.name, wo_eo3_dataset.type.name]
+        product=[ls8_eo3_dataset.product.name, wo_eo3_dataset.product.name]
     )
     assert len(datasets) == 3
     ids = set(dataset.id for dataset in datasets)
@@ -305,7 +305,7 @@ def test_search_or_expressions_eo3(index: Index,
 
     # Redundant ORs should have no effect.
     datasets = index.datasets.search_eager(
-        product=[wo_eo3_dataset.type.name, wo_eo3_dataset.type.name, wo_eo3_dataset.type.name]
+        product=[wo_eo3_dataset.product.name, wo_eo3_dataset.product.name, wo_eo3_dataset.product.name]
     )
     assert len(datasets) == 1
     assert datasets[0].id == wo_eo3_dataset.id
@@ -425,7 +425,7 @@ def test_searches_only_type_eo3(index: Index,
 
     # One result in the product
     datasets = index.datasets.search_eager(
-        product=wo_eo3_dataset.type.name,
+        product=wo_eo3_dataset.product.name,
         platform='landsat-8'
     )
     assert len(datasets) == 1
@@ -466,7 +466,7 @@ def test_search_special_fields_eo3(index: Index,
                                    wo_eo3_dataset: Dataset) -> None:
     # 'product' is a special case
     datasets = index.datasets.search_eager(
-        product=ls8_eo3_dataset.type.name
+        product=ls8_eo3_dataset.product.name
     )
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
@@ -480,11 +480,11 @@ def test_search_special_fields_eo3(index: Index,
 
 
 def test_search_by_uri_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dataset_doc):
-    datasets = index.datasets.search_eager(product=ls8_eo3_dataset.type.name,
+    datasets = index.datasets.search_eager(product=ls8_eo3_dataset.product.name,
                                            uri=eo3_ls8_dataset_doc[1])
     assert len(datasets) == 1
 
-    datasets = index.datasets.search_eager(product=ls8_eo3_dataset.type.name,
+    datasets = index.datasets.search_eager(product=ls8_eo3_dataset.product.name,
                                            uri='file:///x/yz')
     assert len(datasets) == 0
 
@@ -493,7 +493,7 @@ def test_search_conflicting_types(index, ls8_eo3_dataset):
     # Should return no results.
     with pytest.raises(ValueError):
         index.datasets.search_eager(
-            product=ls8_eo3_dataset.type.name,
+            product=ls8_eo3_dataset.product.name,
             # The ls8 type is not of type storage_unit.
             metadata_type='storage_unit'
         )
@@ -509,7 +509,7 @@ def test_fetch_all_of_md_type(index: Index, ls8_eo3_dataset: Dataset) -> None:
     assert results[0].id == ls8_eo3_dataset.id
     # Get every dataset of the type.
     results = index.datasets.search_eager(
-        product=ls8_eo3_dataset.type.name
+        product=ls8_eo3_dataset.product.name
     )
     assert len(results) == 1
     assert results[0].id == ls8_eo3_dataset.id
@@ -525,7 +525,7 @@ def test_count_searches(index: Index,
                         ls8_eo3_dataset: Dataset) -> None:
     # One result in the telemetry type
     datasets = index.datasets.count(
-        product=ls8_eo3_dataset.type.name,
+        product=ls8_eo3_dataset.product.name,
         platform='landsat-8',
         instrument='OLI_TIRS',
     )
@@ -569,17 +569,17 @@ def test_count_by_product_searches_eo3(index: Index,
                                        wo_eo3_dataset: Dataset) -> None:
     # Two result in the ls8 type
     products = tuple(index.datasets.count_by_product(
-        product=ls8_eo3_dataset.type.name,
+        product=ls8_eo3_dataset.product.name,
         platform='landsat-8'
     ))
-    assert products == ((ls8_eo3_dataset.type, 2),)
+    assert products == ((ls8_eo3_dataset.product, 2),)
 
     # Two results in the metadata type
     products = tuple(index.datasets.count_by_product(
         metadata_type=ls8_eo3_dataset.metadata_type.name,
         platform='landsat-8',
     ))
-    assert products == ((ls8_eo3_dataset.type, 2),)
+    assert products == ((ls8_eo3_dataset.product, 2),)
 
     # No results when searching for a different dataset type.
     products = tuple(index.datasets.count_by_product(
@@ -592,7 +592,7 @@ def test_count_by_product_searches_eo3(index: Index,
     products = set(index.datasets.count_by_product(
         platform='landsat-8',
     ))
-    assert products == {(ls8_eo3_dataset.type, 2), (wo_eo3_dataset.type, 1)}
+    assert products == {(ls8_eo3_dataset.product, 2), (wo_eo3_dataset.product, 1)}
 
     # No results for different metadata type.
     products = tuple(index.datasets.count_by_product(
@@ -605,7 +605,7 @@ def test_count_time_groups(index: Index,
                            ls8_eo3_dataset: Dataset) -> None:
     timeline = list(index.datasets.count_product_through_time(
         '1 day',
-        product=ls8_eo3_dataset.type.name,
+        product=ls8_eo3_dataset.product.name,
         time=Range(
             datetime.datetime(2016, 5, 11, tzinfo=tz.tzutc()),
             datetime.datetime(2016, 5, 13, tzinfo=tz.tzutc())
@@ -638,7 +638,7 @@ def test_count_time_groups_cli(clirunner: Any,
         verbose_flag=''
     )
     expected_out = (
-        f'{ls8_eo3_dataset.type.name}\n'
+        f'{ls8_eo3_dataset.product.name}\n'
         '    2016-05-11: 0\n'
         '    2016-05-12: 1\n'
     )
@@ -750,20 +750,20 @@ def test_find_duplicates_eo3(index,
     # Specifying groups as fields:
     f = ls8_eo3_dataset.metadata_type.dataset_fields.get
     field_res = sorted(index.datasets.search_product_duplicates(
-        ls8_eo3_dataset.type,
+        ls8_eo3_dataset.product,
         f('region_code'), f('dataset_maturity')
     ))
     assert field_res == expected_ls8_path_row_duplicates
     # Field names as strings
     product_res = sorted(index.datasets.search_product_duplicates(
-        ls8_eo3_dataset.type,
+        ls8_eo3_dataset.product,
         'region_code', 'dataset_maturity'
     ))
     assert product_res == expected_ls8_path_row_duplicates
 
     # No WO duplicates: there's only one
     sat_res = sorted(index.datasets.search_product_duplicates(
-        wo_eo3_dataset.type,
+        wo_eo3_dataset.product,
         'region_code', 'dataset_maturity'
     ))
     assert sat_res == []
@@ -794,7 +794,7 @@ def test_csv_search_via_cli_eo3(clirunner: Any,
             _cli_csv_search(('datasets',) + args, clirunner)
 
     matches_both('lat in [-40, -10]')
-    matches_both('product=' + ls8_eo3_dataset.type.name)
+    matches_both('product=' + ls8_eo3_dataset.product.name)
 
     # Don't return on a mismatch
     matches_none('lat in [150, 160]')

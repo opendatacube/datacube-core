@@ -96,10 +96,10 @@ class DatasetResource(AbstractDatasetResource):
             else:
                 self.locations[persistable.id] = []
             self.archived_locations[persistable.id] = []
-            if dataset.type.name in self.by_product:
-                self.by_product[dataset.type.name].append(dataset.id)
+            if dataset.product.name in self.by_product:
+                self.by_product[dataset.product.name].append(dataset.id)
             else:
-                self.by_product[dataset.type.name] = [dataset.id]
+                self.by_product[dataset.product.name] = [dataset.id]
         return cast(Dataset, self.get(dataset.id))
 
     def persist_source_relationship(self, ds: Dataset, src: Dataset, classifier: str) -> None:
@@ -148,7 +148,7 @@ class DatasetResource(AbstractDatasetResource):
 
         dups: Dict[Tuple, List[UUID]] = {}
         for ds in self.active_by_id.values():
-            if ds.type.name != product.name:
+            if ds.product.name != product.name:
                 continue
             vals = values(ds)
             if vals in dups:
@@ -167,9 +167,9 @@ class DatasetResource(AbstractDatasetResource):
             raise ValueError(
                 f'Unknown dataset {dataset.id}, cannot update - did you intend to add it?'
             )
-        if dataset.type.name != existing.type.name:
+        if dataset.product.name != existing.product.name:
             raise ValueError(
-                f'Changing product is not supported. From {existing.type.name} to {dataset.type.name} in {dataset.id}'
+                f'Changing product is not supported. From {existing.product.name} to {dataset.product.name} in {dataset.id}'
             )
         # TODO: Determine (un)safe changes from metadata type
         allowed: Dict[Offset, AllowPolicy] = {
@@ -249,7 +249,7 @@ class DatasetResource(AbstractDatasetResource):
             id_ = dsid_to_uuid(id_)
             if id_ in self.active_by_id:
                 ds = self.active_by_id.pop(id_)
-                self.by_product[ds.type.name] = [i for i in self.by_product[ds.type.name] if i != ds.id]
+                self.by_product[ds.product.name] = [i for i in self.by_product[ds.product.name] if i != ds.id]
                 ds.archived_time = datetime.datetime.now()
                 self.archived_by_id[id_] = ds
 
@@ -260,7 +260,7 @@ class DatasetResource(AbstractDatasetResource):
                 ds = self.archived_by_id.pop(id_)
                 ds.archived_time = None
                 self.active_by_id[id_] = ds
-                self.by_product[ds.type.name].append(ds.id)
+                self.by_product[ds.product.name].append(ds.id)
 
     def purge(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
@@ -435,7 +435,7 @@ class DatasetResource(AbstractDatasetResource):
                 if source_product:
                     matching_source = None
                     for sds in cast(Mapping[str, Dataset], ds.sources).values():
-                        if sds.type != source_product:
+                        if sds.product != source_product:
                             continue
                         source_matches = True
                         for expr in source_exprs:
@@ -501,7 +501,7 @@ class DatasetResource(AbstractDatasetResource):
         #    Typing note: mypy can't handle dynamically created namedtuples
         result_type = namedtuple('search_result', field_names)  # type: ignore[misc]
         for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
-            ds_fields = get_dataset_fields(ds.type.metadata_type.definition)
+            ds_fields = get_dataset_fields(ds.metadata_type.definition)
             result_vals = {
                 fn: ds_fields[fn].extract(ds.metadata_doc)  # type: ignore[attr-defined]
                 for fn in field_names
@@ -713,7 +713,7 @@ class DatasetResource(AbstractDatasetResource):
         else:
             uris = []
         return Dataset(
-            product=self.product_resource.clone(orig.type),
+            product=self.product_resource.clone(orig.product),
             metadata_doc=jsonify_document(orig.metadata_doc_without_lineage()),
             uris=uris,
             indexed_by="user" if for_save and orig.indexed_by is None else orig.indexed_by,
