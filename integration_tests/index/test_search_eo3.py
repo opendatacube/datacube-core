@@ -210,6 +210,8 @@ def test_search_by_product_eo3(index: Index,
     assert len(products) == 1
     [dataset] = products[base_eo3_product_doc["name"]]
     assert dataset.id == wo_eo3_dataset.id
+    assert dataset.is_eo3
+    assert dataset.type == dataset.product
 
 
 def test_search_limit_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset):

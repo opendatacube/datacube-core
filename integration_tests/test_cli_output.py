@@ -18,6 +18,14 @@ def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs):
     assert "Add or update products in" in runner.output
     assert runner.exit_code == 1
 
+    runner = clirunner(['product', 'list'], verbose_flag=False, expect_success=False)
+    assert "Usage:  [OPTIONS] [FILES]" not in runner.output
+    assert runner.exit_code == 0
+
+    runner = clirunner(['product', 'show', 'ga_ls8c_ard_3'], verbose_flag=False, expect_success=False)
+    assert "No products" not in runner.output
+    assert runner.exit_code == 1
+
     runner = clirunner(['product', 'add', dataset_add_configs.empty_file], verbose_flag=False, expect_success=False)
     assert "All files are empty, exit" in runner.output
     assert runner.exit_code == 1
@@ -141,6 +149,11 @@ def test_readd_and_update_metadata_product_dataset_command(index, clirunner,
         rerun_add = clirunner(['dataset', 'add', '--confirm-ignore-lineage', ds_path])
         assert "WARNING Dataset" in rerun_add.output
         assert "is already in the database" in rerun_add.output
+
+    update = clirunner(['dataset', 'update',
+                        eo3_dataset_update_path])
+    assert "Unsafe changes in" in update.output
+    assert "0 successful, 1 failed" in update.output
 
     update = clirunner(['dataset', 'update', '--allow-any', 'properties.datetime',
                         eo3_dataset_update_path])
