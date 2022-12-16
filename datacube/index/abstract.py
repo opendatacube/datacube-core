@@ -124,23 +124,16 @@ class AbstractMetadataTypeResource(ABC):
         :return: Persisted Metadatatype model.
         """
 
-    def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]]) -> Sequence[MetadataType]:
+    def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> Tuple[int, int]:
         """
         Add a group of Metadata Type documents in bulk.
 
         :param metadata_docs: An sequence of metadata type metadata docs.
-        :param allow_table_lock:
-            Allow an exclusive lock to be taken on the table while creating the indexes.
-            This will halt other user's requests until completed.
-
-            If false, creation will be slightly slower and cannot be done in a transaction.
-
-            raise NotImplementedError if set to True, and this behaviour is not applicable
-            for the implementing driver.
-        :return:  A Sequence of (persisted) MetadataType objects
-
-        Default implementation simply calls from_doc and add in a loop in a transaction.
+        :param batch_size: Number of metadata types to add per batch (default 1000)
+        :return:  Tuple of: count of metadata types loaded, count of metadata types skipped.
         """
+        # Default implementation simply calls from_doc and add in a loop, with no error checking
+        # or transaction management.
         return [
             self.add(self.from_doc(doc), allow_table_lock=True)
             for doc in metadata_docs
@@ -1279,19 +1272,26 @@ class AbstractIndex(ABC):
         :return: true if the database was created, false if already exists
         """
 
-    def clone(self, origin_index: "AbstractIndex") -> Sequence[str]:
+    def clone(self, origin_index: "AbstractIndex", batch_size: int = 1000) -> Mapping[str, Tuple[int, int]]:
         """
         Clone an existing index into this one.
 
         :param origin_index: Index whose contents we wish to clone.
+        :param batch_size: Maximum number of objects to write to the database in one go.
         :return: List of errors (strings). Empty sequence on successful clone.
         """
-        errors = []
+        results = {
+            "metadata_types": (0, 0),
+            "products": (0, 0),
+            "datasets": (0, 0),
+        }
+        # Clone Metadata Types
         for mdt in self.metadata_types.get_all():
             raise ValueError("clone can only be called on an empty index.")
-        self.metadata_types.bulk_add(list(origin_index.metadata_types.get_all_docs()))
+        results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
+                                                                 batch_size=batch_size)
         # TODO Products and datasets
-        return errors
+        return results
 
     @abstractmethod
     def close(self) -> None:
