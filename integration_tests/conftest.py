@@ -6,7 +6,6 @@
 Common methods for index integration tests.
 """
 import itertools
-import math
 import os
 from copy import copy, deepcopy
 from datetime import timedelta
@@ -58,19 +57,6 @@ settings.register_profile(
 settings.load_profile('opendatacube')
 
 EO3_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'eo3'
-
-
-def sanitise_doc(d):
-    if isinstance(d, str):
-        if d == "NaN":
-            return math.nan
-        return d
-    elif isinstance(d, dict):
-        return {k: sanitise_doc(v) for k, v in d.items()}
-    elif isinstance(d, list):
-        return [sanitise_doc(i) for i in d]
-    else:
-        return d
 
 
 def get_eo3_test_data_doc(path):

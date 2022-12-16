@@ -10,7 +10,6 @@ import copy
 import pytest
 import yaml
 
-from ..conftest import sanitise_doc
 from datacube.drivers.postgres._fields import NumericRangeDocField as PgrNumericRangeDocField, PgField as PgrPgField
 from datacube.drivers.postgis._fields import NumericRangeDocField as PgsNumericRangeDocField, PgField as PgsPgField
 from datacube.index import Index
@@ -19,6 +18,7 @@ from datacube.model import MetadataType, DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes
 from datacube.utils.documents import documents_equal
+from datacube.testutils import sanitise_doc
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',
