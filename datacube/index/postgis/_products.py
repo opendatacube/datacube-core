@@ -13,7 +13,7 @@ from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, DocumentMismatchError
 
-from typing import Iterable, cast
+from typing import Iterable, Tuple, cast
 
 _LOG = logging.getLogger(__name__)
 
@@ -338,6 +338,10 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         with self._db_connection() as connection:
             return self._make_many(connection.get_all_products())
+
+    def get_all_docs(self) -> Iterable[Product]:
+        with self._db_connection() as connection:
+            return connection.get_all_products()
 
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)
