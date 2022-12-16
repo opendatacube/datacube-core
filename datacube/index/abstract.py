@@ -9,7 +9,7 @@ from threading import Lock
 
 from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
-                    List, Mapping, Optional,
+                    List, Mapping, MutableMapping, Optional,
                     Tuple, Union, Sequence)
 from uuid import UUID
 
@@ -128,16 +128,26 @@ class AbstractMetadataTypeResource(ABC):
         """
         Add a group of Metadata Type documents in bulk.
 
-        :param metadata_docs: An sequence of metadata type metadata docs.
+        :param metadata_docs: An iterable of metadata type metadata docs.
         :param batch_size: Number of metadata types to add per batch (default 1000)
-        :return:  Tuple of: count of metadata types loaded, count of metadata types skipped.
+        :return:  Tuple of: count of metadata types added, count of metadata types skipped.
         """
-        # Default implementation simply calls from_doc and add in a loop, with no error checking
-        # or transaction management.
-        return [
-            self.add(self.from_doc(doc), allow_table_lock=True)
-            for doc in metadata_docs
-        ]
+        # Default implementation simply calls from_doc and add in a loop, with basic error checking
+        # and no transaction management.
+        loaded = 0
+        skipped = 0
+        for doc in metadata_docs:
+            try:
+                mdt = self.from_doc(doc)
+                loaded += 1
+                self.add(mdt, allow_table_lock=True)
+            except InvalidDocException as e:
+                _LOG.warning("%s: Skippng", str(e))
+                skipped += 1
+            except:
+                skipped += 1
+        return (loaded, skipped)
+
 
     @abstractmethod
     def can_update(self,
@@ -265,9 +275,8 @@ class AbstractMetadataTypeResource(ABC):
         Retrieve all Metadata Types as documents only
 
         :returns: All available MetadataType definition documents
-
-        Default implementation calls get_all()
         """
+        # Default implementation calls get_all()
         for mdt in self.get_all():
             yield mdt.definition
 
@@ -288,11 +297,13 @@ class AbstractProductResource(ABC):
     """
     metadata_type_resource: AbstractMetadataTypeResource
 
-    def from_doc(self, definition: Mapping[str, Any]) -> Product:
+    def from_doc(self, definition: Mapping[str, Any],
+                 metadata_type_cache: Optional[MutableMapping[str, MetadataType]] = None) -> Product:
         """
         Construct unpersisted Product model from product metadata dictionary
 
         :param definition: a Product metadata dictionary
+        :param metadata_type_cache: a dict cache of MetaDataTypes
         :return: Unpersisted product model
         """
         # This column duplication is getting out of hand:
@@ -305,7 +316,14 @@ class AbstractProductResource(ABC):
         # They either specified the name of a metadata type, or specified a metadata type.
         # Is it a name?
         if isinstance(metadata_type, str):
-            metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
+            if metadata_type_cache is not None and metadata_type in metadata_type_cache:
+                metadata_type = metadata_type_cache[metadata_type]
+            else:
+                metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
+                if (metadata_type is not None
+                        and metadata_type_cache is not None
+                        and metadata_type.name not in metadata_type_cache):
+                    metadata_type_cache[metadata_type.name] = metadata_type
         else:
             # Otherwise they embedded a document, add it if needed:
             metadata_type = self.metadata_type_resource.from_doc(metadata_type)
@@ -336,6 +354,32 @@ class AbstractProductResource(ABC):
             for the implementing driver.
         :return: Persisted Product model.
         """
+
+    def bulk_add(self, product_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> Tuple[int, int]:
+        """
+        Add a group of product documents in bulk.
+
+        :param product_docs: An iterable of product metadata docs.
+        :param batch_size: Number of products to add per batch (default 1000)
+        :return:  Tuple of: count of products added, count of products skipped.
+        """
+        # Default implementation simply calls from_doc and add in a loop, with basic error checking
+        # and metadata type cache) but no transaction management.
+        metadata_cache = {mdt.name: mdt for mdt in self.metadata_type_resource.get_all()}
+        loaded = 0
+        skipped = 0
+        for doc in product_docs:
+            try:
+                prod = self.from_doc(doc, metadata_type_cache=metadata_cache)
+                self.add(prod, allow_table_lock=True)
+                loaded += 1
+            except InvalidDocException as e:
+                _LOG.warning("%s: Skipping", str(e))
+                skipped += 1
+            except Exception as e:
+                _LOG.warning("%s: Skipping", str(e))
+                skipped += 1
+        return (loaded, skipped)
 
     @abstractmethod
     def can_update(self,
@@ -510,6 +554,16 @@ class AbstractProductResource(ABC):
 
         :returns: Product models for all known products
         """
+
+    def get_all_docs(self) -> Iterable[Product]:
+        """
+        Retrieve all Product metadata documents
+
+        :returns: Iterable of metadata documents for all known products
+        """
+        # Default implementation calls get_all()
+        for prod in self.get_all():
+            yield prod.definition
 
 
 # Non-strict Dataset ID representation
@@ -1286,11 +1340,12 @@ class AbstractIndex(ABC):
             "datasets": (0, 0),
         }
         # Clone Metadata Types
-        for mdt in self.metadata_types.get_all():
-            raise ValueError("clone can only be called on an empty index.")
         results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
                                                                  batch_size=batch_size)
-        # TODO Products and datasets
+        # Clone Products
+        results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
+                                                                 batch_size=batch_size)
+        # TODO datasets
         return results
 
     @abstractmethod
