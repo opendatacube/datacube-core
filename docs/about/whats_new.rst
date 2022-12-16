@@ -18,6 +18,8 @@ v1.8.next
 - Postgis driver cleanup - remove faux support for lineage (:pull:`1368`)
 - Add support for nested database transactions (:pull:`1369`)
 - Fix Github doc lint action (:pull:`1370`)
+- Tighten EO3 enforcement in postgis driver, refactor tests, and rename Dataset.type to Dataset.product
+  (with type alias for compatibility) (:pull:`1372`)
 
 v1.8.9 (17 November 2022)
 =========================
