@@ -217,18 +217,18 @@ def test_transactions_api_ctx_mgr(index,
     with pytest.raises(Exception) as e:
         with index.transaction() as trans:
             assert index.datasets.get(ds1.id) is None
-            index.datasets.add(ds1, False)
+            index.datasets.add(ds1, with_lineage=False)
             assert index.datasets.get(ds1.id) is not None
             raise Exception("Rollback!")
     assert "Rollback!" in str(e.value)
     assert index.datasets.get(ds1.id) is None
     with index.transaction() as trans:
         assert index.datasets.get(ds1.id) is None
-        index.datasets.add(ds1, False)
+        index.datasets.add(ds1, with_lineage=False)
         assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds1.id) is not None
     with index.transaction() as trans:
-        index.datasets.add(ds2, False)
+        index.datasets.add(ds2, with_lineage=False)
         assert index.datasets.get(ds2.id) is not None
         raise trans.rollback_exception("Rollback")
     assert index.datasets.get(ds1.id) is not None
@@ -376,14 +376,14 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()
 
-    type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
-    dataset = Dataset(type_, _telemetry_dataset, uris=[first_file.as_uri()], sources={})
+    product = index.products.add_document(_pseudo_telemetry_dataset_type)
+    dataset = Dataset(product, _telemetry_dataset, uris=[first_file.as_uri()], sources={})
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
 
     assert stored.id == _telemetry_uuid
     # TODO: Dataset types?
-    assert stored.product.id == type_.id
+    assert stored.product.id == product.id
     assert stored.metadata_type.id == default_metadata_type.id
     assert stored.local_path == Path(first_file)
 
