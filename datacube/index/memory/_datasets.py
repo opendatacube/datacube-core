@@ -169,7 +169,8 @@ class DatasetResource(AbstractDatasetResource):
             )
         if dataset.product.name != existing.product.name:
             raise ValueError(
-                f'Changing product is not supported. From {existing.product.name} to {dataset.product.name} in {dataset.id}'
+                'Changing product is not supported. '
+                f'From {existing.product.name} to {dataset.product.name} in {dataset.id}'
             )
         # TODO: Determine (un)safe changes from metadata type
         allowed: Dict[Offset, AllowPolicy] = {

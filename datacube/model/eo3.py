@@ -1,4 +1,7 @@
-from datacube.utils.documents import get_doc_offset_safe
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2022 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 
 required_sys_field_values = [
     "id", "label", "creation_dt", "sources",
@@ -39,7 +42,8 @@ def validate_eo3_offset(field_name, mdt_name, offset):
     # Everything else should stored flat in properties
     if offset[0] != "properties" or len(offset) != 2:
         raise ValueError(
-            f"Search_field {field_name} in metadata type {mdt_name} is not stored in an EO3-compliant location: {offset!r}")
+            f"Search_field {field_name} in metadata type {mdt_name} "
+            f"is not stored in an EO3-compliant location: {offset!r}")
 
 
 def validate_eo3_offsets(field_name, mdt_name, defn):
@@ -67,7 +71,9 @@ def validate_eo3_compatible_type(doc):
     for k, v in doc["dataset"].items():
         try:
             if not expected_sys_field_values[k](v):
-                raise ValueError(f"Offset for system field {k} ({v!r}) in metadata type {name} does not match EO3 standard")
+                raise ValueError(
+                    f"Offset for system field {k} ({v!r}) in metadata type {name} does not match EO3 standard"
+                )
         except KeyError as e:
             raise ValueError(f"Unexpected system field in metadata type {name}: {k}")
     # Validate search field offsets

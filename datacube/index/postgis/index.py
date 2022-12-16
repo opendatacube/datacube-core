@@ -5,7 +5,7 @@
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import Iterable, Sequence
 
 from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
 from datacube.index.postgis._transaction import PostgisTransaction

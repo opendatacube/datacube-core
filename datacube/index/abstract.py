@@ -1342,8 +1342,6 @@ class AbstractIndexDriver(ABC):
         ...
 
 
-
-
 # The special handling of grid_spatial, etc appears to NOT apply to EO3.
 # Does EO3 handle it in metadata?
 class DatasetSpatialMixin:
