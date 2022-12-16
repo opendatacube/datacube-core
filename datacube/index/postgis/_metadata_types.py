@@ -12,6 +12,7 @@ from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, DocumentMismatchError
+from datacube.utils import InvalidDocException
 
 _LOG = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                 mdt = self.from_doc(doc)
                 batch.append(mdt)
                 n_in_batch += 1
-            except ValueError as e:
+            except InvalidDocException as e:
                 _LOG.warning("%s: Skipped", str(e))
                 skipped += 1
             if n_in_batch >= batch_size:
