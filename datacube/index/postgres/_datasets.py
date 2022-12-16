@@ -150,7 +150,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
             # First insert all new datasets
             for ds in dss:
-                is_new = transaction.insert_dataset(ds.metadata_doc_without_lineage(), ds.id, ds.type.id)
+                is_new = transaction.insert_dataset(ds.metadata_doc_without_lineage(), ds.id, ds.product.id)
                 sources = ds.sources
                 if is_new and sources is not None:
                     edges.extend((name, ds.id, src.id)
@@ -228,9 +228,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if not existing:
             raise ValueError('Unknown dataset %s, cannot update – did you intend to add it?' % dataset.id)
 
-        if dataset.type.name != existing.type.name:
-            raise ValueError('Changing product is not supported. From %s to %s in %s' % (existing.type.name,
-                                                                                         dataset.type.name,
+        if dataset.product.name != existing.product.name:
+            raise ValueError('Changing product is not supported. From %s to %s in %s' % (existing.product.name,
+                                                                                         dataset.product.name,
                                                                                          dataset.id))
 
         # TODO: figure out (un)safe changes from metadata type?
@@ -276,7 +276,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         _LOG.info("Updating dataset %s", dataset.id)
 
-        product = self.types.get_by_name(dataset.type.name)
+        product = self.types.get_by_name(dataset.product.name)
         with self._db_connection(transaction=True) as transaction:
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
@@ -467,7 +467,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         product = product or self.types.get(dataset_res.dataset_type_ref)
 
         return Dataset(
-            type_=product,
+            product=product,
             metadata_doc=dataset_res.metadata,
             uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,

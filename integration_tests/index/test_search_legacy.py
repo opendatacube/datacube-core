@@ -103,7 +103,7 @@ def pseudo_ls8_dataset(index, pseudo_ls8_type):
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
-    assert d.type.id == pseudo_ls8_type.id
+    assert d.product.id == pseudo_ls8_type.id
 
     return d
 
@@ -156,7 +156,7 @@ def pseudo_ls8_dataset2(index, pseudo_ls8_type):
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
-    assert d.type.id == pseudo_ls8_type.id
+    assert d.product.id == pseudo_ls8_type.id
 
     return d
 
@@ -184,7 +184,7 @@ def pseudo_ls8_dataset3(index: Index,
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
-    assert d.type.id == pseudo_ls8_type.id
+    assert d.product.id == pseudo_ls8_type.id
     return d
 
 
@@ -210,7 +210,7 @@ def pseudo_ls8_dataset4(index: Index,
         assert was_inserted
         d = index.datasets.get(id_)
         # The dataset should have been matched to the telemetry type.
-        assert d.type.id == pseudo_ls8_type.id
+        assert d.product.id == pseudo_ls8_type.id
         return d
 
 
@@ -225,7 +225,7 @@ def ls5_dataset_w_children(index, clirunner, example_ls5_dataset_path, indexed_l
 def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
                           indexed_ls5_scene_products: List[Product]) -> Product:
     for dataset_type in indexed_ls5_scene_products:
-        if dataset_type.name == ls5_dataset_w_children.type.name:
+        if dataset_type.name == ls5_dataset_w_children.product.name:
             return dataset_type
     else:
         raise RuntimeError("LS5 type was not among types")
@@ -599,7 +599,7 @@ def test_searches_only_type(index: Index,
                             pseudo_ls8_dataset: Dataset,
                             ls5_telem_type) -> None:
     # The dataset should have been matched to the telemetry type.
-    assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
+    assert pseudo_ls8_dataset.product.id == pseudo_ls8_type.id
     assert index.datasets.search_eager()
 
     # One result in the telemetry type
@@ -667,11 +667,11 @@ def test_search_special_fields(index: Index,
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_by_uri(index, ls5_dataset_w_children):
-    datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
+    datasets = index.datasets.search_eager(product=ls5_dataset_w_children.product.name,
                                            uri=ls5_dataset_w_children.local_uri)
     assert len(datasets) == 1
 
-    datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
+    datasets = index.datasets.search_eager(product=ls5_dataset_w_children.product.name,
                                            uri='file:///x/yz')
     assert len(datasets) == 0
 
@@ -706,7 +706,7 @@ def test_count_by_product_searches(index: Index,
                                    pseudo_ls8_dataset: Dataset,
                                    ls5_telem_type: Product) -> None:
     # The dataset should have been matched to the telemetry type.
-    assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
+    assert pseudo_ls8_dataset.product.id == pseudo_ls8_type.id
     assert index.datasets.search_eager()
 
     # One result in the telemetry type
@@ -940,7 +940,7 @@ def test_find_duplicates(index, pseudo_ls8_type,
 
     # No LS5 duplicates: there's only one of each
     sat_res = sorted(index.datasets.search_product_duplicates(
-        ls5_dataset_w_children.type,
+        ls5_dataset_w_children.product,
         'sat_path', 'sat_row'
     ))
     assert sat_res == []

@@ -2,10 +2,13 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import pytest
+
 from datacube.model import Dataset, DatasetType
 from typing import List
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_crs_parse(indexed_ls5_scene_products: List[DatasetType]) -> None:
     product = indexed_ls5_scene_products[2]
 

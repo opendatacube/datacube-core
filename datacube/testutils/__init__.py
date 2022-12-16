@@ -6,6 +6,7 @@
 Useful methods for tests (particularly: reading/writing and checking files)
 """
 import atexit
+import math
 import os
 import shutil
 import tempfile
@@ -475,3 +476,16 @@ def remove_crs(xx):
                 x.attrs.pop(attribute_to_remove, None)
 
     return xx
+
+
+def sanitise_doc(d):
+    if isinstance(d, str):
+        if d == "NaN":
+            return math.nan
+        return d
+    elif isinstance(d, dict):
+        return {k: sanitise_doc(v) for k, v in d.items()}
+    elif isinstance(d, list):
+        return [sanitise_doc(i) for i in d]
+    else:
+        return d

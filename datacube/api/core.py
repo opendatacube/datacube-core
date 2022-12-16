@@ -411,7 +411,7 @@ class Datacube(object):
             return xarray.Dataset()
 
         ds, *_ = datasets
-        datacube_product = ds.type
+        datacube_product = ds.product
 
         # Retrieve extra_dimension from product definition
         extra_dims = None

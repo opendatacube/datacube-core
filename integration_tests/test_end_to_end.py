@@ -309,7 +309,7 @@ def check_legacy_open(index):
     sources = dc.group_datasets(dss, query_group_by('time'))
 
     gbox = data_array.geobox
-    mm = [dss[0].type.measurements['blue']]
+    mm = [dss[0].product.measurements['blue']]
     xx = dc.load_data(sources, gbox, mm)
     assert (xx == data_array).all()
 

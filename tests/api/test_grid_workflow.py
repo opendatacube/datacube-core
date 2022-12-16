@@ -197,8 +197,8 @@ def test_gridworkflow():
     # so only thing to check here is the call interface.
 
     measurement = dict(nodata=0, dtype=numpy.int)
-    fakedataset.type.lookup_measurements.return_value = {"dummy": measurement}
-    fakedataset2.type = fakedataset.type
+    fakedataset.product.lookup_measurements.return_value = {"dummy": measurement}
+    fakedataset2.product = fakedataset.product
 
     from unittest.mock import patch
 

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Iterable, Sequence
 
 from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
@@ -12,11 +13,14 @@ from datacube.index.postgis._datasets import DatasetResource, DSID  # type: igno
 from datacube.index.postgis._metadata_types import MetadataTypeResource
 from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, default_metadata_type_docs, AbstractTransaction
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, default_metadata_type_docs
 from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
+
+
+_DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
 
 class Index(AbstractIndex):
@@ -99,7 +103,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
 
         if is_new and with_default_types:
             _LOG.info('Adding default metadata types.')
-            for doc in default_metadata_type_docs():
+            for doc in default_metadata_type_docs(_DEFAULT_METADATA_TYPES_PATH):
                 self.metadata_types.add(self.metadata_types.from_doc(doc), allow_table_lock=True)
 
         if is_new and with_default_spatial_index:

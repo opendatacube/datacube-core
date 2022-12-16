@@ -684,3 +684,13 @@ def test_document_subset_full_recursion():
 
     assert metadata_subset([35, 47, 58], [0, 35, 47, 58, 102], full_recursion=True)
     assert metadata_subset([35, 47, 58], {"a": "foo", "b": [35, 47, 52, 58]}, full_recursion=True)
+
+
+def test_documents_equal():
+    from datacube.utils.documents import documents_equal
+    assert not documents_equal(7, "seven")
+    assert not documents_equal({"a": "ok", "b": "mediocre"}, {"c": "great", "b": "mediocre", "a": "ok"})
+    assert not documents_equal([0, 1, 2], [0, 1, 2, 3])
+    assert not documents_equal([0, 1, 2], [0, 2, 1])
+    assert not documents_equal(0.5, 0.50001)
+    assert documents_equal(0.5, 0.50000000001)

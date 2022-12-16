@@ -53,14 +53,14 @@ def get_raster_info(ds: Dataset, measurements=None):
     :param measurements: List of band names to load
     """
     if measurements is None:
-        measurements = list(ds.type.measurements)
+        measurements = list(ds.product.measurements)
 
     return {n: _raster_metadata(BandInfo(ds, n))
             for n in measurements}
 
 
 def eo3_geobox(ds: Dataset, band: str) -> GeoBox:
-    mm = ds.measurements.get(ds.type.canonical_measurement(band),
+    mm = ds.measurements.get(ds.product.canonical_measurement(band),
                              None)
     if mm is None:
         raise ValueError(f"No such band: {band}")
@@ -88,7 +88,7 @@ def native_geobox(ds, measurements=None, basis=None):
 
     :return: GeoBox describing native storage coordinates.
     """
-    gs = ds.type.grid_spec
+    gs = ds.product.grid_spec
     if gs is not None:
         # Dataset is from ingested product, figure out GeoBox of the tile this dataset covers
         bb = [gbox for _, gbox in gs.tiles(ds.bounds)]
@@ -98,7 +98,7 @@ def native_geobox(ds, measurements=None, basis=None):
         return bb[0]
 
     if measurements is None and basis is None:
-        measurements = list(ds.type.measurements)
+        measurements = list(ds.product.measurements)
 
     if is_doc_eo3(ds.metadata_doc):
         if basis is not None:
@@ -134,9 +134,9 @@ def native_load(ds, measurements=None, basis=None, **kw):
     from datacube import Datacube
     geobox = native_geobox(ds, measurements, basis)  # early exit via exception if no compatible grid exists
     if measurements is not None:
-        mm = ds.type.lookup_measurements(measurements)
+        mm = ds.product.lookup_measurements(measurements)
     else:
-        mm = ds.type.measurements
+        mm = ds.product.measurements
 
     return Datacube.load_data(Datacube.group_datasets([ds], 'time'),
                               geobox,

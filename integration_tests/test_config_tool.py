@@ -16,6 +16,7 @@ import pytest
 EXAMPLE_DATASET_TYPE_DOCS = map(str, Path(__file__).parent.parent.
                                 joinpath('docs', 'config_samples', 'dataset_types').glob('**/*.yaml'))
 
+
 # Documents that shouldn't be accepted as mapping docs.
 INVALID_MAPPING_DOCS = map(str, Path(__file__).parent.parent.joinpath('docs').glob('*'))
 
@@ -25,7 +26,7 @@ def _dataset_type_count(index):
         return len(list(connection.get_all_products()))
 
 
-def test_add_example_dataset_types(clirunner, index, default_metadata_type):
+def test_add_example_dataset_types(clirunner, index, default_metadata_type, eo3_product_paths, ext_eo3_mdt_path):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
 
@@ -33,22 +34,40 @@ def test_add_example_dataset_types(clirunner, index, default_metadata_type):
     """
     existing_mappings = _dataset_type_count(index)
 
-    print('{} mappings'.format(existing_mappings))
-    for mapping_path in EXAMPLE_DATASET_TYPE_DOCS:
-        print('Adding mapping {}'.format(mapping_path))
+    if index.supports_legacy:
+        # Legacy EO test examples
+        print('{} mappings'.format(existing_mappings))
+        for mapping_path in EXAMPLE_DATASET_TYPE_DOCS:
+            print('Adding mapping {}'.format(mapping_path))
 
-        result = clirunner(['-v', 'product', 'add', mapping_path])
+            result = clirunner(['-v', 'product', 'add', mapping_path])
+            assert result.exit_code == 0
+
+            mappings_count = _dataset_type_count(index)
+            assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
+            existing_mappings = mappings_count
+
+        result = clirunner(['-v', 'metadata', 'show', '-f', 'json', 'eo'],
+                           expect_success=True)
+        assert result.exit_code == 0
+
+    # EO3 test examples
+    result = clirunner(['-v', 'metadata', 'add', ext_eo3_mdt_path])
+    assert result.exit_code == 0
+
+    for path in eo3_product_paths:
+        result = clirunner(['-v', 'product', 'add', path])
         assert result.exit_code == 0
 
         mappings_count = _dataset_type_count(index)
-        assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
+        assert mappings_count > existing_mappings, "Mapping document was not added: " + str(path)
         existing_mappings = mappings_count
 
-    result = clirunner(['-v', 'metadata', 'list'])
+    result = clirunner(['-v', 'metadata', 'show', '-f', 'json', 'eo3'],
+                       expect_success=True)
     assert result.exit_code == 0
 
-    result = clirunner(['-v', 'metadata', 'show', '-f', 'json', 'eo'],
-                       expect_success=True)
+    result = clirunner(['-v', 'metadata', 'list'])
     assert result.exit_code == 0
 
     result = clirunner(['-v', 'metadata', 'show'],
@@ -68,11 +87,11 @@ def test_add_example_dataset_types(clirunner, index, default_metadata_type):
                            expect_success=False)
         assert result.exit_code == 1
 
-        result = clirunner(['-v', 'product', 'show', '-f', 'json', 'ls8_level1_usgs'],
+        result = clirunner(['-v', 'product', 'show', '-f', 'json', 'ga_ls8c_ard_3'],
                            expect_success=False)
         assert result.exit_code == 0
 
-        result = clirunner(['-v', 'product', 'show', '-f', 'yaml', 'ls8_level1_usgs'],
+        result = clirunner(['-v', 'product', 'show', '-f', 'yaml', 'ga_ls8c_ard_3'],
                            expect_success=False)
         assert result.exit_code == 0
 
@@ -129,7 +148,7 @@ def test_list_users_does_not_fail(clirunner, local_config, index):
     assert result.exit_code == 0
 
 
-def test_db_init_noop(clirunner, local_config, ls5_telem_type):
+def test_db_init_noop(clirunner, local_config, ls8_eo3_product):
     # Run on an existing database.
     result = clirunner(
         [
@@ -138,7 +157,7 @@ def test_db_init_noop(clirunner, local_config, ls5_telem_type):
     )
     assert 'Updated.' in result.output
     # It should not rebuild indexes by default
-    assert 'Dropping index: dix_{}'.format(ls5_telem_type.name) not in result.output
+    assert 'Dropping index: dix_{}'.format(ls8_eo3_product.name) not in result.output
 
     result = clirunner(['metadata', 'list'])
     assert "eo3 " in result.output

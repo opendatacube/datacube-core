@@ -111,7 +111,7 @@ def load_datasets_for_update(doc_stream, index):
         ds = SimpleDocNav(prep_eo3(ds.doc, auto_skip=True))
 
         # TODO: what about sources=?
-        return Dataset(existing.type,
+        return Dataset(existing.product,
                        ds.doc_without_lineage_sources,
                        uris=[uri]), existing, None
 
@@ -202,7 +202,7 @@ def index_cmd(index, product_names,
         dss = dataset_stream(doc_stream, ds_resolve)
         index_datasets(dss,
                        index,
-                       auto_add_lineage=auto_add_lineage,
+                       auto_add_lineage=auto_add_lineage and not confirm_ignore_lineage,
                        dry_run=dry_run)
 
     # If outputting directly to terminal, show a progress bar.
@@ -342,7 +342,7 @@ def build_dataset_info(index: Index, dataset: Dataset,
                        max_depth: int = 99) -> Mapping[str, Any]:
     info: MutableMapping[str, Any] = OrderedDict((
         ('id', str(dataset.id)),
-        ('product', dataset.type.name),
+        ('product', dataset.product.name),
         ('status', 'archived' if dataset.is_archived else 'active')
     ))
 
@@ -591,7 +591,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
             _LOG.debug("%s selected were archived within the tolerance", len(to_process))
 
         for d in to_process:
-            click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
+            click.echo('restoring %s %s %s' % (d.product.name, d.id, d.local_uri))
         if not dry_run:
             index.datasets.restore(d.id for d in to_process)
 

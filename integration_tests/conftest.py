@@ -66,6 +66,37 @@ def get_eo3_test_data_doc(path):
 
 
 @pytest.fixture
+def ext_eo3_mdt_path():
+    return str(EO3_TESTDIR / "eo3_landsat_ard.odc-type.yaml")
+
+
+@pytest.fixture
+def eo3_product_paths():
+    return [
+        str(EO3_TESTDIR / "ard_ls8.odc-product.yaml"),
+        str(EO3_TESTDIR / "ga_ls_wo_3.odc-product.yaml"),
+        str(EO3_TESTDIR / "s2_africa_product.yaml"),
+    ]
+
+
+@pytest.fixture
+def eo3_dataset_paths():
+    return [
+        str(EO3_TESTDIR / "ls8_dataset.yaml"),
+        str(EO3_TESTDIR / "ls8_dataset2.yaml"),
+        str(EO3_TESTDIR / "ls8_dataset3.yaml"),
+        str(EO3_TESTDIR / "ls8_dataset4.yaml"),
+        str(EO3_TESTDIR / "wo_dataset.yaml"),
+        str(EO3_TESTDIR / "s2_africa_dataset.yaml"),
+    ]
+
+
+@pytest.fixture
+def eo3_dataset_update_path():
+    return str(EO3_TESTDIR / "ls8_dataset_update.yaml")
+
+
+@pytest.fixture
 def dataset_with_lineage_doc():
     return (
         get_eo3_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
@@ -169,7 +200,7 @@ def doc_to_ds(index, product_name, ds_doc, ds_path):
     resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
     ds, err = resolver(ds_doc, ds_path)
     assert err is None and ds is not None
-    index.datasets.add(ds)
+    index.datasets.add(ds, with_lineage=False)
     return index.datasets.get(ds.id)
 
 
@@ -193,6 +224,17 @@ def wo_eo3_product(index, base_eo3_product_doc):
 @pytest.fixture
 def africa_s2_eo3_product(index, africa_s2_product_doc):
     return index.products.add_document(africa_s2_product_doc)
+
+
+@pytest.fixture
+def eo3_products(index, extended_eo3_metadata_type,
+                 ls8_eo3_product, wo_eo3_product,
+                 africa_s2_eo3_product):
+    return [
+        africa_s2_eo3_product,
+        ls8_eo3_product,
+        wo_eo3_product,
+    ]
 
 
 @pytest.fixture
@@ -551,6 +593,16 @@ def default_metadata_type_doc():
 
 
 @pytest.fixture
+def eo3_metadata_type_docs(eo3_base_metadata_type_doc, extended_eo3_metadata_type_doc):
+    return [eo3_base_metadata_type_doc, extended_eo3_metadata_type_doc]
+
+
+@pytest.fixture
+def eo3_base_metadata_type_doc():
+    return [doc for doc in default_metadata_type_docs() if doc['name'] == 'eo3'][0]
+
+
+@pytest.fixture
 def telemetry_metadata_type_doc():
     return [doc for doc in default_metadata_type_docs() if doc['name'] == 'telemetry'][0]
 
@@ -563,9 +615,13 @@ def ga_metadata_type_doc():
 
 
 @pytest.fixture
-def default_metadata_types(index):
+def default_metadata_types(index, eo3_metadata_type_docs):
     """Inserts the default metadata types into the Index"""
-    for d in default_metadata_type_docs():
+    if index.supports_legacy:
+        type_docs = default_metadata_type_docs()
+    else:
+        type_docs = eo3_metadata_type_docs
+    for d in type_docs:
         index.metadata_types.add(index.metadata_types.from_doc(d))
     return index.metadata_types.get_all()
 
@@ -577,7 +633,10 @@ def ga_metadata_type(index, ga_metadata_type_doc):
 
 @pytest.fixture
 def default_metadata_type(index, default_metadata_types):
-    return index.metadata_types.get_by_name('eo')
+    if index.supports_legacy:
+        return index.metadata_types.get_by_name('eo')
+    else:
+        return index.metadata_types.get_by_name('eo3')
 
 
 @pytest.fixture
@@ -663,5 +722,6 @@ def dataset_add_configs():
                            datasets_bad1=str(B / 'datasets_bad1.yml'),
                            datasets_no_id=str(B / 'datasets_no_id.yml'),
                            datasets_eo3=str(B / 'datasets_eo3.yml'),
+                           datasets_eo3_updated=str(B / 'datasets_eo3_updated.yml'),
                            datasets=str(B / 'datasets.yml'),
                            empty_file=str(B / 'empty_file.yml'))

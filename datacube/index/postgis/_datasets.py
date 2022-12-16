@@ -20,7 +20,6 @@ from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product
 from datacube.model.fields import Field
-from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
 from datacube.utils.geometry import CRS, Geometry
@@ -149,56 +148,25 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: Dataset
         """
 
-        sp_crses = self._db.spatial_indexes()
-
-        def process_bunch(dss, main_ds, transaction):
-            edges = []
-            dsids_for_spatial_indexing = []
-            # 1: Loop over datasets
-            for ds in dss:
-                # 1a. insert (if not already exists)
-                is_new = transaction.insert_dataset(ds.metadata_doc_without_lineage(), ds.id, ds.type.id)
-                sources = ds.sources
-                # 1b. Build edge graph for new datasets
-                if is_new and sources is not None:
-                    edges.extend((name, ds.id, src.id)
-                                 for name, src in sources.items())
-                # 1c. Prepare spatial index extents
-                if is_new:
-                    dsids_for_spatial_indexing.append(ds.id)
-            # 2: insert lineage graph edges
-            for ee in edges:
-                transaction.insert_dataset_source(*ee)
-            # 3: insert spatial indexes
-            transaction.update_spindex(dsids=dsids_for_spatial_indexing)
-            # 4: insert search fields
-            transaction.update_search_index(dsids=dsids_for_spatial_indexing)
-            # Finally update location for top-level dataset only
-            if main_ds.uris is not None:
-                self._ensure_new_locations(main_ds, transaction=transaction)
+        if with_lineage:
+            raise ValueError("Lineage is not yet supported by the postgis driver")
 
         _LOG.info('Indexing %s', dataset.id)
 
-        if with_lineage:
-            ds_by_uuid = flatten_datasets(dataset)
-            all_uuids = list(ds_by_uuid)
-
-            present = {k: v for k, v in zip(all_uuids, self.bulk_has(all_uuids))}
-
-            if present[dataset.id]:
-                _LOG.warning('Dataset %s is already in the database', dataset.id)
-                return dataset
-
-            dss = [ds for ds in [dss[0] for dss in ds_by_uuid.values()] if not present[ds.id]]
-        else:
-            if self.has(dataset.id):
-                _LOG.warning('Dataset %s is already in the database', dataset.id)
-                return dataset
-
-            dss = [dataset]
+        if self.has(dataset.id):
+            _LOG.warning('Dataset %s is already in the database', dataset.id)
+            return dataset
 
         with self._db_connection(transaction=True) as transaction:
-            process_bunch(dss, dataset, transaction)
+            # 1a. insert (if not already exists)
+            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
+            if is_new:
+                # 1b. Prepare spatial index extents
+                transaction.update_spindex(dsids=[dataset.id])
+                transaction.update_search_index(dsids=[dataset.id])
+                # 1c. Store locations
+                if dataset.uris is not None:
+                    self._ensure_new_locations(dataset, transaction=transaction)
 
         return dataset
 
@@ -243,9 +211,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if not existing:
             raise ValueError('Unknown dataset %s, cannot update – did you intend to add it?' % dataset.id)
 
-        if dataset.type.name != existing.type.name:
-            raise ValueError('Changing product is not supported. From %s to %s in %s' % (existing.type.name,
-                                                                                         dataset.type.name,
+        if dataset.product.name != existing.product.name:
+            raise ValueError('Changing product is not supported. From %s to %s in %s' % (existing.product.name,
+                                                                                         dataset.product.name,
                                                                                          dataset.id))
 
         # TODO: figure out (un)safe changes from metadata type?
@@ -291,7 +259,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         _LOG.info("Updating dataset %s", dataset.id)
 
-        product = self.types.get_by_name(dataset.type.name)
+        product = self.types.get_by_name(dataset.product.name)
         with self._db_connection(transaction=True) as transaction:
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
@@ -484,7 +452,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         product = product or self.types.get(dataset_res.product_ref)
 
         return Dataset(
-            type_=product,
+            product=product,
             metadata_doc=dataset_res.metadata,
             uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,

@@ -43,7 +43,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         :param dict definition:
         :rtype: datacube.model.MetadataType
         """
-        MetadataType.validate(definition)
+        MetadataType.validate_eo3(definition)
         return self._make(definition)
 
     def add(self, metadata_type, allow_table_lock=False):

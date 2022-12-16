@@ -194,13 +194,13 @@ def test_mem_ds_lineage(mem_eo3_data):
     derived = list(dc.index.datasets.get_derived(ls8_id))
     assert len(derived) == 1
     assert derived[0].id == wo_id
-    assert "cloud_cover" in dc.index.datasets.get_field_names(ls8_ds.type.name)
+    assert "cloud_cover" in dc.index.datasets.get_field_names(ls8_ds.product.name)
 
 
 def test_mem_ds_search_dups(mem_eo3_data):
     dc, ls8_id, wo_id = mem_eo3_data
     ls8_ds = dc.index.datasets.get(ls8_id)
-    dup_results = dc.index.datasets.search_product_duplicates(ls8_ds.type, "cloud_cover", "dataset_maturity")
+    dup_results = dc.index.datasets.search_product_duplicates(ls8_ds.product, "cloud_cover", "dataset_maturity")
     assert len(dup_results) == 1
     assert dup_results[0][0].cloud_cover == ls8_ds.metadata.cloud_cover
     assert ls8_id in dup_results[0][1]
@@ -437,7 +437,7 @@ def test_mem_ds_search_and_count_by_product(mem_eo3_data):
     assert len(lds) == 2
     for dss, product in lds:
         for ds in dss:
-            assert ds.type.name == product.name
+            assert ds.product.name == product.name
     lds = list(dc.index.datasets.count_by_product(platform='landsat-8'))
     assert len(lds) == 2
     for prod, count in lds:

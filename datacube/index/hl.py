@@ -99,7 +99,7 @@ def check_dataset_consistent(dataset: Dataset) -> Tuple[bool, Optional[str]]:
     :return: (Is consistent, [error message|None])
     :rtype: (bool, str or None)
     """
-    product_measurements = set(dataset.type.measurements.keys())
+    product_measurements = set(dataset.product.measurements.keys())
 
     if len(product_measurements) == 0:
         return True, None
@@ -113,7 +113,7 @@ def check_dataset_consistent(dataset: Dataset) -> Tuple[bool, Optional[str]]:
         not_measured = {
             m
             for m in product_measurements - set(dataset.measurements.keys())
-            if "extra_dim" not in dataset.type.measurements.get(m, [])
+            if "extra_dim" not in dataset.product.measurements.get(m, [])
         }
 
         if not_measured:
@@ -219,7 +219,7 @@ def dataset_resolver(index: AbstractIndex,
 
             db_ds = db_dss.get(ds.id)
             if db_ds:
-                product = db_ds.type
+                product = db_ds.product
             else:
                 product = match_product(doc)
 
