@@ -78,48 +78,20 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                 )
         return self.get_by_name(metadata_type.name)
 
-    def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> Tuple[int, int]:
-        def add_batch(batch_types: Iterable[MetadataType]) -> Tuple[int, int]:
-            # Add a "batch" of mdts.  Simple loop in a transaction for now.
-            b_skipped = 0
-            b_added = 0
-            with self._db_connection() as connection:
-                for mdt in batch_types:
-                    try:
-                        self.add(mdt)
-                        b_added += 1
-                    except DocumentMismatchError:
-                        b_skipped += 1
-                    except:
-                        b_skipped += 1
-            return (b_added, b_skipped)
-        n_batches = 0
-        n_in_batch = 0
-        added = 0
-        skipped = 0
-        batch = []
-        for doc in metadata_docs:
-            try:
-                mdt = self.from_doc(doc)
-                batch.append(mdt)
-                n_in_batch += 1
-            except InvalidDocException as e:
-                _LOG.warning("%s: Skipped", str(e))
-                skipped += 1
-            if n_in_batch >= batch_size:
-                batch_added, batch_skipped = add_batch(batch)
-                added += batch_added
-                skipped += batch_skipped
-                batch = []
-                n_in_batch = 0
-                n_batches += 1
-        if n_in_batch > 0:
-            batch_added, batch_skipped = add_batch(batch)
-            added += batch_added
-            skipped += batch_skipped
-
-        return (added, skipped)
-
+    def _add_batch(self, batch_types: Iterable[MetadataType]) -> Tuple[int, int]:
+        # Add a "batch" of mdts.  Simple loop in a transaction for now.
+        b_skipped = 0
+        b_added = 0
+        with self._db_connection() as connection:
+            for mdt in batch_types:
+                try:
+                    self.add(mdt)
+                    b_added += 1
+                except DocumentMismatchError:
+                    b_skipped += 1
+                except:
+                    b_skipped += 1
+        return (b_added, b_skipped)
 
     def can_update(self, metadata_type, allow_unsafe_updates=False):
         """
