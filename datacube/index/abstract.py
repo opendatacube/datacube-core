@@ -133,10 +133,10 @@ class AbstractMetadataTypeResource(ABC):
                 self.add(mdt)
                 b_added += 1
             except DocumentMismatchError as e:
-                _LOG.waring("%s: Skipping", str(e))
+                _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
             except Exception as e:
-                _LOG.waring("%s: Skipping", str(e))
+                _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
         return (b_added, b_skipped)
 
@@ -381,6 +381,24 @@ class AbstractProductResource(ABC):
         :return: Persisted Product model.
         """
 
+
+    def _add_batch(self, batch_products: Iterable[Product]) -> Tuple[int, int]:
+        # Add a "batch" of products.  Default implementation is simple loop of add
+        b_skipped = 0
+        b_added = 0
+        for prod in batch_products:
+            try:
+                self.add(prod)
+                b_added += 1
+            except DocumentMismatchError as e:
+                _LOG.warning("%s: Skipping", str(e))
+                b_skipped += 1
+            except Exception as e:
+                _LOG.warning("%s: Skipping", str(e))
+                b_skipped += 1
+        return (b_added, b_skipped)
+
+
     def bulk_add(self, product_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> Tuple[int, int]:
         """
         Add a group of product documents in bulk.
@@ -389,23 +407,32 @@ class AbstractProductResource(ABC):
         :param batch_size: Number of products to add per batch (default 1000)
         :return:  Tuple of: count of products added, count of products skipped.
         """
-        # Default implementation simply calls from_doc and add in a loop, with basic error checking
-        # and metadata type cache) but no transaction management.
-        metadata_cache = {mdt.name: mdt for mdt in self.metadata_type_resource.get_all()}
-        loaded = 0
+        n_batches = 0
+        n_in_batch = 0
+        added = 0
         skipped = 0
+        batch = []
         for doc in product_docs:
             try:
-                prod = self.from_doc(doc, metadata_type_cache=metadata_cache)
-                self.add(prod, allow_table_lock=True)
-                loaded += 1
+                mdt = self.from_doc(doc)
+                batch.append(mdt)
+                n_in_batch += 1
             except InvalidDocException as e:
-                _LOG.warning("%s: Skipping", str(e))
+                _LOG.warning("%s: Skipped", str(e))
                 skipped += 1
-            except Exception as e:
-                _LOG.warning("%s: Skipping", str(e))
-                skipped += 1
-        return (loaded, skipped)
+            if n_in_batch >= batch_size:
+                batch_added, batch_skipped = self._add_batch(batch)
+                added += batch_added
+                skipped += batch_skipped
+                batch = []
+                n_in_batch = 0
+                n_batches += 1
+        if n_in_batch > 0:
+            batch_added, batch_skipped = self._add_batch(batch)
+            added += batch_added
+            skipped += batch_skipped
+
+        return (added, skipped)
 
     @abstractmethod
     def can_update(self,

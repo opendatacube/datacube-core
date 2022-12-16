@@ -11,7 +11,7 @@ from datacube.index.abstract import AbstractProductResource
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
-from datacube.utils.changes import check_doc_unchanged, get_doc_changes
+from datacube.utils.changes import check_doc_unchanged, get_doc_changes, DocumentMismatchError
 
 from typing import Iterable, cast
 
@@ -86,6 +86,22 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                     concurrently=not allow_table_lock,
                 )
         return self.get_by_name(product.name)
+
+    def _add_batch(self, batch_products: Iterable[Product]) -> Tuple[int, int]:
+        # Add a "batch" of mdts.  Simple loop in a transaction for now.
+        b_skipped = 0
+        b_added = 0
+        with self._db_connection(transaction=True) as connection:
+            for prod in batch_products:
+                try:
+                    self.add(prod)
+                    b_added += 1
+                except DocumentMismatchError:
+                    b_skipped += 1
+                except:
+                    b_skipped += 1
+        return (b_added, b_skipped)
+
 
     def can_update(self, product, allow_unsafe_updates=False):
         """
