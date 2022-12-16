@@ -41,12 +41,11 @@ def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs):
     assert runner.exit_code == 1
 
 
-# TODO Rewrite with EO3 test data
-@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
-    clirunner(['metadata', 'add', dataset_add_configs.metadata])
-    clirunner(['product', 'add', dataset_add_configs.products])
-
+def test_cli_dataset_subcommand(index, clirunner,
+                                extended_eo3_metadata_type,
+                                ls8_eo3_product, wo_eo3_product, africa_s2_eo3_product,
+                                eo3_dataset_paths):
+    # Tests with no datasets in db
     runner = clirunner(['dataset', 'add'], verbose_flag=False, expect_success=False)
     assert "Indexing datasets  [####################################]  100%" not in runner.output
     assert "Usage:  [OPTIONS] [DATASET_PATHS]" in runner.output
@@ -69,15 +68,9 @@ def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
     assert "Search by dataset locations" in runner.output
     assert runner.exit_code == 1
 
-    if index_empty.supports_legacy:
-        clirunner(['dataset', 'add', dataset_add_configs.datasets])
-    else:
-        # Does not support legacy datasets
-        with pytest.raises(ValueError):
-            # Expect to fail with legacy datasets
-            clirunner(['dataset', 'add', dataset_add_configs.datasets])
-        # Use EO3 datasets to allow subsequent tests to run.
-        result = clirunner(['dataset', 'add', "--confirm-ignore-lineage", dataset_add_configs.datasets_eo3])
+    # Insert datasets
+    for path in eo3_dataset_paths:
+        result = clirunner(['dataset', 'add', "--confirm-ignore-lineage", path])
 
     runner = clirunner(['dataset', 'archive'], verbose_flag=False, expect_success=False)
     assert "Completed dataset archival." not in runner.output
@@ -95,6 +88,7 @@ def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
     assert "Usage:  [OPTIONS] [IDS]" in runner.output
     assert "Restore datasets" in runner.output
     assert runner.exit_code == 1
+
     runner = clirunner(['dataset', 'restore', "--all"], verbose_flag=False)
     assert "restoring" in runner.output
     assert "Usage:  [OPTIONS] [IDS]" not in runner.output
@@ -113,35 +107,39 @@ def test_cli_dataset_subcommand(index_empty, clirunner, dataset_add_configs):
     assert runner.exit_code == 0
 
 
-# TODO Rewrite with EO3 test data
-@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_readd_and_update_metadata_product_dataset_command(index_empty, clirunner, dataset_add_configs):
-    clirunner(['metadata', 'add', dataset_add_configs.metadata])
-    rerun_add = clirunner(['metadata', 'add', dataset_add_configs.metadata])
+def test_readd_and_update_metadata_product_dataset_command(index, clirunner,
+                                                           ext_eo3_mdt_path,
+                                                           eo3_product_paths,
+                                                           eo3_dataset_paths,
+                                                           eo3_dataset_update_path):
+    clirunner(['metadata', 'add', ext_eo3_mdt_path])
+    rerun_add = clirunner(['metadata', 'add', ext_eo3_mdt_path])
     assert "WARNING Metadata Type" in rerun_add.output
     assert "is already in the database" in rerun_add.output
 
-    update = clirunner(['metadata', 'update', dataset_add_configs.metadata])
+    update = clirunner(['metadata', 'update', ext_eo3_mdt_path])
     assert "WARNING No changes detected for metadata type" in update.output
 
-    add = clirunner(['product', 'add', dataset_add_configs.products])
-    rerun_add = clirunner(['product', 'add', dataset_add_configs.products])
-    assert "WARNING Product" in rerun_add.output
-    assert "is already in the database" in rerun_add.output
+    for prod_path in eo3_product_paths:
+        add = clirunner(['product', 'add', prod_path])
+        rerun_add = clirunner(['product', 'add', prod_path])
+        assert "WARNING Product" in rerun_add.output
+        assert "is already in the database" in rerun_add.output
 
-    update = clirunner(['product', 'update', dataset_add_configs.products])
-    assert "WARNING No changes detected for product" in update.output
+        update = clirunner(['product', 'update', prod_path])
+        assert "WARNING No changes detected for product" in update.output
 
     # Update before add
-    update = clirunner(['dataset', 'update', dataset_add_configs.datasets_eo3])
-    assert "No such dataset in the database" in update.output
-    assert "Failure while processing" in update.output
+    for ds_path in eo3_dataset_paths:
+        update = clirunner(['dataset', 'update', ds_path])
+        assert "No such dataset in the database" in update.output
+        assert "Failure while processing" in update.output
 
-    clirunner(['dataset', 'add', '--confirm-ignore-lineage', dataset_add_configs.datasets_eo3])
-    rerun_add = clirunner(['dataset', 'add', '--confirm-ignore-lineage', dataset_add_configs.datasets_eo3])
-    assert "WARNING Dataset" in rerun_add.output
-    assert "is already in the database" in rerun_add.output
+        clirunner(['dataset', 'add', '--confirm-ignore-lineage', ds_path])
+        rerun_add = clirunner(['dataset', 'add', '--confirm-ignore-lineage', ds_path])
+        assert "WARNING Dataset" in rerun_add.output
+        assert "is already in the database" in rerun_add.output
 
     update = clirunner(['dataset', 'update', '--allow-any', 'properties.datetime',
-                        dataset_add_configs.datasets_eo3_updated])
-    assert "2 successful, 0 failed" in update.output
+                        eo3_dataset_update_path])
+    assert "1 successful, 0 failed" in update.output

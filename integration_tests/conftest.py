@@ -106,6 +106,11 @@ def eo3_dataset_paths():
 
 
 @pytest.fixture
+def eo3_dataset_update_path():
+    return str(EO3_TESTDIR / "ls8_dataset_update.yaml")
+
+
+@pytest.fixture
 def dataset_with_lineage_doc():
     return (
         get_eo3_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
