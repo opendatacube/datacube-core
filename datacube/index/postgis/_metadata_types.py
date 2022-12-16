@@ -82,7 +82,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         # Add a "batch" of mdts.  Simple loop in a transaction for now.
         b_skipped = 0
         b_added = 0
-        with self._db_connection() as connection:
+        with self._db_connection(transaction=True) as connection:
             for mdt in batch_types:
                 try:
                     self.add(mdt)
