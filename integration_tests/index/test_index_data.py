@@ -481,7 +481,7 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     # Check order of uris is preserved when indexing with more than one
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a589'
-    index.datasets.add(Dataset(type_, second_ds_doc, uris=['file:///a', 'file:///b'], sources={}))
+    index.datasets.add(Dataset(product, second_ds_doc, uris=['file:///a', 'file:///b'], sources={}))
 
     # test order using get_locations function
     assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///a', 'file:///b']
@@ -490,7 +490,7 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     assert index.datasets.get(second_ds_doc['id']).uris == ['file:///a', 'file:///b']
 
     # test update, this should prepend file:///c, file:///d to the existing list
-    index.datasets.update(Dataset(type_, second_ds_doc, uris=['file:///a', 'file:///c', 'file:///d'], sources={}))
+    index.datasets.update(Dataset(product, second_ds_doc, uris=['file:///a', 'file:///c', 'file:///d'], sources={}))
     assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///c', 'file:///d', 'file:///a', 'file:///b']
     assert index.datasets.get(second_ds_doc['id']).uris == ['file:///c', 'file:///d', 'file:///a', 'file:///b']
 
@@ -498,7 +498,7 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     # Add a second dataset with a different location (to catch lack of joins, filtering etc)
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a5c0'
-    index.datasets.add(Dataset(type_, second_ds_doc, uris=[second_file.as_uri()], sources={}))
+    index.datasets.add(Dataset(product, second_ds_doc, uris=[second_file.as_uri()], sources={}))
     for mode in ('exact', 'prefix', None):
         dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri(), mode=mode)]
         assert dataset_ids == [dataset.id]
