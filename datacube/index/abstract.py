@@ -19,7 +19,7 @@ from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
 from datacube.utils import cached_property, read_documents, InvalidDocException
-from datacube.utils.changes import AllowPolicy, Change, Offset
+from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError
 from datacube.utils.generic import thread_local_cache
 from datacube.utils.geometry import CRS, Geometry, box
 
@@ -124,6 +124,22 @@ class AbstractMetadataTypeResource(ABC):
         :return: Persisted Metadatatype model.
         """
 
+    def _add_batch(self, batch_types: Iterable[MetadataType]) -> Tuple[int, int]:
+        # Add a "batch" of mdts.  Default implementation is simple loop of add
+        b_skipped = 0
+        b_added = 0
+        for mdt in batch_types:
+            try:
+                self.add(mdt)
+                b_added += 1
+            except DocumentMismatchError as e:
+                _LOG.waring("%s: Skipping", str(e))
+                b_skipped += 1
+            except Exception as e:
+                _LOG.waring("%s: Skipping", str(e))
+                b_skipped += 1
+        return (b_added, b_skipped)
+
     def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> Tuple[int, int]:
         """
         Add a group of Metadata Type documents in bulk.
@@ -132,22 +148,32 @@ class AbstractMetadataTypeResource(ABC):
         :param batch_size: Number of metadata types to add per batch (default 1000)
         :return:  Tuple of: count of metadata types added, count of metadata types skipped.
         """
-        # Default implementation simply calls from_doc and add in a loop, with basic error checking
-        # and no transaction management.
-        loaded = 0
+        n_batches = 0
+        n_in_batch = 0
+        added = 0
         skipped = 0
+        batch = []
         for doc in metadata_docs:
             try:
                 mdt = self.from_doc(doc)
-                loaded += 1
-                self.add(mdt, allow_table_lock=True)
+                batch.append(mdt)
+                n_in_batch += 1
             except InvalidDocException as e:
-                _LOG.warning("%s: Skippng", str(e))
+                _LOG.warning("%s: Skipped", str(e))
                 skipped += 1
-            except:
-                skipped += 1
-        return (loaded, skipped)
+            if n_in_batch >= batch_size:
+                batch_added, batch_skipped = self._add_batch(batch)
+                added += batch_added
+                skipped += batch_skipped
+                batch = []
+                n_in_batch = 0
+                n_batches += 1
+        if n_in_batch > 0:
+            batch_added, batch_skipped = self._add_batch(batch)
+            added += batch_added
+            skipped += batch_skipped
 
+        return (added, skipped)
 
     @abstractmethod
     def can_update(self,
