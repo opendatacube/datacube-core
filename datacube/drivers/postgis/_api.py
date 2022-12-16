@@ -430,7 +430,8 @@ class PostgisDbAPI(object):
             )
         return self._connection.execute(query).fetchall()
 
-    def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
+    # Not currently implemented.
+    # def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
         # r = self._connection.execute(
         #     insert(DatasetSource).on_conflict_do_nothing(
         #         index_elements=['classifier', 'dataset_ref']
@@ -441,7 +442,6 @@ class PostgisDbAPI(object):
         #     )
         # )
         # return r.rowcount > 0
-        return False
 
     def archive_dataset(self, dataset_id):
         r = self._connection.execute(
