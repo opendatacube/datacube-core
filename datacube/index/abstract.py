@@ -915,6 +915,90 @@ class AbstractDatasetResource(ABC):
         :return: Matching datasets
         """
 
+    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Iterable[
+        Tuple[Product, Mapping[str, Any], Sequence[str]]
+    ]:
+        """
+        Return all datasets in bulk, filtering by product names only. Do not instantiate models.
+        Archived datasets and locations are excluded.
+
+        :param products: Mapping of product names to product names
+                         Filtering is done by product name, and products from this map are used
+                         to build the
+                         Default/None = all products, Products read from the source database.
+        :return: Iterable of tuples containing:
+                0: Product
+                1: Dataset metadata document
+                2: Sequence of locations(uris)
+        """
+        # Default implementation calls search
+        if products:
+            product_search_key =  list(products.keys())
+        else:
+            product_search_key = None
+        for ds in self.search(product=product_search_key):
+            if products:
+                prod = products[ds.product.name]
+            else:
+                prod = ds.product
+            yield (prod, ds.metadata_doc, ds.uris)
+
+    def _add_batch(self, batch_ds: Iterable[Dataset]) -> Tuple[int, int]:
+        # Add a "batch" of datasets.  Default implementation is simple loop of add
+        b_skipped = 0
+        b_added = 0
+        for ds in batch_ds:
+            try:
+                self.add(ds, with_lineage=False)
+                b_added += 1
+            except DocumentMismatchError as e:
+                _LOG.warning("%s: Skipping", str(e))
+                b_skipped += 1
+            except Exception as e:
+                _LOG.warning("%s: Skipping", str(e))
+                b_skipped += 1
+        return (b_added, b_skipped)
+
+    def bulk_add(self, datasets: Iterable[Tuple[Product, Mapping[str, Any], Sequence[str]]],
+                 batch_size: int = 1000) -> Tuple[int, int]:
+        """
+        Add a group of Dataset documents in bulk.
+
+        :param datasets: An Iterable of tuples.  Each tuple represents a dataset and consists of:
+                0: Product
+                1: Dataset metadata document
+                2: Sequence of locations(uris)
+                (i.e. as returned by get_all_docs)
+        :param batch_size: Number of metadata types to add per batch (default 1000)
+        :return: Tuple of: count of datasets added, count of datasets skipped.
+        """
+        n_batches = 0
+        n_in_batch = 0
+        added = 0
+        skipped = 0
+        batch = []
+        for prod, metadata_doc, uris in datasets:
+            try:
+                ds = Dataset(product=prod, metadata_doc=metadata_doc, uris=uris)
+                batch.append(ds)
+                n_in_batch += 1
+            except InvalidDocException as e:
+                _LOG.warning("%s: Skipped", str(e))
+                skipped += 1
+            if n_in_batch >= batch_size:
+                batch_added, batch_skipped = self._add_batch(batch)
+                added += batch_added
+                skipped += batch_skipped
+                batch = []
+                n_in_batch = 0
+                n_batches += 1
+        if n_in_batch > 0:
+            batch_added, batch_skipped = self._add_batch(batch)
+            added += batch_added
+            skipped += batch_skipped
+
+        return (added, skipped)
+
     @abstractmethod
     def search_by_product(self,
                           **query: QueryField
@@ -1397,8 +1481,11 @@ class AbstractIndex(ABC):
                                                                  batch_size=batch_size)
         # Clone Products
         results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
-                                                                 batch_size=batch_size)
-        # TODO datasets
+                                                     batch_size=batch_size)
+        # Clone Datasets (group by product for now for convenience)
+        products = {p.name: p for p in self.products.get_all()}
+        results["datasets"] = self.datasets.bulk_add(origin_index.datasets.get_all_docs(products=products),
+                                                     batch_size=batch_size)
         return results
 
     @abstractmethod

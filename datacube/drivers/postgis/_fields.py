@@ -5,6 +5,8 @@
 """
 Build and index fields within documents.
 """
+import math
+
 from collections import namedtuple
 from datetime import datetime, date
 from decimal import Decimal
@@ -249,6 +251,8 @@ class NumericDocField(SimpleDocField):
         return cast(value, postgres.NUMERIC)
 
     def search_value_to_alchemy(self, value):
+        if isinstance(value, float) and math.isnan(value):
+            raise UnindexableValue("Cannot index NaNs")
         return func.numrange(
             value, value,
             # Inclusive on both sides.
@@ -369,12 +373,17 @@ class RangeDocField(PgDocField):
         return Range(min_val, max_val)
 
 
+class UnindexableValue(Exception):
+    pass
+
 class NumericRangeDocField(RangeDocField):
     FIELD_CLASS = NumericDocField
     type_name = 'numeric-range'
 
     def value_to_alchemy(self, value):
         low, high = value
+        if math.isnan(low) or math.isnan(high):
+            raise UnindexableValue("Cannot index NaN numeric values")
         return func.numrange(
             low, high,
             # Inclusive on both sides.
