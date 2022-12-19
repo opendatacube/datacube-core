@@ -16,7 +16,10 @@ from sqlalchemy import select, func
 
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset
-from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID
+from datacube.drivers.postgis._api import split_uri
+from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
+
+from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product
 from datacube.model.fields import Field
@@ -156,8 +159,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if self.has(dataset.id):
             _LOG.warning('Dataset %s is already in the database', dataset.id)
             return dataset
-        if str(dataset.id) == '78a4c381-737f-4057-bc87-470121960169':
-            _LOG.info("here comes trouble")
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
             is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
@@ -171,18 +172,59 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return dataset
 
-    def _add_batch(self, batch_ds: Iterable[Dataset]) -> Tuple[int, int]:
+    def _add_batch(self, batch_ds: Iterable[DatasetTuple]) -> BatchStatus:
         # Add a "batch" of mdts.  Simple loop in a transaction for now.
-        b_skipped = 0
-        b_added = 0
+        crses = self._db.spatial_indexes()
+        batch = {
+            "datasets": [],
+            "uris": [],
+            "search_indexes": {
+                "string": [],
+                "numeric": [],
+                "datetime": []
+            },
+            "spatial_indexes": {crs: [] for crs in crses}
+        }
+        dsids = []
+        for prod, metadata_doc, uris in batch_ds:
+            dsid = UUID(metadata_doc["id"])
+            dsids.append(dsid)
+            batch["datasets"].append(
+                {
+                    "id": dsid,
+                    "product_ref": prod.id,
+                    "metadata": metadata_doc,
+                    "metadata_type_ref": prod.metadata_type.id
+                }
+            )
+            for uri in uris:
+                scheme, body = split_uri(uri)
+                batch["uris"].append(
+                    {
+                        "dataset_ref": dsid,
+                        "uri_scheme": scheme,
+                        "uri_body": body,
+                    }
+                )
+            extent = extract_geometry_from_eo3_projection(
+                metadata_doc["grid_spatial"]["projection"]
+            )
+            if extent:
+                for crs in crses:
+                    values = generate_dataset_spatial_values(dsid, crs, extent)
+                    if values is not None:
+                        batch["spatial_indexes"][crs].append(values)
+            # TODO: Handle Search Indexes
         with self._db_connection(transaction=True) as connection:
-            for ds in batch_ds:
-                try:
-                    self.add(ds, with_lineage=False)
-                    b_added += 1
-                except Exception as e:
-                    _LOG("Error %s on dataset: %s", str(e), ds.id)
-                    b_skipped += 1
+            if batch["datasets"]:
+                b_added, b_skipped = connection.insert_dataset_bulk(batch["datasets"])
+            if batch["uris"]:
+                connection.insert_dataset_location_bulk(batch["uris"])
+            for crs in crses:
+                crs_values = batch["spatial_indexes"][crs]
+                if crs_values:
+                    connection.insert_dataset_spatial_bulk(crs, crs_values)
+            connection.update_search_index(dsids=dsids)
         return (b_added, b_skipped)
 
     def search_product_duplicates(self, product: Product, *args):

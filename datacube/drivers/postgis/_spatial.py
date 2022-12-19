@@ -18,7 +18,7 @@ from sqlalchemy.engine import Connectable
 from sqlalchemy import Column
 from sqlalchemy.orm import Session
 
-from datacube.utils.geometry import CRS, Geometry as Geom, multipolygon
+from datacube.utils.geometry import CRS, Geometry as Geom, multipolygon, polygon
 from ._core import METADATA
 from .sql import SCHEMA_NAME
 from ._schema import orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
@@ -163,3 +163,46 @@ def promote_to_multipolygon(geom: Geom) -> Geom:
 def geom_alchemy(geom: Geom) -> str:
     geom = promote_to_multipolygon(geom)
     return f"SRID={geom.crs.epsg};{geom.wkt}"
+
+
+def sanitise_extent(extent, crs):
+    if not crs.valid_region:
+        # No valid region on CRS, just reproject
+        return extent.to_crs(crs)
+    geo_extent = extent.to_crs(CRS("EPSG:4326"))
+    if crs.valid_region.contains(geo_extent):
+        # Valid region contains extent, just reproject
+        return extent.to_crs(crs)
+    if not crs.valid_region.intersects(geo_extent):
+        # Extent is entirely outside of valid region - return None
+        return None
+    # Clip to valid region and reproject
+    valid_extent = geo_extent & crs.valid_region
+    if valid_extent.wkt == "POLYGON EMPTY":
+        # Extent is entirely outside of valid region - return None
+        return None
+    return valid_extent.to_crs(crs)
+
+
+def generate_dataset_spatial_values(dataset_id, crs, extent):
+    extent = sanitise_extent(extent, crs)
+    if extent is None:
+        return None
+    geom_alch = geom_alchemy(extent)
+    return {"dataset_ref": dataset_id, "extent": geom_alch}
+
+
+def extract_geometry_from_eo3_projection(eo3_gs_doc):
+    native_crs = CRS(eo3_gs_doc["spatial_reference"])
+    valid_data = eo3_gs_doc.get("valid_data")
+    if valid_data:
+        return Geom(valid_data, crs=native_crs)
+    else:
+        geo_ref_points = eo3_gs_doc.get('geo_ref_points')
+        if geo_ref_points:
+            return polygon(
+                [(geo_ref_points[key]['x'], geo_ref_points[key]['y']) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
+                crs=native_crs
+            )
+        else:
+            return None

@@ -7,7 +7,7 @@ import logging
 from cachetools.func import lru_cache
 
 from datacube.index import fields
-from datacube.index.abstract import AbstractProductResource
+from datacube.index.abstract import AbstractProductResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
@@ -81,27 +81,25 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                     name=product.name,
                     metadata=product.metadata_doc,
                     metadata_type_id=metadata_type.id,
-                    search_fields=metadata_type.dataset_fields,
                     definition=product.definition,
-                    concurrently=not allow_table_lock,
                 )
         return self.get_by_name(product.name)
 
-    def _add_batch(self, batch_products: Iterable[Product]) -> Tuple[int, int]:
-        # Add a "batch" of mdts.  Simple loop in a transaction for now.
-        b_skipped = 0
-        b_added = 0
-        with self._db_connection(transaction=True) as connection:
-            for prod in batch_products:
-                try:
-                    self.add(prod)
-                    b_added += 1
-                except DocumentMismatchError:
-                    b_skipped += 1
-                except:
-                    b_skipped += 1
-        return (b_added, b_skipped)
-
+    def _add_batch(self, batch_products: Iterable[Product]) -> BatchStatus:
+        # Would be nice to keep this level of internals hidden from this layer,
+        # but most efficient to do it before grabbing a connection and keep the implementation
+        # as close to SQLAlchemy as possible.
+        values = [
+            {
+                "name": p.name,
+                "metadata": p.metadata_doc,
+                "metadata_type_ref": p.metadata_type.id,
+                "definition": p.definition
+            }
+            for p in batch_products
+        ]
+        with self._db_connection() as connection:
+            return connection.insert_product_bulk(values)
 
     def can_update(self, product, allow_unsafe_updates=False):
         """
@@ -206,10 +204,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 name=product.name,
                 metadata=product.metadata_doc,
                 metadata_type_id=metadata_type.id,
-                search_fields=metadata_type.dataset_fields,
                 definition=product.definition,
-                update_metadata_type=changing_metadata_type,
-                concurrently=not allow_table_lock
+                update_metadata_type=changing_metadata_type
             )
 
         self.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]

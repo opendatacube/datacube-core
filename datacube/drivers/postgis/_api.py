@@ -25,7 +25,6 @@ from typing import Iterable, Sequence
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
-from datacube.utils import geometry
 from datacube.utils.geometry import CRS, Geometry
 from datacube.index.abstract import DSID
 from . import _core
@@ -34,7 +33,7 @@ from ._fields import NativeField, DateDocField, SimpleDocField
 from ._schema import MetadataType, Product, \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
     search_field_index_map, search_field_tables
-from ._spatial import geom_alchemy
+from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from .sql import escape_pg_identifier
 
 
@@ -65,7 +64,7 @@ PGCODE_FOREIGN_KEY_VIOLATION = '23503'
 _LOG = logging.getLogger(__name__)
 
 
-def _split_uri(uri):
+def split_uri(uri):
     """
     Split the scheme and the remainder of the URI.
 
@@ -238,6 +237,13 @@ class PostgisDbAPI(object):
         )
         return ret.rowcount > 0
 
+    def insert_dataset_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(
+            insert(Dataset), values
+        )
+        return res.rowcount, requested - res.rowcount
+
     def update_dataset(self, metadata_doc, dataset_id, product_id):
         """
         Update dataset
@@ -267,7 +273,7 @@ class PostgisDbAPI(object):
         :rtype bool:
         """
 
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
 
         r = self._connection.execute(
             insert(DatasetLocation).on_conflict_do_nothing(
@@ -281,24 +287,10 @@ class PostgisDbAPI(object):
 
         return r.rowcount > 0
 
-    @staticmethod
-    def _sanitise_extent(extent, crs):
-        if not crs.valid_region:
-            # No valid region on CRS, just reproject
-            return extent.to_crs(crs)
-        geo_extent = extent.to_crs(CRS("EPSG:4326"))
-        if crs.valid_region.contains(geo_extent):
-            # Valid region contains extent, just reproject
-            return extent.to_crs(crs)
-        if not crs.valid_region.intersects(geo_extent):
-            # Extent is entirely outside of valid region - return None
-            return None
-        # Clip to valid region and reproject
-        valid_extent = geo_extent & crs.valid_region
-        if valid_extent.wkt == "POLYGON EMPTY":
-            # Extent is entirely outside of valid region - return None
-            return None
-        return valid_extent.to_crs(crs)
+    def insert_dataset_location_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(DatasetLocation), values)
+        return res.rowcount, requested - res.rowcount
 
     def insert_dataset_search(self, search_table, dataset_id, key, value):
         """
@@ -339,23 +331,26 @@ class PostgisDbAPI(object):
         :type extent: Geometry
         :rtype bool:
         """
-        extent = self._sanitise_extent(extent, crs)
-        if extent is None:
+        values = generate_dataset_spatial_values(dataset_id, crs, extent)
+        if values is None:
             return False
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
-        geom_alch = geom_alchemy(extent)
         r = self._connection.execute(
             insert(
                 SpatialIndex
             ).values(
-                dataset_ref=dataset_id,
-                extent=geom_alch,
+                **values
             ).on_conflict_do_update(
                 index_elements=[SpatialIndex.dataset_ref],
-                set_=dict(extent=geom_alch)
+                set_=dict(extent=values["extent"])
             )
         )
         return r.rowcount > 0
+
+    def insert_dataset_spatial_bulk(self, crs, values):
+        SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+        r = self._connection.execute(insert(SpatialIndex).values(values))
+        return r.rowcount
 
     def spatial_extent(self, ids, crs):
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
@@ -399,7 +394,7 @@ class PostgisDbAPI(object):
         ]
 
     def get_datasets_for_location(self, uri, mode=None):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
 
         if mode is None:
             mode = 'exact' if body.count('#') > 0 else 'prefix'
@@ -841,18 +836,7 @@ class PostgisDbAPI(object):
 
         for result in self._connection.execute(query):
             dsid = result[0]
-            native_crs = CRS(result[1]["spatial_reference"])
-            geom = None
-            valid_data = result[1].get('valid_data')
-            if valid_data:
-                geom = geometry.Geometry(valid_data, crs=native_crs)
-            else:
-                geo_ref_points = result[1].get('geo_ref_points')
-                if geo_ref_points:
-                    geom = geometry.polygon(
-                        [xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
-                        crs=native_crs
-                    )
+            geom = extract_geometry_from_eo3_projection(result[1])
             if not geom:
                 verified += 1
                 continue
@@ -897,9 +881,7 @@ class PostgisDbAPI(object):
                        name,
                        metadata,
                        metadata_type_id,
-                       search_fields,
-                       definition,
-                       concurrently=True):
+                       definition):
 
         res = self._connection.execute(
             insert(Product).values(
@@ -914,13 +896,17 @@ class PostgisDbAPI(object):
 
         return type_id
 
+    def insert_product_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(Product), values)
+        return res.rowcount, requested - res.rowcount
+
     def update_product(self,
                        name,
                        metadata,
                        metadata_type_id,
-                       search_fields,
                        definition,
-                       update_metadata_type=False, concurrently=False):
+                       update_metadata_type=False):
         res = self._connection.execute(
             update(Product).returning(Product.id).where(
                 Product.name == name
@@ -960,20 +946,10 @@ class PostgisDbAPI(object):
             type_id, name, search_fields, concurrently=concurrently
         )
 
-    def insert_metadata_bulk(self, definitions):
-        res = self._connection.execute(
-            insert(MetadataType),
-            [
-                {"name": defn["name"], "definition": defn}
-                for defn in definitions
-            ]
-        )
-        type_ids = list(res.inserted_primary_key)
-        for type_id, definition in zip(type_ids, definitions):
-            search_fields = get_dataset_fields(definition)
-            self._setup_metadata_type_fields(
-                type_id, definition["name"], search_fields, concurrently=True
-            )
+    def insert_metadata_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(MetadataType), values)
+        return res.rowcount, requested - res.rowcount
 
     def update_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(
@@ -1089,7 +1065,7 @@ class PostgisDbAPI(object):
 
         :returns bool: Was the location deleted?
         """
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             delete(DatasetLocation).where(
                 DatasetLocation.dataset_ref == dataset_id
@@ -1102,7 +1078,7 @@ class PostgisDbAPI(object):
         return res.rowcount > 0
 
     def archive_location(self, dataset_id, uri):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             update(DatasetLocation).where(
                 DatasetLocation.dataset_ref == dataset_id
@@ -1119,7 +1095,7 @@ class PostgisDbAPI(object):
         return res.rowcount > 0
 
     def restore_location(self, dataset_id, uri):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             update(DatasetLocation).where(
                 DatasetLocation.dataset_ref == dataset_id

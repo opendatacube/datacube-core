@@ -382,8 +382,6 @@ class NumericRangeDocField(RangeDocField):
 
     def value_to_alchemy(self, value):
         low, high = value
-        if math.isnan(low) or math.isnan(high):
-            raise UnindexableValue("Cannot index NaN numeric values")
         return func.numrange(
             low, high,
             # Inclusive on both sides.
