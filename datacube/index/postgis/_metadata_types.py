@@ -80,18 +80,9 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
     def _add_batch(self, batch_types: Iterable[MetadataType]) -> Tuple[int, int]:
         # Add a "batch" of mdts.  Simple loop in a transaction for now.
-        b_skipped = 0
-        b_added = 0
-        with self._db_connection(transaction=True) as connection:
-            for mdt in batch_types:
-                try:
-                    self.add(mdt)
-                    b_added += 1
-                except DocumentMismatchError:
-                    b_skipped += 1
-                except:
-                    b_skipped += 1
-        return (b_added, b_skipped)
+        values = [{"name": mdt.name, "definition": mdt.definition} for mdt in batch_types]
+        with self._db_connection() as connection:
+            return connection.insert_metadata_bulk(values)
 
     def can_update(self, metadata_type, allow_unsafe_updates=False):
         """

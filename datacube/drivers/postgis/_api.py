@@ -25,7 +25,6 @@ from typing import Iterable, Sequence
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
-from datacube.utils import geometry
 from datacube.utils.geometry import CRS, Geometry
 from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
@@ -35,7 +34,7 @@ from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
     search_field_index_map, search_field_tables
-from ._spatial import geom_alchemy, generate_dataset_spatial_values
+from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from .sql import escape_pg_identifier
 
 _LOG = logging.getLogger(__name__)
@@ -223,6 +222,13 @@ class PostgisDbAPI(object):
         )
         return ret.rowcount > 0
 
+    def insert_dataset_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(
+            insert(Dataset), values
+        )
+        return res.rowcount, requested - res.rowcount
+
     def update_dataset(self, metadata_doc, dataset_id, product_id):
         """
         Update dataset
@@ -265,6 +271,11 @@ class PostgisDbAPI(object):
         )
 
         return r.rowcount > 0
+
+    def insert_dataset_location_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(DatasetLocation), values)
+        return res.rowcount, requested - res.rowcount
 
     def insert_dataset_search(self, search_table, dataset_id, key, value):
         """
@@ -320,6 +331,11 @@ class PostgisDbAPI(object):
             )
         )
         return r.rowcount > 0
+
+    def insert_dataset_spatial_bulk(self, crs, values):
+        SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+        r = self._connection.execute(insert(SpatialIndex).values(values))
+        return r.rowcount
 
     def spatial_extent(self, ids, crs):
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
@@ -805,18 +821,7 @@ class PostgisDbAPI(object):
 
         for result in self._connection.execute(query):
             dsid = result[0]
-            native_crs = CRS(result[1]["spatial_reference"])
-            geom = None
-            valid_data = result[1].get('valid_data')
-            if valid_data:
-                geom = geometry.Geometry(valid_data, crs=native_crs)
-            else:
-                geo_ref_points = result[1].get('geo_ref_points')
-                if geo_ref_points:
-                    geom = geometry.polygon(
-                        [xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
-                        crs=native_crs
-                    )
+            geom = extract_geometry_from_eo3_projection(result[1])
             if not geom:
                 verified += 1
                 continue
@@ -861,9 +866,7 @@ class PostgisDbAPI(object):
                        name,
                        metadata,
                        metadata_type_id,
-                       search_fields,
-                       definition,
-                       concurrently=True):
+                       definition):
 
         res = self._connection.execute(
             insert(Product).values(
@@ -878,13 +881,17 @@ class PostgisDbAPI(object):
 
         return type_id
 
+    def insert_product_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(Product), values)
+        return res.rowcount, requested - res.rowcount
+
     def update_product(self,
                        name,
                        metadata,
                        metadata_type_id,
-                       search_fields,
                        definition,
-                       update_metadata_type=False, concurrently=False):
+                       update_metadata_type=False):
         res = self._connection.execute(
             update(Product).returning(Product.id).where(
                 Product.name == name
@@ -924,20 +931,10 @@ class PostgisDbAPI(object):
             type_id, name, search_fields, concurrently=concurrently
         )
 
-    def insert_metadata_bulk(self, definitions):
-        res = self._connection.execute(
-            insert(MetadataType),
-            [
-                {"name": defn["name"], "definition": defn}
-                for defn in definitions
-            ]
-        )
-        type_ids = list(res.inserted_primary_key)
-        for type_id, definition in zip(type_ids, definitions):
-            search_fields = get_dataset_fields(definition)
-            self._setup_metadata_type_fields(
-                type_id, definition["name"], search_fields, concurrently=True
-            )
+    def insert_metadata_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(MetadataType), values)
+        return res.rowcount, requested - res.rowcount
 
     def update_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(

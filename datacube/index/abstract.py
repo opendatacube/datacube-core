@@ -25,6 +25,10 @@ from datacube.utils.geometry import CRS, Geometry, box
 
 _LOG = logging.getLogger(__name__)
 
+# A tuple representing the results of a batch operation: completed, skipped
+# TODO?: Make a namedtuple - typehint-compatible
+BatchStatus = Tuple[int, int]
+
 
 class AbstractUserResource(ABC):
     """
@@ -140,7 +144,7 @@ class AbstractMetadataTypeResource(ABC):
                 b_skipped += 1
         return (b_added, b_skipped)
 
-    def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> Tuple[int, int]:
+    def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> BatchStatus:
         """
         Add a group of Metadata Type documents in bulk.
 
@@ -382,7 +386,7 @@ class AbstractProductResource(ABC):
         """
 
 
-    def _add_batch(self, batch_products: Iterable[Product]) -> Tuple[int, int]:
+    def _add_batch(self, batch_products: Iterable[Product]) -> BatchStatus:
         # Add a "batch" of products.  Default implementation is simple loop of add
         b_skipped = 0
         b_added = 0
@@ -399,7 +403,7 @@ class AbstractProductResource(ABC):
         return (b_added, b_skipped)
 
 
-    def bulk_add(self, product_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> Tuple[int, int]:
+    def bulk_add(self, product_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> BatchStatus:
         """
         Add a group of product documents in bulk.
 
@@ -621,6 +625,10 @@ class AbstractProductResource(ABC):
 
 # Non-strict Dataset ID representation
 DSID = Union[str, UUID]
+
+# A minimal tuple representing a complete dataset.
+# TODO?: Make a namedtuple - typehint-compatible
+DatasetTuple = Tuple[Product, Mapping[str, Any], Sequence[str]]
 
 
 def dsid_to_uuid(dsid: DSID) -> UUID:
@@ -915,17 +923,14 @@ class AbstractDatasetResource(ABC):
         :return: Matching datasets
         """
 
-    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Iterable[
-        Tuple[Product, Mapping[str, Any], Sequence[str]]
-    ]:
+    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Iterable[DatasetTuple]:
         """
         Return all datasets in bulk, filtering by product names only. Do not instantiate models.
         Archived datasets and locations are excluded.
 
-        :param products: Mapping of product names to product names
-                         Filtering is done by product name, and products from this map are used
-                         to build the
-                         Default/None = all products, Products read from the source database.
+        :param products: Mapping of product names to product names. Filtering is done by product name, and
+                         products from this map are used to build the Dataset models.  May come from a different index.
+                         Default/None: all products, Products read from the source index.
         :return: Iterable of tuples containing:
                 0: Product
                 1: Dataset metadata document
@@ -943,12 +948,13 @@ class AbstractDatasetResource(ABC):
                 prod = ds.product
             yield (prod, ds.metadata_doc, ds.uris)
 
-    def _add_batch(self, batch_ds: Iterable[Dataset]) -> Tuple[int, int]:
+    def _add_batch(self, batch_ds: Iterable[DatasetTuple]) -> BatchStatus:
         # Add a "batch" of datasets.  Default implementation is simple loop of add
         b_skipped = 0
         b_added = 0
-        for ds in batch_ds:
+        for prod, metadata_doc, uris in batch_ds:
             try:
+                ds = Dataset(product=prod, metadata_doc=metadata_doc, uris=uris)
                 self.add(ds, with_lineage=False)
                 b_added += 1
             except DocumentMismatchError as e:
@@ -959,8 +965,7 @@ class AbstractDatasetResource(ABC):
                 b_skipped += 1
         return (b_added, b_skipped)
 
-    def bulk_add(self, datasets: Iterable[Tuple[Product, Mapping[str, Any], Sequence[str]]],
-                 batch_size: int = 1000) -> Tuple[int, int]:
+    def bulk_add(self, datasets: Iterable[DatasetTuple], batch_size: int = 1000) -> BatchStatus:
         """
         Add a group of Dataset documents in bulk.
 
@@ -977,14 +982,9 @@ class AbstractDatasetResource(ABC):
         added = 0
         skipped = 0
         batch = []
-        for prod, metadata_doc, uris in datasets:
-            try:
-                ds = Dataset(product=prod, metadata_doc=metadata_doc, uris=uris)
-                batch.append(ds)
-                n_in_batch += 1
-            except InvalidDocException as e:
-                _LOG.warning("%s: Skipped", str(e))
-                skipped += 1
+        for ds_tup in datasets:
+            batch.append(ds_tup)
+            n_in_batch += 1
             if n_in_batch >= batch_size:
                 batch_added, batch_skipped = self._add_batch(batch)
                 added += batch_added
@@ -1463,7 +1463,7 @@ class AbstractIndex(ABC):
         :return: true if the database was created, false if already exists
         """
 
-    def clone(self, origin_index: "AbstractIndex", batch_size: int = 1000) -> Mapping[str, Tuple[int, int]]:
+    def clone(self, origin_index: "AbstractIndex", batch_size: int = 1000) -> Mapping[str, BatchStatus]:
         """
         Clone an existing index into this one.
 
