@@ -9,7 +9,7 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, List, Union, Optional
+from typing import Iterable, List, Union, Optional, Tuple
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -156,7 +156,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if self.has(dataset.id):
             _LOG.warning('Dataset %s is already in the database', dataset.id)
             return dataset
-
+        if str(dataset.id) == '78a4c381-737f-4057-bc87-470121960169':
+            _LOG.info("here comes trouble")
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
             is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
@@ -169,6 +170,20 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     self._ensure_new_locations(dataset, transaction=transaction)
 
         return dataset
+
+    def _add_batch(self, batch_ds: Iterable[Dataset]) -> Tuple[int, int]:
+        # Add a "batch" of mdts.  Simple loop in a transaction for now.
+        b_skipped = 0
+        b_added = 0
+        with self._db_connection(transaction=True) as connection:
+            for ds in batch_ds:
+                try:
+                    self.add(ds, with_lineage=False)
+                    b_added += 1
+                except Exception as e:
+                    _LOG("Error %s on dataset: %s", str(e), ds.id)
+                    b_skipped += 1
+        return (b_added, b_skipped)
 
     def search_product_duplicates(self, product: Product, *args):
         """
