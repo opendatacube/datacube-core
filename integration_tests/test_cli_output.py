@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+
 def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs):
     runner = clirunner(['product', 'update'], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [FILES]" in runner.output
