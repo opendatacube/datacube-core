@@ -3,16 +3,16 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Iterable, Mapping, Any, Sequence, List, Tuple
+from time import monotonic
+from typing import Iterable
 
 from cachetools.func import lru_cache
 
-from datacube.index.abstract import AbstractMetadataTypeResource
+from datacube.index.abstract import AbstractMetadataTypeResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
-from datacube.utils.changes import check_doc_unchanged, get_doc_changes, DocumentMismatchError
-from datacube.utils import InvalidDocException
+from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
 _LOG = logging.getLogger(__name__)
 
@@ -78,11 +78,13 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                 )
         return self.get_by_name(metadata_type.name)
 
-    def _add_batch(self, batch_types: Iterable[MetadataType]) -> Tuple[int, int]:
+    def _add_batch(self, batch_types: Iterable[MetadataType]) -> BatchStatus:
         # Add a "batch" of mdts.  Simple loop in a transaction for now.
+        b_started = monotonic()
         values = [{"name": mdt.name, "definition": mdt.definition} for mdt in batch_types]
         with self._db_connection() as connection:
-            return connection.insert_metadata_bulk(values)
+            added, skipped = connection.insert_metadata_bulk(values)
+            return (added, skipped, monotonic() - b_started)
 
     def can_update(self, metadata_type, allow_unsafe_updates=False):
         """

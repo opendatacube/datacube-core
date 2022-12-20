@@ -275,24 +275,31 @@ class DatasetSearchDateTime:
                         nullable=True,
                         comment="The value of the datetime search field")
 
+search_field_map = {
+    'numeric-range': "numeric",
+    'double-range': "numeric",
+    'integer-range': "numeric",
+    'datetime-range': "datetime",
 
-search_field_index_map = {
-    'numeric-range': DatasetSearchNumeric,
-    'double-range': DatasetSearchNumeric,
-    'integer-range': DatasetSearchNumeric,
-    'datetime-range': DatasetSearchDateTime,
-
-    'string': DatasetSearchString,
-    'numeric': DatasetSearchNumeric,
-    'double': DatasetSearchNumeric,
-    'integer': DatasetSearchNumeric,
-    'datetime': DatasetSearchDateTime,
+    'string': "string",
+    'numeric': "numeric",
+    'double': "numeric",
+    'integer': "numeric",
+    'datetime': "datetime",
 
     # For backwards compatibility (alias for numeric-range)
-    'float-range': DatasetSearchNumeric,
+    'float-range': "numeric",
 }
 
-search_field_tables = set(search_field_index_map.values())
+search_field_indexes = {
+    'string': DatasetSearchString,
+    'numeric': DatasetSearchNumeric,
+    'datetime': DatasetSearchDateTime,
+}
+
+search_field_index_map = {
+    k: search_field_indexes[v] for k, v in search_field_map.items()
+}
 
 ALL_STATIC_TABLES = [
     MetadataType.__table__, Product.__table__, Dataset.__table__,

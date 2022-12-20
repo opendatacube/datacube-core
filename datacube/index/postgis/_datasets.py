@@ -9,19 +9,20 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, List, Union, Optional, Tuple
+from time import monotonic
+from typing import Iterable, List, Mapping, Union, Optional, Tuple
 from uuid import UUID
 
 from sqlalchemy import select, func
 
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
-from datacube.drivers.postgis._schema import Dataset as SQLDataset
-from datacube.drivers.postgis._api import split_uri
+from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
+from datacube.drivers.postgis._api import split_uri, extract_dataset_search_fields
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.model import Dataset, Product
+from datacube.model import Dataset, Product, Range
 from datacube.model.fields import Field
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
@@ -174,6 +175,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def _add_batch(self, batch_ds: Iterable[DatasetTuple]) -> BatchStatus:
         # Add a "batch" of mdts.  Simple loop in a transaction for now.
+        b_started = monotonic()
         crses = self._db.spatial_indexes()
         batch = {
             "datasets": [],
@@ -214,7 +216,17 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     values = generate_dataset_spatial_values(dsid, crs, extent)
                     if values is not None:
                         batch["spatial_indexes"][crs].append(values)
-            # TODO: Handle Search Indexes
+            search_field_vals = extract_dataset_search_fields(metadata_doc, prod.metadata_type.definition)
+            for fname, finfo in search_field_vals.items():
+                ftype, fval = finfo
+                if isinstance(fval, Range):
+                    fval = list(fval)
+                search_key = search_field_map[ftype]
+                batch["search_indexes"][search_key].append({
+                    "dataset_ref": dsid,
+                    "search_key": fname,
+                    "search_val": fval
+                })
         with self._db_connection(transaction=True) as connection:
             if batch["datasets"]:
                 b_added, b_skipped = connection.insert_dataset_bulk(batch["datasets"])
@@ -224,8 +236,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 crs_values = batch["spatial_indexes"][crs]
                 if crs_values:
                     connection.insert_dataset_spatial_bulk(crs, crs_values)
-            connection.update_search_index(dsids=dsids)
-        return (b_added, b_skipped)
+            for search_type, values in batch["search_indexes"].items():
+                connection.insert_dataset_search_bulk(search_type, values)
+        return (b_added, b_skipped, monotonic() - b_started)
 
     def search_product_duplicates(self, product: Product, *args):
         """
@@ -924,3 +937,16 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
+
+    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None):
+        if not products:
+            products = { p.name: p for p in self.products.get_all()}
+            product_search_key = None
+        else:
+            product_search_key = list(products.keys())
+        with self._db_connection() as connection:
+            for prod_name, metadata_doc, uris in connection.bulk_simple_dataset_search(
+                    products=product_search_key
+            ):
+                prod = products[prod_name]
+                yield(prod, metadata_doc, uris)
