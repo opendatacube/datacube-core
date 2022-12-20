@@ -107,6 +107,7 @@ setup(
         'GeoAlchemy2',
         'toolz',
         'xarray>=0.9,<2022.6',  # >0.9 fixes most problems with `crs` attributes being lost
+        'packaging',
     ],
     extras_require=extras_require,
     tests_require=tests_require,
