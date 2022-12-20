@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 
+from time import monotonic
 from cachetools.func import lru_cache
 
 from datacube.index import fields
@@ -13,7 +14,7 @@ from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes, DocumentMismatchError
 
-from typing import Iterable, Tuple, cast
+from typing import Iterable, Tuple, cast, Mapping, Any
 
 _LOG = logging.getLogger(__name__)
 
@@ -89,6 +90,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         # Would be nice to keep this level of internals hidden from this layer,
         # but most efficient to do it before grabbing a connection and keep the implementation
         # as close to SQLAlchemy as possible.
+        b_started = monotonic()
         values = [
             {
                 "name": p.name,
@@ -99,7 +101,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             for p in batch_products
         ]
         with self._db_connection() as connection:
-            return connection.insert_product_bulk(values)
+            added, skipped = connection.insert_product_bulk(values)
+            return (added, skipped, monotonic() - b_started)
 
     def can_update(self, product, allow_unsafe_updates=False):
         """
@@ -335,7 +338,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return self._make_many(connection.get_all_products())
 
-    def get_all_docs(self) -> Iterable[Product]:
+    def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
         with self._db_connection() as connection:
             return connection.get_all_products()
 

@@ -6,6 +6,7 @@ import datetime
 import logging
 from pathlib import Path
 from threading import Lock
+from time import monotonic
 
 from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
@@ -22,12 +23,13 @@ from datacube.utils import cached_property, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError
 from datacube.utils.generic import thread_local_cache
 from datacube.utils.geometry import CRS, Geometry, box
+from datacube.utils.documents import UnknownMetadataType
 
 _LOG = logging.getLogger(__name__)
 
-# A tuple representing the results of a batch operation: completed, skipped
+# A tuple representing the results of a batch operation: completed, skipped, frac_seconds_elapsed
 # TODO?: Make a namedtuple - typehint-compatible
-BatchStatus = Tuple[int, int]
+BatchStatus = Tuple[int, int, float]
 
 
 class AbstractUserResource(ABC):
@@ -128,10 +130,11 @@ class AbstractMetadataTypeResource(ABC):
         :return: Persisted Metadatatype model.
         """
 
-    def _add_batch(self, batch_types: Iterable[MetadataType]) -> Tuple[int, int]:
+    def _add_batch(self, batch_types: Iterable[MetadataType]) -> BatchStatus:
         # Add a "batch" of mdts.  Default implementation is simple loop of add
         b_skipped = 0
         b_added = 0
+        b_started = monotonic()
         for mdt in batch_types:
             try:
                 self.add(mdt)
@@ -142,7 +145,7 @@ class AbstractMetadataTypeResource(ABC):
             except Exception as e:
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
-        return (b_added, b_skipped)
+        return (b_added, b_skipped, monotonic() - b_started)
 
     def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> BatchStatus:
         """
@@ -156,6 +159,7 @@ class AbstractMetadataTypeResource(ABC):
         n_in_batch = 0
         added = 0
         skipped = 0
+        started = monotonic()
         batch = []
         for doc in metadata_docs:
             try:
@@ -166,18 +170,17 @@ class AbstractMetadataTypeResource(ABC):
                 _LOG.warning("%s: Skipped", str(e))
                 skipped += 1
             if n_in_batch >= batch_size:
-                batch_added, batch_skipped = self._add_batch(batch)
+                batch_added, batch_skipped, batch_elapsed = self._add_batch(batch)
                 added += batch_added
                 skipped += batch_skipped
                 batch = []
                 n_in_batch = 0
                 n_batches += 1
         if n_in_batch > 0:
-            batch_added, batch_skipped = self._add_batch(batch)
+            batch_added, batch_skipped, batch_elapsed = self._add_batch(batch)
             added += batch_added
             skipped += batch_skipped
-
-        return (added, skipped)
+        return (added, skipped, monotonic() - started)
 
     @abstractmethod
     def can_update(self,
@@ -361,7 +364,7 @@ class AbstractProductResource(ABC):
             definition['metadata_type'] = metadata_type.name
 
         if not metadata_type:
-            raise InvalidDocException('Unknown metadata type: %r' % definition['metadata_type'])
+            raise UnknownMetadataType('Unknown metadata type: %r' % definition['metadata_type'])
 
         return Product(metadata_type, definition)
 
@@ -390,6 +393,7 @@ class AbstractProductResource(ABC):
         # Add a "batch" of products.  Default implementation is simple loop of add
         b_skipped = 0
         b_added = 0
+        b_started = monotonic()
         for prod in batch_products:
             try:
                 self.add(prod)
@@ -400,10 +404,13 @@ class AbstractProductResource(ABC):
             except Exception as e:
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
-        return (b_added, b_skipped)
+        return (b_added, b_skipped, monotonic()-b_started)
 
 
-    def bulk_add(self, product_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> BatchStatus:
+    def bulk_add(self,
+                 product_docs: Iterable[Mapping[str, Any]],
+                 metadata_types: Optional[Mapping[str, MetadataType]] = None,
+                 batch_size: int = 1000) -> BatchStatus:
         """
         Add a group of product documents in bulk.
 
@@ -416,27 +423,30 @@ class AbstractProductResource(ABC):
         added = 0
         skipped = 0
         batch = []
+        started = monotonic()
         for doc in product_docs:
             try:
-                mdt = self.from_doc(doc)
-                batch.append(mdt)
+                prod = self.from_doc(doc, metadata_type_cache=metadata_types)
+                batch.append(prod)
                 n_in_batch += 1
+            except UnknownMetadataType as e:
+                skipped += 1
             except InvalidDocException as e:
                 _LOG.warning("%s: Skipped", str(e))
                 skipped += 1
             if n_in_batch >= batch_size:
-                batch_added, batch_skipped = self._add_batch(batch)
+                batch_added, batch_skipped, batch_elapsed = self._add_batch(batch)
                 added += batch_added
                 skipped += batch_skipped
                 batch = []
                 n_in_batch = 0
                 n_batches += 1
         if n_in_batch > 0:
-            batch_added, batch_skipped = self._add_batch(batch)
+            batch_added, batch_skipped, batch_elapsed = self._add_batch(batch)
             added += batch_added
             skipped += batch_skipped
 
-        return (added, skipped)
+        return (added, skipped, monotonic() - started)
 
     @abstractmethod
     def can_update(self,
@@ -612,7 +622,7 @@ class AbstractProductResource(ABC):
         :returns: Product models for all known products
         """
 
-    def get_all_docs(self) -> Iterable[Product]:
+    def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
         """
         Retrieve all Product metadata documents
 
@@ -952,6 +962,7 @@ class AbstractDatasetResource(ABC):
         # Add a "batch" of datasets.  Default implementation is simple loop of add
         b_skipped = 0
         b_added = 0
+        b_started = monotonic()
         for prod, metadata_doc, uris in batch_ds:
             try:
                 ds = Dataset(product=prod, metadata_doc=metadata_doc, uris=uris)
@@ -963,7 +974,7 @@ class AbstractDatasetResource(ABC):
             except Exception as e:
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
-        return (b_added, b_skipped)
+        return (b_added, b_skipped, monotonic() - b_started)
 
     def bulk_add(self, datasets: Iterable[DatasetTuple], batch_size: int = 1000) -> BatchStatus:
         """
@@ -982,22 +993,28 @@ class AbstractDatasetResource(ABC):
         added = 0
         skipped = 0
         batch = []
+        job_started = monotonic()
+        last_batch_started = job_started
         for ds_tup in datasets:
             batch.append(ds_tup)
             n_in_batch += 1
             if n_in_batch >= batch_size:
-                batch_added, batch_skipped = self._add_batch(batch)
+                batch_added, batch_skipped, elapsed = self._add_batch(batch)
+                cutoff = monotonic()
+                elapsed = cutoff - last_batch_started
+                last_batch_started = cutoff
+                print(f"Batch of {n_in_batch} datasets added in {elapsed:.2f}s: ({batch_added*60/elapsed:.2f}datasets/min)")
                 added += batch_added
                 skipped += batch_skipped
                 batch = []
                 n_in_batch = 0
                 n_batches += 1
         if n_in_batch > 0:
-            batch_added, batch_skipped = self._add_batch(batch)
+            batch_added, batch_skipped, elapsed = self._add_batch(batch)
             added += batch_added
             skipped += batch_skipped
 
-        return (added, skipped)
+        return (added, skipped, monotonic() - job_started)
 
     @abstractmethod
     def search_by_product(self,
@@ -1472,20 +1489,28 @@ class AbstractIndex(ABC):
         :return: List of errors (strings). Empty sequence on successful clone.
         """
         results = {
-            "metadata_types": (0, 0),
-            "products": (0, 0),
-            "datasets": (0, 0),
+            "metadata_types": (0, 0, 0.0),
+            "products": (0, 0, 0.0),
+            "datasets": (0, 0, 0.0),
         }
         # Clone Metadata Types
         results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
                                                                  batch_size=batch_size)
+        res = results["metadata_types"]
+        print(f'{res[0]} metadata types loaded ({res[1]} skipped) in {res[2]:.2f}seconds ({res[0]*60/res[2]:.2f} metadata_types/min)')
+        metadata_cache = {mdt.name: mdt for mdt in self.metadata_types.get_all()}
         # Clone Products
         results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
+                                                     metadata_types=metadata_cache,
                                                      batch_size=batch_size)
+        res = results["products"]
+        print(f'{res[0]} products loaded ({res[1]} skipped) in {res[2]:.2f}seconds ({res[0]*60/res[2]:.2f} products/min)')
         # Clone Datasets (group by product for now for convenience)
-        products = {p.name: p for p in self.products.get_all()}
-        results["datasets"] = self.datasets.bulk_add(origin_index.datasets.get_all_docs(products=products),
+        product_cache = {p.name: p for p in self.products.get_all()}
+        results["datasets"] = self.datasets.bulk_add(origin_index.datasets.get_all_docs(products=product_cache),
                                                      batch_size=batch_size)
+        res = results["datasets"]
+        print(f'{res[0]} datasets loaded ({res[1]} skipped) in {res[2]:.2f}seconds ({res[0]*60/res[2]:.2f} datasets/min)')
         return results
 
     @abstractmethod

@@ -268,6 +268,10 @@ class InvalidDocException(Exception):  # noqa: N818
     pass
 
 
+class UnknownMetadataType(InvalidDocException):
+    pass
+
+
 def get_doc_offset(offset, document):
     """
     :type offset: list[str]

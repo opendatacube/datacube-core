@@ -33,7 +33,7 @@ from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F4
 from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
-    search_field_index_map, search_field_tables
+    search_field_index_map, search_field_indexes
 from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from .sql import escape_pg_identifier
 
@@ -44,6 +44,27 @@ _LOG = logging.getLogger(__name__)
 def _dataset_select_fields():
     return (
         Dataset,
+        # All active URIs, from newest to oldest
+        func.array(
+            select(
+                SelectedDatasetLocation.uri
+            ).where(
+                and_(
+                    SelectedDatasetLocation.dataset_ref == Dataset.id,
+                    SelectedDatasetLocation.archived == None
+                )
+            ).order_by(
+                SelectedDatasetLocation.added.desc(),
+                SelectedDatasetLocation.id.desc()
+            ).label('uris')
+        ).label('uris')
+    )
+
+
+def _dataset_bulk_select_fields():
+    return (
+        Dataset.product_ref,
+        Dataset.metadata_doc,
         # All active URIs, from newest to oldest
         func.array(
             select(
@@ -305,6 +326,11 @@ class PostgisDbAPI(object):
         )
         return r.rowcount > 0
 
+    def insert_dataset_search_bulk(self, search_type, values):
+        search_table = search_field_index_map[search_type]
+        r = self._connection.execute(insert(search_table).values(values))
+        return r.rowcount
+
     def insert_dataset_spatial(self, dataset_id, crs, extent):
         """
         Add/update a spatial index entry for a dataset
@@ -459,7 +485,7 @@ class PostgisDbAPI(object):
                 DatasetSource.dataset_ref == dataset_id
             )
         )
-        for table in search_field_tables:
+        for table in search_field_indexes.values():
             self._connection.execute(
                 delete(table).where(table.dataset_ref == dataset_id)
             )
@@ -599,6 +625,14 @@ class PostgisDbAPI(object):
                                                   limit, geom=geom)
         _LOG.debug("search_datasets SQL: %s", str(select_query))
         return self._connection.execute(select_query)
+
+    def bulk_simple_dataset_search(self, products):
+        query = select(
+            _dataset_bulk_select_fields()
+        ).select_from(Dataset)
+        if products:
+            query = query.where(Dataset.product_ref in products)
+        return self._connection.execute(query)
 
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):

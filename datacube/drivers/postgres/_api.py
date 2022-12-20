@@ -935,6 +935,11 @@ class PostgresDbAPI(object):
             PRODUCT.select().order_by(PRODUCT.c.name.asc())
         ).fetchall()
 
+    def get_all_product_docs(self):
+        return self._connection.execute(
+            select(PRODUCT.c.definition)
+        )
+
     def _get_products_for_metadata_type(self, id_):
         return self._connection.execute(
             PRODUCT.select(
@@ -946,6 +951,11 @@ class PostgresDbAPI(object):
 
     def get_all_metadata_types(self):
         return self._connection.execute(METADATA_TYPE.select().order_by(METADATA_TYPE.c.name.asc())).fetchall()
+
+    def get_all_metadata_type_docs(self):
+        return self._connection.execute(
+            select(METADATA_TYPE.c.definition)
+        )
 
     def get_all_metadata_defs(self):
         return [
