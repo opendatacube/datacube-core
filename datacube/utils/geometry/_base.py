@@ -10,7 +10,7 @@ import warnings
 from collections import namedtuple, OrderedDict
 from typing import Tuple, Iterable, List, Union, Optional, Any, Callable, Hashable, Dict, Iterator
 from collections.abc import Sequence
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 import cachetools
 import numpy
@@ -150,7 +150,7 @@ class CRS:
     """
     Wrapper around `pyproj.CRS` for backwards compatibility.
     """
-    DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if LooseVersion(rasterio.__gdal_version__) < LooseVersion("3.0.0")
+    DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if Version(rasterio.__gdal_version__) < Version("3.0.0")
                            else WktVersion.WKT2_2019)
 
     __slots__ = ('_crs', '_epsg', '_str')
