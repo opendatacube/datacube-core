@@ -340,7 +340,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
     def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
         with self._db_connection() as connection:
-            return connection.get_all_products()
+            for row in connection.get_all_product_docs():
+                yield row[0]
 
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)

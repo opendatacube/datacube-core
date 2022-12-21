@@ -118,6 +118,7 @@ class DatasetLocation:
     __table_args__ = (
         _core.METADATA,
         UniqueConstraint('uri_scheme', 'uri_body', 'dataset_ref'),
+        Index("ix_loc_ds_added", "dataset_ref", "added"),
         {
             "schema": sql.SCHEMA_NAME,
             "comment": "Where data for the dataset can be found (uri)."
@@ -138,7 +139,7 @@ eg 'file:///g/data/datasets/LS8_NBAR/odc-metadata.yaml' or 'ftp://eo.something.c
 'file' is a scheme, '///g/data/datasets/LS8_NBAR/odc-metadata.yaml' is a body.""")
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
-    archived = Column(DateTime(timezone=True), default=None, nullable=True,
+    archived = Column(DateTime(timezone=True), default=None, nullable=True, index=True,
                       comment="when archived, null for the active location")
     uri = column_property(uri_scheme + ':' + uri_body)
     dataset = relationship("Dataset")
