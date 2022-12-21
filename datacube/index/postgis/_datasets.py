@@ -10,7 +10,7 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, List, Mapping, Union, Optional, Tuple
+from typing import Iterable, List, Mapping, Union, Optional, Tuple, Any, Sequence
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -938,15 +938,18 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
 
-    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None):
+    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Tuple[
+        Product,
+        Mapping[str, Any],
+        Sequence[str]
+    ]:
         if not products:
             products = { p.name: p for p in self.products.get_all()}
             product_search_key = None
         else:
             product_search_key = list(products.keys())
         with self._db_connection() as connection:
-            for prod_name, metadata_doc, uris in connection.bulk_simple_dataset_search(
-                    products=product_search_key
-            ):
+            for row in connection.bulk_simple_dataset_search(products=product_search_key):
+                prod_name, metadata_doc, uris = tuple(row)
                 prod = products[prod_name]
                 yield(prod, metadata_doc, uris)

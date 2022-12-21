@@ -60,7 +60,7 @@ def _dataset_select_fields():
 
 def _dataset_bulk_select_fields():
     return (
-        Dataset.product_ref,
+        Product.name,
         Dataset.metadata_doc,
         # All active URIs, from newest to oldest
         func.array(
@@ -644,9 +644,15 @@ class PostgisDbAPI(object):
     def bulk_simple_dataset_search(self, products):
         query = select(
             _dataset_bulk_select_fields()
-        ).select_from(Dataset)
+        ).select_from(
+            Dataset
+        ).join(
+            Product
+        ).where(
+            Dataset.archived == None
+        )
         if products:
-            query = query.where(Dataset.product_ref in products)
+            query = query.where(Product.name.in_(products))
         return self._connection.execute(query)
 
     @staticmethod
@@ -672,6 +678,7 @@ class PostgisDbAPI(object):
         dataset_location or dataset_source tables. Joining with other tables would not
         result in multiple records per dataset due to the direction of cardinality.
         """
+
 
         select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
 
@@ -1041,6 +1048,11 @@ class PostgisDbAPI(object):
         return self._connection.execute(
             select(Product).order_by(Product.name.asc())
         ).fetchall()
+
+    def get_all_product_docs(self):
+        return self._connection.execute(
+            select(Product.definition)
+        )
 
     def _get_products_for_metadata_type(self, id_):
         return self._connection.execute(
