@@ -2,7 +2,8 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Geometric operations on GeoBox class
+"""
+Geometric operations on GeoBox class
 """
 
 from typing import Dict, Optional, Tuple, Iterable
@@ -138,15 +139,16 @@ def affine_transform_pix(gbox: GeoBox, transform: Affine) -> GeoBox:
 
 
 class GeoboxTiles():
-    """ Partition GeoBox into sub geoboxes
+    """
+    Partition GeoBox into sub geoboxes
+
+    Construct from a ``GeoBox``
+
+    :param box: source :class:`datacube.utils.geometry.GeoBox`
+    :param tile_shape: Shape of sub-tiles in pixels (rows, cols)
     """
 
     def __init__(self, box: GeoBox, tile_shape: Tuple[int, int]):
-        """ Construct from a ``GeoBox``
-
-        :param box: source :class:`datacube.utils.geometry.GeoBox`
-        :param tile_shape: Shape of sub-tiles in pixels (rows, cols)
-        """
         self._gbox = box
         self._tile_shape = tile_shape
         self._shape = tuple(math.ceil(float(N)/n)
@@ -176,11 +178,12 @@ class GeoboxTiles():
         return (ir, ic)
 
     def chunk_shape(self, idx: Tuple[int, int]) -> Tuple[int, int]:
-        """ Chunk shape for a given chunk index.
+        """
+        Chunk shape for a given chunk index.
 
-            :param idx: (row, col) index
-            :returns: (nrow, ncols) shape of a tile (edge tiles might be smaller)
-            :raises: IndexError when index is outside of [(0,0) -> .shape)
+        :param idx: (row, col) index
+        :returns: (nrow, ncols) shape of a tile (edge tiles might be smaller)
+        :raises: IndexError when index is outside of [(0,0) -> .shape)
         """
         def _sz(i: int, n: int, tile_sz: int, total_sz: int) -> int:
             if 0 <= i < n - 1:  # not edge tile
@@ -194,11 +197,12 @@ class GeoboxTiles():
         return (n1, n2)
 
     def __getitem__(self, idx: Tuple[int, int]) -> GeoBox:
-        """ Lookup tile by index, index is in matrix access order: (row, col)
+        """
+        Lookup tile by index, index is in matrix access order: (row, col)
 
-            :param idx: (row, col) index
-            :returns: GeoBox of a tile
-            :raises: IndexError when index is outside of [(0,0) -> .shape)
+        :param idx: (row, col) index
+        :returns: GeoBox of a tile
+        :raises: IndexError when index is outside of [(0,0) -> .shape)
         """
         sub_gbox = self._cache.get(idx, None)
         if sub_gbox is not None:
@@ -208,7 +212,8 @@ class GeoboxTiles():
         return self._cache.setdefault(idx, self._gbox[roi])
 
     def range_from_bbox(self, bbox: BoundingBox) -> Tuple[range, range]:
-        """ Compute rows and columns overlapping with a given ``BoundingBox``
+        """
+        Compute rows and columns overlapping with a given ``BoundingBox``
         """
         def clamped_range(v1: float, v2: float, N: int) -> range:
             _in = clamp(math.floor(v1), 0, N)
@@ -226,7 +231,8 @@ class GeoboxTiles():
         return (yy, xx)
 
     def tiles(self, polygon: Geometry) -> Iterable[Tuple[int, int]]:
-        """ Return tile indexes overlapping with a given geometry.
+        """
+        Return tile indexes overlapping with a given geometry.
         """
         if self._gbox.crs is None:
             poly = polygon

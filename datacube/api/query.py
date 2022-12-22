@@ -27,17 +27,17 @@ _LOG = logging.getLogger(__name__)
 
 
 class GroupBy:
-    def __init__(self, group_by_func, dimension, units, sort_key=None, group_key=None):
-        """
-        GroupBy Object
+    """
+    GroupBy Object
 
-        :param group_by_func: Dataset -> group identifier
-        :param dimension: dimension of the group key
-        :param units: units of the group key
-        :param sort_key: how to sort datasets in a group internally
-        :param group_key: the coordinate value for a group
-                          list[Dataset] -> coord value
-        """
+    :param group_by_func: Dataset -> group identifier
+    :param dimension: dimension of the group key
+    :param units: units of the group key
+    :param sort_key: how to sort datasets in a group internally
+    :param group_key: the coordinate value for a group
+                      list[Dataset] -> coord value
+    """
+    def __init__(self, group_by_func, dimension, units, sort_key=None, group_key=None):
         self.group_by_func = group_by_func
 
         self.dimension = dimension
@@ -58,37 +58,39 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
               'source_filter')
 
 
-class Query(object):
+class Query:
+    """Parses search terms in preparation for querying the Data Cube Index.
+
+    Create a :class:`Query` object by passing it a set of search terms as keyword arguments.
+
+    >>> query = Query(product='ls5_nbar_albers', time=('2001-01-01', '2002-01-01'))
+
+    Use by accessing :attr:`search_terms`:
+
+    >>> query.search_terms['time']  # doctest: +NORMALIZE_WHITESPACE
+    Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=<UTC>), \
+    end=datetime.datetime(2002, 1, 1, 23, 59, 59, 999999, tzinfo=tzutc()))
+
+    By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
+
+    Used by :meth:`datacube.Datacube.find_datasets` and :meth:`datacube.Datacube.load`.
+
+    :param datacube.index.Index index: An optional `index` object, if checking of field names is desired.
+    :param str product: name of product
+    :param geopolygon: spatial bounds of the search
+    :type geopolygon: geometry.Geometry or None
+    :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
+    :param search_terms:
+
+      * `measurements` - list of measurements to retrieve
+      * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
+      * 'extra_dimension_name' (e.g. `z`) - tuples (min, max) bounding extra \
+         dimensions specified by name for 3D datasets. E.g. z=(10, 30).
+      * `crs` - spatial coordinate reference system to interpret the spatial bounds
+      * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
+
+    """
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
-        """Parses search terms in preparation for querying the Data Cube Index.
-
-        Create a :class:`Query` object by passing it a set of search terms as keyword arguments.
-
-        >>> query = Query(product='ls5_nbar_albers', time=('2001-01-01', '2002-01-01'))
-
-        Use by accessing :attr:`search_terms`:
-
-        >>> query.search_terms['time']  # doctest: +NORMALIZE_WHITESPACE
-        Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=<UTC>), \
-        end=datetime.datetime(2002, 1, 1, 23, 59, 59, 999999, tzinfo=tzutc()))
-
-        By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
-
-        Used by :meth:`datacube.Datacube.find_datasets` and :meth:`datacube.Datacube.load`.
-
-        :param datacube.index.Index index: An optional `index` object, if checking of field names is desired.
-        :param str product: name of product
-        :param geopolygon: spatial bounds of the search
-        :type geopolygon: geometry.Geometry or None
-        :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
-        :param search_terms:
-         * `measurements` - list of measurements to retrieve
-         * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
-         * 'extra_dimension_name' (e.g. `z`) - tuples (min, max) bounding extra \
-            dimensions specified by name for 3D datasets. E.g. z=(10, 30).
-         * `crs` - spatial coordinate reference system to interpret the spatial bounds
-         * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
-        """
         self.product = product
         self.geopolygon = query_geopolygon(geopolygon=geopolygon, **search_terms)
         if 'source_filter' in search_terms and search_terms['source_filter'] is not None:

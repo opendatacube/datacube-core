@@ -14,6 +14,7 @@ def ranges_overlap(ra: Range, rb: Range) -> bool:
     (Assumes the start of the range is included in the range and the end of the range is not.)
 
     :return: True if the ranges overlap.
+
     """
     if ra.begin <= rb.begin:
         return ra.end > rb.begin

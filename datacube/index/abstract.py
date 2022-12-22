@@ -919,7 +919,7 @@ class AbstractDatasetResource(ABC):
         :param query: query parameters that will be processed against metadata_types,
                       product definitions and/or dataset table.
         :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
-        property functions).
+                 property functions).
         """
 
     @abstractmethod

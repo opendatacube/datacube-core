@@ -27,7 +27,7 @@ def _fast_slice(array, indexers):
     return xarray.DataArray(variable, coords=coords, fastpath=True)
 
 
-class Tile(object):
+class Tile:
     """
     The Tile object holds a lightweight representation of a datacube result.
 
@@ -42,15 +42,14 @@ class Tile(object):
 
     This can be used to load small portions of data into memory, instead of having to access
     the entire `Tile` at once.
+
+    :param xarray.DataArray sources: An array of non-spatial dimensions of the request, holding lists of
+        datacube.storage.DatasetSource objects.
+    :param model.GeoBox geobox: The spatial footprint of the Tile
+
     """
 
     def __init__(self, sources, geobox):
-        """Create a Tile representing a dataset that can be loaded.
-
-        :param xarray.DataArray sources: An array of non-spatial dimensions of the request, holding lists of
-            datacube.storage.DatasetSource objects.
-        :param model.GeoBox geobox: The spatial footprint of the Tile
-        """
         self.sources = sources
         self.geobox = geobox
 
@@ -98,17 +97,19 @@ class Tile(object):
 
     def split_by_time(self, freq='A', time_dim='time', **kwargs):
         """
-        Splits along the `time` dimension, into periods, using pandas offsets, such as:
-        :
+        Splits along the `time` dimension, into periods, using pandas offsets, such as::
+
             'A': Annual
             'Q': Quarter
             'M': Month
+
         See: http://pandas.pydata.org/pandas-docs/stable/timeseries.html?highlight=rollback#timeseries-offset-aliases
 
         :param freq: time series frequency
         :param time_dim: name of the time dimension
         :param kwargs: other keyword arguments passed to ``pandas.period_range``
         :return: Generator[tuple(str, Tile)] generator of the key string (eg '1994') and the slice of Tile
+
         """
         # extract first and last timestamps from the time axis, note this will
         # work with 1 element arrays as well

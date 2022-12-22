@@ -389,6 +389,7 @@ class Product:
 
     :param MetadataType metadata_type:
     :param dict definition:
+
     """
 
     def __init__(self,
