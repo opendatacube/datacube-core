@@ -201,11 +201,19 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata):
 
     :return: A dictionary mapping search field names to (type_name, value) tuples.
     """
-    fields = get_dataset_fields(mdt_metadata)
+    fields = {name: field for name, field in get_dataset_fields(mdt_metadata).items() if not isinstance(field, NativeField)}
+    return extract_dataset_fields(ds_metadata, fields)
+
+
+def extract_dataset_fields(ds_metadata, fields):
+    """
+    :param ds_metdata: A Dataset metadata document
+    :param mdt_metadata: The corresponding metadata-type definition document
+
+    :return: A dictionary mapping search field names to (type_name, value) tuples.
+    """
     result = {}
     for field_name, field in fields.items():
-        if isinstance(field, NativeField):
-            continue
         try:
             fld_type = field.type_name
             fld_val = field.search_value_to_alchemy(field.extract(ds_metadata))
@@ -989,7 +997,10 @@ class PostgisDbAPI(object):
 
     def insert_metadata_bulk(self, values):
         requested = len(values)
-        res = self._connection.execute(insert(MetadataType), values)
+        res = self._connection.execute(
+            insert(MetadataType).on_conflict_do_nothing(index_elements=['id']),
+            values
+        )
         return res.rowcount, requested - res.rowcount
 
     def update_metadata_type(self, name, definition, concurrently=False):

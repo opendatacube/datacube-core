@@ -254,7 +254,7 @@ class NumericDocField(SimpleDocField):
         if isinstance(value, float) and math.isnan(value):
             raise UnindexableValue("Cannot index NaNs")
         return func.numrange(
-            value, value,
+            self.value_to_alchemy(value), self.value_to_alchemy(value),
             # Inclusive on both sides.
             '[]',
             type_=NUMRANGE,

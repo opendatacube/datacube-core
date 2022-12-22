@@ -9,21 +9,23 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, List, Union
+from time import monotonic
+from typing import Iterable, List, Union, Mapping, Optional, Any
 from uuid import UUID
 
 from sqlalchemy import select, func
 
 from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgres._schema import DATASET
-from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID
+from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, DatasetTuple, BatchStatus
 from datacube.index.postgres._transaction import IndexResourceAddIn
-from datacube.model import Dataset, DatasetType
+from datacube.model import Dataset, Product
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
 from datacube.index import fields
+from datacube.drivers.postgres._api import split_uri
 
 _LOG = logging.getLogger(__name__)
 
@@ -189,7 +191,39 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return dataset
 
-    def search_product_duplicates(self, product: DatasetType, *args):
+    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
+        b_started = monotonic()
+        batch = {
+            "datasets": [],
+            "uris": [],
+        }
+        for prod, metadata_doc, uris in batch_ds:
+            dsid = UUID(metadata_doc["id"])
+            batch["datasets"].append(
+                {
+                    "id": dsid,
+                    "dataset_type_ref": prod.id,
+                    "metadata": metadata_doc,
+                    "metadata_type_ref": prod.metadata_type.id
+                }
+            )
+            for uri in uris:
+                scheme, body = split_uri(uri)
+                batch["uris"].append(
+                    {
+                        "dataset_ref": dsid,
+                        "uri_scheme": scheme,
+                        "uri_body": body,
+                    }
+                )
+        with self._db_connection(transaction=True) as connection:
+            if batch["datasets"]:
+                b_added, b_skipped = connection.insert_dataset_bulk(batch["datasets"])
+            if batch["uris"]:
+                connection.insert_dataset_location_bulk(batch["uris"])
+        return (b_added, b_skipped, monotonic() - b_started)
+
+    def search_product_duplicates(self, product: Product, *args):
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -513,7 +547,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Perform a search, returning datasets grouped by product type.
 
         :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[(DatasetType,  __generator[Dataset])]]
+        :rtype: __generator[(Product,  __generator[Dataset])]]
         """
         for product, datasets in self._do_search_by_product(query):
             yield product, self._make_many(datasets, product)
@@ -561,7 +595,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param dict[str,str|float|datacube.model.Range] query:
         :returns: Sequence of (product, count)
-        :rtype: __generator[(DatasetType,  int)]]
+        :rtype: __generator[(Product,  int)]]
         """
         return self._do_count_by_product(query)
 
@@ -573,7 +607,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dict[str,str|float|datacube.model.Range] query:
         :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: __generator[(DatasetType, list[(datetime.datetime, datetime.datetime), int)]]
+        :rtype: __generator[(Product, list[(datetime.datetime, datetime.datetime), int)]]
         """
         return self._do_time_count(period, query)
 
@@ -886,3 +920,15 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def spatial_extent(self, ids, crs=None):
         return None
+
+    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Iterable[DatasetTuple]:
+        if not products:
+            products = { p.name: p for p in self.products.get_all()}
+            product_search_key = None
+        else:
+            product_search_key = list(products.keys())
+        with self._db_connection() as connection:
+            for row in connection.bulk_simple_dataset_search(products=product_search_key):
+                prod_name, metadata_doc, uris = tuple(row)
+                prod = products[prod_name]
+                yield(prod, metadata_doc, uris)

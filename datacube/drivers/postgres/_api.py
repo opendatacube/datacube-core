@@ -58,6 +58,24 @@ _DATASET_SELECT_FIELDS = (
         ).label('uris')
     ).label('uris')
 )
+_DATASET_BULK_SELECT_FIELDS = (
+    PRODUCT.c.name,
+    DATASET.c.metadata,
+    # All active URIs, from newest to oldest
+    func.array(
+        select([
+            _dataset_uri_field(SELECTED_DATASET_LOCATION)
+        ]).where(
+            and_(
+                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+                SELECTED_DATASET_LOCATION.c.archived == None
+            )
+        ).order_by(
+            SELECTED_DATASET_LOCATION.c.added.desc(),
+            SELECTED_DATASET_LOCATION.c.id.desc()
+        ).label('uris')
+    ).label('uris')
+)
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 PGCODE_FOREIGN_KEY_VIOLATION = '23503'
@@ -65,7 +83,7 @@ PGCODE_FOREIGN_KEY_VIOLATION = '23503'
 _LOG = logging.getLogger(__name__)
 
 
-def _split_uri(uri):
+def split_uri(uri):
     """
     Split the scheme and the remainder of the URI.
 
@@ -225,6 +243,13 @@ class PostgresDbAPI(object):
         )
         return ret.rowcount > 0
 
+    def insert_dataset_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(
+            insert(DATASET), values
+        )
+        return res.rowcount, requested - res.rowcount
+
     def update_dataset(self, metadata_doc, dataset_id, product_id):
         """
         Update dataset
@@ -255,7 +280,7 @@ class PostgresDbAPI(object):
         :rtype bool:
         """
 
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
 
         r = self._connection.execute(
             insert(DATASET_LOCATION).on_conflict_do_nothing(
@@ -267,6 +292,11 @@ class PostgresDbAPI(object):
         )
 
         return r.rowcount > 0
+
+    def insert_dataset_location_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(DATASET_LOCATION), values)
+        return res.rowcount, requested - res.rowcount
 
     def contains_dataset(self, dataset_id):
         return bool(
@@ -290,7 +320,7 @@ class PostgresDbAPI(object):
                 )).fetchall()]
 
     def get_datasets_for_location(self, uri, mode=None):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
 
         if mode is None:
             mode = 'exact' if body.count('#') > 0 else 'prefix'
@@ -580,6 +610,21 @@ class PostgresDbAPI(object):
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids, limit)
         return self._connection.execute(select_query)
+
+    def bulk_simple_dataset_search(self, products):
+        query = select(
+            _DATASET_BULK_SELECT_FIELDS
+        ).select_from(
+            DATASET
+        ).join(
+            PRODUCT
+        ).where(
+            DATASET.c.archived == None
+        )
+        if products:
+            query = query.where(PRODUCT.c.name.in_(products))
+        return self._connection.execute(query)
+
 
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
@@ -1016,7 +1061,7 @@ class PostgresDbAPI(object):
 
         :returns bool: Was the location deleted?
         """
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             delete(DATASET_LOCATION).where(
                 and_(
@@ -1029,7 +1074,7 @@ class PostgresDbAPI(object):
         return res.rowcount > 0
 
     def archive_location(self, dataset_id, uri):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
                 and_(
@@ -1045,7 +1090,7 @@ class PostgresDbAPI(object):
         return res.rowcount > 0
 
     def restore_location(self, dataset_id, uri):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
                 and_(
