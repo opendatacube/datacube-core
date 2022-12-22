@@ -173,8 +173,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return dataset
 
-    def _add_batch(self, batch_ds: Iterable[DatasetTuple]) -> BatchStatus:
-        # Add a "batch" of mdts.  Simple loop in a transaction for now.
+    def _init_bulk_add_cache(self):
+        return {}
+
+    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache:Mapping[str, Any]) -> BatchStatus:
+        # Add a "batch" of datasets.
         b_started = monotonic()
         crses = self._db.spatial_indexes()
         batch = {
@@ -212,11 +215,16 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 metadata_doc["grid_spatial"]["projection"]
             )
             if extent:
+                geo_extent = extent.to_crs(CRS("EPSG:4326"))
                 for crs in crses:
-                    values = generate_dataset_spatial_values(dsid, crs, extent)
+                    values = generate_dataset_spatial_values(dsid, crs, extent, geo_extent=geo_extent)
                     if values is not None:
                         batch["spatial_indexes"][crs].append(values)
-            search_field_vals = extract_dataset_search_fields(metadata_doc, prod.metadata_type.definition)
+            if prod.metadata_type.name in cache:
+                search_field_vals = cache[prod.metadata_type.name]
+            else:
+                search_field_vals = extract_dataset_search_fields(metadata_doc, prod.metadata_type.definition)
+                cache[prod.metadata_type.name] = search_field_vals
             for fname, finfo in search_field_vals.items():
                 ftype, fval = finfo
                 if isinstance(fval, Range):
@@ -938,11 +946,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
 
-    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Tuple[
-        Product,
-        Mapping[str, Any],
-        Sequence[str]
-    ]:
+    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Iterable[DatasetTuple]:
         if not products:
             products = { p.name: p for p in self.products.get_all()}
             product_search_key = None

@@ -958,7 +958,7 @@ class AbstractDatasetResource(ABC):
                 prod = ds.product
             yield (prod, ds.metadata_doc, ds.uris)
 
-    def _add_batch(self, batch_ds: Iterable[DatasetTuple]) -> BatchStatus:
+    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
         # Add a "batch" of datasets.  Default implementation is simple loop of add
         b_skipped = 0
         b_added = 0
@@ -975,6 +975,9 @@ class AbstractDatasetResource(ABC):
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
         return (b_added, b_skipped, monotonic() - b_started)
+
+    def _init_bulk_add_cache(self) -> Mapping[str, Any]:
+        return {}
 
     def bulk_add(self, datasets: Iterable[DatasetTuple], batch_size: int = 1000) -> BatchStatus:
         """
@@ -995,22 +998,24 @@ class AbstractDatasetResource(ABC):
         batch = []
         job_started = monotonic()
         last_batch_started = job_started
+        inter_batch_cache = self._init_bulk_add_cache()
         for ds_tup in datasets:
             batch.append(ds_tup)
             n_in_batch += 1
             if n_in_batch >= batch_size:
-                batch_added, batch_skipped, elapsed = self._add_batch(batch)
+                batch_added, batch_skipped, elapsed = self._add_batch(batch, inter_batch_cache)
                 cutoff = monotonic()
                 elapsed = cutoff - last_batch_started
                 last_batch_started = cutoff
-                print(f"Batch of {n_in_batch} datasets added in {elapsed:.2f}s: ({batch_added*60/elapsed:.2f}datasets/min)")
+                if batch_size > 1:
+                    print(f"Batch {batch_added}/{n_in_batch} datasets added in {elapsed:.2f}s: ({batch_added*60/elapsed:.2f}datasets/min)")
                 added += batch_added
                 skipped += batch_skipped
                 batch = []
                 n_in_batch = 0
                 n_batches += 1
         if n_in_batch > 0:
-            batch_added, batch_skipped, elapsed = self._add_batch(batch)
+            batch_added, batch_skipped, elapsed = self._add_batch(batch, inter_batch_cache)
             added += batch_added
             skipped += batch_skipped
 

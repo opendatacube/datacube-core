@@ -165,11 +165,15 @@ def geom_alchemy(geom: Geom) -> str:
     return f"SRID={geom.crs.epsg};{geom.wkt}"
 
 
-def sanitise_extent(extent, crs):
+def sanitise_extent(extent, crs, geo_extent=None):
     if not crs.valid_region:
         # No valid region on CRS, just reproject
         return extent.to_crs(crs)
-    geo_extent = extent.to_crs(CRS("EPSG:4326"))
+    if geo_extent is None:
+        geo_extent = extent.to_crs(CRS("EPSG:4326"))
+    if crs.epsg == 4326:
+        # geo_extent is what we want anyway - shortcut
+        return geo_extent
     if crs.valid_region.contains(geo_extent):
         # Valid region contains extent, just reproject
         return extent.to_crs(crs)
@@ -184,8 +188,8 @@ def sanitise_extent(extent, crs):
     return valid_extent.to_crs(crs)
 
 
-def generate_dataset_spatial_values(dataset_id, crs, extent):
-    extent = sanitise_extent(extent, crs)
+def generate_dataset_spatial_values(dataset_id, crs, extent, geo_extent=None):
+    extent = sanitise_extent(extent, crs, geo_extent=geo_extent)
     if extent is None:
         return None
     geom_alch = geom_alchemy(extent)

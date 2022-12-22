@@ -62,6 +62,24 @@ _DATASET_SELECT_FIELDS = (
         ).label('uris')
     ).label('uris')
 )
+_DATASET_BULK_SELECT_FIELDS = (
+    PRODUCT.c.name,
+    DATASET.c.metadata,
+    # All active URIs, from newest to oldest
+    func.array(
+        select([
+            _dataset_uri_field(SELECTED_DATASET_LOCATION)
+        ]).where(
+            and_(
+                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+                SELECTED_DATASET_LOCATION.c.archived == None
+            )
+        ).order_by(
+            SELECTED_DATASET_LOCATION.c.added.desc(),
+            SELECTED_DATASET_LOCATION.c.id.desc()
+        ).label('uris')
+    ).label('uris')
+)
 
 
 def get_native_fields():
@@ -212,6 +230,13 @@ class PostgresDbAPI(object):
         )
         return ret.rowcount > 0
 
+    def insert_dataset_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(
+            insert(DATASET), values
+        )
+        return res.rowcount, requested - res.rowcount
+
     def update_dataset(self, metadata_doc, dataset_id, product_id):
         """
         Update dataset
@@ -254,6 +279,11 @@ class PostgresDbAPI(object):
         )
 
         return r.rowcount > 0
+
+    def insert_dataset_location_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(DATASET_LOCATION), values)
+        return res.rowcount, requested - res.rowcount
 
     def contains_dataset(self, dataset_id):
         return bool(
@@ -567,6 +597,21 @@ class PostgresDbAPI(object):
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids, limit)
         return self._connection.execute(select_query)
+
+    def bulk_simple_dataset_search(self, products):
+        query = select(
+            _DATASET_BULK_SELECT_FIELDS
+        ).select_from(
+            DATASET
+        ).join(
+            PRODUCT
+        ).where(
+            DATASET.c.archived == None
+        )
+        if products:
+            query = query.where(PRODUCT.c.name.in_(products))
+        return self._connection.execute(query)
+
 
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
