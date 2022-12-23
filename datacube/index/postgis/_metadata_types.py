@@ -84,7 +84,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         values = [{"name": mdt.name, "definition": mdt.definition} for mdt in batch_types]
         with self._db_connection() as connection:
             added, skipped = connection.insert_metadata_bulk(values)
-            return (added, skipped, monotonic() - b_started)
+            return BatchStatus(added, skipped, monotonic() - b_started)
 
     def can_update(self, metadata_type, allow_unsafe_updates=False):
         """

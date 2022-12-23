@@ -10,7 +10,8 @@ from time import monotonic
 
 from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
-                    List, Mapping, MutableMapping, Optional,
+                    List, Mapping, MutableMapping,
+                    NamedTuple, Optional,
                     Tuple, Union, Sequence)
 from uuid import UUID
 
@@ -27,9 +28,12 @@ from datacube.utils.documents import UnknownMetadataType
 
 _LOG = logging.getLogger(__name__)
 
-# A tuple representing the results of a batch operation: completed, skipped, frac_seconds_elapsed
-# TODO?: Make a namedtuple - typehint-compatible
-BatchStatus = Tuple[int, int, float]
+# A named tuple representing the results of a batch operation:
+#   Number of records completed, Number of records skipped,
+class BatchStatus(NamedTuple):
+    completed: int
+    skipped: int
+    seconds_elapsed: float
 
 
 class AbstractUserResource(ABC):
@@ -145,7 +149,7 @@ class AbstractMetadataTypeResource(ABC):
             except Exception as e:
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
-        return (b_added, b_skipped, monotonic() - b_started)
+        return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
     def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> BatchStatus:
         """
@@ -170,17 +174,17 @@ class AbstractMetadataTypeResource(ABC):
                 _LOG.warning("%s: Skipped", str(e))
                 skipped += 1
             if n_in_batch >= batch_size:
-                batch_added, batch_skipped, batch_elapsed = self._add_batch(batch)
-                added += batch_added
-                skipped += batch_skipped
+                batch_results = self._add_batch(batch)
+                added += batch_results.completed
+                skipped += batch_results.skipped
                 batch = []
                 n_in_batch = 0
                 n_batches += 1
         if n_in_batch > 0:
-            batch_added, batch_skipped, batch_elapsed = self._add_batch(batch)
-            added += batch_added
-            skipped += batch_skipped
-        return (added, skipped, monotonic() - started)
+            batch_results = self._add_batch(batch)
+            added += batch_results.completed
+            skipped += batch_results.skipped
+        return BatchStatus(added, skipped, monotonic() - started)
 
     @abstractmethod
     def can_update(self,
@@ -404,7 +408,7 @@ class AbstractProductResource(ABC):
             except Exception as e:
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
-        return (b_added, b_skipped, monotonic()-b_started)
+        return BatchStatus(b_added, b_skipped, monotonic()-b_started)
 
 
     def bulk_add(self,
@@ -435,18 +439,18 @@ class AbstractProductResource(ABC):
                 _LOG.warning("%s: Skipped", str(e))
                 skipped += 1
             if n_in_batch >= batch_size:
-                batch_added, batch_skipped, batch_elapsed = self._add_batch(batch)
-                added += batch_added
-                skipped += batch_skipped
+                batch_results = self._add_batch(batch)
+                added += batch_results.completed
+                skipped += batch_results.skipped
                 batch = []
                 n_in_batch = 0
                 n_batches += 1
         if n_in_batch > 0:
-            batch_added, batch_skipped, batch_elapsed = self._add_batch(batch)
-            added += batch_added
-            skipped += batch_skipped
+            batch_results = self._add_batch(batch)
+            added += batch_results.completed
+            skipped += batch_results.skipped
 
-        return (added, skipped, monotonic() - started)
+        return BatchStatus(added, skipped, monotonic() - started)
 
     @abstractmethod
     def can_update(self,
@@ -636,9 +640,11 @@ class AbstractProductResource(ABC):
 # Non-strict Dataset ID representation
 DSID = Union[str, UUID]
 
-# A minimal tuple representing a complete dataset.
-# TODO?: Make a namedtuple - typehint-compatible
-DatasetTuple = Tuple[Product, Mapping[str, Any], Sequence[str]]
+# A named tuple representing a complete dataset. (Product, metadata document, sequence of uris)
+class DatasetTuple(NamedTuple):
+    product: Product
+    metadata: Mapping[str, Any]
+    uris: Sequence[str]
 
 
 def dsid_to_uuid(dsid: DSID) -> UUID:
@@ -956,16 +962,18 @@ class AbstractDatasetResource(ABC):
                 prod = products[ds.product.name]
             else:
                 prod = ds.product
-            yield (prod, ds.metadata_doc, ds.uris)
+            yield DatasetTuple(prod, ds.metadata_doc, ds.uris)
 
     def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
         # Add a "batch" of datasets.  Default implementation is simple loop of add
         b_skipped = 0
         b_added = 0
         b_started = monotonic()
-        for prod, metadata_doc, uris in batch_ds:
+        for ds_tup in batch_ds:
             try:
-                ds = Dataset(product=prod, metadata_doc=metadata_doc, uris=uris)
+                ds = Dataset(product=ds_tup.product,
+                             metadata_doc=ds_tup.metadata,
+                             uris=ds_tup.uris)
                 self.add(ds, with_lineage=False)
                 b_added += 1
             except DocumentMismatchError as e:
@@ -974,7 +982,7 @@ class AbstractDatasetResource(ABC):
             except Exception as e:
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
-        return (b_added, b_skipped, monotonic() - b_started)
+        return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
     def _init_bulk_add_cache(self) -> Mapping[str, Any]:
         return {}
@@ -997,29 +1005,28 @@ class AbstractDatasetResource(ABC):
         skipped = 0
         batch = []
         job_started = monotonic()
-        last_batch_started = job_started
         inter_batch_cache = self._init_bulk_add_cache()
         for ds_tup in datasets:
             batch.append(ds_tup)
             n_in_batch += 1
             if n_in_batch >= batch_size:
-                batch_added, batch_skipped, elapsed = self._add_batch(batch, inter_batch_cache)
-                cutoff = monotonic()
-                elapsed = cutoff - last_batch_started
-                last_batch_started = cutoff
-                if batch_size > 1:
-                    print(f"Batch {batch_added}/{n_in_batch} datasets added in {elapsed:.2f}s: ({batch_added*60/elapsed:.2f}datasets/min)")
-                added += batch_added
-                skipped += batch_skipped
+                batch_result = self._add_batch(batch, inter_batch_cache)
+                _LOG.info("Batch %d/%d datasets added in %.2fs: (%.2fdatasets/min)",
+                          batch_result.completed,
+                          n_in_batch,
+                          batch_result.seconds_elapsed,
+                          batch_result.completed * 60 / batch_result.seconds_elapsed)
+                added += batch_result.completed
+                skipped += batch_result.skipped
                 batch = []
                 n_in_batch = 0
                 n_batches += 1
         if n_in_batch > 0:
-            batch_added, batch_skipped, elapsed = self._add_batch(batch, inter_batch_cache)
-            added += batch_added
-            skipped += batch_skipped
+            batch_result = self._add_batch(batch, inter_batch_cache)
+            added += batch_result.completed
+            skipped += batch_result.skipped
 
-        return (added, skipped, monotonic() - job_started)
+        return BatchStatus(added, skipped, monotonic() - job_started)
 
     @abstractmethod
     def search_by_product(self,
@@ -1493,29 +1500,28 @@ class AbstractIndex(ABC):
         :param batch_size: Maximum number of objects to write to the database in one go.
         :return: List of errors (strings). Empty sequence on successful clone.
         """
-        results = {
-            "metadata_types": (0, 0, 0.0),
-            "products": (0, 0, 0.0),
-            "datasets": (0, 0, 0.0),
-        }
+        results = {}
         # Clone Metadata Types
         results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
                                                                  batch_size=batch_size)
         res = results["metadata_types"]
-        print(f'{res[0]} metadata types loaded ({res[1]} skipped) in {res[2]:.2f}seconds ({res[0]*60/res[2]:.2f} metadata_types/min)')
+        print(f'{res.completed} metadata types loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds "'
+              f'({res.completed*60/res.seconds_elapsed:.2f} metadata_types/min)')
         metadata_cache = {mdt.name: mdt for mdt in self.metadata_types.get_all()}
         # Clone Products
         results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
                                                      metadata_types=metadata_cache,
                                                      batch_size=batch_size)
         res = results["products"]
-        print(f'{res[0]} products loaded ({res[1]} skipped) in {res[2]:.2f}seconds ({res[0]*60/res[2]:.2f} products/min)')
+        print(f'{res.completed} products loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds "'
+              f'({res.completed*60/res.seconds_elapsed:.2f} metadata_types/min)')
         # Clone Datasets (group by product for now for convenience)
         product_cache = {p.name: p for p in self.products.get_all()}
         results["datasets"] = self.datasets.bulk_add(origin_index.datasets.get_all_docs(products=product_cache),
                                                      batch_size=batch_size)
         res = results["datasets"]
-        print(f'{res[0]} datasets loaded ({res[1]} skipped) in {res[2]:.2f}seconds ({res[0]*60/res[2]:.2f} datasets/min)')
+        print(f'{res.completed} datasets loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds "'
+              f'({res.completed*60/res.seconds_elapsed:.2f} metadata_types/min)')
         return results
 
     @abstractmethod

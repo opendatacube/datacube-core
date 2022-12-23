@@ -221,7 +221,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 b_added, b_skipped = connection.insert_dataset_bulk(batch["datasets"])
             if batch["uris"]:
                 connection.insert_dataset_location_bulk(batch["uris"])
-        return (b_added, b_skipped, monotonic() - b_started)
+        return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
     def search_product_duplicates(self, product: Product, *args):
         """
@@ -931,4 +931,4 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for row in connection.bulk_simple_dataset_search(products=product_search_key):
                 prod_name, metadata_doc, uris = tuple(row)
                 prod = products[prod_name]
-                yield(prod, metadata_doc, uris)
+                yield DatasetTuple(prod, metadata_doc, uris)
