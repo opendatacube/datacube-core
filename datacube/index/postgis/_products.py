@@ -102,7 +102,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         ]
         with self._db_connection() as connection:
             added, skipped = connection.insert_product_bulk(values)
-            return (added, skipped, monotonic() - b_started)
+            return BatchStatus(added, skipped, monotonic() - b_started)
 
     def can_update(self, product, allow_unsafe_updates=False):
         """
