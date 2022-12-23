@@ -269,6 +269,7 @@ class InvalidDocException(Exception):  # noqa: N818
 
 
 class UnknownMetadataType(InvalidDocException):
+    # Specific exception to raise on a product with an unknown metadata type
     pass
 
 
