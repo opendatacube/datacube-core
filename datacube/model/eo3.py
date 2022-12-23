@@ -17,7 +17,7 @@ expected_sys_field_values = {
     "label": lambda x: x == ["label"],
     "creation_dt": lambda x: x == ["properties", "odc:processing_datetime"],
     "format": lambda x: x == ["properties", "odc:file_format"],
-    # EO3 mdy has sources at [lineage,source_datasets], but it is actually expected at [lineage],
+    # EO3 mdt has sources at [lineage,source_datasets], but it is actually expected at [lineage],
     # so accept anything vaguely right
     "sources": lambda x: x[0] == "lineage",
     # Actually kept under geometry and grids.  Ignore - why is this even here?
@@ -67,6 +67,16 @@ def validate_eo3_offsets(field_name, mdt_name, defn):
 
 
 def validate_eo3_compatible_type(doc):
+    """
+    Valdate that a metadata type document is EO3 compatible.
+
+    N.B. Assumes the document has already been validated as a valid ODC metadata type document.
+
+    :param doc: A metadata type document
+
+    Raises InvalidDocException if not EO3 compatible
+    """
+    # Validate that a metadata type doc is EO3 compatible.
     name = doc["name"]
     # Validate system field offsets
     for k, v in doc["dataset"].items():
