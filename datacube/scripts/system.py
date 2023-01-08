@@ -9,7 +9,8 @@ from click import echo, style
 from sqlalchemy.exc import OperationalError
 
 import datacube
-from datacube.index import index_connect
+from datacube import Datacube
+from datacube.index import Index, index_connect
 from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
@@ -97,3 +98,21 @@ def check(local_config: LocalConfig):
         handle_exception('Error Connecting to Database: %s', e)
     except IndexSetupError as e:
         handle_exception('Database not initialised: %s', e)
+
+
+@system.command('clone', help='Clone an existing ODC index into a new, empty index')
+@click.option('--batch-size',
+              help='Size of batches for bulk-adding to the new index',
+              type=int,
+              default=1000)
+@click.argument('source-env', type=str, nargs=1)
+@ui.pass_index()
+def clone(index: Index, batch_size: int, source_env: str):
+    try:
+        source_dc = Datacube(env=source_env)
+    except OperationalError as e:
+        handle_exception('Error Connecting to Source Database: %s', e)
+    except IndexSetupError as e:
+        handle_exception('Source database not initialised: %s', e)
+
+    index.clone(source_dc.index, batch_size=batch_size)

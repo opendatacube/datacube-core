@@ -11,7 +11,8 @@ from typing import Type
 
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.orm import aliased, registry, relationship, column_property
-from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text, Index
+from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text, Index, \
+    literal
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
@@ -94,7 +95,7 @@ class Dataset:
     # but is forbidden by SQLAlchemy declarative style
     metadata_doc = Column(name="metadata", type_=postgres.JSONB, index=False, nullable=False,
                           comment="The dataset metadata document")
-    archived = Column(DateTime(timezone=True), default=None, nullable=True, index=True,
+    archived = Column(DateTime(timezone=True), default=None, nullable=True,
                       comment="when archived, null if active")
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
@@ -110,6 +111,10 @@ class Dataset:
                                       primaryjoin="and_(Dataset.id==DatasetLocation.dataset_ref, "
                                                   "DatasetLocation.archived!=None)"
                                      )
+
+
+Index("ix_ds_prod_active", Dataset.product_ref, postgresql_where=(Dataset.archived == None))
+Index("ix_ds_mdt_active", Dataset.metadata_type_ref, postgresql_where=(Dataset.archived == None))
 
 
 @orm_registry.mapped
@@ -141,7 +146,7 @@ eg 'file:///g/data/datasets/LS8_NBAR/odc-metadata.yaml' or 'ftp://eo.something.c
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
     archived = Column(DateTime(timezone=True), default=None, nullable=True, index=True,
                       comment="when archived, null for the active location")
-    uri = column_property(uri_scheme + ':' + uri_body)
+    uri = column_property(uri_scheme + literal(':') + uri_body)
     dataset = relationship("Dataset")
 
 

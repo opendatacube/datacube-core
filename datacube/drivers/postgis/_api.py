@@ -60,7 +60,7 @@ def _dataset_select_fields():
 
 def _dataset_bulk_select_fields():
     return (
-        Product.name,
+        Dataset.product_ref,
         Dataset.metadata_doc,
         # All active URIs, from newest to oldest
         func.array(
@@ -233,7 +233,10 @@ class PostgisDbAPI(object):
         return self._connection.in_transaction()
 
     def begin(self):
+        assert not self._connection.in_transaction()
+        print("Calling begin??")
         self._connection.execute(text('BEGIN'))
+        # assert self._connection.in_transaction()
 
     def commit(self):
         self._connection.execute(text('COMMIT'))
@@ -649,19 +652,17 @@ class PostgisDbAPI(object):
         _LOG.debug("search_datasets SQL: %s", str(select_query))
         return self._connection.execute(select_query)
 
-    def bulk_simple_dataset_search(self, products):
+    def bulk_simple_dataset_search(self, products, batch_size=1000):
         query = select(
             _dataset_bulk_select_fields()
-        ).select_from(
-            Dataset
-        ).join(
-            Product
-        ).where(
+        ).select_from(Dataset).where(
             Dataset.archived == None
         )
         if products:
-            query = query.where(Product.name.in_(products))
-        return self._connection.execute(query)
+            query = query.where(Dataset.product_ref.in_(products))
+
+        assert self._connection.in_transaction()
+        return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):

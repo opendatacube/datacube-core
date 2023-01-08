@@ -108,10 +108,12 @@ def test_spatial_index_crs_santise():
         (135.22, -25.7),
         (103.15, -25.7)), crs=epsg4326)
 
-    assert PostgisDbAPI._sanitise_extent(entire, epsg3577) == entire.to_crs("EPSG:3577")
-    assert PostgisDbAPI._sanitise_extent(valid, epsg3577) == valid.to_crs("EPSG:3577")
-    assert PostgisDbAPI._sanitise_extent(invalid, epsg3577) is None
-    assert PostgisDbAPI._sanitise_extent(partial, epsg3577).area < partial.to_crs("EPSG:3577").area
+    from datacube.drivers.postgis._spatial import sanitise_extent
+
+    assert sanitise_extent(entire, epsg3577) == entire.to_crs("EPSG:3577")
+    assert sanitise_extent(valid, epsg3577) == valid.to_crs("EPSG:3577")
+    assert sanitise_extent(invalid, epsg3577) is None
+    assert sanitise_extent(partial, epsg3577).area < partial.to_crs("EPSG:3577").area
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
