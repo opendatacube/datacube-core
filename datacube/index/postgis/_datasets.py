@@ -930,7 +930,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         in metadata doc and their offsets are provided. custom_query is a dict of key fields involving
         custom fields.
         """
-
         custom_exprs = []
         for key in custom_query:
             # for now we assume all custom query fields are SimpleDocFields
@@ -947,13 +946,25 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return connection.spatial_extent(ids, crs)
 
     def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Iterable[DatasetTuple]:
-        if not products:
-            products = { p.name: p for p in self.products.get_all()}
-            product_search_key = None
+        local_products = list(self.products.get_all())
+        local_products_by_id = {p.id: p for p in local_products}
+        if products:
+            local_products_by_name = {p.name: p for p in local_products}
+            local_products_set = set(local_products_by_name.keys())
+            products_in_set = set(products.keys())
+            if products_in_set == local_products_set:
+                product_search_key = None
+            else:
+                product_search_key = [
+                    local_products_by_name[pname].id
+                    for pname in products_in_set
+                    if pname in local_products_set
+                ]
         else:
-            product_search_key = list(products.keys())
-        with self._db_connection() as connection:
-            for row in connection.bulk_simple_dataset_search(products=product_search_key):
-                prod_name, metadata_doc, uris = tuple(row)
-                prod = products[prod_name]
+            product_search_key = None
+        with self._db_connection(transaction=True) as connection:
+            assert connection.in_transaction
+            for row in connection.bulk_simple_dataset_search(products=product_search_key, batch_size=100):
+                prod_id, metadata_doc, uris = tuple(row)
+                prod = local_products_by_id[prod_id]
                 yield DatasetTuple(prod, metadata_doc, uris)

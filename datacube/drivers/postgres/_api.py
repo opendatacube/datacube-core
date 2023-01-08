@@ -599,17 +599,21 @@ class PostgresDbAPI(object):
         return self._connection.execute(select_query)
 
     def bulk_simple_dataset_search(self, products):
+        if products:
+            query = select(PRODUCT.c.id).select_from(PRODUCT).where(PRODUCT.c.name.in_(products))
+            products = [row[0] for row in self._connection.execute(query)]
+            if not products:
+                return []
+        else:
+            products = None
         query = select(
             _DATASET_BULK_SELECT_FIELDS
-        ).select_from(
-            DATASET
-        ).join(
-            PRODUCT
-        ).where(
+        ).select_from(DATASET).join(PRODUCT).where(
             DATASET.c.archived == None
         )
         if products:
-            query = query.where(PRODUCT.c.name.in_(products))
+            query = query.where(DATASET.c.dataset_type_ref.in_(products))
+
         return self._connection.execute(query)
 
 

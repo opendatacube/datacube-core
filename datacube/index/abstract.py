@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import logging
+import sys
+
 from pathlib import Path
 from threading import Lock
 from time import monotonic
@@ -944,7 +946,7 @@ class AbstractDatasetResource(ABC):
         Return all datasets in bulk, filtering by product names only. Do not instantiate models.
         Archived datasets and locations are excluded.
 
-        :param products: Mapping of product names to product names. Filtering is done by product name, and
+        :param products: Mapping of product names to Products. Filtering is done by product name, and
                          products from this map are used to build the Dataset models.  May come from a different index.
                          Default/None: all products, Products read from the source index.
         :return: Iterable of tuples containing:
@@ -954,7 +956,7 @@ class AbstractDatasetResource(ABC):
         """
         # Default implementation calls search
         if products:
-            product_search_key =  list(products.keys())
+            product_search_key = list(products.keys())
         else:
             product_search_key = None
         for ds in self.search(product=product_search_key):
@@ -999,6 +1001,9 @@ class AbstractDatasetResource(ABC):
         :param batch_size: Number of metadata types to add per batch (default 1000)
         :return: Tuple of: count of datasets added, count of datasets skipped.
         """
+        def increment_progress():
+            if sys.stdout.isatty():
+                print(".", end="", flush=True)
         n_batches = 0
         n_in_batch = 0
         added = 0
@@ -1021,10 +1026,12 @@ class AbstractDatasetResource(ABC):
                 batch = []
                 n_in_batch = 0
                 n_batches += 1
+                increment_progress()
         if n_in_batch > 0:
             batch_result = self._add_batch(batch, inter_batch_cache)
             added += batch_result.completed
             skipped += batch_result.skipped
+            increment_progress()
 
         return BatchStatus(added, skipped, monotonic() - job_started)
 
@@ -1502,26 +1509,46 @@ class AbstractIndex(ABC):
         """
         results = {}
         # Clone Metadata Types
+        if sys.stdout.isatty():
+            print("Cloning Metadata Types:")
         results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
                                                                  batch_size=batch_size)
         res = results["metadata_types"]
-        print(f'{res.completed} metadata types loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds "'
-              f'({res.completed*60/res.seconds_elapsed:.2f} metadata_types/min)')
+        msg = f'{res.completed} metadata types loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
+              f'({res.completed * 60 / res.seconds_elapsed:.2f} metadata_types/min)'
+        if sys.stdout.isatty():
+            print(msg)
+        else:
+            _LOG.info(msg)
         metadata_cache = {mdt.name: mdt for mdt in self.metadata_types.get_all()}
         # Clone Products
+        if sys.stdout.isatty():
+            print("Cloning Products:")
         results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
                                                      metadata_types=metadata_cache,
                                                      batch_size=batch_size)
         res = results["products"]
-        print(f'{res.completed} products loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds "'
-              f'({res.completed*60/res.seconds_elapsed:.2f} metadata_types/min)')
+        msg = f'{res.completed} products loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
+              f'({res.completed * 60 / res.seconds_elapsed:.2f} products/min)'
+        if sys.stdout.isatty():
+            print(msg)
+        else:
+            _LOG.info(msg)
         # Clone Datasets (group by product for now for convenience)
+        if sys.stdout.isatty():
+            print("Cloning Datasets:")
         product_cache = {p.name: p for p in self.products.get_all()}
         results["datasets"] = self.datasets.bulk_add(origin_index.datasets.get_all_docs(products=product_cache),
                                                      batch_size=batch_size)
         res = results["datasets"]
-        print(f'{res.completed} datasets loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds "'
-              f'({res.completed*60/res.seconds_elapsed:.2f} metadata_types/min)')
+        if sys.stdout.isatty():
+            print("")
+        msg = f'{res.completed} datasets loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
+              f'({res.completed * 60 / res.seconds_elapsed:.2f} datasets/min)'
+        if sys.stdout.isatty():
+            print(msg)
+        else:
+            _LOG.info(msg)
         return results
 
     @abstractmethod
