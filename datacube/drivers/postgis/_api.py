@@ -212,22 +212,30 @@ class PostgisDbAPI(object):
     def __init__(self, parentdb, connection):
         self._db = parentdb
         self._connection = connection
+        self._sqla_txn = None
 
     @property
     def in_transaction(self):
-        return self._connection.in_transaction()
+        in_txn = self._connection.in_transaction()
+        if in_txn:
+            assert self._sqla_txn is not None
+        else:
+            assert self._sqla_txn is None
+        return in_txn
 
     def begin(self):
-        assert not self._connection.in_transaction()
-        print("Calling begin??")
-        self._connection.execute(text('BEGIN'))
-        # assert self._connection.in_transaction()
+        self._connection.execution_options(isolation_level="SERIALIZABLE")
+        self._sqla_txn = self._connection.begin()
 
     def commit(self):
-        self._connection.execute(text('COMMIT'))
+        self._sqla_txn.commit()
+        self._sqla_txn = None
+        self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
     def rollback(self):
-        self._connection.execute(text('ROLLBACK'))
+        self._sqla_txn.rollback()
+        self._sqla_txn = None
+        self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
     def execute(self, command):
         return self._connection.execute(command)
@@ -486,22 +494,27 @@ class PostgisDbAPI(object):
         return r.rowcount > 0
 
     def delete_dataset(self, dataset_id):
+        _LOG.warning("Deleting locations")
         self._connection.execute(
             delete(DatasetLocation).where(
                 DatasetLocation.dataset_ref == dataset_id
             )
         )
+        _LOG.warning("Deleting sources")
         self._connection.execute(
             delete(DatasetSource).where(
                 DatasetSource.dataset_ref == dataset_id
             )
         )
+        _LOG.warning("Deleting search fields")
         for table in search_field_indexes.values():
             self._connection.execute(
                 delete(table).where(table.dataset_ref == dataset_id)
             )
+        _LOG.warning("Deleting spatial index entries")
         for crs in self._db.spatial_indexes():
             SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+            _LOG.warning("Deleting spatial index entries for %s", crs)
             self._connection.execute(
                 delete(
                     SpatialIndex
@@ -510,6 +523,7 @@ class PostgisDbAPI(object):
                 )
             )
 
+        _LOG.warning("Deleting datasets")
         r = self._connection.execute(
             delete(Dataset).where(
                 Dataset.id == dataset_id
