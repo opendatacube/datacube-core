@@ -174,7 +174,6 @@ WARNING: Database schema and internal APIs may change significantly between rele
             yield trans._connection
         elif transaction:
             closing = True
-            print("Starting a transaction...")
             with self._db._connect() as conn:
                 conn.begin()
                 # assert conn.in_transaction

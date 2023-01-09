@@ -125,6 +125,7 @@ def ensure_spindex(engine: Connectable, sp_idx: Type[SpatialIndex]) -> None:
         orm_registry.metadata.create_all(engine, [sp_idx.__table__])
         # ... and add a SpatialIndexRecord
         session.add(SpatialIndexRecord.from_spindex(sp_idx))
+        session.commit()
         session.flush()
     return
 
@@ -134,7 +135,6 @@ def spindexes(engine: Connectable) -> Mapping[CRS, Type[SpatialIndex]]:
     Return a CRS-to-Spatial Index ORM class mapping for indexes that exist in a particular database.
     """
     out = {}
-    sir = SpatialIndexORMRegistry()
     with Session(engine) as session:
         results = session.execute(select(SpatialIndexRecord.srid))
         for result in results:

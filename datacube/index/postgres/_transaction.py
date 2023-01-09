@@ -19,8 +19,8 @@ class PostgresTransaction(AbstractTransaction):
 
     def _new_connection(self) -> Any:
         dbconn = self._db.give_me_a_connection()
-        dbconn.execute(text('BEGIN'))
         conn = PostgresDbAPI(dbconn)
+        conn.begin()
         return conn
 
     def _commit(self) -> None:

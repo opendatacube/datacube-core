@@ -195,19 +195,30 @@ def get_dataset_fields(metadata_type_definition):
 class PostgresDbAPI(object):
     def __init__(self, connection):
         self._connection = connection
+        self._sqla_txn = None
 
     @property
     def in_transaction(self):
-        return self._connection.in_transaction()
+        in_txn = self._connection.in_transaction()
+        if in_txn:
+            assert self._sqla_txn is not None
+        else:
+            assert self._sqla_txn is None
+        return in_txn
 
     def begin(self):
-        self._connection.execute(text('BEGIN'))
-
-    def rollback(self):
-        self._connection.execute(text('ROLLBACK'))
+        self._connection.execution_options(isolation_level="SERIALIZABLE")
+        self._sqla_txn = self._connection.begin()
 
     def commit(self):
-        self._connection.execute(text('COMMIT'))
+        self._sqla_txn.commit()
+        self._sqla_txn = None
+        self._connection.execution_options(isolation_level="AUTOCOMMIT")
+
+    def rollback(self):
+        self._sqla_txn.rollback()
+        self._sqla_txn = None
+        self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
     def execute(self, command):
         return self._connection.execute(command)

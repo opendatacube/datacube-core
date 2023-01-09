@@ -56,8 +56,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
-            If false (and there is no already active transaction), creation will be slightly slower
-            and cannot be done in a transaction.
+            If false, creation will be slightly slower
+
         :param Product product: Product to add
         :rtype: Product
         """
@@ -77,7 +77,9 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
                 metadata_type = self.metadata_type_resource.add(product.metadata_type,
                                                                 allow_table_lock=allow_table_lock)
-            with self._db_connection(transaction=allow_table_lock) as connection:
+            with self._db_connection() as connection:
+                if connection.in_transaction and not allow_table_lock:
+                    raise ValueError("allow_table_lock must be True if called inside a transaction.")
                 connection.insert_product(
                     name=product.name,
                     metadata=product.metadata_doc,

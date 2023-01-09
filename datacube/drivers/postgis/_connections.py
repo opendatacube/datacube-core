@@ -242,7 +242,9 @@ class PostGisDb(object):
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
         if refresh:
             self._refresh_spindexes()
-        return list(self.spindexes.keys())
+        ispidx_list = list(self.spindexes.keys())
+        _LOG.warning("index_list=%s", repr(ispidx_list))
+        return ispidx_list
 
     @contextmanager
     def _connect(self):
@@ -263,6 +265,7 @@ class PostGisDb(object):
         """
         with self._engine.connect() as connection:
             try:
+                connection.execution_options(isolation_level="AUTOCOMMIT")
                 yield _api.PostgisDbAPI(self, connection)
             finally:
                 connection.close()
