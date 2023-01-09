@@ -22,8 +22,8 @@ from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Range
 from datacube.model import DatasetType as Product
-from datacube.utils import cached_property, read_documents, InvalidDocException
-from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError
+from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException
+from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.generic import thread_local_cache
 from datacube.utils.geometry import CRS, Geometry, box
 from datacube.utils.documents import UnknownMetadataType
@@ -36,6 +36,7 @@ class BatchStatus(NamedTuple):
     completed: int
     skipped: int
     seconds_elapsed: float
+    safe: Optional[Iterable[str]] = None
 
 
 class AbstractUserResource(ABC):
@@ -141,19 +142,23 @@ class AbstractMetadataTypeResource(ABC):
         b_skipped = 0
         b_added = 0
         b_started = monotonic()
+        b_loaded = set()
         for mdt in batch_types:
             try:
                 self.add(mdt)
                 b_added += 1
+                b_loaded.add(mdt.name)
             except DocumentMismatchError as e:
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
             except Exception as e:
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
-        return BatchStatus(b_added, b_skipped, monotonic() - b_started)
+        return BatchStatus(b_added, b_skipped, monotonic() - b_started, b_loaded)
 
-    def bulk_add(self, metadata_docs: Iterable[Mapping[str, Any]], batch_size: int = 1000) -> BatchStatus:
+    def bulk_add(self,
+                 metadata_docs: Iterable[Mapping[str, Any]],
+                 batch_size: int = 1000) -> BatchStatus:
         """
         Add a group of Metadata Type documents in bulk.
 
@@ -161,32 +166,56 @@ class AbstractMetadataTypeResource(ABC):
         :param batch_size: Number of metadata types to add per batch (default 1000)
         :return:  Tuple of: count of metadata types added, count of metadata types skipped.
         """
-        n_batches = 0
         n_in_batch = 0
         added = 0
         skipped = 0
         started = monotonic()
         batch = []
+        existing = {mdt.name: mdt for mdt in self.get_all()}
+        batched = set()
+        safe = set()
         for doc in metadata_docs:
             try:
                 mdt = self.from_doc(doc)
-                batch.append(mdt)
-                n_in_batch += 1
+                if mdt.name in existing:
+                    check_doc_unchanged(
+                        existing[mdt.name].definition,
+                        jsonify_document(mdt.definition),
+                        'Metadata Type {}'.format(mdt.name)
+                    )
+                    _LOG.warning("%s: Skipped - already exists", mdt.name)
+                    skipped += 1
+                    safe.add(mdt.name)
+                else:
+                    batch.append(mdt)
+                    batched.add(mdt.name)
+                    n_in_batch += 1
+            except DocumentMismatchError as e:
+                _LOG.warning("%s: Skipped", str(e))
+                skipped += 1
             except InvalidDocException as e:
                 _LOG.warning("%s: Skipped", str(e))
                 skipped += 1
             if n_in_batch >= batch_size:
                 batch_results = self._add_batch(batch)
+                batch = []
                 added += batch_results.completed
                 skipped += batch_results.skipped
-                batch = []
+                if batch_results.safe is None:
+                    safe.update(batched)
+                else:
+                    safe.update(batch_results.safe)
+                batched = set()
                 n_in_batch = 0
-                n_batches += 1
         if n_in_batch > 0:
             batch_results = self._add_batch(batch)
             added += batch_results.completed
             skipped += batch_results.skipped
-        return BatchStatus(added, skipped, monotonic() - started)
+            if batch_results.safe is None:
+                safe.update(batched)
+            else:
+                safe.update(batch_results.safe)
+        return BatchStatus(added, skipped, monotonic() - started, safe)
 
     @abstractmethod
     def can_update(self,
@@ -424,17 +453,30 @@ class AbstractProductResource(ABC):
         :param batch_size: Number of products to add per batch (default 1000)
         :return:  Tuple of: count of products added, count of products skipped.
         """
-        n_batches = 0
         n_in_batch = 0
         added = 0
         skipped = 0
         batch = []
         started = monotonic()
+        safe = set()
+        batched = set()
+        existing = {prod.name: prod for prod in self.get_all()}
         for doc in product_docs:
+            if metadata_types is not None:
+                if doc["metadata_type"] not in metadata_types:
+                    skipped += 1
+                    continue
             try:
                 prod = self.from_doc(doc, metadata_type_cache=metadata_types)
-                batch.append(prod)
-                n_in_batch += 1
+                if prod.name in existing:
+                    check_doc_unchanged(prod.definition, jsonify_document(doc), f"Product {prod.name}")
+                    _LOG.warning("%s: skipped (already loaded)", prod.name)
+                    skipped += 1
+                    safe.add(prod.name)
+                else:
+                    batch.append(prod)
+                    n_in_batch += 1
+                    batched.add(prod.name)
             except UnknownMetadataType as e:
                 skipped += 1
             except InvalidDocException as e:
@@ -444,15 +486,23 @@ class AbstractProductResource(ABC):
                 batch_results = self._add_batch(batch)
                 added += batch_results.completed
                 skipped += batch_results.skipped
+                if batch_results.safe is not None:
+                    safe.update(batch_results.safe)
+                else:
+                    safe.update(batched)
+                batched = set()
                 batch = []
                 n_in_batch = 0
-                n_batches += 1
         if n_in_batch > 0:
             batch_results = self._add_batch(batch)
             added += batch_results.completed
             skipped += batch_results.skipped
+            if batch_results.safe is not None:
+                safe.update(batch_results.safe)
+            else:
+                safe.update(batched)
 
-        return BatchStatus(added, skipped, monotonic() - started)
+        return BatchStatus(added, skipped, monotonic() - started, safe)
 
     @abstractmethod
     def can_update(self,
@@ -666,6 +716,11 @@ class AbstractDatasetResource(ABC):
     (If a particular abstract method is not applicable for a particular implementation
     raise a NotImplementedError)
     """
+
+    def __init__(self, index):
+        self._index = index
+        self.products = self._index.products
+        self.types = self.products # types is compatibility alias for products
 
     @abstractmethod
     def get(self,
@@ -941,13 +996,17 @@ class AbstractDatasetResource(ABC):
         :return: Matching datasets
         """
 
-    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Iterable[DatasetTuple]:
+    def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
+        for ds in self.search(product=[product.name]):
+            yield (product, ds.metadata_doc, ds.uris)
+
+    def get_all_docs(self, products: Optional[Iterable[Product]] = None,
+                     batch_size: int = 1000) -> Iterable[DatasetTuple]:
         """
         Return all datasets in bulk, filtering by product names only. Do not instantiate models.
         Archived datasets and locations are excluded.
 
-        :param products: Mapping of product names to Products. Filtering is done by product name, and
-                         products from this map are used to build the Dataset models.  May come from a different index.
+        :param products: Iterable of products used to build the Dataset models.  May come from a different index.
                          Default/None: all products, Products read from the source index.
         :return: Iterable of tuples containing:
                 0: Product
@@ -955,16 +1014,11 @@ class AbstractDatasetResource(ABC):
                 2: Sequence of locations(uris)
         """
         # Default implementation calls search
-        if products:
-            product_search_key = list(products.keys())
-        else:
-            product_search_key = None
-        for ds in self.search(product=product_search_key):
-            if products:
-                prod = products[ds.product.name]
-            else:
-                prod = ds.product
-            yield DatasetTuple(prod, ds.metadata_doc, ds.uris)
+        if products is None:
+            products = list(self.products.get_all())
+        for product in products:
+            for dstup in self.get_all_docs_for_product(product, batch_size=batch_size):
+                yield dstup
 
     def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
         # Add a "batch" of datasets.  Default implementation is simple loop of add
@@ -1520,7 +1574,7 @@ class AbstractIndex(ABC):
             print(msg)
         else:
             _LOG.info(msg)
-        metadata_cache = {mdt.name: mdt for mdt in self.metadata_types.get_all()}
+        metadata_cache = {name: self.metadata_types.get_by_name(name) for name in res.safe}
         # Clone Products
         if sys.stdout.isatty():
             print("Cloning Products:")
@@ -1537,9 +1591,11 @@ class AbstractIndex(ABC):
         # Clone Datasets (group by product for now for convenience)
         if sys.stdout.isatty():
             print("Cloning Datasets:")
-        product_cache = {p.name: p for p in self.products.get_all()}
-        results["datasets"] = self.datasets.bulk_add(origin_index.datasets.get_all_docs(products=product_cache),
-                                                     batch_size=batch_size)
+        products = [p for p in self.products.get_all() if p.name in res.safe]
+        results["datasets"] = self.datasets.bulk_add(
+            origin_index.datasets.get_all_docs(products=products, batch_size=batch_size),
+            batch_size=batch_size
+        )
         res = results["datasets"]
         if sys.stdout.isatty():
             print("")
