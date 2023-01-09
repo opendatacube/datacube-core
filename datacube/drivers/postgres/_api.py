@@ -609,7 +609,7 @@ class PostgresDbAPI(object):
                                                   select_fields, with_source_ids, limit)
         return self._connection.execute(select_query)
 
-    def bulk_simple_dataset_search(self, products):
+    def bulk_simple_dataset_search(self, products, batch_size=1000):
         if products:
             query = select(PRODUCT.c.id).select_from(PRODUCT).where(PRODUCT.c.name.in_(products))
             products = [row[0] for row in self._connection.execute(query)]
@@ -624,8 +624,7 @@ class PostgresDbAPI(object):
         )
         if products:
             query = query.where(DATASET.c.dataset_type_ref.in_(products))
-
-        return self._connection.execute(query)
+        return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
 
     @staticmethod

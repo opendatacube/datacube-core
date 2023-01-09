@@ -48,9 +48,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :type product_resource: datacube.index._products.ProductResource
         """
         self._db = db
-        self._index = index
-        self.types = self._index.products   # types is a compatibility alias for products.
-        self.products = self._index.products
+        super().__init__(index)
 
     def get(self, id_: Union[str, UUID], include_sources=False):
         """
@@ -945,26 +943,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
 
-    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Iterable[DatasetTuple]:
-        local_products = list(self.products.get_all())
-        local_products_by_id = {p.id: p for p in local_products}
-        if products:
-            local_products_by_name = {p.name: p for p in local_products}
-            local_products_set = set(local_products_by_name.keys())
-            products_in_set = set(products.keys())
-            if products_in_set == local_products_set:
-                product_search_key = None
-            else:
-                product_search_key = [
-                    local_products_by_name[pname].id
-                    for pname in products_in_set
-                    if pname in local_products_set
-                ]
-        else:
-            product_search_key = None
+    def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
+        local_product = self.products.get_by_name(product.name)
+        product_search_key = [local_product.id]
         with self._db_connection(transaction=True) as connection:
             assert connection.in_transaction
-            for row in connection.bulk_simple_dataset_search(products=product_search_key, batch_size=100):
+            for row in connection.bulk_simple_dataset_search(products=product_search_key, batch_size=batch_size):
                 prod_id, metadata_doc, uris = tuple(row)
-                prod = local_products_by_id[prod_id]
-                yield DatasetTuple(prod, metadata_doc, uris)
+                yield DatasetTuple(product, metadata_doc, uris)

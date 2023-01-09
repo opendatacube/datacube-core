@@ -44,8 +44,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :type dataset_type_resource: datacube.index._products.ProductResource
         """
         self._db = db
-        self._index = index
-        self.types = self._index.products
+        super().__init__(index)
 
     def get(self, id_: Union[str, UUID], include_sources=False):
         """
@@ -921,14 +920,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def spatial_extent(self, ids, crs=None):
         return None
 
-    def get_all_docs(self, products: Optional[Mapping[str, Product]] = None) -> Iterable[DatasetTuple]:
-        if not products:
-            products = { p.name: p for p in self.products.get_all()}
-            product_search_key = None
-        else:
-            product_search_key = list(products.keys())
+    def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
+        product_search_key = [product.name]
         with self._db_connection() as connection:
-            for row in connection.bulk_simple_dataset_search(products=product_search_key):
+            for row in connection.bulk_simple_dataset_search(products=product_search_key, batch_siz=batch_size):
                 prod_name, metadata_doc, uris = tuple(row)
-                prod = products[prod_name]
-                yield DatasetTuple(prod, metadata_doc, uris)
+                yield DatasetTuple(product, metadata_doc, uris)

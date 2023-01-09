@@ -243,7 +243,6 @@ class PostGisDb(object):
         if refresh:
             self._refresh_spindexes()
         ispidx_list = list(self.spindexes.keys())
-        _LOG.warning("index_list=%s", repr(ispidx_list))
         return ispidx_list
 
     @contextmanager
