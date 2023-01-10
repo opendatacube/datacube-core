@@ -922,7 +922,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
         product_search_key = [product.name]
-        with self._db_connection() as connection:
-            for row in connection.bulk_simple_dataset_search(products=product_search_key, batch_siz=batch_size):
+        with self._db_connection(transaction=True) as connection:
+            for row in connection.bulk_simple_dataset_search(products=product_search_key, batch_size=batch_size):
                 prod_name, metadata_doc, uris = tuple(row)
                 yield DatasetTuple(product, metadata_doc, uris)

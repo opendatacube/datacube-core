@@ -199,26 +199,23 @@ class PostgresDbAPI(object):
 
     @property
     def in_transaction(self):
-        in_txn = self._connection.in_transaction()
-        if in_txn:
-            assert self._sqla_txn is not None
-        else:
-            assert self._sqla_txn is None
-        return in_txn
+        return self._connection.in_transaction()
 
     def begin(self):
         self._connection.execution_options(isolation_level="SERIALIZABLE")
         self._sqla_txn = self._connection.begin()
 
-    def commit(self):
-        self._sqla_txn.commit()
+    def _end_transaction(self):
         self._sqla_txn = None
         self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
+    def commit(self):
+        self._sqla_txn.commit()
+        self._end_transaction()
+
     def rollback(self):
         self._sqla_txn.rollback()
-        self._sqla_txn = None
-        self._connection.execution_options(isolation_level="AUTOCOMMIT")
+        self._end_transaction()
 
     def execute(self, command):
         return self._connection.execute(command)
