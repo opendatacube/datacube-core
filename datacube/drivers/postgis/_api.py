@@ -201,7 +201,11 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata):
 
     :return: A dictionary mapping search field names to (type_name, value) tuples.
     """
-    fields = {name: field for name, field in get_dataset_fields(mdt_metadata).items() if not isinstance(field, NativeField)}
+    fields = {
+        name: field
+        for name, field in get_dataset_fields(mdt_metadata).items()
+        if not isinstance(field, NativeField)
+    }
     return extract_dataset_fields(ds_metadata, fields)
 
 
@@ -698,8 +702,6 @@ class PostgisDbAPI(object):
         dataset_location or dataset_source tables. Joining with other tables would not
         result in multiple records per dataset due to the direction of cardinality.
         """
-
-
         select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
 
         return self._connection.execute(select_query)

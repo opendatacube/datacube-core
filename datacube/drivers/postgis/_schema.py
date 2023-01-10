@@ -281,6 +281,7 @@ class DatasetSearchDateTime:
                         nullable=True,
                         comment="The value of the datetime search field")
 
+
 search_field_map = {
     'numeric-range': "numeric",
     'double-range': "numeric",

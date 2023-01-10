@@ -376,6 +376,7 @@ class RangeDocField(PgDocField):
 class UnindexableValue(Exception):
     pass
 
+
 class NumericRangeDocField(RangeDocField):
     FIELD_CLASS = NumericDocField
     type_name = 'numeric-range'

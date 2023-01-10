@@ -12,9 +12,9 @@ from datacube.index.abstract import AbstractProductResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
-from datacube.utils.changes import check_doc_unchanged, get_doc_changes, DocumentMismatchError
+from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
-from typing import Iterable, Tuple, cast, Mapping, Any
+from typing import Iterable, cast, Mapping, Any
 
 _LOG = logging.getLogger(__name__)
 

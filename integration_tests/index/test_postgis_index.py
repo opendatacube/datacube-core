@@ -73,10 +73,9 @@ def test_spatial_index_crs_validity(index: Index,
     assert index.update_spatial_index(crses=[epsg3577]) == 2
 
 
-def test_spatial_index_crs_santise():
+def test_spatial_index_crs_sanitise():
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    from datacube.drivers.postgis._api import PostgisDbAPI
     from datacube.utils.geometry import polygon
     # EPSG:4326 polygons to be converted in EPSG:3577
     # Equal to entire valid region

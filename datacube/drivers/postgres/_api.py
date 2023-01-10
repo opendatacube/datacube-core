@@ -636,7 +636,6 @@ class PostgresDbAPI(object):
             query = query.where(DATASET.c.dataset_type_ref.in_(products))
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
-
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
         """

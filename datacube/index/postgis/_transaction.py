@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from contextlib import contextmanager
-from sqlalchemy import text
 from typing import Any
 
 from datacube.drivers.postgis import PostGisDb

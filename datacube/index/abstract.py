@@ -30,6 +30,7 @@ from datacube.utils.documents import UnknownMetadataType
 
 _LOG = logging.getLogger(__name__)
 
+
 # A named tuple representing the results of a batch operation:
 #   Number of records completed, Number of records skipped,
 class BatchStatus(NamedTuple):
@@ -423,7 +424,6 @@ class AbstractProductResource(ABC):
         :return: Persisted Product model.
         """
 
-
     def _add_batch(self, batch_products: Iterable[Product]) -> BatchStatus:
         # Add a "batch" of products.  Default implementation is simple loop of add
         b_skipped = 0
@@ -440,7 +440,6 @@ class AbstractProductResource(ABC):
                 _LOG.warning("%s: Skipping", str(e))
                 b_skipped += 1
         return BatchStatus(b_added, b_skipped, monotonic()-b_started)
-
 
     def bulk_add(self,
                  product_docs: Iterable[Mapping[str, Any]],
@@ -692,6 +691,7 @@ class AbstractProductResource(ABC):
 # Non-strict Dataset ID representation
 DSID = Union[str, UUID]
 
+
 # A named tuple representing a complete dataset. (Product, metadata document, sequence of uris)
 class DatasetTuple(NamedTuple):
     product: Product
@@ -720,7 +720,7 @@ class AbstractDatasetResource(ABC):
     def __init__(self, index):
         self._index = index
         self.products = self._index.products
-        self.types = self.products # types is compatibility alias for products
+        self.types = self.products  # types is compatibility alias for products
 
     @abstractmethod
     def get(self,
@@ -1701,7 +1701,6 @@ class AbstractIndexDriver(ABC):
     def metadata_type_from_doc(definition: dict
                               ) -> MetadataType:
         ...
-
 
 
 # The special handling of grid_spatial, etc appears to NOT apply to EO3.
