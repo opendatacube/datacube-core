@@ -265,5 +265,3 @@ def from_pg_role(pg_role):
         raise ValueError('Not a pg role: %r. Expected one of %r' % (pg_role, USER_ROLES))
 
     return pg_role.split('_')[1]
-
-
