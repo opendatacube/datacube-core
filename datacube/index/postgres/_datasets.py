@@ -10,7 +10,7 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, List, Union, Mapping, Optional, Any
+from typing import Iterable, List, Union, Mapping, Any
 from uuid import UUID
 
 from sqlalchemy import select, func

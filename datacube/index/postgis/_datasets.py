@@ -10,7 +10,7 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, List, Mapping, Union, Optional, Tuple, Any, Sequence
+from typing import Iterable, List, Mapping, Union, Optional, Any
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -174,7 +174,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def _init_bulk_add_cache(self):
         return {}
 
-    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache:Mapping[str, Any]) -> BatchStatus:
+    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
         # Add a "batch" of datasets.
         b_started = monotonic()
         crses = self._db.spatial_indexes()
