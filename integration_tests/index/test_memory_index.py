@@ -582,8 +582,7 @@ def test_default_clone_bulk_ops(mem_index_fresh, index, extended_eo3_metadata_ty
                                 ls8_eo3_product, wo_eo3_product, africa_s2_eo3_product,
                                 ls8_eo3_dataset, ls8_eo3_dataset2,
                                 ls8_eo3_dataset3, ls8_eo3_dataset4,
-                                wo_eo3_dataset, africa_eo3_dataset
-                               ):
+                                wo_eo3_dataset, africa_eo3_dataset):
     mem_index_fresh.index.clone(index)
     assert mem_index_fresh.index.datasets.has(africa_eo3_dataset.id)
     assert mem_index_fresh.index.datasets.has(wo_eo3_dataset.id)
