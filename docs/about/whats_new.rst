@@ -22,6 +22,7 @@ v1.8.next
   (with type alias for compatibility) (:pull:`1372`)
 - Fix deprecation message due to distutils Version classes (:pull: `1375`)
 - Postgresql drivers cleanup - consolidate split_uri into utils and removed unused constants (:pull: `1378`)
+- Postgresql drivers cleanup - Handle NaNs in search fields and allow caching in sanitise_extent (:pull: `1379`)
 
 
 v1.8.9 (17 November 2022)

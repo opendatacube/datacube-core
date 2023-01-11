@@ -163,3 +163,31 @@ def promote_to_multipolygon(geom: Geom) -> Geom:
 def geom_alchemy(geom: Geom) -> str:
     geom = promote_to_multipolygon(geom)
     return f"SRID={geom.crs.epsg};{geom.wkt}"
+
+
+def sanitise_extent(extent, crs, geo_extent=None):
+    if not crs.valid_region:
+        # No valid region on CRS, just reproject
+        return extent.to_crs(crs)
+    if geo_extent is None:
+        geo_extent = extent.to_crs(CRS("EPSG:4326"))
+    if crs.valid_region.contains(geo_extent):
+        # Valid region contains extent, just reproject
+        return extent.to_crs(crs)
+    if not crs.valid_region.intersects(geo_extent):
+        # Extent is entirely outside of valid region - return None
+        return None
+    # Clip to valid region and reproject
+    valid_extent = geo_extent & crs.valid_region
+    if valid_extent.wkt == "POLYGON EMPTY":
+        # Extent is entirely outside of valid region - return None
+        return None
+    return valid_extent.to_crs(crs)
+
+
+def generate_dataset_spatial_values(dataset_id, crs, extent, geo_extent=None):
+    extent = sanitise_extent(extent, crs, geo_extent=geo_extent)
+    if extent is None:
+        return None
+    geom_alch = geom_alchemy(extent)
+    return {"dataset_ref": dataset_id, "extent": geom_alch}

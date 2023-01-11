@@ -277,6 +277,7 @@ multipolygon
 mx
 mypy
 NaN
+NaNs
 nan
 nationalmap
 nbar

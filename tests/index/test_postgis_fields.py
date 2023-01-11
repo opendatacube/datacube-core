@@ -6,13 +6,18 @@
 import datetime
 from decimal import Decimal
 
-from datacube.drivers.postgis._fields import NumericDocField, IntDocField, DoubleDocField, DateDocField
+import pytest
+
+from datacube.drivers.postgis._fields import NumericDocField, IntDocField, DoubleDocField, DateDocField, \
+    UnindexableValue
 from datacube.drivers.postgis._schema import Dataset
 
 
 def test_numeric_parse():
     fld = NumericDocField("test_fld", "field for testing", Dataset.metadata_doc, True)
     assert isinstance(fld.parse_value("55.88"), Decimal)
+    with pytest.raises(UnindexableValue):
+        fld.search_value_to_alchemy(float("nan"))
 
 
 def test_int_parse():

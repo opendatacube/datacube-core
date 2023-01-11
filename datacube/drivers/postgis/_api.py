@@ -31,11 +31,11 @@ from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
 from . import _core
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
-from ._fields import NativeField, DateDocField, SimpleDocField
+from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
     search_field_index_map, search_field_tables
-from ._spatial import geom_alchemy
+from ._spatial import geom_alchemy, generate_dataset_spatial_values
 from .sql import escape_pg_identifier
 
 _LOG = logging.getLogger(__name__)
@@ -171,9 +171,12 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata):
     for field_name, field in fields.items():
         if isinstance(field, NativeField):
             continue
-        fld_type = field.type_name
-        fld_val = field.search_value_to_alchemy(field.extract(ds_metadata))
-        result[field_name] = (fld_type, fld_val)
+        try:
+            fld_type = field.type_name
+            fld_val = field.search_value_to_alchemy(field.extract(ds_metadata))
+            result[field_name] = (fld_type, fld_val)
+        except UnindexableValue:
+            continue
     return result
 
 
@@ -263,25 +266,6 @@ class PostgisDbAPI(object):
 
         return r.rowcount > 0
 
-    @staticmethod
-    def _sanitise_extent(extent, crs):
-        if not crs.valid_region:
-            # No valid region on CRS, just reproject
-            return extent.to_crs(crs)
-        geo_extent = extent.to_crs(CRS("EPSG:4326"))
-        if crs.valid_region.contains(geo_extent):
-            # Valid region contains extent, just reproject
-            return extent.to_crs(crs)
-        if not crs.valid_region.intersects(geo_extent):
-            # Extent is entirely outside of valid region - return None
-            return None
-        # Clip to valid region and reproject
-        valid_extent = geo_extent & crs.valid_region
-        if valid_extent.wkt == "POLYGON EMPTY":
-            # Extent is entirely outside of valid region - return None
-            return None
-        return valid_extent.to_crs(crs)
-
     def insert_dataset_search(self, search_table, dataset_id, key, value):
         """
         Add/update a search field index entry for a dataset
@@ -321,20 +305,18 @@ class PostgisDbAPI(object):
         :type extent: Geometry
         :rtype bool:
         """
-        extent = self._sanitise_extent(extent, crs)
-        if extent is None:
+        values = generate_dataset_spatial_values(dataset_id, crs, extent)
+        if values is None:
             return False
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
-        geom_alch = geom_alchemy(extent)
         r = self._connection.execute(
             insert(
                 SpatialIndex
             ).values(
-                dataset_ref=dataset_id,
-                extent=geom_alch,
+                **values
             ).on_conflict_do_update(
                 index_elements=[SpatialIndex.dataset_ref],
-                set_=dict(extent=geom_alch)
+                set_=dict(extent=values["extent"])
             )
         )
         return r.rowcount > 0
