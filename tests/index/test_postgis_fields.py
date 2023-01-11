@@ -17,7 +17,7 @@ def test_numeric_parse():
     fld = NumericDocField("test_fld", "field for testing", Dataset.metadata_doc, True)
     assert isinstance(fld.parse_value("55.88"), Decimal)
     with pytest.raises(UnindexableValue):
-        fld.parse_value(float("nan"))
+        fld.search_value_to_alchemy(float("nan"))
 
 
 def test_int_parse():
