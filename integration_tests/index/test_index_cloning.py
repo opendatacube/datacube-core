@@ -33,10 +33,11 @@ def test_index_clone_cli(local_config_pair, index_pair_populated_empty, clirunne
     ], expect_success=False)
 
 
-def test_index_clone_cli(local_config_pair, index_pair_populated_empty, clirunner_raw):
+def test_index_clone_cli_small_batch(local_config_pair, index_pair_populated_empty, clirunner_raw):
     source_cfg, target_cfg = local_config_pair
     clirunner_raw([
         '-E', target_cfg._env,
         'system', 'clone',
+        '--batch-size', '2',
         source_cfg._env
     ], expect_success=False)
