@@ -31,7 +31,7 @@ from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
 from . import _core
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
-from ._fields import NativeField, DateDocField, SimpleDocField
+from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
     search_field_index_map, search_field_tables
@@ -171,9 +171,12 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata):
     for field_name, field in fields.items():
         if isinstance(field, NativeField):
             continue
-        fld_type = field.type_name
-        fld_val = field.search_value_to_alchemy(field.extract(ds_metadata))
-        result[field_name] = (fld_type, fld_val)
+        try:
+            fld_type = field.type_name
+            fld_val = field.search_value_to_alchemy(field.extract(ds_metadata))
+            result[field_name] = (fld_type, fld_val)
+        except UnindexableValue:
+            continue
     return result
 
 
