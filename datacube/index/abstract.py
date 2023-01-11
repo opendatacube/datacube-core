@@ -31,8 +31,15 @@ from datacube.utils.documents import UnknownMetadataType
 _LOG = logging.getLogger(__name__)
 
 
-# A named tuple representing the results of a batch operation:
-#   Number of records completed, Number of records skipped,
+# A named tuple representing the results of a batch add operation:
+# - completed: Number of objects added to theMay be None for internal functions and for datasets.
+# - skipped: Number of objects skipped, either because they already exist
+#   or the documents are invalid for this driver.
+# - seconds_elapsed: seconds elapsed during the bulk add operation;
+# - safe: an optional list of names of bulk added objects that are safe to be
+#   used for lower level bulk adds. Includes objects added, and objects skipped
+#   because they already exist in the index and are identical to the version
+#   being added.  May be None for internal functions and for datasets.
 class BatchStatus(NamedTuple):
     completed: int
     skipped: int
@@ -139,7 +146,16 @@ class AbstractMetadataTypeResource(ABC):
         """
 
     def _add_batch(self, batch_types: Iterable[MetadataType]) -> BatchStatus:
-        # Add a "batch" of mdts.  Default implementation is simple loop of add
+        """
+        Add a single "batch" of mdts.
+
+        Default implementation is simple loop of add
+
+        API Note: This API method is not finalised and may be subject to change.
+
+        :param batch_types: An iterable of one batch's worth of MetadataType objects to add
+        :return: BatchStatus named tuple.
+        """
         b_skipped = 0
         b_added = 0
         b_started = monotonic()
@@ -163,9 +179,12 @@ class AbstractMetadataTypeResource(ABC):
         """
         Add a group of Metadata Type documents in bulk.
 
+        API Note: This API method is not finalised and may be subject to change.
+
         :param metadata_docs: An iterable of metadata type metadata docs.
         :param batch_size: Number of metadata types to add per batch (default 1000)
-        :return:  Tuple of: count of metadata types added, count of metadata types skipped.
+        :return: BatchStatus named tuple, with `safe` containing a list of
+                 metadata type names that are safe to include in a subsequent product bulk add.
         """
         n_in_batch = 0
         added = 0
@@ -341,7 +360,11 @@ class AbstractMetadataTypeResource(ABC):
 
     def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
         """
-        Retrieve all Metadata Types as documents only
+        Retrieve all Metadata Types as documents only (e.g. for an index clone)
+
+        Default implementation calls self.get_all()
+
+        API Note: This API method is not finalised and may be subject to change.
 
         :returns: All available MetadataType definition documents
         """
@@ -372,7 +395,8 @@ class AbstractProductResource(ABC):
         Construct unpersisted Product model from product metadata dictionary
 
         :param definition: a Product metadata dictionary
-        :param metadata_type_cache: a dict cache of MetaDataTypes
+        :param metadata_type_cache: a dict cache of MetaDataTypes to use in constructing a Product.
+                                    MetaDataTypes may come from a different index.
         :return: Unpersisted product model
         """
         # This column duplication is getting out of hand:
@@ -425,7 +449,16 @@ class AbstractProductResource(ABC):
         """
 
     def _add_batch(self, batch_products: Iterable[Product]) -> BatchStatus:
-        # Add a "batch" of products.  Default implementation is simple loop of add
+        """
+        Add a single "batch" of products.
+
+        Default implementation is simple loop of add
+
+        API Note: This API method is not finalised and may be subject to change.
+
+        :param batch_types: An iterable of one batch's worth of Product objects to add
+        :return: BatchStatus named tuple.
+        """
         b_skipped = 0
         b_added = 0
         b_started = monotonic()
@@ -448,9 +481,15 @@ class AbstractProductResource(ABC):
         """
         Add a group of product documents in bulk.
 
+        API Note: This API method is not finalised and may be subject to change.
+
         :param product_docs: An iterable of product metadata docs.
         :param batch_size: Number of products to add per batch (default 1000)
-        :return:  Tuple of: count of products added, count of products skipped.
+        :param metadata_types: Optional dictionary cache of MetadataType objects.
+                               Used for product metadata validation, and for filtering.
+                               (Metadata types not in in this list are skipped.)
+        :return: BatchStatus named tuple, with `safe` containing a list of
+                 product names that are safe to include in a subsequent dataset bulk add.
         """
         n_in_batch = 0
         added = 0
@@ -680,10 +719,12 @@ class AbstractProductResource(ABC):
     def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
         """
         Retrieve all Product metadata documents
+        Default implementation calls get_all()
+
+        API Note: This API method is not finalised and may be subject to change.
 
         :returns: Iterable of metadata documents for all known products
         """
-        # Default implementation calls get_all()
         for prod in self.get_all():
             yield prod.definition
 
@@ -692,18 +733,24 @@ class AbstractProductResource(ABC):
 DSID = Union[str, UUID]
 
 
-# A named tuple representing a complete dataset. (Product, metadata document, sequence of uris)
-class DatasetTuple(NamedTuple):
-    product: Product
-    metadata: Mapping[str, Any]
-    uris: Sequence[str]
-
-
 def dsid_to_uuid(dsid: DSID) -> UUID:
+    """
+    Convert non-strict dataset ID representation to strict UUID
+    """
     if isinstance(dsid, UUID):
         return dsid
     else:
         return UUID(dsid)
+
+
+# A named tuple representing a complete dataset:
+# - product: A Product model.
+# - metadata: The dataset metadata document
+# - uris: A list of locations (uris)
+class DatasetTuple(NamedTuple):
+    product: Product
+    metadata: Mapping[str, Any]
+    uris: Sequence[str]
 
 
 class AbstractDatasetResource(ABC):
@@ -1006,12 +1053,11 @@ class AbstractDatasetResource(ABC):
         Return all datasets in bulk, filtering by product names only. Do not instantiate models.
         Archived datasets and locations are excluded.
 
+        API Note: This API method is not finalised and may be subject to change.
+
         :param products: Iterable of products used to build the Dataset models.  May come from a different index.
                          Default/None: all products, Products read from the source index.
-        :return: Iterable of tuples containing:
-                0: Product
-                1: Dataset metadata document
-                2: Sequence of locations(uris)
+        :return: Iterable of DatasetTuple named tuples
         """
         # Default implementation calls search
         if products is None:
@@ -1021,7 +1067,16 @@ class AbstractDatasetResource(ABC):
                 yield dstup
 
     def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
-        # Add a "batch" of datasets.  Default implementation is simple loop of add
+        """
+        Add a single "batch" of datasets, provided as DatasetTuples.
+
+        Default implementation is simple loop of add
+
+        API Note: This API method is not finalised and may be subject to change.
+
+        :param batch_types: An iterable of one batch's worth of DatasetTuples to add
+        :return: BatchStatus named tuple.
+        """
         b_skipped = 0
         b_added = 0
         b_started = monotonic()
@@ -1041,19 +1096,24 @@ class AbstractDatasetResource(ABC):
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
     def _init_bulk_add_cache(self) -> Mapping[str, Any]:
+        """
+        Initialise a cache dictionary that may be used to share data between calls to _add_batch()
+
+        API Note: This API method is not finalised and may be subject to change.
+
+        :return: The initialised cache dictionary
+        """
         return {}
 
     def bulk_add(self, datasets: Iterable[DatasetTuple], batch_size: int = 1000) -> BatchStatus:
         """
         Add a group of Dataset documents in bulk.
 
-        :param datasets: An Iterable of tuples.  Each tuple represents a dataset and consists of:
-                0: Product
-                1: Dataset metadata document
-                2: Sequence of locations(uris)
-                (i.e. as returned by get_all_docs)
+        API Note: This API method is not finalised and may be subject to change.
+
+        :param datasets: An Iterable of DatasetTuples (i.e. as returned by get_all_docs)
         :param batch_size: Number of metadata types to add per batch (default 1000)
-        :return: Tuple of: count of datasets added, count of datasets skipped.
+        :return: BatchStatus named tuple, with `safe` set to None.
         """
         def increment_progress():
             if sys.stdout.isatty():
@@ -1557,9 +1617,27 @@ class AbstractIndex(ABC):
         """
         Clone an existing index into this one.
 
+        Steps are:
+
+        1) Clone all metadata types compatible with this index driver.
+           * Products and Datasets with incompatible metadata types are excluded from subsequent steps.
+           * Existing metadata types are skipped, but products and datasets associated with them are only
+             excluded if the existing metadata type does not match the one from the origin index.
+        2) Clone all products with "safe" metadata types.
+           * Products are included or excluded by metadata type as discussed above.
+           * Existing products are skipped, but datasets associated with them are only
+             excluded if the existing product definition does not match the one from the origin index.
+        3)  Clone all datasets with "safe" products
+            * Datasets are included or excluded by product and metadata type, as discussed above.
+            * Archived datasets and locations are not cloned.
+            * Dataset source (lineage) are not currently cloned (TODO)
+
+        API Note: This API method is not finalised and may be subject to change.
+
         :param origin_index: Index whose contents we wish to clone.
         :param batch_size: Maximum number of objects to write to the database in one go.
-        :return: List of errors (strings). Empty sequence on successful clone.
+        :return: Dictionary containing a BatchStatus named tuple for "metadata_types", "products"
+                 and "datasets".
         """
         results = {}
         # Clone Metadata Types
