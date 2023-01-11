@@ -26,12 +26,16 @@ from sqlalchemy.exc import IntegrityError
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import OrExpression
 from datacube.model import Range
+from datacube.utils.uris import split_uri
 from . import _core
 from . import _dynamic as dynamic
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField
 from ._schema import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, PRODUCT
 from .sql import escape_pg_identifier
+
+PGCODE_FOREIGN_KEY_VIOLATION = '23503'
+_LOG = logging.getLogger(__name__)
 
 
 def _dataset_uri_field(table):
@@ -58,23 +62,6 @@ _DATASET_SELECT_FIELDS = (
         ).label('uris')
     ).label('uris')
 )
-
-PGCODE_UNIQUE_CONSTRAINT = '23505'
-PGCODE_FOREIGN_KEY_VIOLATION = '23503'
-
-_LOG = logging.getLogger(__name__)
-
-
-def _split_uri(uri):
-    """
-    Split the scheme and the remainder of the URI.
-
-    """
-    idx = uri.find(':')
-    if idx < 0:
-        raise ValueError("Not a URI")
-
-    return uri[:idx], uri[idx+1:]
 
 
 def get_native_fields():
@@ -255,7 +242,7 @@ class PostgresDbAPI(object):
         :rtype bool:
         """
 
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
 
         r = self._connection.execute(
             insert(DATASET_LOCATION).on_conflict_do_nothing(
@@ -290,7 +277,7 @@ class PostgresDbAPI(object):
                 )).fetchall()]
 
     def get_datasets_for_location(self, uri, mode=None):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
 
         if mode is None:
             mode = 'exact' if body.count('#') > 0 else 'prefix'
@@ -998,7 +985,7 @@ class PostgresDbAPI(object):
 
         :returns bool: Was the location deleted?
         """
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             delete(DATASET_LOCATION).where(
                 and_(
@@ -1011,7 +998,7 @@ class PostgresDbAPI(object):
         return res.rowcount > 0
 
     def archive_location(self, dataset_id, uri):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
                 and_(
@@ -1027,7 +1014,7 @@ class PostgresDbAPI(object):
         return res.rowcount > 0
 
     def restore_location(self, dataset_id, uri):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
                 and_(
