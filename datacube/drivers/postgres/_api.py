@@ -41,6 +41,7 @@ _LOG = logging.getLogger(__name__)
 def _dataset_uri_field(table):
     return table.c.uri_scheme + ':' + table.c.uri_body
 
+
 # Fields for selecting dataset with uris
 # Need to alias the table, as queries may join the location table for filtering.
 SELECTED_DATASET_LOCATION = DATASET_LOCATION.alias('selected_dataset_location')
