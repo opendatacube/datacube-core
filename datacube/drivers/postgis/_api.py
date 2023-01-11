@@ -328,16 +328,14 @@ class PostgisDbAPI(object):
         if values is None:
             return False
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
-        geom_alch = geom_alchemy(extent)
         r = self._connection.execute(
             insert(
                 SpatialIndex
             ).values(
-                dataset_ref=dataset_id,
-                extent=geom_alch,
+                **values
             ).on_conflict_do_update(
                 index_elements=[SpatialIndex.dataset_ref],
-                set_=dict(extent=geom_alch)
+                set_=dict(extent=values["extent"])
             )
         )
         return r.rowcount > 0
