@@ -287,6 +287,8 @@ nci
 ncml
 ndarray
 ndexpr
+NaN
+NaNs
 NDVI
 ndvi
 NetCDF
