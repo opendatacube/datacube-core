@@ -266,25 +266,6 @@ class PostgisDbAPI(object):
 
         return r.rowcount > 0
 
-    @staticmethod
-    def _sanitise_extent(extent, crs):
-        if not crs.valid_region:
-            # No valid region on CRS, just reproject
-            return extent.to_crs(crs)
-        geo_extent = extent.to_crs(CRS("EPSG:4326"))
-        if crs.valid_region.contains(geo_extent):
-            # Valid region contains extent, just reproject
-            return extent.to_crs(crs)
-        if not crs.valid_region.intersects(geo_extent):
-            # Extent is entirely outside of valid region - return None
-            return None
-        # Clip to valid region and reproject
-        valid_extent = geo_extent & crs.valid_region
-        if valid_extent.wkt == "POLYGON EMPTY":
-            # Extent is entirely outside of valid region - return None
-            return None
-        return valid_extent.to_crs(crs)
-
     def insert_dataset_search(self, search_table, dataset_id, key, value):
         """
         Add/update a search field index entry for a dataset

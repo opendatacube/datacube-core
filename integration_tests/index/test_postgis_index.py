@@ -112,6 +112,7 @@ def test_spatial_index_crs_sanitise():
     assert sanitise_extent(valid, epsg3577) == valid.to_crs("EPSG:3577")
     assert sanitise_extent(invalid, epsg3577) is None
     assert sanitise_extent(partial, epsg3577).area < partial.to_crs("EPSG:3577").area
+    assert sanitise_extent(entire, epsg4326) == entire.to_crs("EPSG:4326")
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
