@@ -20,6 +20,9 @@ v1.8.next
 - Fix Github doc lint action (:pull:`1370`)
 - Tighten EO3 enforcement in postgis driver, refactor tests, and rename Dataset.type to Dataset.product
   (with type alias for compatibility) (:pull:`1372`)
+- Fix deprecation message due to distutils Version classes (:pull: `1375`)
+- Postgresql drivers cleanup - consolidate split_uri into utils and removed unused constants (:pull: `1378`)
+
 
 v1.8.9 (17 November 2022)
 =========================

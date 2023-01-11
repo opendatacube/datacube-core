@@ -27,6 +27,7 @@ from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils import geometry
 from datacube.utils.geometry import CRS, Geometry
+from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
 from . import _core
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
@@ -36,6 +37,8 @@ from ._schema import MetadataType, Product, \
     search_field_index_map, search_field_tables
 from ._spatial import geom_alchemy
 from .sql import escape_pg_identifier
+
+_LOG = logging.getLogger(__name__)
 
 
 # Make a function because it's broken
@@ -57,24 +60,6 @@ def _dataset_select_fields():
             ).label('uris')
         ).label('uris')
     )
-
-
-PGCODE_UNIQUE_CONSTRAINT = '23505'
-PGCODE_FOREIGN_KEY_VIOLATION = '23503'
-
-_LOG = logging.getLogger(__name__)
-
-
-def _split_uri(uri):
-    """
-    Split the scheme and the remainder of the URI.
-
-    """
-    idx = uri.find(':')
-    if idx < 0:
-        raise ValueError("Not a URI")
-
-    return uri[:idx], uri[idx+1:]
 
 
 def get_native_fields():
@@ -264,7 +249,7 @@ class PostgisDbAPI(object):
         :rtype bool:
         """
 
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
 
         r = self._connection.execute(
             insert(DatasetLocation).on_conflict_do_nothing(
@@ -396,7 +381,7 @@ class PostgisDbAPI(object):
         ]
 
     def get_datasets_for_location(self, uri, mode=None):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
 
         if mode is None:
             mode = 'exact' if body.count('#') > 0 else 'prefix'
@@ -1067,7 +1052,7 @@ class PostgisDbAPI(object):
 
         :returns bool: Was the location deleted?
         """
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             delete(DatasetLocation).where(
                 DatasetLocation.dataset_ref == dataset_id
@@ -1080,7 +1065,7 @@ class PostgisDbAPI(object):
         return res.rowcount > 0
 
     def archive_location(self, dataset_id, uri):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             update(DatasetLocation).where(
                 DatasetLocation.dataset_ref == dataset_id
@@ -1097,7 +1082,7 @@ class PostgisDbAPI(object):
         return res.rowcount > 0
 
     def restore_location(self, dataset_id, uri):
-        scheme, body = _split_uri(uri)
+        scheme, body = split_uri(uri)
         res = self._connection.execute(
             update(DatasetLocation).where(
                 DatasetLocation.dataset_ref == dataset_id

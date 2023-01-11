@@ -14,6 +14,16 @@ from pathlib import Path
 
 URL_RE = re.compile(r'\A\s*[\w\d\+]+://')
 
+def split_uri(uri):
+    """
+    Split the scheme and the remainder of the URI.
+
+    """
+    idx = uri.find(':')
+    if idx < 0:
+        raise ValueError("Not a URI")
+
+    return uri[:idx], uri[idx+1:]
 
 def is_url(url_str: str) -> bool:
     """
