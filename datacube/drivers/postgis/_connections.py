@@ -242,8 +242,7 @@ class PostGisDb(object):
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
         if refresh:
             self._refresh_spindexes()
-        ispidx_list = list(self.spindexes.keys())
-        return ispidx_list
+        return list(self.spindexes.keys())
 
     @contextmanager
     def _connect(self):
