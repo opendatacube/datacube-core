@@ -19,15 +19,3 @@ def gen_password(num_random_bytes=12):
     """
     import base64
     return base64.urlsafe_b64encode(os.urandom(num_random_bytes)).decode('utf-8')
-
-
-def split_uri(uri):
-    """
-    Split the scheme and the remainder of the URI.
-
-    """
-    idx = uri.find(':')
-    if idx < 0:
-        raise ValueError("Not a URI")
-
-    return uri[:idx], uri[idx+1:]

@@ -662,7 +662,7 @@ class PostgisDbAPI(object):
                  * array of uris
         """
         if batch_size > 0 and not self.in_transaction:
-                raise ValueError("Postgresql bulk reads must occur within a transaction.")
+            raise ValueError("Postgresql bulk reads must occur within a transaction.")
         query = select(
             _dataset_bulk_select_fields()
         ).select_from(Dataset).where(
