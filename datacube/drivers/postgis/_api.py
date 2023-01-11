@@ -37,6 +37,7 @@ from ._schema import MetadataType, Product, \
 from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from .sql import escape_pg_identifier
 
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -495,27 +496,22 @@ class PostgisDbAPI(object):
         return r.rowcount > 0
 
     def delete_dataset(self, dataset_id):
-        _LOG.warning("Deleting locations")
         self._connection.execute(
             delete(DatasetLocation).where(
                 DatasetLocation.dataset_ref == dataset_id
             )
         )
-        _LOG.warning("Deleting sources")
         self._connection.execute(
             delete(DatasetSource).where(
                 DatasetSource.dataset_ref == dataset_id
             )
         )
-        _LOG.warning("Deleting search fields")
         for table in search_field_indexes.values():
             self._connection.execute(
                 delete(table).where(table.dataset_ref == dataset_id)
             )
-        _LOG.warning("Deleting spatial index entries")
         for crs in self._db.spatial_indexes():
             SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
-            _LOG.warning("Deleting spatial index entries for %s", crs)
             self._connection.execute(
                 delete(
                     SpatialIndex
@@ -523,8 +519,6 @@ class PostgisDbAPI(object):
                     SpatialIndex.dataset_ref == dataset_id
                 )
             )
-
-        _LOG.warning("Deleting datasets")
         r = self._connection.execute(
             delete(Dataset).where(
                 Dataset.id == dataset_id
@@ -652,7 +646,23 @@ class PostgisDbAPI(object):
         _LOG.debug("search_datasets SQL: %s", str(select_query))
         return self._connection.execute(select_query)
 
-    def bulk_simple_dataset_search(self, products, batch_size=1000):
+    def bulk_simple_dataset_search(self, products=None, batch_size=0):
+        """
+        Perform bulk database reads (e.g. for index cloning)
+
+        Note that this operates with product ids to prevent an unnecessary join to the Product table.
+
+        :param products: Optional iterable of product IDs.  Only fetch nominated products.
+        :param batch_size: Number of streamed rows to fetch from database at once.
+                           Defaults to zero, which means no streaming.
+                           Note streaming is only supported inside a transaction.
+        :return: Iterable of tuples of:
+                 * Product ID
+                 * Dataset metadata document
+                 * array of uris
+        """
+        if batch_size > 0 and not self.in_transaction:
+                raise ValueError("Postgresql bulk reads must occur within a transaction.")
         query = select(
             _dataset_bulk_select_fields()
         ).select_from(Dataset).where(
@@ -661,8 +671,11 @@ class PostgisDbAPI(object):
         if products:
             query = query.where(Dataset.product_ref.in_(products))
 
-        assert self._connection.in_transaction()
-        return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
+        if batch_size > 0:
+            conn = self._connection.execution_options(stream_results=True, yield_per=batch_size)
+        else:
+            conn = self._connection
+        return conn.execute(query)
 
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
@@ -980,19 +993,14 @@ class PostgisDbAPI(object):
 
         return prod_id
 
-    def insert_metadata_type(self, name, definition, concurrently=False):
+    def insert_metadata_type(self, name, definition):
         res = self._connection.execute(
             insert(MetadataType).values(
                 name=name,
                 definition=definition
             )
         )
-        type_id = res.inserted_primary_key[0]
-
-        search_fields = get_dataset_fields(definition)
-        self._setup_metadata_type_fields(
-            type_id, name, search_fields, concurrently=concurrently
-        )
+        return res.inserted_primary_key[0]
 
     def insert_metadata_bulk(self, values):
         requested = len(values)
@@ -1002,7 +1010,7 @@ class PostgisDbAPI(object):
         )
         return res.rowcount, requested - res.rowcount
 
-    def update_metadata_type(self, name, definition, concurrently=False):
+    def update_metadata_type(self, name, definition):
         res = self._connection.execute(
             update(MetadataType).returning(MetadataType.id).where(
                 MetadataType.name == name
@@ -1011,39 +1019,8 @@ class PostgisDbAPI(object):
                 definition=definition
             )
         )
-        type_id = res.first()[0]
+        return res.first()[0]
 
-        search_fields = get_dataset_fields(definition)
-        self._setup_metadata_type_fields(
-            type_id, name, search_fields,
-            concurrently=concurrently,
-            rebuild_views=True,
-        )
-
-        return type_id
-
-    def check_dynamic_fields(self, concurrently=False, rebuild_views=False, rebuild_indexes=False):
-        _LOG.info('Checking dynamic views/indexes. (rebuild views=%s, indexes=%s)', rebuild_views, rebuild_indexes)
-
-        search_fields = {}
-
-        for metadata_type in self.get_all_metadata_types():
-            fields = get_dataset_fields(metadata_type['definition'])
-            search_fields[metadata_type['id']] = fields
-            self._setup_metadata_type_fields(
-                metadata_type['id'],
-                metadata_type['name'],
-                fields,
-                rebuild_indexes=rebuild_indexes,
-                rebuild_views=rebuild_views,
-                concurrently=concurrently,
-            )
-
-    def _setup_metadata_type_fields(self, id_, name, fields,
-                                    rebuild_indexes=False, rebuild_views=False, concurrently=True):
-        pass
-
-    @staticmethod
     def _get_active_field_names(fields, metadata_doc):
         for field in fields.values():
             if hasattr(field, 'extract'):

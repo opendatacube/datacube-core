@@ -74,7 +74,6 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                 connection.insert_metadata_type(
                     name=metadata_type.name,
                     definition=metadata_type.definition,
-                    concurrently=not allow_table_lock
                 )
         return self.get_by_name(metadata_type.name)
 
@@ -156,7 +155,6 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             connection.update_metadata_type(
                 name=metadata_type.name,
                 definition=metadata_type.definition,
-                concurrently=not allow_table_lock
             )
 
         self.get_by_name_unsafe.cache_clear()   # type: ignore[attr-defined]
@@ -203,12 +201,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
             If false, creation will be slightly slower and cannot be done in a transaction.
         """
-        with self._db_connection() as connection:
-            connection.check_dynamic_fields(
-                concurrently=not allow_table_lock,
-                rebuild_indexes=rebuild_indexes,
-                rebuild_views=rebuild_views,
-            )
+        pass
 
     def get_all(self):
         """

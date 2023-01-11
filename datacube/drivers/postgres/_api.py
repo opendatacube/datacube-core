@@ -606,7 +606,21 @@ class PostgresDbAPI(object):
                                                   select_fields, with_source_ids, limit)
         return self._connection.execute(select_query)
 
-    def bulk_simple_dataset_search(self, products, batch_size=1000):
+    def bulk_simple_dataset_search(self, products=None, batch_size=0):
+        """
+        Perform bulk database reads (e.g. for index cloning)
+
+        :param products: Optional iterable of product names.  Only fetch nominated products.
+        :param batch_size: Number of streamed rows to fetch from database at once.
+                           Defaults to zero, which means no streaming.
+                           Note streaming is only supported inside a transaction.
+        :return: Iterable of tuples of:
+                 * Product name
+                 * Dataset metadata document
+                 * array of uris
+        """
+        if batch_size > 0 and not self.in_transaction:
+            raise ValueError("Postgresql bulk reads must occur within a transaction.")
         if products:
             query = select(PRODUCT.c.id).select_from(PRODUCT).where(PRODUCT.c.name.in_(products))
             products = [row[0] for row in self._connection.execute(query)]

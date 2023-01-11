@@ -17,7 +17,8 @@ from sqlalchemy import select, func
 
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
-from datacube.drivers.postgis._api import split_uri, extract_dataset_search_fields
+from datacube.drivers.postgis._api import extract_dataset_search_fields
+from datacube.utils._misc import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
@@ -947,7 +948,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         local_product = self.products.get_by_name(product.name)
         product_search_key = [local_product.id]
         with self._db_connection(transaction=True) as connection:
-            assert connection.in_transaction
             for row in connection.bulk_simple_dataset_search(products=product_search_key, batch_size=batch_size):
                 prod_id, metadata_doc, uris = tuple(row)
                 yield DatasetTuple(product, metadata_doc, uris)

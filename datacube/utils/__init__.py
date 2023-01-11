@@ -37,6 +37,7 @@ from .math import (
 from ._misc import (
     DatacubeException,
     gen_password,
+    split_uri
 )
 
 

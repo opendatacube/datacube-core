@@ -2,11 +2,14 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import pytest
+
 from configparser import ConfigParser
 
 from datacube.index.postgres.index import Index
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_with_standard_index(uninitialised_postgres_db):
     index = Index(uninitialised_postgres_db)
     index.init_db()
