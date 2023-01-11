@@ -277,6 +277,7 @@ multipolygon
 mx
 mypy
 NaN
+NaNs
 nan
 nationalmap
 nbar
@@ -287,8 +288,6 @@ nci
 ncml
 ndarray
 ndexpr
-NaN
-NaNs
 NDVI
 ndvi
 NetCDF
