@@ -35,7 +35,7 @@ from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
     search_field_index_map, search_field_tables
-from ._spatial import geom_alchemy
+from ._spatial import geom_alchemy, generate_dataset_spatial_values
 from .sql import escape_pg_identifier
 
 _LOG = logging.getLogger(__name__)
@@ -324,8 +324,8 @@ class PostgisDbAPI(object):
         :type extent: Geometry
         :rtype bool:
         """
-        extent = self._sanitise_extent(extent, crs)
-        if extent is None:
+        values = generate_dataset_spatial_values(dataset_id, crs, extent)
+        if values is None:
             return False
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
         geom_alch = geom_alchemy(extent)
