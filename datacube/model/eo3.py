@@ -55,7 +55,7 @@ def validate_eo3_offsets(field_name, mdt_name, defn):
         else:
             raise InvalidDocException(f"No min_offset supplied for field {field_name} in metadata type {mdt_name}")
         if "max_offset" in defn:
-            validate_eo3_offset(field_name, mdt_name, defn["min_offset"])
+            validate_eo3_offset(field_name, mdt_name, defn["max_offset"])
         else:
             raise InvalidDocException(f"No max_offset supplied for field {field_name} in metadata type {mdt_name}")
     else:
