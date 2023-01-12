@@ -295,10 +295,10 @@ def test_transactions_api_manual(index,
 
 
 def test_transactions_api_hybrid(index,
-                                 extended_eo3_metadata_type_doc,
-                                 ls8_eo3_product,
-                                 eo3_ls8_dataset_doc,
-                                 eo3_ls8_dataset2_doc):
+                                     extended_eo3_metadata_type_doc,
+                                     ls8_eo3_product,
+                                     eo3_ls8_dataset_doc,
+                                     eo3_ls8_dataset2_doc):
     from datacube.index.hl import Doc2Dataset
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
@@ -512,3 +512,14 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
 def utc_now():
     # utcnow() doesn't include a tzinfo.
     return datetime.datetime.utcnow().replace(tzinfo=tz.tzutc())
+
+
+def test_bulk_reads_transaction(index, extended_eo3_metadata_type_doc,
+                                 ls8_eo3_product,
+                                 eo3_ls8_dataset_doc,
+                                 eo3_ls8_dataset2_doc
+                                 ):
+    with pytest.raises(ValueError) as e:
+        with index.datasets._db_connection() as conn:
+            conn.bulk_simple_dataset_search(batch_size=2)
+    assert "within a transaction" in str(e.value)
