@@ -314,3 +314,19 @@ def test_eo3_compatible_type():
     with pytest.raises(InvalidDocException) as e:
         validate_eo3_compatible_type(test_doc)
     assert "invalid_system_field" in str(e.value)
+
+
+def test_geom_from_eo3_proj():
+    from datacube.drivers.postgis._spatial import extract_geometry_from_eo3_projection
+    assert extract_geometry_from_eo3_projection({
+        "spatial_reference": "EPSG:4326",
+    }) is None
+    assert extract_geometry_from_eo3_projection({
+        "spatial_reference": "EPSG:4326",
+        "geo_ref_points": {
+            "ll": {"x": 10.0, "y": 10.0},
+            "ul": {"x": 10.0, "y": 20.0},
+            "ur": {"x": 20.0, "y": 20.0},
+            "lr": {"x": 20.0, "y": 10.0},
+        }
+    }) is not None

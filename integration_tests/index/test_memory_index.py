@@ -588,3 +588,10 @@ def test_default_clone_bulk_ops(mem_index_fresh, index, extended_eo3_metadata_ty
     assert mem_index_fresh.index.datasets.has(wo_eo3_dataset.id)
     assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset.id)
     assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset4.id)
+
+
+def test_default_clone_bulk_ops(mem_eo3_data, index):
+    mem_idx, ls8id, woid = mem_eo3_data
+    index.clone(mem_idx.index)
+    assert index.datasets.has(ls8id)
+    assert index.datasets.has(woid)
