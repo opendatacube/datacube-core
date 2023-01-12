@@ -94,7 +94,7 @@ def test_archive_datasets(index, local_config, ls8_eo3_dataset):
     assert not indexed_dataset.is_archived
 
 
-def test_purge_datasets(index, local_config, ls8_eo3_dataset, clirunner):
+def test_purge_datasets(index, ls8_eo3_dataset):
     assert index.datasets.has(ls8_eo3_dataset.id)
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
@@ -115,7 +115,7 @@ def test_purge_datasets(index, local_config, ls8_eo3_dataset, clirunner):
     assert index.datasets.get(ls8_eo3_dataset.id) is None
 
 
-def test_purge_datasets_cli(index, local_config, ls8_eo3_dataset, clirunner):
+def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner):
     dsid = ls8_eo3_dataset.id
 
     # Attempt to purge non-archived dataset should fail

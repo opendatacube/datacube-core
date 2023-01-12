@@ -326,7 +326,7 @@ def datacube_env_name(request):
     return request.param
 
 
-@pytest.fixture(params=[("datacube", "experimental"), ("datacube", "experimental")])
+@pytest.fixture(params=[("datacube", "experimental"), ("experimental", "datacube")])
 def datacube_env_name_pair(request):
     return request.param
 
