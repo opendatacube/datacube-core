@@ -16,11 +16,11 @@ and some very basic information about the product
     metadata_type: eo3
 
     metadata:
-        product:
+      product:
         name: dem_srtm
 
     measurements:
-        - name: elevation
+      - name: elevation
         dtype: int16
         nodata: -32768.0
         units: "metre"
@@ -39,17 +39,20 @@ known when loading data.
     license: CC-BY-4.0
 
     metadata:
-        product:
+      product:
         name: dem_srtm
 
     storage:
         crs: EPSG:4326
+        tile_size:
+          x: 100000.0
+          y: 100000.0
         resolution:
-        longitude: 0.000277777777780
-        latitude: -0.000277777777780
+          longitude: 0.000277777777780
+          latitude: -0.000277777777780
 
     measurements:
-        - name: elevation
+      - name: elevation
         dtype: int16
         nodata: -32768.0
         units: "metre"
