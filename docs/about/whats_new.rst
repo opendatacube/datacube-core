@@ -23,7 +23,7 @@ v1.8.next
 - Fix deprecation message due to distutils Version classes (:pull: `1375`)
 - Postgresql drivers cleanup - consolidate split_uri into utils and removed unused constants (:pull: `1378`)
 - Postgresql drivers cleanup - Handle NaNs in search fields and allow caching in sanitise_extent (:pull: `1379`)
-
+- Fix example product yaml documentation (:pull: `1384`)
 
 v1.8.9 (17 November 2022)
 =========================
