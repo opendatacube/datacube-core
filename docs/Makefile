@@ -13,7 +13,7 @@ help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 
-.PHONY: help Makefile livehtml clean plantuml_diags
+.PHONY: help Makefile livehtml clean plantuml_diags list_refs linkcheck
 
 PLANTUML_FILES = $(shell find . -type f -name '*.plantuml')
 SVG_FILES = $(PLANTUML_FILES:.plantuml=.svg)
@@ -39,5 +39,11 @@ livehtml:
 
 clean:
 	rm -rf _build/
-	rm -rf dev/api/generate data-access-analysis/apis/generate api/indexed-data/generate api/geometry/generate
-	find . -name generate -type d -exec rm -rf '{}' \;
+#	rm -rf dev/api/generate data-access-analysis/apis/generate api/indexed-data/generate api/geometry/generate
+	find . -name generate -type d -prune -exec rm -rf '{}' \;
+
+list_refs:
+	python -m sphinx.ext.intersphinx _build/html/objects.inv
+
+linkcheck:
+	sphinx-build . _build -b linkcheck

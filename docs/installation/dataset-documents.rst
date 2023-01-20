@@ -321,7 +321,7 @@ lineage
                         checksum_sha1: f66265314fc12e005deb356b69721a7031a71374
 
 Reasons for deprecation
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 #. Duplication of spatial information
 
@@ -341,7 +341,3 @@ Reasons for deprecation
    of input datasets.
 
 #. Format does not capture per band resolution/image size
-
-.. _metadata-type-definition:
-
-    ## TODO

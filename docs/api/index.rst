@@ -6,18 +6,17 @@ The following pages provide a full API reference for the ``datacube`` python lib
 
 
 .. toctree::
-    :caption: Core Classes & Data Model
-    :maxdepth: 1
+   :caption: Core Classes & Data Model
 
-    core-classes/datacube
-    core-classes/dataset
-    core-classes/product
-    core-classes/geometry
-    core-classes/measurement
-    core-classes/metadataType
-    core-classes/range
-    core-classes/query
-    grid-processing/tile
+   core-classes/datacube
+   core-classes/dataset
+   core-classes/product
+   core-classes/geometry
+   core-classes/measurement
+   core-classes/metadataType
+   core-classes/range
+   core-classes/query
+   grid-processing/tile
 
 
 .. toctree::

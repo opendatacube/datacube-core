@@ -1,12 +1,12 @@
 Indexing data from Amazon (AWS S3)
-======================================
+==================================
 
 Options currently exist that allow for a user to store, index, and retrieve data
 from cloud object stores, such as Amazon S3 buckets, using the open ODC.
 While the process is largely the same as the step by step guide there are a few additional requirements outline below.
 
 Configuring AWS CLI Credentials
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Install the AWS CLI package and configure it with your Amazon AWS credentials.
 For a more detailed tutorial on AWS CLI configurations, visit the
@@ -27,10 +27,10 @@ and further detailed documentation for the tools used below in the
 
 .. code-block:: bash
 
-    pip install --extra-index-url="https://packages.dea.ga.gov.au" odc_apps_dc_tools
+    pip install odc_apps_dc_tools
 
 S3 Indexing Example
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 For this example we will be indexing Digital Earth Australia's public data bucket,
 which you can browse at `data.dea.ga.gov.au <https://data.dea.ga.gov.au>`_.

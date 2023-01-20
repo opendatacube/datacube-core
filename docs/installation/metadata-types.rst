@@ -1,3 +1,7 @@
+
+
+.. _metadata-type-definition:
+
 Metadata Types
 **************
 

@@ -92,5 +92,7 @@ The ``datacube system init`` tool can create and populate the Data Cube database
     datacube -v system init
 
 .. click:: datacube.scripts.system:database_init
-
    :prog: datacube system
+
+By default, it requires SuperUser access to the database. This is because
+it creates Roles as well as tables and Indexes.

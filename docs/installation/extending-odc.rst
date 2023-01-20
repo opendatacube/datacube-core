@@ -296,9 +296,8 @@ Data Cube Drivers API
 =====================
 
 .. automodule:: datacube.drivers
-
-    :members:
-    :imported-members:
+   :members:
+   :imported-members:
 
 References and History
 ======================

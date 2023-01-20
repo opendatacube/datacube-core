@@ -1,3 +1,6 @@
+
+.. _command-line-tools:
+
 Command Line Tools
 ******************
 

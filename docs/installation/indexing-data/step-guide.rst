@@ -1,31 +1,29 @@
 Step-by-step Guide to Indexing Data
-=====================================
+===================================
 
 Introduction
-****************
+*************
 
 Once you have the Data Cube software installed and connected to a database, you can start to load in some data. This step is performed using the datacube command line tool.
 
-.. admonition:: Note
-
-  :class: important
+.. note:: 
 
   When you load data into the Data Cube using indexing, all you are doing is recording the existence of and detailed metadata about the data into the index. None of the data itself is copied, moved or transformed. This is therefore a relatively safe and fast process.
 
 Steps Overview
-******************
+**************
 
- * Create a new product definition
+1. Create a new product definition
     Before the data itself can be added, a product describing the data must be created.
     Requires creation of a :ref:`product-definitions` document (yaml)
 
- * Ensure the data is prepared
+2. Ensure the data is prepared
     The data to be indexed requires datacube friendly :ref:`dataset-documents` for data which is to be indexed
 
- * Index the data
+3. Index the data
     Run the actual indexing process
 
- * (OPTIONAL) :ref:`Ingest <ingestion>` the data
+4. (OPTIONAL) :ref:`Ingest <ingestion>` the data
     After indexing the data you can choose to ingest. This provides the ability to tile the original data into a faster storage format or a new projection system.
     Requires creation of an ingestion configuration file (yaml). This is not recommended.
 
@@ -75,9 +73,7 @@ no further steps are required for indexing them.
 For third party datasets, see :ref:`prepare-scripts`.
 
 
-.. admonition:: Note
-
-  :class: info
+.. note::
 
     Some metadata requires cleanup before they are ready to be loaded.
 

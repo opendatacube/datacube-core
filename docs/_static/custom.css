@@ -130,10 +130,6 @@ dt:target, span.highlighted {
     margin-top: 3px;
 }
 
-/* Hide the in-content nav */
-.bd-content .toctree-wrapper {
-    display: none;
-}
 
 
 /* RIGHT NAV COLUMN */

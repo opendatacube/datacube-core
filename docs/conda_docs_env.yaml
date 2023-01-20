@@ -1,0 +1,45 @@
+name: odc-core
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python[version='>=3.8']
+  - numpy
+  - pandas
+  - boto3
+  - botocore
+  - pyyaml
+  - python-dateutil
+  - netcdf4
+  - sqlalchemy
+  - jsonschema
+  - dask-core
+  - toolz
+  - distributed
+  - cachetools
+  - psycopg2
+  - affine
+  - geoalchemy2
+  - lark
+  - click[version='>=5.0']
+  - pyproj[version='>=2.5']
+  - shapely[version='>=1.6.4']
+  - rasterio[version='>=1.3.2']
+  - cloudpickle[version='>=0.4']
+  - xarray=2022.3.0
+  - ca-certificates
+  - libgcc-ng[version='>=12']
+  - pytest
+  - certifi
+  - openssl
+  - ipython
+  - hypothesis
+  - moto
+  - pytest-httpserver
+  - sphinx-autobuild
+  - beautifulsoup4
+  - sphinx-autodoc-typehints
+  - sphinx-click
+  - autodocsumm
+  - nbsphinx
+  - pydata-sphinx-theme

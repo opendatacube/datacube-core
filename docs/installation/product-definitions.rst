@@ -43,13 +43,13 @@ known when loading data.
         name: dem_srtm
 
     storage:
-        crs: EPSG:4326
-        tile_size:
-          x: 100000.0
-          y: 100000.0
-        resolution:
-          longitude: 0.000277777777780
-          latitude: -0.000277777777780
+      crs: EPSG:4326
+      tile_size:
+        x: 100000.0
+        y: 100000.0
+      resolution:
+        longitude: 0.000277777777780
+        latitude: -0.000277777777780
 
     measurements:
       - name: elevation
@@ -58,8 +58,8 @@ known when loading data.
         units: "metre"
 
 
-You can add product definitions using the command line as follows: ``datacube product add <path-to-file>``
-and you can update them using ``datacube product update <path-to-file>``.
+You can add Product definitions from the command line with ``datacube product add <path-to-file>``, 
+and you can update them using ``datacube product update <path-to-file>``. See :ref:`command-line-tools` for more.
 
 A tool exists that can help you keep products in sync between a CSV list of products and the ODC
 dataset. See the `datacube-product-sync <https://github.com/opendatacube/odc-tools/blob/develop/apps/dc_tools/README.md#dc-sync-products>`_ tool.

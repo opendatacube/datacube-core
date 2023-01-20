@@ -1,6 +1,8 @@
+
 ================
 Dataset Querying
 ================
+
 When connected to an ODC Database, these methods are available for searching and querying:
 
 .. code-block:: bash
@@ -9,11 +11,13 @@ When connected to an ODC Database, these methods are available for searching and
    dc.index.datasets.{method}
 
 
+
+.. py:class:: datacube.index.abstract.AbstractDatasetResource
+
 .. currentmodule:: datacube.index.abstract.AbstractDatasetResource
 
-.. autosummary::
 
-   :toctree: generate/
+.. autosummary::
 
    get
    search
@@ -35,3 +39,5 @@ When connected to an ODC Database, these methods are available for searching and
    get_locations
    get_archived_locations
    get_datasets_for_location
+ 
+ 

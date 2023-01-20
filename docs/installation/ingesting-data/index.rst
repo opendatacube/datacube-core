@@ -1,8 +1,9 @@
 
+.. _ingestion:
 
 Ingesting Data
 **************
-.. _ingestion:
+
 
 .. note::
 

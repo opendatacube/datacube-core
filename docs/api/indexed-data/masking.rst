@@ -13,7 +13,7 @@ Masking No Data Values
 
 .. currentmodule:: datacube.utils.masking
 
-.. automethod:: mask_invalid_data
+.. autofunction:: mask_invalid_data
 
 Masking with Bit-Flag Measurements
 ----------------------------------
@@ -40,9 +40,9 @@ Open Data Cube provides a way of describing the meanings that can be encoded
 in variables, which can then be used to give a readable method when using that
 variable.
 
-.. automethod:: describe_variable_flags
+.. autofunction:: describe_variable_flags
 
-.. automethod:: make_mask
+.. autofunction:: make_mask
 
 How to Define Meanings on Measurements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -13,8 +13,6 @@ When connected to an ODC Database, these methods are available for adding, updat
 
 .. autosummary::
 
-   :toctree: generate/
-
    add
    add_location
    archive
