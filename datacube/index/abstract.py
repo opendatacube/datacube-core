@@ -743,11 +743,13 @@ def dsid_to_uuid(dsid: DSID) -> UUID:
         return UUID(dsid)
 
 
-# A named tuple representing a complete dataset:
-# - product: A Product model.
-# - metadata: The dataset metadata document
-# - uris: A list of locations (uris)
 class DatasetTuple(NamedTuple):
+    """
+    A named tuple representing a complete dataset:
+    - product: A Product model.
+    - metadata: The dataset metadata document
+    - uris: A list of locations (uris)
+    """
     product: Product
     metadata: Mapping[str, Any]
     uris: Sequence[str]
