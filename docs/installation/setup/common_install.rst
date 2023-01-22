@@ -92,6 +92,7 @@ Then edit the ``~/.datacube_integration.conf`` with a text editor and add the fo
     db_username: <foo>
     db_password: <foobar>
 
+Note: For Ubuntu Setup the db_hostname should be set to "/var/run/postgresql". For more refer: https://github.com/opendatacube/datacube-core/issues/1329
 
 Verify it all works
 ===================
