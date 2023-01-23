@@ -1558,7 +1558,11 @@ class AbstractIndex(ABC):
     supports_nongeo = True
     #   supports lineage
     supports_lineage = True
-    supports_source_filters = True
+    #   supports external lineage API (as described in EP-08)
+    #   IF support_lineage is True and supports_external_lineage is False THEN legacy lineage API.
+    supports_external_lineage = False
+    #   supports an external lineage home field.  Only valid if also supports_external_lineage
+    supports_external_home = False
     # Supports ACID transactions
     supports_transactions = False
 
