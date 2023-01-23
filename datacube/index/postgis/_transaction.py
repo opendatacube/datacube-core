@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from contextlib import contextmanager
-from sqlalchemy import text
 from typing import Any
 
 from datacube.drivers.postgis import PostGisDb
@@ -19,8 +18,8 @@ class PostgisTransaction(AbstractTransaction):
 
     def _new_connection(self) -> Any:
         dbconn = self._db.give_me_a_connection()
-        dbconn.execute(text('BEGIN'))
         conn = PostgisDbAPI(self._db, dbconn)
+        conn.begin()
         return conn
 
     def _commit(self) -> None:

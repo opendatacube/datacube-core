@@ -18,7 +18,7 @@ from sqlalchemy.engine import Connectable
 from sqlalchemy import Column
 from sqlalchemy.orm import Session
 
-from datacube.utils.geometry import CRS, Geometry as Geom, multipolygon
+from datacube.utils.geometry import CRS, Geometry as Geom, multipolygon, polygon
 from ._core import METADATA
 from .sql import SCHEMA_NAME
 from ._schema import orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
@@ -125,6 +125,7 @@ def ensure_spindex(engine: Connectable, sp_idx: Type[SpatialIndex]) -> None:
         orm_registry.metadata.create_all(engine, [sp_idx.__table__])
         # ... and add a SpatialIndexRecord
         session.add(SpatialIndexRecord.from_spindex(sp_idx))
+        session.commit()
         session.flush()
     return
 
@@ -134,7 +135,6 @@ def spindexes(engine: Connectable) -> Mapping[CRS, Type[SpatialIndex]]:
     Return a CRS-to-Spatial Index ORM class mapping for indexes that exist in a particular database.
     """
     out = {}
-    sir = SpatialIndexORMRegistry()
     with Session(engine) as session:
         results = session.execute(select(SpatialIndexRecord.srid))
         for result in results:
@@ -171,6 +171,9 @@ def sanitise_extent(extent, crs, geo_extent=None):
         return extent.to_crs(crs)
     if geo_extent is None:
         geo_extent = extent.to_crs(CRS("EPSG:4326"))
+    if crs.epsg == 4326:
+        # geo_extent is what we want anyway - shortcut
+        return geo_extent
     if crs.valid_region.contains(geo_extent):
         # Valid region contains extent, just reproject
         return extent.to_crs(crs)
@@ -191,3 +194,19 @@ def generate_dataset_spatial_values(dataset_id, crs, extent, geo_extent=None):
         return None
     geom_alch = geom_alchemy(extent)
     return {"dataset_ref": dataset_id, "extent": geom_alch}
+
+
+def extract_geometry_from_eo3_projection(eo3_gs_doc):
+    native_crs = CRS(eo3_gs_doc["spatial_reference"])
+    valid_data = eo3_gs_doc.get("valid_data")
+    if valid_data:
+        return Geom(valid_data, crs=native_crs)
+    else:
+        geo_ref_points = eo3_gs_doc.get('geo_ref_points')
+        if geo_ref_points:
+            return polygon(
+                [(geo_ref_points[key]['x'], geo_ref_points[key]['y']) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
+                crs=native_crs
+            )
+        else:
+            return None

@@ -94,7 +94,7 @@ def test_archive_datasets(index, local_config, ls8_eo3_dataset):
     assert not indexed_dataset.is_archived
 
 
-def test_purge_datasets(index, local_config, ls8_eo3_dataset, clirunner):
+def test_purge_datasets(index, ls8_eo3_dataset):
     assert index.datasets.has(ls8_eo3_dataset.id)
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
@@ -115,7 +115,7 @@ def test_purge_datasets(index, local_config, ls8_eo3_dataset, clirunner):
     assert index.datasets.get(ls8_eo3_dataset.id) is None
 
 
-def test_purge_datasets_cli(index, local_config, ls8_eo3_dataset, clirunner):
+def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner):
     dsid = ls8_eo3_dataset.id
 
     # Attempt to purge non-archived dataset should fail
@@ -512,3 +512,14 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
 def utc_now():
     # utcnow() doesn't include a tzinfo.
     return datetime.datetime.utcnow().replace(tzinfo=tz.tzutc())
+
+
+def test_bulk_reads_transaction(index, extended_eo3_metadata_type_doc,
+                                ls8_eo3_product,
+                                eo3_ls8_dataset_doc,
+                                eo3_ls8_dataset2_doc
+                                ):
+    with pytest.raises(ValueError) as e:
+        with index.datasets._db_connection() as conn:
+            conn.bulk_simple_dataset_search(batch_size=2)
+    assert "within a transaction" in str(e.value)

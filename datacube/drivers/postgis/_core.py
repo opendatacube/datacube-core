@@ -8,15 +8,15 @@ Core SQL schema settings.
 
 import logging
 
+from sqlalchemy import MetaData
+from sqlalchemy.engine import Engine
+from sqlalchemy.schema import CreateSchema
+
 from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                           SCHEMA_NAME, TYPES_INIT_SQL,
                                           UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
                                           UPDATE_TIMESTAMP_SQL,
                                           escape_pg_identifier)
-from sqlalchemy import MetaData
-from sqlalchemy.engine import Engine
-from sqlalchemy.schema import CreateSchema
-
 
 USER_ROLES = ('odc_user', 'odc_ingest', 'odc_manage', 'odc_admin')
 

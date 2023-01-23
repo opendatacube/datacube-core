@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from affine import Affine
 import pytest
-from datacube.utils.documents import parse_yaml
+from datacube.utils.documents import parse_yaml, InvalidDocException
 from datacube.testutils import mk_sample_product
 from datacube.model import Dataset
 
@@ -250,3 +250,83 @@ def test_prep_eo3(sample_doc, sample_doc_180, eo3_metadata):
 
     with pytest.raises(ValueError):
         prep_eo3(non_eo3_doc)
+
+
+def test_val_eo3_offset():
+    from datacube.model.eo3 import validate_eo3_offset
+    # Simple offsets
+    validate_eo3_offset("foo", "bar", ["properties", "ns:foo"])
+    with pytest.raises(InvalidDocException):
+        validate_eo3_offset("foo", "bar", ["not_properties", "ns:foo"])
+    with pytest.raises(InvalidDocException):
+        validate_eo3_offset("foo", "bar", ["properties", "nested", "ns:foo"])
+    # Compound offsets
+    validate_eo3_offset("foo", "bar", [["properties", "ns:foo1"], ["properties", "ns:foo2"]])
+    with pytest.raises(InvalidDocException):
+        validate_eo3_offset("foo", "bar", [["properties", "ns:foo"], ["not_properties", "ns:foo"]])
+    with pytest.raises(InvalidDocException):
+        validate_eo3_offset("foo", "bar", [["properties", "nested", "ns:foo"], ["properties", "ns:foo"]])
+
+
+def test_val_eo3_offsets():
+    from datacube.model.eo3 import validate_eo3_offsets
+    # Scalar types
+    validate_eo3_offsets("foo", "bar", {
+        "offset": ["properties", "ns:foo"]
+    })
+    validate_eo3_offsets("foo", "bar", {
+        "type": "integer",
+        "offset": ["properties", "ns:foo"]
+    })
+    # Range Types
+    validate_eo3_offsets("foo", "bar", {
+        "type": "numeric-range",
+        "min_offset": ["properties", "ns:foo_min"],
+        "max_offset": ["properties", "ns:foo_max"],
+    })
+    # Missing offsets
+    with pytest.raises(InvalidDocException):
+        validate_eo3_offsets("foo", "bar", {
+            "type": "numeric",
+        })
+    with pytest.raises(InvalidDocException):
+        validate_eo3_offsets("foo", "bar", {
+            "type": "numeric-range",
+            "max_offset": ["properties", "ns:foo_max"],
+        })
+    with pytest.raises(InvalidDocException):
+        validate_eo3_offsets("foo", "bar", {
+            "type": "integer-range",
+            "min_offset": ["properties", "ns:foo"]
+        })
+
+
+def test_eo3_compatible_type():
+    from datacube.model.eo3 import validate_eo3_compatible_type
+    test_doc = {
+        "name": "eo3_test",
+        "description": "eo3 test doc with issues",
+        "dataset": {
+            "invalid_system_field": ["whatever", "wherever"],
+            "grid_spatial": ["grid_spatial", "projection"]
+        }
+    }
+    with pytest.raises(InvalidDocException) as e:
+        validate_eo3_compatible_type(test_doc)
+    assert "invalid_system_field" in str(e.value)
+
+
+def test_geom_from_eo3_proj():
+    from datacube.drivers.postgis._spatial import extract_geometry_from_eo3_projection
+    assert extract_geometry_from_eo3_projection({
+        "spatial_reference": "EPSG:4326",
+    }) is None
+    assert extract_geometry_from_eo3_projection({
+        "spatial_reference": "EPSG:4326",
+        "geo_ref_points": {
+            "ll": {"x": 10.0, "y": 10.0},
+            "ul": {"x": 10.0, "y": 20.0},
+            "ur": {"x": 20.0, "y": 20.0},
+            "lr": {"x": 20.0, "y": 10.0},
+        }
+    }) is not None

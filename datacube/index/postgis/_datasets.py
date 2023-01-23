@@ -9,16 +9,21 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from typing import Iterable, List, Union, Optional
+from time import monotonic
+from typing import Iterable, List, Mapping, Union, Optional, Any
 from uuid import UUID
 
 from sqlalchemy import select, func
 
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
-from datacube.drivers.postgis._schema import Dataset as SQLDataset
-from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID
+from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
+from datacube.drivers.postgis._api import extract_dataset_search_fields
+from datacube.utils.uris import split_uri
+from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
+
+from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.model import Dataset, Product
+from datacube.model import Dataset, Product, Range
 from datacube.model.fields import Field
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
@@ -44,9 +49,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :type product_resource: datacube.index._products.ProductResource
         """
         self._db = db
-        self._index = index
-        self.types = self._index.products   # types is a compatibility alias for products.
-        self.products = self._index.products
+        super().__init__(index)
 
     def get(self, id_: Union[str, UUID], include_sources=False):
         """
@@ -156,7 +159,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if self.has(dataset.id):
             _LOG.warning('Dataset %s is already in the database', dataset.id)
             return dataset
-
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
             is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
@@ -169,6 +171,81 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     self._ensure_new_locations(dataset, transaction=transaction)
 
         return dataset
+
+    def _init_bulk_add_cache(self):
+        return {}
+
+    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
+        # Add a "batch" of datasets.
+        b_started = monotonic()
+        crses = self._db.spatial_indexes()
+        batch = {
+            "datasets": [],
+            "uris": [],
+            "search_indexes": {
+                "string": [],
+                "numeric": [],
+                "datetime": []
+            },
+            "spatial_indexes": {crs: [] for crs in crses}
+        }
+        dsids = []
+        for prod, metadata_doc, uris in batch_ds:
+            dsid = UUID(metadata_doc["id"])
+            dsids.append(dsid)
+            batch["datasets"].append(
+                {
+                    "id": dsid,
+                    "product_ref": prod.id,
+                    "metadata": metadata_doc,
+                    "metadata_type_ref": prod.metadata_type.id
+                }
+            )
+            for uri in uris:
+                scheme, body = split_uri(uri)
+                batch["uris"].append(
+                    {
+                        "dataset_ref": dsid,
+                        "uri_scheme": scheme,
+                        "uri_body": body,
+                    }
+                )
+            extent = extract_geometry_from_eo3_projection(
+                metadata_doc["grid_spatial"]["projection"]
+            )
+            if extent:
+                geo_extent = extent.to_crs(CRS("EPSG:4326"))
+                for crs in crses:
+                    values = generate_dataset_spatial_values(dsid, crs, extent, geo_extent=geo_extent)
+                    if values is not None:
+                        batch["spatial_indexes"][crs].append(values)
+            if prod.metadata_type.name in cache:
+                search_field_vals = cache[prod.metadata_type.name]
+            else:
+                search_field_vals = extract_dataset_search_fields(metadata_doc, prod.metadata_type.definition)
+                cache[prod.metadata_type.name] = search_field_vals
+            for fname, finfo in search_field_vals.items():
+                ftype, fval = finfo
+                if isinstance(fval, Range):
+                    fval = list(fval)
+                search_key = search_field_map[ftype]
+                batch["search_indexes"][search_key].append({
+                    "dataset_ref": dsid,
+                    "search_key": fname,
+                    "search_val": fval
+                })
+        with self._db_connection(transaction=True) as connection:
+            if batch["datasets"]:
+                b_added, b_skipped = connection.insert_dataset_bulk(batch["datasets"])
+            if batch["uris"]:
+                connection.insert_dataset_location_bulk(batch["uris"])
+            for crs in crses:
+                crs_values = batch["spatial_indexes"][crs]
+                if crs_values:
+                    connection.insert_dataset_spatial_bulk(crs, crs_values)
+            for search_type, values in batch["search_indexes"].items():
+                connection.insert_dataset_search_bulk(search_type, values)
+        return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
     def search_product_duplicates(self, product: Product, *args):
         """
@@ -852,7 +929,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         in metadata doc and their offsets are provided. custom_query is a dict of key fields involving
         custom fields.
         """
-
         custom_exprs = []
         for key in custom_query:
             # for now we assume all custom query fields are SimpleDocFields
@@ -867,3 +943,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
+
+    def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
+        local_product = self.products.get_by_name(product.name)
+        product_search_key = [local_product.id]
+        with self._db_connection(transaction=True) as connection:
+            for row in connection.bulk_simple_dataset_search(products=product_search_key, batch_size=batch_size):
+                prod_id, metadata_doc, uris = tuple(row)
+                yield DatasetTuple(product, metadata_doc, uris)

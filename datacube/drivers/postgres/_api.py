@@ -62,6 +62,24 @@ _DATASET_SELECT_FIELDS = (
         ).label('uris')
     ).label('uris')
 )
+_DATASET_BULK_SELECT_FIELDS = (
+    PRODUCT.c.name,
+    DATASET.c.metadata,
+    # All active URIs, from newest to oldest
+    func.array(
+        select([
+            _dataset_uri_field(SELECTED_DATASET_LOCATION)
+        ]).where(
+            and_(
+                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+                SELECTED_DATASET_LOCATION.c.archived == None
+            )
+        ).order_by(
+            SELECTED_DATASET_LOCATION.c.added.desc(),
+            SELECTED_DATASET_LOCATION.c.id.desc()
+        ).label('uris')
+    ).label('uris')
+)
 
 
 def get_native_fields():
@@ -164,19 +182,27 @@ def get_dataset_fields(metadata_type_definition):
 class PostgresDbAPI(object):
     def __init__(self, connection):
         self._connection = connection
+        self._sqla_txn = None
 
     @property
     def in_transaction(self):
         return self._connection.in_transaction()
 
     def begin(self):
-        self._connection.execute(text('BEGIN'))
+        self._connection.execution_options(isolation_level="SERIALIZABLE")
+        self._sqla_txn = self._connection.begin()
 
-    def rollback(self):
-        self._connection.execute(text('ROLLBACK'))
+    def _end_transaction(self):
+        self._sqla_txn = None
+        self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
     def commit(self):
-        self._connection.execute(text('COMMIT'))
+        self._sqla_txn.commit()
+        self._end_transaction()
+
+    def rollback(self):
+        self._sqla_txn.rollback()
+        self._end_transaction()
 
     def execute(self, command):
         return self._connection.execute(command)
@@ -211,6 +237,13 @@ class PostgresDbAPI(object):
             metadata=metadata_doc
         )
         return ret.rowcount > 0
+
+    def insert_dataset_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(
+            insert(DATASET), values
+        )
+        return res.rowcount, requested - res.rowcount
 
     def update_dataset(self, metadata_doc, dataset_id, product_id):
         """
@@ -254,6 +287,11 @@ class PostgresDbAPI(object):
         )
 
         return r.rowcount > 0
+
+    def insert_dataset_location_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(DATASET_LOCATION), values)
+        return res.rowcount, requested - res.rowcount
 
     def contains_dataset(self, dataset_id):
         return bool(
@@ -567,6 +605,37 @@ class PostgresDbAPI(object):
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids, limit)
         return self._connection.execute(select_query)
+
+    def bulk_simple_dataset_search(self, products=None, batch_size=0):
+        """
+        Perform bulk database reads (e.g. for index cloning)
+
+        :param products: Optional iterable of product names.  Only fetch nominated products.
+        :param batch_size: Number of streamed rows to fetch from database at once.
+                           Defaults to zero, which means no streaming.
+                           Note streaming is only supported inside a transaction.
+        :return: Iterable of tuples of:
+                 * Product name
+                 * Dataset metadata document
+                 * array of uris
+        """
+        if batch_size > 0 and not self.in_transaction:
+            raise ValueError("Postgresql bulk reads must occur within a transaction.")
+        if products:
+            query = select(PRODUCT.c.id).select_from(PRODUCT).where(PRODUCT.c.name.in_(products))
+            products = [row[0] for row in self._connection.execute(query)]
+            if not products:
+                return []
+        else:
+            products = None
+        query = select(
+            _DATASET_BULK_SELECT_FIELDS
+        ).select_from(DATASET).join(PRODUCT).where(
+            DATASET.c.archived == None
+        )
+        if products:
+            query = query.where(DATASET.c.dataset_type_ref.in_(products))
+        return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
@@ -935,6 +1004,11 @@ class PostgresDbAPI(object):
             PRODUCT.select().order_by(PRODUCT.c.name.asc())
         ).fetchall()
 
+    def get_all_product_docs(self):
+        return self._connection.execute(
+            select(PRODUCT.c.definition)
+        )
+
     def _get_products_for_metadata_type(self, id_):
         return self._connection.execute(
             PRODUCT.select(
@@ -946,6 +1020,19 @@ class PostgresDbAPI(object):
 
     def get_all_metadata_types(self):
         return self._connection.execute(METADATA_TYPE.select().order_by(METADATA_TYPE.c.name.asc())).fetchall()
+
+    def get_all_metadata_type_docs(self):
+        return self._connection.execute(
+            select(METADATA_TYPE.c.definition)
+        )
+
+    def get_all_metadata_defs(self):
+        return [
+            r[0]
+            for r in self._connection.execute(
+                METADATA_TYPE.select(METADATA_TYPE.c.definition).order_by(METADATA_TYPE.c.name.asc())
+            ).fetchall()
+        ]
 
     def get_locations(self, dataset_id):
         return [

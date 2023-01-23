@@ -11,6 +11,7 @@ from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Union
 from uuid import uuid4
 
 import pytest
@@ -245,21 +246,21 @@ def ls8_eo3_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_
 
 
 @pytest.fixture
-def ls8_eo3_dataset2(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset2_doc):
+def ls8_eo3_dataset2(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset2_doc):
     return doc_to_ds(index,
                      ls8_eo3_product.name,
                      *eo3_ls8_dataset2_doc)
 
 
 @pytest.fixture
-def ls8_eo3_dataset3(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset3_doc):
+def ls8_eo3_dataset3(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset3_doc):
     return doc_to_ds(index,
                      ls8_eo3_product.name,
                      *eo3_ls8_dataset3_doc)
 
 
 @pytest.fixture
-def ls8_eo3_dataset4(index, extended_eo3_metadata_type_doc, ls8_eo3_product, eo3_ls8_dataset4_doc):
+def ls8_eo3_dataset4(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset4_doc):
     return doc_to_ds(index,
                      ls8_eo3_product.name,
                      *eo3_ls8_dataset4_doc)
@@ -325,6 +326,11 @@ def datacube_env_name(request):
     return request.param
 
 
+@pytest.fixture(params=[("datacube", "experimental"), ("experimental", "datacube")])
+def datacube_env_name_pair(request):
+    return request.param
+
+
 @pytest.fixture
 def local_config(datacube_env_name):
     """Provides a :class:`LocalConfig` configured with suitable config file paths.
@@ -334,6 +340,16 @@ def local_config(datacube_env_name):
         The :func:`integration_config_paths` fixture sets up the config files.
     """
     return LocalConfig.find(CONFIG_FILE_PATHS, env=datacube_env_name)
+
+
+@pytest.fixture
+def local_config_pair(datacube_env_name_pair):
+    """Provides a pair of :class:`LocalConfig` configured with suitable config file paths.
+    """
+    return tuple(
+        LocalConfig.find(CONFIG_FILE_PATHS, env=env)
+        for env in datacube_env_name_pair
+    )
 
 
 @pytest.fixture
@@ -360,50 +376,74 @@ def ingest_configs(datacube_env_name):
     }
 
 
-@pytest.fixture(params=["US/Pacific", "UTC", ])
-def uninitialised_postgres_db(local_config, request):
-    """
-    Return a connection to an empty PostgreSQL or PostGIS database
-    """
-    timezone = request.param
-
-    if local_config._env == "datacube":
+def reset_db(local_cfg, tz=None) -> Union[PostgresDb, PostGisDb]:
+    if local_cfg._env in ('datacube', 'default', 'postgres'):
         db = PostgresDb.from_config(
-            local_config,
+            local_cfg,
             application_name='test-run',
             validate_connection=False
         )
         # Drop tables so our tests have a clean db.
         # with db.begin() as c:  # Creates a new PostgresDbAPI, by passing a new connection to it
         pgres_core.drop_db(db._engine)
-        db._engine.execute('alter database %s set timezone = %r' % (local_config['db_database'], timezone))
+        if tz:
+            db._engine.execute('alter database %s set timezone = %r' % (local_cfg['db_database'], tz))
         # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
         # and attempts to recreate them. WTF TODO FIX
         remove_postgres_dynamic_indexes()
     else:
         db = PostGisDb.from_config(
-            local_config,
+            local_cfg,
             application_name='test-run',
             validate_connection=False
         )
         pgis_core.drop_db(db._engine)
-        db._engine.execute('alter database %s set timezone = %r' % (local_config['db_database'], timezone))
+        if tz:
+            db._engine.execute('alter database %s set timezone = %r' % (local_cfg['db_database'], tz))
         remove_postgis_dynamic_indexes()
+    return db
+
+
+def cleanup_db(local_cfg, db):
+    if local_cfg._env in ('datacube', 'default', 'postgres'):
+        # with db.begin() as c:  # Drop SCHEMA
+        pgres_core.drop_db(db._engine)
+    else:
+        pgis_core.drop_db(db._engine)
+    db.close()
+
+
+@pytest.fixture(params=["US/Pacific", "UTC", ])
+def uninitialised_postgres_db(local_config, request):
+    """
+    Return a connection to an empty PostgreSQL or PostGIS database
+    """
+    # Setup
+    timezone = request.param
+    db = reset_db(local_config, timezone)
 
     yield db
 
-    if local_config._env in ('default', 'postgres'):
-        # with db.begin() as c:  # Drop SCHEMA
-        pgres_core.drop_db(db._engine)
-        db.close()
-    else:
-        pgis_core.drop_db(db._engine)
-        db.close()
+    # Cleanup
+    cleanup_db(local_config, db)
+
+
+@pytest.fixture
+def uninitialised_postgres_db_pair(local_config_pair):
+    """
+    Return a pair connections to empty PostgreSQL or PostGIS databases
+    """
+    dbs = tuple(reset_db(local_config) for local_config in local_config_pair)
+
+    yield dbs
+
+    for local_cfg, db in zip(local_config_pair, dbs):
+        cleanup_db(local_cfg, db)
 
 
 @pytest.fixture
 def index(local_config,
-          uninitialised_postgres_db: PostgresDb):
+          uninitialised_postgres_db: Union[PostGisDb, PostgresDb]):
     index = index_connect(local_config, validate_connection=False)
     index.init_db()
     yield index
@@ -411,7 +451,41 @@ def index(local_config,
 
 
 @pytest.fixture
-def index_empty(local_config, uninitialised_postgres_db: PostgresDb):
+def index_pair_populated_empty(local_config_pair, uninitialised_postgres_db_pair,
+                               extended_eo3_metadata_type_doc,
+                               base_eo3_product_doc, extended_eo3_product_doc, africa_s2_product_doc,
+                               eo3_ls8_dataset_doc, eo3_ls8_dataset2_doc,
+                               eo3_ls8_dataset3_doc, eo3_ls8_dataset4_doc,
+                               eo3_wo_dataset_doc, eo3_africa_dataset_doc):
+    populated_cfg, empty_cfg = local_config_pair
+    populated_idx = index_connect(populated_cfg, validate_connection=False)
+    empty_idx = index_connect(empty_cfg, validate_connection=False)
+    populated_idx.init_db()
+    empty_idx.init_db(with_default_types=False)
+    assert list(empty_idx.products.get_all()) == []
+    assert list(populated_idx.products.get_all()) == []
+    # Populate the populated index
+    populated_idx.metadata_types.add(
+        populated_idx.metadata_types.from_doc(extended_eo3_metadata_type_doc)
+    )
+    for prod_doc in (base_eo3_product_doc, extended_eo3_product_doc, africa_s2_product_doc):
+        populated_idx.products.add_document(prod_doc)
+    for ds_doc, ds_path in (eo3_ls8_dataset_doc, eo3_ls8_dataset2_doc,
+                            eo3_ls8_dataset3_doc, eo3_ls8_dataset4_doc,
+                            eo3_wo_dataset_doc, eo3_africa_dataset_doc):
+        doc_to_ds(populated_idx, ds_doc['product']['name'], ds_doc, ds_path)
+    assert list(populated_idx.products.get_all()) != list(empty_idx.products.get_all())
+    assert list(empty_idx.products.get_all()) == []
+    assert list(populated_idx.products.get_all()) != []
+
+    yield (populated_idx, empty_idx)
+
+    del populated_idx
+    del empty_idx
+
+
+@pytest.fixture
+def index_empty(local_config, uninitialised_postgres_db: Union[PostGisDb, PostgresDb]):
     index = index_connect(local_config, validate_connection=False)
     index.init_db(with_default_types=False)
     yield index

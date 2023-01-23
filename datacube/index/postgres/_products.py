@@ -5,15 +5,14 @@
 import logging
 
 from cachetools.func import lru_cache
+from typing import Iterable, cast, Any, Mapping
 
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
-from datacube.model import DatasetType, MetadataType
+from datacube.model import MetadataType, Product
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
-
-from typing import Iterable, cast
 
 
 _LOG = logging.getLogger(__name__)
@@ -57,12 +56,12 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
-            If false (and there is no already active transaction), creation will be slightly slower
-            and cannot be done in a transaction.
-        :param DatasetType product: Product to add
-        :rtype: DatasetType
+            If false, creation will be slightly slower
+
+        :param Product product: Product to add
+        :rtype: Product
         """
-        DatasetType.validate(product.definition)
+        Product.validate(product.definition)
 
         existing = self.get_by_name(product.name)
         if existing:
@@ -78,7 +77,9 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
                 metadata_type = self.metadata_type_resource.add(product.metadata_type,
                                                                 allow_table_lock=allow_table_lock)
-            with self._db_connection(transaction=allow_table_lock) as connection:
+            with self._db_connection() as connection:
+                if connection.in_transaction and not allow_table_lock:
+                    raise ValueError("allow_table_lock must be True if called inside a transaction.")
                 connection.insert_product(
                     name=product.name,
                     metadata=product.metadata_doc,
@@ -96,11 +97,11 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param DatasetType product: Product to update
+        :param Product product: Product to update
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :rtype: bool,list[change],list[change]
         """
-        DatasetType.validate(product.definition)
+        Product.validate(product.definition)
 
         existing = self.get_by_name(product.name)
         if not existing:
@@ -133,21 +134,21 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
-    def update(self, product: DatasetType, allow_unsafe_updates=False, allow_table_lock=False):
+    def update(self, product: Product, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a product. Unsafe changes will throw a ValueError by default.
 
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param DatasetType product: Product to update
+        :param Product product: Product to update
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: DatasetType
+        :rtype: Product
         """
 
         can_update, safe_changes, unsafe_changes = self.can_update(product, allow_unsafe_updates)
@@ -166,7 +167,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         _LOG.info("Updating product %s", product.name)
 
-        existing = cast(DatasetType, self.get_by_name(product.name))
+        existing = cast(Product, self.get_by_name(product.name))
         changing_metadata_type = product.metadata_type.name != existing.metadata_type.name
         if changing_metadata_type:
             raise ValueError("Unsafe change: cannot (currently) switch metadata types for a product")
@@ -216,7 +217,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: DatasetType
+        :rtype: Product
         """
         type_ = self.from_doc(definition)
         return self.update(
@@ -248,7 +249,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         Return dataset types that have all the given fields.
 
         :param tuple[str] field_names:
-        :rtype: __generator[DatasetType]
+        :rtype: __generator[Product]
         """
         for type_ in self.get_all():
             for name in field_names:
@@ -262,7 +263,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
 
         :param dict query:
-        :rtype: __generator[(DatasetType, dict)]
+        :rtype: __generator[(Product, dict)]
         """
 
         def _listify(v):
@@ -318,18 +319,26 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             for dataset in self._make_many(connection.search_products_by_metadata(metadata)):
                 yield dataset
 
-    def get_all(self) -> Iterable[DatasetType]:
+    def get_all(self) -> Iterable[Product]:
         """
         Retrieve all Products
         """
         with self._db_connection() as connection:
             return (self._make(record) for record in connection.get_all_products())
 
+    def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
+        """
+        Retrieve all Products
+        """
+        with self._db_connection() as connection:
+            for record in connection.get_all_product_docs():
+                yield record[0]
+
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)
 
-    def _make(self, query_row) -> DatasetType:
-        return DatasetType(
+    def _make(self, query_row) -> Product:
+        return Product(
             definition=query_row['definition'],
             metadata_type=cast(MetadataType, self.metadata_type_resource.get(query_row['metadata_type_ref'])),
             id_=query_row['id'],

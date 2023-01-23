@@ -4,16 +4,17 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 
+from time import monotonic
 from cachetools.func import lru_cache
 
 from datacube.index import fields
-from datacube.index.abstract import AbstractProductResource
+from datacube.index.abstract import AbstractProductResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
-from typing import Iterable, cast
+from typing import Iterable, cast, Mapping, Any
 
 _LOG = logging.getLogger(__name__)
 
@@ -81,11 +82,27 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                     name=product.name,
                     metadata=product.metadata_doc,
                     metadata_type_id=metadata_type.id,
-                    search_fields=metadata_type.dataset_fields,
                     definition=product.definition,
-                    concurrently=not allow_table_lock,
                 )
         return self.get_by_name(product.name)
+
+    def _add_batch(self, batch_products: Iterable[Product]) -> BatchStatus:
+        # Would be nice to keep this level of internals hidden from this layer,
+        # but most efficient to do it before grabbing a connection and keep the implementation
+        # as close to SQLAlchemy as possible.
+        b_started = monotonic()
+        values = [
+            {
+                "name": p.name,
+                "metadata": p.metadata_doc,
+                "metadata_type_ref": p.metadata_type.id,
+                "definition": p.definition
+            }
+            for p in batch_products
+        ]
+        with self._db_connection() as connection:
+            added, skipped = connection.insert_product_bulk(values)
+            return BatchStatus(added, skipped, monotonic() - b_started)
 
     def can_update(self, product, allow_unsafe_updates=False):
         """
@@ -190,10 +207,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 name=product.name,
                 metadata=product.metadata_doc,
                 metadata_type_id=metadata_type.id,
-                search_fields=metadata_type.dataset_fields,
                 definition=product.definition,
-                update_metadata_type=changing_metadata_type,
-                concurrently=not allow_table_lock
+                update_metadata_type=changing_metadata_type
             )
 
         self.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
@@ -322,6 +337,11 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         with self._db_connection() as connection:
             return self._make_many(connection.get_all_products())
+
+    def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
+        with self._db_connection() as connection:
+            for row in connection.get_all_product_docs():
+                yield row[0]
 
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)

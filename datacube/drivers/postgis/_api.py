@@ -25,7 +25,6 @@ from typing import Iterable, Sequence
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
-from datacube.utils import geometry
 from datacube.utils.geometry import CRS, Geometry
 from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
@@ -34,9 +33,10 @@ from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F4
 from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, \
     Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
-    search_field_index_map, search_field_tables
-from ._spatial import geom_alchemy, generate_dataset_spatial_values
+    search_field_index_map, search_field_indexes
+from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from .sql import escape_pg_identifier
+
 
 _LOG = logging.getLogger(__name__)
 
@@ -45,6 +45,27 @@ _LOG = logging.getLogger(__name__)
 def _dataset_select_fields():
     return (
         Dataset,
+        # All active URIs, from newest to oldest
+        func.array(
+            select(
+                SelectedDatasetLocation.uri
+            ).where(
+                and_(
+                    SelectedDatasetLocation.dataset_ref == Dataset.id,
+                    SelectedDatasetLocation.archived == None
+                )
+            ).order_by(
+                SelectedDatasetLocation.added.desc(),
+                SelectedDatasetLocation.id.desc()
+            ).label('uris')
+        ).label('uris')
+    )
+
+
+def _dataset_bulk_select_fields():
+    return (
+        Dataset.product_ref,
+        Dataset.metadata_doc,
         # All active URIs, from newest to oldest
         func.array(
             select(
@@ -166,11 +187,23 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata):
 
     :return: A dictionary mapping search field names to (type_name, value) tuples.
     """
-    fields = get_dataset_fields(mdt_metadata)
+    fields = {
+        name: field
+        for name, field in get_dataset_fields(mdt_metadata).items()
+        if not isinstance(field, NativeField)
+    }
+    return extract_dataset_fields(ds_metadata, fields)
+
+
+def extract_dataset_fields(ds_metadata, fields):
+    """
+    :param ds_metdata: A Dataset metadata document
+    :param mdt_metadata: The corresponding metadata-type definition document
+
+    :return: A dictionary mapping search field names to (type_name, value) tuples.
+    """
     result = {}
     for field_name, field in fields.items():
-        if isinstance(field, NativeField):
-            continue
         try:
             fld_type = field.type_name
             fld_val = field.search_value_to_alchemy(field.extract(ds_metadata))
@@ -184,19 +217,27 @@ class PostgisDbAPI(object):
     def __init__(self, parentdb, connection):
         self._db = parentdb
         self._connection = connection
+        self._sqla_txn = None
 
     @property
     def in_transaction(self):
         return self._connection.in_transaction()
 
     def begin(self):
-        self._connection.execute(text('BEGIN'))
+        self._connection.execution_options(isolation_level="SERIALIZABLE")
+        self._sqla_txn = self._connection.begin()
+
+    def _end_transaction(self):
+        self._sqla_txn = None
+        self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
     def commit(self):
-        self._connection.execute(text('COMMIT'))
+        self._sqla_txn.commit()
+        self._end_transaction()
 
     def rollback(self):
-        self._connection.execute(text('ROLLBACK'))
+        self._sqla_txn.rollback()
+        self._end_transaction()
 
     def execute(self, command):
         return self._connection.execute(command)
@@ -222,6 +263,13 @@ class PostgisDbAPI(object):
             )
         )
         return ret.rowcount > 0
+
+    def insert_dataset_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(
+            insert(Dataset), values
+        )
+        return res.rowcount, requested - res.rowcount
 
     def update_dataset(self, metadata_doc, dataset_id, product_id):
         """
@@ -266,6 +314,11 @@ class PostgisDbAPI(object):
 
         return r.rowcount > 0
 
+    def insert_dataset_location_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(DatasetLocation), values)
+        return res.rowcount, requested - res.rowcount
+
     def insert_dataset_search(self, search_table, dataset_id, key, value):
         """
         Add/update a search field index entry for a dataset
@@ -294,6 +347,11 @@ class PostgisDbAPI(object):
         )
         return r.rowcount > 0
 
+    def insert_dataset_search_bulk(self, search_type, values):
+        search_table = search_field_index_map[search_type]
+        r = self._connection.execute(insert(search_table).values(values))
+        return r.rowcount
+
     def insert_dataset_spatial(self, dataset_id, crs, extent):
         """
         Add/update a spatial index entry for a dataset
@@ -320,6 +378,11 @@ class PostgisDbAPI(object):
             )
         )
         return r.rowcount > 0
+
+    def insert_dataset_spatial_bulk(self, crs, values):
+        SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+        r = self._connection.execute(insert(SpatialIndex).values(values))
+        return r.rowcount
 
     def spatial_extent(self, ids, crs):
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
@@ -443,7 +506,7 @@ class PostgisDbAPI(object):
                 DatasetSource.dataset_ref == dataset_id
             )
         )
-        for table in search_field_tables:
+        for table in search_field_indexes.values():
             self._connection.execute(
                 delete(table).where(table.dataset_ref == dataset_id)
             )
@@ -456,7 +519,6 @@ class PostgisDbAPI(object):
                     SpatialIndex.dataset_ref == dataset_id
                 )
             )
-
         r = self._connection.execute(
             delete(Dataset).where(
                 Dataset.id == dataset_id
@@ -584,6 +646,37 @@ class PostgisDbAPI(object):
         _LOG.debug("search_datasets SQL: %s", str(select_query))
         return self._connection.execute(select_query)
 
+    def bulk_simple_dataset_search(self, products=None, batch_size=0):
+        """
+        Perform bulk database reads (e.g. for index cloning)
+
+        Note that this operates with product ids to prevent an unnecessary join to the Product table.
+
+        :param products: Optional iterable of product IDs.  Only fetch nominated products.
+        :param batch_size: Number of streamed rows to fetch from database at once.
+                           Defaults to zero, which means no streaming.
+                           Note streaming is only supported inside a transaction.
+        :return: Iterable of tuples of:
+                 * Product ID
+                 * Dataset metadata document
+                 * array of uris
+        """
+        if batch_size > 0 and not self.in_transaction:
+            raise ValueError("Postgresql bulk reads must occur within a transaction.")
+        query = select(
+            _dataset_bulk_select_fields()
+        ).select_from(Dataset).where(
+            Dataset.archived == None
+        )
+        if products:
+            query = query.where(Dataset.product_ref.in_(products))
+
+        if batch_size > 0:
+            conn = self._connection.execution_options(stream_results=True, yield_per=batch_size)
+        else:
+            conn = self._connection
+        return conn.execute(query)
+
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
         """
@@ -607,7 +700,6 @@ class PostgisDbAPI(object):
         dataset_location or dataset_source tables. Joining with other tables would not
         result in multiple records per dataset due to the direction of cardinality.
         """
-
         select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
 
         return self._connection.execute(select_query)
@@ -805,18 +897,7 @@ class PostgisDbAPI(object):
 
         for result in self._connection.execute(query):
             dsid = result[0]
-            native_crs = CRS(result[1]["spatial_reference"])
-            geom = None
-            valid_data = result[1].get('valid_data')
-            if valid_data:
-                geom = geometry.Geometry(valid_data, crs=native_crs)
-            else:
-                geo_ref_points = result[1].get('geo_ref_points')
-                if geo_ref_points:
-                    geom = geometry.polygon(
-                        [xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
-                        crs=native_crs
-                    )
+            geom = extract_geometry_from_eo3_projection(result[1])
             if not geom:
                 verified += 1
                 continue
@@ -861,9 +942,7 @@ class PostgisDbAPI(object):
                        name,
                        metadata,
                        metadata_type_id,
-                       search_fields,
-                       definition,
-                       concurrently=True):
+                       definition):
 
         res = self._connection.execute(
             insert(Product).values(
@@ -878,13 +957,17 @@ class PostgisDbAPI(object):
 
         return type_id
 
+    def insert_product_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(insert(Product), values)
+        return res.rowcount, requested - res.rowcount
+
     def update_product(self,
                        name,
                        metadata,
                        metadata_type_id,
-                       search_fields,
                        definition,
-                       update_metadata_type=False, concurrently=False):
+                       update_metadata_type=False):
         res = self._connection.execute(
             update(Product).returning(Product.id).where(
                 Product.name == name
@@ -910,21 +993,24 @@ class PostgisDbAPI(object):
 
         return prod_id
 
-    def insert_metadata_type(self, name, definition, concurrently=False):
+    def insert_metadata_type(self, name, definition):
         res = self._connection.execute(
             insert(MetadataType).values(
                 name=name,
                 definition=definition
             )
         )
-        type_id = res.inserted_primary_key[0]
+        return res.inserted_primary_key[0]
 
-        search_fields = get_dataset_fields(definition)
-        self._setup_metadata_type_fields(
-            type_id, name, search_fields, concurrently=concurrently
+    def insert_metadata_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(
+            insert(MetadataType).on_conflict_do_nothing(index_elements=['id']),
+            values
         )
+        return res.rowcount, requested - res.rowcount
 
-    def update_metadata_type(self, name, definition, concurrently=False):
+    def update_metadata_type(self, name, definition):
         res = self._connection.execute(
             update(MetadataType).returning(MetadataType.id).where(
                 MetadataType.name == name
@@ -933,39 +1019,8 @@ class PostgisDbAPI(object):
                 definition=definition
             )
         )
-        type_id = res.first()[0]
+        return res.first()[0]
 
-        search_fields = get_dataset_fields(definition)
-        self._setup_metadata_type_fields(
-            type_id, name, search_fields,
-            concurrently=concurrently,
-            rebuild_views=True,
-        )
-
-        return type_id
-
-    def check_dynamic_fields(self, concurrently=False, rebuild_views=False, rebuild_indexes=False):
-        _LOG.info('Checking dynamic views/indexes. (rebuild views=%s, indexes=%s)', rebuild_views, rebuild_indexes)
-
-        search_fields = {}
-
-        for metadata_type in self.get_all_metadata_types():
-            fields = get_dataset_fields(metadata_type['definition'])
-            search_fields[metadata_type['id']] = fields
-            self._setup_metadata_type_fields(
-                metadata_type['id'],
-                metadata_type['name'],
-                fields,
-                rebuild_indexes=rebuild_indexes,
-                rebuild_views=rebuild_views,
-                concurrently=concurrently,
-            )
-
-    def _setup_metadata_type_fields(self, id_, name, fields,
-                                    rebuild_indexes=False, rebuild_views=False, concurrently=True):
-        pass
-
-    @staticmethod
     def _get_active_field_names(fields, metadata_doc):
         for field in fields.values():
             if hasattr(field, 'extract'):
@@ -981,6 +1036,11 @@ class PostgisDbAPI(object):
             select(Product).order_by(Product.name.asc())
         ).fetchall()
 
+    def get_all_product_docs(self):
+        return self._connection.execute(
+            select(Product.definition)
+        )
+
     def _get_products_for_metadata_type(self, id_):
         return self._connection.execute(
             select(Product).where(
@@ -991,6 +1051,10 @@ class PostgisDbAPI(object):
 
     def get_all_metadata_types(self):
         return self._connection.execute(select(MetadataType).order_by(MetadataType.name.asc())).fetchall()
+
+    def get_all_metadata_type_defs(self):
+        for r in self._connection.execute(select(MetadataType.definition).order_by(MetadataType.name.asc())):
+            yield r[0]
 
     def get_locations(self, dataset_id):
         return [

@@ -3,10 +3,12 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from time import monotonic
+from typing import Iterable
 
 from cachetools.func import lru_cache
 
-from datacube.index.abstract import AbstractMetadataTypeResource
+from datacube.index.abstract import AbstractMetadataTypeResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
@@ -43,7 +45,6 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         :param dict definition:
         :rtype: datacube.model.MetadataType
         """
-        MetadataType.validate_eo3(definition)
         return self._make(definition)
 
     def add(self, metadata_type, allow_table_lock=False):
@@ -57,7 +58,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         :rtype: datacube.model.MetadataType
         """
         # This column duplication is getting out of hand:
-        MetadataType.validate(metadata_type.definition)
+        MetadataType.validate_eo3(metadata_type.definition)
 
         existing = self.get_by_name(metadata_type.name)
         if existing:
@@ -73,9 +74,16 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                 connection.insert_metadata_type(
                     name=metadata_type.name,
                     definition=metadata_type.definition,
-                    concurrently=not allow_table_lock
                 )
         return self.get_by_name(metadata_type.name)
+
+    def _add_batch(self, batch_types: Iterable[MetadataType]) -> BatchStatus:
+        # Add a "batch" of mdts.  Simple loop in a transaction for now.
+        b_started = monotonic()
+        values = [{"name": mdt.name, "definition": mdt.definition} for mdt in batch_types]
+        with self._db_connection() as connection:
+            added, skipped = connection.insert_metadata_bulk(values)
+            return BatchStatus(added, skipped, monotonic() - b_started)
 
     def can_update(self, metadata_type, allow_unsafe_updates=False):
         """
@@ -147,7 +155,6 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             connection.update_metadata_type(
                 name=metadata_type.name,
                 definition=metadata_type.definition,
-                concurrently=not allow_table_lock
             )
 
         self.get_by_name_unsafe.cache_clear()   # type: ignore[attr-defined]
@@ -194,12 +201,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
             If false, creation will be slightly slower and cannot be done in a transaction.
         """
-        with self._db_connection() as connection:
-            connection.check_dynamic_fields(
-                concurrently=not allow_table_lock,
-                rebuild_indexes=rebuild_indexes,
-                rebuild_views=rebuild_views,
-            )
+        pass
 
     def get_all(self):
         """
@@ -209,6 +211,11 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         """
         with self._db_connection() as connection:
             return self._make_many(connection.get_all_metadata_types())
+
+    def get_all_docs(self):
+        with self._db_connection() as connection:
+            for defn in connection.get_all_metadata_type_defs():
+                yield defn
 
     def _make_many(self, query_rows):
         """
@@ -228,6 +235,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         :param int id_:
         :rtype: datacube.model.MetadataType
         """
+        MetadataType.validate_eo3(definition)
         return MetadataType(
             definition,
             dataset_search_fields=self._db.get_dataset_fields(definition),

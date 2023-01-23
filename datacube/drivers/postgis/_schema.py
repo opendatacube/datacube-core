@@ -11,7 +11,8 @@ from typing import Type
 
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.orm import aliased, registry, relationship, column_property
-from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text, Index
+from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text, Index, \
+    literal
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
@@ -94,7 +95,7 @@ class Dataset:
     # but is forbidden by SQLAlchemy declarative style
     metadata_doc = Column(name="metadata", type_=postgres.JSONB, index=False, nullable=False,
                           comment="The dataset metadata document")
-    archived = Column(DateTime(timezone=True), default=None, nullable=True, index=True,
+    archived = Column(DateTime(timezone=True), default=None, nullable=True,
                       comment="when archived, null if active")
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
@@ -112,12 +113,17 @@ class Dataset:
                                      )
 
 
+Index("ix_ds_prod_active", Dataset.product_ref, postgresql_where=(Dataset.archived == None))
+Index("ix_ds_mdt_active", Dataset.metadata_type_ref, postgresql_where=(Dataset.archived == None))
+
+
 @orm_registry.mapped
 class DatasetLocation:
     __tablename__ = "location"
     __table_args__ = (
         _core.METADATA,
         UniqueConstraint('uri_scheme', 'uri_body', 'dataset_ref'),
+        Index("ix_loc_ds_added", "dataset_ref", "added"),
         {
             "schema": sql.SCHEMA_NAME,
             "comment": "Where data for the dataset can be found (uri)."
@@ -138,9 +144,9 @@ eg 'file:///g/data/datasets/LS8_NBAR/odc-metadata.yaml' or 'ftp://eo.something.c
 'file' is a scheme, '///g/data/datasets/LS8_NBAR/odc-metadata.yaml' is a body.""")
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
-    archived = Column(DateTime(timezone=True), default=None, nullable=True,
+    archived = Column(DateTime(timezone=True), default=None, nullable=True, index=True,
                       comment="when archived, null for the active location")
-    uri = column_property(uri_scheme + ':' + uri_body)
+    uri = column_property(uri_scheme + literal(':') + uri_body)
     dataset = relationship("Dataset")
 
 
@@ -276,23 +282,31 @@ class DatasetSearchDateTime:
                         comment="The value of the datetime search field")
 
 
-search_field_index_map = {
-    'numeric-range': DatasetSearchNumeric,
-    'double-range': DatasetSearchNumeric,
-    'integer-range': DatasetSearchNumeric,
-    'datetime-range': DatasetSearchDateTime,
+search_field_map = {
+    'numeric-range': "numeric",
+    'double-range': "numeric",
+    'integer-range': "numeric",
+    'datetime-range': "datetime",
 
-    'string': DatasetSearchString,
-    'numeric': DatasetSearchNumeric,
-    'double': DatasetSearchNumeric,
-    'integer': DatasetSearchNumeric,
-    'datetime': DatasetSearchDateTime,
+    'string': "string",
+    'numeric': "numeric",
+    'double': "numeric",
+    'integer': "numeric",
+    'datetime': "datetime",
 
     # For backwards compatibility (alias for numeric-range)
-    'float-range': DatasetSearchNumeric,
+    'float-range': "numeric",
 }
 
-search_field_tables = set(search_field_index_map.values())
+search_field_indexes = {
+    'string': DatasetSearchString,
+    'numeric': DatasetSearchNumeric,
+    'datetime': DatasetSearchDateTime,
+}
+
+search_field_index_map = {
+    k: search_field_indexes[v] for k, v in search_field_map.items()
+}
 
 ALL_STATIC_TABLES = [
     MetadataType.__table__, Product.__table__, Dataset.__table__,

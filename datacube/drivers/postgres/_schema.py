@@ -8,7 +8,7 @@ Tables for indexing the datasets which were ingested into the AGDC.
 
 import logging
 
-from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger
+from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Index
 from sqlalchemy import Table, Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
@@ -86,6 +86,12 @@ DATASET = Table(
     # Note that the `updated` column is not included here to maintain backwards-compatibility
     # with pre-1.8.3 datacubes (and it is not used by any internal ODC functionality yet anyway)
 )
+
+
+Index("ix_ds_isactive", DATASET.c.archived == None)
+Index("ix_ds_prod_isactive", DATASET.c.dataset_type_ref, DATASET.c.archived == None)
+Index("ix_ds_mdt_isactive", DATASET.c.metadata_type_ref, DATASET.c.archived == None)
+
 
 DATASET_LOCATION = Table(
     'dataset_location', _core.METADATA,

@@ -176,6 +176,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
             closing = True
             with self._db._connect() as conn:
                 conn.begin()
+                # assert conn.in_transaction
                 try:
                     yield conn
                     conn.commit()
