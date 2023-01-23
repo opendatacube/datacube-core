@@ -8,10 +8,9 @@ from textwrap import dedent
 from typing import Any, Callable, Dict, Mapping, Optional, Set, Tuple, Union
 from urllib.parse import urlencode
 
-import ciso8601
 from ruamel.yaml.timestamp import TimeStamp as RuamelTimeStamp
 
-from eodatasets3.utils import default_utc
+from datacube.utils.dates import parse_time, tz_aware
 
 
 class FileFormat(Enum):
@@ -53,13 +52,10 @@ def datetime_type(value):
     if isinstance(value, RuamelTimeStamp):
         value = value.isoformat()
 
-    if isinstance(value, str):
-        value = ciso8601.parse_datetime(value)
-
     # Store all dates with a timezone.
     # yaml standard says all dates default to UTC.
     # (and ruamel normalises timezones to UTC itself)
-    return default_utc(value)
+    return tz_aware(parse_time(value))
 
 
 def of_enum_type(

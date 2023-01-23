@@ -28,7 +28,8 @@ from datacube.model import Range
 from datacube.testutils import load_dataset_definition
 
 from datacube import Datacube
-from .search_utils import _load_product_query, assume_utc, _csv_search_raw, _cli_csv_search
+from .search_utils import _load_product_query, _csv_search_raw, _cli_csv_search
+from datacube.utils.dates import tz_as_utc
 
 # These tests use non-EO3 metadata, so will not work with the experimental driver.
 # Mark all with @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
@@ -842,7 +843,7 @@ def test_cli_info(index: Index,
     # Check indexed time separately, as we don't care what timezone it's displayed in.
     indexed_time = yaml_docs[0]['indexed']
     assert isinstance(indexed_time, datetime.datetime)
-    assert assume_utc(indexed_time) == assume_utc(pseudo_ls8_dataset.indexed_time)
+    assert tz_as_utc(indexed_time) == tz_as_utc(pseudo_ls8_dataset.indexed_time)
 
     # Request two, they should have separate yaml documents
     opts.append(str(pseudo_ls8_dataset2.id))

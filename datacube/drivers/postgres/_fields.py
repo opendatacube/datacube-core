@@ -10,7 +10,6 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import Any, Callable, Tuple, Union
 
-from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
@@ -23,6 +22,8 @@ from datacube.model.fields import Expression, Field
 from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
 from .sql import FLOAT8RANGE
+
+from datacube.utils.dates import tz_aware
 
 
 class PgField(Field):
@@ -262,7 +263,7 @@ class DateDocField(SimpleDocField):
         Wrap a value as needed for this field type.
         """
         if isinstance(value, datetime):
-            return _default_utc(value)
+            return tz_aware(value)
         # SQLAlchemy expression or string are parsed in pg as dates.
         elif isinstance(value, (ColumnElement, str)):
             return func.agdc.common_timestamp(value)
@@ -422,8 +423,8 @@ class DateRangeDocField(RangeDocField):
         if isinstance(low, datetime) and isinstance(high, datetime):
             return RangeBetweenExpression(
                 self,
-                _default_utc(low),
-                _default_utc(high),
+                tz_aware(low),
+                tz_aware(high),
                 _range_class=DateTimeTZRange
             )
         else:
@@ -612,12 +613,6 @@ def _coalesce(*values):
         if v is not None:
             return v
     return None
-
-
-def _default_utc(d):
-    if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
-    return d
 
 
 # How to choose/combine multiple doc values.

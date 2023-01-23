@@ -8,7 +8,7 @@ Date and time utility functions
 Includes sequence generation functions to be used by statistics apps
 
 """
-from typing import Union, Callable
+from typing import Union
 from datetime import datetime, tzinfo
 
 import dateutil
@@ -46,7 +46,7 @@ def date_sequence(start, end, stats_duration, step_size):
 
 
 def parse_interval(interval):
-    count, units = split_duration(interval)
+    count, units = _split_duration(interval)
     try:
         return count, FREQS[units]
     except KeyError:
@@ -54,7 +54,7 @@ def parse_interval(interval):
 
 
 def parse_duration(duration):
-    count, units = split_duration(duration)
+    count, units = _split_duration(duration)
     try:
         delta = {DURATIONS[units]: count}
     except KeyError:
@@ -63,42 +63,37 @@ def parse_duration(duration):
     return relativedelta(**delta)
 
 
-def split_duration(duration):
+def _split_duration(duration):
     return int(duration[:-1]), duration[-1:]
 
 
-def datetime_to_seconds_since_1970(dt):
-    epoch = datetime(1970, 1, 1, 0, 0, 0, tzinfo=tzutc() if dt.tzinfo else None)
-    return (dt - epoch).total_seconds()
+# def _parse_time_generic(time: Union[str, datetime]) -> datetime:
+#     """Convert string to datetime object
+
+#     Calling this on datetime object is a no-op.
+#     """
+#     if isinstance(time, str):
+#         return dateutil.parser.parse(time)
+#     return time
 
 
-def _parse_time_generic(time: Union[str, datetime]) -> datetime:
-    """Convert string to datetime object
+# def _parse_time_ciso8601(time: Union[str, datetime]) -> datetime:
+#     """Convert string to datetime object
 
-    Calling this on datetime object is a no-op.
-    """
-    if isinstance(time, str):
-        return dateutil.parser.parse(time)
-    return time
+#     This function deals with ISO8601 dates fast, and fallbacks to python for
+#     other formats.
 
+#     Calling this on datetime object is a no-op.
+#     """
+#     from ciso8601 import parse_datetime
 
-def _parse_time_ciso8601(time: Union[str, datetime]) -> datetime:
-    """Convert string to datetime object
+#     if isinstance(time, datetime):
+#         return time
 
-    This function deals with ISO8601 dates fast, and fallbacks to python for
-    other formats.
-
-    Calling this on datetime object is a no-op.
-    """
-    from ciso8601 import parse_datetime
-
-    if isinstance(time, datetime):
-        return time
-
-    try:
-        return parse_datetime(time)
-    except Exception:  # pylint: disable=broad-except
-        return _parse_time_generic(time)
+#     try:
+#         return parse_datetime(time)
+#     except Exception:  # pylint: disable=broad-except
+#         return _parse_time_generic(time)
 
 
 def normalise_dt(dt: Union[str, datetime]) -> datetime:
@@ -119,6 +114,14 @@ def tz_aware(dt: datetime, default: tzinfo = tzutc()) -> datetime:
     return dt
 
 
+def tz_as_utc(dt: datetime) -> datetime:
+    """ Ensure a datetime has a UTC timezone
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=tzutc())
+    return dt.astimezone(tzutc())
+
+
 def mk_time_coord(dts, name='time', units=None):
     """ List[datetime] -> time coordinate for xarray
     """
@@ -133,12 +136,30 @@ def mk_time_coord(dts, name='time', units=None):
                         attrs=attrs)
 
 
-def _mk_parse_time() -> Callable[[Union[str, datetime]], datetime]:
-    try:
-        import ciso8601             # pylint: disable=wrong-import-position # noqa: F401
-        return _parse_time_ciso8601
-    except ImportError:             # pragma: no cover
-        return _parse_time_generic  # pragma: no cover
+# def _mk_parse_time() -> Callable[[Union[str, datetime]], datetime]:
+#     try:
+#         import ciso8601             # pylint: disable=wrong-import-position # noqa: F401
+#         return _parse_time_ciso8601
+#     except ImportError:             # pragma: no cover
+#         return _parse_time_generic  # pragma: no cover
 
 
-parse_time = _mk_parse_time()  # pylint: disable=invalid-name
+# parse_time = _mk_parse_time()  # pylint: disable=invalid-name
+
+
+def parse_time(time: Union[str, datetime]) -> datetime:
+    """Convert string to datetime object
+
+    This function deals with ISO8601 dates fast, and fallbacks to python for
+    other formats.
+
+    Calling this on datetime object is a no-op.
+    """
+    if isinstance(time, str):
+        try:
+            from ciso8601 import parse_datetime  # pylint: disable=wrong-import-position # noqa: F401
+            return parse_datetime(time)
+        except ImportError:                      # pragma: no cover
+            return dateutil.parser.parse(time)
+
+    return time

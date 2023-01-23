@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from datacube.api.query import Query, _datetime_to_timestamp, query_group_by, solar_day, GroupBy, solar_offset
+from datacube.api.query import Query, query_group_by, solar_day, GroupBy, solar_offset
 from datacube.model import Range
 from datacube.utils import parse_time
 from datacube.utils.geometry import CRS
@@ -19,13 +19,6 @@ from datacube.utils.geometry import CRS
 def mock_index():
     from unittest.mock import MagicMock
     return MagicMock()
-
-
-def test_datetime_to_timestamp():
-    assert _datetime_to_timestamp((1990, 1, 7)) == 631670400
-    assert _datetime_to_timestamp(datetime.datetime(1990, 1, 7)) == 631670400
-    assert _datetime_to_timestamp(631670400) == 631670400
-    assert _datetime_to_timestamp('1990-01-07T00:00:00.0Z') == 631670400
 
 
 def test_query_kwargs(mock_index):
