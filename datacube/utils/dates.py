@@ -67,35 +67,6 @@ def _split_duration(duration):
     return int(duration[:-1]), duration[-1:]
 
 
-# def _parse_time_generic(time: Union[str, datetime]) -> datetime:
-#     """Convert string to datetime object
-
-#     Calling this on datetime object is a no-op.
-#     """
-#     if isinstance(time, str):
-#         return dateutil.parser.parse(time)
-#     return time
-
-
-# def _parse_time_ciso8601(time: Union[str, datetime]) -> datetime:
-#     """Convert string to datetime object
-
-#     This function deals with ISO8601 dates fast, and fallbacks to python for
-#     other formats.
-
-#     Calling this on datetime object is a no-op.
-#     """
-#     from ciso8601 import parse_datetime
-
-#     if isinstance(time, datetime):
-#         return time
-
-#     try:
-#         return parse_datetime(time)
-#     except Exception:  # pylint: disable=broad-except
-#         return _parse_time_generic(time)
-
-
 def normalise_dt(dt: Union[str, datetime]) -> datetime:
     """ Turn strings into dates, turn timestamps with timezone info into UTC and remove timezone info.
     """
@@ -134,17 +105,6 @@ def mk_time_coord(dts, name='time', units=None):
                         coords={name: data},
                         dims=(name,),
                         attrs=attrs)
-
-
-# def _mk_parse_time() -> Callable[[Union[str, datetime]], datetime]:
-#     try:
-#         import ciso8601             # pylint: disable=wrong-import-position # noqa: F401
-#         return _parse_time_ciso8601
-#     except ImportError:             # pragma: no cover
-#         return _parse_time_generic  # pragma: no cover
-
-
-# parse_time = _mk_parse_time()  # pylint: disable=invalid-name
 
 
 def parse_time(time: Union[str, datetime]) -> datetime:
