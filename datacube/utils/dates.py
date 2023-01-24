@@ -119,7 +119,7 @@ def parse_time(time: Union[str, datetime]) -> datetime:
         try:
             from ciso8601 import parse_datetime  # pylint: disable=wrong-import-position # noqa: F401
             return parse_datetime(time)
-        except ImportError:                      # pragma: no cover
+        except (ImportError, ValueError):        # pragma: no cover
             return dateutil.parser.parse(time)
 
     return time
