@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2023 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 from uuid import UUID
@@ -77,11 +81,12 @@ class DatasetDoc(Eo3Interface):
 
     Includes :class:`.Eo3Interface` methods for metadata access::
 
+        >>> from dateutil.tz import tzutc
         >>> p = DatasetDoc()
         >>> p.platform = 'LANDSAT_8'
         >>> p.processed = '2018-04-03'
         >>> p.properties['odc:processing_datetime']
-        datetime.datetime(2018, 4, 3, 0, 0, tzinfo=datetime.timezone.utc)
+        datetime.datetime(2018, 4, 3, 0, 0, tzinfo=tzutc())
 
     """
 
