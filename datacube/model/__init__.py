@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 """
 Core classes used across modules.
@@ -23,6 +23,7 @@ from datacube.index.eo3 import is_doc_eo3
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
+from .lineage import LineageDirection, LineageTree
 
 _LOG = logging.getLogger(__name__)
 
