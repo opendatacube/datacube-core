@@ -196,7 +196,7 @@ def test_gridworkflow():
     # to ultimately convert geobox,sources,measurements to xarray,
     # so only thing to check here is the call interface.
 
-    measurement = dict(nodata=0, dtype=numpy.int)
+    measurement = dict(nodata=0, dtype=numpy.int32)
     fakedataset.product.lookup_measurements.return_value = {"dummy": measurement}
     fakedataset2.product = fakedataset.product
 

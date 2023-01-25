@@ -88,7 +88,7 @@ setup(
     install_requires=[
         'affine',
         'pyproj>=2.5',
-        'shapely>=1.6.4',
+        'shapely>=2.0',
         'cachetools',
         'click>=5.0',
         'cloudpickle>=0.4',

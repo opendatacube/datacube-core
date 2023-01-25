@@ -17,7 +17,7 @@ import numpy
 import xarray as xr
 from affine import Affine
 import rasterio                    # type: ignore[import]
-from shapely import geometry, ops  # type: ignore[import]
+from shapely import geometry, ops, from_wkt  # type: ignore[import]
 from shapely.geometry import base  # type: ignore[import]
 from pyproj import CRS as _CRS
 from pyproj.enums import WktVersion
@@ -438,7 +438,7 @@ def densify(coords: CoordList, resolution: float) -> CoordList:
 
 
 def _clone_shapely_geom(geom: base.BaseGeometry) -> base.BaseGeometry:
-    return type(geom)(geom)
+    return from_wkt(geom.wkt)
 
 
 class Geometry:
@@ -604,7 +604,10 @@ class Geometry:
 
     @property
     def __array_interface__(self):
-        return self.geom.__array_interface__
+        """
+        Should consider to deprecate this interface as shapely > 1.8 does
+        """
+        return numpy.array(self.geom.coords)
 
     @property
     def __geo_interface__(self):
@@ -710,7 +713,7 @@ class Geometry:
         if splitter.crs != self.crs:
             raise CRSMismatchError(self.crs, splitter.crs)
 
-        for g in ops.split(self.geom, splitter.geom):
+        for g in ops.split(self.geom, splitter.geom).geoms:
             yield Geometry(g, self.crs)
 
     def __iter__(self) -> Iterator['Geometry']:
