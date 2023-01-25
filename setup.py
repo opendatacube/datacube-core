@@ -87,6 +87,7 @@ setup(
     scripts=[],
     install_requires=[
         'affine',
+        'attrs>=18.1',
         'pyproj>=2.5',
         'shapely>=1.6.4',
         'cachetools',
@@ -103,6 +104,7 @@ setup(
         'python-dateutil',
         'pyyaml',
         'rasterio>=1.3.2',  # Warping broken in 1.3.0 and 1.3.1
+        'ruamel.yaml',
         'sqlalchemy',
         'GeoAlchemy2',
         'toolz',

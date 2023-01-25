@@ -1,6 +1,7 @@
 # datacube dependencies
 Sphinx
 affine
+attrs>=18.1
 # boto is too huge, need to set lower bound
 boto3>1.17.0
 bottleneck
@@ -29,6 +30,7 @@ pyyaml
 rasterio>=1.3.2
 recommonmark
 redis
+ruamel.yaml
 shapely>=1.7.1
 sphinx-click
 sphinx_autodoc_typehints
