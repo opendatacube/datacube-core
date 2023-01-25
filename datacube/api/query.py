@@ -20,8 +20,8 @@ import numpy as np
 
 
 from ..model import Range, Dataset
-from ..utils import geometry, datetime_to_seconds_since_1970
-from ..utils.dates import normalise_dt
+from ..utils import geometry
+from ..utils.dates import normalise_dt, tz_aware
 
 _LOG = logging.getLogger(__name__)
 
@@ -304,12 +304,6 @@ def _values_to_search(**kwargs):
     return search
 
 
-def _datetime_to_timestamp(dt):
-    if not isinstance(dt, datetime.datetime) and not isinstance(dt, datetime.date):
-        dt = _to_datetime(dt)
-    return datetime_to_seconds_since_1970(dt)
-
-
 def _to_datetime(t):
     if isinstance(t, (float, int)):
         t = datetime.datetime.fromtimestamp(t, tz=tz.tzutc())
@@ -322,9 +316,7 @@ def _to_datetime(t):
         except ValueError:
             pass
     elif isinstance(t, datetime.datetime):
-        if t.tzinfo is None:
-            t = t.replace(tzinfo=tz.tzutc())
-        return t
+        return tz_aware(t)
 
     return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
 

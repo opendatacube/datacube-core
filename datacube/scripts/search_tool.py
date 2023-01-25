@@ -14,12 +14,13 @@ import sys
 from functools import partial
 
 import click
-from dateutil import tz
 from psycopg2._range import Range
 from functools import singledispatch
 
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
+
+from datacube.utils.dates import tz_as_utc
 
 PASS_INDEX = ui.pass_index('datacube-search')
 
@@ -111,7 +112,7 @@ def product_counts(index, period, expressions):
     for product, series in index.datasets.count_by_product_through_time(period, **expressions):
         click.echo(product.name)
         for timerange, count in series:
-            formatted_dt = _assume_utc(timerange[0]).strftime("%Y-%m-%d")
+            formatted_dt = tz_as_utc(timerange[0]).strftime("%Y-%m-%d")
             click.echo('    {}: {}'.format(formatted_dt, count))
 
 
@@ -130,14 +131,7 @@ def printable_dt(val):
     """
     :type val: datetime.datetime
     """
-    return _assume_utc(val).isoformat()
-
-
-def _assume_utc(val):
-    if val.tzinfo is None:
-        return val.replace(tzinfo=tz.tzutc())
-    else:
-        return val.astimezone(tz.tzutc())
+    return tz_as_utc(val).isoformat()
 
 
 @printable.register(Range)

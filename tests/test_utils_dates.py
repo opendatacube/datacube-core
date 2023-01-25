@@ -9,7 +9,6 @@ from datacube.utils.dates import (
     parse_duration,
     parse_interval,
     parse_time,
-    _parse_time_generic,
     mk_time_coord,
     normalise_dt,
     tz_aware,
@@ -35,9 +34,8 @@ def test_parse():
     with pytest.raises(ValueError):
         parse_interval('1g')
 
-    assert _parse_time_generic('2020-01-01') == parse_time('2020-01-01')
     date = datetime(2020, 2, 3)
-    assert _parse_time_generic(date) is date
+    assert parse_time(date) is date
 
     # test fallback to python parser
     assert parse_time("3 Jan 2020") == datetime(2020, 1, 3)

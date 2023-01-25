@@ -6,7 +6,7 @@
 Utility functions
 """
 
-from .dates import datetime_to_seconds_since_1970, parse_time
+from .dates import parse_time
 from .py import cached_property, ignore_exceptions_if, import_function
 from .serialise import jsonify_document
 from .uris import is_url, uri_to_local_path, get_part_from_uri, mk_part_uri, is_vsipath
@@ -41,7 +41,6 @@ from ._misc import (
 
 
 __all__ = (
-    "datetime_to_seconds_since_1970",
     "parse_time",
     "cached_property",
     "ignore_exceptions_if",

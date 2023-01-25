@@ -21,7 +21,8 @@ from datacube.model import Product
 from datacube.model import Range
 
 from datacube import Datacube
-from .search_utils import assume_utc, _cli_csv_search, _csv_search_raw, _load_product_query
+from .search_utils import _cli_csv_search, _csv_search_raw, _load_product_query
+from datacube.utils.dates import tz_as_utc
 
 
 def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product):
@@ -716,7 +717,7 @@ def test_cli_info_eo3(index: Index,
     # Check indexed time separately, as we don't care what timezone it's displayed in.
     indexed_time = yaml_docs[0]['indexed']
     assert isinstance(indexed_time, datetime.datetime)
-    assert assume_utc(indexed_time) == assume_utc(ls8_eo3_dataset.indexed_time)
+    assert tz_as_utc(indexed_time) == tz_as_utc(ls8_eo3_dataset.indexed_time)
 
     # Request two, they should have separate yaml documents
     opts.append(str(ls8_eo3_dataset2.id))

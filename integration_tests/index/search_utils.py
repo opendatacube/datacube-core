@@ -6,8 +6,6 @@ import csv
 import io
 from typing import Iterable, Tuple, Dict, List
 
-from dateutil import tz
-
 import datacube.scripts.search_tool
 from datacube.model import Product, Dataset
 
@@ -24,13 +22,6 @@ def _load_product_query(
         assert product.name not in products, "search_by_product() returned a product twice"
         products[product.name] = list(datasets)
     return products
-
-
-def assume_utc(d):
-    if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
-    else:
-        return d.astimezone(tz.tzutc())
 
 
 def _csv_search_raw(args, clirunner):

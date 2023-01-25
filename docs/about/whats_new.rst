@@ -20,13 +20,13 @@ v1.8.next
 - Fix Github doc lint action (:pull:`1370`)
 - Tighten EO3 enforcement in postgis driver, refactor tests, and rename Dataset.type to Dataset.product
   (with type alias for compatibility) (:pull:`1372`)
-- Fix deprecation message due to distutils Version classes (:pull: `1375`)
-- Postgresql drivers cleanup - consolidate split_uri into utils and removed unused constants (:pull: `1378`)
-- Postgresql drivers cleanup - Handle NaNs in search fields and allow caching in sanitise_extent (:pull: `1379`)
-- Fix example product yaml documentation (:pull: `1384`)
+- Fix deprecation message due to distutils Version classes (:pull:`1375`)
+- Postgresql drivers cleanup - consolidate split_uri into utils and removed unused constants (:pull:`1378`)
+- Postgresql drivers cleanup - Handle NaNs in search fields and allow caching in sanitise_extent (:pull:`1379`)
+- Fix example product yaml documentation (:pull:`1384`)
 - Bulk read/write API methods and fast whole-index cloning. Cloning does NOT include lineage information yet,
-  and new API methods may be subject to change. (:pull: `1381`)
-
+  and new API methods may be subject to change. (:pull:`1381`)
+- Clean up datetime functions (:pull:`1387`)
 
 v1.8.9 (17 November 2022)
 =========================
