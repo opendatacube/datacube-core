@@ -151,11 +151,12 @@ def producer_check(value):
 def parsed_sentinel_tile_id(tile_id) -> Tuple[str, Dict]:
     """Extract useful extra fields from a sentinel tile id
 
+    >>> from dateutil.tz import tzutc
     >>> val, props = parsed_sentinel_tile_id("S2B_OPER_MSI_L1C_TL_EPAE_20201011T011446_A018789_T55HFA_N02.09")
     >>> val
     'S2B_OPER_MSI_L1C_TL_EPAE_20201011T011446_A018789_T55HFA_N02.09'
     >>> props
-    {'sentinel:datatake_start_datetime': datetime.datetime(2020, 10, 11, 1, 14, 46, tzinfo=datetime.timezone.utc)}
+    {'sentinel:datatake_start_datetime': datetime.datetime(2020, 10, 11, 1, 14, 46, tzinfo=tzutc())}
     """
     extras = {}
     split_tile_id = tile_id.split("_")
@@ -173,11 +174,12 @@ def parsed_sentinel_tile_id(tile_id) -> Tuple[str, Dict]:
 def parsed_sentinel_datastrip_id(tile_id) -> Tuple[str, Dict]:
     """Extract useful extra fields from a sentinel datastrip id
 
+    >>> from dateutil.tz import tzutc
     >>> val, props = parsed_sentinel_datastrip_id("S2B_OPER_MSI_L1C_DS_EPAE_20201011T011446_S20201011T000244_N02.09")
     >>> val
     'S2B_OPER_MSI_L1C_DS_EPAE_20201011T011446_S20201011T000244_N02.09'
     >>> props
-    {'sentinel:datatake_start_datetime': datetime.datetime(2020, 10, 11, 1, 14, 46, tzinfo=datetime.timezone.utc)}
+    {'sentinel:datatake_start_datetime': datetime.datetime(2020, 10, 11, 1, 14, 46, tzinfo=tzutc())}
     """
     extras = {}
     split_tile_id = tile_id.split("_")
