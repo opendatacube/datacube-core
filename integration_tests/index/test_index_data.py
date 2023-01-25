@@ -331,7 +331,7 @@ def test_get_missing_things(index: Index) -> None:
     missing_thing = index.datasets.get(uuid_, include_sources=False)
     assert missing_thing is None, "get() should return none when it doesn't exist"
 
-    if index.supports_lineage:
+    if index.supports_lineage and not index.supports_external_lineage:
         missing_thing = index.datasets.get(uuid_, include_sources=True)
         assert missing_thing is None, "get() should return none when it doesn't exist"
 

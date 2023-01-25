@@ -32,7 +32,7 @@ from . import _core
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, \
-    Dataset, DatasetSource, DatasetLocation, SelectedDatasetLocation, \
+    Dataset, DatasetLineage, DatasetLocation, SelectedDatasetLocation, \
     search_field_index_map, search_field_indexes
 from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from .sql import escape_pg_identifier
@@ -502,8 +502,8 @@ class PostgisDbAPI(object):
             )
         )
         self._connection.execute(
-            delete(DatasetSource).where(
-                DatasetSource.dataset_ref == dataset_id
+            delete(DatasetLineage).where(
+                DatasetLineage.derived_dataset_ref == dataset_id
             )
         )
         for table in search_field_indexes.values():
