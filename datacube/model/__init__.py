@@ -51,7 +51,9 @@ class Dataset:
                  sources: Optional[Mapping[str, 'Dataset']] = None,
                  indexed_by: Optional[str] = None,
                  indexed_time: Optional[datetime] = None,
-                 archived_time: Optional[datetime] = None):
+                 archived_time: Optional[datetime] = None,
+                 source_tree: Optional[LineageTree] = None,
+                 derived_tree: Optional[LineageTree] = None):
         assert isinstance(product, Product)
 
         self.product = product
@@ -68,6 +70,9 @@ class Dataset:
 
         if self.sources is not None:
             assert set(self.metadata.sources.keys()) == set(self.sources.keys())
+
+        self.source_tree = source_tree
+        self.derived_tree = derived_tree
 
         #: The User who indexed this dataset
         self.indexed_by = indexed_by
