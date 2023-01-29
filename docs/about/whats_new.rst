@@ -26,7 +26,9 @@ v1.8.next
 - Fix example product yaml documentation (:pull:`1384`)
 - Bulk read/write API methods and fast whole-index cloning. Cloning does NOT include lineage information yet,
   and new API methods may be subject to change. (:pull:`1381`)
+- Documentation update. (:pull:`1385`)
 - Clean up datetime functions (:pull:`1387`)
+- Dependency updates (:pull:`1388`, :pull:`13??`)
 
 v1.8.9 (17 November 2022)
 =========================
