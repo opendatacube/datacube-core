@@ -105,7 +105,7 @@ setup(
         'pyyaml',
         'rasterio>=1.3.2',  # Warping broken in 1.3.0 and 1.3.1
         'ruamel.yaml',
-        'sqlalchemy>=1.4,<2.0', # GeoAlchemy2 requires >=1.4  postgres driver implementation is not 2.0 compatible.
+        'sqlalchemy>=1.4,<2.0',  # GeoAlchemy2 requires >=1.4  postgres driver implementation is not 2.0 compatible.
         'GeoAlchemy2',
         'toolz',
         'xarray>=0.9,<2022.6',  # >0.9 fixes most problems with `crs` attributes being lost
