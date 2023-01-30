@@ -19,8 +19,7 @@ Notes for 1.8.10
  2. Recent refactoring in the XArray library has lead to changes in behaviour that affect some ODC operations
     and are unlikely to be addressed by the XArray team.  This release includes changes in the way the ODC
     works with XArray to circumvent these issues. If you experience Xarray issues with this ODC release, please
-    raise an issue on Github and we will try to address them before the next release.  In the meantime
-    pinning array to `==2022.03.0` in your environment may provide a workaround.
+    raise an issue on Github and we will try to address them before the next release.
 
 Full list of changes:
 ~~~~~~~~~~~~~~~~~~~~~
