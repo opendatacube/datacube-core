@@ -13,6 +13,13 @@ on:
       - '!docker/**'
       - '!docs/**'
       - '!contrib/**'
+  
+  # build and push new docker image first if necessary
+  workflow_run:
+    workflows:
+      - Docker (test runner)
+    types:
+      - completed
 
 jobs:
   main:
