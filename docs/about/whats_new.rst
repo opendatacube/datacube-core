@@ -8,6 +8,22 @@ What's New
 v1.8.next
 =========
 
+v1.8.10 (30 January 2023)
+=========================
+
+Notes for 1.8.10
+~~~~~~~~~~~~~~~~
+
+ 1. The new APIs for bulk-reads, bulk-writes and index cloning should be considered unstable and may change
+    in subsequent releases.
+ 2. Recent refactoring in the XArray library has lead to changes in behaviour that affect some ODC operations
+    and are unlikely to be addressed by the XArray team.  This release includes changes in the way the ODC
+    works with XArray to circumvent these issues. If you experience Xarray issues with this ODC release, please
+    raise an issue on Github and we will try to address them before the next release.
+
+Full list of changes:
+~~~~~~~~~~~~~~~~~~~~~
+
 - Add `grid_spec` to `list_products` (:pull:`1357`)
 - Add database relationship diagram to doc (:pull:`1350`)
 - Maintain search field index tables, and use them for dataset queries (:pull:`1360`)
@@ -29,6 +45,8 @@ v1.8.next
 - Documentation update. (:pull:`1385`)
 - Clean up datetime functions (:pull:`1387`)
 - Dependency updates (:pull:`1388`, :pull:`1391`)
+- Upgrades for compatibility with newer versions of Shapely and Xarray.  (:pull:`1389`)
+- Finalise release notes for 1.8.10 release (:pull:`1392`)
 
 v1.8.9 (17 November 2022)
 =========================
