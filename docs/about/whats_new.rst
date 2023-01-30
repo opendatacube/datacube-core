@@ -8,6 +8,9 @@ What's New
 v1.8.next
 =========
 
+- Update conda create environment README (:pull:`1394`)
+
+
 v1.8.10 (30 January 2023)
 =========================
 

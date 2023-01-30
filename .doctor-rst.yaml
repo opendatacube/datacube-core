@@ -45,7 +45,7 @@ rules:
     valid_inline_highlighted_namespaces: ~
     valid_use_statements: ~
     versionadded_directive_should_have_version: ~
-    yaml_instead_of_yml_suffix: ~
+    # yaml_instead_of_yml_suffix: ~
     yarn_dev_option_at_the_end: ~
 #    no_app_bundle: ~
 
