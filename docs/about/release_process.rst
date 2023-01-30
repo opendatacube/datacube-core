@@ -4,6 +4,8 @@ Release Process
 #. Decide to do a release, and check with regular contributors on Slack that
    they don't have anything pending.
 
+#. Ensure version pins in setup.py and conda-environment.yml are in sync and up to date.
+
 #. Update the release notes in the ``develop`` branch via a PR.
 
 #. Create a new **Tag** and **Release** using the `GitHub Releases Web UI`_
