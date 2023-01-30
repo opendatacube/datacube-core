@@ -74,7 +74,6 @@ jobs:
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
     - name: Verify Docker Image
-      id: verify
       run: |
         # Make sure we test docker image we built
         if [[ "${{ steps.cfg.outputs.docker_image }}" != "opendatacube/datacube-tests:latest" ]]; then
@@ -92,7 +91,7 @@ jobs:
       if: |
         github.event_name == 'push' && (
           github.ref == 'refs/heads/develop'
-          ) && steps.verify.outcome == 'success'
+          )
       uses: docker/login-action@v2
       with:
         username: ${DOCKER_USER}
