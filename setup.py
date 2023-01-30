@@ -89,7 +89,7 @@ setup(
         'affine',
         'attrs>=18.1',
         'pyproj>=2.5',
-        'shapely>=1.6.4',
+        'shapely>=2.0',
         'cachetools',
         'click>=5.0',
         'cloudpickle>=0.4',
@@ -108,7 +108,7 @@ setup(
         'sqlalchemy>=1.4,<2.0',  # GeoAlchemy2 requires >=1.4  postgres driver implementation is not 2.0 compatible.
         'GeoAlchemy2',
         'toolz',
-        'xarray>=0.9,<2022.6',  # >0.9 fixes most problems with `crs` attributes being lost
+        'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
         'packaging',
     ],
     extras_require=extras_require,

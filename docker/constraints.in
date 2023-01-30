@@ -1,5 +1,5 @@
 # datacube dependencies
-Sphinx
+Sphinx<6.0.0 # be compatible to sphinx_rtd_theme
 affine
 attrs>=18.1
 # boto is too huge, need to set lower bound
@@ -37,8 +37,7 @@ sphinx_autodoc_typehints
 sphinx_rtd_theme
 sqlalchemy
 toolz
-# FOR INVESTIGATION: xarray 2022.6.0 breaks virtual products tests.
-xarray>=0.18,!=2022.6.0
+xarray>=0.18
 
 # Previous pins were to very old versions
 # pytest Py3.10 requires >6.2.5

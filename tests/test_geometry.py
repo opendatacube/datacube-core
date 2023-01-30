@@ -248,7 +248,7 @@ def test_ops():
 
     # test array interface
     assert line.__array_interface__ is not None
-    assert np.array(line).shape == (3, 2)
+    assert np.array(line.coords).shape == (3, 2)
 
     # test simplify
     poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], epsg4326)

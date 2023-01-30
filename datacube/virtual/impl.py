@@ -543,6 +543,7 @@ class Aggregate(VirtualProduct):
             data = self._input.fetch(value, **load_settings)
             result = self._statistic.compute(data)
             result.coords[dim] = coords[dim]
+            result = result.drop_indexes(dim, errors="ignore")
             return result
 
         groups = list(xr_map(grouped.box, statistic))

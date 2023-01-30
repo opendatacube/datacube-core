@@ -17,14 +17,13 @@ _LOG = logging.getLogger(__name__)
 def _fast_slice(array, indexers):
     data = array.values[indexers]
     dims = [dim for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice)]
-    variable = xarray.Variable(dims, data, attrs=array.attrs, fastpath=True)
     coords = OrderedDict((dim,
                           xarray.Variable((dim,),
                                           array.coords[dim].values[indexer],
                                           attrs=array.coords[dim].attrs,
                                           fastpath=True))
                          for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice))
-    return xarray.DataArray(variable, coords=coords, fastpath=True)
+    return xarray.DataArray(data, dims=dims, coords=coords, attrs=array.attrs)
 
 
 class Tile(object):
