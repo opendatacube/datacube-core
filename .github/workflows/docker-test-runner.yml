@@ -49,16 +49,8 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-
 
-    - name: DockerHub Login
-      id: login
-      uses: docker/login-action@v2
-      with:
-        username: ${DOCKER_USER}
-        password: ${{ secrets.DockerPassword }}
-
     - name: Build Docker
       uses: docker/build-push-action@v3
-      if: steps.login.outcome == 'success'
       with:
         file: docker/Dockerfile
         context: .
@@ -70,7 +62,6 @@ jobs:
         cache-from: |
           type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new
-        push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/develop') }}
 
     # This ugly bit is necessary if you don't want your cache to grow forever
     # till it hits GitHub's limit of 5GB.
@@ -83,6 +74,7 @@ jobs:
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
     - name: Verify Docker Image
+      id: verify
       run: |
         # Make sure we test docker image we built
         if [[ "${{ steps.cfg.outputs.docker_image }}" != "opendatacube/datacube-tests:latest" ]]; then
@@ -93,3 +85,21 @@ jobs:
 
         echo "Verify that twine is installed"
         docker run --rm opendatacube/datacube-tests:latest twine --version
+
+    # if tests passed, login and push to DockerHub
+    - name: DockerHub Login
+      id: login
+      if: |
+        github.event_name == 'push' && (
+          github.ref == 'refs/heads/develop'
+          ) && steps.verify.outcome == 'success'
+      uses: docker/login-action@v2
+      with:
+        username: ${DOCKER_USER}
+        password: ${{ secrets.DockerPassword }}
+
+    - name: DockerHub Push
+      if: |
+        steps.login.outcome == 'success'
+      run: | 
+        docker push "${{ steps.cfg.outputs.docker_image }}"
