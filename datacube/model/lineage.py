@@ -41,3 +41,17 @@ class LineageTree:
     dataset_id: UUID
     children: Optional[Mapping[str, Sequence["LineageTree"]]] = None
     home: Optional[str] = None
+
+    @classmethod
+    def sources(cls, dsid: UUID, sources: Mapping[str, Sequence[UUID]], home=None) -> "LineageTree":
+        return cls(
+            direction=LineageDirection.SOURCES,
+            dataset_id=dsid,
+            children={
+                classifier: [
+                    cls(direction=LineageDirection.SOURCES, dataset_id=src, home=home)
+                    for src in srcs
+                ]
+                for classifier, srcs in sources.items()
+            },
+        )
