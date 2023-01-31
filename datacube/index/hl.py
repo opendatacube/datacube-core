@@ -266,6 +266,7 @@ def dataset_resolver(index: AbstractIndex,
     else:
         resolver = resolve_legacy_lineage
         extra_kwargs = {
+            "matcher": match_product,
             "index": index,
             "fail_on_missing_lineage": fail_on_missing_lineage,
             "verify_lineage": verify_lineage,
