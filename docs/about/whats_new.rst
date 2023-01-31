@@ -11,6 +11,7 @@ v1.8.next
 - Update conda create environment README (:pull:`1394`)
 - Update conda environment file and add notes to release process to ensure pip and conda
   dependencies are in sync and up-to-date. (:pull:`1395`)
+- Update docker constraints (:pull:`1396`)
 
 
 v1.8.10 (30 January 2023)
