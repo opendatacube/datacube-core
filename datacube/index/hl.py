@@ -251,7 +251,7 @@ def dataset_resolver(index: AbstractIndex,
                      verify_lineage: bool = True,
                      skip_lineage: bool = False,
                      home_index: Optional[str] = None,
-                     source_tree: Optional[LineageTree] = None) -> Callable[[SimpleDocNav, str], DatasetOrError]
+                     source_tree: Optional[LineageTree] = None) -> Callable[[SimpleDocNav, str], DatasetOrError]:
     if skip_lineage or not index.supports_lineage:
         resolver = resolve_no_lineage
         extra_kwargs = {
