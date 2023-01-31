@@ -159,16 +159,16 @@ def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
     uuid_ = doc.id
     if not uuid_:
         return None, "No id defined in dataset doc"
-    if not is_doc_eo3(doc):
+    if not is_doc_eo3(doc.doc):
         return None, "Not an EO3 dataset"
     try:
-        product = matcher(doc)
+        product = matcher(doc.doc)
     except BadMatch as e:
         return None, e
-    return Dataset(product, doc,
+    return Dataset(product, doc.doc,
                    uris=[uri],
                    source_tree=LineageTree.sources(uuid_, doc.sources, home=home_index)
-    )
+    ), None
 
 def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
                            index: AbstractIndex,
