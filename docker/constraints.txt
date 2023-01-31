@@ -18,6 +18,7 @@ async-timeout==4.0.2
     # via redis
 attrs==22.2.0
     # via
+    #   -r constraints.in
     #   fiona
     #   hypothesis
     #   jsonschema
@@ -325,6 +326,10 @@ rfc3986==2.0.0
     # via twine
 rich==13.2.0
     # via twine
+ruamel-yaml==0.17.21
+    # via -r constraints.in
+ruamel-yaml-clib==0.2.7
+    # via ruamel-yaml
 s3transfer==0.6.0
     # via boto3
 secretstorage==3.3.3
