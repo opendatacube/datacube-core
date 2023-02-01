@@ -158,7 +158,7 @@ class DatasetLineage:
     __tablename__ = "dataset_lineage"
     __table_args__ = (
         _core.METADATA,
-        PrimaryKeyConstraint('derived_dataset_ref', 'derived_dataset_ref'),
+        PrimaryKeyConstraint('source_dataset_ref', 'derived_dataset_ref'),
         Index("ix_lin_derived_classifier", "derived_dataset_ref", "classifier"),
         {
             "schema": sql.SCHEMA_NAME,
