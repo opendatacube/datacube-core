@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 import pytest
 import xarray as xr
+import pandas as pd
+import numpy as np
 from datacube.testutils.geom import epsg4326, epsg3857
 from datacube.testutils import mk_sample_xr_dataset, remove_crs
 from datacube.utils.geometry import assign_crs
@@ -16,7 +18,11 @@ from datacube.utils.xarray_geoextensions import (
     _get_crs_from_coord,
 )
 
+multi_coords = xr.DataArray(np.zeros(1), [("spec", pd.MultiIndex.from_arrays(np.array([["2001-01-01"], ["2001-01-01"]]),
+    names=('time', 'solar_day')))]).coords
+single_coord = dict(time=np.array(["2001-01-01"]))
 
+@pytest.mark.parametrize("odc_style_xr_dataset", [single_coord, multi_coords], indirect=True)
 def test_xr_extension(odc_style_xr_dataset):
     xx = odc_style_xr_dataset
     assert _norm_crs(None) is None
@@ -26,7 +32,7 @@ def test_xr_extension(odc_style_xr_dataset):
     with pytest.raises(ValueError):
         _norm_crs([])
 
-    assert xx.geobox.shape == xx.B10.shape
+    assert (1,) + xx.geobox.shape == xx.B10.shape
 
     (sx, zz0, tx, zz1, sy, ty) = xx.affine[:6]
     assert (zz0, zz1) == (0, 0)
@@ -167,6 +173,7 @@ def test_crs_from_attrs():
     assert xx.geobox.crs is epsg3857
 
 
+@pytest.mark.parametrize("odc_style_xr_dataset", [{}, multi_coords], indirect=True)
 def test_assign_crs(odc_style_xr_dataset):
     xx = odc_style_xr_dataset
     assert xx.geobox is not None

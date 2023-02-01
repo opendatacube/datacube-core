@@ -603,7 +603,7 @@ class Datacube(object):
         if dims_default is None:
             dims_default = tuple(coords) + geobox.dimensions
 
-        shape_default = tuple(c.size for c in coords.values()) + geobox.shape
+        shape_default = tuple(c.size for k, c in coords.items() if k in dims_default) + geobox.shape
         coords_default = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
 
         arrays = []
