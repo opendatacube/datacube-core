@@ -32,18 +32,17 @@ from datacube.model import LineageTree, LineageDirection
 _LOG = logging.getLogger(__name__)
 
 
-# A named tuple representing the results of a batch add operation:
-# - completed: Number of objects added to theMay be None for internal functions and for datasets.
-# - skipped: Number of objects skipped, either because they already exist
-#   or the documents are invalid for this driver.
-# - seconds_elapsed: seconds elapsed during the bulk add operation;
-# - safe: an optional list of names of bulk added objects that are safe to be
-#   used for lower level bulk adds. Includes objects added, and objects skipped
-#   because they already exist in the index and are identical to the version
-#   being added.  May be None for internal functions and for datasets.
 class BatchStatus(NamedTuple):
     """
-
+    A named tuple representing the results of a batch add operation:
+    - completed: Number of objects added to theMay be None for internal functions and for datasets.
+    - skipped: Number of objects skipped, either because they already exist
+      or the documents are invalid for this driver.
+    - seconds_elapsed: seconds elapsed during the bulk add operation;
+    - safe: an optional list of names of bulk added objects that are safe to be
+      used for lower level bulk adds. Includes objects added, and objects skipped
+      because they already exist in the index and are identical to the version
+      being added.  May be None for internal functions and for datasets.
     """
     completed: int
     skipped: int
