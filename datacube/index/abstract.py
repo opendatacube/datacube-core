@@ -27,6 +27,7 @@ from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatch
 from datacube.utils.generic import thread_local_cache
 from datacube.utils.geometry import CRS, Geometry, box
 from datacube.utils.documents import UnknownMetadataType
+from model import LineageTree, LineageDirection
 
 _LOG = logging.getLogger(__name__)
 
@@ -741,6 +742,94 @@ def dsid_to_uuid(dsid: DSID) -> UUID:
         return dsid
     else:
         return UUID(dsid)
+
+
+class AbstractLineageResource(ABC):
+    """
+    Abstract base class for the Lineage portion of an index api.
+
+    All LineageResource implementations should inherit from this base class.
+
+    Note that this is a "new" resource only supported by new index drivers with `supports_external_lineage`
+    set to True.  If a driver does NOT support external lineage, it can use LegacyLineageResource below,
+    which is a minimal implementation of this resource that raises a NotImplementedError for all methods.
+    """
+    def __init__(self, index) -> None:
+        self.index = index
+        # THis is explicitly for indexes that do not support the External Lineage API.
+        assert self.index.supports_external_lineage
+
+    @abstractmethod
+    def get_derived_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
+        """
+        Extract a LineageTree from the index, with:
+            - "id" at the root of the tree.
+            - "derived" direction (i.e. datasets derived from id, datasets derived from
+              datasets derived from id, etc.)
+            - maximum depth as requested (default 0 = unlimited depth)
+
+        Tree may be empty (i.e. just the root node) if no lineage for id is stored.
+
+        :param id: the id of the dataset at the root of the returned tree
+        :param max_depth: Maximum recursion depth.  Default/Zero = unlimited depth
+        :return: A derived-direction Lineage tree with id at the root.
+        """
+
+    @abstractmethod
+    def get_source_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
+        """
+        Extract a LineageTree from the index, with:
+            - "id" at the root of the tree.
+            - "source" direction (i.e. datasets id was derived from, the dataset ids THEY were derived from, etc.)
+            - maximum depth as requested (default 0 = unlimited depth)
+
+        Tree may be empty (i.e. just the root node) if no lineage for id is stored.
+
+        :param id: the id of the dataset at the root of the returned tree
+        :param max_depth: Maximum recursion depth.  Default/Zero = unlimited depth
+        :return: A source-direction Lineage tree with id at the root.
+        """
+
+    @abstractmethod
+    def add(self, tree: LineageTree, max_depth: int = 0, replace: bool = False) -> None:
+        """
+        Add or update a LineageTree into the Index.
+
+        If the provided tree is inconsistent with lineage data already
+        recorded in the database, by default a ValueError is raised,
+        If replace is True, the provided tree is treated as authoritative
+        and the database is updated to match.
+
+        :param tree: The LineageTree to add to the index
+        :param max_depth: Maximum recursion depth. Default/Zero = unlimited depth
+        :param replace: If True, update database to match tree exactly.
+        """
+
+    @abstractmethod
+    def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
+        """
+        Remove lineage information from the Index.
+
+        :param id_: The Dataset ID to start removing lineage from.
+        :param direction: The direction in which to remove lineage (from id_)
+        :param max_depth: The maximum depth to which to remove lineage (0/default = no limit)
+        """
+
+
+class LegacyLineageResource(AbstractLineageResource):
+    """
+    Minimal implementation of AbstractLineageResource that raises "not implemented"
+       for all methods.
+    """
+    def __init__(self, index) -> None :
+        self.index = self.index
+        assert not self.index.supports_external_lineage
+
+    def get_derived_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
+        raise NotImplementedError()
+
+    def get_source_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
+        raise NotImplementedError()
 
 
 class DatasetTuple(NamedTuple):
