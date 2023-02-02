@@ -27,7 +27,7 @@ from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatch
 from datacube.utils.generic import thread_local_cache
 from datacube.utils.geometry import CRS, Geometry, box
 from datacube.utils.documents import UnknownMetadataType
-from model import LineageTree, LineageDirection
+from datacube.model import LineageTree, LineageDirection
 
 _LOG = logging.getLogger(__name__)
 
@@ -42,6 +42,9 @@ _LOG = logging.getLogger(__name__)
 #   because they already exist in the index and are identical to the version
 #   being added.  May be None for internal functions and for datasets.
 class BatchStatus(NamedTuple):
+    """
+
+    """
     completed: int
     skipped: int
     seconds_elapsed: float
