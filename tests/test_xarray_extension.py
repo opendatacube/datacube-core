@@ -18,9 +18,11 @@ from datacube.utils.xarray_geoextensions import (
     _get_crs_from_coord,
 )
 
-multi_coords = xr.DataArray(np.zeros(1), [("spec", pd.MultiIndex.from_arrays(np.array([["2001-01-01"], ["2001-01-01"]]),
-    names=('time', 'solar_day')))]).coords
+multi_coords = xr.DataArray(np.zeros(1),
+                            [("spec",pd.MultiIndex.from_arrays(np.array([["2001-01-01"], ["2001-01-01"]]),
+                                                               names=('time', 'solar_day')))]).coords
 single_coord = dict(time=np.array(["2001-01-01"]))
+
 
 @pytest.mark.parametrize("odc_style_xr_dataset", [single_coord, multi_coords], indirect=True)
 def test_xr_extension(odc_style_xr_dataset):
