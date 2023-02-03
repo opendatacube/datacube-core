@@ -271,6 +271,7 @@ mongolia
 MTL
 multiband
 multigeom
+MultiIndex
 multiline
 multipoint
 multipolygon
