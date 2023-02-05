@@ -46,31 +46,24 @@ class LineageTree:
     home: Optional[str] = None
 
     @classmethod
-    def sources(cls, dsid: UUID, sources: Mapping[str, Sequence[UUID]], home=None) -> "LineageTree":
-        return cls(
-            direction=LineageDirection.SOURCES,
-            dataset_id=dsid,
+    def from_eo3_doc(cls, dsid:UUID,
+              direction: LineageDirection = LineageDirection.SOURCES,
+              sources: Optional[Mapping[str, Sequence[UUID]]] = None,
+              home=None) -> "LineageTree":
+        if sources is None:
+            children=None
+        else:
             children={
-                classifier: [
-                    cls(direction=LineageDirection.SOURCES, dataset_id=src, home=home)
-                    for src in srcs
-                ]
-                for classifier, srcs in sources.items()
-            },
-        )
-
-    @classmethod
-    def deriveds(cls, dsid: UUID, sources: Mapping[str, Sequence[UUID]], home=None) -> "LineageTree":
+                         classifier: [
+                             cls(direction=direction, dataset_id=der, home=home)
+                             for der in ders
+                         ]
+                         for classifier, ders in sources.items()
+                     }
         return cls(
-            direction=LineageDirection.DERIVED,
+            direction=direction,
             dataset_id=dsid,
-            children={
-                classifier: [
-                    cls(direction=LineageDirection.DERIVED, dataset_id=der, home=home)
-                    for der in ders
-                ]
-                for classifier, ders in sources.items()
-            },
+            children=children,
         )
 
 
@@ -112,7 +105,7 @@ class LineageRelations:
             self._homes[id_] = home
 
     def _merge_new_relation(self, ids: Tuple[UUID, UUID], classifier: str) -> None:
-        self._merge_new_lineage_relation(LineageRelation(classifier=classifier, source_id=ids[0], derived_id=ids[1]))
+        self.merge_new_lineage_relation(LineageRelation(classifier=classifier, source_id=ids[0], derived_id=ids[1]))
 
     def merge_new_lineage_relation(self, rel: LineageRelation) -> None:
         ids = (rel.source_id, rel.derived_id)
@@ -150,7 +143,7 @@ class LineageRelations:
     def merge_tree(self, tree: LineageTree,
                                      parent_id: Optional[UUID] = None,
                                      max_depth: int = 0) -> None:
-        self._merge_new_home(tree.dataset_id.home)
+        self._merge_new_home(tree.dataset_id, tree.home)
         recurse = True
         next_max_depth = max_depth - 1
         if not parent_id:
@@ -165,9 +158,9 @@ class LineageRelations:
                     raise InconsistentLineageException("Tree contains both derived and source nodes")
                 if parent_id:
                     if tree.direction == LineageDirection.SOURCES:
-                        ids = [parent_id, child.dataset_id]
+                        ids = (parent_id, child.dataset_id)
                     else:
-                        ids = [child.dataset_id, parent_id]
+                        ids = (child.dataset_id, parent_id)
                     self._merge_new_relation(ids, classifier)
                     self._merge_new_node(ids, child)
                 if recurse:
