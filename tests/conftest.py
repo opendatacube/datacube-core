@@ -297,15 +297,15 @@ def tmpnetcdf_filename(tmpdir):
 
 
 @pytest.fixture
-def odc_style_xr_dataset():
-    """An xarray.Dataset with ODC style coordinates and CRS, and no time dimension.
+def odc_style_xr_dataset(request):
+    """An xarray.Dataset with ODC style coordinates and CRS
 
     Contains an EPSG:4326, single variable 'B10' of 100x100 int16 pixels."""
     affine = Affine.scale(0.1, 0.1) * Affine.translation(20, 30)
     geobox = geometry.GeoBox(100, 100, affine, geometry.CRS(GEO_PROJ))
 
     return Datacube.create_storage(
-        {}, geobox, [Measurement(name="B10", dtype="int16", nodata=0, units="1")]
+        request.param, geobox, [Measurement(name="B10", dtype="int16", nodata=0, units="1")]
     )
 
 

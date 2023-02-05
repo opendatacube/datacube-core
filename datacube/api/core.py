@@ -593,8 +593,17 @@ class Datacube(object):
         #  - 3D dims must fit between (t) and (y, x) or (lat, lon)
 
         # 2D defaults
-        dims_default = tuple(coords) + geobox.dimensions
-        shape_default = tuple(c.size for c in coords.values()) + geobox.shape
+        # retrieve dims from coords if DataArray
+        dims_default = None
+        if coords != {}:
+            coords_value = next(iter(coords.values()))
+            if isinstance(coords_value, xarray.DataArray):
+                dims_default = coords_value.dims + geobox.dimensions
+
+        if dims_default is None:
+            dims_default = tuple(coords) + geobox.dimensions
+
+        shape_default = tuple(c.size for k, c in coords.items() if k in dims_default) + geobox.shape
         coords_default = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
 
         arrays = []

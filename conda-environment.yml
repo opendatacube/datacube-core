@@ -33,5 +33,5 @@ dependencies:
   - ruamel.yaml
   - sqlalchemy <2.0
   - GeoAlchemy2
-  - xarray >=0.9,!=2022.6.0
+  - xarray >=0.9
   - toolz

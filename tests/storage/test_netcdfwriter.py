@@ -292,6 +292,7 @@ def test_useful_error_on_write_empty_dataset(tmpnetcdf_filename):
     assert 'geobox' in str(excinfo.value)
 
 
+@pytest.mark.parametrize("odc_style_xr_dataset", [{}], indirect=True)
 def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
     write_dataset_to_netcdf(odc_style_xr_dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
                             variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
