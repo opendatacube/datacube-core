@@ -8,11 +8,17 @@ What's New
 v1.8.next
 =========
 
+
+v1.8.11 (6 February 2023)
+=========================
+
+- Simplify Github actions (:pull:`1393`)
 - Update conda create environment README (:pull:`1394`)
 - Update conda environment file and add notes to release process to ensure pip and conda
   dependencies are in sync and up-to-date. (:pull:`1395`)
 - Update docker constraints (:pull:`1396`)
 - Compatible with the changes w.r.t. `MultiIndex` and `coord/dims` introduced since `xarray>2022.3.0` (:pull:`1397`)
+- Final sync of conda/pip dependencies and release notes. (:pull:`1398`)
 
 
 v1.8.10 (30 January 2023)

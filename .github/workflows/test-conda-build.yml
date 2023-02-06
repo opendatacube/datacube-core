@@ -35,7 +35,6 @@ jobs:
           environment-file: conda-environment.yml
           auto-update-conda: true
           python-version: ${{ matrix.python-version}}
-          use-only-tar-bz2: true  # Used for cache
 
       - name: Bash
         shell: bash -l {0}
