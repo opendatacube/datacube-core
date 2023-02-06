@@ -13,14 +13,15 @@ dependencies:
   - sphinx-click
   - click
   - affine
+  - attrs >=18.1
   - botocore
   - boto3
   - cachetools
-  - click
+  - click>=5.0
   - cloudpickle >=0.4.0
   - dask
-  - pyproj
-  - shapely
+  - pyproj >=2.5
+  - shapely >=2.0
   - jsonschema
   - lark
   - netcdf4
