@@ -66,6 +66,16 @@ class LineageTree:
             children=children,
         )
 
+    def child_datasets(self) -> Set[UUID]:
+        child_dsids = set()
+        for classifier, children in self.children.items():
+            for child in children:
+                subchildren = child.child_datasets()
+                if self.dataset_id in subchildren:
+                    raise InconsistentLineageException("LineageTrees must be acyclic")
+                child_dsids.update(subchildren)
+        return child_dsids
+
 
 class InconsistentLineageException(Exception):
     pass
@@ -90,8 +100,8 @@ class LineageRelations:
         self._relations_idx: MutableMapping[Tuple[UUID, UUID], str] = {}
         self._trees_idx: MutableMapping[Tuple[UUID, UUID], Sequence[LineageTree]] = {}
         self.relations: Sequence[LineageRelation] = []
-        self.source_ids: Set[UUID] = set()
-        self.derived_ids: Set[UUID] = set()
+        self.by_source: MutableMapping[UUID, Mapping[UUID, str]] = {}
+        self.by_derived: MutableMapping[UUID] = {}
         if merge_with is not None:
             self.merge(merge_with)
         if tree is not None:
@@ -117,8 +127,12 @@ class LineageRelations:
         else:
             self._relations_idx[ids] = rel.classifier
             self.relations.append(rel)
-            self.source_ids.add(rel.source_id)
-            self.derived_ids.add(rel.derived_id)
+            if rel.source_id not in self.by_source:
+                self.by_source[rel.source_id] = {}
+            if rel.derived_id not in self.by_derived:
+                self.by_derived[rel.derived_id] = {}
+            self.by_source[rel.source_id][rel.derived_id] = rel.classifier
+            self.by_derived[rel.derived_id][rel.source_id] = rel.classifier
 
     def _merge_new_node(self, ids: Tuple[UUID, UUID], node):
         if ids in self._trees_idx:
@@ -143,6 +157,8 @@ class LineageRelations:
     def merge_tree(self, tree: LineageTree,
                                      parent_id: Optional[UUID] = None,
                                      max_depth: int = 0) -> None:
+        # Check acyclic
+        tree.child_datasets()
         self._merge_new_home(tree.dataset_id, tree.home)
         recurse = True
         next_max_depth = max_depth - 1
@@ -215,3 +231,26 @@ class LineageRelations:
             relations_to_add, relations_to_update,
             homes_to_add, homes_to_update
         )
+
+    def extract_tree(self,
+                     root: UUID,
+                     direction: LineageDirection = LineageDirection.SOURCES) -> LineageTree:
+        children = {}
+        if direction == LineageDirection.SOURCES:
+            subtrees = self.by_source.get(root, {})
+        else:
+            subtrees = self.by_derived.get(root, {})
+        for dsid, classifier in subtrees.items():
+            subtree = self.extract_tree(dsid, direction)
+            if classifier in children:
+                children[classifier].append(subtree)
+            else:
+                children[classifier] = [subtree]
+        tree = LineageTree(
+            dataset_id=root,
+            direction=direction,
+            children=children,
+            home=self._homes[root]
+        )
+        # Check acyclic
+        tree.child_datasets()
