@@ -21,7 +21,7 @@ dependencies:
   - cloudpickle >=0.4.0
   - dask
   - pyproj >=2.5
-  - shapely >=2.0.0
+  - shapely >=2.0
   - jsonschema
   - lark
   - netcdf4
