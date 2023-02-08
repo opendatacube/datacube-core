@@ -167,7 +167,7 @@ def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
         return None, e
     return Dataset(product, doc.doc,
                    uris=[uri],
-                   source_tree=LineageTree.sources(uuid_, doc.sources, home=home_index)
+                   source_tree=LineageTree.from_eo3_doc(uuid_, sources=doc.sources, home=home_index)
     ), None
 
 

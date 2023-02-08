@@ -50,8 +50,8 @@ class LineageTree:
 
     @classmethod
     def from_eo3_doc(cls, dsid: UUID,
-                     direction: LineageDirection = LineageDirection.SOURCES,
                      sources: Optional[Mapping[str, Sequence[UUID]]] = None,
+                     direction: LineageDirection = LineageDirection.SOURCES,
                      home=None) -> "LineageTree":
         if sources is None:
             children = None
