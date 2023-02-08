@@ -48,6 +48,43 @@ class LineageTree:
     children: Optional[Mapping[str, Sequence["LineageTree"]]] = None
     home: Optional[str] = None
 
+    def find_subtree(self, dsid: UUID, _state: Optional[Sequence["LineageTree"]] = None) -> Optional["LineageTree"]:
+        """
+        Finds subtree with root at dsid, if there is one.
+
+        Immediately retunrs the first match found with not-None children, but keeps track of first
+        children=None match to return if no not-None matches.
+
+
+        :param dsid: The desired dataset id
+        :param _state: For shared state through recursion
+        :return: None, or the subtree with root at dsid.
+        """
+        root_call = _state is None
+        if root_call:
+            _state = list()
+        # root node will always be first match.
+        if dsid == self.dataset_id:
+            if self.children is not None:
+                # Best match - shortcut
+                return self
+            if not _state:
+                # Partial match - cache if first
+                _state.append(self)
+        # Recurse
+        if self.children is not None:
+            for classifier, children in self.children.items():
+                for child in children:
+                    subtree = child.find_subtree(dsid, _state=_state)
+                    if subtree:
+                        # Catch and return shortcut best match
+                        return subtree
+        if root_call and _state:
+            # Cached first partial match
+            return _state[0]
+        # No match
+        return None
+
     @classmethod
     def from_eo3_doc(cls, dsid: UUID,
                      sources: Optional[Mapping[str, Sequence[UUID]]] = None,

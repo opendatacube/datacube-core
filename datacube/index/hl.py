@@ -15,6 +15,7 @@ from datacube.index.abstract import AbstractIndex
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
+from datacube.model import LineageDirection
 from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo  # type: ignore[attr-defined]
 
 
@@ -145,7 +146,12 @@ DatasetOrError = Union[
 ]
 
 
-def resolve_no_lineage(ds: SimpleDocNav, uri: str, matcher: ProductMatcher) -> DatasetOrError:
+def resolve_no_lineage(ds: SimpleDocNav,
+                       uri: str,
+                       matcher: ProductMatcher,
+                       source_tree: Optional[LineageTree] = None) -> DatasetOrError:
+    if source_tree:
+        raise ValueError("source_tree passed to non-lineage resolver")
     doc = ds.doc_without_lineage_sources
     try:
         product = matcher(doc)
@@ -155,7 +161,21 @@ def resolve_no_lineage(ds: SimpleDocNav, uri: str, matcher: ProductMatcher) -> D
 
 
 def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
+                         source_tree: Optional[LineageTree] = None,
                          home_index: Optional[str] = None) -> DatasetOrError:
+    """
+    Dataset driver for the (new) external lineage API
+
+    API paramters
+    :param doc: Dataset docnav
+    :param uri: location uri
+
+    Extra kwargs passed in by Doc2Dataset:
+    :param matcher: Product matcher
+    :param source_tree: sourcewards LineageTree to use in place of EO3 sources (optional)
+    :param home_index: Home for sources (ignored if source_tree is not none)
+    :return:
+    """
     uuid_ = doc.id
     if not uuid_:
         return None, "No id defined in dataset doc"
@@ -165,17 +185,29 @@ def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
         product = matcher(doc.doc)
     except BadMatch as e:
         return None, e
-    return Dataset(product, doc.doc,
-                   uris=[uri],
-                   source_tree=LineageTree.from_eo3_doc(uuid_, sources=doc.sources, home=home_index)
-    ), None
+    if source_tree is None:
+        # Get sources from EO3 document, use home_index as home of source id's
+        source_tree = LineageTree.from_eo3_doc(uuid_, sources=doc.sources, home=home_index)
+    else:
+        # May be None
+        if source_tree.direction == LineageDirection.DERIVED:
+            raise ValueError("source_tree cannot be a derived tree.")
+        source_tree = source_tree.find_subtree(uuid_)
+    return Dataset(product,
+                   doc.doc,
+                   source_tree=source_tree,
+                   uris=[uri]), None
 
 
 def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
                            index: AbstractIndex,
                            fail_on_missing_lineage: bool,
                            verify_lineage: bool,
+                           source_tree: Optional[LineageTree] = None,
                            ) -> DatasetOrError:
+    if source_tree:
+        raise ValueError("source_tree passed to non-external lineage resolver")
+
     try:
         main_ds = SimpleDocNav(dedup_lineage(main_ds_doc))
     except InvalidDocException as e:
@@ -251,20 +283,25 @@ def dataset_resolver(index: AbstractIndex,
                      fail_on_missing_lineage: bool = False,
                      verify_lineage: bool = True,
                      skip_lineage: bool = False,
-                     home_index: Optional[str] = None,
-                     source_tree: Optional[LineageTree] = None) -> Callable[[SimpleDocNav, str], DatasetOrError]:
+                     home_index: Optional[str] = None) -> Callable[
+    [SimpleDocNav, str, Optional[LineageTree]],
+    DatasetOrError
+]:
     if skip_lineage or not index.supports_lineage:
+        # Resolver that ignores lineage.
         resolver = resolve_no_lineage
         extra_kwargs = {
             "matcher": match_product,
         }
     elif index.supports_external_lineage:
+        # ODCv2 external lineage API resolver
         resolver = resolve_with_lineage
         extra_kwargs = {
             "matcher": match_product,
             "home_index": home_index,
         }
     else:
+        # Legacy lineage API resolver
         resolver = resolve_legacy_lineage
         extra_kwargs = {
             "matcher": match_product,
@@ -322,11 +359,7 @@ class Doc2Dataset:
                 Will be dropped in ODCv2 as only eo3 documents will be supported
     :param home_index: Ignored if index.supports_exernal_home is False.  Defaults to None.
                 Optional string labelling the "home index" for lineage datasets.
-                home_index cannot be used with source_tree.
-    :param source_tree: Optional source-direction LineageTree.
-                        Must be null if index.supports_external_lineage is False.
-                        If provided, this lineage tree is used for source lineage, instead
-                        of being taken from the dataset document.
+                home_index is ignored if an explicit source_tree is passed to the resolver.
     """
     def __init__(self,
                  index: AbstractIndex,
@@ -336,14 +369,12 @@ class Doc2Dataset:
                  verify_lineage: bool = True,
                  skip_lineage: bool = False,
                  eo3: Union[bool, str] = 'auto',
-                 home_index: Optional[str] = None,
-                 source_tree: Optional[LineageTree] = None):
+                 home_index: Optional[str] = None):
         if not index.supports_lineage:
             skip_lineage = True
             verify_lineage = False
             fail_on_missing_lineage = False
             home_index = None
-            source_tree = None
         else:
             if not index.supports_legacy and not index.supports_nongeo:
                 if not eo3:
@@ -351,11 +382,7 @@ class Doc2Dataset:
                 eo3 = True
             if index.supports_external_lineage and fail_on_missing_lineage:
                 raise ValueError("fail_on_missing_lineage is not supported for this index driver.")
-            if not index.supports_external_lineage and source_tree:
-                raise ValueError("source_tree is not supported for this index driver.")
-            if home_index and source_tree:
-                raise ValueError("Cannot provide both an explicit source_tree and a home_index.")
-            if (home_index or source_tree) and skip_lineage:
+            if home_index and skip_lineage:
                 raise ValueError("Cannot provide an explicit source_tree or home_index when skip_lineage is set.")
 
         rules, err_msg = load_rules_from_types(index,
@@ -372,10 +399,10 @@ class Doc2Dataset:
                                             fail_on_missing_lineage=fail_on_missing_lineage,
                                             verify_lineage=verify_lineage,
                                             skip_lineage=skip_lineage,
-                                            home_index=home_index,
-                                            source_tree=source_tree)
+                                            home_index=home_index)
 
-    def __call__(self, doc_in: Union[SimpleDocNav, Mapping[str, Any]], uri: str) -> DatasetOrError:
+    def __call__(self, doc_in: Union[SimpleDocNav, Mapping[str, Any]], uri: str,
+                 source_tree: Optional[LineageTree] = None) -> DatasetOrError:
         """Attempt to construct dataset from metadata document and a uri.
 
         :param doc: Dictionary or SimpleDocNav object
@@ -399,7 +426,7 @@ class Doc2Dataset:
                 )
             )
 
-        dataset, err = self._ds_resolve(doc, uri)
+        dataset, err = self._ds_resolve(doc, uri, source_tree=source_tree)
         if dataset is None:
             return None, cast(Union[str, Exception], err)
 
