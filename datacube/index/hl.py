@@ -179,8 +179,6 @@ def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
     uuid_ = doc.id
     if not uuid_:
         return None, "No id defined in dataset doc"
-    if not is_doc_eo3(doc.doc):
-        return None, "Not an EO3 dataset"
     try:
         product = matcher(doc.doc)
     except BadMatch as e:
