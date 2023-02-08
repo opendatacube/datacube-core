@@ -310,8 +310,8 @@ def dataset_resolver(index: AbstractIndex,
             "verify_lineage": verify_lineage,
         }
 
-    def resolve(doc: SimpleDocNav, uri: str) -> DatasetOrError:
-        return resolver(doc, uri, **extra_kwargs)
+    def resolve(doc: SimpleDocNav, uri: str, source_tree: Optional[LineageTree] = None) -> DatasetOrError:
+        return resolver(doc, uri, source_tree=source_tree, **extra_kwargs)
 
     return resolve
 
