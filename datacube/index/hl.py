@@ -383,7 +383,7 @@ class Doc2Dataset:
             if index.supports_external_lineage and fail_on_missing_lineage:
                 raise ValueError("fail_on_missing_lineage is not supported for this index driver.")
             if home_index and skip_lineage:
-                raise ValueError("Cannot provide an explicit source_tree or home_index when skip_lineage is set.")
+                raise ValueError("Cannot provide a default home_index when skip_lineage is set.")
 
         rules, err_msg = load_rules_from_types(index,
                                                product_names=products,
