@@ -23,7 +23,7 @@ from datacube.index.eo3 import is_doc_eo3
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
-from .lineage import LineageDirection, LineageTree, InconsistentLineageException
+from .lineage import LineageDirection, LineageTree, InconsistentLineageException  # noqa: F401
 
 __all__ = [
     "Field", "get_dataset_fields",

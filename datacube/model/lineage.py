@@ -58,8 +58,8 @@ class LineageTree:
         else:
             children = {
                 classifier: [
-                 cls(direction=direction, dataset_id=der, home=home)
-                 for der in ders
+                    cls(direction=direction, dataset_id=der, home=home)
+                    for der in ders
                 ]
                 for classifier, ders in sources.items()
             }
@@ -289,12 +289,11 @@ class LineageRelations:
         return
 
     def relations_diff(self,
-                  existing_relations: Optional["LineageRelations"] = None,
-                  allow_updates: bool = False
-                 ) -> Tuple[Mapping[Tuple[UUID, UUID], str],
-                            Mapping[Tuple[UUID, UUID], str],
-                            Mapping[UUID, str],
-                            Mapping[UUID, str]]:
+                       existing_relations: Optional["LineageRelations"] = None,
+                       allow_updates: bool = False) -> Tuple[Mapping[Tuple[UUID, UUID], str],
+                                                             Mapping[Tuple[UUID, UUID], str],
+                                                             Mapping[UUID, str],
+                                                             Mapping[UUID, str]]:
         """
         Compare to another LineageRelations object, returning records to be added to or updated in
         the other LinearRelations collection to consistently merge this collection into it.

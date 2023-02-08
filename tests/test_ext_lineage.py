@@ -49,44 +49,55 @@ def big_src_tree_ids():
 def big_src_lineage_tree(big_src_tree_ids):
     ids = big_src_tree_ids
     direction = LineageDirection.SOURCES
-    return LineageTree(dataset_id=ids["root"], direction=direction,
+    return LineageTree(
+        dataset_id=ids["root"], direction=direction,
         children={
             "ard": [
-                LineageTree(dataset_id=ids["ard1"], direction=direction,
+                LineageTree(
+                    dataset_id=ids["ard1"], direction=direction,
                     children={
                         "l1": [
-                            LineageTree(dataset_id=ids["l1_1"], direction=direction,
+                            LineageTree(
+                                dataset_id=ids["l1_1"], direction=direction,
                                 children={}
                             ),
-                            LineageTree(dataset_id=ids["l1_2"], direction=direction,
+                            LineageTree(
+                                dataset_id=ids["l1_2"], direction=direction,
                                 children={}
                             ),
-                            LineageTree(dataset_id=ids["l1_3"], direction=direction,
+                            LineageTree(
+                                dataset_id=ids["l1_3"], direction=direction,
                                 children={}
                             ),
                         ],
                         "atmos_corr": [
-                            LineageTree(dataset_id=ids["atmos"], direction=direction,
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
                                 children={}
                             )
                         ],
                     }
                 ),
-                LineageTree(dataset_id=ids["ard2"], direction=direction,
+                LineageTree(
+                    dataset_id=ids["ard2"], direction=direction,
                     children={
                         "l1": [
-                            LineageTree(dataset_id=ids["l1_4"], direction=direction,
+                            LineageTree(
+                                dataset_id=ids["l1_4"], direction=direction,
                                 children={}
                             ),
-                            LineageTree(dataset_id=ids["l1_5"], direction=direction,
+                            LineageTree(
+                                dataset_id=ids["l1_5"], direction=direction,
                                 children={}
                             ),
-                            LineageTree(dataset_id=ids["l1_6"], direction=direction,
+                            LineageTree(
+                                dataset_id=ids["l1_6"], direction=direction,
                                 children={}
                             ),
                         ],
                         "atmos_corr": [
-                            LineageTree(dataset_id=ids["atmos"], direction=direction,
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
                                 children={}
                             )
                         ],
@@ -118,11 +129,10 @@ def test_detect_cyclic_deps(big_src_lineage_tree, big_src_tree_ids):
     # Confirm trivial cyclic dependencies are detected.
     repeated_uuid = random_uuid()
     looped_tree = LineageTree(
-        dataset_id=repeated_uuid, direction=LineageDirection.SOURCES, children={
+        dataset_id=repeated_uuid, direction=LineageDirection.SOURCES,
+        children={
             "cyclic_self": [
-                LineageTree(
-                    dataset_id=repeated_uuid, direction=LineageDirection.SOURCES, children={}
-                )
+                LineageTree(dataset_id=repeated_uuid, direction=LineageDirection.SOURCES, children={})
             ]
         }
     )
@@ -132,7 +142,7 @@ def test_detect_cyclic_deps(big_src_lineage_tree, big_src_tree_ids):
     # Confirm more complex cyclic dependencies can be detected.
     rels = LineageRelations(tree=big_src_lineage_tree)
     breaking_tree = LineageTree(
-        dataset_id= big_src_tree_ids["l1_1"],
+        dataset_id=big_src_tree_ids["l1_1"],
         direction=LineageDirection.SOURCES,
         children={
             "cyclic_dep": [LineageTree(
