@@ -823,7 +823,7 @@ class LegacyLineageResource(AbstractLineageResource):
     Minimal implementation of AbstractLineageResource that raises "not implemented"
        for all methods.
     """
-    def __init__(self, index) -> None :
+    def __init__(self, index) -> None:
         self.index = self.index
         assert not self.index.supports_external_lineage
 

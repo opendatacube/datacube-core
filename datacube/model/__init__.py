@@ -25,6 +25,15 @@ from ._base import Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
 from .lineage import LineageDirection, LineageTree, InconsistentLineageException
 
+__all__ = [
+    "Field", "get_dataset_fields",
+    "Range", "ranges_overlap",
+    "LineageTree", "LineageTree", "InconsistentLineageException",
+    "Dataset", "Product", "MetadataType", "Measurement", "GridSpec",
+    "metadata_from_doc",
+    "ExtraDimensions", "IngestorConfig"
+]
+
 _LOG = logging.getLogger(__name__)
 
 DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec

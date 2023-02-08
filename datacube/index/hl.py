@@ -170,6 +170,7 @@ def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
                    source_tree=LineageTree.sources(uuid_, doc.sources, home=home_index)
     ), None
 
+
 def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
                            index: AbstractIndex,
                            fail_on_missing_lineage: bool,
@@ -271,6 +272,7 @@ def dataset_resolver(index: AbstractIndex,
             "fail_on_missing_lineage": fail_on_missing_lineage,
             "verify_lineage": verify_lineage,
         }
+
     def resolve(doc: SimpleDocNav, uri: str) -> DatasetOrError:
         return resolver(doc, uri, **extra_kwargs)
 

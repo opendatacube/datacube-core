@@ -3,10 +3,11 @@
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
-from uuid import UUID, uuid4 as random_uuid
+from uuid import uuid4 as random_uuid
 
 from datacube.model import LineageDirection, LineageTree, InconsistentLineageException
-from datacube.model.lineage import InconsistentLineageException, LineageRelations, LineageRelation
+from datacube.model.lineage import LineageRelations
+
 
 def test_ltree_clsmethods():
     root = random_uuid()
@@ -17,13 +18,13 @@ def test_ltree_clsmethods():
     assert minimal.children is None
     # Check optional args to from_eo3_doc are set correctly.
     optional_args = LineageTree.from_eo3_doc(dsid=root, sources={},
-                                          direction=LineageDirection.DERIVED,
-                                          home="notused")
+                                             direction=LineageDirection.DERIVED,
+                                             home="notused")
     assert optional_args == LineageTree(direction=LineageDirection.DERIVED,
                                         dataset_id=root,
                                         children={},
-                                        home=None   # Note home is not written to the root node
-                                        )
+                                        home=None)   # Note home is not written to the root node
+
 
 @pytest.fixture
 def big_src_tree_ids():

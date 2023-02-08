@@ -165,8 +165,11 @@ class DatasetLineage:
             "comment": "Represents a source-lineage relationship between two datasets"
         }
     )
-    derived_dataset_ref = Column(postgres.UUID(as_uuid=True), nullable=False, index=True,
-                         comment="The downstream derived dataset produced from the upstream source dataset.")
+    derived_dataset_ref = Column(
+        postgres.UUID(as_uuid=True),
+        nullable=False, index=True,
+        comment="The downstream derived dataset produced from the upstream source dataset."
+    )
     source_dataset_ref = Column(
         postgres.UUID(as_uuid=True), nullable=False, index=True,
         comment="An upstream source dataset that the downstream derived dataset was produced from."
@@ -187,8 +190,8 @@ class DatasetHome:
         }
     )
     dataset_ref = Column(postgres.UUID(as_uuid=True), primary_key=True,
-                comment="The dataset ID - no referential integrity enforced to dataset table.")
-    home = Column(Text, nullable=False, comment="""The 'home' index where this dataset can be found. 
+                         comment="The dataset ID - no referential integrity enforced to dataset table.")
+    home = Column(Text, nullable=False, comment="""The 'home' index where this dataset can be found.
 Not interpreted directly by ODC, provided as a convenience to database administrators.""")
 
 

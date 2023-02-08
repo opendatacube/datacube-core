@@ -7,9 +7,6 @@ from enum import Enum
 from uuid import UUID
 from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple
 
-from datacube.utils import cached_property
-
-
 
 class LineageDirection(Enum):
     """
@@ -52,20 +49,20 @@ class LineageTree:
     home: Optional[str] = None
 
     @classmethod
-    def from_eo3_doc(cls, dsid:UUID,
-              direction: LineageDirection = LineageDirection.SOURCES,
-              sources: Optional[Mapping[str, Sequence[UUID]]] = None,
-              home=None) -> "LineageTree":
+    def from_eo3_doc(cls, dsid: UUID,
+                     direction: LineageDirection = LineageDirection.SOURCES,
+                     sources: Optional[Mapping[str, Sequence[UUID]]] = None,
+                     home=None) -> "LineageTree":
         if sources is None:
-            children=None
+            children = None
         else:
-            children={
-                         classifier: [
-                             cls(direction=direction, dataset_id=der, home=home)
-                             for der in ders
-                         ]
-                         for classifier, ders in sources.items()
-                     }
+            children = {
+                classifier: [
+                 cls(direction=direction, dataset_id=der, home=home)
+                 for der in ders
+                ]
+                for classifier, ders in sources.items()
+            }
         return cls(
             direction=direction,
             dataset_id=dsid,
@@ -224,7 +221,7 @@ class LineageRelations:
         if got_grandchildren:
             if ids in self._trees_idx:
                 raise InconsistentLineageException(
-                    f"Self-reference or duplicate subtrees detected: risk of infinite recursion."
+                    "Self-reference or duplicate subtrees detected: risk of infinite recursion."
                 )
             else:
                 self._trees_idx[ids] = node
@@ -243,8 +240,8 @@ class LineageRelations:
             self._merge_new_node(ids, node)
 
     def merge_tree(self, tree: LineageTree,
-                                     parent_node: Optional[LineageTree] = None,
-                                     max_depth: int = 0) -> None:
+                   parent_node: Optional[LineageTree] = None,
+                   max_depth: int = 0) -> None:
         """
         Merge in a LineageTree, ensuring it is consistent with the collection so far.
 
@@ -294,12 +291,10 @@ class LineageRelations:
     def relations_diff(self,
                   existing_relations: Optional["LineageRelations"] = None,
                   allow_updates: bool = False
-                 ) -> Tuple[
-                      Mapping[Tuple[UUID, UUID], str],
-                      Mapping[Tuple[UUID, UUID], str],
-                      Mapping[UUID, str],
-                      Mapping[UUID, str]
-                      ]:
+                 ) -> Tuple[Mapping[Tuple[UUID, UUID], str],
+                            Mapping[Tuple[UUID, UUID], str],
+                            Mapping[UUID, str],
+                            Mapping[UUID, str]]:
         """
         Compare to another LineageRelations object, returning records to be added to or updated in
         the other LinearRelations collection to consistently merge this collection into it.
