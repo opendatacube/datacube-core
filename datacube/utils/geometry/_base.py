@@ -538,8 +538,8 @@ class Geometry:
         return self.geom._repr_svg_()
 
     @property
-    def type(self) -> str:
-        return self.geom.type
+    def geom_type(self) -> str:
+        return self.geom.geom_type
 
     @property
     def is_empty(self) -> bool:
@@ -623,20 +623,20 @@ class Geometry:
         """
 
         def segmentize_shapely(geom: base.BaseGeometry) -> base.BaseGeometry:
-            if geom.type in ['Point', 'MultiPoint']:
-                return type(geom)(geom)  # clone without changes
+            if geom.geom_type in ['Point', 'MultiPoint']:
+                return _clone_shapely_geom(geom)  # clone without changes
 
-            if geom.type in ['GeometryCollection', 'MultiPolygon', 'MultiLineString']:
+            if geom.geom_type in ['GeometryCollection', 'MultiPolygon', 'MultiLineString']:
                 return type(geom)([segmentize_shapely(g) for g in geom.geoms])
 
-            if geom.type in ['LineString', 'LinearRing']:
+            if geom.geom_type in ['LineString', 'LinearRing']:
                 return type(geom)(densify(list(geom.coords), resolution))
 
-            if geom.type == 'Polygon':
+            if geom.geom_type == 'Polygon':
                 return geometry.Polygon(densify(list(geom.exterior.coords), resolution),
                                         [densify(list(i.coords), resolution) for i in geom.interiors])
 
-            raise ValueError('unknown geometry type {}'.format(geom.type))  # pragma: no cover
+            raise ValueError('unknown geometry type {}'.format(geom.geom_type))  # pragma: no cover
 
         return Geometry(segmentize_shapely(self.geom), self.crs)
 
@@ -801,7 +801,7 @@ def clip_lon180(geom: Geometry, tol=1e-6) -> Geometry:
         clip = _pick_clip(xx)
         return _clip_180(xx, clip), yy
 
-    if geom.type.startswith('Multi'):
+    if geom.geom_type.startswith('Multi'):
         return multigeom(g.transform(transformer) for g in geom)
 
     return geom.transform(transformer)
@@ -942,7 +942,7 @@ def multigeom(geoms: Iterable[Geometry]) -> Geometry:
     """ Construct Multi{Polygon|LineString|Point}
     """
     geoms = [g for g in geoms]  # force into list
-    src_types = {g.type for g in geoms}
+    src_types = {g.geom_type for g in geoms}
     if len(src_types) > 1:
         raise ValueError("All Geometries must be of the same type")
 

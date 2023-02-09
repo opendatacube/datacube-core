@@ -147,9 +147,9 @@ def spindexes(engine: Connectable) -> Mapping[CRS, Type[SpatialIndex]]:
 
 def promote_to_multipolygon(geom: Geom) -> Geom:
     # Assumes input is a polygon or multipolygon - does not work on lines or points
-    if geom.type == "Multipolygon":
+    if geom.geom_type == "Multipolygon":
         return geom
-    elif geom.type == "Polygon":
+    elif geom.geom_type == "Polygon":
         # Promote to multipolygon (is there a more elegant way to do this??
         polycoords = [list(geom.geom.exterior.coords)]
         for interior in geom.geom.interiors:
@@ -157,7 +157,7 @@ def promote_to_multipolygon(geom: Geom) -> Geom:
         geom = multipolygon([polycoords], crs=geom.crs)
         return geom
     else:
-        raise ValueError(f"Cannot promote geometry type {geom.type} to multi-polygon")
+        raise ValueError(f"Cannot promote geometry type {geom.geom_type} to multi-polygon")
 
 
 def geom_alchemy(geom: Geom) -> str:
