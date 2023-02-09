@@ -365,7 +365,8 @@ class LineageRelations:
     def extract_tree(self,
                      root: UUID,
                      direction: LineageDirection = LineageDirection.SOURCES,
-                     so_far: Optional[Set[UUID]] = None
+                     parents: Optional[Set[UUID]] = None,
+                     so_far: Optional[Set[UUID]] = None,
                      ) -> LineageTree:
         """
         Extract a LineageTree from this LineageRelations collection.
@@ -374,23 +375,31 @@ class LineageRelations:
 
         :param root: The dataset id at the root of the extracted LineageTree
         :param direction: The direction of the extracted tree
-        :param so_far: Used to detect cyclic dependencies in recursive mode - should be None on initial call.
+        :param parents: Used to detect cyclic dependencies in recursive mode - should be None on initial call.
+        :param so_far: Used to detect duplication from diamond dependencies in recursive mode - should be None on initial call.
         :return: the extracted LineageTree.
         """
         # Trees are extracted from the root down, so the leaf-up cycle-detection of tree.child_datasets
         # is insufficient here
         if so_far is None:
             so_far = set()
-        if root in so_far:
+        if parents is None:
+            parents = set()
+        if root in parents:
             raise InconsistentLineageException(f"LineageTrees must be acyclic: {root}")
+        parents.add(root)
+        if root in so_far:
+            # Shortcut duplicates for handling diamond-dependencies
+            return LineageTree(dataset_id=root, direction=direction, home=self._homes.get(root))
         so_far.add(root)
+
         children = {}
         if direction == LineageDirection.SOURCES:
             subtrees = self.by_source.get(root, {})
         else:
             subtrees = self.by_derived.get(root, {})
         for dsid, classifier in subtrees.items():
-            subtree = self.extract_tree(dsid, direction, set(so_far))
+            subtree = self.extract_tree(dsid, direction, set(parents), so_far)
             if classifier in children:
                 children[classifier].append(subtree)
             else:

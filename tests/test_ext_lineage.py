@@ -113,7 +113,8 @@ def big_src_tree_ids(shared_tree_ids):
         "l1_5": random_uuid(),
         "l1_6": random_uuid(),
 
-        "atmos": ids["atmos"]
+        "atmos": ids["atmos"],
+        "atmos_parent": random_uuid()
     }
 
 
@@ -145,7 +146,7 @@ def big_src_lineage_tree(big_src_tree_ids):
                         "atmos_corr": [
                             LineageTree(
                                 dataset_id=ids["atmos"], direction=direction,
-                                children={}
+                                children=None
                             )
                         ],
                     }
@@ -170,7 +171,161 @@ def big_src_lineage_tree(big_src_tree_ids):
                         "atmos_corr": [
                             LineageTree(
                                 dataset_id=ids["atmos"], direction=direction,
+                                children={
+                                    "preatmos": [
+                                        LineageTree(
+                                            dataset_id=ids["atmos_parent"], direction=direction,
+                                            children={}
+                                        )
+                                    ]
+                                }
+                            )
+                        ],
+                    }
+                ),
+            ]
+        }
+    )
+
+
+@pytest.fixture
+def classifier_mismatch(big_src_tree_ids):
+    ids = big_src_tree_ids
+    direction = LineageDirection.SOURCES
+    return LineageTree(
+        dataset_id=ids["root"], direction=direction,
+        children={
+            "ard": [
+                LineageTree(
+                    dataset_id=ids["ard1"], direction=direction,
+                    children={
+                        "l1": [
+                            LineageTree(
+                                dataset_id=ids["l1_1"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_2"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_3"], direction=direction,
+                                children={}
+                            ),
+                        ],
+                        "atmos_corr": [
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
                                 children=None
+                            )
+                        ],
+                    }
+                ),
+                LineageTree(
+                    dataset_id=ids["ard2"], direction=direction,
+                    children={
+                        "lvl1": [
+                            LineageTree(
+                                dataset_id=ids["l1_4"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_5"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_6"], direction=direction,
+                                children={}
+                            ),
+                        ],
+                        "atmos_corr": [
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
+                                children={
+                                    "preatmos": [
+                                        LineageTree(
+                                            dataset_id=ids["atmos_parent"], direction=direction,
+                                            children={}
+                                        )
+                                    ]
+                                }
+                            )
+                        ],
+                    }
+                ),
+            ]
+        }
+    )
+
+
+@pytest.fixture
+def src_lineage_tree_with_bad_diamond(big_src_tree_ids):
+    ids = big_src_tree_ids
+    direction = LineageDirection.SOURCES
+    return LineageTree(
+        dataset_id=ids["root"], direction=direction,
+        children={
+            "ard": [
+                LineageTree(
+                    dataset_id=ids["ard1"], direction=direction,
+                    children={
+                        "l1": [
+                            LineageTree(
+                                dataset_id=ids["l1_1"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_2"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_3"], direction=direction,
+                                children={}
+                            ),
+                        ],
+                        "atmos_corr": [
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
+                                children={
+                                    "preatmos": [
+                                        LineageTree(
+                                            dataset_id=ids["atmos_parent"], direction=direction,
+                                            children={}
+                                        )
+                                    ]
+                                }
+                            )
+                        ],
+                    }
+                ),
+                LineageTree(
+                    dataset_id=ids["ard2"], direction=direction,
+                    children={
+                        "l1": [
+                            LineageTree(
+                                dataset_id=ids["l1_4"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_5"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_6"], direction=direction,
+                                children={}
+                            ),
+                        ],
+                        "atmos_corr": [
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
+                                children={
+                                    "preatmos": [
+                                        LineageTree(
+                                            dataset_id=ids["atmos_parent"], direction=direction,
+                                            children={}
+                                        )
+                                    ]
+                                }
                             )
                         ],
                     }
@@ -243,3 +398,26 @@ def test_good_consistency_check(big_src_lineage_tree, src_lineage_tree, big_src_
     diff = rels1.relations_diff(rels2)
     assert diff[1] == {} and diff[3] == {}
     assert (src_lineage_tree.dataset_id, big_src_tree_ids["ard1"]) in diff[0]
+    diff = rels1.relations_diff(rels2, allow_updates=True)
+    assert diff[1] == {} and diff[3] == {}
+    assert (src_lineage_tree.dataset_id, big_src_tree_ids["ard1"]) in diff[0]
+
+
+def test_bad_diamond(src_lineage_tree_with_bad_diamond, big_src_tree_ids):
+    with pytest.raises(InconsistentLineageException, match="Duplicate nodes in LineageTree"):
+        rels = LineageRelations(tree=src_lineage_tree_with_bad_diamond)
+
+
+def test_home_mismatch(big_src_lineage_tree):
+    tree = big_src_lineage_tree
+    tree.children["ard"][0].children["atmos_corr"][0].home = "bungalow"
+    tree.children["ard"][1].children["atmos_corr"][0].home = "apartment"
+    with pytest.raises(InconsistentLineageException, match="Tree contains inconsistent homes"):
+        rels = LineageRelations(tree=tree)
+
+
+def test_classifier_mismatch(big_src_lineage_tree, classifier_mismatch):
+    rels1 = LineageRelations(tree=big_src_lineage_tree)
+    rels2 = LineageRelations(tree=classifier_mismatch)
+    with pytest.raises(InconsistentLineageException, match="Dataset .* depends on .* with inconsistent classifiers."):
+        rels1.merge(rels2)
