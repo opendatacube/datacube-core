@@ -96,6 +96,7 @@ def src_lineage_tree(src_tree_ids):
         }
     )
 
+
 @pytest.fixture
 def big_src_tree_ids(shared_tree_ids):
     ids = shared_tree_ids
