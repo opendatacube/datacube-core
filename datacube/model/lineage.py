@@ -375,8 +375,10 @@ class LineageRelations:
 
         :param root: The dataset id at the root of the extracted LineageTree
         :param direction: The direction of the extracted tree
-        :param parents: Used to detect cyclic dependencies in recursive mode - should be None on initial call.
-        :param so_far: Used to detect duplication from diamond dependencies in recursive mode - should be None on initial call.
+        :param parents: Used to detect cyclic dependencies in recursive mode
+                        - should be None on initial call.
+        :param so_far: Used to detect duplication from diamond dependencies in recursive mode
+                       - should be None on initial call.
         :return: the extracted LineageTree.
         """
         # Trees are extracted from the root down, so the leaf-up cycle-detection of tree.child_datasets
