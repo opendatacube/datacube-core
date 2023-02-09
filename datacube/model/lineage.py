@@ -169,8 +169,6 @@ class LineageRelations:
         # Tuple[UUID, UUID]'s are always (derived, source)
         # Mapping  (derived, source): classifier - Allow search by source, derived pair.
         self._relations_idx: MutableMapping[Tuple[UUID, UUID], str] = {}
-        # Mapping  (derived, source): list of LineageTree objects merged so far - prevent infinite loops in merging
-        self._trees_idx: MutableMapping[Tuple[UUID, UUID], Sequence[LineageTree]] = {}
         # Sequence of the distinct LineageRelation objects this object represents.
         self.relations: Sequence[LineageRelation] = []
         # Mapping source to mapping derived to classifier.  Allow search by source
@@ -238,31 +236,6 @@ class LineageRelations:
                 self.extract_tree(rel.source_id, direction=LineageDirection.DERIVED)
             self.dataset_ids.update(new_ids)
 
-    def _merge_new_node(self, ids: Tuple[UUID, UUID], node: LineageTree):
-        """
-        Check for self-reference/infinite recursion.
-
-        If a dataset is repeated in a LineageTree e.g. because of "diamond" relation:
-
-            A -> B     B -> D
-            A -> C     C -> D
-
-        then only one can explicitly have grandchildren - the rest must be "placeholder" LineageTrees
-        with children=None.
-
-        :param ids:
-        :param node:
-        :return:
-        """
-        got_grandchildren = bool(node.children)
-        if got_grandchildren:
-            if ids in self._trees_idx:
-                raise InconsistentLineageException(
-                    "Self-reference or duplicate subtrees detected: risk of infinite recursion."
-                )
-            else:
-                self._trees_idx[ids] = node
-
     def merge(self, pool: "LineageRelations") -> None:
         """
         Merge in another LineageRelations collection, ensuring it is consistent with this one.
@@ -273,11 +246,9 @@ class LineageRelations:
             self.merge_new_home(id_, home)
         for ids, classifier in pool._relations_idx.items():
             self._merge_new_relation(ids, classifier)
-        for ids, node in pool._trees_idx.items():
-            self._merge_new_node(ids, node)
 
     def merge_tree(self, tree: LineageTree,
-                   parent_node: Optional[LineageTree] = None,
+                   nodes: Optional[Mapping[UUID, LineageTree]] = None,
                    max_depth: int = 0) -> None:
         """
         Merge in a LineageTree, ensuring it is consistent with the collection so far.
@@ -294,13 +265,18 @@ class LineageRelations:
         # Determine recursion behaviour
         recurse = True
         next_max_depth = max_depth - 1
-        if not parent_node:
+        if nodes is None:
+            nodes = {}
             next_max_depth = max_depth
         elif max_depth == 0:
             next_max_depth = 0
         elif max_depth == 1:
             recurse = False
-        if not tree.children:
+        if tree.children:
+            if tree.dataset_id in nodes:
+                raise InconsistentLineageException("Duplicate nodes in LineageTree")
+            nodes[tree.dataset_id] = tree
+        else:
             # tree.children is {} or None (i.e. leaf node of original input tree).
             # Try to extract a reverse-direction tree to check for cyclic dependencies
             self.extract_tree(tree.dataset_id, direction=tree.direction.opposite())
@@ -316,11 +292,10 @@ class LineageRelations:
                 else:
                     ids = (child.dataset_id, tree.dataset_id)
                 self._merge_new_relation(ids, classifier)
-                self._merge_new_node(ids, child)
                 if recurse:
                     self.merge_tree(
                         child,
-                        parent_node=tree,
+                        nodes=nodes,
                         max_depth=next_max_depth
                     )
         return
@@ -350,11 +325,11 @@ class LineageRelations:
         """
         if not existing_relations:
             return (
-                self.relations, {},
+                self.relations_idx, {},
                 self._homes, {}
             )
-        relations_to_add = []
-        relations_to_update = []
+        relations_to_add = {}
+        relations_to_update = {}
         homes_to_add = {}
         homes_to_update = {}
 
@@ -363,21 +338,21 @@ class LineageRelations:
             merged = LineageRelations(clone=self)
             merged.merge(existing_relations)
             # Determine homes and relations to add
-            for id_, home in self._homes:
+            for id_, home in self._homes.items():
                 if id_ not in existing_relations._homes:
                     homes_to_add[id_] = home
-            for ids, classifier in self._relations_idx:
+            for ids, classifier in self._relations_idx.items():
                 if ids not in existing_relations._relations_idx:
                     relations_to_add[ids] = classifier
         else:
             # Determine homes to add and update
-            for id_, home in self._homes:
+            for id_, home in self._homes.items():
                 if id_ not in existing_relations._homes:
                     homes_to_add[id_] = home
                 elif home != existing_relations._homes[id_]:
                     homes_to_update[id_] = home
             # Determine relations to add and update
-            for ids, classifier in self._relations_idx:
+            for ids, classifier in self._relations_idx.items():
                 if ids not in existing_relations._relations_idx:
                     relations_to_add[ids] = classifier
                 elif classifier != existing_relations._relations_idx[ids]:

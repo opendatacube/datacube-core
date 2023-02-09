@@ -9,6 +9,12 @@ from datacube.model import LineageDirection, LineageTree, InconsistentLineageExc
 from datacube.model.lineage import LineageRelations
 
 
+def test_directions():
+    assert LineageDirection.SOURCES != LineageDirection.DERIVED
+    assert LineageDirection.DERIVED == LineageDirection.SOURCES.opposite()
+    assert LineageDirection.SOURCES == LineageDirection.DERIVED.opposite()
+
+
 def test_ltree_clsmethods():
     root = random_uuid()
     # Minimal tree - root node only
@@ -27,21 +33,86 @@ def test_ltree_clsmethods():
 
 
 @pytest.fixture
-def big_src_tree_ids():
+def shared_tree_ids():
     return {
-        "root": random_uuid(),
         "ard1": random_uuid(),
-        "ard2": random_uuid(),
 
         "l1_1": random_uuid(),
         "l1_2": random_uuid(),
         "l1_3": random_uuid(),
 
+        "atmos": random_uuid(),
+    }
+
+
+@pytest.fixture
+def src_tree_ids(shared_tree_ids):
+    return {
+        "root": random_uuid(),
+        "ard1": shared_tree_ids["ard1"],
+
+        "l1_1": shared_tree_ids["l1_1"],
+        "l1_2": shared_tree_ids["l1_2"],
+        "l1_3": shared_tree_ids["l1_3"],
+
+        "atmos": shared_tree_ids["atmos"],
+    }
+
+
+@pytest.fixture
+def src_lineage_tree(src_tree_ids):
+    ids = src_tree_ids
+    direction = LineageDirection.SOURCES
+    return LineageTree(
+        dataset_id=ids["root"], direction=direction,
+        children={
+            "ard": [
+                LineageTree(
+                    dataset_id=ids["ard1"], direction=direction,
+                    children={
+                        "l1": [
+                            LineageTree(
+                                dataset_id=ids["l1_1"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_2"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_3"], direction=direction,
+                                children={}
+                            ),
+                        ],
+                        "atmos_corr": [
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
+                                children={}
+                            )
+                        ],
+                    }
+                ),
+            ]
+        }
+    )
+
+@pytest.fixture
+def big_src_tree_ids(shared_tree_ids):
+    ids = shared_tree_ids
+    return {
+        "root": random_uuid(),
+        "ard1": ids["ard1"],
+        "ard2": random_uuid(),
+
+        "l1_1": ids["l1_1"],
+        "l1_2": ids["l1_2"],
+        "l1_3": ids["l1_3"],
+
         "l1_4": random_uuid(),
         "l1_5": random_uuid(),
         "l1_6": random_uuid(),
 
-        "atmos": random_uuid(),
+        "atmos": ids["atmos"]
     }
 
 
@@ -98,7 +169,7 @@ def big_src_lineage_tree(big_src_tree_ids):
                         "atmos_corr": [
                             LineageTree(
                                 dataset_id=ids["atmos"], direction=direction,
-                                children={}
+                                children=None
                             )
                         ],
                     }
@@ -154,3 +225,20 @@ def test_detect_cyclic_deps(big_src_lineage_tree, big_src_tree_ids):
     with pytest.raises(InconsistentLineageException) as e:
         rels.merge_tree(breaking_tree)
     assert "LineageTrees must be acyclic" in str(e.value)
+
+
+def test_subtree(big_src_lineage_tree, big_src_tree_ids):
+    sub = big_src_lineage_tree.find_subtree(big_src_tree_ids["root"])
+    assert sub == big_src_lineage_tree
+
+    sub = big_src_lineage_tree.find_subtree(big_src_tree_ids["atmos"])
+    assert sub.dataset_id == big_src_tree_ids["atmos"]
+    assert sub.children is not None
+
+
+def test_good_consistency_check(big_src_lineage_tree, src_lineage_tree, big_src_tree_ids):
+    rels1 = LineageRelations(tree=src_lineage_tree)
+    rels2 = LineageRelations(tree=big_src_lineage_tree)
+    diff = rels1.relations_diff(rels2)
+    assert diff[1] == {} and diff[3] == {}
+    assert (src_lineage_tree.dataset_id, big_src_tree_ids["ard1"]) in diff[0]
