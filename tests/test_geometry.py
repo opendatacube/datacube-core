@@ -307,14 +307,14 @@ def test_multigeom():
     b1 = geometry.box(*p1, *p2, epsg4326)
     b2 = geometry.box(*p3, *p4, epsg4326)
     bb = multigeom([b1, b2])
-    assert bb.type == 'MultiPolygon'
+    assert bb.geom_type == 'MultiPolygon'
     assert bb.crs is b1.crs
     assert len(list(bb)) == 2
 
     g1 = geometry.line([p1, p2], None)
     g2 = geometry.line([p3, p4], None)
     gg = multigeom(iter([g1, g2, g1]))
-    assert gg.type == 'MultiLineString'
+    assert gg.geom_type == 'MultiLineString'
     assert gg.crs is g1.crs
     assert len(list(gg)) == 3
 
@@ -322,7 +322,7 @@ def test_multigeom():
     g2 = geometry.point(*p2, epsg3857)
     g3 = geometry.point(*p3, epsg3857)
     gg = multigeom(iter([g1, g2, g3]))
-    assert gg.type == 'MultiPoint'
+    assert gg.geom_type == 'MultiPoint'
     assert gg.crs is g1.crs
     assert len(list(gg)) == 3
     assert list(gg)[0] == g1
@@ -390,8 +390,8 @@ def test_to_crs():
     mpoly = (geometry.box(0, 0, 1, 3, 'EPSG:4326') |
              geometry.box(2, 4, 3, 6, 'EPSG:4326'))
 
-    assert mpoly.type == 'MultiPolygon'
-    assert mpoly.to_crs(epsg3857).type == 'MultiPolygon'
+    assert mpoly.geom_type == 'MultiPolygon'
+    assert mpoly.to_crs(epsg3857).geom_type == 'MultiPolygon'
 
     poly = geometry.polygon([(0, 0), (0, 5), (10, 5)], None)
     assert poly.crs is None
@@ -455,19 +455,19 @@ def test_unary_union():
     assert union0 == box1
 
     union1 = geometry.unary_union([box1, box4])
-    assert union1.type == 'MultiPolygon'
+    assert union1.geom_type == 'MultiPolygon'
     assert union1.area == 2.0 * box1.area
 
     union2 = geometry.unary_union([box1, box2])
-    assert union2.type == 'Polygon'
+    assert union2.geom_type == 'Polygon'
     assert union2.area == 1.5 * box1.area
 
     union3 = geometry.unary_union([box1, box2, box3, box4])
-    assert union3.type == 'Polygon'
+    assert union3.geom_type == 'Polygon'
     assert union3.area == 2.5 * box1.area
 
     union4 = geometry.unary_union([union1, box2, box3])
-    assert union4.type == 'Polygon'
+    assert union4.geom_type == 'Polygon'
     assert union4.area == 2.5 * box1.area
 
     assert geometry.unary_union([]) is None
@@ -502,7 +502,7 @@ def test_unary_intersection():
 
     inter5 = geometry.unary_intersection([box1, box2, box3, box4, box5])
     assert bool(inter5)
-    assert inter5.type == 'LineString'
+    assert inter5.geom_type == 'LineString'
     assert inter5.length == 20.0
 
     inter6 = geometry.unary_intersection([box1, box2, box3, box4, box5, box6])
@@ -788,7 +788,7 @@ def test_chop():
 
     chopped = chop_along_antimeridian(poly)
     assert chopped.crs is poly.crs
-    assert chopped.type == 'MultiPolygon'
+    assert chopped.geom_type == 'MultiPolygon'
     assert len([g for g in chopped]) == 2
 
     poly = geometry.box(0, 0, 10, 20, 'EPSG:4326')._to_crs(epsg3857)
@@ -830,10 +830,10 @@ def test_wrap_dateline():
                              (4465089.861944263, -5313778.16975072),
                              (3658653.1976781483, -4995675.379595791)], crs=albers_crs)
     wrapped = wrap.to_crs(geog_crs)
-    assert wrapped.type == 'Polygon'
+    assert wrapped.geom_type == 'Polygon'
     assert wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=geog_crs))
     wrapped = wrap.to_crs(geog_crs, wrapdateline=True)
-    assert wrapped.type == 'MultiPolygon'
+    assert wrapped.geom_type == 'MultiPolygon'
     assert not wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=geog_crs))
 
 
@@ -867,9 +867,9 @@ def test_wrap_dateline_sinusoidal(pts):
 
     wrap = geometry.polygon(pts, crs=sinus_crs)
     wrapped = wrap.to_crs(epsg4326)
-    assert wrapped.type == 'Polygon'
+    assert wrapped.geom_type == 'Polygon'
     wrapped = wrap.to_crs(epsg4326, wrapdateline=True)
-    assert wrapped.type == 'MultiPolygon'
+    assert wrapped.geom_type == 'MultiPolygon'
     assert not wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=epsg4326))
 
 
@@ -878,10 +878,10 @@ def test_wrap_dateline_utm():
                         849000, -1642500, 'EPSG:32660')
 
     wrapped = poly.to_crs(epsg4326)
-    assert wrapped.type == 'Polygon'
+    assert wrapped.geom_type == 'Polygon'
     assert wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=epsg4326))
     wrapped = poly.to_crs(epsg4326, wrapdateline=True)
-    assert wrapped.type == 'MultiPolygon'
+    assert wrapped.geom_type == 'MultiPolygon'
     assert not wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=epsg4326))
 
 
