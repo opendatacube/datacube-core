@@ -8,6 +8,8 @@ What's New
 v1.8.next
 =========
 
+- Rename Geometry `type` attribute to `geom_type`, to align with Shapely 2.0 (:pull:`1402`)
+
 
 v1.8.11 (6 February 2023)
 =========================
