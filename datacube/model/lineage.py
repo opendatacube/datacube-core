@@ -293,10 +293,10 @@ class LineageRelations:
                 self._merge_new_relation(ids, classifier)
                 if recurse:
                     self.merge_tree(
-                    child,
-                    nodes=nodes,
-                    max_depth=next_max_depth
-                )
+                        child,
+                        nodes=nodes,
+                        max_depth=next_max_depth
+                    )
         return
 
     def relations_diff(self,
