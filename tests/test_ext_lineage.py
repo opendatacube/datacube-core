@@ -87,7 +87,7 @@ def src_lineage_tree(src_tree_ids):
                         "atmos_corr": [
                             LineageTree(
                                 dataset_id=ids["atmos"], direction=direction,
-                                children={}
+                                children=None
                             )
                         ],
                     }
@@ -383,13 +383,19 @@ def test_detect_cyclic_deps(big_src_lineage_tree, big_src_tree_ids):
     assert "LineageTrees must be acyclic" in str(e.value)
 
 
-def test_subtree(big_src_lineage_tree, big_src_tree_ids):
+def test_subtree(big_src_lineage_tree, big_src_tree_ids, src_lineage_tree, src_tree_ids):
     sub = big_src_lineage_tree.find_subtree(big_src_tree_ids["root"])
     assert sub == big_src_lineage_tree
 
+    # Test multiple nodes, one with children
     sub = big_src_lineage_tree.find_subtree(big_src_tree_ids["atmos"])
     assert sub.dataset_id == big_src_tree_ids["atmos"]
     assert sub.children is not None
+
+    # Test no nodes with children
+    sub = src_lineage_tree.find_subtree((src_tree_ids["atmos"]))
+    assert sub.dataset_id == src_tree_ids["atmos"]
+    assert sub.children is None
 
 
 def test_good_consistency_check(big_src_lineage_tree, src_lineage_tree, big_src_tree_ids):
@@ -399,6 +405,9 @@ def test_good_consistency_check(big_src_lineage_tree, src_lineage_tree, big_src_
     assert diff[1] == {} and diff[3] == {}
     assert (src_lineage_tree.dataset_id, big_src_tree_ids["ard1"]) in diff[0]
     diff = rels1.relations_diff(rels2, allow_updates=True)
+    assert diff[1] == {} and diff[3] == {}
+    assert (src_lineage_tree.dataset_id, big_src_tree_ids["ard1"]) in diff[0]
+    diff = rels1.relations_diff()
     assert diff[1] == {} and diff[3] == {}
     assert (src_lineage_tree.dataset_id, big_src_tree_ids["ard1"]) in diff[0]
 
@@ -421,3 +430,30 @@ def test_classifier_mismatch(big_src_lineage_tree, classifier_mismatch):
     rels2 = LineageRelations(tree=classifier_mismatch)
     with pytest.raises(InconsistentLineageException, match="Dataset .* depends on .* with inconsistent classifiers."):
         rels1.merge(rels2)
+
+
+def test_merge_tree_limited_depth(big_src_lineage_tree, big_src_tree_ids):
+    ids = big_src_tree_ids
+    rels = LineageRelations(tree=big_src_lineage_tree, max_depth=1)
+    assert ids["root"] in rels.dataset_ids
+    assert ids["ard1"] in rels.dataset_ids
+    assert ids["l1_1"] not in rels.dataset_ids
+    assert ids["atmos"] not in rels.dataset_ids
+    assert ids["atmos_parent"] not in rels.dataset_ids
+
+    rels = LineageRelations(tree=big_src_lineage_tree, max_depth=2)
+    assert ids["root"] in rels.dataset_ids
+    assert ids["ard1"] in rels.dataset_ids
+    assert ids["l1_1"] in rels.dataset_ids
+    assert ids["atmos"] in rels.dataset_ids
+    assert ids["atmos_parent"] not in rels.dataset_ids
+
+    rels = LineageRelations(tree=big_src_lineage_tree, max_depth=3)
+    assert ids["root"] in rels.dataset_ids
+    assert ids["ard1"] in rels.dataset_ids
+    assert ids["l1_1"] in rels.dataset_ids
+    assert ids["atmos"] in rels.dataset_ids
+    assert ids["atmos_parent"] in rels.dataset_ids
+
+    rels = LineageRelations(tree=big_src_lineage_tree, max_depth=7)
+    assert ids["atmos_parent"] in rels.dataset_ids

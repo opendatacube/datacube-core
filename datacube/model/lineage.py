@@ -267,8 +267,7 @@ class LineageRelations:
         next_max_depth = max_depth - 1
         if nodes is None:
             nodes = {}
-            next_max_depth = max_depth
-        elif max_depth == 0:
+        if max_depth == 0:
             next_max_depth = 0
         elif max_depth == 1:
             recurse = False
@@ -294,10 +293,10 @@ class LineageRelations:
                 self._merge_new_relation(ids, classifier)
                 if recurse:
                     self.merge_tree(
-                        child,
-                        nodes=nodes,
-                        max_depth=next_max_depth
-                    )
+                    child,
+                    nodes=nodes,
+                    max_depth=next_max_depth
+                )
         return
 
     def relations_diff(self,
@@ -325,7 +324,7 @@ class LineageRelations:
         """
         if not existing_relations:
             return (
-                self.relations_idx, {},
+                self._relations_idx, {},
                 self._homes, {}
             )
         relations_to_add = {}

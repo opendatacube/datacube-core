@@ -793,7 +793,7 @@ class AbstractLineageResource(ABC):
         """
 
     @abstractmethod
-    def add(self, tree: LineageTree, max_depth: int = 0, replace: bool = False) -> None:
+    def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
         """
         Add or update a LineageTree into the Index.
 
@@ -804,7 +804,8 @@ class AbstractLineageResource(ABC):
 
         :param tree: The LineageTree to add to the index
         :param max_depth: Maximum recursion depth. Default/Zero = unlimited depth
-        :param replace: If True, update database to match tree exactly.
+        :param allow_updates: If False and the tree would require index updates to fully
+                              add, then raise an InconsistentLineageException.
         """
 
     @abstractmethod
@@ -812,9 +813,32 @@ class AbstractLineageResource(ABC):
         """
         Remove lineage information from the Index.
 
+        Removes lineage relation data only. Home values not affected.
+
         :param id_: The Dataset ID to start removing lineage from.
         :param direction: The direction in which to remove lineage (from id_)
         :param max_depth: The maximum depth to which to remove lineage (0/default = no limit)
+        """
+
+    @abstractmethod
+    def set_home(self, home: str, *args: DSID) -> int:
+        """
+        Set the home for one or more dataset ids.
+
+        :param home: The home string
+        :param args: One or more dataset ids
+        :returns: The number of records affected.  Normally len(args) or zero.
+        """
+
+    @abstractmethod
+    def clear_home(self, *args: DSID, home: Optional[str] = None) -> int:
+        """
+        Clear the home for one or more dataset ids, or all dataset ids that currently have
+        a particular home value.
+
+        :param args: One or more dataset ids
+        :param home: The home string.  Supply home or args - not both.
+        :returns: The number of home records deleted.
         """
 
 
