@@ -73,6 +73,88 @@ def src_lineage_tree(src_tree_ids):
                         "l1": [
                             LineageTree(
                                 dataset_id=ids["l1_1"], direction=direction,
+                                home="level1db",
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_2"], direction=direction,
+                                home="level1db",
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_3"], direction=direction,
+                                home="level1db",
+                                children={}
+                            ),
+                        ],
+                        "atmos_corr": [
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
+                                home="level1db",
+                                children=None
+                            )
+                        ],
+                    }
+                ),
+            ]
+        }
+    )
+
+
+@pytest.fixture
+def src_lineage_tree_diffhome(src_tree_ids):
+    ids = src_tree_ids
+    direction = LineageDirection.SOURCES
+    return LineageTree(
+        dataset_id=ids["root"], direction=direction,
+        children={
+            "ard": [
+                LineageTree(
+                    dataset_id=ids["ard1"], direction=direction,
+                    children={
+                        "l1": [
+                            LineageTree(
+                                dataset_id=ids["l1_1"], direction=direction,
+                                home="elsewhere",
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_2"], direction=direction,
+                                home="elsewhere",
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_3"], direction=direction,
+                                children={}
+                            ),
+                        ],
+                        "atmos_corr": [
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
+                                children=None
+                            )
+                        ],
+                    }
+                ),
+            ]
+        }
+    )
+
+
+@pytest.fixture
+def mixed_dir_lineage_tree(src_tree_ids):
+    ids = src_tree_ids
+    direction = LineageDirection.SOURCES
+    return LineageTree(
+        dataset_id=ids["root"], direction=direction,
+        children={
+            "ard": [
+                LineageTree(
+                    dataset_id=ids["ard1"], direction=LineageDirection.DERIVED,
+                    children={
+                        "l1": [
+                            LineageTree(
+                                dataset_id=ids["l1_1"], direction=direction,
                                 children={}
                             ),
                             LineageTree(
@@ -341,15 +423,22 @@ def test_child_datasets(big_src_lineage_tree, big_src_tree_ids):
         assert dsid == big_src_lineage_tree.dataset_id or dsid in cds
 
 
-def test_lin_rels_lin_tree_conversions(big_src_lineage_tree):
+def test_lin_rels_lin_tree_conversions(big_src_lineage_tree, big_src_tree_ids):
     # Create LRS from LT
     rels1 = LineageRelations(tree=big_src_lineage_tree)
     # Extract LT from LRS
-    extracted_tree = rels1.extract_tree(big_src_lineage_tree.dataset_id, big_src_lineage_tree.direction)
+    extracted_tree = rels1.extract_tree(big_src_tree_ids["root"], big_src_lineage_tree.direction)
     # Confirm extract LT produces same LRS as original LT
     rels2 = LineageRelations(tree=extracted_tree)
     for rel in rels1.relations:
         assert rel in rels2.relations
+    # Extract reverse direction tree
+    derived_tree = rels1.extract_tree(root=big_src_tree_ids["atmos"], direction=LineageDirection.DERIVED)
+    rels3 = LineageRelations(tree=derived_tree)
+    extracted_tree = rels3.extract_tree(big_src_tree_ids["root"], direction=big_src_lineage_tree.direction)
+    rels4 = LineageRelations(tree=extracted_tree)
+    for rel in rels4.relations:
+        assert rel in rels1.relations
 
 
 def test_detect_cyclic_deps(big_src_lineage_tree, big_src_tree_ids):
@@ -430,6 +519,25 @@ def test_classifier_mismatch(big_src_lineage_tree, classifier_mismatch):
     rels2 = LineageRelations(tree=classifier_mismatch)
     with pytest.raises(InconsistentLineageException, match="Dataset .* depends on .* with inconsistent classifiers."):
         rels1.merge(rels2)
+
+
+def test_classifier_update(big_src_lineage_tree, classifier_mismatch):
+    rels1 = LineageRelations(tree=big_src_lineage_tree)
+    rels2 = LineageRelations(tree=classifier_mismatch)
+    diffs = rels1.relations_diff(existing_relations=rels2, allow_updates=True)
+    assert len(diffs[1]) > 0
+
+
+def test_home_update(src_lineage_tree, src_lineage_tree_diffhome):
+    rels1 = LineageRelations(tree=src_lineage_tree)
+    rels2 = LineageRelations(tree=src_lineage_tree_diffhome)
+    diffs = rels1.relations_diff(existing_relations=rels2, allow_updates=True)
+    assert len(diffs[3]) > 0
+
+
+def test_mixed_dirs(mixed_dir_lineage_tree):
+    with pytest.raises(InconsistentLineageException, match="Tree contains both derived and source nodes"):
+        rels1 = LineageRelations(tree=mixed_dir_lineage_tree)
 
 
 def test_merge_tree_limited_depth(big_src_lineage_tree, big_src_tree_ids):

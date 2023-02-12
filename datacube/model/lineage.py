@@ -261,7 +261,8 @@ class LineageRelations:
         """
         # Check new tree is acyclic within itself
         tree.child_datasets()
-        self.merge_new_home(tree.dataset_id, tree.home)
+        if tree.home is not None:
+            self.merge_new_home(tree.dataset_id, tree.home)
         # Determine recursion behaviour
         recurse = True
         next_max_depth = max_depth - 1
