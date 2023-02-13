@@ -848,13 +848,25 @@ class LegacyLineageResource(AbstractLineageResource):
        for all methods.
     """
     def __init__(self, index) -> None:
-        self.index = self.index
+        self.index = index
         assert not self.index.supports_external_lineage
 
     def get_derived_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
         raise NotImplementedError()
 
     def get_source_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
+        raise NotImplementedError()
+
+    def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
+        raise NotImplementedError()
+
+    def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
+        raise NotImplementedError()
+
+    def set_home(self, home: str, *args: DSID) -> int:
+        raise NotImplementedError()
+
+    def clear_home(self, *args: DSID, home: Optional[str] = None) -> int:
         raise NotImplementedError()
 
 
@@ -1700,6 +1712,11 @@ class AbstractIndex(ABC):
     @abstractmethod
     def products(self) -> AbstractProductResource:
         """A Product Resource instance for the index"""
+
+    @property
+    @abstractmethod
+    def lineage(self) -> AbstractLineageResource:
+        """A Lineage Resource instance for the index"""
 
     @property
     @abstractmethod

@@ -11,6 +11,7 @@ from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
 from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore
 from datacube.index.postgis._metadata_types import MetadataTypeResource
+from datacube.index.postgis._lineage import LineageResource
 from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, default_metadata_type_docs
@@ -68,6 +69,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
         self._users = UserResource(db, self)
         self._metadata_types = MetadataTypeResource(db, self)
         self._products = ProductResource(db, self)
+        self._lineage = LineageResource(db, self)
         self._datasets = DatasetResource(db, self)
 
     @property
@@ -81,6 +83,10 @@ WARNING: Database schema and internal APIs may change significantly between rele
     @property
     def products(self) -> ProductResource:
         return self._products
+
+    @property
+    def lineage(self) -> LineageResource:
+        return self._lineage
 
     @property
     def datasets(self) -> DatasetResource:
