@@ -49,9 +49,9 @@ _DATASET_SELECT_FIELDS = (
     DATASET,
     # All active URIs, from newest to oldest
     func.array(
-        select([
+        select(
             _dataset_uri_field(SELECTED_DATASET_LOCATION)
-        ]).where(
+        ).where(
             and_(
                 SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
                 SELECTED_DATASET_LOCATION.c.archived == None
@@ -67,9 +67,9 @@ _DATASET_BULK_SELECT_FIELDS = (
     DATASET.c.metadata,
     # All active URIs, from newest to oldest
     func.array(
-        select([
+        select(
             _dataset_uri_field(SELECTED_DATASET_LOCATION)
-        ]).where(
+        ).where(
             and_(
                 SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
                 SELECTED_DATASET_LOCATION.c.archived == None

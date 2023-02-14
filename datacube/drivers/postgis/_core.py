@@ -8,7 +8,7 @@ Core SQL schema settings.
 
 import logging
 
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 
@@ -91,7 +91,7 @@ def ensure_db(engine, with_permissions=True):
         grant all on database {db} to odc_admin;
         """.format(db=quoted_db_name))
 
-    if not has_schema(engine, c):
+    if not has_schema(engine):
         is_new = True
         try:
             c.execute('begin')
@@ -144,7 +144,7 @@ def database_exists(engine):
     """
     Have they init'd this database?
     """
-    return has_schema(engine, engine)
+    return has_schema(engine)
 
 
 def schema_is_latest(engine: Engine) -> bool:
@@ -217,8 +217,9 @@ def has_role(conn, role_name):
     return bool(conn.execute('SELECT rolname FROM pg_roles WHERE rolname=%s', role_name).fetchall())
 
 
-def has_schema(engine, connection):
-    return engine.dialect.has_schema(connection, SCHEMA_NAME)
+def has_schema(engine):
+    inspector = inspect(engine)
+    return SCHEMA_NAME in inspector.get_schema_names()
 
 
 def drop_db(connection):

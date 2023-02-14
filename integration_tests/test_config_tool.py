@@ -201,7 +201,7 @@ def test_db_init(clirunner, index):
     with index._db._connect() as connection:
         drop_db(connection._connection)
 
-        assert not has_schema(index._db._engine, connection._connection)
+        assert not has_schema(index._db._engine)
 
     # Run on an empty database.
     if index._db.driver_name == "postgis":
@@ -212,7 +212,7 @@ def test_db_init(clirunner, index):
     assert 'Created.' in result.output
 
     with index._db._connect() as connection:
-        assert has_schema(index._db._engine, connection._connection)
+        assert has_schema(index._db._engine)
 
 
 def test_add_no_such_product(clirunner, index):
