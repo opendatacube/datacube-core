@@ -839,7 +839,20 @@ class AbstractLineageResource(ABC):
 
         :param args: One or more dataset ids
         :param home: The home string.  Supply home or args - not both.
-        :returns: The number of home records deleted.
+        :returns: The number of home records deleted. Usually len(args).
+        """
+
+    @abstractmethod
+    def get_homes(self, *args: DSID) -> Mapping[UUID, str]:
+        """
+        Obtain a dictionary mapping UUIDs to home strings for the passed in DSIDs.
+
+        If a passed in DSID does not have a home set in the database, it will not
+        be included in the returned mapping.  i.e. a database index with no homes
+        recorded will always return an empty mapping.
+
+        :param args: One or more dataset ids
+        :return: Mapping of dataset ids to home strings.
         """
 
 
@@ -869,6 +882,9 @@ class LegacyLineageResource(AbstractLineageResource):
 
     def clear_home(self, *args: DSID, home: Optional[str] = None) -> int:
         raise NotImplementedError()
+
+    def get_homes(self, *args: DSID) -> Mapping[UUID, str]:
+        return {}
 
 
 class DatasetTuple(NamedTuple):

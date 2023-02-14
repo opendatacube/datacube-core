@@ -199,13 +199,19 @@ def test_lineage_home_api(index):
     a_uuids = [random_uuid() for i in range(10)]
     b_uuids = [random_uuid() for i in range(10)]
     all_uuids = a_uuids + b_uuids
+    assert index.lineage.get_homes(*a_uuids) == {}
     # Test delete of non-existent entries
     assert index.lineage.clear_home(*a_uuids) == 0
     # Test insert a uuids
     assert index.lineage.set_home("spam", *a_uuids) == 10
+    for home in index.lineage.get_homes(*a_uuids).values():
+        assert home == "spam"
     # Test update with and without allow_update
     index.lineage.set_home("eggs", *a_uuids) == 0
     index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 10
+    for home in index.lineage.get_homes(*a_uuids).values():
+        assert home == "eggs"
+    assert index.lineage.get_homes(*b_uuids) == {}
     index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 0
     index.lineage.set_home("eggs", *b_uuids, allow_updates=True) == 10
 

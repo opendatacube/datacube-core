@@ -1215,3 +1215,12 @@ class PostgisDbAPI(object):
             delete(DatasetHome).where(DatasetHome.dataset_ref.in_(ids))
         )
         return res.rowcount
+
+    def select_homes(self, ids):
+        results = self._connection.execute(
+            select(DatasetHome).where(DatasetHome.dataset_ref.in_(ids))
+        )
+        return {
+            row.dataset_ref: row.home
+            for row in results
+        }
