@@ -9,6 +9,7 @@ v1.8.next
 =========
 
 - Rename Geometry `type` attribute to `geom_type`, to align with Shapely 2.0 (:pull:`1402`)
+- Remove some deprecated SQLAlchemy usages (:pull:`1403`)
 
 
 v1.8.11 (6 February 2023)
