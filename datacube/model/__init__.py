@@ -28,7 +28,7 @@ from .lineage import LineageDirection, LineageTree, InconsistentLineageException
 __all__ = [
     "Field", "get_dataset_fields",
     "Range", "ranges_overlap",
-    "LineageTree", "LineageTree", "InconsistentLineageException",
+    "LineageDirection", "LineageTree", "InconsistentLineageException",
     "Dataset", "Product", "MetadataType", "Measurement", "GridSpec",
     "metadata_from_doc",
     "ExtraDimensions", "IngestorConfig"

@@ -21,6 +21,7 @@ from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
+from sqlalchemy.exc import IntegrityError
 from typing import Iterable, Sequence
 
 from datacube.index.fields import OrExpression
@@ -33,7 +34,7 @@ from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F4
 from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, \
     Dataset, DatasetLineage, DatasetLocation, SelectedDatasetLocation, \
-    search_field_index_map, search_field_indexes
+    search_field_index_map, search_field_indexes, DatasetHome
 from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from .sql import escape_pg_identifier
 
@@ -1188,3 +1189,29 @@ class PostgisDbAPI(object):
                 raise ValueError('Unknown user %r' % user)
 
         _core.grant_role(self._connection, pg_role, users)
+
+    def insert_home(self, home, ids, allow_updates):
+        try:
+            values = [
+                {"dataset_ref": id_, "home": home}
+                for id_ in ids
+            ]
+            qry = insert(DatasetHome)
+            if allow_updates:
+                qry = qry.on_conflict_do_update(
+                    index_elements=["dataset_ref"],
+                    set_={"home": home},
+                    where=(DatasetHome.home != home))
+            res = self._connection.execute(
+                qry,
+                values
+            )
+            return res.rowcount
+        except IntegrityError:
+            return 0
+
+    def delete_home(self, ids):
+        res = self._connection.execute(
+            delete(DatasetHome).where(DatasetHome.dataset_ref.in_(ids))
+        )
+        return res.rowcount

@@ -328,8 +328,10 @@ search_field_index_map = {
 }
 
 ALL_STATIC_TABLES = [
-    MetadataType.__table__, Product.__table__, Dataset.__table__,
-    DatasetLocation.__table__, DatasetLineage.__table__, SpatialIndexRecord.__table__,
+    MetadataType.__table__, Product.__table__,
+    Dataset.__table__, DatasetLocation.__table__,
+    DatasetLineage.__table__, DatasetHome.__table__,
+    SpatialIndexRecord.__table__,
     DatasetSearchString.__table__, DatasetSearchNumeric.__table__,
     DatasetSearchDateTime.__table__,
 ]

@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2022 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
+from uuid import uuid4 as random_uuid
 
 from datacube.model import Range
 from datacube.index import Index
@@ -191,3 +192,23 @@ def test_spatial_search(index,
     assert len(dssids) == 2
     assert ls8_eo3_dataset3.id in dssids
     assert ls8_eo3_dataset3.id in dssids
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_lineage_home_api(index):
+    a_uuids = [random_uuid() for i in range(10)]
+    b_uuids = [random_uuid() for i in range(10)]
+    all_uuids = a_uuids + b_uuids
+    # Test delete of non-existent entries
+    assert index.lineage.clear_home(*a_uuids) == 0
+    # Test insert a uuids
+    assert index.lineage.set_home("spam", *a_uuids) == 10
+    # Test update with and without allow_update
+    index.lineage.set_home("eggs", *a_uuids) == 0
+    index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 10
+    index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 0
+    index.lineage.set_home("eggs", *b_uuids, allow_updates=True) == 10
+
+    # Test clear_home with actual work done.
+    assert index.lineage.clear_home(*a_uuids) == 10
+    assert index.lineage.clear_home(*b_uuids) == 10

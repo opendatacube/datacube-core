@@ -757,9 +757,9 @@ class AbstractLineageResource(ABC):
     which is a minimal implementation of this resource that raises a NotImplementedError for all methods.
     """
     def __init__(self, index) -> None:
-        self.index = index
+        self._index = index
         # THis is explicitly for indexes that do not support the External Lineage API.
-        assert self.index.supports_external_lineage
+        assert self._index.supports_external_lineage
 
     @abstractmethod
     def get_derived_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
@@ -821,13 +821,14 @@ class AbstractLineageResource(ABC):
         """
 
     @abstractmethod
-    def set_home(self, home: str, *args: DSID) -> int:
+    def set_home(self, home: str, *args: DSID, allow_updates: bool = False) -> int:
         """
         Set the home for one or more dataset ids.
 
         :param home: The home string
         :param args: One or more dataset ids
-        :returns: The number of records affected.  Normally len(args) or zero.
+        :param allow_updates: Allow datasets with existing homes to be updated.
+        :returns: The number of records affected.  Between zero and len(args).
         """
 
     @abstractmethod
@@ -848,8 +849,8 @@ class LegacyLineageResource(AbstractLineageResource):
        for all methods.
     """
     def __init__(self, index) -> None:
-        self.index = index
-        assert not self.index.supports_external_lineage
+        self._index = index
+        assert not self._index.supports_external_lineage
 
     def get_derived_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
         raise NotImplementedError()
@@ -863,7 +864,7 @@ class LegacyLineageResource(AbstractLineageResource):
     def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
         raise NotImplementedError()
 
-    def set_home(self, home: str, *args: DSID) -> int:
+    def set_home(self, home: str, *args: DSID, allow_updates: bool = False) -> int:
         raise NotImplementedError()
 
     def clear_home(self, *args: DSID, home: Optional[str] = None) -> int:
