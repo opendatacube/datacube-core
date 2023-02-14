@@ -12,7 +12,7 @@ from datacube.index.postgres._metadata_types import MetadataTypeResource
 from datacube.index.postgres._products import ProductResource
 from datacube.index.postgres._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, \
-     default_metadata_type_docs, LegacyLineageResource
+    default_metadata_type_docs, LegacyLineageResource
 from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
