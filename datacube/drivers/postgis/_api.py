@@ -22,13 +22,14 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Optional, Set
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils.geometry import CRS, Geometry
 from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
+from datacube.model.lineage import LineageRelation, LineageDirection
 from . import _core
 from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
@@ -1191,17 +1192,17 @@ class PostgisDbAPI(object):
         _core.grant_role(self._connection, pg_role, users)
 
     def insert_home(self, home, ids, allow_updates):
+        values = [
+            {"dataset_ref": id_, "home": home}
+            for id_ in ids
+        ]
+        qry = insert(DatasetHome)
+        if allow_updates:
+            qry = qry.on_conflict_do_update(
+                index_elements=["dataset_ref"],
+                set_={"home": home},
+                where=(DatasetHome.home != home))
         try:
-            values = [
-                {"dataset_ref": id_, "home": home}
-                for id_ in ids
-            ]
-            qry = insert(DatasetHome)
-            if allow_updates:
-                qry = qry.on_conflict_do_update(
-                    index_elements=["dataset_ref"],
-                    set_={"home": home},
-                    where=(DatasetHome.home != home))
             res = self._connection.execute(
                 qry,
                 values
@@ -1224,3 +1225,75 @@ class PostgisDbAPI(object):
             row.dataset_ref: row.home
             for row in results
         }
+
+    def get_all_relations(self, dsids: Iterable[uuid.UUID]) -> Iterable[LineageRelation]:
+        results = self._connection.execute(
+            select(DatasetLineage).where(or_(
+                DatasetLineage.derived_dataset_ref.in_(dsids),
+                DatasetLineage.source_dataset_ref.in_(dsids)
+            ))
+        )
+        for rel in results:
+            yield LineageRelation(classifier=DatasetLineage.classifier,
+                                  source_id=DatasetLineage.source_dataset_ref,
+                                  derived_id=DatasetLineage.source_dataset_ref)
+
+    def write_relations(self, relations: Iterable[LineageRelation], allow_updates: bool):
+        values = [
+            {
+                "derived_dataset_ref": rel.derived_id,
+                "source_dataset_ref": rel.source_id,
+                "classifier": rel.classifier
+            }
+            for rel in relations
+        ]
+        qry = insert(DatasetLineage)
+        if allow_updates:
+            qry = qry.on_conflict_do_update(
+                index_elements=["derived_dataset_ref", "source_dataset_ref"])
+        try:
+            res = self._connection.execute(
+                qry, values
+            )
+            return res.rowcount
+        except IntegrityError:
+            return 0
+
+    def load_lineage_relations(self,
+                               roots: Iterable[uuid.UUID],
+                               direction: LineageDirection,
+                               depth: int,
+                               ids_so_far: Optional[Set[uuid.UUID]] = None) -> Iterable[LineageRelation]:
+        # Naive manually-recursive initial implementation.
+        # TODO: Reimplement using WITH RECURSIVE query
+        if ids_so_far is None:
+            ids_so_far = set(roots)
+        qry = select(DatasetLineage)
+        if direction == LineageDirection.SOURCES:
+            qry = qry.where(DatasetLineage.derived_dataset_ref.in_(roots))
+        else:
+            qry = qry.where(DatasetLineage.source_dataset_ref.in_(roots))
+        relations = []
+        next_lvl_ids = set()
+        results = self._connection.execute(qry)
+        for row in results:
+            rel = LineageRelation(classifier=row["classifier"],
+                                  source_id=row["source_dataset_ref"],
+                                  derived_id=row["derived_dataset_ref"])
+            relations.append(rel)
+            if direction == LineageDirection.SOURCES:
+                next_id = rel.source_id
+            else:
+                next_id = rel.derived_id
+            if next_id not in ids_so_far:
+                next_lvl_ids.add(next_id)
+                ids_so_far.add(next_id)
+        next_depth = depth - 1
+        recurse = True
+        if depth == 0:
+            next_depth = 0
+        elif depth == 1:
+            recurse = False
+        if recurse:
+            relations.extend(self.load_lineage_relations(next_lvl_ids, direction, next_depth, ids_so_far))
+        return relations

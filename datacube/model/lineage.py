@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
-from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple
+from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable
 
 
 class LineageDirection(Enum):
@@ -146,17 +146,21 @@ class LineageRelations:
     def __init__(self,
                  tree: Optional[LineageTree] = None,
                  max_depth: int = 0,
+                 relations: Optional[Iterable[LineageRelation]] = None,
+                 homes: Optional[Mapping[UUID, str]] = None,
                  clone: Optional["LineageRelations"] = None) -> None:
         """
         All arguments are optional.  Default gives an empty LineageRelations, and:
 
-             rels = LineageRelations(tree, max_depth=max_depth, clone=clone)
+             rels = LineageRelations(tree, max_depth=max_depth, relations=lrels, clone=clone)
 
         is equivalent to:
 
              rels = LineageRelations()
-             rels.merge(clone)
              rels.merge_tree(tree, max_depth=max_depth)
+             rels.merge(clone)
+             for rel in lrels:
+                rels.merge_new_lineage_relation(rel)
 
         :param tree: Initially merge a LineageTree
         :param max_depth: The maximum depth to read the LineageTree.
@@ -183,6 +187,12 @@ class LineageRelations:
             self.merge(clone)
         if tree is not None:
             self.merge_tree(tree, max_depth=max_depth)
+        if relations is not None:
+            for rel in relations:
+                self.merge_new_lineage_relation(rel)
+        if homes is not None:
+            for id_, home in homes.items():
+                self.merge_new_home(id_, home)
 
     def merge_new_home(self, id_: UUID, home: str) -> None:
         """
