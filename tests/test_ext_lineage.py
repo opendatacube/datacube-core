@@ -517,7 +517,9 @@ def test_home_mismatch(big_src_lineage_tree):
 def test_classifier_mismatch(big_src_lineage_tree, classifier_mismatch):
     rels1 = LineageRelations(tree=big_src_lineage_tree)
     rels2 = LineageRelations(tree=classifier_mismatch)
-    with pytest.raises(InconsistentLineageException, match="Dataset .* is derived from .* with inconsistent classifiers."):
+    with pytest.raises(
+            InconsistentLineageException,
+            match="Dataset .* is derived from .* with inconsistent classifiers."):
         rels1.merge(rels2)
 
 
