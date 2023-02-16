@@ -32,6 +32,7 @@ from integration_tests.utils import _make_geotiffs, _make_ls5_scene_datasets, lo
 from datacube.config import LocalConfig
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgis import PostGisDb
+from datacube.model import LineageTree, LineageDirection
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 
@@ -803,3 +804,93 @@ def dataset_add_configs():
                            datasets_eo3_updated=str(B / 'datasets_eo3_updated.yml'),
                            datasets=str(B / 'datasets.yml'),
                            empty_file=str(B / 'empty_file.yml'))
+
+
+@pytest.fixture
+def src_tree_ids():
+    return {
+        "root": uuid4(),
+        "ard1": uuid4(),
+        "ard2": uuid4(),
+
+        "l1_1": uuid4(),
+        "l1_2": uuid4(),
+        "l1_3": uuid4(),
+
+        "l1_4": uuid4(),
+        "l1_5": uuid4(),
+        "l1_6": uuid4(),
+
+        "atmos": uuid4(),
+        "atmos_parent": uuid4()
+    }
+
+
+@pytest.fixture
+def src_lineage_tree(src_tree_ids):
+    ids = src_tree_ids
+    direction = LineageDirection.SOURCES
+    return LineageTree(
+        dataset_id=ids["root"], direction=direction,
+        children={
+            "ard": [
+                LineageTree(
+                    dataset_id=ids["ard1"], direction=direction,
+                    children={
+                        "l1": [
+                            LineageTree(
+                                dataset_id=ids["l1_1"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_2"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_3"], direction=direction,
+                                children={}
+                            ),
+                        ],
+                        "atmos_corr": [
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
+                                children=None
+                            )
+                        ],
+                    }
+                ),
+                LineageTree(
+                    dataset_id=ids["ard2"], direction=direction,
+                    children={
+                        "l1": [
+                            LineageTree(
+                                dataset_id=ids["l1_4"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_5"], direction=direction,
+                                children={}
+                            ),
+                            LineageTree(
+                                dataset_id=ids["l1_6"], direction=direction,
+                                children={}
+                            ),
+                        ],
+                        "atmos_corr": [
+                            LineageTree(
+                                dataset_id=ids["atmos"], direction=direction,
+                                children={
+                                    "preatmos": [
+                                        LineageTree(
+                                            dataset_id=ids["atmos_parent"], direction=direction,
+                                            children={}
+                                        )
+                                    ]
+                                }
+                            )
+                        ],
+                    }
+                ),
+            ]
+        }
+    )

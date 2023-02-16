@@ -9,7 +9,7 @@ from datacube.index.abstract import AbstractIndex, AbstractLineageResource, DSID
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.drivers.postgis._api import PostgisDbAPI
 from datacube.model import LineageTree, LineageDirection
-from model.lineage import LineageRelations, LineageRelation
+from datacube.model.lineage import LineageRelations, LineageRelation
 
 
 class LineageResource(AbstractLineageResource, IndexResourceAddIn):
@@ -27,7 +27,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                                                           LineageDirection.DERIVED,
                                                           max_depth)
         rels = LineageRelations(relations=relations)
-        return rels.extract_tree(id_, LineageTree.DERIVED)
+        return rels.extract_tree(id_, LineageDirection.DERIVED)
 
     def get_source_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         with self._db_connection() as connection:
@@ -35,7 +35,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                                                           LineageDirection.SOURCES,
                                                           max_depth)
         rels = LineageRelations(relations=relations)
-        return rels.extract_tree(id_, LineageTree.SOURCES)
+        return rels.extract_tree(id_, LineageDirection.SOURCES)
 
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
         # Convert to a relations collection
@@ -44,7 +44,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             # Get all current relations one step forwards and backwards from all dataset ids in the tree.
             db_relations = LineageRelations(
                 relations=connection.get_all_relations(relations.dataset_ids),
-                homes=connection.get_homes(*relations.dataset_ids)
+                homes=connection.select_homes(relations.dataset_ids)
             )
             # Check for consistency:
             new_rels, update_rels, new_homes, update_homes = relations.relations_diff(
@@ -77,7 +77,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             ]
             rels_update = [
                 LineageRelation(classifier=classifier, derived_id=derived, source_id=src)
-                for (derived, src), classifier in new_rels.items()
+                for (derived, src), classifier in update_rels.items()
             ]
             connection.write_relations(rels_new, allow_updates=False)
             connection.write_relations(rels_update, allow_updates=True)

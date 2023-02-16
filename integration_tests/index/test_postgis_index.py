@@ -5,7 +5,7 @@
 import pytest
 from uuid import uuid4 as random_uuid
 
-from datacube.model import Range
+from datacube.model import LineageDirection, Range
 from datacube.index import Index
 from datacube.utils.geometry import CRS
 
@@ -218,3 +218,18 @@ def test_lineage_home_api(index):
     # Test clear_home with actual work done.
     assert index.lineage.clear_home(*a_uuids) == 10
     assert index.lineage.clear_home(*b_uuids) == 10
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_lineage_tree_index_api(index, src_lineage_tree, src_tree_ids):
+    src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
+    assert src_tree.dataset_id == src_tree_ids["root"]
+    assert src_tree.direction == LineageDirection.SOURCES
+    assert src_tree.children == {}
+    index.lineage.add(src_lineage_tree, max_depth=1)
+    src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
+    assert src_tree.dataset_id == src_tree_ids["root"]
+    assert src_tree.direction == LineageDirection.SOURCES
+    for ard_subtree in src_tree.children["ard"]:
+        assert ard_subtree.dataset_id in (src_tree_ids["ard1"], src_tree_ids["ard2"])
+        assert not ard_subtree.children

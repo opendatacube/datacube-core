@@ -1239,25 +1239,44 @@ class PostgisDbAPI(object):
                                   derived_id=DatasetLineage.source_dataset_ref)
 
     def write_relations(self, relations: Iterable[LineageRelation], allow_updates: bool):
-        values = [
-            {
-                "derived_dataset_ref": rel.derived_id,
-                "source_dataset_ref": rel.source_id,
-                "classifier": rel.classifier
-            }
-            for rel in relations
-        ]
-        qry = insert(DatasetLineage)
         if allow_updates:
-            qry = qry.on_conflict_do_update(
-                index_elements=["derived_dataset_ref", "source_dataset_ref"])
-        try:
-            res = self._connection.execute(
-                qry, values
-            )
-            return res.rowcount
-        except IntegrityError:
-            return 0
+            by_classifier = {}
+            for rel in relations:
+                db_repr = {
+                    "derived_dataset_ref": rel.derived_id,
+                    "source_dataset_ref": rel.source_id,
+                    "classifier": rel.classifier
+                }
+                if rel.classifier in by_classifier:
+                    by_classifier[rel.classifier].append(db_repr)
+                else:
+                    by_classifier[rel.classifier] = [db_repr]
+                updates = 0
+                for classifier, values in by_classifier.items():
+                    qry = insert(DatasetLineage).on_conflict_do_update(
+                        index_elements=["derived_dataset_ref", "source_dataset_ref"],
+                        set_={"classifier": classifier},
+                        where=(DatasetLineage.classifier != classifier))
+                    res = self._connection.execute(qry, values)
+                    updates += res.rowcount
+                return updates
+        else:
+            values = [
+                {
+                    "derived_dataset_ref": rel.derived_id,
+                    "source_dataset_ref": rel.source_id,
+                    "classifier": rel.classifier
+                }
+                for rel in relations
+            ]
+            qry = insert(DatasetLineage)
+            try:
+                res = self._connection.execute(
+                    qry, values
+                )
+                return res.rowcount
+            except IntegrityError:
+                return 0
 
     def load_lineage_relations(self,
                                roots: Iterable[uuid.UUID],
@@ -1294,6 +1313,6 @@ class PostgisDbAPI(object):
             next_depth = 0
         elif depth == 1:
             recurse = False
-        if recurse:
+        if recurse and next_lvl_ids:
             relations.extend(self.load_lineage_relations(next_lvl_ids, direction, next_depth, ids_so_far))
         return relations

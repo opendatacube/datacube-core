@@ -213,7 +213,7 @@ class LineageRelations:
         """
         Internal convenience wrapper to merge_new_lineage_relation
         """
-        self.merge_new_lineage_relation(LineageRelation(classifier=classifier, source_id=ids[0], derived_id=ids[1]))
+        self.merge_new_lineage_relation(LineageRelation(classifier=classifier, derived_id=ids[0], source_id=ids[1]))
 
     def merge_new_lineage_relation(self, rel: LineageRelation) -> None:
         """
@@ -222,7 +222,7 @@ class LineageRelations:
         Raises InconsistentLineageException if we already have this relation with a different classifier, or
         this relation would result in a cyclic relation.
         """
-        ids = (rel.source_id, rel.derived_id)
+        ids = (rel.derived_id, rel.source_id)
         if ids in self._relations_idx:
             if self._relations_idx[ids] != rel.classifier:
                 raise InconsistentLineageException(
@@ -407,9 +407,9 @@ class LineageRelations:
 
         children = {}
         if direction == LineageDirection.SOURCES:
-            subtrees = self.by_source.get(root, {})
-        else:
             subtrees = self.by_derived.get(root, {})
+        else:
+            subtrees = self.by_source.get(root, {})
         for dsid, classifier in subtrees.items():
             subtree = self.extract_tree(dsid, direction, set(parents), so_far)
             if classifier in children:
