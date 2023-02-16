@@ -222,8 +222,6 @@ def test_lineage_home_api(index):
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_lineage_tree_index_api(index, src_lineage_tree, src_tree_ids):
-    import pydevd_pycharm
-    pydevd_pycharm.settrace('localhost', port=54321, stdoutToServer=True, stderrToServer=True)
     src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
     assert src_tree.dataset_id == src_tree_ids["root"]
     assert src_tree.direction == LineageDirection.SOURCES
