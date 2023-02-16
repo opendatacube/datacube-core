@@ -126,14 +126,31 @@ class InconsistentLineageException(Exception):
     """
 
 
-@dataclass
+@dataclass(frozen=True)
+class LineageIDPair:
+    """
+    LineagePair
+
+    A lineage relationship between a source UUID, a derived UUID
+    (no classifier)
+    """
+    derived_id: UUID
+    source_id: UUID
+
+
+@dataclass(frozen=True)
 class LineageRelation:
     """
     LineageRelation
+
+    A lineage relationship between a source UUID, a derived UUID, with a classifier string
     """
     classifier: str
     source_id: UUID
     derived_id: UUID
+
+    def ids(self):
+        return LineageIDPair(derived_id=self.derived_id, source_id=self.source_id)
 
 
 class LineageRelations:
@@ -172,7 +189,7 @@ class LineageRelations:
         self._homes: MutableMapping[UUID, str] = {}
         # Tuple[UUID, UUID]'s are always (derived, source)
         # Mapping  (derived, source): classifier - Allow search by source, derived pair.
-        self._relations_idx: MutableMapping[Tuple[UUID, UUID], str] = {}
+        self._relations_idx: MutableMapping[LineageIDPair, str] = {}
         # Sequence of the distinct LineageRelation objects this object represents.
         self.relations: Sequence[LineageRelation] = []
         # Mapping source to mapping derived to classifier.  Allow search by source
@@ -213,7 +230,11 @@ class LineageRelations:
         """
         Internal convenience wrapper to merge_new_lineage_relation
         """
-        self.merge_new_lineage_relation(LineageRelation(classifier=classifier, derived_id=ids[0], source_id=ids[1]))
+        self.merge_new_lineage_relation(
+            LineageRelation(
+                classifier=classifier,
+                derived_id=ids.derived_id,
+                source_id=ids.source_id))
 
     def merge_new_lineage_relation(self, rel: LineageRelation) -> None:
         """
@@ -222,11 +243,11 @@ class LineageRelations:
         Raises InconsistentLineageException if we already have this relation with a different classifier, or
         this relation would result in a cyclic relation.
         """
-        ids = (rel.derived_id, rel.source_id)
+        ids = rel.ids()
         if ids in self._relations_idx:
             if self._relations_idx[ids] != rel.classifier:
                 raise InconsistentLineageException(
-                    f"Dataset {ids[0]} depends on {ids[1]} with inconsistent classifiers."
+                    f"Dataset {ids.derived_id} is derived from {ids.source_id} with inconsistent classifiers."
                 )
         else:
             self._relations_idx[ids] = rel.classifier
@@ -238,7 +259,7 @@ class LineageRelations:
             self.by_source[rel.source_id][rel.derived_id] = rel.classifier
             self.by_derived[rel.derived_id][rel.source_id] = rel.classifier
             # Check for cyclic dependencies:
-            new_ids = set([rel.source_id, rel.derived_id])
+            new_ids = set([ids.derived_id, ids.source_id])
             if new_ids & self.dataset_ids:
                 # We already know about these ids so need to confirm we are still acyclic
                 # Extract sourcewards from derived and vice versa for full tree coverage
@@ -298,9 +319,9 @@ class LineageRelations:
                 if child.direction != tree.direction:
                     raise InconsistentLineageException("Tree contains both derived and source nodes")
                 if tree.direction == LineageDirection.SOURCES:
-                    ids = (tree.dataset_id, child.dataset_id)
+                    ids = LineageIDPair(derived_id=tree.dataset_id, source_id=child.dataset_id)
                 else:
-                    ids = (child.dataset_id, tree.dataset_id)
+                    ids = LineageIDPair(derived_id=child.dataset_id, source_id=tree.dataset_id)
                 self._merge_new_relation(ids, classifier)
                 if recurse:
                     self.merge_tree(
@@ -312,8 +333,8 @@ class LineageRelations:
 
     def relations_diff(self,
                        existing_relations: Optional["LineageRelations"] = None,
-                       allow_updates: bool = False) -> Tuple[Mapping[Tuple[UUID, UUID], str],
-                                                             Mapping[Tuple[UUID, UUID], str],
+                       allow_updates: bool = False) -> Tuple[Mapping[LineageIDPair, str],
+                                                             Mapping[LineageIDPair, str],
                                                              Mapping[UUID, str],
                                                              Mapping[UUID, str]]:
         """

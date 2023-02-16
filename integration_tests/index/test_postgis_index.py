@@ -222,6 +222,8 @@ def test_lineage_home_api(index):
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_lineage_tree_index_api(index, src_lineage_tree, src_tree_ids):
+    import pydevd_pycharm
+    pydevd_pycharm.settrace('localhost', port=54321, stdoutToServer=True, stderrToServer=True)
     src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
     assert src_tree.dataset_id == src_tree_ids["root"]
     assert src_tree.direction == LineageDirection.SOURCES
@@ -233,3 +235,23 @@ def test_lineage_tree_index_api(index, src_lineage_tree, src_tree_ids):
     for ard_subtree in src_tree.children["ard"]:
         assert ard_subtree.dataset_id in (src_tree_ids["ard1"], src_tree_ids["ard2"])
         assert not ard_subtree.children
+    index.lineage.add(src_lineage_tree, max_depth=2)
+    src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
+    for ard_subtree in src_tree.children["ard"]:
+        assert "l1" in ard_subtree.children
+        assert not ard_subtree.children["atmos_corr"][0].children
+    index.lineage.add(src_lineage_tree, max_depth=0)
+    for ard_subtree in src_tree.children["ard"]:
+        assert "l1" in ard_subtree.children
+        assert "atmos_corr" in ard_subtree.children
+        assert not ard_subtree.children["atmos_corr"][0].children
+    index.lineage.add(src_lineage_tree, max_depth=0)
+    src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
+    seen = False
+    for ard_subtree in src_tree.children["ard"]:
+        assert "l1" in ard_subtree.children
+        assert "atmos_corr" in ard_subtree.children
+        if ard_subtree.children["atmos_corr"][0].children:
+            assert "preatmos" in ard_subtree.children["atmos_corr"][0].children
+            seen = True
+    assert seen

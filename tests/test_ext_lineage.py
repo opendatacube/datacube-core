@@ -6,7 +6,7 @@ import pytest
 from uuid import uuid4 as random_uuid
 
 from datacube.model import LineageDirection, LineageTree, InconsistentLineageException
-from datacube.model.lineage import LineageRelations
+from datacube.model.lineage import LineageRelations, LineageIDPair
 
 
 def test_directions():
@@ -492,13 +492,13 @@ def test_good_consistency_check(big_src_lineage_tree, src_lineage_tree, big_src_
     rels2 = LineageRelations(tree=big_src_lineage_tree)
     diff = rels1.relations_diff(rels2)
     assert diff[1] == {} and diff[3] == {}
-    assert (src_lineage_tree.dataset_id, big_src_tree_ids["ard1"]) in diff[0]
+    assert LineageIDPair(derived_id=src_lineage_tree.dataset_id, source_id=big_src_tree_ids["ard1"]) in diff[0]
     diff = rels1.relations_diff(rels2, allow_updates=True)
     assert diff[1] == {} and diff[3] == {}
-    assert (src_lineage_tree.dataset_id, big_src_tree_ids["ard1"]) in diff[0]
+    assert LineageIDPair(derived_id=src_lineage_tree.dataset_id, source_id=big_src_tree_ids["ard1"]) in diff[0]
     diff = rels1.relations_diff()
     assert diff[1] == {} and diff[3] == {}
-    assert (src_lineage_tree.dataset_id, big_src_tree_ids["ard1"]) in diff[0]
+    assert LineageIDPair(derived_id=src_lineage_tree.dataset_id, source_id=big_src_tree_ids["ard1"]) in diff[0]
 
 
 def test_bad_diamond(src_lineage_tree_with_bad_diamond, big_src_tree_ids):
@@ -517,7 +517,7 @@ def test_home_mismatch(big_src_lineage_tree):
 def test_classifier_mismatch(big_src_lineage_tree, classifier_mismatch):
     rels1 = LineageRelations(tree=big_src_lineage_tree)
     rels2 = LineageRelations(tree=classifier_mismatch)
-    with pytest.raises(InconsistentLineageException, match="Dataset .* depends on .* with inconsistent classifiers."):
+    with pytest.raises(InconsistentLineageException, match="Dataset .* is derived from .* with inconsistent classifiers."):
         rels1.merge(rels2)
 
 

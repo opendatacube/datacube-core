@@ -1234,9 +1234,9 @@ class PostgisDbAPI(object):
             ))
         )
         for rel in results:
-            yield LineageRelation(classifier=DatasetLineage.classifier,
-                                  source_id=DatasetLineage.source_dataset_ref,
-                                  derived_id=DatasetLineage.source_dataset_ref)
+            yield LineageRelation(classifier=rel["classifier"],
+                                  source_id=rel["source_dataset_ref"],
+                                  derived_id=rel["derived_dataset_ref"])
 
     def write_relations(self, relations: Iterable[LineageRelation], allow_updates: bool):
         if allow_updates:

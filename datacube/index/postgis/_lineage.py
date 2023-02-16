@@ -72,12 +72,12 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                     connection.insert_home(home, ids, allow_updates=allow_updates)
             # Merge Relations data
             rels_new = [
-                LineageRelation(classifier=classifier, derived_id=derived, source_id=src)
-                for (derived, src), classifier in new_rels.items()
+                LineageRelation(classifier=classifier, derived_id=ids.derived_id, source_id=ids.source_id)
+                for ids, classifier in new_rels.items()
             ]
             rels_update = [
-                LineageRelation(classifier=classifier, derived_id=derived, source_id=src)
-                for (derived, src), classifier in update_rels.items()
+                LineageRelation(classifier=classifier, derived_id=ids.derived_id, source_id=ids.source_id)
+                for ids, classifier in update_rels.items()
             ]
             connection.write_relations(rels_new, allow_updates=False)
             connection.write_relations(rels_update, allow_updates=True)
