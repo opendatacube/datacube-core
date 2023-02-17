@@ -253,3 +253,5 @@ def test_lineage_tree_index_api(index, src_lineage_tree, src_tree_ids):
             assert "preatmos" in ard_subtree.children["atmos_corr"][0].children
             seen = True
     assert seen
+    der_tree = index.lineage.get_derived_tree(src_tree_ids["atmos_parent"])
+    assert der_tree.find_subtree(src_tree_ids["root"]).dataset_id == src_tree_ids["root"]

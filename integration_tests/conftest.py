@@ -840,20 +840,24 @@ def src_lineage_tree(src_tree_ids):
                         "l1": [
                             LineageTree(
                                 dataset_id=ids["l1_1"], direction=direction,
+                                home="level1",
                                 children={}
                             ),
                             LineageTree(
                                 dataset_id=ids["l1_2"], direction=direction,
+                                home="level1",
                                 children={}
                             ),
                             LineageTree(
                                 dataset_id=ids["l1_3"], direction=direction,
+                                home="level1",
                                 children={}
                             ),
                         ],
                         "atmos_corr": [
                             LineageTree(
                                 dataset_id=ids["atmos"], direction=direction,
+                                home="anciliary",
                                 children=None
                             )
                         ],
@@ -865,24 +869,29 @@ def src_lineage_tree(src_tree_ids):
                         "l1": [
                             LineageTree(
                                 dataset_id=ids["l1_4"], direction=direction,
+                                home="level1",
                                 children={}
                             ),
                             LineageTree(
                                 dataset_id=ids["l1_5"], direction=direction,
+                                home="level1",
                                 children={}
                             ),
                             LineageTree(
                                 dataset_id=ids["l1_6"], direction=direction,
+                                home="level1",
                                 children={}
                             ),
                         ],
                         "atmos_corr": [
                             LineageTree(
                                 dataset_id=ids["atmos"], direction=direction,
+                                home="anciliary",
                                 children={
                                     "preatmos": [
                                         LineageTree(
                                             dataset_id=ids["atmos_parent"], direction=direction,
+                                            home="anciliary",
                                             children={}
                                         )
                                     ]
