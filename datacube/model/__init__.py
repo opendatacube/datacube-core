@@ -315,7 +315,7 @@ class Dataset:
 
     @property
     def metadata(self) -> DocReader:
-        return self.metadata_type.dataset_reader(self._metadata_doc)
+        return self.metadata_type.dataset_reader(self.metadata_doc)
 
     def metadata_doc_without_lineage(self) -> Dict[str, Any]:
         """ Return metadata document without nested lineage datasets
