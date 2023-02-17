@@ -32,7 +32,6 @@ from datacube.utils.documents import (
     DocReader,
     is_supported_document_type,
     get_doc_offset,
-    get_doc_offset_safe,
     _set_doc_offset,
     transform_object_tree,
     metadata_subset,
@@ -583,14 +582,9 @@ def test_is_supported_doc_type():
 def test_doc_offset():
     assert get_doc_offset(['a'], {'a': 4}) == 4
     assert get_doc_offset(['a', 'b'], {'a': {'b': 4}}) == 4
-    with pytest.raises(KeyError):
-        get_doc_offset(['a'], {})
-
-    assert get_doc_offset_safe(['a'], {'a': 4}) == 4
-    assert get_doc_offset_safe(['a', 'b'], {'a': {'b': 4}}) == 4
-    assert get_doc_offset_safe(['a'], {}) is None
-    assert get_doc_offset_safe(['a', 'b', 'c'], {'a': {'b': {}}}, 10) == 10
-    assert get_doc_offset_safe(['a', 'b', 'c'], {'a': {'b': []}}, 11) == 11
+    assert get_doc_offset(['a'], {}) is None
+    assert get_doc_offset(['a', 'b', 'c'], {'a': {'b': {}}}, 10) == 10
+    assert get_doc_offset(['a', 'b', 'c'], {'a': {'b': []}}, 11) == 11
 
     doc = {'a': 4}
     _set_doc_offset(['a'], doc, 5)

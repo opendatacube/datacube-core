@@ -20,7 +20,7 @@ from sqlalchemy.sql import ColumnElement
 from datacube import utils
 from datacube.model.fields import Expression, Field
 from datacube.model import Range
-from datacube.utils import get_doc_offset_safe
+from datacube.utils import get_doc_offset
 from .sql import FLOAT8RANGE
 
 from datacube.utils.dates import tz_aware
@@ -167,7 +167,7 @@ class PgDocField(PgField):
             # It's a single offset.
             doc_offsets = [doc_offsets]
 
-        values = (get_doc_offset_safe(offset, doc) for offset in doc_offsets)
+        values = (get_doc_offset(offset, doc) for offset in doc_offsets)
         values = [self.parse_value(v) for v in values if v is not None]
 
         if not values:
