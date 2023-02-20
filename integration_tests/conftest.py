@@ -902,4 +902,95 @@ def src_lineage_tree(src_tree_ids):
                 ),
             ]
         }
+    ), ids
+
+
+@pytest.fixture
+def compatible_derived_tree(src_tree_ids):
+    ids = src_tree_ids.copy()
+    ids.update({
+        "atmos_grandparent": uuid4(),
+        "ard3": uuid4(),
+        "ard4": uuid4(),
+        "leaf_1": uuid4(),
+        "leaf_2": uuid4(),
+        "leaf_3": uuid4()
+    })
+    tree = LineageTree(
+        dataset_id=ids["atmos_grandparent"],
+        direction=LineageDirection.DERIVED,
+        home="steves_basement",
+        children={
+            "spam": [
+                LineageTree(
+                    dataset_id=ids["atmos_parent"],
+                    direction=LineageDirection.DERIVED,
+                    home="anciliary",
+                    children={
+                        "preatmos": [
+                            LineageTree(
+                                dataset_id=ids["atmos"],
+                                direction=LineageDirection.DERIVED,
+                                home="anciliary",
+                                children={
+                                    "atmos_corr": [
+                                        LineageTree(
+                                            dataset_id=ids["ard1"],
+                                            direction=LineageDirection.DERIVED,
+                                            home="ard",
+                                            children={
+                                                "ard": [
+                                                    LineageTree(
+                                                        dataset_id=ids["root"],
+                                                        direction=LineageDirection.DERIVED,
+                                                        home="extensions", children={}
+                                                    ),
+                                                    LineageTree(
+                                                        dataset_id=ids["leaf_1"],
+                                                        direction=LineageDirection.DERIVED,
+                                                        home="extensions", children={}
+                                                    ),
+                                                ]
+                                            }
+                                        ),
+                                        LineageTree(
+                                            dataset_id=ids["ard2"],
+                                            direction=LineageDirection.DERIVED,
+                                            home="ard",
+                                            children={}
+                                        ),
+                                        LineageTree(
+                                            dataset_id=ids["ard3"],
+                                            direction=LineageDirection.DERIVED,
+                                            home="ard",
+                                            children={
+                                                "ard": [
+                                                    LineageTree(
+                                                        dataset_id=ids["leaf_2"],
+                                                        direction=LineageDirection.DERIVED,
+                                                        home="extensions", children={}
+                                                    ),
+                                                    LineageTree(
+                                                        dataset_id=ids["leaf_3"],
+                                                        direction=LineageDirection.DERIVED,
+                                                        home="extensions", children={}
+                                                    ),
+                                                ]
+                                            }
+                                        ),
+                                        LineageTree(
+                                            dataset_id=ids["ard4"],
+                                            direction=LineageDirection.DERIVED,
+                                            home="ard",
+                                            children={}
+                                        ),
+                                    ]
+                                }
+                            )
+                        ]
+                    }
+                )
+            ]
+        }
     )
+    return tree, ids

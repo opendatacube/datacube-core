@@ -34,7 +34,10 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             relations = connection.load_lineage_relations([id_],
                                                           LineageDirection.SOURCES,
                                                           max_depth)
-        rels = LineageRelations(relations=relations)
+            rels = LineageRelations(relations=relations)
+            homes = connection.select_homes(rels.dataset_ids)
+        for dsid, home in homes.items():
+            rels.merge_new_home(dsid, home)
         return rels.extract_tree(id_, LineageDirection.SOURCES)
 
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
@@ -55,7 +58,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             if new_homes:
                 homes_new = {}
                 for id_, home in new_homes.items():
-                    if id_ in homes_new:
+                    if home in homes_new:
                         homes_new[home].append(id_)
                     else:
                         homes_new[home] = [id_]
@@ -64,7 +67,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             if update_homes:
                 homes_update = {}
                 for id_, home in update_homes.items():
-                    if id_ in homes_update:
+                    if home in homes_update:
                         homes_update[home].append(id_)
                     else:
                         homes_update[home] = [id_]

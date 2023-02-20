@@ -8,6 +8,7 @@ from uuid import uuid4 as random_uuid
 from datacube.model import LineageDirection, Range
 from datacube.index import Index
 from datacube.utils.geometry import CRS
+from datacube.model import LineageTree, InconsistentLineageException
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
@@ -221,30 +222,30 @@ def test_lineage_home_api(index):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
-def test_lineage_tree_index_api(index, src_lineage_tree, src_tree_ids):
-    src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
-    assert src_tree.dataset_id == src_tree_ids["root"]
+def test_lineage_tree_index_api_simple(index, src_lineage_tree):
+    tree, ids = src_lineage_tree
+    # Test api responses for lineage not in database:
+    src_tree = index.lineage.get_source_tree(ids["root"])
+    assert src_tree.dataset_id == ids["root"]
     assert src_tree.direction == LineageDirection.SOURCES
     assert src_tree.children == {}
-    index.lineage.add(src_lineage_tree, max_depth=1)
-    src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
-    assert src_tree.dataset_id == src_tree_ids["root"]
+    # Add the test tree to depth 1
+    index.lineage.add(tree, max_depth=1)
+    src_tree = index.lineage.get_source_tree(ids["root"])
+    assert src_tree.dataset_id == ids["root"]
     assert src_tree.direction == LineageDirection.SOURCES
     for ard_subtree in src_tree.children["ard"]:
-        assert ard_subtree.dataset_id in (src_tree_ids["ard1"], src_tree_ids["ard2"])
+        assert ard_subtree.dataset_id in (ids["ard1"], ids["ard2"])
         assert not ard_subtree.children
-    index.lineage.add(src_lineage_tree, max_depth=2)
-    src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
+    # Add the test tree to depth 2
+    index.lineage.add(tree, max_depth=2)
+    src_tree = index.lineage.get_source_tree(ids["root"])
     for ard_subtree in src_tree.children["ard"]:
         assert "l1" in ard_subtree.children
         assert not ard_subtree.children["atmos_corr"][0].children
-    index.lineage.add(src_lineage_tree, max_depth=0)
-    for ard_subtree in src_tree.children["ard"]:
-        assert "l1" in ard_subtree.children
-        assert "atmos_corr" in ard_subtree.children
-        assert not ard_subtree.children["atmos_corr"][0].children
-    index.lineage.add(src_lineage_tree, max_depth=0)
-    src_tree = index.lineage.get_source_tree(src_tree_ids["root"])
+    # Add full test tree
+    index.lineage.add(tree, max_depth=0)
+    src_tree = index.lineage.get_source_tree(ids["root"])
     seen = False
     for ard_subtree in src_tree.children["ard"]:
         assert "l1" in ard_subtree.children
@@ -253,5 +254,48 @@ def test_lineage_tree_index_api(index, src_lineage_tree, src_tree_ids):
             assert "preatmos" in ard_subtree.children["atmos_corr"][0].children
             seen = True
     assert seen
-    der_tree = index.lineage.get_derived_tree(src_tree_ids["atmos_parent"])
-    assert der_tree.find_subtree(src_tree_ids["root"]).dataset_id == src_tree_ids["root"]
+    # And test reversing the tree
+    der_tree = index.lineage.get_derived_tree(ids["atmos_parent"])
+    assert der_tree.find_subtree(ids["root"]).dataset_id == ids["root"]
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_lineage_tree_index_api_consistent(index, src_lineage_tree, compatible_derived_tree):
+    tree1, ids = src_lineage_tree
+    tree2, ids = compatible_derived_tree
+
+    index.lineage.add(tree1)
+    tree1a = index.lineage.get_source_tree(ids["root"])
+    assert tree1a.home is None
+
+    index.lineage.add(tree2)
+    tree2a = index.lineage.get_source_tree(ids["root"])
+    assert tree2a.home == "extensions"
+    tree2b = tree2a.find_subtree(ids["atmos"])
+    tree2c = tree2b.find_subtree(ids["atmos_grandparent"])
+    assert tree2c
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree):
+    tree, ids = src_lineage_tree
+    home_update = LineageTree(
+        dataset_id=ids["ard1"],
+        direction=LineageDirection.SOURCES,
+        home="not_too_ard",
+        children={
+            "l1": [
+                LineageTree(
+                    dataset_id=ids["l1_1"],
+                    direction=LineageDirection.SOURCES,
+                    home="level1a",
+                )
+            ]
+        }
+    )
+    index.lineage.add(tree)
+    with pytest.raises(InconsistentLineageException):
+        index.lineage.add(home_update, allow_updates=False)
+    index.lineage.add(home_update, allow_updates=True)
+    dbtree = index.lineage.get_source_tree(ids["ard1"])
+    assert dbtree.home == "not_too_ard"
