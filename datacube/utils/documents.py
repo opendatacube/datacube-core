@@ -449,17 +449,6 @@ class SimpleDocNav(object):
         return SimpleDocNav(toolz.dissoc(self._doc, 'location'))
 
 
-def _set_doc_offset(offset, document, value):
-    """
-    :type offset: list[str]
-    :type document: dict
-
-    """
-    read_offset = offset[:-1]
-    sub_doc = get_doc_offset(read_offset, document)
-    sub_doc[offset[-1]] = value
-
-
 class DocReader(object):
     def __init__(self, type_definition, search_fields, doc):
         """
@@ -497,7 +486,7 @@ class DocReader(object):
                     name, list(self.system_fields.keys())
                 )
             )
-        return _set_doc_offset(offset, self.doc, val)
+        self.doc = toolz.update_in(self.doc, offset, lambda _: val)
 
     def __dir__(self):
         return list(self.fields)
