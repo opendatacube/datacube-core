@@ -63,7 +63,7 @@ def datetime_type(value):
 
 
 def of_enum_type(
-    vals: Union[EnumMeta, Tuple[str, ...]] = None, lower=False, upper=False, strict=True
+    vals: Union[EnumMeta, Tuple[str, ...]] = None, lower=False, strict=True
 ) -> Callable[[str], str]:
     if isinstance(vals, EnumMeta):
         vals = tuple(vals.__members__.keys())
@@ -72,8 +72,6 @@ def of_enum_type(
         if isinstance(v, Enum):
             v = v.name
 
-        if upper:
-            v = v.upper()
         if lower:
             v = v.lower()
 

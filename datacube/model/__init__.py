@@ -21,7 +21,7 @@ from datacube.utils import geometry, without_lineage_sources, parse_time, cached
     schema_validated, DocReader
 from datacube.index.eo3 import is_doc_eo3
 from .fields import Field, get_dataset_fields
-from ._base import Range, ranges_overlap  # noqa: F401
+from ._base import Range
 from .eo3 import validate_eo3_compatible_type
 from .lineage import LineageDirection, LineageTree, LineageRelation, InconsistentLineageException  # noqa: F401
 
