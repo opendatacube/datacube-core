@@ -1311,3 +1311,14 @@ class PostgisDbAPI(object):
         if recurse and next_lvl_ids:
             relations.extend(self.load_lineage_relations(next_lvl_ids, direction, next_depth, ids_so_far))
         return relations
+
+    def remove_lineage_relations(self,
+                                 ids: Iterable[DSID],
+                                 direction: LineageDirection) -> int:
+        qry = delete(DatasetLineage)
+        if direction == LineageDirection.SOURCES:
+            qry = qry.where(DatasetLineage.derived_dataset_ref.in_(ids))
+        else:
+            qry = qry.where(DatasetLineage.source_dataset_ref.in_(ids))
+        results = self._connection.execute(qry)
+        return results.rowcount

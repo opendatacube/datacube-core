@@ -257,6 +257,19 @@ def test_lineage_tree_index_api_simple(index, src_lineage_tree):
     # And test reversing the tree
     der_tree = index.lineage.get_derived_tree(ids["atmos_parent"])
     assert der_tree.find_subtree(ids["root"]).dataset_id == ids["root"]
+    # Test Lineage removal - sourcewards
+    index.lineage.remove(ids["root"], LineageDirection.SOURCES, max_depth=2)
+    src_tree = index.lineage.get_source_tree(ids["root"])
+    assert not src_tree.children
+    src_tree = index.lineage.get_source_tree(ids["atmos"])
+    assert src_tree.children
+    # Test Lineage removal - derivedwards
+    index.lineage.add(tree, max_depth=0)
+    index.lineage.remove(ids["atmos_parent"], LineageDirection.DERIVED, max_depth=2)
+    src_tree = index.lineage.get_source_tree(ids["root"])
+    assert src_tree.children
+    src_tree = index.lineage.get_source_tree(ids["atmos"])
+    assert not src_tree.children
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))

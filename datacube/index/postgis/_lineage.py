@@ -86,7 +86,16 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             connection.write_relations(rels_update, allow_updates=True)
 
     def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
-        raise NotImplementedError("TODO")
+        with self._db_connection() as connection:
+            relations = connection.load_lineage_relations([id_],
+                                                          direction,
+                                                          max_depth)
+            rels = LineageRelations(relations=relations)
+            if direction == LineageDirection.SOURCES:
+                ids = list(rels.by_derived.keys())
+            else:
+                ids = list(rels.by_source.keys())
+            connection.remove_lineage_relations(ids, direction)
 
     def set_home(self, home: str, *args: DSID, allow_updates: bool = False) -> int:
         with self._db_connection() as connection:
