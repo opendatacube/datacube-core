@@ -32,7 +32,6 @@ from datacube.utils.documents import (
     DocReader,
     is_supported_document_type,
     get_doc_offset,
-    _set_doc_offset,
     transform_object_tree,
     metadata_subset,
 )
@@ -585,13 +584,6 @@ def test_doc_offset():
     assert get_doc_offset(['a'], {}) is None
     assert get_doc_offset(['a', 'b', 'c'], {'a': {'b': {}}}, 10) == 10
     assert get_doc_offset(['a', 'b', 'c'], {'a': {'b': []}}, 11) == 11
-
-    doc = {'a': 4}
-    _set_doc_offset(['a'], doc, 5)
-    assert doc == {'a': 5}
-    doc = {'a': {'b': 4}}
-    _set_doc_offset(['a', 'b'], doc, 'c')
-    assert doc == {'a': {'b': 'c'}}
 
 
 def test_transform_object_tree():
