@@ -503,11 +503,6 @@ class PostgisDbAPI(object):
                 DatasetLocation.dataset_ref == dataset_id
             )
         )
-        self._connection.execute(
-            delete(DatasetLineage).where(
-                DatasetLineage.derived_dataset_ref == dataset_id
-            )
-        )
         for table in search_field_indexes.values():
             self._connection.execute(
                 delete(table).where(table.dataset_ref == dataset_id)
