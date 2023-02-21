@@ -67,7 +67,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 dataset = connection.get_dataset(id_)
                 return self._make(dataset, full_info=True) if dataset else None
 
-            datasets = {result['id']: (self._make(result, full_info=True), result)
+            datasets = {result._mapping['id']: (self._make(result, full_info=True), result)
                         for result in connection.get_dataset_sources(id_)}
 
         if not datasets:
@@ -77,11 +77,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for dataset, result in datasets.values():
             dataset.metadata.sources = {
                 classifier: datasets[source][0].metadata_doc
-                for source, classifier in zip(result['sources'], result['classes']) if source
+                for source, classifier in zip(result._mapping['sources'], result._mapping['classes']) if source
             }
             dataset.sources = {
                 classifier: datasets[source][0]
-                for source, classifier in zip(result['sources'], result['classes']) if source
+                for source, classifier in zip(result._mapping['sources'], result._mapping['classes']) if source
             }
         return datasets[id_][0]
 

@@ -8,7 +8,7 @@ Core SQL schema settings.
 
 import logging
 
-from sqlalchemy import MetaData, inspect
+from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 
@@ -44,12 +44,12 @@ def install_timestamp_trigger(connection):
         _schema.Dataset.__tablename__,
     ]
     # Create trigger capture function
-    connection.execute(UPDATE_TIMESTAMP_SQL)
+    connection.execute(text(UPDATE_TIMESTAMP_SQL))
 
     for name in TABLE_NAMES:
         # Add update columns
-        connection.execute(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
-        connection.execute(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
+        connection.execute(text(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
+        connection.execute(text(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
 
 
 def schema_qualified(name):
@@ -61,7 +61,7 @@ def schema_qualified(name):
 
 
 def _get_quoted_connection_info(connection):
-    db, user = connection.execute("select quote_ident(current_database()), quote_ident(current_user)").fetchone()
+    db, user = connection.execute(text("select quote_ident(current_database()), quote_ident(current_user)")).fetchone()
     return db, user
 
 
@@ -87,53 +87,53 @@ def ensure_db(engine, with_permissions=True):
         _ensure_role(c, 'odc_manage', inherits_from='odc_ingest')
         _ensure_role(c, 'odc_admin', inherits_from='odc_manage', add_user=True)
 
-        c.execute("""
-        grant all on database {db} to odc_admin;
-        """.format(db=quoted_db_name))
+        c.execute(text(f"""
+        grant all on database {quoted_db_name} to odc_admin;
+        """))
 
     if not has_schema(engine):
         is_new = True
         try:
-            c.execute('begin')
+            c.execute(text('begin'))
             if with_permissions:
                 # Switch to 'odc_admin', so that all items are owned by them.
-                c.execute('set role odc_admin')
+                c.execute(text('set role odc_admin'))
             _LOG.info('Creating schema.')
             c.execute(CreateSchema(SCHEMA_NAME))
             _LOG.info('Creating tables.')
-            c.execute(TYPES_INIT_SQL)
+            c.execute(text(TYPES_INIT_SQL))
             from ._schema import orm_registry, ALL_STATIC_TABLES
             _LOG.info("Dataset indexes: %s", repr(orm_registry.metadata.tables["odc.dataset"].indexes))
             orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
-            c.execute('commit')
+            c.execute(text('commit'))
         except:  # noqa: E722
             _LOG.error("Unhandled SQLAlchemy error.")
-            c.execute('rollback')
+            c.execute(text('rollback'))
             raise
         finally:
             if with_permissions:
-                c.execute('set role {}'.format(quoted_user))
+                c.execute(text(f'set role {quoted_user}'))
 
     if with_permissions:
         _LOG.info('Adding role grants.')
-        c.execute("""
-        grant usage on schema {schema} to odc_user;
-        grant select on all tables in schema {schema} to odc_user;
-        grant execute on function {schema}.common_timestamp(text) to odc_user;
+        c.execute(text(f"""
+        grant usage on schema {SCHEMA_NAME} to odc_user;
+        grant select on all tables in schema {SCHEMA_NAME} to odc_user;
+        grant execute on function {SCHEMA_NAME}.common_timestamp(text) to odc_user;
 
-        grant insert on {schema}.dataset,
-                        {schema}.location,
-                        {schema}.dataset_lineage to odc_ingest;
-        grant usage, select on all sequences in schema {schema} to odc_ingest;
+        grant insert on {SCHEMA_NAME}.dataset,
+                        {SCHEMA_NAME}.location,
+                        {SCHEMA_NAME}.dataset_lineage to odc_ingest;
+        grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_ingest;
 
         -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
-        grant insert, delete on {schema}.product,
-                                {schema}.metadata_type to odc_manage;
+        grant insert, delete on {SCHEMA_NAME}.product,
+                                {SCHEMA_NAME}.metadata_type to odc_manage;
         -- Allow creation of indexes, views
-        grant create on schema {schema} to odc_manage;
-        """.format(schema=SCHEMA_NAME))
+        grant create on schema {SCHEMA_NAME} to odc_manage;
+        """))
 
     c.close()
 
@@ -183,13 +183,13 @@ def update_schema(engine: Engine):
     # TODO: implement migrations
 
 
-def _ensure_extension(engine, extension_name="POSTGIS"):
-    sql = f'create extension if not exists {extension_name}'
-    engine.execute(sql)
+def _ensure_extension(conn, extension_name="POSTGIS"):
+    sql = text(f'create extension if not exists {extension_name}')
+    conn.execute(sql)
 
 
-def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
-    if has_role(engine, name):
+def _ensure_role(conn, name, inherits_from=None, add_user=False, create_db=False):
+    if has_role(conn, name):
         _LOG.debug('Role exists: %s', name)
         return
 
@@ -200,21 +200,22 @@ def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=Fal
     ]
     if inherits_from:
         sql.append('in role ' + inherits_from)
-    engine.execute(' '.join(sql))
+    conn.execute(text(' '.join(sql)))
 
 
-def grant_role(engine, role, users):
+def grant_role(conn, role, users):
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
 
-    users = [escape_pg_identifier(engine, user) for user in users]
-    with engine.begin():
-        engine.execute('revoke {roles} from {users}'.format(users=', '.join(users), roles=', '.join(USER_ROLES)))
-        engine.execute('grant {role} to {users}'.format(users=', '.join(users), role=role))
+    users = [escape_pg_identifier(conn, user) for user in users]
+    conn.execute(text('revoke {roles} from {users}'.format(users=', '.join(users), roles=', '.join(USER_ROLES))))
+    conn.execute(text('grant {role} to {users}'.format(users=', '.join(users), role=role)))
 
 
 def has_role(conn, role_name):
-    return bool(conn.execute('SELECT rolname FROM pg_roles WHERE rolname=%s', role_name).fetchall())
+    return bool(
+        conn.execute(text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")).fetchall()
+    )
 
 
 def has_schema(engine):
@@ -223,7 +224,7 @@ def has_schema(engine):
 
 
 def drop_db(connection):
-    connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
+    connection.execute(text(f'drop schema if exists {SCHEMA_NAME} cascade'))
 
 
 def to_pg_role(role):

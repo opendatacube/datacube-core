@@ -1148,7 +1148,7 @@ class PostgisDbAPI(object):
         return "PostgresDb<connection={!r}>".format(self._connection)
 
     def list_users(self):
-        result = self._connection.execute("""
+        result = self._connection.execute(text("""
             select
                 group_role.rolname as role_name,
                 user_role.rolname as user_name,
@@ -1158,20 +1158,18 @@ class PostgisDbAPI(object):
             inner join pg_roles user_role on am.member = user_role.oid
             where (group_role.rolname like 'odc_%%') and not (user_role.rolname like 'odc_%%')
             order by group_role.oid asc, user_role.oid asc;
-        """)
+        """))
         for row in result:
-            yield _core.from_pg_role(row['role_name']), row['user_name'], row['description']
+            yield _core.from_pg_role(row._mapping['role_name']), row._mapping['user_name'], row._mapping['description']
 
     def create_user(self, username, password, role, description=None):
         pg_role = _core.to_pg_role(role)
         username = escape_pg_identifier(self._connection, username)
         sql = text('create user {username} password :password in role {role}'.format(username=username, role=pg_role))
-        self._connection.execute(sql,
-                                 password=password)
+        self._connection.execute(sql, {"password": password})
         if description:
             sql = text('comment on role {username} is :description'.format(username=username))
-            self._connection.execute(sql,
-                                     description=description)
+            self._connection.execute(sql, {"description": description})
 
     def drop_users(self, users: Iterable[str]) -> str:
         for username in users:

@@ -18,6 +18,7 @@ import pytest
 import yaml
 from click.testing import CliRunner
 from hypothesis import HealthCheck, settings
+from sqlalchemy import text
 
 import datacube.scripts.cli_app
 import datacube.utils
@@ -385,9 +386,10 @@ def reset_db(local_cfg, tz=None) -> Union[PostgresDb, PostGisDb]:
         )
         # Drop tables so our tests have a clean db.
         # with db.begin() as c:  # Creates a new PostgresDbAPI, by passing a new connection to it
-        pgres_core.drop_db(db._engine)
-        if tz:
-            db._engine.execute('alter database %s set timezone = %r' % (local_cfg['db_database'], tz))
+        with db._engine.connect() as connection:
+            pgres_core.drop_db(connection)
+            if tz:
+                connection.execute(text('alter database %s set timezone = %r' % (local_cfg['db_database'], tz)))
         # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
         # and attempts to recreate them. WTF TODO FIX
         remove_postgres_dynamic_indexes()
@@ -397,19 +399,21 @@ def reset_db(local_cfg, tz=None) -> Union[PostgresDb, PostGisDb]:
             application_name='test-run',
             validate_connection=False
         )
-        pgis_core.drop_db(db._engine)
-        if tz:
-            db._engine.execute('alter database %s set timezone = %r' % (local_cfg['db_database'], tz))
+        with db._engine.connect() as connection:
+            pgis_core.drop_db(connection)
+            if tz:
+                connection.execute(text('alter database %s set timezone = %r' % (local_cfg['db_database'], tz)))
         remove_postgis_dynamic_indexes()
     return db
 
 
 def cleanup_db(local_cfg, db):
-    if local_cfg._env in ('datacube', 'default', 'postgres'):
-        # with db.begin() as c:  # Drop SCHEMA
-        pgres_core.drop_db(db._engine)
-    else:
-        pgis_core.drop_db(db._engine)
+    with db._engine.connect() as connection:
+        if local_cfg._env in ('datacube', 'default', 'postgres'):
+            # with db.begin() as c:  # Drop SCHEMA
+            pgres_core.drop_db(connection)
+        else:
+            pgis_core.drop_db(connection)
     db.close()
 
 

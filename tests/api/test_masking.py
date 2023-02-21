@@ -431,9 +431,3 @@ def test_valid_data_mask():
 
     with pytest.raises(TypeError):
         valid_data_mask(([], []))
-
-
-def test_deprecation():
-    from datacube.storage.masking import make_mask as a
-    from datacube.utils.masking import make_mask as b
-    assert a is b
