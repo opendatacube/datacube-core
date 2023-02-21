@@ -556,9 +556,11 @@ class PostgresDbAPI(object):
                     limit
                 )
             )
-        select_fields = select_columns + (DATASET_SOURCE.c.source_dataset_ref,
-                          literal(1).label('distance'),
-                          DATASET_SOURCE.c.classifier.label('path'))
+        select_fields = select_columns + (
+            DATASET_SOURCE.c.source_dataset_ref,
+            literal(1).label('distance'),
+            DATASET_SOURCE.c.classifier.label('path')
+        )
         base_query = (
             select(
                 *select_fields
