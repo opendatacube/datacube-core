@@ -6,7 +6,7 @@
 Custom types for postgres & sqlalchemy
 """
 
-from sqlalchemy import TIMESTAMP
+from sqlalchemy import TIMESTAMP, text
 from sqlalchemy.dialects.postgresql.ranges import RangeOperators
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import sqltypes
@@ -155,4 +155,4 @@ def escape_pg_identifier(engine, name):
     # New (2.7+) versions of psycopg2 have function: extensions.quote_ident()
     # But it's too bleeding edge right now. We'll ask the server to escape instead, as
     # these are not performance sensitive.
-    return engine.execute("select quote_ident(%s)", name).scalar()
+    return engine.execute(text(f"select quote_ident('{name}')")).scalar()

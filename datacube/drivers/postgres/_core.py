@@ -15,7 +15,7 @@ from datacube.drivers.postgres.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                            UPDATE_TIMESTAMP_SQL,
                                            escape_pg_identifier,
                                            pg_column_exists)
-from sqlalchemy import MetaData, inspect
+from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 
@@ -46,18 +46,18 @@ def install_timestamp_trigger(connection):
         _schema.DATASET.name,
     ]
     # Create trigger capture function
-    connection.execute(UPDATE_TIMESTAMP_SQL)
+    connection.execute(text(UPDATE_TIMESTAMP_SQL))
 
     for name in TABLE_NAMES:
         # Add update columns
-        connection.execute(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
-        connection.execute(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name))
+        connection.execute(text(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
+        connection.execute(text(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
 
 
 def install_added_column(connection):
     from . import _schema
     TABLE_NAME = _schema.DATASET_LOCATION.name  # noqa: N806
-    connection.execute(ADDED_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=TABLE_NAME))
+    connection.execute(text(ADDED_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=TABLE_NAME)))
 
 
 def schema_qualified(name):
@@ -69,7 +69,7 @@ def schema_qualified(name):
 
 
 def _get_quoted_connection_info(connection):
-    db, user = connection.execute("select quote_ident(current_database()), quote_ident(current_user)").fetchone()
+    db, user = connection.execute(text("select quote_ident(current_database()), quote_ident(current_user)")).fetchone()
     return db, user
 
 
@@ -93,37 +93,37 @@ def ensure_db(engine, with_permissions=True):
         _ensure_role(c, 'agdc_manage', inherits_from='agdc_ingest')
         _ensure_role(c, 'agdc_admin', inherits_from='agdc_manage', add_user=True)
 
-        c.execute("""
+        c.execute(text("""
         grant all on database {db} to agdc_admin;
-        """.format(db=quoted_db_name))
+        """.format(db=quoted_db_name)))
 
     if not has_schema(engine):
         is_new = True
         try:
-            c.execute('begin')
+            c.execute(text('begin'))
             if with_permissions:
                 # Switch to 'agdc_admin', so that all items are owned by them.
-                c.execute('set role agdc_admin')
+                c.execute(text('set role agdc_admin'))
             _LOG.info('Creating schema.')
             c.execute(CreateSchema(SCHEMA_NAME))
             _LOG.info('Creating tables.')
-            c.execute(TYPES_INIT_SQL)
+            c.execute(text(TYPES_INIT_SQL))
             METADATA.create_all(c)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             _LOG.info("Creating added column.")
             install_added_column(c)
-            c.execute('commit')
+            c.execute(text('commit'))
         except:  # noqa: E722
-            c.execute('rollback')
+            c.execute(text('rollback'))
             raise
         finally:
             if with_permissions:
-                c.execute('set role {}'.format(quoted_user))
+                c.execute(text('set role {}'.format(quoted_user)))
 
     if with_permissions:
         _LOG.info('Adding role grants.')
-        c.execute("""
+        c.execute(text("""
         grant usage on schema {schema} to agdc_user;
         grant select on all tables in schema {schema} to agdc_user;
         grant execute on function {schema}.common_timestamp(text) to agdc_user;
@@ -138,7 +138,7 @@ def ensure_db(engine, with_permissions=True):
                                 {schema}.metadata_type to agdc_manage;
         -- Allow creation of indexes, views
         grant create on schema {schema} to agdc_manage;
-        """.format(schema=SCHEMA_NAME))
+        """.format(schema=SCHEMA_NAME)))
 
     c.close()
 
@@ -193,20 +193,19 @@ def update_schema(engine: Engine):
     #    function for some examples.
 
     # Post 1.8 DB Incremental Sync triggers
-    if not pg_column_exists(engine, schema_qualified('dataset'), 'updated'):
-        _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
-        c = engine.connect()
-        c.execute('begin')
-        install_timestamp_trigger(c)
-        install_added_column(c)
-        c.execute('commit')
-        c.close()
-    else:
-        _LOG.info("No schema updates required.")
+    with engine.connect() as connection:
+        if not pg_column_exists(connection, schema_qualified('dataset'), 'updated'):
+            _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
+            connection.execute(text('begin'))
+            install_timestamp_trigger(connection)
+            install_added_column(connection)
+            connection.execute(text('commit'))
+        else:
+            _LOG.info("No schema updates required.")
 
 
-def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
-    if has_role(engine, name):
+def _ensure_role(conn, name, inherits_from=None, add_user=False, create_db=False):
+    if has_role(conn, name):
         _LOG.debug('Role exists: %s', name)
         return
 
@@ -217,21 +216,21 @@ def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=Fal
     ]
     if inherits_from:
         sql.append('in role ' + inherits_from)
-    engine.execute(' '.join(sql))
+    conn.execute(text(' '.join(sql)))
 
 
-def grant_role(engine, role, users):
+def grant_role(conn, role, users):
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
 
-    users = [escape_pg_identifier(engine, user) for user in users]
-    with engine.begin():
-        engine.execute('revoke {roles} from {users}'.format(users=', '.join(users), roles=', '.join(USER_ROLES)))
-        engine.execute('grant {role} to {users}'.format(users=', '.join(users), role=role))
+    users = [escape_pg_identifier(conn, user) for user in users]
+    conn.execute(text('revoke {roles} from {users}'.format(users=', '.join(users), roles=', '.join(USER_ROLES))))
+    conn.execute(text('grant {role} to {users}'.format(users=', '.join(users), role=role)))
 
 
 def has_role(conn, role_name):
-    return bool(conn.execute('SELECT rolname FROM pg_roles WHERE rolname=%s', role_name).fetchall())
+    res = conn.execute(text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")).fetchall()
+    return bool(res)
 
 
 def has_schema(engine):
@@ -240,7 +239,7 @@ def has_schema(engine):
 
 
 def drop_db(connection):
-    connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
+    connection.execute(text(f'drop schema if exists {SCHEMA_NAME} cascade;'))
 
 
 def to_pg_role(role):

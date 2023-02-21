@@ -220,21 +220,23 @@ class PostgresDbAPI(object):
         ret = self._connection.execute(
             insert(DATASET).from_select(
                 ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
-                select([
+                select(
                     bindparam('id'), dataset_type_ref,
-                    select([
+                    select(
                         PRODUCT.c.metadata_type_ref
-                    ]).where(
+                    ).where(
                         PRODUCT.c.id == dataset_type_ref
                     ).label('metadata_type_ref'),
                     bindparam('metadata', type_=JSONB)
-                ])
+                )
             ).on_conflict_do_nothing(
                 index_elements=['id']
             ),
-            id=dataset_id,
-            dataset_type_ref=product_id,
-            metadata=metadata_doc
+            {
+                "id": dataset_id,
+                "dataset_type_ref": product_id,
+                "metadata": metadata_doc
+            }
         )
         return ret.rowcount > 0
 
@@ -281,9 +283,11 @@ class PostgresDbAPI(object):
             insert(DATASET_LOCATION).on_conflict_do_nothing(
                 index_elements=['uri_scheme', 'uri_body', 'dataset_ref']
             ),
-            dataset_ref=dataset_id,
-            uri_scheme=scheme,
-            uri_body=body,
+            {
+                "dataset_ref": dataset_id,
+                "uri_scheme": scheme,
+                "uri_body": body,
+            }
         )
 
         return r.rowcount > 0
@@ -297,7 +301,7 @@ class PostgresDbAPI(object):
         return bool(
             self._connection.execute(
                 select(
-                    [DATASET.c.id]
+                    DATASET.c.id
                 ).where(
                     DATASET.c.id == dataset_id
                 )
@@ -309,7 +313,7 @@ class PostgresDbAPI(object):
         """
         return [r[0]
                 for r in self._connection.execute(select(
-                    [DATASET.c.id]
+                    DATASET.c.id
                 ).where(
                     DATASET.c.id.in_(dataset_ids)
                 )).fetchall()]
@@ -359,9 +363,11 @@ class PostgresDbAPI(object):
                 insert(DATASET_SOURCE).on_conflict_do_nothing(
                     index_elements=['classifier', 'dataset_ref']
                 ),
-                classifier=classifier,
-                dataset_ref=dataset_id,
-                source_dataset_ref=source_dataset_id
+                {
+                    "classifier": classifier,
+                    "dataset_ref": dataset_id,
+                    "source_dataset_ref": source_dataset_id
+                }
             )
             return r.rowcount > 0
         except IntegrityError as e:
@@ -408,18 +414,18 @@ class PostgresDbAPI(object):
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
-            select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
+            select(*_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
         ).first()
 
     def get_datasets(self, dataset_ids):
         return self._connection.execute(
-            select(_DATASET_SELECT_FIELDS).where(DATASET.c.id.in_(dataset_ids))
+            select(*_DATASET_SELECT_FIELDS).where(DATASET.c.id.in_(dataset_ids))
         ).fetchall()
 
     def get_derived_datasets(self, dataset_id):
         return self._connection.execute(
             select(
-                _DATASET_SELECT_FIELDS
+                *_DATASET_SELECT_FIELDS
             ).select_from(
                 DATASET.join(DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref)
             ).where(
@@ -431,9 +437,9 @@ class PostgresDbAPI(object):
         # recursively build the list of (dataset_ref, source_dataset_ref) pairs starting from dataset_id
         # include (dataset_ref, NULL) [hence the left join]
         sources = select(
-            [DATASET.c.id.label('dataset_ref'),
-             DATASET_SOURCE.c.source_dataset_ref,
-             DATASET_SOURCE.c.classifier]
+            DATASET.c.id.label('dataset_ref'),
+            DATASET_SOURCE.c.source_dataset_ref,
+            DATASET_SOURCE.c.classifier
         ).select_from(
             DATASET.join(DATASET_SOURCE,
                          DATASET.c.id == DATASET_SOURCE.c.dataset_ref,
@@ -444,9 +450,9 @@ class PostgresDbAPI(object):
 
         sources = sources.union_all(
             select(
-                [sources.c.source_dataset_ref.label('dataset_ref'),
-                 DATASET_SOURCE.c.source_dataset_ref,
-                 DATASET_SOURCE.c.classifier]
+                sources.c.source_dataset_ref.label('dataset_ref'),
+                DATASET_SOURCE.c.source_dataset_ref,
+                DATASET_SOURCE.c.classifier
             ).select_from(
                 sources.join(DATASET_SOURCE,
                              sources.c.source_dataset_ref == DATASET_SOURCE.c.dataset_ref,
@@ -456,15 +462,14 @@ class PostgresDbAPI(object):
         # turn the list of pairs into adjacency list (dataset_ref, [source_dataset_ref, ...])
         # some source_dataset_ref's will be NULL
         aggd = select(
-            [sources.c.dataset_ref,
-             func.array_agg(sources.c.source_dataset_ref).label('sources'),
-             func.array_agg(sources.c.classifier).label('classes')]
+            sources.c.dataset_ref,
+            func.array_agg(sources.c.source_dataset_ref).label('sources'),
+            func.array_agg(sources.c.classifier).label('classes')
         ).group_by(sources.c.dataset_ref).alias('aggd')
 
         # join the adjacency list with datasets table
-        query = select(
-            _DATASET_SELECT_FIELDS + (aggd.c.sources, aggd.c.classes)
-        ).select_from(aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref))
+        select_fields = _DATASET_SELECT_FIELDS + (aggd.c.sources, aggd.c.classes)
+        query = select(*select_fields).select_from(aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref))
 
         return self._connection.execute(query).fetchall()
 
@@ -542,7 +547,7 @@ class PostgresDbAPI(object):
         if not source_exprs:
             return (
                 select(
-                    select_columns
+                    *select_columns
                 ).select_from(
                     from_expression
                 ).where(
@@ -551,11 +556,12 @@ class PostgresDbAPI(object):
                     limit
                 )
             )
+        select_fields = select_columns + (DATASET_SOURCE.c.source_dataset_ref,
+                          literal(1).label('distance'),
+                          DATASET_SOURCE.c.classifier.label('path'))
         base_query = (
             select(
-                select_columns + (DATASET_SOURCE.c.source_dataset_ref,
-                                  literal(1).label('distance'),
-                                  DATASET_SOURCE.c.classifier.label('path'))
+                *select_fields
             ).select_from(
                 from_expression.join(DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref)
             ).where(
@@ -946,11 +952,11 @@ class PostgresDbAPI(object):
         search_fields = {}
 
         for metadata_type in self.get_all_metadata_types():
-            fields = get_dataset_fields(metadata_type['definition'])
-            search_fields[metadata_type['id']] = fields
+            fields = get_dataset_fields(metadata_type._mapping['definition'])
+            search_fields[metadata_type._mapping['id']] = fields
             self._setup_metadata_type_fields(
-                metadata_type['id'],
-                metadata_type['name'],
+                metadata_type._mapping['id'],
+                metadata_type._mapping['name'],
                 fields,
                 rebuild_indexes=rebuild_indexes,
                 rebuild_views=rebuild_views,
@@ -970,10 +976,10 @@ class PostgresDbAPI(object):
 
         for product in self._get_products_for_metadata_type(id_):
             self._setup_product_fields(
-                product['id'],
-                product['name'],
+                product._mapping['id'],
+                product._mapping['name'],
                 fields,
-                product['definition']['metadata'],
+                product._mapping['definition']['metadata'],
                 rebuild_view=rebuild_views,
                 rebuild_indexes=rebuild_indexes,
                 concurrently=concurrently
@@ -1120,7 +1126,7 @@ class PostgresDbAPI(object):
         return "PostgresDb<connection={!r}>".format(self._connection)
 
     def list_users(self):
-        result = self._connection.execute("""
+        result = self._connection.execute(text("""
             select
                 group_role.rolname as role_name,
                 user_role.rolname as user_name,
@@ -1130,20 +1136,18 @@ class PostgresDbAPI(object):
             inner join pg_roles user_role on am.member = user_role.oid
             where (group_role.rolname like 'agdc_%%') and not (user_role.rolname like 'agdc_%%')
             order by group_role.oid asc, user_role.oid asc;
-        """)
+        """))
         for row in result:
-            yield _core.from_pg_role(row['role_name']), row['user_name'], row['description']
+            yield _core.from_pg_role(row._mapping['role_name']), row._mapping['user_name'], row._mapping['description']
 
     def create_user(self, username, password, role, description=None):
         pg_role = _core.to_pg_role(role)
         username = escape_pg_identifier(self._connection, username)
         sql = text('create user {username} password :password in role {role}'.format(username=username, role=pg_role))
-        self._connection.execute(sql,
-                                 password=password)
+        self._connection.execute(sql, {"password": password})
         if description:
             sql = text('comment on role {username} is :description'.format(username=username))
-            self._connection.execute(sql,
-                                     description=description)
+            self._connection.execute(sql, {"description": description})
 
     def drop_users(self, users: Iterable[str]) -> None:
         for username in users:

@@ -8,7 +8,7 @@ Methods for managing dynamic dataset field indexes and views.
 
 import logging
 
-from sqlalchemy import Index
+from sqlalchemy import Index, text
 from sqlalchemy import select
 
 from ._core import schema_qualified
@@ -43,16 +43,20 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
     # This currently leaves a window of time without the views: it's primarily intended for development.
     if exists and replace_existing:
         _LOG.debug('Dropping view: %s (replace=%r)', view_name, replace_existing)
-        conn.execute('drop view %s' % view_name)
+        conn.execute(text(f'drop view {view_name}'))
         exists = False
     if not exists:
         _LOG.debug('Creating view: %s', view_name)
+        select_fields = [
+            field.alchemy_expression.label(field.name)
+            for field in fields.values()
+            if not field.affects_row_selection
+        ]
         conn.execute(
             CreateView(
                 view_name,
                 select(
-                    [field.alchemy_expression.label(field.name) for field in fields.values()
-                     if not field.affects_row_selection]
+                    *select_fields
                 ).select_from(
                     DATASET.join(PRODUCT).join(METADATA_TYPE)
                 ).where(where_expression)
@@ -63,7 +67,7 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
     legacy_name = schema_qualified('{}_dataset'.format(name))
     if pg_exists(conn, legacy_name):
         _LOG.debug('Dropping legacy view: %s', legacy_name)
-        conn.execute('drop view %s' % legacy_name)
+        conn.execute(text(f'drop view {legacy_name}'))
 
 
 def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names, fields, name,
