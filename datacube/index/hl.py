@@ -185,7 +185,7 @@ def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
         return None, e
     if source_tree is None:
         # Get sources from EO3 document, use home_index as home of source id's
-        source_tree = LineageTree.from_eo3_doc(uuid_, sources=doc.sources, home=home_index)
+        source_tree = LineageTree.from_data(uuid_, sources=doc.sources, home=home_index)
     else:
         # May be None
         if source_tree.direction == LineageDirection.DERIVED:

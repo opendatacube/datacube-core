@@ -9,6 +9,7 @@ from datacube.model import LineageDirection, Range
 from datacube.index import Index
 from datacube.utils.geometry import CRS
 from datacube.model import LineageTree, InconsistentLineageException
+from datacube.model.lineage import LineageRelations
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
@@ -219,6 +220,21 @@ def test_lineage_home_api(index):
     # Test clear_home with actual work done.
     assert index.lineage.clear_home(*a_uuids) == 10
     assert index.lineage.clear_home(*b_uuids) == 10
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_lineage_merge(index, src_lineage_tree, compatible_derived_tree):
+    stree, ids = src_lineage_tree
+    dtree, ids = compatible_derived_tree
+
+    rels = LineageRelations(tree=stree)
+    rels.merge_tree(dtree)
+    index.lineage.merge(rels)
+    src_tree = index.lineage.get_source_tree(ids["root"])
+    assert src_tree.dataset_id == ids["root"]
+    assert src_tree.direction == LineageDirection.SOURCES
+    for ard_subtree in src_tree.children["ard"]:
+        assert ard_subtree.dataset_id in (ids["ard1"], ids["ard2"])
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))

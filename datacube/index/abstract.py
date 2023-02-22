@@ -20,14 +20,14 @@ from uuid import UUID
 from datacube.config import LocalConfig
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
-from datacube.model import Dataset, MetadataType, Range
-from datacube.model import DatasetType as Product
+from datacube.model import Product, Dataset, MetadataType, Range
+from datacube.model import LineageTree, LineageDirection
+from datacube.model.lineage import LineageRelations
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.generic import thread_local_cache
 from datacube.utils.geometry import CRS, Geometry, box
 from datacube.utils.documents import UnknownMetadataType
-from datacube.model import LineageTree, LineageDirection
 
 _LOG = logging.getLogger(__name__)
 
@@ -793,6 +793,18 @@ class AbstractLineageResource(ABC):
         """
 
     @abstractmethod
+    def merge(self, rels: LineageRelations, allow_updates: bool=False, validate_only=False) -> None:
+        """
+        Merge an entire LineageRelations collection into the databse.
+
+        :param rels: The LineageRelations collection to merge.
+        :param allow_updates: If False and the merging rels would require index updates,
+                              then raise an InconsistentLineageException.
+        :param validate_only: If True, do not actually merge the LineageRelations, just check for inconsistency.
+                              allow_updates and validate_only cannot both be True
+        """
+
+    @abstractmethod
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
         """
         Add or update a LineageTree into the Index.
@@ -872,6 +884,9 @@ class LegacyLineageResource(AbstractLineageResource):
         raise NotImplementedError()
 
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
+        raise NotImplementedError()
+
+    def merge(self, rels: LineageRelations, allow_updates: bool=False, validate_only=False) -> None:
         raise NotImplementedError()
 
     def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:

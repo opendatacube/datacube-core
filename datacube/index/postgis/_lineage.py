@@ -43,17 +43,24 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
         # Convert to a relations collection
         relations = LineageRelations(tree=tree, max_depth=max_depth)
+        self.merge(relations, allow_updates=allow_updates)
+
+    def merge(self, rels: LineageRelations, allow_updates: bool=False, validate_only=False) -> None:
+        if allow_updates and validate_only:
+            raise ValueError("Cannot validate-only AND allow updates")
         with self._db_connection() as connection:
             # Get all current relations one step forwards and backwards from all dataset ids in the tree.
             db_relations = LineageRelations(
-                relations=connection.get_all_relations(relations.dataset_ids),
-                homes=connection.select_homes(relations.dataset_ids)
+                relations=connection.get_all_relations(rels.dataset_ids),
+                homes=connection.select_homes(rels.dataset_ids)
             )
             # Check for consistency:
-            new_rels, update_rels, new_homes, update_homes = relations.relations_diff(
+            new_rels, update_rels, new_homes, update_homes = rels.relations_diff(
                 existing_relations=db_relations,
                 allow_updates=allow_updates
             )
+            if validate_only:
+                return
             # Merge homes data
             if new_homes:
                 homes_new = {}

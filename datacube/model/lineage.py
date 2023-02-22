@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
-from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable
+from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable, Union, Any
 
 
 class LineageDirection(Enum):
@@ -86,10 +86,41 @@ class LineageTree:
         return None
 
     @classmethod
-    def from_eo3_doc(cls, dsid: UUID,
+    def from_eo3_doc(cls, doc: Mapping[str, Any],
+                     home=None,
+                     home_derived=None) -> "LineageTree":
+        """
+        Generate a shallow (depth=1) LineageTree from an EO3 dataset document
+
+        :param dsid: The (derived) dataset id
+        :param sources: A dictionary of classifiers to list of source IDs
+        :param direction: Tree direction (default SOURCEwards, as per an EO3 dataset)
+        :param home: Home database for source datasets (defaults to None).
+        :param home_derived: Home database for the derived dataset (defaults to None).
+        :return: A depth==1 LineageTree
+
+        :param doc_in:
+        :return:
+        """
+        lineage = doc.get("lineage", {})
+        return cls.from_data(doc["id"], lineage, home=home, home_derived=home_derived)
+
+    @classmethod
+    def from_data(cls, dsid: UUID,
                      sources: Optional[Mapping[str, Sequence[UUID]]] = None,
                      direction: LineageDirection = LineageDirection.SOURCES,
-                     home=None) -> "LineageTree":
+                     home=None,
+                     home_derived=None) -> "LineageTree":
+        """
+        Generate a shallow (depth=1) LineageTree from the sort of data found in an EO3 dataset
+
+        :param dsid: The (derived) dataset id
+        :param sources: A dictionary of classifiers to list of source IDs
+        :param direction: Tree direction (default SOURCEwards, as per an EO3 dataset)
+        :param home: Home database for source datasets (defaults to None).
+        :param home_derived: Home database for the derived dataset (defaults to None).
+        :return: A depth==1 LineageTree
+        """
         if sources is None:
             children = None
         else:
@@ -104,6 +135,7 @@ class LineageTree:
             direction=direction,
             dataset_id=dsid,
             children=children,
+            home=home_derived
         )
 
     def child_datasets(self) -> Set[UUID]:

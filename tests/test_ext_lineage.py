@@ -2,11 +2,13 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import os
 import pytest
 from uuid import uuid4 as random_uuid
 
 from datacube.model import LineageDirection, LineageTree, InconsistentLineageException
 from datacube.model.lineage import LineageRelations, LineageIDPair
+from datacube.utils import read_documents
 
 
 def test_directions():
@@ -15,21 +17,28 @@ def test_directions():
     assert LineageDirection.SOURCES == LineageDirection.DERIVED.opposite()
 
 
-def test_ltree_clsmethods():
+def test_ltree_clsmethods(data_folder):
     root = random_uuid()
     # Minimal tree - root node only
-    minimal = LineageTree.from_eo3_doc(dsid=root)
+    minimal = LineageTree.from_data(dsid=root)
     assert minimal.dataset_id == root
     assert minimal.direction == LineageDirection.SOURCES
     assert minimal.children is None
     # Check optional args to from_eo3_doc are set correctly.
-    optional_args = LineageTree.from_eo3_doc(dsid=root, sources={},
-                                             direction=LineageDirection.DERIVED,
-                                             home="notused")
+    optional_args = LineageTree.from_data(dsid=root, sources={},
+                                          direction=LineageDirection.DERIVED,
+                                          home="notused")
     assert optional_args == LineageTree(direction=LineageDirection.DERIVED,
                                         dataset_id=root,
                                         children={},
                                         home=None)   # Note home is not written to the root node
+    doc = list(read_documents(
+       str(os.path.join(data_folder, "ds_eo3.yml"))
+    ))[0][1]
+    tree = LineageTree.from_eo3_doc(doc, home="src_home", home_derived="der_home")
+    assert tree.home == "der_home"
+    for child in tree.children["bc"]:
+        assert child.home == "src_home"
 
 
 @pytest.fixture
