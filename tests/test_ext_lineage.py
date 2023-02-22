@@ -112,6 +112,45 @@ def src_lineage_tree(src_tree_ids):
     )
 
 
+def test_lineage_serialisation(src_lineage_tree, src_tree_ids):
+    ids = src_tree_ids
+    serialised = src_lineage_tree.serialise()
+    assert serialised == {
+        "id": str(ids["root"]),
+        "sources": {
+            "ard": [
+                {
+                    "id": str(ids["ard1"]),
+                    "sources": {
+                        "l1": [
+                            {
+                                "id": str(ids["l1_1"]),
+                                "home": "level1db"
+                            },
+                            {
+                                "id": str(ids["l1_2"]),
+                                "home": "level1db"
+                            },
+                            {
+                                "id": str(ids["l1_3"]),
+                                "home": "level1db"
+                            },
+                        ],
+                        "atmos_corr": [
+                            {
+                                "id": str(ids["atmos"]),
+                                "home": "level1db"
+                            }
+                        ]
+                    },
+                }
+            ]
+        }
+    }
+    tree_out = LineageTree.deserialise(serialised)
+    assert tree_out == src_lineage_tree
+
+
 @pytest.fixture
 def src_lineage_tree_diffhome(src_tree_ids):
     ids = src_tree_ids

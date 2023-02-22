@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
-from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable, Any
+from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable, Any, Union
 
 
 class LineageDirection(Enum):
@@ -23,6 +23,12 @@ class LineageDirection(Enum):
             return self.DERIVED
         else:
             return self.SOURCES
+    @property
+    def label(self):
+        if self == self.SOURCES:
+            return "sources"
+        else:
+            return "derivations"
 
 
 @dataclass
@@ -47,6 +53,61 @@ class LineageTree:
     dataset_id: UUID
     children: Optional[Mapping[str, Sequence["LineageTree"]]] = None
     home: Optional[str] = None
+
+    def __eq__(self, other):
+        if not self.children and not other.children:
+            children_equal = True
+        else:
+            children_equal = (self.children == other.children)
+
+        return (
+            self.dataset_id == other.dataset_id
+            and self.home == other.home
+            and children_equal
+        )
+
+    def serialise(self, specify_direction_if_empty=True) -> Mapping[str, Any]:
+        serial = {"id": str(self.dataset_id)}
+        if self.home:
+            serial["home"] = self.home
+        if self.children:
+            serial[self.direction.label] = {
+                classifier: [
+                    child.serialise(False)
+                    for child in children
+                ]
+                for classifier, children in self.children.items()
+            }
+        elif specify_direction_if_empty:
+            serial[self.direction.label] = {}
+        return serial
+
+    @classmethod
+    def deserialise(cls, serialised: Mapping[str, Any], direction: Optional[LineageDirection] = None) -> "LineageTree":
+        if "id" not in serialised:
+            raise ValueError("Serialised Lineage tree node must have an id")
+        id_ = UUID(serialised["id"])
+        home = serialised.get("home")
+        if direction is None:
+            if LineageDirection.SOURCES.label in serialised:
+                direction = LineageDirection.SOURCES
+            elif LineageDirection.DERIVED.label in serialised:
+                direction = LineageDirection.DERIVED
+            else:
+                raise ValueError(f"Ambiguous direction for serialised Lineage Tree at {id_}")
+        if direction.opposite().label in serialised:
+            raise ValueError(f"Ambiguous direction for serialised Lineage Tree at {id_}")
+        if serialised.get(direction.label):
+            children = {
+                classifier: [
+                    LineageTree.deserialise(child_tree, direction)
+                    for child_tree in child_trees
+                ]
+                for classifier, child_trees in serialised[direction.label].items()
+            }
+        else:
+            children = {}
+        return LineageTree(dataset_id=id_, home=home, direction=direction, children=children)
 
     def find_subtree(self, dsid: UUID, _state: Optional[Sequence["LineageTree"]] = None) -> Optional["LineageTree"]:
         """
