@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
-from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable, Any, Union
+from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable, Any
 
 
 class LineageDirection(Enum):
@@ -23,6 +23,7 @@ class LineageDirection(Enum):
             return self.DERIVED
         else:
             return self.SOURCES
+
     @property
     def label(self):
         if self == self.SOURCES:
