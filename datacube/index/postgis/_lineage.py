@@ -45,7 +45,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
         relations = LineageRelations(tree=tree, max_depth=max_depth)
         self.merge(relations, allow_updates=allow_updates)
 
-    def merge(self, rels: LineageRelations, allow_updates: bool=False, validate_only=False) -> None:
+    def merge(self, rels: LineageRelations, allow_updates: bool = False, validate_only = False) -> None:
         if allow_updates and validate_only:
             raise ValueError("Cannot validate-only AND allow updates")
         with self._db_connection() as connection:

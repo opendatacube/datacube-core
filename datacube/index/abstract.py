@@ -793,7 +793,7 @@ class AbstractLineageResource(ABC):
         """
 
     @abstractmethod
-    def merge(self, rels: LineageRelations, allow_updates: bool=False, validate_only=False) -> None:
+    def merge(self, rels: LineageRelations, allow_updates: bool = False, validate_only: bool = False) -> None:
         """
         Merge an entire LineageRelations collection into the databse.
 
@@ -886,7 +886,7 @@ class LegacyLineageResource(AbstractLineageResource):
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
         raise NotImplementedError()
 
-    def merge(self, rels: LineageRelations, allow_updates: bool=False, validate_only=False) -> None:
+    def merge(self, rels: LineageRelations, allow_updates: bool = False, validate_only = False) -> None:
         raise NotImplementedError()
 
     def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:

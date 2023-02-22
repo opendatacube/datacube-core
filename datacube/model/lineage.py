@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
-from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable, Union, Any
+from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable, Any
 
 
 class LineageDirection(Enum):
@@ -107,10 +107,10 @@ class LineageTree:
 
     @classmethod
     def from_data(cls, dsid: UUID,
-                     sources: Optional[Mapping[str, Sequence[UUID]]] = None,
-                     direction: LineageDirection = LineageDirection.SOURCES,
-                     home=None,
-                     home_derived=None) -> "LineageTree":
+                  sources: Optional[Mapping[str, Sequence[UUID]]] = None,
+                  direction: LineageDirection = LineageDirection.SOURCES,
+                  home=None,
+                  home_derived=None) -> "LineageTree":
         """
         Generate a shallow (depth=1) LineageTree from the sort of data found in an EO3 dataset
 

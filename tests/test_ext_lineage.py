@@ -32,9 +32,11 @@ def test_ltree_clsmethods(data_folder):
                                         dataset_id=root,
                                         children={},
                                         home=None)   # Note home is not written to the root node
-    doc = list(read_documents(
-       str(os.path.join(data_folder, "ds_eo3.yml"))
-    ))[0][1]
+    doc = list(
+        read_documents(
+            str(os.path.join(data_folder, "ds_eo3.yml"))
+        )
+    )[0][1]
     tree = LineageTree.from_eo3_doc(doc, home="src_home", home_derived="der_home")
     assert tree.home == "der_home"
     for child in tree.children["bc"]:
