@@ -49,6 +49,9 @@ class Dataset:
 
     Most important parts are the metadata_doc and uri.
 
+    Dataset objects should be constructed by an index driver, or with the
+    datacube.index.hl.Doc2Dataset
+
     :param metadata_doc: the document (typically a parsed json/yaml)
     :param uris: All active uris for the dataset
     """

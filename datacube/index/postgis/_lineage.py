@@ -22,27 +22,29 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
         super().__init__(index)
 
     def get_derived_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
-        with self._db_connection() as connection:
-            relations = connection.load_lineage_relations([id_],
-                                                          LineageDirection.DERIVED,
-                                                          max_depth)
-        rels = LineageRelations(relations=relations)
-        return rels.extract_tree(id_, LineageDirection.DERIVED)
+        return self.get_lineage_tree(id_, LineageDirection.DERIVED, max_depth)
 
     def get_source_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
+        return self.get_lineage_tree(id_, LineageDirection.SOURCES, max_depth)
+
+    def get_lineage_tree(self, id_: DSID, direction: LineageDirection, max_depth: int):
         with self._db_connection() as connection:
+            # Extract lineage relations into a collection
             relations = connection.load_lineage_relations([id_],
-                                                          LineageDirection.SOURCES,
+                                                          direction,
                                                           max_depth)
             rels = LineageRelations(relations=relations)
+            # Extract home information into the collection
             homes = connection.select_homes(rels.dataset_ids)
         for dsid, home in homes.items():
             rels.merge_new_home(dsid, home)
-        return rels.extract_tree(id_, LineageDirection.SOURCES)
+        # Extract tree from collection
+        return rels.extract_tree(id_, direction)
 
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
         # Convert to a relations collection
         relations = LineageRelations(tree=tree, max_depth=max_depth)
+        # and merge into index.
         self.merge(relations, allow_updates=allow_updates)
 
     def merge(self, rels: LineageRelations, allow_updates: bool = False, validate_only: bool = False) -> None:
@@ -60,6 +62,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                 allow_updates=allow_updates
             )
             if validate_only:
+                # If we get to here, data is safe to add
                 return
             # Merge homes data
             if new_homes:
@@ -94,6 +97,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
 
     def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
         with self._db_connection() as connection:
+            # Convert tree to desired deoth to lineage relations collection
             relations = connection.load_lineage_relations([id_],
                                                           direction,
                                                           max_depth)
@@ -102,6 +106,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                 ids = list(rels.by_derived.keys())
             else:
                 ids = list(rels.by_source.keys())
+            # Delete individual relations.
             connection.remove_lineage_relations(ids, direction)
 
     def set_home(self, home: str, *args: DSID, allow_updates: bool = False) -> int:
