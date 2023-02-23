@@ -1187,6 +1187,14 @@ class PostgisDbAPI(object):
         _core.grant_role(self._connection, pg_role, users)
 
     def insert_home(self, home, ids, allow_updates):
+        """
+        Set home for multiple IDs (but one home value)
+
+        :param home: The home value to set
+        :param ids: The IDs to set it for
+        :param allow_updates: If False only inserts are allowed
+        :return: number of database records updated or added.
+        """
         values = [
             {"dataset_ref": id_, "home": home}
             for id_ in ids
@@ -1207,12 +1215,24 @@ class PostgisDbAPI(object):
             return 0
 
     def delete_home(self, ids):
+        """
+        Delete the home value for the specified IDs
+
+        :param ids: The IDs to delete home for
+        :return: The number of hone records deleted from the databes
+        """
         res = self._connection.execute(
             delete(DatasetHome).where(DatasetHome.dataset_ref.in_(ids))
         )
         return res.rowcount
 
     def select_homes(self, ids):
+        """
+        Find homes for IDs.
+
+        :param ids: Iterable of IDs
+        :return: Mapping of ID to home string for IDs found in database.
+        """
         results = self._connection.execute(
             select(DatasetHome).where(DatasetHome.dataset_ref.in_(ids))
         )
@@ -1222,6 +1242,12 @@ class PostgisDbAPI(object):
         }
 
     def get_all_relations(self, dsids: Iterable[uuid.UUID]) -> Iterable[LineageRelation]:
+        """
+        Fetch all lineage relations in the database involving a set on dataset IDs.
+
+        :param dsids: Iterable of dataset IDs
+        :return: Iterable of LineageRelation objects.
+        """
         results = self._connection.execute(
             select(DatasetLineage).where(or_(
                 DatasetLineage.derived_dataset_ref.in_(dsids),
@@ -1234,6 +1260,13 @@ class PostgisDbAPI(object):
                                   derived_id=rel["derived_dataset_ref"])
 
     def write_relations(self, relations: Iterable[LineageRelation], allow_updates: bool):
+        """
+        Write a set of LineageRelation objects to the database.
+
+        :param relations: An Iterable of LineageRelation objects
+        :param allow_updates: if False, only allow adding new relations, not updating old ones.
+        :return: Count of database rows affected
+        """
         if allow_updates:
             by_classifier = {}
             for rel in relations:
@@ -1278,6 +1311,16 @@ class PostgisDbAPI(object):
                                direction: LineageDirection,
                                depth: int,
                                ids_so_far: Optional[Set[uuid.UUID]] = None) -> Iterable[LineageRelation]:
+        """
+        Read from the database all indexed LineageRelation objects required to build all LineageTrees with
+        the given roots, direction and depth.
+
+        :param roots: Iterable of root dataset ids
+        :param direction: tree direction
+        :param depth: Maximum tree depth - zero indicates unlimited depth.
+        :param ids_so_far: Used for maintaining state through recursion - expected to be None on initial call
+        :return: Iterable of LineageRelation objects read from database
+        """
         # Naive manually-recursive initial implementation.
         # TODO: Reimplement using WITH RECURSIVE query
         if ids_so_far is None:
@@ -1315,6 +1358,15 @@ class PostgisDbAPI(object):
     def remove_lineage_relations(self,
                                  ids: Iterable[DSID],
                                  direction: LineageDirection) -> int:
+        """
+        Remove lineage relations from the provided ids in the specified direction.
+
+        Note no depth parameter - depth is effectively always 1.
+
+        :param ids: Iterable of IDs to remove lineage information for.
+        :param direction: Remove the source or derived lineage relation records
+        :return: Return number of relation records deleted.
+        """
         qry = delete(DatasetLineage)
         if direction == LineageDirection.SOURCES:
             qry = qry.where(DatasetLineage.derived_dataset_ref.in_(ids))
