@@ -70,7 +70,7 @@ class Tile(object):
     @property
     def product(self):
         """
-        :rtype: datacube.model.DatasetType
+        :rtype: datacube.model.Product
         """
         return self.sources.values[0][0].product
 

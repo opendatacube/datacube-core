@@ -197,7 +197,7 @@ def make_dataset(product, sources, extent, center_time, valid_data=None, uri=Non
     """
     Create :class:`datacube.model.Dataset` for the data
 
-    :param DatasetType product: Product the dataset is part of
+    :param Product product: Product the dataset is part of
     :param list[:class:`Dataset`] sources: datasets used to produce the dataset
     :param Geometry extent: extent of the dataset
     :param Geometry valid_data: extent of the valid data

@@ -5,7 +5,7 @@
 import logging
 
 from datacube.index.abstract import AbstractProductResource
-from datacube.model import DatasetType
+from datacube.model import Product
 
 from typing import Iterable
 
@@ -22,7 +22,7 @@ class ProductResource(AbstractProductResource):
     def can_update(self, product, allow_unsafe_updates=False, allow_table_lock=False):
         raise NotImplementedError()
 
-    def update(self, product: DatasetType, allow_unsafe_updates=False, allow_table_lock=False):
+    def update(self, product: Product, allow_unsafe_updates=False, allow_table_lock=False):
         raise NotImplementedError()
 
     def get_unsafe(self, id_):
@@ -40,5 +40,5 @@ class ProductResource(AbstractProductResource):
     def search_by_metadata(self, metadata):
         return []
 
-    def get_all(self) -> Iterable[DatasetType]:
+    def get_all(self) -> Iterable[Product]:
         return []

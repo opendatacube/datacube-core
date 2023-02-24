@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from datacube.index.abstract import AbstractDatasetResource, DSID
-from datacube.model import Dataset, DatasetType
+from datacube.model import Dataset, Product
 from typing import Iterable
 
 
@@ -31,7 +31,7 @@ class DatasetResource(AbstractDatasetResource):
             with_lineage: bool = True) -> Dataset:
         raise NotImplementedError()
 
-    def search_product_duplicates(self, product: DatasetType, *args):
+    def search_product_duplicates(self, product: Product, *args):
         return []
 
     def can_update(self, dataset, updates_allowed=None):
