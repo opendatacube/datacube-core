@@ -48,6 +48,9 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
 
     # A blank host will use a local socket. Specify a hostname (such as localhost) to use TCP.
     db_hostname:
+    
+    # Port is optional. The default port is 5432.
+    # db_hostname:
 
     # Credentials are optional: you might have other Postgres authentication configured.
     # The default username otherwise is the current user id.
