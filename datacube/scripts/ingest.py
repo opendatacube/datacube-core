@@ -17,7 +17,7 @@ from typing import Tuple
 import datacube
 from datacube.api.core import Datacube
 from datacube.index import Index
-from datacube.model import DatasetType, Range, Measurement, IngestorConfig
+from datacube.model import Product, Range, Measurement, IngestorConfig
 from datacube.utils import geometry
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
@@ -57,7 +57,7 @@ def morph_dataset_type(source_type, config, index, storage_format):
     if 'metadata_type' in config:
         output_metadata_type = index.metadata_types.get_by_name(config['metadata_type'])
 
-    output_type = DatasetType(output_metadata_type, deepcopy(source_type.definition))
+    output_type = Product(output_metadata_type, deepcopy(source_type.definition))
     output_type.definition['name'] = config['output_type']
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
@@ -151,7 +151,7 @@ def get_resampling(config):
 def ensure_output_type(index: Index,
                        config: dict,
                        storage_format: str,
-                       allow_product_changes: bool = False) -> Tuple[DatasetType, DatasetType]:
+                       allow_product_changes: bool = False) -> Tuple[Product, Product]:
     """
     Create the output product for the given ingest config if it doesn't already exist.
 
@@ -160,11 +160,11 @@ def ensure_output_type(index: Index,
     """
     source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
-        click.echo("Source DatasetType %s does not exist" % config['source_type'])
+        click.echo("Source Product %s does not exist" % config['source_type'])
         click.get_current_context().exit(1)
 
     output_type = morph_dataset_type(source_type, config, index, storage_format)
-    _LOG.info('Created DatasetType %s', output_type.name)
+    _LOG.info('Created Product %s', output_type.name)
 
     existing = index.products.get_by_name(output_type.name)
     if existing:
