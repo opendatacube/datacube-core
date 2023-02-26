@@ -174,7 +174,11 @@ def catalog():
                     method: mean
                     group_by: month
                     input:
-                        transform: to_float
+                        transform: expressions
+                        output:
+                          blue:
+                            formula: blue
+                            dtype: float32
                         input:
                             collate:
                               - product: ls7_nbar_albers
@@ -342,62 +346,6 @@ def test_misspelled_product(dc, query):
 #####################################
 # Virtual Product Transform Tests
 #####################################
-
-
-def test_select_transform(dc, query):
-    select = construct_from_yaml("""
-        transform: select
-        measurement_names:
-            - green
-        input:
-            product: ls8_nbar_albers
-            measurements: [blue, green]
-    """)
-
-    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
-        mock_datacube.load_data = load_data
-        mock_datacube.group_datasets = group_datasets
-        data = select.load(dc, **query)
-
-    assert 'green' in data
-    assert 'blue' not in data
-
-
-def test_rename_transform(dc, query):
-    rename = construct_from_yaml("""
-        transform: rename
-        measurement_names:
-            green: verde
-        input:
-            product: ls8_nbar_albers
-            measurements: [blue, green]
-    """)
-
-    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
-        mock_datacube.load_data = load_data
-        mock_datacube.group_datasets = group_datasets
-        data = rename.load(dc, **query)
-
-    assert 'verde' in data
-    assert 'blue' in data
-    assert 'green' not in data
-
-
-def test_to_float_transform(dc, query):
-    to_float = construct_from_yaml("""
-        transform: to_float
-        input:
-            product: ls8_nbar_albers
-            measurements: [blue]
-    """)
-
-    with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
-        mock_datacube.load_data = load_data
-        mock_datacube.group_datasets = group_datasets
-        data = to_float.load(dc, **query)
-
-    assert numpy.all(numpy.isnan(data.blue.values))
-    assert data.blue.dtype == 'float32'
 
 
 def test_vp_handles_product_aliases(dc, query):
