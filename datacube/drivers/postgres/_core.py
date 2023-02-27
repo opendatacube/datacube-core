@@ -100,7 +100,7 @@ def ensure_db(engine, with_permissions=True):
     if not has_schema(engine):
         is_new = True
         try:
-            c.execute(text('begin'))
+            sqla_txn = c.begin()
             if with_permissions:
                 # Switch to 'agdc_admin', so that all items are owned by them.
                 c.execute(text('set role agdc_admin'))
@@ -113,9 +113,9 @@ def ensure_db(engine, with_permissions=True):
             install_timestamp_trigger(c)
             _LOG.info("Creating added column.")
             install_added_column(c)
-            c.execute(text('commit'))
+            sqla_txn.commit()
         except:  # noqa: E722
-            c.execute(text('rollback'))
+            sqla_txn.rollback()
             raise
         finally:
             if with_permissions:

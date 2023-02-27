@@ -348,7 +348,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
     def _make(self, query_row) -> Product:
         return Product(
-            definition=query_row._mapping['definition'],
-            metadata_type=cast(MetadataType, self.metadata_type_resource.get(query_row._mapping['metadata_type_ref'])),
-            id_=query_row._mapping['id'],
+            definition=query_row.definition,
+            metadata_type=cast(MetadataType, self.metadata_type_resource.get(query_row.metadata_type_ref)),
+            id_=query_row.id,
         )

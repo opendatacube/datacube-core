@@ -136,7 +136,7 @@ class PostGisDb(object):
             # than assuming it's still open. Allows servers to close idle connections without clients
             # getting errors.
             pool_recycle=pool_timeout,
-            connect_args={'application_name': application_name}
+            connect_args={'application_name': application_name},
         )
 
         if iam_rds_auth:

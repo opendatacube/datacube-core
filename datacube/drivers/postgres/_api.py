@@ -954,11 +954,11 @@ class PostgresDbAPI(object):
         search_fields = {}
 
         for metadata_type in self.get_all_metadata_types():
-            fields = get_dataset_fields(metadata_type._mapping['definition'])
-            search_fields[metadata_type._mapping['id']] = fields
+            fields = get_dataset_fields(metadata_type.definition)
+            search_fields[metadata_type.id] = fields
             self._setup_metadata_type_fields(
-                metadata_type._mapping['id'],
-                metadata_type._mapping['name'],
+                metadata_type.id,
+                metadata_type.name,
                 fields,
                 rebuild_indexes=rebuild_indexes,
                 rebuild_views=rebuild_views,
@@ -978,10 +978,10 @@ class PostgresDbAPI(object):
 
         for product in self._get_products_for_metadata_type(id_):
             self._setup_product_fields(
-                product._mapping['id'],
-                product._mapping['name'],
+                product.id,
+                product.name,
                 fields,
-                product._mapping['definition']['metadata'],
+                product.definition['metadata'],
                 rebuild_view=rebuild_views,
                 rebuild_indexes=rebuild_indexes,
                 concurrently=concurrently
@@ -1140,7 +1140,7 @@ class PostgresDbAPI(object):
             order by group_role.oid asc, user_role.oid asc;
         """))
         for row in result:
-            yield _core.from_pg_role(row._mapping['role_name']), row._mapping['user_name'], row._mapping['description']
+            yield _core.from_pg_role(row.role_name), row.user_name, row.description
 
     def create_user(self, username, password, role, description=None):
         pg_role = _core.to_pg_role(role)

@@ -1160,7 +1160,7 @@ class PostgisDbAPI(object):
             order by group_role.oid asc, user_role.oid asc;
         """))
         for row in result:
-            yield _core.from_pg_role(row._mapping['role_name']), row._mapping['user_name'], row._mapping['description']
+            yield _core.from_pg_role(row.role_name), row.user_name, row.description
 
     def create_user(self, username, password, role, description=None):
         pg_role = _core.to_pg_role(role)
