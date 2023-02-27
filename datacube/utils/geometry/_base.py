@@ -485,7 +485,11 @@ class Geometry:
 
     @wrap_shapely
     def intersects(self, other: 'Geometry') -> bool:
-        return self.intersects(other)
+        np_settings = numpy.seterr()
+        numpy.seterr(invalid="ignore")
+        intersect = self.intersects(other)
+        numpy.seterr(**np_settings)
+        return intersect
 
     @wrap_shapely
     def touches(self, other: 'Geometry') -> bool:
@@ -505,7 +509,11 @@ class Geometry:
 
     @wrap_shapely
     def intersection(self, other: 'Geometry') -> 'Geometry':
-        return self.intersection(other)
+        np_settings = numpy.seterr()
+        numpy.seterr(invalid="ignore")
+        intersection = self.intersection(other)
+        numpy.seterr(**np_settings)
+        return intersection
 
     @wrap_shapely
     def symmetric_difference(self, other: 'Geometry') -> 'Geometry':
