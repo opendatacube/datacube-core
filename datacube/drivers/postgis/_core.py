@@ -94,7 +94,8 @@ def ensure_db(engine, with_permissions=True):
     if not has_schema(engine):
         is_new = True
         try:
-            c.execute(text('begin'))
+            # TODO: Switch to SQLAlchemy-2.0/Future style connections and transactions.
+            sqla_txn = c.begin()
             if with_permissions:
                 # Switch to 'odc_admin', so that all items are owned by them.
                 c.execute(text('set role odc_admin'))
@@ -107,10 +108,10 @@ def ensure_db(engine, with_permissions=True):
             orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
-            c.execute(text('commit'))
+            sqla_txn.commit()
         except:  # noqa: E722
             _LOG.error("Unhandled SQLAlchemy error.")
-            c.execute(text('rollback'))
+            sqla_txn.rollback()
             raise
         finally:
             if with_permissions:

@@ -226,7 +226,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         """
         :rtype: datacube.model.MetadataType
         """
-        return self._make(query_row._mapping['definition'], query_row._mapping['id'])
+        return self._make(query_row.definition, query_row.id)
 
     def _make(self, definition, id_=None):
         """
