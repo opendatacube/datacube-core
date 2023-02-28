@@ -8,18 +8,12 @@ on:
   push:
     paths:
       - '**'
-      - '!.github/**'
-      - '.github/workflows/main.yml'
-      - '!docker/**'
       - '!docs/**'
       - '!contrib/**'
   
-  # build and push new docker image first if necessary
-  workflow_run:
-    workflows:
-      - Docker (test runner)
-    types:
-      - completed
+env:
+  DOCKER_USER: gadockersvc
+
 
 jobs:
   main:
@@ -36,43 +30,35 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Config
-      id: cfg
-      run: |
-        push_dea=no
-        push_pypi=no
-        push_test_pypi=no
-        primary=no
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-        if [ "${{ matrix.docker_image }}" == "opendatacube/datacube-tests:latest" ]; then
-           primary=yes
-        fi
+    - name: Cache Docker layers
+      uses: pat-s/always-upload-cache@v2.1.5
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
 
-        case "${GITHUB_REF}" in
-        "refs/heads/develop")
-             push_dea=${primary}
-             ;;
-        "refs/tags/"*)
-             push_pypi=${primary}
-             push_test_pypi=${primary}
-             push_dea=${primary}
-             ;;
-        "refs/heads/"*)
-             ;;
-        "refs/pull/"*)
-             ;;
-        *)
-             ;;
-        esac
+    - name: DockerHub Login
+      id: login
+      if: |
+        github.event_name == 'push'
+        && github.ref == 'refs/heads/develop'
+      uses: docker/login-action@v2
+      with:
+        username: ${DOCKER_USER}
+        password: ${{ secrets.DockerPassword }}
 
-        for x in primary push_pypi push_test_pypi push_dea; do
-           echo "${x}=${!x}" >> $GITHUB_OUTPUT
-        done
-
-    - name: Pull Docker
-      run: |
-        docker pull "${{ matrix.docker_image }}"
-
+    - name: Build Docker
+      uses: docker/build-push-action@v4
+      with:
+        file: docker/Dockerfile
+        context: .
+        tags: ${{ matrix.docker_image }}
+        load: true
+    
     - name: Build Packages
       run: |
         cat <<EOF | docker run --rm -i  \
@@ -81,15 +67,15 @@ jobs:
                   ${{ matrix.docker_image }} bash -
         python setup.py bdist_wheel sdist
         ls -lh ./dist/
-        if hash twine 2> /dev/null ; then
-           twine check ./dist/*
-        else
-           echo "WARNING: twine is missing from the docker!"
-        fi
+        twine check ./dist/*
         EOF
 
-    - name: Run Tests
+    - name: Verify and Run Tests
       run: |
+        echo "Verify that twine is installed"
+        docker run --rm opendatacube/datacube-tests:latest twine --version
+
+        echo "Run tests"
         cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ matrix.docker_image }} bash -
           pip install -e /code/tests/drivers/fail_drivers --no-deps
           pip install -e /code/examples/io_plugin --no-deps
@@ -104,49 +90,17 @@ jobs:
             integration_tests
         EOF
 
-    - name: Publish to dea packages repo
-      if: steps.cfg.outputs.push_dea == 'yes'
-      run: |
-        if [ -n "${AWS_ACCESS_KEY_ID}" ]; then
-           echo "Using Keys: ...${AWS_ACCESS_KEY_ID:(-4)}/...${AWS_SECRET_ACCESS_KEY:(-4)}"
-           aws s3 cp ./dist/datacube-*whl "${S3_DST}/"
-           aws s3 cp ./dist/datacube-*tar.gz "${S3_DST}/"
-        else
-           echo "Skipping upload AWS_ACCESS_KEY_ID is not set"
-        fi
-      env:
-          AWS_DEFAULT_REGION: 'ap-southeast-2'
-          AWS_REGION: 'ap-southeast-2'
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          S3_DST: 's3://datacube-core-deployment/datacube'
-
-    - name: Publish to Test PyPi
-      if: steps.cfg.outputs.push_test_pypi == 'yes'
-      run: |
-        if [ -n "${TWINE_PASSWORD}" ]; then
-          docker run --rm  \
-            -v $(pwd):/code \
-            -e SKIP_DB=yes \
-            ${{ matrix.docker_image }} \
-            twine upload \
-              --verbose \
-              --non-interactive \
-              --disable-progress-bar \
-              --username=__token__ \
-              --password=${TWINE_PASSWORD} \
-              --repository-url=${TWINE_REPOSITORY_URL} \
-              --skip-existing dist/* || true
-        else
-           echo "Skipping upload as 'TestPyPiToken' is not set"
-        fi
-
-      env:
-        TWINE_PASSWORD: ${{ secrets.TestPyPiToken }}
-        TWINE_REPOSITORY_URL: 'https://test.pypi.org/legacy/'
-
+    - name: DockerHub Push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ matrix.docker_image }}
+       
     - name: Publish to PyPi
-      if: steps.cfg.outputs.push_pypi == 'yes'
+      if: |
+        github.event_name == 'push'
+        && github.ref == 'refs/heads/pypi/publish'
       run: |
         if [ -n "${TWINE_PASSWORD}" ]; then
           docker run --rm  \
