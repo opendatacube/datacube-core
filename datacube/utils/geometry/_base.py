@@ -383,7 +383,12 @@ def wrap_shapely(method):
             if first.crs != arg.crs:
                 raise CRSMismatchError((first.crs, arg.crs))
 
+        if method.__name__ in ["intersects", "intersection"]:
+            np_settings = numpy.seterr()
+            numpy.seterr(invalid="ignore")
         result = method(*[arg.geom for arg in args])
+        if method.__name__ in ["intersects", "intersection"]:
+            numpy.seterr(**np_settings)
         if isinstance(result, base.BaseGeometry):
             return Geometry(result, first.crs)
         return result
@@ -485,10 +490,7 @@ class Geometry:
 
     @wrap_shapely
     def intersects(self, other: 'Geometry') -> bool:
-        np_settings = numpy.seterr()
-        numpy.seterr(invalid="ignore")
         intersect = self.intersects(other)
-        numpy.seterr(**np_settings)
         return intersect
 
     @wrap_shapely
@@ -509,10 +511,7 @@ class Geometry:
 
     @wrap_shapely
     def intersection(self, other: 'Geometry') -> 'Geometry':
-        np_settings = numpy.seterr()
-        numpy.seterr(invalid="ignore")
         intersection = self.intersection(other)
-        numpy.seterr(**np_settings)
         return intersection
 
     @wrap_shapely
