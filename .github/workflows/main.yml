@@ -13,27 +13,38 @@ on:
   
 env:
   DOCKER_USER: gadockersvc
+  DOCKER_IMAGE: opendatacube/datacube-tests:latest
 
 
 jobs:
   main:
     runs-on: ubuntu-latest
 
-    strategy:
-      max-parallel: 2
-      matrix:
-        docker_image:
-          - opendatacube/datacube-tests:latest
-
     steps:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
+    - uses: dorny/paths-filter@v2
+      id: changes
+      if: |
+        github.event_name == 'push'
+      with:
+        filters: |
+          docker:
+            - 'docker/**'
+
+    - name: Pull Docker
+      if: steps.changes.outputs.docker == 'false'
+      run: |
+        docker pull "${{ env.DOCKER_IMAGE }}"
+
     - name: Set up Docker Buildx
+      if: steps.changes.outputs.docker == 'true'
       uses: docker/setup-buildx-action@v2
 
     - name: Cache Docker layers
+      if: steps.changes.outputs.docker == 'true'
       uses: pat-s/always-upload-cache@v2.1.5
       with:
         path: /tmp/.buildx-cache
@@ -52,23 +63,13 @@ jobs:
         password: ${{ secrets.DockerPassword }}
 
     - name: Build Docker
+      if: steps.changes.outputs.docker == 'true'
       uses: docker/build-push-action@v4
       with:
         file: docker/Dockerfile
         context: .
-        tags: ${{ matrix.docker_image }}
+        tags: ${DOCKER_IMAGE}
         load: true
-    
-    - name: Build Packages
-      run: |
-        cat <<EOF | docker run --rm -i  \
-                  -v $(pwd):/code \
-                  -e SKIP_DB=yes \
-                  ${{ matrix.docker_image }} bash -
-        python setup.py bdist_wheel sdist
-        ls -lh ./dist/
-        twine check ./dist/*
-        EOF
 
     - name: Verify and Run Tests
       run: |
@@ -76,7 +77,7 @@ jobs:
         docker run --rm opendatacube/datacube-tests:latest twine --version
 
         echo "Run tests"
-        cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ matrix.docker_image }} bash -
+        cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ env.DOCKER_IMAGE }} bash -
           pip install -e /code/tests/drivers/fail_drivers --no-deps
           pip install -e /code/examples/io_plugin --no-deps
 
@@ -91,12 +92,24 @@ jobs:
         EOF
 
     - name: DockerHub Push
+      if: steps.changes.outputs.docker == 'true'
       uses: docker/build-push-action@v4
       with:
         context: .
         push: true
-        tags: ${{ matrix.docker_image }}
-       
+        tags: ${DOCKER_IMAGE}
+
+    - name: Build Packages
+      run: |
+        cat <<EOF | docker run --rm -i  \
+                  -v $(pwd):/code \
+                  -e SKIP_DB=yes \
+                  ${{ env.DOCKER_IMAGE }} bash -
+        python setup.py bdist_wheel sdist
+        ls -lh ./dist/
+        twine check ./dist/*
+        EOF
+
     - name: Publish to PyPi
       if: |
         github.event_name == 'push'
@@ -106,7 +119,7 @@ jobs:
           docker run --rm  \
             -v $(pwd):/code \
             -e SKIP_DB=yes \
-            ${{ matrix.docker_image }} \
+            ${{ env.DOCKER_IMAGE }} \
             twine upload \
               --verbose \
               --non-interactive \
