@@ -224,7 +224,7 @@ class PostgisDbAPI(object):
         return self._connection.in_transaction()
 
     def begin(self):
-        self._connection.execution_options(isolation_level="SERIALIZABLE")
+        self._connection.execution_options(isolation_level="REPEATABLE READ")
         self._sqla_txn = self._connection.begin()
 
     def _end_transaction(self):
