@@ -13,6 +13,7 @@ v1.8.next
 - Fix RTD docs build (:pull:`1399`)
 - Minor Documentation fixes (:pull:`1409`, :pull:`1413`)
 - Bugfix and code cleanup in virtual products (:pull:`1410`)
+- Reduce transaction isolation level to improve database write concurrency (:pull:`1414`)
 
 
 v1.8.11 (6 February 2023)
