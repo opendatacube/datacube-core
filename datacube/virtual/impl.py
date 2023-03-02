@@ -610,7 +610,8 @@ class Collate(VirtualProduct):
                   in enumerate(zip(self._children, datasets.bag['collate']))]
 
         dim = self.get('dim', 'time')
-        return VirtualDatasetBox(xarray.concat([grouped.box for grouped in groups], dim=dim).sortby(dim),
+        return VirtualDatasetBox(xarray.concat([grouped.box for grouped in groups
+                                                if grouped.box.shape[0] > 0], dim=dim).sortby(dim),
                                  select_unique([grouped.geobox for grouped in groups]),
                                  select_unique([grouped.load_natively for grouped in groups]),
                                  merge_dicts([grouped.product_definitions for grouped in groups]),

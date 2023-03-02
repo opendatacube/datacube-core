@@ -370,24 +370,31 @@ def _norm_crs_or_error(crs: MaybeCRS) -> CRS:
     return CRS(crs)
 
 
-def wrap_shapely(method):
+def wrap_shapely(suppress_geos_warnings=False):
     """
     Takes a method that expects shapely geometry arguments
     and converts it to a method that operates on `Geometry`
     objects that carry their CRSs.
     """
-    @functools.wraps(method, assigned=('__doc__', ))
-    def wrapped(*args):
-        first = args[0]
-        for arg in args[1:]:
-            if first.crs != arg.crs:
-                raise CRSMismatchError((first.crs, arg.crs))
+    def wrap_func(method):
+        @functools.wraps(method, assigned=('__doc__', ))
+        def wrapped(*args):
+            first = args[0]
+            for arg in args[1:]:
+                if first.crs != arg.crs:
+                    raise CRSMismatchError((first.crs, arg.crs))
 
-        result = method(*[arg.geom for arg in args])
-        if isinstance(result, base.BaseGeometry):
-            return Geometry(result, first.crs)
-        return result
-    return wrapped
+            if suppress_geos_warnings:
+                np_settings = numpy.seterr()
+                numpy.seterr(invalid="ignore")
+            result = method(*[arg.geom for arg in args])
+            if suppress_geos_warnings:
+                numpy.seterr(**np_settings)
+            if isinstance(result, base.BaseGeometry):
+                return Geometry(result, first.crs)
+            return result
+        return wrapped
+    return wrap_func
 
 
 def force_2d(geojson: Dict[str, Any]) -> Dict[str, Any]:
@@ -471,63 +478,63 @@ class Geometry:
     def clone(self) -> 'Geometry':
         return Geometry(self)
 
-    @wrap_shapely
+    @wrap_shapely()
     def contains(self, other: 'Geometry') -> bool:
         return self.contains(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def crosses(self, other: 'Geometry') -> bool:
         return self.crosses(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def disjoint(self, other: 'Geometry') -> bool:
         return self.disjoint(other)
 
-    @wrap_shapely
+    @wrap_shapely(suppress_geos_warnings=True)
     def intersects(self, other: 'Geometry') -> bool:
         return self.intersects(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def touches(self, other: 'Geometry') -> bool:
         return self.touches(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def within(self, other: 'Geometry') -> bool:
         return self.within(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def overlaps(self, other: 'Geometry') -> bool:
         return self.overlaps(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def difference(self, other: 'Geometry') -> 'Geometry':
         return self.difference(other)
 
-    @wrap_shapely
+    @wrap_shapely(suppress_geos_warnings=True)
     def intersection(self, other: 'Geometry') -> 'Geometry':
         return self.intersection(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def symmetric_difference(self, other: 'Geometry') -> 'Geometry':
         return self.symmetric_difference(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def union(self, other: 'Geometry') -> 'Geometry':
         return self.union(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def __and__(self, other: 'Geometry') -> 'Geometry':
         return self.__and__(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def __or__(self, other: 'Geometry') -> 'Geometry':
         return self.__or__(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def __xor__(self, other: 'Geometry') -> 'Geometry':
         return self.__xor__(other)
 
-    @wrap_shapely
+    @wrap_shapely()
     def __sub__(self, other: 'Geometry') -> 'Geometry':
         return self.__sub__(other)
 
