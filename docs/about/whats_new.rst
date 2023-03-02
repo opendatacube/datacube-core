@@ -12,7 +12,7 @@ v1.8.next
 - Remove some deprecated SQLAlchemy usages (:pull:`1403`, :pull:`1407`)
 - Fix RTD docs build (:pull:`1399`)
 - Minor Documentation fixes (:pull:`1409`, :pull:`1413`)
-- Bugfix and code cleanup in virtual products (:pull:`1410`)
+- Bug-fix and code cleanup in virtual products (:pull:`1410`)
 - Reduce transaction isolation level to improve database write concurrency (:pull:`1414`)
 
 
