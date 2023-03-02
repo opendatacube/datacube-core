@@ -50,7 +50,7 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
     db_hostname:
     
     # Port is optional. The default port is 5432.
-    # db_hostname:
+    # db_port:
 
     # Credentials are optional: you might have other Postgres authentication configured.
     # The default username otherwise is the current user id.
