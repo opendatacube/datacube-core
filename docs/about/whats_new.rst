@@ -11,6 +11,8 @@ v1.8.next
 - Rename Geometry `type` attribute to `geom_type`, to align with Shapely 2.0 (:pull:`1402`)
 - Remove some deprecated SQLAlchemy usages (:pull:`1403`, :pull:`1407`)
 - Fix RTD docs build (:pull:`1399`)
+- Minor Documentation fixes (:pull:`1409`, :pull:`1413`)
+- Bugfix and code cleanup in virtual products (:pull:`1410`)
 
 
 v1.8.11 (6 February 2023)
