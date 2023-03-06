@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 """
 Core classes used across modules.
@@ -23,6 +23,16 @@ from datacube.index.eo3 import is_doc_eo3
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
+from .lineage import LineageDirection, LineageTree, InconsistentLineageException  # noqa: F401
+
+__all__ = [
+    "Field", "get_dataset_fields",
+    "Range", "ranges_overlap",
+    "LineageDirection", "LineageTree", "InconsistentLineageException",
+    "Dataset", "Product", "MetadataType", "Measurement", "GridSpec",
+    "metadata_from_doc",
+    "ExtraDimensions", "IngestorConfig"
+]
 
 _LOG = logging.getLogger(__name__)
 
@@ -39,6 +49,9 @@ class Dataset:
 
     Most important parts are the metadata_doc and uri.
 
+    Dataset objects should be constructed by an index driver, or with the
+    datacube.index.hl.Doc2Dataset
+
     :param metadata_doc: the document (typically a parsed json/yaml)
     :param uris: All active uris for the dataset
     """
@@ -50,7 +63,9 @@ class Dataset:
                  sources: Optional[Mapping[str, 'Dataset']] = None,
                  indexed_by: Optional[str] = None,
                  indexed_time: Optional[datetime] = None,
-                 archived_time: Optional[datetime] = None):
+                 archived_time: Optional[datetime] = None,
+                 source_tree: Optional[LineageTree] = None,
+                 derived_tree: Optional[LineageTree] = None):
         assert isinstance(product, Product)
 
         self.product = product
@@ -67,6 +82,9 @@ class Dataset:
 
         if self.sources is not None:
             assert set(self.metadata.sources.keys()) == set(self.sources.keys())
+
+        self.source_tree = source_tree
+        self.derived_tree = derived_tree
 
         #: The User who indexed this dataset
         self.indexed_by = indexed_by

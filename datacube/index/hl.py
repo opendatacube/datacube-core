@@ -10,11 +10,12 @@ import toolz
 from uuid import UUID
 from typing import cast, Any, Callable, Optional, Iterable, List, Mapping, Sequence, Tuple, Union, MutableMapping
 
-from datacube.model import Dataset, DatasetType as Product
+from datacube.model import Dataset, LineageTree, Product
 from datacube.index.abstract import AbstractIndex
 from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
 from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
+from datacube.model import LineageDirection
 from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo  # type: ignore[attr-defined]
 
 
@@ -48,7 +49,10 @@ def load_rules_from_types(index: AbstractIndex,
     return [ProductRule(p, p.metadata_doc) for p in products], None
 
 
-def product_matcher(rules: Sequence[ProductRule]) -> Callable[[Mapping[str, Any]], Product]:
+ProductMatcher = Callable[[Mapping[str, Any]], Product]
+
+
+def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
     """Given product matching rules return a function mapping a document to a
     matching product.
 
@@ -142,93 +146,172 @@ DatasetOrError = Union[
 ]
 
 
+def resolve_no_lineage(ds: SimpleDocNav,
+                       uri: str,
+                       matcher: ProductMatcher,
+                       source_tree: Optional[LineageTree] = None) -> DatasetOrError:
+    if source_tree:
+        raise ValueError("source_tree passed to non-lineage resolver")
+    doc = ds.doc_without_lineage_sources
+    try:
+        product = matcher(doc)
+    except BadMatch as e:
+        return None, e
+    return Dataset(product, doc, uris=[uri], sources={}), None
+
+
+def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
+                         source_tree: Optional[LineageTree] = None,
+                         home_index: Optional[str] = None) -> DatasetOrError:
+    """
+    Dataset driver for the (new) external lineage API
+
+    API paramters
+    :param doc: Dataset docnav
+    :param uri: location uri
+
+    Extra kwargs passed in by Doc2Dataset:
+    :param matcher: Product matcher
+    :param source_tree: sourcewards LineageTree to use in place of EO3 sources (optional)
+    :param home_index: Home for sources (ignored if source_tree is not none)
+    :return:
+    """
+    uuid_ = doc.id
+    if not uuid_:
+        return None, "No id defined in dataset doc"
+    try:
+        product = matcher(doc.doc)
+    except BadMatch as e:
+        return None, e
+    if source_tree is None:
+        # Get sources from EO3 document, use home_index as home of source id's
+        source_tree = LineageTree.from_data(uuid_, sources=doc.sources, home=home_index)
+    else:
+        # May be None
+        if source_tree.direction == LineageDirection.DERIVED:
+            raise ValueError("source_tree cannot be a derived tree.")
+        source_tree = source_tree.find_subtree(uuid_)
+    return Dataset(product,
+                   doc.doc,
+                   source_tree=source_tree,
+                   uris=[uri]), None
+
+
+def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
+                           index: AbstractIndex,
+                           fail_on_missing_lineage: bool,
+                           verify_lineage: bool,
+                           source_tree: Optional[LineageTree] = None,
+                           ) -> DatasetOrError:
+    if source_tree:
+        raise ValueError("source_tree passed to non-external lineage resolver")
+
+    try:
+        main_ds = SimpleDocNav(dedup_lineage(main_ds_doc))
+    except InvalidDocException as e:
+        return None, e
+
+    main_uuid = main_ds.id
+    if not main_uuid:
+        return None, "No id defined in dataset doc"
+
+    ds_by_uuid = toolz.valmap(toolz.first, flatten_datasets(main_ds))
+    all_uuid = list(ds_by_uuid)
+    db_dss = {ds.id: ds for ds in index.datasets.bulk_get(all_uuid)}
+
+    lineage_uuids = set(filter(lambda x: x != main_uuid, all_uuid))
+    missing_lineage = lineage_uuids - set(db_dss)
+
+    if missing_lineage and fail_on_missing_lineage:
+        return None, "Following lineage datasets are missing from DB: %s" % (
+            ','.join(str(m) for m in missing_lineage))
+
+    if not is_doc_eo3(main_ds.doc):
+        if is_doc_geo(main_ds.doc, check_eo3=False):
+            if not index.supports_legacy:
+                return None, "Legacy metadata formats not supported by the current index driver."
+        else:
+            if not index.supports_nongeo:
+                return None, "Non-geospatial metadata formats not supported by the current index driver."
+        if verify_lineage:
+            bad_lineage = []
+
+            for uuid in lineage_uuids:
+                if uuid in db_dss:
+                    ok, err = check_consistent(jsonify_document(ds_by_uuid[uuid].doc_without_lineage_sources),
+                                               db_dss[uuid].metadata_doc)
+                    if not ok:
+                        bad_lineage.append((uuid, err))
+
+            if len(bad_lineage) > 0:
+                error_report = '\n'.join('Inconsistent lineage dataset {}:\n> {}'.format(uuid, err)
+                                         for uuid, err in bad_lineage)
+                return None, error_report
+
+    def with_cache(v: Dataset, k: UUID, cache: MutableMapping[UUID, Dataset]) -> Dataset:
+        cache[k] = v
+        return v
+
+    def resolve_ds(ds: SimpleDocNav,
+                   sources: Optional[Mapping[UUID, Dataset]],
+                   cache: MutableMapping[UUID, Dataset]) -> Dataset:
+        cached = cache.get(ds.id)
+        if cached is not None:
+            return cached
+
+        uris = [uri] if ds.id == main_uuid else []
+
+        doc = ds.doc
+
+        db_ds = db_dss.get(ds.id)
+        if db_ds:
+            product = db_ds.product
+        else:
+            product = matcher(doc)
+
+        return with_cache(Dataset(product, doc, uris=uris, sources=sources), ds.id, cache)
+    try:
+        return remap_lineage_doc(main_ds, resolve_ds, cache={}), None
+    except BadMatch as e:
+        return None, e
+
+
 def dataset_resolver(index: AbstractIndex,
-                     product_matching_rules: Sequence[ProductRule],
+                     match_product: Callable[[Mapping[str, Any]], Product],
                      fail_on_missing_lineage: bool = False,
                      verify_lineage: bool = True,
-                     skip_lineage: bool = False) -> Callable[[SimpleDocNav, str], DatasetOrError]:
-    match_product = product_matcher(product_matching_rules)
+                     skip_lineage: bool = False,
+                     home_index: Optional[str] = None) -> Callable[
+    [SimpleDocNav, str, Optional[LineageTree]],
+    DatasetOrError
+]:
+    if skip_lineage or not index.supports_lineage:
+        # Resolver that ignores lineage.
+        resolver = resolve_no_lineage
+        extra_kwargs = {
+            "matcher": match_product,
+        }
+    elif index.supports_external_lineage:
+        # ODCv2 external lineage API resolver
+        resolver = resolve_with_lineage
+        extra_kwargs = {
+            "matcher": match_product,
+            "home_index": home_index,
+        }
+    else:
+        # Legacy lineage API resolver
+        resolver = resolve_legacy_lineage
+        extra_kwargs = {
+            "matcher": match_product,
+            "index": index,
+            "fail_on_missing_lineage": fail_on_missing_lineage,
+            "verify_lineage": verify_lineage,
+        }
 
-    def resolve_no_lineage(ds: SimpleDocNav, uri: str) -> DatasetOrError:
-        doc = ds.doc_without_lineage_sources
-        try:
-            product = match_product(doc)
-        except BadMatch as e:
-            return None, e
+    def resolve(doc: SimpleDocNav, uri: str, source_tree: Optional[LineageTree] = None) -> DatasetOrError:
+        return resolver(doc, uri, source_tree=source_tree, **extra_kwargs)
 
-        return Dataset(product, doc, uris=[uri], sources={}), None
-
-    def resolve(main_ds_doc: SimpleDocNav, uri: str) -> DatasetOrError:
-        try:
-            main_ds = SimpleDocNav(dedup_lineage(main_ds_doc))
-        except InvalidDocException as e:
-            return None, e
-
-        main_uuid = main_ds.id
-
-        if not main_uuid:
-            return None, "No id defined in dataset doc"
-
-        ds_by_uuid = toolz.valmap(toolz.first, flatten_datasets(main_ds))
-        all_uuid = list(ds_by_uuid)
-        db_dss = {ds.id: ds for ds in index.datasets.bulk_get(all_uuid)}
-
-        lineage_uuids = set(filter(lambda x: x != main_uuid, all_uuid))
-        missing_lineage = lineage_uuids - set(db_dss)
-
-        if missing_lineage and fail_on_missing_lineage:
-            return None, "Following lineage datasets are missing from DB: %s" % (
-                ','.join(str(m) for m in missing_lineage))
-
-        if not is_doc_eo3(main_ds.doc):
-            if is_doc_geo(main_ds.doc, check_eo3=False):
-                if not index.supports_legacy:
-                    return None, "Legacy metadata formats not supported by the current index driver."
-            else:
-                if not index.supports_nongeo:
-                    return None, "Non-geospatial metadata formats not supported by the current index driver."
-            if verify_lineage:
-                bad_lineage = []
-
-                for uuid in lineage_uuids:
-                    if uuid in db_dss:
-                        ok, err = check_consistent(jsonify_document(ds_by_uuid[uuid].doc_without_lineage_sources),
-                                                   db_dss[uuid].metadata_doc)
-                        if not ok:
-                            bad_lineage.append((uuid, err))
-
-                if len(bad_lineage) > 0:
-                    error_report = '\n'.join('Inconsistent lineage dataset {}:\n> {}'.format(uuid, err)
-                                             for uuid, err in bad_lineage)
-                    return None, error_report
-
-        def with_cache(v: Dataset, k: UUID, cache: MutableMapping[UUID, Dataset]) -> Dataset:
-            cache[k] = v
-            return v
-
-        def resolve_ds(ds: SimpleDocNav,
-                       sources: Optional[Mapping[UUID, Dataset]],
-                       cache: MutableMapping[UUID, Dataset]) -> Dataset:
-            cached = cache.get(ds.id)
-            if cached is not None:
-                return cached
-
-            uris = [uri] if ds.id == main_uuid else []
-
-            doc = ds.doc
-
-            db_ds = db_dss.get(ds.id)
-            if db_ds:
-                product = db_ds.product
-            else:
-                product = match_product(doc)
-
-            return with_cache(Dataset(product, doc, uris=uris, sources=sources), ds.id, cache)
-        try:
-            return remap_lineage_doc(main_ds, resolve_ds, cache={}), None
-        except BadMatch as e:
-            return None, e
-    return resolve_no_lineage if skip_lineage else resolve
+    return resolve
 
 
 class Doc2Dataset:
@@ -258,12 +341,23 @@ class Doc2Dataset:
     :param fail_on_missing_lineage: If True fail resolve if any lineage
                                     datasets are missing from the DB
 
+                                    Only False supported if index.supports_external_lineage is True.
+
     :param verify_lineage: If True check that lineage datasets in the
                            supplied document are identical to DB versions
+
+                           Ignored for EO3 documents.  Will be dropped in ODCv2 as only eo3 documents
+                           will be supported.
 
     :param skip_lineage: If True ignore lineage sub-tree in the supplied
                          document and construct dataset without lineage datasets
     :param eo3: 'auto'/True/False by default auto-detect EO3 datasets and pre-process them
+
+                Cannot be 'False' if index.supports_legacy is False.
+                Will be dropped in ODCv2 as only eo3 documents will be supported
+    :param home_index: Ignored if index.supports_exernal_home is False.  Defaults to None.
+                Optional string labelling the "home index" for lineage datasets.
+                home_index is ignored if an explicit source_tree is passed to the resolver.
     """
     def __init__(self,
                  index: AbstractIndex,
@@ -272,25 +366,41 @@ class Doc2Dataset:
                  fail_on_missing_lineage: bool = False,
                  verify_lineage: bool = True,
                  skip_lineage: bool = False,
-                 eo3: Union[bool, str] = 'auto'):
-        if not index.supports_legacy and not index.supports_nongeo:
-            if not eo3:
-                raise ValueError("EO3 cannot be set to False for a non-legacy geo-only index.")
-            eo3 = True
+                 eo3: Union[bool, str] = 'auto',
+                 home_index: Optional[str] = None):
+        if not index.supports_lineage:
+            skip_lineage = True
+            verify_lineage = False
+            fail_on_missing_lineage = False
+            home_index = None
+        else:
+            if not index.supports_legacy and not index.supports_nongeo:
+                if not eo3:
+                    raise ValueError("EO3 cannot be set to False for a non-legacy geo-only index.")
+                eo3 = True
+            if index.supports_external_lineage and fail_on_missing_lineage:
+                raise ValueError("fail_on_missing_lineage is not supported for this index driver.")
+            if home_index and skip_lineage:
+                raise ValueError("Cannot provide a default home_index when skip_lineage is set.")
+
         rules, err_msg = load_rules_from_types(index,
                                                product_names=products,
                                                excluding=exclude_products)
         if rules is None:
             raise ValueError(err_msg)
 
+        self.index = index
         self._eo3 = eo3
+        matcher = product_matcher(rules)
         self._ds_resolve = dataset_resolver(index,
-                                            rules,
+                                            matcher,
                                             fail_on_missing_lineage=fail_on_missing_lineage,
                                             verify_lineage=verify_lineage,
-                                            skip_lineage=skip_lineage)
+                                            skip_lineage=skip_lineage,
+                                            home_index=home_index)
 
-    def __call__(self, doc_in: Union[SimpleDocNav, Mapping[str, Any]], uri: str) -> DatasetOrError:
+    def __call__(self, doc_in: Union[SimpleDocNav, Mapping[str, Any]], uri: str,
+                 source_tree: Optional[LineageTree] = None) -> DatasetOrError:
         """Attempt to construct dataset from metadata document and a uri.
 
         :param doc: Dictionary or SimpleDocNav object
@@ -306,9 +416,15 @@ class Doc2Dataset:
 
         if self._eo3:
             auto_skip = self._eo3 == 'auto'
-            doc = SimpleDocNav(prep_eo3(doc.doc, auto_skip=auto_skip))
+            doc = SimpleDocNav(
+                prep_eo3(
+                    doc.doc,
+                    auto_skip=auto_skip,
+                    remap_lineage=not self.index.supports_external_lineage
+                )
+            )
 
-        dataset, err = self._ds_resolve(doc, uri)
+        dataset, err = self._ds_resolve(doc, uri, source_tree=source_tree)
         if dataset is None:
             return None, cast(Union[str, Exception], err)
 
