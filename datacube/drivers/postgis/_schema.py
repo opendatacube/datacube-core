@@ -154,19 +154,22 @@ SelectedDatasetLocation = aliased(DatasetLocation, name="sel_loc")
 
 
 @orm_registry.mapped
-class DatasetSource:
+class DatasetLineage:
     __tablename__ = "dataset_lineage"
     __table_args__ = (
         _core.METADATA,
-        PrimaryKeyConstraint('dataset_ref', 'classifier'),
-        UniqueConstraint('source_dataset_ref', 'dataset_ref'),
+        PrimaryKeyConstraint('source_dataset_ref', 'derived_dataset_ref'),
+        Index("ix_lin_derived_classifier", "derived_dataset_ref", "classifier"),
         {
             "schema": sql.SCHEMA_NAME,
             "comment": "Represents a source-lineage relationship between two datasets"
         }
     )
-    dataset_ref = Column(postgres.UUID(as_uuid=True), nullable=False, index=True,
-                         comment="The downstream derived dataset produced from the upstream source dataset.")
+    derived_dataset_ref = Column(
+        postgres.UUID(as_uuid=True),
+        nullable=False, index=True,
+        comment="The downstream derived dataset produced from the upstream source dataset."
+    )
     source_dataset_ref = Column(
         postgres.UUID(as_uuid=True), nullable=False, index=True,
         comment="An upstream source dataset that the downstream derived dataset was produced from."
@@ -174,6 +177,22 @@ class DatasetSource:
     classifier = Column(String, nullable=False, comment="""An identifier for this source dataset.
 E.g. the dataset type ('ortho', 'nbar'...) if there's only one source of each type, or a datestamp
 for a time-range summary.""")
+
+
+@orm_registry.mapped
+class DatasetHome:
+    __tablename__ = "dataset_home"
+    __table_args__ = (
+        _core.METADATA,
+        {
+            "schema": sql.SCHEMA_NAME,
+            "comment": "Represents an optional 'home index' for an external datasets"
+        }
+    )
+    dataset_ref = Column(postgres.UUID(as_uuid=True), primary_key=True,
+                         comment="The dataset ID - no referential integrity enforced to dataset table.")
+    home = Column(Text, nullable=False, comment="""The 'home' index where this dataset can be found.
+Not interpreted directly by ODC, provided as a convenience to database administrators.""")
 
 
 class SpatialIndex:
@@ -309,8 +328,10 @@ search_field_index_map = {
 }
 
 ALL_STATIC_TABLES = [
-    MetadataType.__table__, Product.__table__, Dataset.__table__,
-    DatasetLocation.__table__, DatasetSource.__table__, SpatialIndexRecord.__table__,
+    MetadataType.__table__, Product.__table__,
+    Dataset.__table__, DatasetLocation.__table__,
+    DatasetLineage.__table__, DatasetHome.__table__,
+    SpatialIndexRecord.__table__,
     DatasetSearchString.__table__, DatasetSearchNumeric.__table__,
     DatasetSearchDateTime.__table__,
 ]

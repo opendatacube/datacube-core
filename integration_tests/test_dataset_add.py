@@ -196,20 +196,21 @@ def check_bad_yaml(clirunner, index):
     assert 'ERROR Failed reading documents from ' in r.output
 
 
-# Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_add_no_id(dataset_add_configs, index_empty, clirunner):
-    p = dataset_add_configs
-    index = index_empty
-    ds_no_id = load_dataset_definition(p.datasets_no_id)
-
-    clirunner(['metadata', 'add', p.metadata])
-    clirunner(['product', 'add', p.products])
+def test_dataset_add_no_id(index, eo3_ls8_dataset3_doc, ls8_eo3_product):
+    doc, uri = eo3_ls8_dataset3_doc
+    del doc["id"]
 
     # Check .hl.Doc2Dataset
     doc2ds = Doc2Dataset(index)
-    _ds, _err = doc2ds(ds_no_id, 'file:///something')
+    _ds, _err = doc2ds(doc, uri)
     assert _err == 'No id defined in dataset doc'
+
+
+def test_dataset_add_not_eo3(index, ls8_eo3_product, eo3_wo_dataset_doc):
+    from datacube.model.utils import BadMatch
+    doc2ds = Doc2Dataset(index)
+    _ds, _err = doc2ds(*eo3_wo_dataset_doc)
+    assert isinstance(_err, BadMatch)
 
 
 # Current formulation of this test relies on non-EO3 test data

@@ -11,6 +11,7 @@ from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
 from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore
 from datacube.index.postgis._metadata_types import MetadataTypeResource
+from datacube.index.postgis._lineage import LineageResource
 from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, default_metadata_type_docs
@@ -51,9 +52,11 @@ class Index(AbstractIndex):
     supports_legacy = False
     # Hopefully can reinstate non-geo support, but dropping for now will make progress easier.
     supports_nongeo = False
-    # Hopefully can reinstate a simpler form of lineage support, but leave for now
-    supports_lineage = False
-    supports_source_filters = False
+    # Postgis driver supports the new lineage data model and API, as per EP-08.
+    supports_lineage = True
+    supports_external_lineage = True
+    supports_external_home = True
+    # Postgis driver supports ACID database transactions
     supports_transactions = True
 
     def __init__(self, db: PostGisDb) -> None:
@@ -66,6 +69,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
         self._users = UserResource(db, self)
         self._metadata_types = MetadataTypeResource(db, self)
         self._products = ProductResource(db, self)
+        self._lineage = LineageResource(db, self)
         self._datasets = DatasetResource(db, self)
 
     @property
@@ -79,6 +83,10 @@ WARNING: Database schema and internal APIs may change significantly between rele
     @property
     def products(self) -> ProductResource:
         return self._products
+
+    @property
+    def lineage(self) -> LineageResource:
+        return self._lineage
 
     @property
     def datasets(self) -> DatasetResource:
