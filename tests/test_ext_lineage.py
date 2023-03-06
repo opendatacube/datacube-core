@@ -394,6 +394,7 @@ def classifier_mismatch(big_src_tree_ids):
 def src_lineage_tree_with_bad_diamond(big_src_tree_ids):
     ids = big_src_tree_ids
     direction = LineageDirection.SOURCES
+    # This is a test tree with a malformed diamond relationship.
     return LineageTree(
         dataset_id=ids["root"], direction=direction,
         children={
@@ -416,6 +417,8 @@ def src_lineage_tree_with_bad_diamond(big_src_tree_ids):
                             ),
                         ],
                         "atmos_corr": [
+                            # First half of the diamond relationship:
+                            # ard1 depends on atmos (which depends on atmos_parent)
                             LineageTree(
                                 dataset_id=ids["atmos"], direction=direction,
                                 children={
@@ -447,6 +450,10 @@ def src_lineage_tree_with_bad_diamond(big_src_tree_ids):
                                 children={}
                             ),
                         ],
+                        # Second half of the diamond relationship:
+                        # ard2 also depends on atmos (which depends on atmos_parent)
+                        # But the atmos->atmos_parent relationship was already recorded
+                        # above, so "children" here should be None or {}.
                         "atmos_corr": [
                             LineageTree(
                                 dataset_id=ids["atmos"], direction=direction,
@@ -552,6 +559,9 @@ def test_good_consistency_check(big_src_lineage_tree, src_lineage_tree, big_src_
 
 
 def test_bad_diamond(src_lineage_tree_with_bad_diamond, big_src_tree_ids):
+    # Test detection of trees that have a diamond relationship in which both paths are extended.
+    # E.g. If A->B->C->D  and A->E->C->D, the C->D relationship should only be recorded
+    # under one branch (B or A) and the other occurence of C should have no children recorded.
     with pytest.raises(InconsistentLineageException, match="Duplicate nodes in LineageTree"):
         rels = LineageRelations(tree=src_lineage_tree_with_bad_diamond)
 
