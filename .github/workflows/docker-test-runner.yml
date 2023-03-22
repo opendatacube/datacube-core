@@ -50,7 +50,7 @@ jobs:
           ${{ runner.os }}-buildx-
 
     - name: Build Docker
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
         file: docker/Dockerfile
         context: .
