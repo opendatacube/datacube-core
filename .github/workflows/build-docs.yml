@@ -36,7 +36,7 @@ jobs:
         EOF
 
     - name: Deploy to Netlify
-      uses: nwtgck/actions-netlify@v1.0
+      uses: nwtgck/actions-netlify@v2.0
       with:
         production-branch: 'master'
         publish-dir: 'docs/_build/html'
