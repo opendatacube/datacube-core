@@ -86,6 +86,7 @@ csiro
 CSV
 cubeenv
 currentmodule
+cyear
 cython
 da
 Dahu
