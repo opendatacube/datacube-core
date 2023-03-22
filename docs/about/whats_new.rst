@@ -8,6 +8,9 @@ What's New
 v1.8.next
 =========
 
+- Documentation fixes (:pull:`1417`, :pull:`1418`)
+
+
 v1.8.12 (7th March 2023)
 ========================
 

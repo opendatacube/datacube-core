@@ -41,7 +41,7 @@ take some time, but will add a continental product to your local Datacube.
 
 .. code-block:: bash
 
-    datacube product add https://explorer.nci.dea.ga.gov.au/products/ga_ls8c_nbart_gm_cyear_3.odc-product.yaml
+    datacube product add https://explorer.sandbox.dea.ga.gov.au/products/ga_ls8c_nbart_gm_cyear_3.odc-product.yaml
     s3-to-dc --no-sign-request 's3://dea-public-data/derivative/ga_ls8c_nbart_gm_cyear_3/3-0-0/**/*.yaml' ga_ls8c_nbart_gm_cyear_3
 
 Congratulations, you've now indexed data from the Digital Earth Australia buckets 🎉
