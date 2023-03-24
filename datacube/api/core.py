@@ -15,7 +15,8 @@ from dask import array as da
 from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
-from odc.geo.crs import CRS
+from odc.geo import CRS
+from odc.geo.xr import xr_coords
 from datacube.utils.dates import normalise_dt
 from odc.geo.geom import intersects, box, bbox_union
 from odc.geo.geobox import GeoBox, GeoboxTiles
@@ -604,7 +605,7 @@ class Datacube(object):
             dims_default = tuple(coords) + geobox.dimensions
 
         shape_default = tuple(c.size for k, c in coords.items() if k in dims_default) + geobox.shape
-        coords_default = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
+        coords_default = OrderedDict(**coords, **xr_coords(geobox, spatial_ref))
 
         arrays = []
         ds_coords = deepcopy(coords_default)

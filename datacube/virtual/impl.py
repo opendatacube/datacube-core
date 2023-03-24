@@ -31,6 +31,7 @@ from datacube.testutils.io import native_geobox
 from odc.geo.geobox import GeoBox, GeoboxTiles, geobox_union_conservative
 from odc.geo.warp import rio_reproject, resampling_s2rio
 from odc.geo.overlap import compute_reproject_roi
+from odc.geo.xr import xr_coords
 from datacube.api.core import per_band_load_data_settings
 
 from .utils import qualified_name, merge_dicts
@@ -818,7 +819,7 @@ class Reproject(VirtualProduct):
         result = xarray.Dataset()
         result.coords['time'] = grouped.box.coords['time']
 
-        coords = OrderedDict(**geobox.xr_coords(with_crs=spatial_ref))
+        coords = OrderedDict(**xr_coords(geobox, spatial_ref))
         result.coords.update(coords)
 
         for measurement in measurements:

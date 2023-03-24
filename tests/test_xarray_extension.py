@@ -16,6 +16,7 @@ from datacube.utils.xarray_geoextensions import (
     _get_crs_from_attrs,
     _get_crs_from_coord,
 )
+from odc.geo.xr import xr_coords
 
 multi_coords = xr.DataArray(
     np.zeros(1),
@@ -119,8 +120,8 @@ def test_crs_from_coord():
     xx_none = mk_sample_xr_dataset(crs=None)
     xx_3857 = mk_sample_xr_dataset(crs=epsg3857)
     xx_4326 = mk_sample_xr_dataset(crs=epsg4326)
-    cc_4326 = xx_4326.geobox.xr_coords(with_crs="epsg_4326")["epsg_4326"]
-    cc_3857 = xx_3857.geobox.xr_coords(with_crs="epsg_3857")["epsg_3857"]
+    cc_4326 = xr_coords(xx_4326.geobox, "epsg_4326")["epsg_4326"]
+    cc_3857 = xr_coords(xx_3857.geobox, "epsg_3857")["epsg_3857"]
 
     assert _get_crs_from_coord(xx_none.band) is None
     assert _get_crs_from_coord(xx_none) is None

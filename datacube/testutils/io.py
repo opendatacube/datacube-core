@@ -14,6 +14,7 @@ from types import SimpleNamespace
 from odc.geo.warp import resampling_s2rio
 from odc.geo.geobox import GeoBox, zoom_to
 from odc.geo import wh_
+from odc.geo.xr import xr_coords
 
 
 class RasterFileDataSource(RasterioDataSource):
@@ -398,6 +399,6 @@ def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
 
     return DataArray(im,
                      dims=dims,
-                     coords=mm.gbox.xr_coords(with_crs=True),
+                     coords=xr_coords(mm.gbox),
                      attrs=dict(
                          nodata=mm.nodata))
