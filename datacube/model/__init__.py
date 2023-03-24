@@ -751,10 +751,10 @@ class GridSpec:
     >>> gs.tile_resolution
     (10, 10)
     >>> list(gs.tiles(BoundingBox(140, -50, 141.5, -48.5)))
-    [((0, 0), GeoBox(10, 10, Affine(0.1, 0.0, 139.95,
-           0.0, -0.1, -49.05), EPSG:4326)), ((1, 0), GeoBox(10, 10, Affine(0.1, 0.0, 140.95,
-           0.0, -0.1, -49.05), EPSG:4326)), ((0, 1), GeoBox(10, 10, Affine(0.1, 0.0, 139.95,
-           0.0, -0.1, -48.05), EPSG:4326)), ((1, 1), GeoBox(10, 10, Affine(0.1, 0.0, 140.95,
+    [((0, 0), GeoBox((10, 10), Affine(0.1, 0.0, 139.95,
+           0.0, -0.1, -49.05), EPSG:4326)), ((1, 0), GeoBox((10, 10), Affine(0.1, 0.0, 140.95,
+           0.0, -0.1, -49.05), EPSG:4326)), ((0, 1), GeoBox((10, 10), Affine(0.1, 0.0, 139.95,
+           0.0, -0.1, -48.05), EPSG:4326)), ((1, 1), GeoBox((10, 10), Affine(0.1, 0.0, 140.95,
            0.0, -0.1, -48.05), EPSG:4326))]
 
     :param odc.geo.crs.CRS crs: Coordinate System used to define the grid
