@@ -68,7 +68,7 @@ jobs:
       with:
         file: docker/Dockerfile
         context: .
-        tags: ${DOCKER_IMAGE}
+        tags: ${{ env.DOCKER_IMAGE }}
         load: true
 
     - name: Verify and Run Tests
