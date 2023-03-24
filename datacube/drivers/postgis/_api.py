@@ -26,7 +26,7 @@ from typing import Iterable, Sequence, Optional, Set
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
-from datacube.utils.geometry import CRS, Geometry
+from odc.geo import CRS, Geometry
 from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
 from datacube.model.lineage import LineageRelation, LineageDirection

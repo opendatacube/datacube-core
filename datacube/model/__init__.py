@@ -17,7 +17,7 @@ from affine import Affine
 from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union
 
 from urllib.parse import urlparse
-from datacube.utils import geometry, without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
+from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
 from datacube.index.eo3 import is_doc_eo3
 from .fields import Field, get_dataset_fields
@@ -33,6 +33,10 @@ __all__ = [
     "metadata_from_doc",
     "ExtraDimensions", "IngestorConfig"
 ]
+
+from odc.geo import CRS, BoundingBox, Geometry
+from odc.geo.geobox import GeoBox
+from odc.geo.geom import intersects, polygon
 
 _LOG = logging.getLogger(__name__)
 
@@ -192,7 +196,7 @@ class Dataset:
         return self.center_time
 
     @property
-    def bounds(self) -> Optional[geometry.BoundingBox]:
+    def bounds(self) -> Optional[BoundingBox]:
         """ :returns: bounding box of the dataset in the native crs
         """
         gs = self._gs
@@ -200,10 +204,10 @@ class Dataset:
             return None
 
         bounds = gs['geo_ref_points']
-        return geometry.BoundingBox(left=min(bounds['ur']['x'], bounds['ll']['x']),
-                                    right=max(bounds['ur']['x'], bounds['ll']['x']),
-                                    top=max(bounds['ur']['y'], bounds['ll']['y']),
-                                    bottom=min(bounds['ur']['y'], bounds['ll']['y']))
+        return BoundingBox(left=min(bounds['ur']['x'], bounds['ll']['x']),
+                           right=max(bounds['ur']['x'], bounds['ll']['x']),
+                           top=max(bounds['ur']['y'], bounds['ll']['y']),
+                           bottom=min(bounds['ur']['y'], bounds['ll']['y']))
 
     @property
     def transform(self) -> Optional[Affine]:
@@ -248,7 +252,7 @@ class Dataset:
             return None
 
     @property
-    def crs(self) -> Optional[geometry.CRS]:
+    def crs(self) -> Optional[CRS]:
         """ Return CRS if available
         """
         projection = self._gs
@@ -258,11 +262,11 @@ class Dataset:
 
         crs = projection.get('spatial_reference', None)
         if crs:
-            return geometry.CRS(str(crs))
+            return CRS(str(crs))
         return None
 
     @cached_property
-    def extent(self) -> Optional[geometry.Geometry]:
+    def extent(self) -> Optional[Geometry]:
         """ :returns: valid extent of the dataset or None
         """
 
@@ -281,10 +285,10 @@ class Dataset:
         valid_data = projection.get('valid_data')
         geo_ref_points = projection.get('geo_ref_points')
         if valid_data:
-            return geometry.Geometry(valid_data, crs=crs)
+            return Geometry(valid_data, crs=crs)
         elif geo_ref_points:
-            return geometry.polygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
-                                    crs=crs)
+            return polygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
+                           crs=crs)
 
         return None
 
@@ -525,7 +529,7 @@ class Product:
         if crs is None:
             return None
 
-        crs = geometry.CRS(str(crs).strip())
+        crs = CRS(str(crs).strip())
 
         def extract_point(name):
             xx = storage.get(name, None)
@@ -635,7 +639,7 @@ class Product:
             else:
                 return None
 
-        crs = geometry.CRS(_load['crs'])
+        crs = CRS(_load['crs'])
 
         def extract_point(name):
             xx = _load.get(name, None)
@@ -646,7 +650,7 @@ class Product:
         return dict(crs=crs, **params)
 
     @property
-    def default_crs(self) -> Optional[geometry.CRS]:
+    def default_crs(self) -> Optional[CRS]:
         return self.load_hints().get('output_crs', None)
 
     @property
@@ -743,17 +747,17 @@ class GridSpec:
     """
     Definition for a regular spatial grid
 
-    >>> gs = GridSpec(crs=geometry.CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(-50.05, 139.95))
+    >>> gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(-50.05, 139.95))
     >>> gs.tile_resolution
     (10, 10)
-    >>> list(gs.tiles(geometry.BoundingBox(140, -50, 141.5, -48.5)))
+    >>> list(gs.tiles(BoundingBox(140, -50, 141.5, -48.5)))
     [((0, 0), GeoBox(10, 10, Affine(0.1, 0.0, 139.95,
            0.0, -0.1, -49.05), EPSG:4326)), ((1, 0), GeoBox(10, 10, Affine(0.1, 0.0, 140.95,
            0.0, -0.1, -49.05), EPSG:4326)), ((0, 1), GeoBox(10, 10, Affine(0.1, 0.0, 139.95,
            0.0, -0.1, -48.05), EPSG:4326)), ((1, 1), GeoBox(10, 10, Affine(0.1, 0.0, 140.95,
            0.0, -0.1, -48.05), EPSG:4326))]
 
-    :param geometry.CRS crs: Coordinate System used to define the grid
+    :param odc.geo.crs.CRS crs: Coordinate System used to define the grid
     :param [float,float] tile_size: (Y, X) size of each tile, in CRS units
     :param [float,float] resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
                                    usually be negative.
@@ -761,7 +765,7 @@ class GridSpec:
     """
 
     def __init__(self,
-                 crs: geometry.CRS,
+                 crs: CRS,
                  tile_size: Tuple[float, float],
                  resolution: Tuple[float, float],
                  origin: Optional[Tuple[float, float]] = None):
@@ -820,7 +824,7 @@ class GridSpec:
                 for index, res, size, origin in zip(tile_index[::-1], self.resolution, self.tile_size, self.origin))
         return (y, x)
 
-    def tile_geobox(self, tile_index: Tuple[int, int]) -> geometry.GeoBox:
+    def tile_geobox(self, tile_index: Tuple[int, int]) -> GeoBox:
         """
         Tile geobox.
 
@@ -829,12 +833,12 @@ class GridSpec:
         res_y, res_x = self.resolution
         y, x = self.tile_coords(tile_index)
         h, w = self.tile_resolution
-        geobox = geometry.GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
+        geobox = GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
         return geobox
 
-    def tiles(self, bounds: geometry.BoundingBox,
+    def tiles(self, bounds: BoundingBox,
               geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
-                                                                     geometry.GeoBox]]:
+                                                                     GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `bounds` rectangle.
@@ -865,10 +869,10 @@ class GridSpec:
                 tile_index = (x, y)
                 yield tile_index, geobox(tile_index)
 
-    def tiles_from_geopolygon(self, geopolygon: geometry.Geometry,
+    def tiles_from_geopolygon(self, geopolygon: Geometry,
                               tile_buffer: Optional[Tuple[float, float]] = None,
                               geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
-                                                                                     geometry.GeoBox]]:
+                                                                                     GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `geopolygon`.
@@ -878,7 +882,7 @@ class GridSpec:
            Grid cells are referenced by coordinates `(x, y)`, which is the opposite to the usual CRS
            dimension order.
 
-        :param geometry.Geometry geopolygon: Polygon to tile
+        :param odc.geo.Geometry geopolygon: Polygon to tile
         :param tile_buffer: Optional <float,float> tuple, (extra padding for the query
                             in native units of this GridSpec)
         :param dict geobox_cache: Optional cache to re-use geoboxes instead of creating new one each time
@@ -891,7 +895,7 @@ class GridSpec:
         for tile_index, tile_geobox in self.tiles(bbox, geobox_cache):
             tile_geobox = tile_geobox.buffered(*tile_buffer) if tile_buffer else tile_geobox
 
-            if geometry.intersects(tile_geobox.extent, geopolygon):
+            if intersects(tile_geobox.extent, geopolygon):
                 yield (tile_index, tile_geobox)
 
     @staticmethod

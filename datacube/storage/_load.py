@@ -20,7 +20,8 @@ from typing import (
 
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.math import invalid_mask
-from datacube.utils.geometry import GeoBox, roi_is_empty
+from odc.geo.geobox import GeoBox
+from odc.geo.roi import roi_is_empty
 from datacube.model import Measurement
 from datacube.drivers._types import ReaderDriver
 from ..drivers.datasource import DataSource

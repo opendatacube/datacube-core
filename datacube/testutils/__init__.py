@@ -26,7 +26,8 @@ from datacube.utils.documents import parse_yaml
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
-from datacube.utils.geometry import GeoBox, CRS
+from odc.geo import CRS
+from odc.geo.geobox import GeoBox
 
 _DEFAULT = object()
 

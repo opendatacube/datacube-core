@@ -7,11 +7,9 @@ from affine import Affine
 from typing import Callable, Union, Tuple
 import warnings
 
-from datacube.utils.geometry import (
-    CRS,
-    GeoBox,
-    apply_affine,
-)
+from odc.geo import CRS
+from odc.geo.geobox import GeoBox
+from odc.geo.math import apply_affine
 from datacube.model import GridSpec
 
 # pylint: disable=invalid-name

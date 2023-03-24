@@ -7,7 +7,7 @@ import xarray
 from collections import OrderedDict
 import pandas as pd
 
-from datacube.utils.geometry import intersects
+from odc.geo.geom import intersects
 from .query import Query, query_group_by
 from .core import Datacube
 
@@ -169,7 +169,7 @@ class GridWorkflow(object):
         """
         List datasets, grouped by cell.
 
-        :param datacube.utils.Geometry geopolygon:
+        :param odc.geo.geom.Geometry geopolygon:
             Only return observations with data inside polygon.
         :param (float,float) tile_buffer:
             buffer tiles by (y, x) in CRS units

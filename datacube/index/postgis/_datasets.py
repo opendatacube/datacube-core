@@ -27,7 +27,7 @@ from datacube.model import Dataset, Product, Range
 from datacube.model.fields import Field
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
-from datacube.utils.geometry import CRS, Geometry
+from odc.geo import CRS, Geometry
 from datacube.index import fields
 
 _LOG = logging.getLogger(__name__)

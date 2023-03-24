@@ -7,7 +7,7 @@ from uuid import uuid4 as random_uuid
 
 from datacube.model import LineageDirection, Range
 from datacube.index import Index
-from datacube.utils.geometry import CRS
+from odc.geo import CRS
 from datacube.model import LineageTree, InconsistentLineageException
 from datacube.model.lineage import LineageRelations
 
@@ -79,7 +79,7 @@ def test_spatial_index_crs_validity(index: Index,
 def test_spatial_index_crs_sanitise():
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    from datacube.utils.geometry import polygon
+    from odc.geo.geom import polygon
     # EPSG:4326 polygons to be converted in EPSG:3577
     # Equal to entire valid region
     entire = polygon((

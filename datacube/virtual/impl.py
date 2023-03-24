@@ -28,10 +28,9 @@ from datacube.api.query import Query, query_group_by
 from datacube.model import Measurement, DatasetType
 from datacube.model.utils import xr_apply, xr_iter, SafeDumper
 from datacube.testutils.io import native_geobox
-from datacube.utils.geometry import GeoBox, rio_reproject, geobox_union_conservative
-from datacube.utils.geometry import compute_reproject_roi
-from datacube.utils.geometry.gbox import GeoboxTiles
-from datacube.utils.geometry._warp import resampling_s2rio
+from odc.geo.geobox import GeoBox, GeoboxTiles, geobox_union_conservative
+from odc.geo.warp import rio_reproject, resampling_s2rio
+from odc.geo.overlap import compute_reproject_roi
 from datacube.api.core import per_band_load_data_settings
 
 from .utils import qualified_name, merge_dicts

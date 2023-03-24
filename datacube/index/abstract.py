@@ -25,7 +25,8 @@ from datacube.model.lineage import LineageRelations
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException, report_to_user
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.generic import thread_local_cache
-from datacube.utils.geometry import CRS, Geometry, box
+from odc.geo import CRS, Geometry
+from odc.geo.geom import box
 from datacube.utils.documents import UnknownMetadataType
 
 _LOG = logging.getLogger(__name__)
@@ -1594,21 +1595,21 @@ class AbstractDatasetResource(ABC):
             elif isinstance(lat, Range):
                 if isinstance(lon, (int, float)):
                     # lat is a range, but lon is scalar - geom is ideally a line
-                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
+                    # odc.geo is always (x, y) order - ignore lat,lon order specified by EPSG:4326
                     geom = box(lon - delta, lat.begin, lon + delta, lat.end, crs=CRS("EPSG:4326"))
                 else:
                     raise ValueError("lon search term must be a Range or a numeric scalar")
             elif isinstance(lon, Range):
                 if isinstance(lat, (int, float)):
                     # lon is a range, but lat is scalar - geom is ideally a line
-                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
+                    # odc.geo is always (x, y) order - ignore lat,lon order specified by EPSG:4326
                     geom = box(lon.begin, lat - delta, lon.end, lat + delta, crs=CRS("EPSG:4326"))
                 else:
                     raise ValueError("lat search term must be a Range or a numeric scalar")
             else:
                 if isinstance(lon, (int, float)) and isinstance(lat, (int, float)):
                     # Lat and Lon are both scalars - geom is ideally point
-                    # datacube.utils.geometry is always (x, y) order - ignore lat,lon order specified by EPSG:4326
+                    # odc.geo is always (x, y) order - ignore lat,lon order specified by EPSG:4326
                     geom = box(lon - delta, lat - delta, lon + delta, lat + delta, crs=CRS("EPSG:4326"))
                 else:
                     raise ValueError("lat and lon search terms must be of type Range or a numeric scalar")

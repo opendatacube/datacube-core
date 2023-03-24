@@ -6,7 +6,8 @@ import pytest
 import numpy
 from datacube.api.grid_workflow import GridWorkflow
 from datacube.model import GridSpec
-from datacube.utils import geometry
+from odc.geo import CRS
+from odc.geo.geom import box
 from unittest.mock import MagicMock
 from datacube.testutils import mk_sample_product
 import datetime
@@ -72,7 +73,7 @@ def test_gridworkflow():
     # ----- fake a datacube -----
     # e.g. let there be a dataset that coincides with a grid cell
 
-    fakecrs = geometry.CRS("EPSG:4326")
+    fakecrs = CRS("EPSG:4326")
 
     grid = 100  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units
@@ -84,7 +85,7 @@ def test_gridworkflow():
     )  # e.g. product gridspec
 
     fakedataset = MagicMock()
-    fakedataset.extent = geometry.box(
+    fakedataset.extent = box(
         left=grid, bottom=-grid, right=2 * grid, top=-2 * grid, crs=fakecrs
     )
     fakedataset.center_time = t = datetime.datetime(2001, 2, 15)
@@ -141,7 +142,7 @@ def test_gridworkflow():
 
     # consider cell (2,-2)
     fakedataset2 = MagicMock()
-    fakedataset2.extent = geometry.box(
+    fakedataset2.extent = box(
         left=2 * grid, bottom=-grid, right=3 * grid, top=-2 * grid, crs=fakecrs
     )
     fakedataset2.center_time = t
@@ -239,7 +240,7 @@ def test_gridworkflow_with_time_depth():
     """Test GridWorkflow with time series.
     Also test `Tile` methods `split` and `split_by_time`
     """
-    fakecrs = geometry.CRS("EPSG:4326")
+    fakecrs = CRS("EPSG:4326")
 
     grid = 100  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units
@@ -255,7 +256,7 @@ def test_gridworkflow_with_time_depth():
         delta = datetime.timedelta(days=16)
         for i in range(num_datasets):
             fakedataset = MagicMock()
-            fakedataset.extent = geometry.box(
+            fakedataset.extent = box(
                 left=grid, bottom=-grid, right=2 * grid, top=-2 * grid, crs=fakecrs
             )
             fakedataset.center_time = start_time + (delta * i)

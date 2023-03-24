@@ -16,18 +16,20 @@ from datacube.drivers.netcdf.writer import create_netcdf, create_coordinate, cre
     create_grid_mapping_variable, flag_mask_meanings, Variable
 from datacube.drivers.netcdf import write_dataset_to_netcdf
 from datacube.drivers.netcdf.writer import DEFAULT_GRID_MAPPING
-from datacube.utils import geometry, DatacubeException, read_strings_from_netcdf
+from datacube.utils import DatacubeException, read_strings_from_netcdf
+from odc.geo import CRS
+from odc.geo.geobox import Coordinate
 from datacube.testutils import mk_sample_xr_dataset
 
 
 crs_var = DEFAULT_GRID_MAPPING
 
-GEO_PROJ = geometry.CRS("""GEOGCS["WGS 84",
+GEO_PROJ = CRS("""GEOGCS["WGS 84",
                            DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],
                            AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],
                            AUTHORITY["EPSG","4326"]]""")
 
-ALBERS_PROJ = geometry.CRS("""PROJCS["GDA94 / Australian Albers",
+ALBERS_PROJ = CRS("""PROJCS["GDA94 / Australian Albers",
                                 GEOGCS["GDA94",
                                     DATUM["Geocentric_Datum_of_Australia_1994",
                                         SPHEROID["GRS 1980",6378137,298.257222101,
@@ -52,7 +54,7 @@ ALBERS_PROJ = geometry.CRS("""PROJCS["GDA94 / Australian Albers",
                                 AXIS["Easting",EAST],
                                 AXIS["Northing",NORTH]]""")
 
-SINIS_PROJ = geometry.CRS("""PROJCS["Sinusoidal",
+SINIS_PROJ = CRS("""PROJCS["Sinusoidal",
                                 GEOGCS["GCS_Undefined",
                                         DATUM["Undefined",
                                         SPHEROID["User_Defined_Spheroid",6371007.181,0.0]],
@@ -64,7 +66,7 @@ SINIS_PROJ = geometry.CRS("""PROJCS["Sinusoidal",
                                 PARAMETER["Central_Meridian",0.0],
                                 UNIT["Meter",1.0]]""")
 
-LCC2_PROJ = geometry.CRS("""PROJCS["unnamed",
+LCC2_PROJ = CRS("""PROJCS["unnamed",
                                GEOGCS["WGS 84",
                                        DATUM["unknown",
                                        SPHEROID["WGS84",6378137,6556752.3141]],
@@ -350,8 +352,8 @@ def test_write_dataset_with_time_dimension_to_netcdf(tmpnetcdf_filename):
 
 
 def test_get_units():
-    assert _get_units(geometry.Coordinate([], 'K', None)) == 'K'
-    assert _get_units(geometry.Coordinate([], None, None)) == '1'
-    assert _get_units(geometry.Coordinate(numpy.zeros(1, dtype='uint8'), None, None)) == '1'
-    assert _get_units(geometry.Coordinate(
+    assert _get_units(Coordinate([], 'K', None)) == 'K'
+    assert _get_units(Coordinate([], None, None)) == '1'
+    assert _get_units(Coordinate(numpy.zeros(1, dtype='uint8'), None, None)) == '1'
+    assert _get_units(Coordinate(
         numpy.zeros(1, dtype='datetime64[s]'), None, None)).startswith('seconds since ')

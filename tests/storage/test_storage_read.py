@@ -13,14 +13,11 @@ from datacube.storage._read import (
     rdr_geobox)
 
 from datacube.testutils.io import RasterFileDataSource
-from datacube.utils.geometry import (
-    compute_reproject_roi,
-    GeoBox,
-    roi_shape,
-    roi_is_empty,
-)
+from odc.geo.overlap import compute_reproject_roi
+from odc.geo.roi import roi_shape, roi_is_empty
+from odc.geo.geobox import GeoBox
 
-from datacube.utils.geometry import gbox as gbx
+from odc.geo import geobox as gbx
 
 from datacube.testutils.io import (
     rio_slurp

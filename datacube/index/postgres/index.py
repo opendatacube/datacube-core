@@ -15,7 +15,7 @@ from datacube.index.postgres._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, \
     default_metadata_type_docs
 from datacube.model import MetadataType
-from datacube.utils.geometry import CRS
+from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
 

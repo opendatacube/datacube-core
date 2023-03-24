@@ -19,7 +19,8 @@ import rasterio
 import yaml
 from hypothesis.strategies import sampled_from, datetimes, composite, floats, lists, text, uuids
 
-from datacube.utils.geometry import CRS, point
+from odc.geo import CRS
+from odc.geo.geom import point
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 

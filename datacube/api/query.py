@@ -20,8 +20,16 @@ import numpy as np
 
 
 from ..model import Range, Dataset
-from ..utils import geometry
 from ..utils.dates import normalise_dt, tz_aware
+
+from odc.geo import CRS, Geometry
+from odc.geo.geom import (
+    lonlat_bounds,
+    point,
+    line,
+    polygon,
+    mid_longitude,
+)
 
 _LOG = logging.getLogger(__name__)
 
@@ -142,7 +150,7 @@ class Query(object):
         kwargs = {}
         kwargs.update(self.search)
         if self.geopolygon:
-            geo_bb = geometry.lonlat_bounds(self.geopolygon, resolution=100_000)  # TODO: pick resolution better
+            geo_bb = lonlat_bounds(self.geopolygon, resolution=100_000)  # TODO: pick resolution better
             if geo_bb.bottom != geo_bb.top:
                 kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
             else:
@@ -250,21 +258,21 @@ def _range_to_geopolygon(**kwargs):
         if key in ['longitude', 'lon', 'long', 'x']:
             input_coords['left'], input_coords['right'] = _value_to_range(value)
         if key in ['crs', 'coordinate_reference_system']:
-            input_crs = geometry.CRS(value)
-    input_crs = input_crs or geometry.CRS('EPSG:4326')
+            input_crs = CRS(value)
+    input_crs = input_crs or CRS('EPSG:4326')
     if any(v is not None for v in input_coords.values()):
         if input_coords['left'] == input_coords['right']:
             if input_coords['top'] == input_coords['bottom']:
-                return geometry.point(input_coords['left'], input_coords['top'], crs=input_crs)
+                return point(input_coords['left'], input_coords['top'], crs=input_crs)
             else:
                 points = [(input_coords['left'], input_coords['bottom']),
                           (input_coords['left'], input_coords['top'])]
-                return geometry.line(points, crs=input_crs)
+                return line(points, crs=input_crs)
         else:
             if input_coords['top'] == input_coords['bottom']:
                 points = [(input_coords['left'], input_coords['top']),
                           (input_coords['right'], input_coords['top'])]
-                return geometry.line(points, crs=input_crs)
+                return line(points, crs=input_crs)
             else:
                 points = [
                     (input_coords['left'], input_coords['top']),
@@ -273,7 +281,7 @@ def _range_to_geopolygon(**kwargs):
                     (input_coords['left'], input_coords['bottom']),
                     (input_coords['left'], input_coords['top'])
                 ]
-                return geometry.polygon(points, crs=input_crs)
+                return polygon(points, crs=input_crs)
     return None
 
 
@@ -389,7 +397,7 @@ def solar_day(dataset: Dataset, longitude: Optional[float] = None) -> np.datetim
     return np.datetime64(solar_time.date(), 'D')
 
 
-def solar_offset(geom: Union[geometry.Geometry, Dataset],
+def solar_offset(geom: Union[Geometry, Dataset],
                  precision: str = 'h') -> datetime.timedelta:
     """
     Given a geometry or a Dataset compute offset to add to UTC timestamp to get solar day right.
@@ -399,8 +407,8 @@ def solar_offset(geom: Union[geometry.Geometry, Dataset],
     :param geom: Geometry with defined CRS
     :param precision: one of ``'h'`` or ``'s'``, defaults to hour precision
     """
-    if isinstance(geom, geometry.Geometry):
-        lon = geometry.mid_longitude(geom)
+    if isinstance(geom, Geometry):
+        lon = mid_longitude(geom)
     else:
         _lon = _ds_mid_longitude(geom)
         if _lon is None:

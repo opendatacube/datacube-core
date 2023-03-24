@@ -8,12 +8,11 @@ import toolz
 from ..model import Dataset
 from ..storage import reproject_and_fuse, BandInfo
 from ..storage._rio import RasterioDataSource, RasterDatasetDataSource
-from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
-from ..utils.geometry import GeoBox
-from ..utils.geometry import gbox as gbx
 from ..index.eo3 import is_doc_eo3, EO3Grid  # type: ignore[attr-defined]
 from types import SimpleNamespace
+from odc.geo.warp import resampling_s2rio
+from odc.geo.geobox import GeoBox, zoom_to
 
 
 class RasterFileDataSource(RasterioDataSource):
@@ -254,7 +253,7 @@ def write_gtiff(fname,
 
 
 def dc_crs_from_rio(crs):
-    from datacube.utils.geometry import CRS
+    from odc.geo import CRS
 
     if crs.is_epsg_code:
         return CRS('EPSG:{}'.format(crs.to_epsg()))
@@ -339,7 +338,7 @@ def rio_slurp_read(fname, out_shape=None, **kw):
         src_gbox = rio_geobox(meta)
 
         same_gbox = out_shape is None or out_shape == src_gbox.shape
-        gbox = src_gbox if same_gbox else gbx.zoom_to(src_gbox, out_shape)
+        gbox = src_gbox if same_gbox else zoom_to(src_gbox, out_shape)
 
         meta['src_gbox'] = src_gbox
         meta['gbox'] = gbox

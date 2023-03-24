@@ -12,7 +12,7 @@ from datacube.index.memory._products import ProductResource
 from datacube.index.memory._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction
 from datacube.model import MetadataType
-from datacube.utils.geometry import CRS
+from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
 

@@ -13,8 +13,11 @@ from collections import namedtuple
 import numpy
 
 from datacube.utils.masking import describe_flags_def
-from datacube.utils import geometry, data_resolution_and_offset
+from datacube.utils import data_resolution_and_offset
 from ._safestrings import SafeStringsDataset as Dataset
+
+from odc.geo import CRS
+from odc.geo.geom import box
 
 from datacube import __version__
 
@@ -228,7 +231,7 @@ def _create_projected_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING)
 
 
 def _write_geographical_extents_attributes(nco, extent):
-    geo_extents = extent.to_crs(geometry.CRS("EPSG:4326"))
+    geo_extents = extent.to_crs(CRS("EPSG:4326"))
     nco.geospatial_bounds = geo_extents.wkt
     nco.geospatial_bounds_crs = "EPSG:4326"
 
@@ -274,7 +277,7 @@ def create_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
 
     left, right = nco[dims[1]][0] - 0.5 * xres, nco[dims[1]][-1] + 0.5 * xres
     bottom, top = nco[dims[0]][0] - 0.5 * yres, nco[dims[0]][-1] + 0.5 * yres
-    _write_geographical_extents_attributes(nco, geometry.box(left, bottom, right, top, crs=crs))
+    _write_geographical_extents_attributes(nco, box(left, bottom, right, top, crs=crs))
 
     return crs_var
 

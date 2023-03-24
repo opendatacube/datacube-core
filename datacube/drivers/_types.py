@@ -14,7 +14,7 @@ import numpy as np
 from affine import Affine
 from concurrent.futures import Future
 from datacube.storage import BandInfo
-from datacube.utils.geometry import CRS
+from odc.geo.crs import CRS
 
 # pylint: disable=invalid-name,unsubscriptable-object,pointless-statement
 

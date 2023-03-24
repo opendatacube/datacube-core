@@ -15,7 +15,7 @@ import rasterio  # type: ignore[import]
 from urllib.parse import urlparse
 from typing import Optional, Iterator
 
-from datacube.utils import geometry
+from odc.geo import CRS
 from datacube.utils.math import num2numpy
 from datacube.utils import uri_to_local_path, get_part_from_uri, is_vsipath
 from datacube.utils.rio import activate_from_config
@@ -30,7 +30,7 @@ def _rasterio_crs(src):
     if src.crs is None:
         raise ValueError('no CRS')
 
-    return geometry.CRS(src.crs)
+    return CRS(src.crs)
 
 
 def maybe_lock(lock):
@@ -60,7 +60,7 @@ class BandDataSource(GeoRasterReader):
         return self._nodata
 
     @property
-    def crs(self) -> geometry.CRS:
+    def crs(self) -> CRS:
         return _rasterio_crs(self.source.ds)
 
     @property

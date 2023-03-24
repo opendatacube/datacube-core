@@ -13,8 +13,8 @@ import numpy as np
 import xarray as xr
 from affine import Affine
 from datacube.storage import BandInfo
-from datacube.utils import geometry
 from datacube.utils.math import num2numpy
+from odc.geo import CRS
 
 PROTOCOL = ["file", "xarray_3d"]
 FORMAT = "xarray_3d"
@@ -93,7 +93,7 @@ class XArrayDataSource3D(object):
             return self._nodata  # type: ignore
 
         @property
-        def crs(self) -> geometry.CRS:
+        def crs(self) -> CRS:
             return self.da.crs
 
         @property

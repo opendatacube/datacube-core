@@ -10,19 +10,22 @@ from typing import Optional, Tuple
 
 from ..utils.math import is_almost_int, valid_mask
 
-from ..utils.geometry import (
+from odc.geo.roi import (
     roi_shape,
     roi_is_empty,
     roi_is_full,
     roi_pad,
-    GeoBox,
     w_,
+)
+from odc.geo.geobox import GeoBox, zoom_out
+from odc.geo.warp import (
     warp_affine,
     rio_reproject,
-    compute_reproject_roi)
-
-from ..utils.geometry._warp import is_resampling_nn, Resampling, Nodata
-from ..utils.geometry import gbox as gbx
+    is_resampling_nn,
+    Resampling,
+    Nodata,
+)
+from odc.geo.overlap import compute_reproject_roi
 
 
 def rdr_geobox(rdr) -> GeoBox:
@@ -178,7 +181,7 @@ def read_time_slice(rdr,
         dst_gbox = dst_gbox[rr.roi_dst]
         src_gbox = src_gbox[rr.roi_src]
         if scale > 1:
-            src_gbox = gbx.zoom_out(src_gbox, scale)
+            src_gbox = zoom_out(src_gbox, scale)
 
         pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape, extra_dim_index))
 
@@ -251,7 +254,7 @@ def read_time_slice_v2(rdr,
         dst_gbox = dst_gbox[rr.roi_dst]
         src_gbox = src_gbox[rr.roi_src]
         if scale > 1:
-            src_gbox = gbx.zoom_out(src_gbox, scale)
+            src_gbox = zoom_out(src_gbox, scale)
 
         dst = np.full(dst_gbox.shape, dst_nodata, dtype=rdr.dtype)
         pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape)).result()
