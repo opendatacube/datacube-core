@@ -17,7 +17,7 @@ import warnings
 import xarray
 from datacube.utils import spatial_dims
 from datacube.utils.math import affine_from_axis
-from odc.geo import CRS, CRSError
+from odc.geo import CRS, CRSError, wh_
 from odc.geo.geobox import GeoBox
 
 
@@ -178,7 +178,7 @@ def _xarray_geobox(obj):
 
     h, w = (obj.coords[dim].size for dim in sdims)
 
-    return GeoBox(w, h, transform, crs)
+    return GeoBox(wh_(w, h), transform, crs)
 
 
 xarray.Dataset.geobox = property(_xarray_geobox)    # type: ignore

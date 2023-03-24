@@ -10,6 +10,8 @@ from typing import Optional, Tuple
 
 from ..utils.math import is_almost_int, valid_mask
 
+from odc.geo import wh_
+
 from odc.geo.roi import (
     roi_shape,
     roi_is_empty,
@@ -32,7 +34,7 @@ def rdr_geobox(rdr) -> GeoBox:
     """ Construct GeoBox from opened dataset reader.
     """
     h, w = rdr.shape
-    return GeoBox(w, h, rdr.transform, rdr.crs)
+    return GeoBox(wh_(w, h), rdr.transform, rdr.crs)
 
 
 def can_paste(rr, stol=1e-3, ttol=1e-2):

@@ -13,6 +13,7 @@ from ..index.eo3 import is_doc_eo3, EO3Grid  # type: ignore[attr-defined]
 from types import SimpleNamespace
 from odc.geo.warp import resampling_s2rio
 from odc.geo.geobox import GeoBox, zoom_to
+from odc.geo import wh_
 
 
 class RasterFileDataSource(RasterioDataSource):
@@ -72,9 +73,8 @@ def eo3_geobox(ds: Dataset, band: str) -> GeoBox:
         raise ValueError('Not a valid EO3 dataset')
 
     grid = EO3Grid(grid_spec)
-    h, w = grid.shape
 
-    return GeoBox(w, h, grid.transform, crs)
+    return GeoBox(grid.shape, grid.transform, crs)
 
 
 def native_geobox(ds, measurements=None, basis=None):
@@ -270,7 +270,7 @@ def rio_geobox(meta):
     crs = dc_crs_from_rio(meta['crs'])
     transform = meta['transform']
 
-    return GeoBox(w, h, transform, crs)
+    return GeoBox(wh_(w, h), transform, crs)
 
 
 def _fix_resampling(kw):

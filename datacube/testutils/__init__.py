@@ -26,7 +26,7 @@ from datacube.utils.documents import parse_yaml
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
-from odc.geo import CRS
+from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
 
 _DEFAULT = object()
@@ -459,7 +459,7 @@ def mk_sample_xr_dataset(crs="EPSG:3578",
 
     transform = Affine.translation(*xy)*Affine.scale(*resolution[::-1])
     h, w = shape
-    geobox = GeoBox(w, h, transform, crs)
+    geobox = GeoBox(wh_(w, h), transform, crs)
 
     return Datacube.create_storage(t_coords, geobox, [Measurement(name=name, dtype=dtype, nodata=nodata, units=units)])
 

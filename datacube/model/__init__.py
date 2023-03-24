@@ -34,7 +34,7 @@ __all__ = [
     "ExtraDimensions", "IngestorConfig"
 ]
 
-from odc.geo import CRS, BoundingBox, Geometry
+from odc.geo import CRS, BoundingBox, Geometry, wh_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
 
@@ -833,7 +833,7 @@ class GridSpec:
         res_y, res_x = self.resolution
         y, x = self.tile_coords(tile_index)
         h, w = self.tile_resolution
-        geobox = GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
+        geobox = GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), shape=wh_(w, h))
         return geobox
 
     def tiles(self, bounds: BoundingBox,

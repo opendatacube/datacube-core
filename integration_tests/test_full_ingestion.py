@@ -16,7 +16,7 @@ from datacube.api.query import query_group_by
 from datacube.utils import read_documents, netcdf_extract_string
 from integration_tests.utils import prepare_test_ingestion_configuration, GEOTIFF
 from integration_tests.test_end_to_end import INGESTER_CONFIGS
-from odc.geo import CRS
+from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
 
 EXPECTED_STORAGE_UNIT_DATA_SHAPE = (1, 40, 40)
@@ -214,7 +214,7 @@ def check_open_with_api(index, time_slices):
 
         input_type_name = 'ls5_nbar_albers'
         input_type = dc.index.products.get_by_name(input_type_name)
-        geobox = GeoBox(200, 200, Affine(25, 0.0, 638000, 0.0, -25, 6276000), CRS('EPSG:28355'))
+        geobox = GeoBox(wh_(200, 200), Affine(25, 0.0, 638000, 0.0, -25, 6276000), CRS('EPSG:28355'))
         observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
         group_by = query_group_by('time')
         sources = dc.group_datasets(observations, group_by)
@@ -254,7 +254,7 @@ def check_data_with_api(index, time_slices):
 
     input_type_name = 'ls5_nbar_albers'
     input_type = dc.index.products.get_by_name(input_type_name)
-    geobox = GeoBox(shape_x + 2, shape_y + 2,
+    geobox = GeoBox(wh_(shape_x + 2, shape_y + 2),
                     Affine(pixel_x, 0.0, GEOTIFF['ul']['x'], 0.0, pixel_y, GEOTIFF['ul']['y']),
                     CRS(GEOTIFF['crs']))
     observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
