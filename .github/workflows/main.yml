@@ -45,7 +45,7 @@ jobs:
 
     - name: Cache Docker layers
       if: steps.changes.outputs.docker == 'true'
-      uses: pat-s/always-upload-cache@v2.1.5
+      uses: pat-s/always-upload-cache@v3.0.11
       with:
         path: /tmp/.buildx-cache
         key: ${{ runner.os }}-buildx-${{ github.sha }}
