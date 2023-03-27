@@ -7,7 +7,8 @@ from contextlib import contextmanager
 
 from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
 from datacube.index.postgres._transaction import PostgresTransaction
-from datacube.index.postgres._datasets import DatasetResource, LineageResource  # type: ignore
+from datacube.index.postgres._datasets import DatasetResource  # type: ignore
+from datacube.index.postgres._lineage import LineageResource
 from datacube.index.postgres._metadata_types import MetadataTypeResource
 from datacube.index.postgres._products import ProductResource
 from datacube.index.postgres._users import UserResource
