@@ -5,12 +5,12 @@
 import logging
 from threading import Lock
 
-from datacube.index.memory._datasets import DatasetResource  # type: ignore
+from datacube.index.memory._datasets import DatasetResource, LineageResource  # type: ignore
 from datacube.index.memory._fields import get_dataset_fields
 from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.index.memory._products import ProductResource
 from datacube.index.memory._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction, LegacyLineageResource
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction
 from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
@@ -30,7 +30,7 @@ class Index(AbstractIndex):
         self._users = UserResource()
         self._metadata_types = MetadataTypeResource()
         self._products = ProductResource(self.metadata_types)
-        self._lineage = LegacyLineageResource(self)
+        self._lineage = LineageResource(self)
         self._datasets = DatasetResource(self.products)
         global counter
         with counter_lock:
@@ -50,7 +50,7 @@ class Index(AbstractIndex):
         return self._products
 
     @property
-    def lineage(self) -> LegacyLineageResource:
+    def lineage(self) -> LineageResource:
         return self._lineage
 
     @property
