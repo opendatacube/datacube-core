@@ -140,9 +140,9 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             b_added, b_skipped = connection.insert_lineage_bulk(
                 [
                     {
-                        "dataset_ref": rel.derived_id,
+                        "derived_dataset_ref": rel.derived_id,
                         "classifier": rel.classifier,
-                        "dataset_source_ref": rel.source_id,
+                        "source_dataset_ref": rel.source_id,
                     }
                     for rel in batch
                 ]

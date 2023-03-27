@@ -1926,13 +1926,15 @@ class AbstractIndex(ABC):
         msg = f'{res.completed} datasets loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
               f'({res.completed * 60 / res.seconds_elapsed:.2f} datasets/min)'
         report_to_user(msg, logger=_LOG)
-        if not self.supports_lineage or not origin_index.supports_external_lineage or skip_lineage:
+        if not self.supports_lineage or not origin_index.supports_lineage or skip_lineage:
             report_to_user("Skipping lineage")
             return results
         report_to_user("Cloning Lineage:")
-        lineage_stream = origin_index.lineage.get_all_lineage()
-        results["lineage"] = {}
-
+        results["lineage"] = self.lineage.bulk_add(origin_index.lineage.get_all_lineage(batch_size), batch_size)
+        res = results["lineage"]
+        msg = f'{res.completed} lineage relations loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
+              f'({res.completed * 60 / res.seconds_elapsed:.2f} lineage relations/min)'
+        report_to_user(msg, logger=_LOG)
         return results
 
     @abstractmethod

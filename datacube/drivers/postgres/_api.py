@@ -648,14 +648,15 @@ class PostgresDbAPI(object):
     def get_all_lineage(self, batch_size: int):
         if batch_size > 0 and not self.in_transaction:
             raise ValueError("Postgresql bulk reads must occur within a transaction.")
-        query = select(DATASET_SOURCE.c.dataset_ref, DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.dataset_source_ref)
+        query = select(DATASET_SOURCE.c.dataset_ref, DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.source_dataset_ref)
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
     def insert_lineage_bulk(self, values):
         requested = len(values)
         res = self._connection.execute(
-            insert(DATASET_SOURCE), values
-        ).on_conflict_do_nothing()
+            insert(DATASET_SOURCE).on_conflict_do_nothing(),
+            values
+        )
         return res.rowcount, requested - res.rowcount
 
     @staticmethod

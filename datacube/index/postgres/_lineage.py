@@ -21,7 +21,7 @@ class LineageResource(NoLineageResource, IndexResourceAddIn):
                 yield LineageRelation(
                     derived_id=row.dataset_ref,
                     classifier=row.classifier,
-                    source_id=row.dataset_source_ref
+                    source_id=row.source_dataset_ref
                 )
 
     def _add_batch(self, batch: Iterable[LineageRelation]) -> BatchStatus:
@@ -32,7 +32,7 @@ class LineageResource(NoLineageResource, IndexResourceAddIn):
                     {
                         "dataset_ref": rel.derived_id,
                         "classifier": rel.classifier,
-                        "dataset_source_ref": rel.source_id,
+                        "source_dataset_ref": rel.source_id,
                     }
                     for rel in batch
                 ]

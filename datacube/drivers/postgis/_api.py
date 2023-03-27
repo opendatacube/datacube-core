@@ -525,12 +525,12 @@ class PostgisDbAPI(object):
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
-            select(_dataset_select_fields()).where(Dataset.id == dataset_id)
+            select(*_dataset_select_fields()).where(Dataset.id == dataset_id)
         ).first()
 
     def get_datasets(self, dataset_ids):
         return self._connection.execute(
-            select(_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
+            select(*_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
         ).fetchall()
 
     def get_derived_datasets(self, dataset_id):
@@ -548,7 +548,7 @@ class PostgisDbAPI(object):
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
-            select(_dataset_select_fields()).where(Dataset.metadata_doc.contains(metadata))
+            select(*_dataset_select_fields()).where(Dataset.metadata_doc.contains(metadata))
         ).fetchall()
 
     def search_products_by_metadata(self, metadata):
@@ -661,7 +661,7 @@ class PostgisDbAPI(object):
         if batch_size > 0 and not self.in_transaction:
             raise ValueError("Postgresql bulk reads must occur within a transaction.")
         query = select(
-            _dataset_bulk_select_fields()
+            *_dataset_bulk_select_fields()
         ).select_from(Dataset).where(
             Dataset.archived == None
         )
@@ -677,15 +677,20 @@ class PostgisDbAPI(object):
     def get_all_lineage(self, batch_size: int):
         if batch_size > 0 and not self.in_transaction:
             raise ValueError("Postgresql bulk reads must occur within a transaction.")
-        query = select(DatasetLineage.dataset_ref, DatasetLineage.classifier, DatasetLineage.dataset_source_ref)
+        query = select(
+            DatasetLineage.derived_dataset_ref,
+            DatasetLineage.classifier,
+            DatasetLineage.source_dataset_ref
+        )
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
 
     def insert_lineage_bulk(self, values):
         requested = len(values)
         res = self._connection.execute(
-            insert(DatasetLineage), values
-        ).on_conflict_do_nothing()
+            insert(DatasetLineage).on_conflict_do_nothing(),
+            values
+        )
         return res.rowcount, requested - res.rowcount
 
     @staticmethod
