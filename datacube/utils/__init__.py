@@ -37,6 +37,7 @@ from .math import (
 from ._misc import (
     DatacubeException,
     gen_password,
+    report_to_user
 )
 
 
@@ -75,4 +76,5 @@ __all__ = (
     "check_write_path",
     "gen_password",
     "_readable_offset",
+    "report_to_user"
 )
