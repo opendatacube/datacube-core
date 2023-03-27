@@ -2,14 +2,15 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Mapping, Optional
+from time import monotonic
+from typing import Mapping, Optional, Iterable
 from uuid import UUID
 
-from datacube.index.abstract import AbstractIndex, AbstractLineageResource, DSID, dsid_to_uuid
+from datacube.index.abstract import AbstractIndex, AbstractLineageResource, DSID, dsid_to_uuid, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.drivers.postgis._api import PostgisDbAPI
-from datacube.model import LineageTree, LineageDirection
-from datacube.model.lineage import LineageRelations, LineageRelation
+from datacube.model import LineageTree, LineageDirection, LineageRelation
+from datacube.model.lineage import LineageRelations
 
 
 class LineageResource(AbstractLineageResource, IndexResourceAddIn):
@@ -123,3 +124,16 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
         ids = [dsid_to_uuid(id_) for id_ in args]
         with self._db_connection() as connection:
             return connection.select_homes(ids)
+
+    def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
+        with self._db_connection(transaction=True) as connection:
+            for row in connection.get_all_lineage(batch_size=batch_size):
+                yield LineageRelation(
+                    derived_id=row.dataset_ref,
+                    classifier=row.classifier,
+                    source_id=row.dataset_source_ref
+                )
+
+    def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
+        b_started = monotonic()
+        return BatchStatus(0, 0, monotonic()-b_started)

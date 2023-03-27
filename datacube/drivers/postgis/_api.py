@@ -674,6 +674,12 @@ class PostgisDbAPI(object):
             conn = self._connection
         return conn.execute(query)
 
+    def get_all_lineage(self, batch_size: int):
+        if batch_size > 0 and not self.in_transaction:
+            raise ValueError("Postgresql bulk reads must occur within a transaction.")
+        query = select(DatasetLineage.dataset_ref, DatasetLineage.classifier, DatasetLineage.dataset_source_ref)
+        return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
+
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
         """

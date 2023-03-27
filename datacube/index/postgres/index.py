@@ -7,12 +7,12 @@ from contextlib import contextmanager
 
 from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
 from datacube.index.postgres._transaction import PostgresTransaction
-from datacube.index.postgres._datasets import DatasetResource  # type: ignore
+from datacube.index.postgres._datasets import DatasetResource, LineageResource  # type: ignore
 from datacube.index.postgres._metadata_types import MetadataTypeResource
 from datacube.index.postgres._products import ProductResource
 from datacube.index.postgres._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, \
-    default_metadata_type_docs, LegacyLineageResource
+    default_metadata_type_docs
 from datacube.model import MetadataType
 from datacube.utils.geometry import CRS
 
@@ -51,7 +51,7 @@ class Index(AbstractIndex):
         self._users = UserResource(db, self)
         self._metadata_types = MetadataTypeResource(db, self)
         self._products = ProductResource(db, self)
-        self._lineage = LegacyLineageResource(self)
+        self._lineage = LineageResource(db, self)
         self._datasets = DatasetResource(db, self)
 
     @property
@@ -67,7 +67,7 @@ class Index(AbstractIndex):
         return self._products
 
     @property
-    def lineage(self) -> LegacyLineageResource:
+    def lineage(self) -> LineageResource:
         return self._lineage
 
     @property
