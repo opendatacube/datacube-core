@@ -763,7 +763,7 @@ class DatasetResource(AbstractDatasetResource):
 
 class LineageResource(NoLineageResource):
     def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
-        return self._index.datasets.get_all_lineage()
+        return self._index.datasets._get_all_lineage()
 
     def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
         return self._index.datasets._add_lineage_batch(batch_rels)
