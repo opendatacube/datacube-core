@@ -680,6 +680,14 @@ class PostgisDbAPI(object):
         query = select(DatasetLineage.dataset_ref, DatasetLineage.classifier, DatasetLineage.dataset_source_ref)
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
+
+    def insert_lineage_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(
+            insert(DatasetLineage), values
+        ).on_conflict_do_nothing()
+        return res.rowcount, requested - res.rowcount
+
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
         """
