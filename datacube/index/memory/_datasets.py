@@ -7,6 +7,7 @@ import logging
 import re
 import warnings
 from collections import namedtuple
+from time import monotonic
 from typing import (Any, Callable, Dict, Iterable,
                     List, Mapping, MutableMapping,
                     Optional, Set, Tuple, Union,
@@ -15,11 +16,12 @@ from uuid import UUID
 
 from datacube.index import fields
 
-from datacube.index.abstract import AbstractDatasetResource, DSID, dsid_to_uuid, QueryField, DatasetSpatialMixin
+from datacube.index.abstract import (AbstractDatasetResource, DSID, dsid_to_uuid, BatchStatus,
+                                     QueryField,  DatasetSpatialMixin, NoLineageResource)
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.index.memory._products import ProductResource
-from datacube.model import Dataset, DatasetType as Product, Range, ranges_overlap
+from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
 from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes
 from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
@@ -724,3 +726,44 @@ class DatasetResource(AbstractDatasetResource):
 
     def spatial_extent(self, ids, crs=None):
         return None
+
+    def _get_all_lineage(self) -> Iterable[LineageRelation]:
+        for derived_id, sources in self.derived_from.items():
+            for classifier, source_id in sources.items():
+                yield LineageRelation(
+                    derived_id=derived_id,
+                    source_id=source_id,
+                    classifier=classifier
+                )
+
+    def _add_lineage_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
+        b_added = 0
+        b_skipped = 0
+        b_started = monotonic()
+        for rel in batch_rels:
+            if rel.derived_id in self.derived_from:
+                if (rel.classifier in self.derived_from[rel.derived_id]
+                        and self.derived_from[rel.derived_id][rel.classifier] != rel.source_id):
+                    b_skipped += 1
+                    continue
+                else:
+                    self.derived_from[rel.derived_id][rel.classifier] = rel.source_id
+                    b_added += 1
+            else:
+                self.derived_from[rel.derived_id] = {rel.classifier: rel.source_id}
+                b_added += 1
+
+            if rel.source_id in self.derivations:
+                self.derivations[rel.source_id][rel.classifier] = rel.derived_id
+            else:
+                self.derivations[rel.source_id] = {rel.classifier: rel.derived_id}
+
+        return BatchStatus(b_added, b_skipped, monotonic()-b_started)
+
+
+class LineageResource(NoLineageResource):
+    def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
+        return self._index.datasets.get_all_lineage()
+
+    def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
+        return self._index.datasets._add_lineage_batch(batch_rels)

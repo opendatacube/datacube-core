@@ -8,7 +8,7 @@ from datacube.index.null._datasets import DatasetResource  # type: ignore
 from datacube.index.null._metadata_types import MetadataTypeResource
 from datacube.index.null._products import ProductResource
 from datacube.index.null._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction, LegacyLineageResource
+from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction, NoLineageResource
 from datacube.model import MetadataType
 from datacube.model.fields import get_dataset_fields
 from datacube.utils.geometry import CRS
@@ -27,7 +27,7 @@ class Index(AbstractIndex):
         self._users = UserResource()
         self._metadata_types = MetadataTypeResource()
         self._products = ProductResource(self.metadata_types)
-        self._lineage = LegacyLineageResource(self)
+        self._lineage = NoLineageResource(self)
         self._datasets = DatasetResource(self.products)
 
     @property
@@ -43,7 +43,7 @@ class Index(AbstractIndex):
         return self._products
 
     @property
-    def lineage(self) -> LegacyLineageResource:
+    def lineage(self) -> NoLineageResource:
         return self._lineage
 
     @property

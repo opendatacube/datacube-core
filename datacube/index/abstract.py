@@ -21,8 +21,8 @@ from datacube.config import LocalConfig
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
 from datacube.model import Product, Dataset, MetadataType, Range
-from datacube.model import LineageTree, LineageDirection
-from datacube.model.lineage import LineageRelations, LineageRelation
+from datacube.model import LineageTree, LineageDirection, LineageRelation
+from datacube.model.lineage import LineageRelations
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException, report_to_user
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.generic import thread_local_cache
