@@ -134,6 +134,17 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                     source_id=row.dataset_source_ref
                 )
 
-    def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
+    def _add_batch(self, batch: Iterable[LineageRelation]) -> BatchStatus:
         b_started = monotonic()
-        return BatchStatus(0, 0, monotonic()-b_started)
+        with self._db_connection(transaction=True) as connection:
+            b_added, b_skipped = connection.insert_lineage_bulk(
+                [
+                    {
+                        "dataset_ref": rel.derived_id,
+                        "classifier": rel.classifier,
+                        "dataset_source_ref": rel.source_id,
+                    }
+                    for rel in batch
+                ]
+            )
+        return BatchStatus(b_added, b_skipped, monotonic() - b_started)
