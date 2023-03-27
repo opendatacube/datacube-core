@@ -637,7 +637,7 @@ class PostgresDbAPI(object):
         else:
             products = None
         query = select(
-            _DATASET_BULK_SELECT_FIELDS
+            *_DATASET_BULK_SELECT_FIELDS
         ).select_from(DATASET).join(PRODUCT).where(
             DATASET.c.archived == None
         )
@@ -650,6 +650,13 @@ class PostgresDbAPI(object):
             raise ValueError("Postgresql bulk reads must occur within a transaction.")
         query = select(DATASET_SOURCE.c.dataset_ref, DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.dataset_source_ref)
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
+
+    def insert_lineage_bulk(self, values):
+        requested = len(values)
+        res = self._connection.execute(
+            insert(DATASET_SOURCE), values
+        ).on_conflict_do_nothing()
+        return res.rowcount, requested - res.rowcount
 
     @staticmethod
     def search_unique_datasets_query(expressions, select_fields, limit):
