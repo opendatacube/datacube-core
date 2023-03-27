@@ -22,8 +22,8 @@ from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
 from datacube.model import Product, Dataset, MetadataType, Range
 from datacube.model import LineageTree, LineageDirection
-from datacube.model.lineage import LineageRelations
-from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException
+from datacube.model.lineage import LineageRelations, LineageRelation
+from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException, report_to_user
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.generic import thread_local_cache
 from datacube.utils.geometry import CRS, Geometry, box
@@ -753,8 +753,11 @@ class AbstractLineageResource(ABC):
     All LineageResource implementations should inherit from this base class.
 
     Note that this is a "new" resource only supported by new index drivers with `supports_external_lineage`
-    set to True.  If a driver does NOT support external lineage, it can use LegacyLineageResource below,
+    set to True.  If a driver does NOT support external lineage, it can use extend the NoLineageResource class below,
     which is a minimal implementation of this resource that raises a NotImplementedError for all methods.
+
+    However, any index driver that supports lineage must implement at least the get_all_lineage() and _add_batch()
+    methods.
     """
     def __init__(self, index) -> None:
         self._index = index
@@ -867,11 +870,85 @@ class AbstractLineageResource(ABC):
         :return: Mapping of dataset ids to home strings.
         """
 
+    @abstractmethod
+    def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
+        """
+        Perform a batch-read of all lineage relations (as used by index clone operation)
+        and return as an iterable stream of LineageRelation objects.
 
-class LegacyLineageResource(AbstractLineageResource):
+        API Note: This API method is not finalised and may be subject to change.
+
+        :param batch_size: The number of records to read from the database at a time.
+        :return: An iterable stream of LineageRelation objects.
+        """
+
+    @abstractmethod
+    def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
+        """
+        Add a single "batch" of LineageRelation objects.
+
+        No default implementation is provided
+
+        API Note: This API method is not finalised and may be subject to change.
+
+        :param batch_rels: An iterable of one batch's worth of LineageRelation objects to add
+        :return: BatchStatus named tuple, with `safe` set to None.
+        """
+
+    def bulk_add(self, relations: Iterable[LineageRelation], batch_size: int = 1000) -> BatchStatus:
+        """
+        Add a group of LineageRelation objects in bulk.
+
+        API Note: This API method is not finalised and may be subject to change.
+
+        :param relations: An Iterable of LineageRelation objects (i.e. as returned by get_all_lineage)
+        :param batch_size: Number of lineage relations to add per batch (default 1000)
+        :return: BatchStatus named tuple, with `safe` set to None.
+        """
+
+        def increment_progress():
+            report_to_user(".", progress_indicator=True)
+
+        n_batches = 0
+        n_in_batch = 0
+        added = 0
+        skipped = 0
+        batch = []
+        job_started = monotonic()
+        for rel in relations:
+            batch.append(rel)
+            n_in_batch += 1
+            if n_in_batch >= batch_size:
+                batch_result = self._add_batch(batch)
+                _LOG.info("Batch %d/%d datasets added in %.2fs: (%.2fdatasets/min)",
+                          batch_result.completed,
+                          n_in_batch,
+                          batch_result.seconds_elapsed,
+                          batch_result.completed * 60 / batch_result.seconds_elapsed)
+                added += batch_result.completed
+                skipped += batch_result.skipped
+                batch = []
+                n_in_batch = 0
+                n_batches += 1
+                increment_progress()
+        if n_in_batch > 0:
+            batch_result = self._add_batch(batch)
+            added += batch_result.completed
+            skipped += batch_result.skipped
+            increment_progress()
+
+        return BatchStatus(added, skipped, monotonic() - job_started)
+
+
+class NoLineageResource(AbstractLineageResource):
     """
     Minimal implementation of AbstractLineageResource that raises "not implemented"
        for all methods.
+
+    Index drivers that do not support lineage at all may use this implementation as is.
+
+    Index drivers that support legacy lineage should extend this implementation and provide
+    implementations of the get_all_lineage() and _add_batch() methods.
     """
     def __init__(self, index) -> None:
         self._index = index
@@ -900,6 +977,12 @@ class LegacyLineageResource(AbstractLineageResource):
 
     def get_homes(self, *args: DSID) -> Mapping[UUID, str]:
         return {}
+
+    def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
+        raise NotImplementedError()
+
+    def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
+        raise NotImplementedError()
 
 
 class DatasetTuple(NamedTuple):
@@ -1273,12 +1356,11 @@ class AbstractDatasetResource(ABC):
         API Note: This API method is not finalised and may be subject to change.
 
         :param datasets: An Iterable of DatasetTuples (i.e. as returned by get_all_docs)
-        :param batch_size: Number of metadata types to add per batch (default 1000)
+        :param batch_size: Number of datasets to add per batch (default 1000)
         :return: BatchStatus named tuple, with `safe` set to None.
         """
         def increment_progress():
-            if sys.stdout.isatty():
-                print(".", end="", flush=True)
+            report_to_user(".", progress_indicator=True)
         n_batches = 0
         n_in_batch = 0
         added = 0
@@ -1783,7 +1865,7 @@ class AbstractIndex(ABC):
         :return: true if the database was created, false if already exists
         """
 
-    def clone(self, origin_index: "AbstractIndex", batch_size: int = 1000) -> Mapping[str, BatchStatus]:
+    def clone(self, origin_index: "AbstractIndex", batch_size: int = 1000, skip_lineage=False) -> Mapping[str, BatchStatus]:
         """
         Clone an existing index into this one.
 
@@ -1800,59 +1882,57 @@ class AbstractIndex(ABC):
         3)  Clone all datasets with "safe" products
             * Datasets are included or excluded by product and metadata type, as discussed above.
             * Archived datasets and locations are not cloned.
-            * Dataset source (lineage) are not currently cloned (TODO)
+        4) Clone all lineage relations that can be cloned.
+            * All lineage relations are skipped if either index driver does not support lineage,
+              or if skip_lineage is True.
+            * If this index does not support external lineage then lineage relations that reference datasets
+              that do not exist in this index after step 3 above are skipped.
 
         API Note: This API method is not finalised and may be subject to change.
 
         :param origin_index: Index whose contents we wish to clone.
         :param batch_size: Maximum number of objects to write to the database in one go.
         :return: Dictionary containing a BatchStatus named tuple for "metadata_types", "products"
-                 and "datasets".
+                 and "datasets", and optionally "lineage".
         """
         results = {}
         # Clone Metadata Types
-        if sys.stdout.isatty():
-            print("Cloning Metadata Types:")
+        report_to_user("Cloning Metadata Types:")
         results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
                                                                  batch_size=batch_size)
         res = results["metadata_types"]
         msg = f'{res.completed} metadata types loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
               f'({res.completed * 60 / res.seconds_elapsed:.2f} metadata_types/min)'
-        if sys.stdout.isatty():
-            print(msg)
-        else:
-            _LOG.info(msg)
+        report_to_user(msg, logger=_LOG)
         metadata_cache = {name: self.metadata_types.get_by_name(name) for name in res.safe}
         # Clone Products
-        if sys.stdout.isatty():
-            print("Cloning Products:")
+        report_to_user("Cloning Products:")
         results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
                                                      metadata_types=metadata_cache,
                                                      batch_size=batch_size)
         res = results["products"]
         msg = f'{res.completed} products loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
               f'({res.completed * 60 / res.seconds_elapsed:.2f} products/min)'
-        if sys.stdout.isatty():
-            print(msg)
-        else:
-            _LOG.info(msg)
+        report_to_user(msg, logger=_LOG)
         # Clone Datasets (group by product for now for convenience)
-        if sys.stdout.isatty():
-            print("Cloning Datasets:")
+        report_to_user("Cloning Datasets:")
         products = [p for p in self.products.get_all() if p.name in res.safe]
         results["datasets"] = self.datasets.bulk_add(
             origin_index.datasets.get_all_docs(products=products, batch_size=batch_size),
             batch_size=batch_size
         )
         res = results["datasets"]
-        if sys.stdout.isatty():
-            print("")
+        report_to_user("")
         msg = f'{res.completed} datasets loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
               f'({res.completed * 60 / res.seconds_elapsed:.2f} datasets/min)'
-        if sys.stdout.isatty():
-            print(msg)
-        else:
-            _LOG.info(msg)
+        report_to_user(msg, logger=_LOG)
+        if not self.supports_lineage or not origin_index.supports_external_lineage or skip_lineage:
+            report_to_user("Skipping lineage")
+            return results
+        report_to_user("Cloning Lineage:")
+        lineage_stream = origin_index.lineage.get_all_lineage()
+        results["lineage"] = {}
+
         return results
 
     @abstractmethod
