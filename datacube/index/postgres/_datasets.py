@@ -18,9 +18,9 @@ from sqlalchemy import select, func
 from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgres._schema import DATASET
 from datacube.index.abstract import (AbstractDatasetResource, DatasetSpatialMixin, DSID,
-                                     DatasetTuple, BatchStatus, NoLineageResource)
+                                     DatasetTuple, BatchStatus)
 from datacube.index.postgres._transaction import IndexResourceAddIn
-from datacube.model import Dataset, Product, LineageRelation
+from datacube.model import Dataset, Product
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes
@@ -929,20 +929,3 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 yield DatasetTuple(product, metadata_doc, uris)
 
 
-class LineageResource(NoLineageResource, IndexResourceAddIn):
-    def __init__(self, db, index):
-        self._db = db
-        super().__init__(index)
-
-    def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
-        with self._db_connection(transaction=True) as connection:
-            for row in connection.get_all_lineage(batch_size=batch_size):
-                yield LineageRelation(
-                    derived_id=row.dataset_ref,
-                    classifier=row.classifier,
-                    source_id=row.dataset_source_ref
-                )
-
-    def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
-        b_started = monotonic()
-        return BatchStatus(0, 0, monotonic()-b_started)
