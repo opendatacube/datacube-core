@@ -29,11 +29,7 @@ class LineageResource(NoLineageResource, IndexResourceAddIn):
         with self._db_connection(transaction=True) as connection:
             b_added, b_skipped = connection.insert_lineage_bulk(
                 [
-                    {
-                        "dataset_ref": rel.derived_id,
-                        "classifier": rel.classifier,
-                        "source_dataset_ref": rel.source_id,
-                    }
+                    (str(rel.derived_id), rel.classifier, str(rel.source_id))
                     for rel in batch
                 ]
             )
