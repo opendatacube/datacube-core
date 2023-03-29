@@ -129,9 +129,9 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
         with self._db_connection(transaction=True) as connection:
             for row in connection.get_all_lineage(batch_size=batch_size):
                 yield LineageRelation(
-                    derived_id=row.dataset_ref,
+                    derived_id=row.derived_dataset_ref,
                     classifier=row.classifier,
-                    source_id=row.dataset_source_ref
+                    source_id=row.source_dataset_ref
                 )
 
     def _add_batch(self, batch: Iterable[LineageRelation]) -> BatchStatus:

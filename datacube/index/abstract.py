@@ -1865,7 +1865,7 @@ class AbstractIndex(ABC):
         :return: true if the database was created, false if already exists
         """
 
-    def clone(self, origin_index: "AbstractIndex", batch_size: int = 1000, skip_lineage=False) -> Mapping[str, BatchStatus]:
+    def clone(self, origin_index: "AbstractIndex", batch_size: int = 1000, skip_lineage=False, lineage_only=False) -> Mapping[str, BatchStatus]:
         """
         Clone an existing index into this one.
 
@@ -1896,42 +1896,44 @@ class AbstractIndex(ABC):
                  and "datasets", and optionally "lineage".
         """
         results = {}
-        # Clone Metadata Types
-        report_to_user("Cloning Metadata Types:")
-        results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
-                                                                 batch_size=batch_size)
-        res = results["metadata_types"]
-        msg = f'{res.completed} metadata types loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
-              f'({res.completed * 60 / res.seconds_elapsed:.2f} metadata_types/min)'
-        report_to_user(msg, logger=_LOG)
-        metadata_cache = {name: self.metadata_types.get_by_name(name) for name in res.safe}
-        # Clone Products
-        report_to_user("Cloning Products:")
-        results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
-                                                     metadata_types=metadata_cache,
-                                                     batch_size=batch_size)
-        res = results["products"]
-        msg = f'{res.completed} products loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
-              f'({res.completed * 60 / res.seconds_elapsed:.2f} products/min)'
-        report_to_user(msg, logger=_LOG)
-        # Clone Datasets (group by product for now for convenience)
-        report_to_user("Cloning Datasets:")
-        products = [p for p in self.products.get_all() if p.name in res.safe]
-        results["datasets"] = self.datasets.bulk_add(
-            origin_index.datasets.get_all_docs(products=products, batch_size=batch_size),
-            batch_size=batch_size
-        )
-        res = results["datasets"]
-        report_to_user("")
-        msg = f'{res.completed} datasets loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
-              f'({res.completed * 60 / res.seconds_elapsed:.2f} datasets/min)'
-        report_to_user(msg, logger=_LOG)
+        if not lineage_only:
+            # Clone Metadata Types
+            report_to_user("Cloning Metadata Types:")
+            results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
+                                                                     batch_size=batch_size)
+            res = results["metadata_types"]
+            msg = f'{res.completed} metadata types loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
+                  f'({res.completed * 60 / res.seconds_elapsed:.2f} metadata_types/min)'
+            report_to_user(msg, logger=_LOG)
+            metadata_cache = {name: self.metadata_types.get_by_name(name) for name in res.safe}
+            # Clone Products
+            report_to_user("Cloning Products:")
+            results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
+                                                         metadata_types=metadata_cache,
+                                                         batch_size=batch_size)
+            res = results["products"]
+            msg = f'{res.completed} products loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
+                  f'({res.completed * 60 / res.seconds_elapsed:.2f} products/min)'
+            report_to_user(msg, logger=_LOG)
+            # Clone Datasets (group by product for now for convenience)
+            report_to_user("Cloning Datasets:")
+            products = [p for p in self.products.get_all() if p.name in res.safe]
+            results["datasets"] = self.datasets.bulk_add(
+                origin_index.datasets.get_all_docs(products=products, batch_size=batch_size),
+                batch_size=batch_size
+            )
+            res = results["datasets"]
+            report_to_user("")
+            msg = f'{res.completed} datasets loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
+                  f'({res.completed * 60 / res.seconds_elapsed:.2f} datasets/min)'
+            report_to_user(msg, logger=_LOG)
         if not self.supports_lineage or not origin_index.supports_lineage or skip_lineage:
             report_to_user("Skipping lineage")
             return results
         report_to_user("Cloning Lineage:")
         results["lineage"] = self.lineage.bulk_add(origin_index.lineage.get_all_lineage(batch_size), batch_size)
         res = results["lineage"]
+        report_to_user("")
         msg = f'{res.completed} lineage relations loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
               f'({res.completed * 60 / res.seconds_elapsed:.2f} lineage relations/min)'
         report_to_user(msg, logger=_LOG)

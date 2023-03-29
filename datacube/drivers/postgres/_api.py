@@ -16,11 +16,11 @@ Persistence API implementation for postgres.
 import logging
 import uuid  # noqa: F401
 from typing import Iterable, Tuple
-from sqlalchemy import cast
-from sqlalchemy import delete
+from sqlalchemy import cast, String
+from sqlalchemy import delete, column, values
 from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
 from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.dialects.postgresql import JSONB, insert
+from sqlalchemy.dialects.postgresql import JSONB, insert, UUID
 from sqlalchemy.exc import IntegrityError
 
 from datacube.index.exceptions import MissingRecordError
@@ -651,12 +651,29 @@ class PostgresDbAPI(object):
         query = select(DATASET_SOURCE.c.dataset_ref, DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.source_dataset_ref)
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
-    def insert_lineage_bulk(self, values):
-        requested = len(values)
-        res = self._connection.execute(
-            insert(DATASET_SOURCE).on_conflict_do_nothing(),
-            values
+    def insert_lineage_bulk(self, vals):
+        requested = len(vals)
+        sqla_vals = values(
+            column("dataset_ref", UUID),
+            column("classifier", String),
+            column("source_dataset_ref", UUID),
+            name="batch_data"
+        ).data(vals)
+        derived_ds = DATASET.alias("derived")
+        source_ds = DATASET
+        sel_query = sqla_vals.select().where(
+            derived_ds.select().where(derived_ds.c.id == sqla_vals.c.dataset_ref).exists(),
+            source_ds.select().where(source_ds.c.id == sqla_vals.c.source_dataset_ref).exists(),
         )
+        query = insert(
+            DATASET_SOURCE
+        ).from_select(
+            ['dataset_ref', 'classifier', 'source_dataset_ref'],
+            sel_query
+        ).on_conflict_do_nothing(
+            index_elements = ['classifier', 'dataset_ref']
+        )
+        res = self._connection.execute(query)
         return res.rowcount, requested - res.rowcount
 
     @staticmethod

@@ -105,9 +105,20 @@ def check(local_config: LocalConfig):
               help='Size of batches for bulk-adding to the new index',
               type=int,
               default=1000)
+@click.option(
+    '--skip-lineage/--no-skip-lineage', is_flag=True, default=False,
+    help="Clone lineage data where possible. (default: true)"
+)
+@click.option(
+    '--lineage-only/--no-lineage-only', is_flag=True, default=False,
+    help="Clone lineage data only. (default: false)"
+)
 @click.argument('source-env', type=str, nargs=1)
 @ui.pass_index()
-def clone(index: Index, batch_size: int, source_env: str):
+def clone(index: Index, batch_size: int, skip_lineage: bool, lineage_only: bool, source_env: str):
+    if skip_lineage and lineage_only:
+        echo("Cannot set both lineage-only and skip-lineage")
+        exit(1)
     try:
         source_dc = Datacube(env=source_env)
     except OperationalError as e:
@@ -115,4 +126,4 @@ def clone(index: Index, batch_size: int, source_env: str):
     except IndexSetupError as e:
         handle_exception('Source database not initialised: %s', e)
 
-    index.clone(source_dc.index, batch_size=batch_size)
+    index.clone(source_dc.index, batch_size=batch_size, skip_lineage=skip_lineage, lineage_only=lineage_only)
