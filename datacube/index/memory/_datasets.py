@@ -17,7 +17,7 @@ from uuid import UUID
 from datacube.index import fields
 
 from datacube.index.abstract import (AbstractDatasetResource, DSID, dsid_to_uuid, BatchStatus,
-                                     QueryField,  DatasetSpatialMixin, NoLineageResource)
+                                     QueryField, DatasetSpatialMixin, NoLineageResource)
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.index.memory._products import ProductResource

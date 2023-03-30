@@ -684,7 +684,6 @@ class PostgisDbAPI(object):
         )
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
-
     def insert_lineage_bulk(self, values):
         requested = len(values)
         res = self._connection.execute(
