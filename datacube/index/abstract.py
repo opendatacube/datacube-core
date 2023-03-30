@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import logging
-import sys
 
 from pathlib import Path
 from threading import Lock
@@ -1865,7 +1864,11 @@ class AbstractIndex(ABC):
         :return: true if the database was created, false if already exists
         """
 
-    def clone(self, origin_index: "AbstractIndex", batch_size: int = 1000, skip_lineage=False, lineage_only=False) -> Mapping[str, BatchStatus]:
+    def clone(self,
+              origin_index: "AbstractIndex",
+              batch_size: int = 1000,
+              skip_lineage=False,
+              lineage_only=False) -> Mapping[str, BatchStatus]:
         """
         Clone an existing index into this one.
 
@@ -1902,7 +1905,8 @@ class AbstractIndex(ABC):
             results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
                                                                      batch_size=batch_size)
             res = results["metadata_types"]
-            msg = f'{res.completed} metadata types loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
+            msg = f'{res.completed} metadata types loaded ({res.skipped} skipped) in ' \
+                  f'{res.seconds_elapsed:.2f}seconds ' \
                   f'({res.completed * 60 / res.seconds_elapsed:.2f} metadata_types/min)'
             report_to_user(msg, logger=_LOG)
             metadata_cache = {name: self.metadata_types.get_by_name(name) for name in res.safe}
