@@ -671,7 +671,7 @@ class PostgresDbAPI(object):
             ['dataset_ref', 'classifier', 'source_dataset_ref'],
             sel_query
         ).on_conflict_do_nothing(
-            index_elements = ['classifier', 'dataset_ref']
+            index_elements=['classifier', 'dataset_ref']
         )
         res = self._connection.execute(query)
         return res.rowcount, requested - res.rowcount
