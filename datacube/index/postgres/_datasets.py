@@ -927,5 +927,3 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for row in connection.bulk_simple_dataset_search(products=product_search_key, batch_size=batch_size):
                 prod_name, metadata_doc, uris = tuple(row)
                 yield DatasetTuple(product, metadata_doc, uris)
-
-
