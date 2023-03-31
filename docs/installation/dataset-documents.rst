@@ -184,6 +184,24 @@ Note that this dataset metadata document:
     xarray variable for the driver to load (similar to the netcdf example above).
 
 
+.. _dataset-metadata-doc-time-stacked-netcdf:
+
+Time-stacked NetCDF files
+-------------------
+
+It is possible to add NetCDF files with multiple time slices to the Open Data Cube index.
+The time slice index can be specified by adding a fragment `#part=<int>` to the `path` of a band starting from 0.
+
+Example:
+
+.. code-block:: yaml
+
+   measurements:
+      time_stacked_netcdf_example:
+        path: file://some.nc#part=0
+        layer: some_var
+
+
 .. _dataset-metadata-doc-eo:
 
 EO (deprecated)
