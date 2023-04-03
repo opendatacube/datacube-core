@@ -727,6 +727,8 @@ class DatasetResource(AbstractDatasetResource):
     def spatial_extent(self, ids, crs=None):
         return None
 
+    # Lineage methods need to be implemented on the dataset resource as that is where the relevant indexes
+    # currently live.
     def _get_all_lineage(self) -> Iterable[LineageRelation]:
         for derived_id, sources in self.derived_from.items():
             for classifier, source_id in sources.items():
@@ -762,6 +764,10 @@ class DatasetResource(AbstractDatasetResource):
 
 
 class LineageResource(NoLineageResource):
+    """
+    Minimal implementation as does not support external lineage.
+    Lineage indexes live in the Dataset resource, so thin wrapper around that.
+    """
     def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
         return self._index.datasets._get_all_lineage()
 

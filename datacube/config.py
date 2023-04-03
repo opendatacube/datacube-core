@@ -6,14 +6,11 @@
 User configuration.
 """
 
-import logging
 import os
 from pathlib import Path
 import configparser
 from urllib.parse import unquote_plus, urlparse, parse_qsl
 from typing import Any, Dict, Iterable, MutableMapping, Optional, Tuple, Union
-
-_LOG = logging.getLogger("datacube_cfg")
 
 PathLike = Union[str, 'os.PathLike[Any]']
 
