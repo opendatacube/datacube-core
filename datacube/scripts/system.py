@@ -9,7 +9,6 @@ from click import echo, style
 from sqlalchemy.exc import OperationalError
 
 import datacube
-from datacube import Datacube
 from datacube.index import Index, index_connect
 from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
