@@ -203,7 +203,12 @@ def doc_to_ds(index, product_name, ds_doc, ds_path):
     resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
     ds, err = resolver(ds_doc, ds_path)
     assert err is None and ds is not None
-    index.datasets.add(ds, with_lineage=False)
+    if index.supports_external_lineage:
+        index.datasets.add(ds, with_lineage=False)
+        eo3_tree = LineageTree.from_eo3_doc(ds_doc)
+        index.lineage.add(eo3_tree)
+    else:
+        index.datasets.add(ds, with_lineage=index.supports_lineage)
     return index.datasets.get(ds.id)
 
 
