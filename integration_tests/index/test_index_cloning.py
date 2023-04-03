@@ -24,20 +24,26 @@ def test_index_clone_small_batch(index_pair_populated_empty):
     assert results["datasets"].skipped == 0
 
 
-def test_index_clone_cli(local_config_pair, index_pair_populated_empty, clirunner_raw):
+def test_index_clone_cli(local_config_pair, index_pair_populated_empty, clirunner):
     source_cfg, target_cfg = local_config_pair
-    clirunner_raw([
+    clirunner([
+        '-E', target_cfg._env,
+        'system', 'clone',
+        '--lineage-only', '--skip-lineage',
+        source_cfg._env
+    ], expect_success=False)
+    clirunner([
         '-E', target_cfg._env,
         'system', 'clone',
         source_cfg._env
-    ], expect_success=False)
+    ], expect_success=True)
 
 
-def test_index_clone_cli_small_batch(local_config_pair, index_pair_populated_empty, clirunner_raw):
+def test_index_clone_cli_small_batch(local_config_pair, index_pair_populated_empty, clirunner):
     source_cfg, target_cfg = local_config_pair
-    clirunner_raw([
+    clirunner([
         '-E', target_cfg._env,
         'system', 'clone',
         '--batch-size', '2',
         source_cfg._env
-    ], expect_success=False)
+    ], expect_success=True)

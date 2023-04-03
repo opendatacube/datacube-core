@@ -119,11 +119,18 @@ def clone(index: Index, batch_size: int, skip_lineage: bool, lineage_only: bool,
     if skip_lineage and lineage_only:
         echo("Cannot set both lineage-only and skip-lineage")
         exit(1)
+    obj = click.get_current_context().obj
+    paths = obj.get('config_files', None)
     try:
-        source_dc = Datacube(env=source_env)
+        source_config = LocalConfig.find(paths=paths, env=source_env)
+    except ValueError:
+        raise click.ClickException("No datacube config found for '{}'".format(source_env))
+
+    try:
+        src_index = index_connect(source_config, validate_connection=True)
+        index.clone(src_index, batch_size=batch_size, skip_lineage=skip_lineage, lineage_only=lineage_only)
+        exit(0)
     except OperationalError as e:
         handle_exception('Error Connecting to Source Database: %s', e)
     except IndexSetupError as e:
         handle_exception('Source database not initialised: %s', e)
-
-    index.clone(source_dc.index, batch_size=batch_size, skip_lineage=skip_lineage, lineage_only=lineage_only)

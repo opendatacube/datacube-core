@@ -6,11 +6,14 @@
 User configuration.
 """
 
+import logging
 import os
 from pathlib import Path
 import configparser
 from urllib.parse import unquote_plus, urlparse, parse_qsl
 from typing import Any, Dict, Iterable, MutableMapping, Optional, Tuple, Union
+
+_LOG = logging.getLogger("datacube_cfg")
 
 PathLike = Union[str, 'os.PathLike[Any]']
 
@@ -87,7 +90,6 @@ class LocalConfig(object):
         if env is None:
             env = os.environ.get('DATACUBE_ENVIRONMENT',
                                  config.get('user', 'default_environment', fallback=None))
-
         # If the user specifies a particular env, we either want to use it or Fail
         if env:
             if config.has_section(env):
