@@ -675,6 +675,12 @@ class PostgisDbAPI(object):
         return conn.execute(query)
 
     def get_all_lineage(self, batch_size: int):
+        """
+        Stream all lineage data in bulk (e.g. for index cloning)
+
+        :param batch_size: The number of lineage records to return at once.
+        :return: Streamable SQLAlchemy result object.
+        """
         if batch_size > 0 and not self.in_transaction:
             raise ValueError("Postgresql bulk reads must occur within a transaction.")
         query = select(
@@ -685,7 +691,15 @@ class PostgisDbAPI(object):
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
     def insert_lineage_bulk(self, values):
+        """
+        Insert bulk lineage records (e.g. for index cloning)
+
+        :param values: An array of values dicts for bulk inser
+        :return: Tuple[count of rows loaded, count of rows skipped]
+        """
         requested = len(values)
+        # Simple bulk insert with on_conflict_do_nothing.
+        # No need to check referential integrity as this is an external lineage index driver.
         res = self._connection.execute(
             insert(DatasetLineage).on_conflict_do_nothing(),
             values

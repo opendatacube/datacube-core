@@ -646,19 +646,34 @@ class PostgresDbAPI(object):
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
     def get_all_lineage(self, batch_size: int):
+        """
+        Stream all lineage data in bulk (e.g. for index cloning)
+
+        :param batch_size: The number of lineage records to return at once.
+        :return: Streamable SQLAlchemy result object.
+        """
         if batch_size > 0 and not self.in_transaction:
             raise ValueError("Postgresql bulk reads must occur within a transaction.")
         query = select(DATASET_SOURCE.c.dataset_ref, DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.source_dataset_ref)
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
     def insert_lineage_bulk(self, vals):
+        """
+        Insert bulk lineage records (e.g. for index cloning)
+
+        :param values: An array of values dicts for bulk inser
+        :return: Tuple[count of rows loaded, count of rows skipped]
+        """
         requested = len(vals)
+        # Wrap values in SQLAlchemy Values object
         sqla_vals = values(
             column("dataset_ref", UUID),
             column("classifier", String),
             column("source_dataset_ref", UUID),
             name="batch_data"
         ).data(vals)
+        # Join Values object against the dataset table, via both FK relations to
+        # filter out external lineage that cannot be loaded into a legacy lineage index driver
         derived_ds = DATASET.alias("derived")
         source_ds = DATASET
         sel_query = sqla_vals.select().where(
