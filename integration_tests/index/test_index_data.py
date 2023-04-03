@@ -70,7 +70,7 @@ _pseudo_telemetry_dataset_type = {
 }
 
 
-def test_archive_datasets(index, local_config, ls8_eo3_dataset):
+def test_archive_datasets(index, ls8_eo3_dataset):
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
     assert datasets[0].is_active
