@@ -314,15 +314,6 @@ def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
     return mem_index_eo3, ds_ls8.id, ds_wo.id
 
 
-@pytest.fixture
-def global_integration_cli_args():
-    """
-    The first arguments to pass to a cli command for integration test configuration.
-    """
-    # List of a config files in order.
-    return list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
-
-
 @pytest.fixture(scope="module", params=["datacube", "experimental"])
 def datacube_env_name(request):
     return request.param
@@ -745,7 +736,7 @@ def example_ls5_nbar_metadata_doc():
 
 
 @pytest.fixture
-def clirunner(global_integration_cli_args, datacube_env_name):
+def clirunner(datacube_env_name):
     def _run_cli(opts, catch_exceptions=False,
                  expect_success=True, cli_method=datacube.scripts.cli_app.cli,
                  verbose_flag='-v'):
