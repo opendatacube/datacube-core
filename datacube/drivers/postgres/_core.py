@@ -99,6 +99,7 @@ def ensure_db(engine, with_permissions=True):
 
     if not has_schema(engine):
         is_new = True
+        sqla_txn = None
         try:
             sqla_txn = c.begin()
             if with_permissions:
@@ -115,7 +116,8 @@ def ensure_db(engine, with_permissions=True):
             install_added_column(c)
             sqla_txn.commit()
         except:  # noqa: E722
-            sqla_txn.rollback()
+            if sqla_txn is not None:
+                sqla_txn.rollback()
             raise
         finally:
             if with_permissions:
