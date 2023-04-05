@@ -1,9 +1,6 @@
 name: Doc QA
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches:
-      - 'develop'
+  # Triggers the workflow on pull request events for the main branch
   pull_request:
     branches:
       - 'develop'
