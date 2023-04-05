@@ -32,7 +32,7 @@ dependencies:
   - pyyaml
   - rasterio >=1.3.2
   - ruamel.yaml
-  - sqlalchemy <2.0
+  - sqlalchemy >=2.0
   - GeoAlchemy2
   - xarray >=0.9
   - toolz
