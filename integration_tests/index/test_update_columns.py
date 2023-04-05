@@ -31,7 +31,8 @@ and tgrelid = '{schema}.{table}'::regclass;
 
 
 def check_column(conn, table_name: str, column_name: str) -> bool:
-    column_result = conn.execute(text(
+    column_result = conn.execute(
+        text(
             COLUMN_PRESENCE.format(
                 schema=SCHEMA_NAME, table=table_name, column=column_name
             )
@@ -41,7 +42,8 @@ def check_column(conn, table_name: str, column_name: str) -> bool:
 
 
 def check_trigger(conn, table_name: str) -> bool:
-    trigger_result = conn.execute(text(
+    trigger_result = conn.execute(
+        text(
             TRIGGER_PRESENCE.format(schema=SCHEMA_NAME, table=table_name)
         )
     ).fetchone()

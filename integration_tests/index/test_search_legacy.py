@@ -15,7 +15,6 @@ from typing import List, Any
 import pytest
 import yaml
 from dateutil import tz
-from psycopg2._range import NumericRange
 from sqlalchemy.dialects.postgresql.ranges import Range as SQLARange
 
 from datacube.config import LocalConfig
@@ -935,11 +934,11 @@ def test_find_duplicates(index, pseudo_ls8_type,
     ]
     f = pseudo_ls8_type.metadata_type.dataset_fields.get
     field_res = list(
-            index.datasets.search_product_duplicates(
-                pseudo_ls8_type,
-                f('time').lower.day  # type: ignore
-            )
+        index.datasets.search_product_duplicates(
+            pseudo_ls8_type,
+            f('time').lower.day  # type: ignore
         )
+    )
 
     # Datasets 1 & 3 are on the 26th.
     # Datasets 2 & 4 are on the 27th.
