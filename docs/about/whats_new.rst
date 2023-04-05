@@ -5,6 +5,14 @@
 What's New
 **********
 
+v1.9.next
+=========
+
+- External Lineage API (:pull:`#1401`)
+- Add lineage support to index clone operation (:pull:`#1429`)
+- Migrate to SQLAlchemy 2.0 (:pull:`#14??`)
+
+
 v1.8.next
 =========
 
