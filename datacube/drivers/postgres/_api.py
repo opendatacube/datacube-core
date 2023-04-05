@@ -333,7 +333,7 @@ class PostgresDbAPI(object):
 
         return self._connection.execute(
             select(
-                _DATASET_SELECT_FIELDS
+                *_DATASET_SELECT_FIELDS
             ).select_from(
                 DATASET_LOCATION.join(DATASET)
             ).where(
@@ -482,7 +482,7 @@ class PostgresDbAPI(object):
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
-            select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
+            select(*_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
         ).fetchall()
 
     def search_products_by_metadata(self, metadata):
@@ -571,15 +571,18 @@ class PostgresDbAPI(object):
             )
         ).cte(name="base_query", recursive=True)
 
+        rq_select_cols = [
+            col
+            for col in base_query.columns
+            if col.name not in ['source_dataset_ref', 'distance', 'path']
+        ] + [
+            DATASET_SOURCE.c.source_dataset_ref,
+            (base_query.c.distance + 1).label('distance'),
+            (base_query.c.path + '.' + DATASET_SOURCE.c.classifier).label('path')
+        ]
         recursive_query = base_query.union_all(
             select(
-                [col for col in base_query.columns
-                 if col.name not in ['source_dataset_ref', 'distance', 'path']
-                 ] + [
-                    DATASET_SOURCE.c.source_dataset_ref,
-                    (base_query.c.distance + 1).label('distance'),
-                    (base_query.c.path + '.' + DATASET_SOURCE.c.classifier).label('path')
-                ]
+                *rq_select_cols
             ).select_from(
                 base_query.join(
                     DATASET_SOURCE, base_query.c.source_dataset_ref == DATASET_SOURCE.c.dataset_ref
@@ -589,10 +592,11 @@ class PostgresDbAPI(object):
 
         return (
             select(
-                [distinct(recursive_query.c.id)
-                 ] + [
+                distinct(recursive_query.c.id),
+                *[
                     col for col in recursive_query.columns
-                    if col.name not in ['id', 'source_dataset_ref', 'distance', 'path']]
+                    if col.name not in ['id', 'source_dataset_ref', 'distance', 'path']
+                ]
             ).select_from(
                 recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
             ).where(
@@ -718,9 +722,9 @@ class PostgresDbAPI(object):
                 if field.name in {'uri', 'uris'}:
                     # All active URIs, from newest to oldest
                     uris_field = func.array(
-                        select([
+                        select(
                             _dataset_uri_field(SELECTED_DATASET_LOCATION)
-                        ]).where(
+                        ).where(
                             and_(
                                 SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
                                 SELECTED_DATASET_LOCATION.c.archived == None
@@ -746,7 +750,7 @@ class PostgresDbAPI(object):
 
         return (
             select(
-                select_columns
+                *select_columns
             ).select_from(
                 from_expression
             ).where(
@@ -774,7 +778,8 @@ class PostgresDbAPI(object):
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
 
         select_query = select(
-            (func.array_agg(DATASET.c.id),) + group_expressions
+            func.array_agg(DATASET.c.id),
+            *group_expressions
         ).select_from(
             PostgresDbAPI._from_expression(DATASET, expressions, match_fields)
         ).where(
@@ -796,7 +801,7 @@ class PostgresDbAPI(object):
 
         select_query = (
             select(
-                [func.count('*')]
+                func.count('*')
             ).select_from(
                 self._from_expression(DATASET, expressions)
             ).where(
@@ -826,31 +831,31 @@ class PostgresDbAPI(object):
     def count_datasets_through_time_query(self, start, end, period, time_field, expressions):
         raw_expressions = self._alchemify_expressions(expressions)
 
-        start_times = select((
+        start_times = select(
             func.generate_series(start, end, cast(period, INTERVAL)).label('start_time'),
-        )).alias('start_times')
+        ).alias('start_times')
 
         time_range_select = (
-            select((
+            select(
                 func.tstzrange(
                     start_times.c.start_time,
                     func.lead(start_times.c.start_time).over()
                 ).label('time_period'),
-            ))
+            )
         ).alias('all_time_ranges')
 
         # Exclude the trailing (end time to infinite) row. Is there a simpler way?
         time_ranges = (
-            select((
+            select(
                 time_range_select,
-            )).where(
+            ).where(
                 ~func.upper_inf(time_range_select.c.time_period)
             )
         ).alias('time_ranges')
 
         count_query = (
             select(
-                (func.count('*'),)
+                func.count('*')
             ).select_from(
                 self._from_expression(DATASET, expressions)
             ).where(
@@ -862,7 +867,7 @@ class PostgresDbAPI(object):
             )
         )
 
-        return select((time_ranges.c.time_period, count_query.label('dataset_count')))
+        return select(time_ranges.c.time_period, count_query.label('dataset_count'))
 
     @staticmethod
     def _from_expression(source_table, expressions=None, fields=None):
@@ -1092,9 +1097,9 @@ class PostgresDbAPI(object):
         return [
             record[0]
             for record in self._connection.execute(
-                select([
+                select(
                     _dataset_uri_field(DATASET_LOCATION)
-                ]).where(
+                ).where(
                     and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived == None)
                 ).order_by(
                     DATASET_LOCATION.c.added.desc(),
@@ -1110,9 +1115,9 @@ class PostgresDbAPI(object):
         return [
             (location_uri, archived_time)
             for location_uri, archived_time in self._connection.execute(
-                select([
+                select(
                     _dataset_uri_field(DATASET_LOCATION), DATASET_LOCATION.c.archived
-                ]).where(
+                ).where(
                     and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived != None)
                 ).order_by(
                     DATASET_LOCATION.c.added.desc()

@@ -397,7 +397,7 @@ class DoubleRangeDocField(RangeDocField):
         """
         :rtype: Expression
         """
-        return RangeBetweenExpression(self, low, high, _range_class=NumericRange)
+        return RangeBetweenExpression(self, low, high, _range_class=func.agdc.float8range)
 
 
 class DateRangeDocField(RangeDocField):

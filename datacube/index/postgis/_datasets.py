@@ -760,7 +760,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         for _, results in self._do_search_by_product(query, return_fields=True):
             for columns in results:
-                output = dict(columns)
+                output = columns._asdict()
                 _LOG.warning("search results: %s (%s)", output["id"], output["product"])
                 yield output
 

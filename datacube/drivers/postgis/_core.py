@@ -73,70 +73,65 @@ def ensure_db(engine, with_permissions=True):
 
     Create the schema if it doesn't exist.
     """
-    is_new = False
-    c = engine.connect()
+    is_new = not has_schema(engine)
+    with engine.connect() as c:
+        #  NB. Using default SQLA2.0 auto-begin commit-as-you-go behaviour
+        quoted_db_name, quoted_user = _get_quoted_connection_info(c)
 
-    quoted_db_name, quoted_user = _get_quoted_connection_info(c)
+        _ensure_extension(c, 'POSTGIS')
+        c.commit()
 
-    _ensure_extension(c, 'POSTGIS')
+        if with_permissions:
+            _LOG.info('Ensuring user roles.')
+            _ensure_role(c, 'odc_user')
+            _ensure_role(c, 'odc_ingest', inherits_from='odc_user')
+            _ensure_role(c, 'odc_manage', inherits_from='odc_ingest')
+            _ensure_role(c, 'odc_admin', inherits_from='odc_manage', add_user=True)
 
-    if with_permissions:
-        _LOG.info('Ensuring user roles.')
-        _ensure_role(c, 'odc_user')
-        _ensure_role(c, 'odc_ingest', inherits_from='odc_user')
-        _ensure_role(c, 'odc_manage', inherits_from='odc_ingest')
-        _ensure_role(c, 'odc_admin', inherits_from='odc_manage', add_user=True)
+            c.execute(text(f"""
+            grant all on database {quoted_db_name} to odc_admin;
+            """))
+            c.commit()
 
-        c.execute(text(f"""
-        grant all on database {quoted_db_name} to odc_admin;
-        """))
-
-    if not has_schema(engine):
-        is_new = True
-        try:
-            # TODO: Switch to SQLAlchemy-2.0/Future style connections and transactions.
+        if is_new:
             sqla_txn = c.begin()
             if with_permissions:
                 # Switch to 'odc_admin', so that all items are owned by them.
                 c.execute(text('set role odc_admin'))
             _LOG.info('Creating schema.')
             c.execute(CreateSchema(SCHEMA_NAME))
-            _LOG.info('Creating tables.')
+            _LOG.info('Creating types.')
             c.execute(text(TYPES_INIT_SQL))
             from ._schema import orm_registry, ALL_STATIC_TABLES
+            _LOG.info('Creating tables.')
             _LOG.info("Dataset indexes: %s", repr(orm_registry.metadata.tables["odc.dataset"].indexes))
             orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             sqla_txn.commit()
-        except:  # noqa: E722
-            _LOG.error("Unhandled SQLAlchemy error.")
-            sqla_txn.rollback()
-            raise
-        finally:
             if with_permissions:
                 c.execute(text(f'set role {quoted_user}'))
+            c.commit()
 
-    if with_permissions:
-        _LOG.info('Adding role grants.')
-        c.execute(text(f"""
-        grant usage on schema {SCHEMA_NAME} to odc_user;
-        grant select on all tables in schema {SCHEMA_NAME} to odc_user;
-        grant execute on function {SCHEMA_NAME}.common_timestamp(text) to odc_user;
+        if with_permissions:
+            _LOG.info('Adding role grants.')
+            c.execute(text(f"""
+            grant usage on schema {SCHEMA_NAME} to odc_user;
+            grant select on all tables in schema {SCHEMA_NAME} to odc_user;
+            grant execute on function {SCHEMA_NAME}.common_timestamp(text) to odc_user;
 
-        grant insert on {SCHEMA_NAME}.dataset,
-                        {SCHEMA_NAME}.location,
-                        {SCHEMA_NAME}.dataset_lineage to odc_ingest;
-        grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_ingest;
+            grant insert on {SCHEMA_NAME}.dataset,
+                            {SCHEMA_NAME}.location,
+                            {SCHEMA_NAME}.dataset_lineage to odc_ingest;
+            grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_ingest;
 
-        -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
-        grant insert, delete on {SCHEMA_NAME}.product,
-                                {SCHEMA_NAME}.metadata_type to odc_manage;
-        -- Allow creation of indexes, views
-        grant create on schema {SCHEMA_NAME} to odc_manage;
-        """))
-
-    c.close()
+            -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
+            grant insert, delete on {SCHEMA_NAME}.product,
+                                    {SCHEMA_NAME}.metadata_type to odc_manage;
+            -- Allow creation of indexes, views
+            grant create on schema {SCHEMA_NAME} to odc_manage;
+            """))
+            c.commit()
 
     return is_new
 
