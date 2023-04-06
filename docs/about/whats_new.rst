@@ -9,7 +9,7 @@ v1.8.next
 =========
 
 - Fix broken Github action workflows (:pull:`1425`, :pull:`1433`)
-- Setup Dependabot, and dependabot-generated updates (:pull:`1416`, :pull:`1420`, :pull:`1423`,
+- Setup Dependabot, and Dependabot-generated updates (:pull:`1416`, :pull:`1420`, :pull:`1423`,
             :pull:`1428`)
 - Documentation fixes (:pull:`1417`, :pull:`1418`, :pull:`1430`)
 
