@@ -95,7 +95,8 @@ jobs:
       if: steps.changes.outputs.docker == 'true'
       uses: docker/build-push-action@v4
       with:
-        context: "{{defaultContext}}:docker"
+        file: docker/Dockerfile
+        context: .
         push: true
         tags: ${{env.DOCKER_IMAGE}}
 
