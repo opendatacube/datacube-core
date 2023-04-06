@@ -92,7 +92,10 @@ jobs:
         EOF
 
     - name: DockerHub Push
-      if: steps.changes.outputs.docker == 'true'
+      if: |
+        github.event_name == 'push'
+        && github.ref == 'refs/heads/develop'
+        && steps.changes.outputs.docker == 'true'
       uses: docker/build-push-action@v4
       with:
         file: docker/Dockerfile
@@ -136,7 +139,6 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PyPiToken }}
 
     - name: Upload coverage to Codecov
-      if: steps.cfg.outputs.primary == 'yes'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
