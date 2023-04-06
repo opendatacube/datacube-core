@@ -63,7 +63,7 @@ jobs:
         password: ${{ secrets.GADOCKERSVC_PASSWORD }}
 
     - name: Build Docker
-      if: steps.changes.outputs.docker == 'true'
+      # if: steps.changes.outputs.docker == 'true'
       uses: docker/build-push-action@v4
       with:
         file: docker/Dockerfile
@@ -95,7 +95,7 @@ jobs:
       if: steps.changes.outputs.docker == 'true'
       uses: docker/build-push-action@v4
       with:
-        context: ./docker
+        context: "{{defaultContext}}:docker"
         push: true
         tags: ${{env.DOCKER_IMAGE}}
 
