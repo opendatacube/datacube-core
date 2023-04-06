@@ -97,7 +97,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${DOCKER_IMAGE}
+        tags: ${{env.DOCKER_IMAGE}}
 
     - name: Build Packages
       run: |
