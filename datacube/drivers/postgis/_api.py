@@ -442,7 +442,7 @@ class PostgisDbAPI(object):
 
         return self._connection.execute(
             select(
-                _dataset_select_fields()
+                *_dataset_select_fields()
             ).join(
                 Dataset.locations
             ).where(

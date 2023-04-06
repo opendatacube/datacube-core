@@ -530,7 +530,7 @@ class PostgresDbAPI(object):
             # Include the IDs of source datasets
             select_columns += (
                 select(
-                    (func.array_agg(DATASET_SOURCE.c.source_dataset_ref),)
+                    func.array_agg(DATASET_SOURCE.c.source_dataset_ref)
                 ).select_from(
                     DATASET_SOURCE
                 ).where(
