@@ -15,7 +15,7 @@ from typing import List, Any
 import pytest
 import yaml
 from dateutil import tz
-from psycopg2._range import NumericRange
+from sqlalchemy.dialects.postgresql.ranges import Range as SQLARange
 
 from datacube.config import LocalConfig
 from datacube.drivers.postgres._connections import DEFAULT_DB_USER
@@ -489,7 +489,6 @@ def test_search_returning(index: Index,
                           pseudo_ls8_type: Product,
                           pseudo_ls8_dataset: Dataset,
                           ls5_dataset_w_children) -> None:
-
     assert index.datasets.count() == 4, "Expected four test datasets"
 
     # Expect one product with our one dataset.
@@ -500,10 +499,11 @@ def test_search_returning(index: Index,
     ))
     assert len(results) == 1
     id_, path_range, sat_range = results[0]
+    path_range_type = path_range.__class__
     assert id_ == pseudo_ls8_dataset.id
     # TODO: output nicer types?
-    assert path_range == NumericRange(Decimal('116'), Decimal('116'), '[]')
-    assert sat_range == NumericRange(Decimal('74'), Decimal('84'), '[]')
+    assert path_range == SQLARange(lower=Decimal('116'), upper=Decimal('116'), bounds='[]')
+    assert sat_range == SQLARange(lower=Decimal('74'), upper=Decimal('84'), bounds='[]')
 
     results = list(index.datasets.search_returning(
         ('id', 'metadata_doc',),
@@ -875,8 +875,6 @@ def test_cli_missing_info(clirunner, index):
 def test_find_duplicates(index, pseudo_ls8_type,
                          pseudo_ls8_dataset, pseudo_ls8_dataset2, pseudo_ls8_dataset3, pseudo_ls8_dataset4,
                          ls5_dataset_w_children):
-    # type: (Index, Product, Dataset, Dataset, Dataset, Dataset, Dataset) -> None
-
     # Our four ls8 datasets and three ls5.
     all_datasets = index.datasets.search_eager()
     assert len(all_datasets) == 7
@@ -885,15 +883,15 @@ def test_find_duplicates(index, pseudo_ls8_type,
     expected_ls8_path_row_duplicates = [
         (
             (
-                NumericRange(Decimal('116'), Decimal('116'), '[]'),
-                NumericRange(Decimal('74'), Decimal('84'), '[]')
+                SQLARange(lower=Decimal('116'), upper=Decimal('116'), bounds='[]'),
+                SQLARange(lower=Decimal('74'), upper=Decimal('84'), bounds='[]')
             ),
             {pseudo_ls8_dataset.id, pseudo_ls8_dataset2.id}
         ),
         (
             (
-                NumericRange(Decimal('116'), Decimal('116'), '[]'),
-                NumericRange(Decimal('85'), Decimal('87'), '[]')
+                SQLARange(lower=Decimal('116'), upper=Decimal('116'), bounds='[]'),
+                SQLARange(lower=Decimal('85'), upper=Decimal('87'), bounds='[]')
             ),
             {pseudo_ls8_dataset3.id, pseudo_ls8_dataset4.id}
         ),
@@ -902,28 +900,24 @@ def test_find_duplicates(index, pseudo_ls8_type,
 
     # Specifying groups as fields:
     f = pseudo_ls8_type.metadata_type.dataset_fields.get
-    field_res = sorted(index.datasets.search_product_duplicates(
-        pseudo_ls8_type,
-        f('sat_path'), f('sat_row')
-    ))
-    assert field_res == expected_ls8_path_row_duplicates
+    field_res = list(
+        index.datasets.search_product_duplicates(
+            pseudo_ls8_type,
+            f('sat_path'), f('sat_row')
+        )
+    )
+    assert len(field_res) == len(expected_ls8_path_row_duplicates)
+    for field_result in field_res:
+        assert field_result in expected_ls8_path_row_duplicates
     # Field names as strings
-    product_res = sorted(index.datasets.search_product_duplicates(
+    product_res = list(index.datasets.search_product_duplicates(
         pseudo_ls8_type,
         'sat_path', 'sat_row'
     ))
     assert product_res == expected_ls8_path_row_duplicates
 
     # Get duplicates that start on the same day
-    f = pseudo_ls8_type.metadata_type.dataset_fields.get
-    field_res = sorted(index.datasets.search_product_duplicates(
-        pseudo_ls8_type,
-        f('time').lower.day  # type: ignore
-    ))
-
-    # Datasets 1 & 3 are on the 26th.
-    # Datasets 2 & 4 are on the 27th.
-    assert field_res == [
+    expected_time_day_duplicates = [
         (
             (
                 datetime.datetime(2014, 7, 26, 0, 0),
@@ -938,9 +932,22 @@ def test_find_duplicates(index, pseudo_ls8_type,
         ),
 
     ]
+    f = pseudo_ls8_type.metadata_type.dataset_fields.get
+    field_res = list(
+        index.datasets.search_product_duplicates(
+            pseudo_ls8_type,
+            f('time').lower.day  # type: ignore
+        )
+    )
+
+    # Datasets 1 & 3 are on the 26th.
+    # Datasets 2 & 4 are on the 27th.
+    assert len(field_res) == len(expected_time_day_duplicates)
+    for field_result in field_res:
+        assert field_result in expected_time_day_duplicates
 
     # No LS5 duplicates: there's only one of each
-    sat_res = sorted(index.datasets.search_product_duplicates(
+    sat_res = list(index.datasets.search_product_duplicates(
         ls5_dataset_w_children.product,
         'sat_path', 'sat_row'
     ))

@@ -9,6 +9,7 @@ Module
 import copy
 import pytest
 import yaml
+from sqlalchemy import text
 
 from datacube.drivers.postgres._fields import NumericRangeDocField as PgrNumericRangeDocField, PgField as PgrPgField
 from datacube.drivers.postgis._fields import NumericRangeDocField as PgsNumericRangeDocField, PgField as PgsPgField
@@ -162,7 +163,7 @@ def _object_exists(index, index_name):
     else:
         schema_name = "agdc"
     with index._active_connection() as connection:
-        val = connection._connection.execute(f"SELECT to_regclass('{schema_name}.{index_name}')").scalar()
+        val = connection._connection.execute(text(f"SELECT to_regclass('{schema_name}.{index_name}')")).scalar()
     return val in (index_name, f'{schema_name}.{index_name}')
 
 

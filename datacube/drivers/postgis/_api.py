@@ -391,9 +391,9 @@ class PostgisDbAPI(object):
         if SpatialIndex is None:
             return None
         result = self._connection.execute(
-            select([
+            select(
                 func.ST_AsGeoJSON(func.ST_Union(SpatialIndex.extent))
-            ]).select_from(
+            ).select_from(
                 SpatialIndex
             ).where(
                 SpatialIndex.dataset_ref.in_(ids)
@@ -442,7 +442,7 @@ class PostgisDbAPI(object):
 
         return self._connection.execute(
             select(
-                _dataset_select_fields()
+                *_dataset_select_fields()
             ).join(
                 Dataset.locations
             ).where(
@@ -619,7 +619,7 @@ class PostgisDbAPI(object):
         raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
         join_tables = PostgisDbAPI._join_tables(expressions, select_fields)
         where_expr = and_(Dataset.archived == None, *raw_expressions)
-        query = select(select_columns).select_from(Dataset)
+        query = select(*select_columns).select_from(Dataset)
         for joins in join_tables:
             query = query.join(*joins)
         if spatialquery is not None:
@@ -739,7 +739,8 @@ class PostgisDbAPI(object):
         join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
 
         query = select(
-            (func.array_agg(Dataset.id),) + group_expressions
+            func.array_agg(Dataset.id),
+            *group_expressions
         ).select_from(Dataset)
         for joins in join_tables:
             query = query.join(*joins)
@@ -792,24 +793,24 @@ class PostgisDbAPI(object):
     def count_datasets_through_time_query(self, start, end, period, time_field, expressions):
         raw_expressions = self._alchemify_expressions(expressions)
 
-        start_times = select((
+        start_times = select(
             func.generate_series(start, end, cast(period, INTERVAL)).label('start_time'),
-        )).alias('start_times')
+        ).alias('start_times')
 
         time_range_select = (
-            select((
+            select(
                 func.tstzrange(
                     start_times.c.start_time,
                     func.lead(start_times.c.start_time).over()
                 ).label('time_period'),
-            ))
+            )
         ).alias('all_time_ranges')
 
         # Exclude the trailing (end time to infinite) row. Is there a simpler way?
         time_ranges = (
-            select((
+            select(
                 time_range_select,
-            )).where(
+            ).where(
                 ~func.upper_inf(time_range_select.c.time_period)
             )
         ).alias('time_ranges')
@@ -826,7 +827,7 @@ class PostgisDbAPI(object):
             )
         )
 
-        return select((time_ranges.c.time_period, count_query.label('dataset_count')))
+        return select(time_ranges.c.time_period, count_query.label('dataset_count'))
 
     def update_search_index(self, product_names: Sequence[str] = [], dsids: Sequence[DSID] = []):
         """
@@ -1287,9 +1288,9 @@ class PostgisDbAPI(object):
             ))
         )
         for rel in results:
-            yield LineageRelation(classifier=rel["classifier"],
-                                  source_id=rel["source_dataset_ref"],
-                                  derived_id=rel["derived_dataset_ref"])
+            yield LineageRelation(classifier=rel.classifier,
+                                  source_id=rel.source_dataset_ref,
+                                  derived_id=rel.derived_dataset_ref)
 
     def write_relations(self, relations: Iterable[LineageRelation], allow_updates: bool):
         """
@@ -1366,9 +1367,9 @@ class PostgisDbAPI(object):
         next_lvl_ids = set()
         results = self._connection.execute(qry)
         for row in results:
-            rel = LineageRelation(classifier=row["classifier"],
-                                  source_id=row["source_dataset_ref"],
-                                  derived_id=row["derived_dataset_ref"])
+            rel = LineageRelation(classifier=row.classifier,
+                                  source_id=row.source_dataset_ref,
+                                  derived_id=row.derived_dataset_ref)
             relations.append(rel)
             if direction == LineageDirection.SOURCES:
                 next_id = rel.source_id

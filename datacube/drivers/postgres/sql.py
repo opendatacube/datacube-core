@@ -7,7 +7,8 @@ Custom types for postgres & sqlalchemy
 """
 
 from sqlalchemy import TIMESTAMP, text
-from sqlalchemy.dialects.postgresql.ranges import RangeOperators
+from sqlalchemy.types import Double
+from sqlalchemy.dialects.postgresql.ranges import AbstractRange, Range
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import sqltypes
 from sqlalchemy.sql.expression import Executable, ClauseElement
@@ -74,7 +75,7 @@ create type {schema}.float8range as range (
 
 
 # pylint: disable=abstract-method
-class FLOAT8RANGE(RangeOperators, sqltypes.TypeEngine):
+class FLOAT8RANGE(AbstractRange[Range[Double]]):
     __visit_name__ = 'FLOAT8RANGE'
 
 

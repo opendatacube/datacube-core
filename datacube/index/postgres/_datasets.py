@@ -739,13 +739,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         for _, results in self._do_search_by_product(query, return_fields=True):
             for columns in results:
-                yield dict(columns)
+                yield columns._asdict()
 
     def get_product_time_bounds(self, product: str):
         """
         Returns the minimum and maximum acquisition time of the product.
         """
-
+        # This implementation violates architecture - should not be SQLAlchemy code at this level.
         # Get the offsets from dataset doc
         product = self.types.get_by_name(product)
         dataset_section = product.metadata_type.definition['dataset']
@@ -769,7 +769,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             result = connection.execute(
                 select(
-                    [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
+                    func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)
                 ).where(
                     DATASET.c.dataset_type_ref == product.id
                 )

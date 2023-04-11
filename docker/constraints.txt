@@ -380,7 +380,7 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
-sqlalchemy==1.4.46
+sqlalchemy==2.0.8
     # via
     #   -r constraints.in
     #   geoalchemy2
@@ -411,6 +411,7 @@ typing-extensions==4.4.0
     # via
     #   pygeoif
     #   setuptools-scm
+    #   sqlalchemy
 urllib3==1.26.14
     # via
     #   botocore

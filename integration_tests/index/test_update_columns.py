@@ -7,6 +7,7 @@ Test creation of added/updated columns during
 `datacube system init`
 """
 import pytest
+from sqlalchemy import text
 
 from datacube.drivers.postgres.sql import SCHEMA_NAME
 from datacube.drivers.postgres import _schema
@@ -31,8 +32,10 @@ and tgrelid = '{schema}.{table}'::regclass;
 
 def check_column(conn, table_name: str, column_name: str) -> bool:
     column_result = conn.execute(
-        COLUMN_PRESENCE.format(
-            schema=SCHEMA_NAME, table=table_name, column=column_name
+        text(
+            COLUMN_PRESENCE.format(
+                schema=SCHEMA_NAME, table=table_name, column=column_name
+            )
         )
     ).fetchone()
     return column_result == (True,)
@@ -40,7 +43,9 @@ def check_column(conn, table_name: str, column_name: str) -> bool:
 
 def check_trigger(conn, table_name: str) -> bool:
     trigger_result = conn.execute(
-        TRIGGER_PRESENCE.format(schema=SCHEMA_NAME, table=table_name)
+        text(
+            TRIGGER_PRESENCE.format(schema=SCHEMA_NAME, table=table_name)
+        )
     ).fetchone()
     if trigger_result is None:
         return False
@@ -48,8 +53,11 @@ def check_trigger(conn, table_name: str) -> bool:
 
 
 def drop_column(conn, table: str, column: str):
-    conn.execute(DROP_COLUMN.format(
-        schema=SCHEMA_NAME, table=table, column=column))
+    conn.execute(
+        text(
+            DROP_COLUMN.format(schema=SCHEMA_NAME, table=table, column=column)
+        )
+    )
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))

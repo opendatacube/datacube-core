@@ -81,66 +81,60 @@ def ensure_db(engine, with_permissions=True):
 
     Create the schema if it doesn't exist.
     """
-    is_new = False
-    c = engine.connect()
+    is_new = not has_schema(engine)
+    with engine.connect() as c:
+        #  NB. Using default SQLA2.0 auto-begin commit-as-you-go behaviour
+        quoted_db_name, quoted_user = _get_quoted_connection_info(c)
 
-    quoted_db_name, quoted_user = _get_quoted_connection_info(c)
+        if with_permissions:
+            _LOG.info('Ensuring user roles.')
+            _ensure_role(c, 'agdc_user')
+            _ensure_role(c, 'agdc_ingest', inherits_from='agdc_user')
+            _ensure_role(c, 'agdc_manage', inherits_from='agdc_ingest')
+            _ensure_role(c, 'agdc_admin', inherits_from='agdc_manage', add_user=True)
 
-    if with_permissions:
-        _LOG.info('Ensuring user roles.')
-        _ensure_role(c, 'agdc_user')
-        _ensure_role(c, 'agdc_ingest', inherits_from='agdc_user')
-        _ensure_role(c, 'agdc_manage', inherits_from='agdc_ingest')
-        _ensure_role(c, 'agdc_admin', inherits_from='agdc_manage', add_user=True)
+            c.execute(text("""
+            grant all on database {db} to agdc_admin;
+            """.format(db=quoted_db_name)))
+            c.commit()
 
-        c.execute(text("""
-        grant all on database {db} to agdc_admin;
-        """.format(db=quoted_db_name)))
-
-    if not has_schema(engine):
-        is_new = True
-        try:
-            sqla_txn = c.begin()
+        if is_new:
             if with_permissions:
                 # Switch to 'agdc_admin', so that all items are owned by them.
                 c.execute(text('set role agdc_admin'))
             _LOG.info('Creating schema.')
             c.execute(CreateSchema(SCHEMA_NAME))
-            _LOG.info('Creating tables.')
+            _LOG.info('Creating types.')
             c.execute(text(TYPES_INIT_SQL))
+            _LOG.info('Creating tables.')
             METADATA.create_all(c)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             _LOG.info("Creating added column.")
             install_added_column(c)
-            sqla_txn.commit()
-        except:  # noqa: E722
-            sqla_txn.rollback()
-            raise
-        finally:
             if with_permissions:
                 c.execute(text('set role {}'.format(quoted_user)))
+            c.commit()
 
-    if with_permissions:
-        _LOG.info('Adding role grants.')
-        c.execute(text("""
-        grant usage on schema {schema} to agdc_user;
-        grant select on all tables in schema {schema} to agdc_user;
-        grant execute on function {schema}.common_timestamp(text) to agdc_user;
+        if with_permissions:
+            _LOG.info('Adding role grants.')
+            c.execute(text("""
+            grant usage on schema {schema} to agdc_user;
+            grant select on all tables in schema {schema} to agdc_user;
+            grant execute on function {schema}.common_timestamp(text) to agdc_user;
 
-        grant insert on {schema}.dataset,
-                        {schema}.dataset_location,
-                        {schema}.dataset_source to agdc_ingest;
-        grant usage, select on all sequences in schema {schema} to agdc_ingest;
+            grant insert on {schema}.dataset,
+                            {schema}.dataset_location,
+                            {schema}.dataset_source to agdc_ingest;
+            grant usage, select on all sequences in schema {schema} to agdc_ingest;
 
-        -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
-        grant insert, delete on {schema}.dataset_type,
-                                {schema}.metadata_type to agdc_manage;
-        -- Allow creation of indexes, views
-        grant create on schema {schema} to agdc_manage;
-        """.format(schema=SCHEMA_NAME)))
-
-    c.close()
+            -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
+            grant insert, delete on {schema}.dataset_type,
+                                    {schema}.metadata_type to agdc_manage;
+            -- Allow creation of indexes, views
+            grant create on schema {schema} to agdc_manage;
+            """.format(schema=SCHEMA_NAME)))
+            c.commit()
 
     return is_new
 
