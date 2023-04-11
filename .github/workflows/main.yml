@@ -13,7 +13,9 @@ on:
   
 env:
   DOCKER_USER: gadockersvc
-  DOCKER_IMAGE: opendatacube/datacube-tests:latest
+  DOCKER_IMAGE: opendatacube/datacube-tests:latest1.9
+  # NB Restore standard image name when merge into develop
+  # DOCKER_IMAGE: opendatacube/datacube-tests:latest
 
 
 jobs:
@@ -63,7 +65,6 @@ jobs:
         password: ${{ secrets.GADOCKERSVC_PASSWORD }}
 
     - name: Build Docker
-      if: steps.changes.outputs.docker == 'true'
       uses: docker/build-push-action@v4
       with:
         file: docker/Dockerfile
