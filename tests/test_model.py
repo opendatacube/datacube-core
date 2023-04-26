@@ -42,8 +42,8 @@ def test_gridspec():
 def test_gridspec_upperleft():
     """ Test to ensure grid indexes can be counted correctly from bottom left or top left
     """
-    tile_bbox = BoundingBox(left=1934400.0, top=2414800.0, right=2084400.000, bottom=2264800.000)
-    bbox = BoundingBox(left=1934615, top=2379460, right=1937615, bottom=2376460)
+    tile_bbox = BoundingBox(left=1934400.0, top=2414800.0, right=2084400.000, bottom=2264800.000, crs=CRS('EPSG:5070'))
+    bbox = BoundingBox(left=1934615, top=2379460, right=1937615, bottom=2376460, crs=CRS('EPSG:5070'))
     # Upper left - validated against WELD product tile calculator
     # http://globalmonitoring.sdstate.edu/projects/weld/tilecalc.php
     gs = GridSpec(crs=CRS('EPSG:5070'), tile_size=(-150000, 150000), resolution=(-30, 30),

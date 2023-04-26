@@ -6,6 +6,7 @@ import pytest
 from datacube.testutils.threads import FakeThreadPoolExecutor
 from datacube.testutils import mk_sample_xr_dataset, mk_sample_dataset
 from datacube.testutils.io import native_geobox
+from odc.geo import XY
 
 
 def test_fakethreadpool():
@@ -54,7 +55,7 @@ def test_mk_sample_xr():
     assert mk_sample_xr_dataset(name='xx', time=None, shape=(3, 7)).xx.shape == (3, 7)
     assert mk_sample_xr_dataset(name='xx', time=None).xx.dims == ('y', 'x')
 
-    assert mk_sample_xr_dataset(resolution=(1, 100)).geobox.resolution == (1, 100)
+    assert mk_sample_xr_dataset(resolution=(1, 100)).geobox.resolution == XY(1, 100)
     assert mk_sample_xr_dataset(resolution=(1, 100), xy=(3, 55)).geobox.transform*(0, 0) == (3, 55)
     assert mk_sample_xr_dataset(crs=None).geobox is None
 

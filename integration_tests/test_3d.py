@@ -384,7 +384,7 @@ def load_with_dc(
     params = SimpleNamespace(
         measurements=[measurement],
         like=GeoBox(
-            *product_id.size,
+            product_id.size,
             product_id.affine,
             GEDI_PRODUCT.crs,
         ),

@@ -15,7 +15,7 @@ from dask import array as da
 from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
-from odc.geo import CRS
+from odc.geo import CRS, XY
 from odc.geo.xr import xr_coords
 from datacube.utils.dates import normalise_dt
 from odc.geo.geom import intersects, box, bbox_union
@@ -908,7 +908,7 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
             geopolygon = get_bounds(datasets, crs)
 
-    return GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
+    return GeoBox.from_geopolygon(geopolygon, resolution, crs, XY(align))
 
 
 def select_datasets_inside_polygon(datasets, polygon):
