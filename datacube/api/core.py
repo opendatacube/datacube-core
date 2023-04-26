@@ -908,7 +908,7 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
             geopolygon = get_bounds(datasets, crs)
 
-    return GeoBox.from_geopolygon(geopolygon, resolution, crs, XY(align))
+    return GeoBox.from_geopolygon(geopolygon, resolution, crs, XY(*align))
 
 
 def select_datasets_inside_polygon(datasets, polygon):
@@ -1049,7 +1049,7 @@ def _make_dask_array(chunked_srcs,
         key_prefix = (dsk_name, *irr_index)
 
         # all spatial chunks
-        for idx in numpy.ndindex(gbt.shape):
+        for idx in numpy.ndindex(gbt.shape.shape):
             dss = tiled_dss.get(idx, None)
 
             if dss is None:
