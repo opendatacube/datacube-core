@@ -908,7 +908,10 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
             geopolygon = get_bounds(datasets, crs)
 
-    return GeoBox.from_geopolygon(geopolygon, resolution, crs, XY(*align))
+    if align is not None:
+        align = XY(*align)
+
+    return GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
 
 
 def select_datasets_inside_polygon(datasets, polygon):

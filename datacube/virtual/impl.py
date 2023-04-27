@@ -30,7 +30,7 @@ from datacube.model.utils import xr_apply, xr_iter, SafeDumper
 from datacube.testutils.io import native_geobox
 from odc.geo.geobox import GeoBox, GeoboxTiles, geobox_union_conservative
 from odc.geo.warp import rio_reproject, resampling_s2rio
-from odc.geo.overlap import compute_reproject_roi
+from odc.geo.overlap import compute_reproject_roi, is_affine_st
 from odc.geo.xr import xr_coords
 from datacube.api.core import per_band_load_data_settings
 
@@ -409,7 +409,7 @@ class Product(VirtualProduct):
                                                                              align=dataset_geobox.alignment,
                                                                              resolution=dataset_geobox.resolution))
 
-                self._assert(reproject_roi.is_st, "native load is not axis-aligned")
+                self._assert(is_affine_st(reproject_roi.transform.linear), "native load is not axis-aligned")
                 self._assert(numpy.isclose(reproject_roi.scale, 1.0), "native load should not require scaling")
 
                 geobox = dataset_geobox[reproject_roi.roi_src]

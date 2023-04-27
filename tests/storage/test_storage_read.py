@@ -125,7 +125,7 @@ def test_read_with_reproject(tmpdir):
 
     mm = write_gtiff(pp/'tst-read-with-reproject-128x64-int16.tif', xx,
                      crs=str(tile.crs),
-                     resolution=tile.resolution[::-1],
+                     resolution=tile.resolution.yx,
                      offset=tile.transform*(0, 0),
                      nodata=-999)
     assert mm.gbox == tile
