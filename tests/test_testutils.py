@@ -55,7 +55,7 @@ def test_mk_sample_xr():
     assert mk_sample_xr_dataset(name='xx', time=None, shape=(3, 7)).xx.shape == (3, 7)
     assert mk_sample_xr_dataset(name='xx', time=None).xx.dims == ('y', 'x')
 
-    assert mk_sample_xr_dataset(resolution=(1, 100)).geobox.resolution == XY(1, 100)
+    assert mk_sample_xr_dataset(resolution=(1, 100)).geobox.resolution == XY(100, 1)
     assert mk_sample_xr_dataset(resolution=(1, 100), xy=(3, 55)).geobox.transform*(0, 0) == (3, 55)
     assert mk_sample_xr_dataset(crs=None).geobox is None
 

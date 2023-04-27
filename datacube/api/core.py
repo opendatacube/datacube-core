@@ -15,7 +15,7 @@ from dask import array as da
 from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
-from odc.geo import CRS, XY
+from odc.geo import CRS, XY, Resolution
 from odc.geo.xr import xr_coords
 from datacube.utils.dates import normalise_dt
 from odc.geo.geom import intersects, box, bbox_union
@@ -907,6 +907,9 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
                 raise ValueError("Bounds are not specified")
 
             geopolygon = get_bounds(datasets, crs)
+
+    if resolution is not None:
+        resolution = Resolution(*resolution)
 
     if align is not None:
         align = XY(*align)

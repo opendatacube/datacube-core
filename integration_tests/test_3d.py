@@ -413,7 +413,7 @@ def check_open_with_dc_simple(dc, product_def, product_ids, measurement):
     """
     product_id = product_ids[0]
     data = load_with_dc(dc, product_def, product_id, measurement)
-    expected = [len(product_ids), *product_id.size[::-1]]
+    expected = [len(product_ids), *product_id.size]
     if product_def.wavelengths:
         wlen = (
             1
