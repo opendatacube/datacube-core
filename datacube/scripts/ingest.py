@@ -38,7 +38,7 @@ FUSER_KEY = 'fuse_data'
 def polygon_from_sources_extents(sources, geobox):
     sources_union = unary_union(source.extent.to_crs(geobox.crs) for source in sources)
     valid_data = geobox.extent.intersection(sources_union)
-    resolution = min([abs(x) for x in geobox.resolution])
+    resolution = min([abs(x) for x in geobox.resolution.xy])
     return valid_data.simplify(tolerance=resolution * 0.01)
 
 

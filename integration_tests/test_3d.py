@@ -497,7 +497,7 @@ def check_load_via_dss(dc, product_def, product_ids, measurement, original_data)
         measurement,
         datasets=datasets,
     )
-    expected = [len(product_ids), *product_id.size[::-1]]
+    expected = [len(product_ids), *product_id.size]
     if product_def.wavelengths:
         wlen = (
             1

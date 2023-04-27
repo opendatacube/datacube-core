@@ -908,7 +908,7 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
             geopolygon = get_bounds(datasets, crs)
 
-    if resolution is not None:
+    if resolution is not None and type(resolution) is not Resolution:
         resolution = Resolution(*resolution)
 
     if align is not None:
