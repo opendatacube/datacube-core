@@ -117,7 +117,8 @@ def read_time_slice(rdr,
         else:
             np.copyto(dst, pix, where=valid_mask(pix, rdr.nodata))
     else:
-        if is_affine_st(rr.transform.linear):
+        is_st = False if rr.transform.linear is None else is_affine_st(rr.transform.linear)
+        if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
             rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_gbox.shape)
@@ -189,7 +190,8 @@ def read_time_slice_v2(rdr,
 
         dst = pix
     else:
-        if is_affine_st(rr.transform.linear):
+        is_st = False if rr.transform.linear is None else is_affine_st(rr.transform.linear)
+        if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
             rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_gbox.shape)
