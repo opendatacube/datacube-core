@@ -504,7 +504,7 @@ class DocReader(object):
     def system_fields(self):
         return {name: field
                 for name, offset in self._system_offsets.items()
-                if (field := get_doc_offset(offset, self.doc) is not None)}
+                if ((field := get_doc_offset(offset, self._doc)) is not None)}
 
     @property
     def fields(self):

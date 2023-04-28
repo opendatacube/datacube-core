@@ -300,7 +300,7 @@ class Datacube(object):
             If a list is specified, the measurements will be returned in the order requested.
             By default all available measurements are included.
 
-        :param \*\*query:
+        :param **query:
             Search parameters for products and dimension ranges as described above.
             For example: ``'x', 'y', 'time', 'crs'``.
 
