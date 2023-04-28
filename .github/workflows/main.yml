@@ -33,7 +33,6 @@ jobs:
         filters: |
           docker:
             - 'docker/**'
-
     - name: Pull Docker
       if: steps.changes.outputs.docker == 'false'
       run: |
@@ -75,12 +74,14 @@ jobs:
       run: |
         echo "Verify that twine is installed"
         docker run --rm opendatacube/datacube-tests:latest twine --version
+<<<<<<< HEAD
 
+=======
+>>>>>>> d6b62081 (combine docker build actions into main workflow)
         echo "Run tests"
         cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ env.DOCKER_IMAGE }} bash -
           pip install -e /code/tests/drivers/fail_drivers --no-deps
           pip install -e /code/examples/io_plugin --no-deps
-
           pytest -r a \
             --cov datacube \
             --cov-report=xml \
@@ -90,7 +91,15 @@ jobs:
             tests \
             integration_tests
         EOF
+    - name: DockerHub Push
+      if: steps.changes.outputs.docker == 'true'
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ env.DOCKER_IMAGE }}
 
+<<<<<<< HEAD
     - name: DockerHub Push
       if: |
         github.event_name == 'push'
@@ -103,6 +112,8 @@ jobs:
         push: true
         tags: ${{ env.DOCKER_IMAGE }}
 
+=======
+>>>>>>> d6b62081 (combine docker build actions into main workflow)
     - name: Build Packages
       run: |
         cat <<EOF | docker run --rm -i  \
@@ -113,7 +124,10 @@ jobs:
         ls -lh ./dist/
         twine check ./dist/*
         EOF
+<<<<<<< HEAD
 
+=======
+>>>>>>> d6b62081 (combine docker build actions into main workflow)
     - name: Publish to PyPi
       if: |
         github.event_name == 'push'
@@ -134,7 +148,6 @@ jobs:
         else
            echo "Skipping upload as 'PyPiToken' is not set"
         fi
-
       env:
         TWINE_PASSWORD: ${{ secrets.PyPiToken }}
 
