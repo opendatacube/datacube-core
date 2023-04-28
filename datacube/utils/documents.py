@@ -486,25 +486,25 @@ class DocReader(object):
                     name, list(self.system_fields.keys())
                 )
             )
-        self._doc = toolz.update_in(self._doc, offset, lambda _: val)
+        self.__dict__['_doc'] = toolz.update_in(self.__dict__['_doc'], offset, lambda _: val)
 
     def __dir__(self):
         return list(self.fields)
 
     @property
     def doc(self):
-        return self._doc
+        return self.__dict__['_doc']
 
     @property
     def search_fields(self):
-        return {name: field.extract(self._doc)
+        return {name: field.extract(self.__dict__['_doc'])
                 for name, field in self._search_fields.items()}
 
     @property
     def system_fields(self):
         return {name: field
                 for name, offset in self._system_offsets.items()
-                if ((field := get_doc_offset(offset, self._doc)) is not None)}
+                if ((field := get_doc_offset(offset, self.__dict__['_doc'])) is not None)}
 
     @property
     def fields(self):
