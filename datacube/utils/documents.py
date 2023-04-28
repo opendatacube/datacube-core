@@ -486,7 +486,7 @@ class DocReader(object):
                     name, list(self.system_fields.keys())
                 )
             )
-        self.doc = toolz.update_in(self.doc, offset, lambda _: val)
+        self._doc = toolz.update_in(self._doc, offset, lambda _: val)
 
     def __dir__(self):
         return list(self.fields)
@@ -497,7 +497,7 @@ class DocReader(object):
 
     @property
     def search_fields(self):
-        return {name: field.extract(self.doc)
+        return {name: field.extract(self._doc)
                 for name, field in self._search_fields.items()}
 
     @property
