@@ -837,6 +837,7 @@ class Reproject(VirtualProduct):
 def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
     """ Reproject a single measurement to the geobox. """
     if not hasattr(band.data, 'dask') or dask_chunks is None:
+        print(band.data.ndim)
         data = reproject_array(band.data, band.nodata, band.geobox, geobox, resampling)
         return wrap_in_dataarray(data, band, geobox, dims)
 

@@ -384,7 +384,7 @@ def load_with_dc(
     params = SimpleNamespace(
         measurements=[measurement],
         like=GeoBox(
-            product_id.size,
+            product_id.size[::-1],
             product_id.affine,
             GEDI_PRODUCT.crs,
         ),
@@ -413,7 +413,7 @@ def check_open_with_dc_simple(dc, product_def, product_ids, measurement):
     """
     product_id = product_ids[0]
     data = load_with_dc(dc, product_def, product_id, measurement)
-    expected = [len(product_ids), *product_id.size]
+    expected = [len(product_ids), *product_id.size[::-1]]
     if product_def.wavelengths:
         wlen = (
             1
@@ -497,7 +497,7 @@ def check_load_via_dss(dc, product_def, product_ids, measurement, original_data)
         measurement,
         datasets=datasets,
     )
-    expected = [len(product_ids), *product_id.size]
+    expected = [len(product_ids), *product_id.size[::-1]]
     if product_def.wavelengths:
         wlen = (
             1
