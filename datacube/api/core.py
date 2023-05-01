@@ -1057,7 +1057,7 @@ def _make_dask_array(chunked_srcs,
         key_prefix = (dsk_name, *irr_index)
 
         # all spatial chunks
-        for idx in numpy.ndindex(gbt.shape.xy):
+        for idx in numpy.ndindex(gbt.shape.shape):
             dss = tiled_dss.get(idx, None)
 
             if dss is None:
