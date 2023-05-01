@@ -14,7 +14,7 @@ import numpy
 
 from datacube.utils.masking import describe_flags_def
 from datacube.utils import data_resolution_and_offset
-from ._safestrings import SafeStringsDataset as Dataset
+from netCDF4 import Dataset
 
 from odc.geo import CRS
 from odc.geo.geom import box

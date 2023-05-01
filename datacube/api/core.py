@@ -296,7 +296,7 @@ class Datacube(object):
             If a list is specified, the measurements will be returned in the order requested.
             By default all available measurements are included.
 
-        :param \*\*query:
+        :param **query:
             Search parameters for products and dimension ranges as described above.
             For example: ``'x', 'y', 'time', 'crs'``.
 
@@ -1041,6 +1041,8 @@ def _make_dask_array(chunked_srcs,
     empties = {}  # type Dict[Tuple[int,int], str]
 
     def _mk_empty(shape: Tuple[int, ...]) -> str:
+        if type(shape) is not tuple:
+            shape = shape.xy
         name = empties.get(shape, None)
         if name is not None:
             return name
@@ -1055,11 +1057,11 @@ def _make_dask_array(chunked_srcs,
         key_prefix = (dsk_name, *irr_index)
 
         # all spatial chunks
-        for idx in numpy.ndindex(gbt.shape.shape):
+        for idx in numpy.ndindex(gbt.shape.xy):
             dss = tiled_dss.get(idx, None)
 
             if dss is None:
-                val = _mk_empty(gbt.chunk_shape(idx))
+                val = _mk_empty(gbt.chunk_shape(idx).xy)
                 # 3D case
                 if 'extra_dim' in measurement:
                     index_subset = extra_dims.measurements_index(measurement.extra_dim)

@@ -178,7 +178,7 @@ def check_open_with_dc(index):
                                 measurements=['blue'], group_by='solar_day')
     assert 0 < solar_day_dataset.time.size <= dataset.time.size
 
-    dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2), align=(5, 20))
+    dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2), align=(20, 5))
     assert dataset.geobox.affine.f % abs(dataset.geobox.affine.e) == 5
     assert dataset.geobox.affine.c % abs(dataset.geobox.affine.a) == 20
     dataset_like = dc.load(product='ls5_nbar_albers', measurements=['blue'], like=dataset)
