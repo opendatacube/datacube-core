@@ -276,12 +276,14 @@ class UnknownMetadataType(InvalidDocException):
     pass
 
 
-def get_doc_offset(offset, document, default=None):
+def get_doc_offset(offset, document, default=None, no_default=False):
     """
     :type offset: list[str]
     :type document: dict
 
     """
+    if no_default:
+        return toolz.get_in(offset, document, no_default=True)
     return toolz.get_in(offset, document, default=default)
 
 
@@ -432,7 +434,7 @@ class SimpleDocNav(object):
     def sources(self):
         if self._sources is None:
             self._sources = {k: SimpleDocNav(v)
-                             for k, v in get_doc_offset(self._sources_path, self._doc, {}).items()}
+                             for k, v in get_doc_offset(self._sources_path, self._doc, default={}).items()}
         return self._sources
 
     @property
@@ -486,7 +488,7 @@ class DocReader(object):
                     name, list(self.system_fields.keys())
                 )
             )
-        self.__dict__['_doc'] = toolz.update_in(self.__dict__['_doc'], offset, lambda _: val)
+        self.__dict__['_doc'] = toolz.assoc_in(self._doc, offset, val)
 
     def __dir__(self):
         return list(self.fields)
@@ -520,16 +522,17 @@ def without_lineage_sources(doc: Dict[str, Any],
     :param spec: Product or MetadataType according to which `doc` to be interpreted
     :param bool inplace: If True modify `doc` in place
     """
-    # TODO: the inplace param doesn't seem to be used
+
     if not inplace:
         doc = deepcopy(doc)
 
     doc_view = spec.dataset_reader(doc)
 
     if 'sources' in doc_view.fields:
-        doc_view.sources = {}
+        if doc_view.sources is not None:
+            doc_view.sources = {}
 
-    return doc
+    return doc_view.doc
 
 
 def schema_validated(schema):
