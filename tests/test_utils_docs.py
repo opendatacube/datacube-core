@@ -116,23 +116,16 @@ def test_without_lineage_sources():
 
     x = {'a': 1}
     assert without_lineage_sources(x, spec) == x
-    assert without_lineage_sources(x, spec, inplace=True) == x
 
     x = {'a': 1, 'lineage': {}}
     assert without_lineage_sources(x, spec) == x
-    assert without_lineage_sources(x, spec, inplace=True) == x
 
     x = mk_sample(1)
     assert without_lineage_sources(x, spec) != x
     assert x['lineage']['source_datasets'] == 1
 
-    x = mk_sample(2)
-    assert without_lineage_sources(x, spec, inplace=True) == x
-    assert x['lineage']['source_datasets'] == {}
-
     assert mk_sample(10) != mk_sample({})
     assert without_lineage_sources(mk_sample(10), spec) == mk_sample({})
-    assert without_lineage_sources(mk_sample(10), spec, inplace=True) == mk_sample({})
 
     # check behaviour when `sources` is not defined for the type
     no_sources_type = MetadataType({
@@ -148,7 +141,6 @@ def test_without_lineage_sources():
     }, dataset_search_fields={})
 
     assert without_lineage_sources(mk_sample(10), no_sources_type) == mk_sample(10)
-    assert without_lineage_sources(mk_sample(10), no_sources_type, inplace=True) == mk_sample(10)
 
 
 def test_parse_yaml():
