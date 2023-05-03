@@ -4,8 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 """ Geometric shapes and operations on them
 """
+from warnings import warn
 
-from ._base import (
+warn(
+    'datacube.utils.geometry is now deprecated. Please use the odc-geo library instead.',
+    DeprecationWarning,
+    stacklevel=2)
+
+from ._base import (  # noqa
     Coordinate,
     BoundingBox,
     CRSError,
@@ -44,7 +50,7 @@ from ._base import (
     mid_longitude,
 )
 
-from .tools import (
+from .tools import (  # noqa
     is_affine_st,
     apply_affine,
     roi_boundary,
@@ -69,7 +75,7 @@ from .tools import (
     w_,
 )
 
-from ._warp import (
+from ._warp import (  # noqa
     warp_affine,
     rio_reproject,
 )
