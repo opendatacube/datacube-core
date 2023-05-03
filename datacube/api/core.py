@@ -1052,7 +1052,7 @@ def _make_dask_array(chunked_srcs,
             dss = tiled_dss.get(idx, None)
 
             if dss is None:
-                val = _mk_empty(gbt.chunk_shape(idx).xy)
+                val = _mk_empty(gbt.chunk_shape(idx))
                 # 3D case
                 if 'extra_dim' in measurement:
                     index_subset = extra_dims.measurements_index(measurement.extra_dim)
