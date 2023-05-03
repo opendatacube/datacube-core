@@ -39,6 +39,7 @@ sqlalchemy>=2.0
 toolz
 xarray>=0.9
 odc-geo
+deprecat
 
 # Previous pins were to very old versions
 # pytest Py3.10 requires >6.2.5
