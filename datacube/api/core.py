@@ -1041,8 +1041,6 @@ def _make_dask_array(chunked_srcs,
     empties = {}  # type Dict[Tuple[int,int], str]
 
     def _mk_empty(shape: Tuple[int, ...]) -> str:
-        if type(shape) is not tuple:
-            shape = shape.xy
         name = empties.get(shape, None)
         if name is not None:
             return name
