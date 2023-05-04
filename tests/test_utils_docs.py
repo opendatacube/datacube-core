@@ -32,8 +32,6 @@ from datacube.utils.documents import (
     DocReader,
     is_supported_document_type,
     get_doc_offset,
-    get_doc_offset_safe,
-    _set_doc_offset,
     transform_object_tree,
     metadata_subset,
 )
@@ -118,23 +116,16 @@ def test_without_lineage_sources():
 
     x = {'a': 1}
     assert without_lineage_sources(x, spec) == x
-    assert without_lineage_sources(x, spec, inplace=True) == x
 
     x = {'a': 1, 'lineage': {}}
     assert without_lineage_sources(x, spec) == x
-    assert without_lineage_sources(x, spec, inplace=True) == x
 
     x = mk_sample(1)
     assert without_lineage_sources(x, spec) != x
     assert x['lineage']['source_datasets'] == 1
 
-    x = mk_sample(2)
-    assert without_lineage_sources(x, spec, inplace=True) == x
-    assert x['lineage']['source_datasets'] == {}
-
     assert mk_sample(10) != mk_sample({})
     assert without_lineage_sources(mk_sample(10), spec) == mk_sample({})
-    assert without_lineage_sources(mk_sample(10), spec, inplace=True) == mk_sample({})
 
     # check behaviour when `sources` is not defined for the type
     no_sources_type = MetadataType({
@@ -150,7 +141,6 @@ def test_without_lineage_sources():
     }, dataset_search_fields={})
 
     assert without_lineage_sources(mk_sample(10), no_sources_type) == mk_sample(10)
-    assert without_lineage_sources(mk_sample(10), no_sources_type, inplace=True) == mk_sample(10)
 
 
 def test_parse_yaml():
@@ -583,21 +573,9 @@ def test_is_supported_doc_type():
 def test_doc_offset():
     assert get_doc_offset(['a'], {'a': 4}) == 4
     assert get_doc_offset(['a', 'b'], {'a': {'b': 4}}) == 4
-    with pytest.raises(KeyError):
-        get_doc_offset(['a'], {})
-
-    assert get_doc_offset_safe(['a'], {'a': 4}) == 4
-    assert get_doc_offset_safe(['a', 'b'], {'a': {'b': 4}}) == 4
-    assert get_doc_offset_safe(['a'], {}) is None
-    assert get_doc_offset_safe(['a', 'b', 'c'], {'a': {'b': {}}}, 10) == 10
-    assert get_doc_offset_safe(['a', 'b', 'c'], {'a': {'b': []}}, 11) == 11
-
-    doc = {'a': 4}
-    _set_doc_offset(['a'], doc, 5)
-    assert doc == {'a': 5}
-    doc = {'a': {'b': 4}}
-    _set_doc_offset(['a', 'b'], doc, 'c')
-    assert doc == {'a': {'b': 'c'}}
+    assert get_doc_offset(['a'], {}) is None
+    assert get_doc_offset(['a', 'b', 'c'], {'a': {'b': {}}}, 10) == 10
+    assert get_doc_offset(['a', 'b', 'c'], {'a': {'b': []}}, 11) == 11
 
 
 def test_transform_object_tree():

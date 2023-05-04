@@ -23,7 +23,7 @@ from datacube import Datacube
 from datacube.model import Measurement
 from datacube.utils.dates import mk_time_coord
 from datacube.utils.documents import parse_yaml
-from datacube.model import Dataset, DatasetType, MetadataType
+from datacube.model import Dataset, Product, MetadataType
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, SimpleDocNav
 from datacube.utils.geometry import GeoBox, CRS
@@ -206,7 +206,7 @@ def mk_sample_product(name,
     if load is not None:
         definition['load'] = load
 
-    return DatasetType(metadata_type, definition)
+    return Product(metadata_type, definition)
 
 
 def mk_sample_dataset(bands,

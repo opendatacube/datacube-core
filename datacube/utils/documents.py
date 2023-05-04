@@ -13,13 +13,14 @@ import sys
 import collections.abc
 from collections import OrderedDict
 from contextlib import contextmanager
-from itertools import chain
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from typing import Dict, Any, Mapping
 from copy import deepcopy
 from uuid import UUID
+
+from deprecat import deprecat
 
 import numpy
 import toolz  # type: ignore[import]
@@ -275,22 +276,13 @@ class UnknownMetadataType(InvalidDocException):
     pass
 
 
-def get_doc_offset(offset, document):
+def get_doc_offset(offset, document, default=None):
     """
     :type offset: list[str]
     :type document: dict
 
     """
-    return toolz.get_in(offset, document, no_default=True)
-
-
-def get_doc_offset_safe(offset, document, value_if_missing=None):
-    """
-    :type offset: list[str]
-    :type document: dict
-
-    """
-    return toolz.get_in(offset, document, default=value_if_missing)
+    return toolz.get_in(offset, document, default=default)
 
 
 def documents_equal(d1, d2):
@@ -440,7 +432,7 @@ class SimpleDocNav(object):
     def sources(self):
         if self._sources is None:
             self._sources = {k: SimpleDocNav(v)
-                             for k, v in get_doc_offset_safe(self._sources_path, self._doc, {}).items()}
+                             for k, v in get_doc_offset(self._sources_path, self._doc, {}).items()}
         return self._sources
 
     @property
@@ -461,10 +453,9 @@ def _set_doc_offset(offset, document, value):
     """
     :type offset: list[str]
     :type document: dict
-
     """
     read_offset = offset[:-1]
-    sub_doc = get_doc_offset(read_offset, document)
+    sub_doc = get_doc_offset(read_offset, document, {})
     sub_doc[offset[-1]] = value
 
 
@@ -483,21 +474,17 @@ class DocReader(object):
 
         # The field offsets that the datacube itself understands: id, format, sources etc.
         # (See the metadata-type-schema.yaml or the comments in default-metadata-types.yaml)
-        self.__dict__['_system_offsets'] = {name: field
-                                            for name, field in type_definition.items()
+        self.__dict__['_system_offsets'] = {name: offset
+                                            for name, offset in type_definition.items()
                                             if name != 'search_fields'}
 
     def __getattr__(self, name):
-        offset = self._system_offsets.get(name)
-        field = self._search_fields.get(name)
-        if offset:
-            return get_doc_offset_safe(offset, self._doc)
-        elif field:
-            return field.extract(self._doc)
+        if name in self.fields.keys():
+            return self.fields[name]
         else:
             raise AttributeError(
                 'Unknown field %r. Expected one of %r' % (
-                    name, list(chain(self._system_offsets.keys(), self._search_fields.keys()))
+                    name, list(self.fields.keys())
                 )
             )
 
@@ -506,42 +493,34 @@ class DocReader(object):
         if offset is None:
             raise AttributeError(
                 'Unknown field offset %r. Expected one of %r' % (
-                    name, list(self._fields.keys())
+                    name, list(self.system_fields.keys())
                 )
             )
         return _set_doc_offset(offset, self._doc, val)
 
-    @property
-    def fields(self):
-        fields = {}
-        fields.update(self.search_fields)
-        fields.update(self.system_fields)
-        return fields
-
-    @property
-    def search_fields(self):
-        fields = {}
-        for name, field in self._search_fields.items():
-            try:
-                fields[name] = field.extract(self._doc)
-            except (AttributeError, KeyError, ValueError):
-                continue
-        return fields
-
-    @property
-    def system_fields(self):
-        fields = {}
-        for name, offset in self._system_offsets.items():
-            try:
-                fields[name] = get_doc_offset(offset, self._doc)
-            except (AttributeError, KeyError, ValueError):
-                continue
-        return fields
-
     def __dir__(self):
         return list(self.fields)
 
+    @property
+    def doc(self):
+        return self.__dict__['_doc']
 
+    @property
+    def search_fields(self):
+        return {name: field.extract(self.__dict__['_doc'])
+                for name, field in self._search_fields.items()}
+
+    @property
+    def system_fields(self):
+        return {name: get_doc_offset(field, self.__dict__['_doc'])
+                for name, field in self._system_offsets.items()}
+
+    @property
+    def fields(self):
+        return {**self.system_fields, **self.search_fields}
+
+
+@deprecat(deprecated_args={'inplace': {'version': '1.9.0', 'reason': 'not being used'}})
 def without_lineage_sources(doc: Dict[str, Any],
                             spec,
                             inplace: bool = False) -> Dict[str, Any]:
@@ -551,14 +530,14 @@ def without_lineage_sources(doc: Dict[str, Any],
     :param spec: Product or MetadataType according to which `doc` to be interpreted
     :param bool inplace: If True modify `doc` in place
     """
-
     if not inplace:
         doc = deepcopy(doc)
 
     doc_view = spec.dataset_reader(doc)
 
     if 'sources' in doc_view.fields:
-        doc_view.sources = {}
+        if doc_view.sources is not None:
+            doc_view.sources = {}
 
     return doc
 
