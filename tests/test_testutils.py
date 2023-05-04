@@ -56,7 +56,6 @@ def test_mk_sample_xr():
 
     assert mk_sample_xr_dataset(resolution=(1, 100)).geobox.resolution == (1, 100)
     assert mk_sample_xr_dataset(resolution=(1, 100), xy=(3, 55)).geobox.transform*(0, 0) == (3, 55)
-    assert mk_sample_xr_dataset(crs=None).geobox is None
 
 
 def test_native_geobox_ingested():

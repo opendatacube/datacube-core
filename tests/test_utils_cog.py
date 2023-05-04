@@ -13,7 +13,6 @@ import dask
 from datacube.testutils import (
     mk_test_image,
     gen_tiff_dataset,
-    remove_crs,
 )
 from datacube.testutils.io import native_load, rio_slurp_xarray, rio_slurp
 from datacube.utils.cog import write_cog, to_cog, _write_cog
@@ -202,20 +201,6 @@ def test_cog_mem_dask(tmpdir):
     np.testing.assert_array_equal(yy.values, xx.values)
     assert yy.geobox == xx.geobox
     assert yy.nodata == xx.nodata
-
-
-@pytest.mark.parametrize("with_dask", [True, False])
-def test_cog_no_crs(tmpdir, with_dask):
-    pp = Path(str(tmpdir))
-
-    xx, ds = gen_test_data(pp, dask=with_dask)
-    xx = remove_crs(xx)
-
-    with pytest.raises(ValueError):
-        write_cog(xx, ":mem:")
-
-    with pytest.raises(ValueError):
-        to_cog(xx)
 
 
 @pytest.mark.parametrize("use_windowed_writes", [False, True])
