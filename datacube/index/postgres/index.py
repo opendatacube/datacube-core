@@ -32,7 +32,7 @@ class Index(AbstractIndex):
     other connections are active. Or else use a separate instance of this class in each process.
 
     :ivar datacube.index._datasets.DatasetResource datasets: store and retrieve :class:`datacube.model.Dataset`
-    :ivar datacube.index._products.ProductResource products: store and retrieve :class:`datacube.model.DatasetType`\
+    :ivar datacube.index._products.ProductResource products: store and retrieve :class:`datacube.model.Product`\
     (should really be called Product)
     :ivar datacube.index._metadata_types.MetadataTypeResource metadata_types: store and retrieve \
     :class:`datacube.model.MetadataType`

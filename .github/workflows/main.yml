@@ -35,7 +35,6 @@ jobs:
         filters: |
           docker:
             - 'docker/**'
-
     - name: Pull Docker
       if: steps.changes.outputs.docker == 'false'
       run: |
@@ -81,7 +80,6 @@ jobs:
         cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ env.DOCKER_IMAGE }} bash -
           pip install -e /code/tests/drivers/fail_drivers --no-deps
           pip install -e /code/examples/io_plugin --no-deps
-
           pytest -r a \
             --cov datacube \
             --cov-report=xml \
@@ -114,7 +112,6 @@ jobs:
         ls -lh ./dist/
         twine check ./dist/*
         EOF
-
     - name: Publish to PyPi
       if: |
         github.event_name == 'push'
@@ -135,7 +132,6 @@ jobs:
         else
            echo "Skipping upload as 'PyPiToken' is not set"
         fi
-
       env:
         TWINE_PASSWORD: ${{ secrets.PyPiToken }}
 

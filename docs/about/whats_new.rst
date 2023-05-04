@@ -11,7 +11,8 @@ v1.9.next
 - External Lineage API (:pull:`#1401`)
 - Add lineage support to index clone operation (:pull:`#1429`)
 - Migrate to SQLAlchemy 2.0 (:pull:`#1432`)
-- Mark geometry module as deprecate and replace all usage with odc-geo (:pull:`#1424`)
+- Clean up deprecated code and add deprecation warnings to legacy methods, simplify DocReader logic (:pull:`#1406`)
+- Mark geometry module as deprecated and replace all usage with odc-geo (:pull:`#1424`)
 
 
 v1.8.next

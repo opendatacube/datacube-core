@@ -25,7 +25,7 @@ from datacube import Datacube
 from datacube.api.core import output_geobox
 from datacube.api.grid_workflow import _fast_slice
 from datacube.api.query import Query, query_group_by
-from datacube.model import Measurement, DatasetType
+from datacube.model import Measurement, Product
 from datacube.model.utils import xr_apply, xr_iter, SafeDumper
 from datacube.testutils.io import native_geobox
 from odc.geo.geobox import GeoBox, GeoboxTiles, geobox_union_conservative
@@ -275,10 +275,10 @@ class VirtualProduct(Mapping):
         """
         self._settings = settings
 
-    def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
+    def output_measurements(self, product_definitions: Dict[str, Product]) -> Dict[str, Measurement]:
         """
         A dictionary mapping names to measurement metadata.
-        :param product_definitions: a dictionary mapping product names to products (`DatasetType` objects)
+        :param product_definitions: a dictionary mapping product names to products (`Product` objects)
         """
         raise NotImplementedError
 
@@ -322,7 +322,7 @@ class Product(VirtualProduct):
         return {key: value if key not in ['fuse_func', 'dataset_predicate'] else qualified_name(value)
                 for key, value in self.items()}
 
-    def output_measurements(self, product_definitions: TypeMapping[str, DatasetType],  # type: ignore[override]
+    def output_measurements(self, product_definitions: TypeMapping[str, Product],  # type: ignore[override]
                             measurements: Optional[List[str]] = None) -> TypeMapping[str, Measurement]:
         self._assert(self._product in product_definitions,
                      "product {} not found in definitions".format(self._product))
@@ -455,7 +455,7 @@ class Transform(VirtualProduct):
         return dict(transform=qualified_name(self['transform']),
                     input=self._input._reconstruct(), **reject_keys(self, ['input', 'transform']))
 
-    def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
+    def output_measurements(self, product_definitions: Dict[str, Product]) -> Dict[str, Measurement]:
         input_measurements = self._input.output_measurements(product_definitions)
 
         return self._transformation.measurements(input_measurements)
@@ -505,7 +505,7 @@ class Aggregate(VirtualProduct):
                     input=self._input._reconstruct(),
                     **reject_keys(self, ['input', 'aggregate', 'group_by']))
 
-    def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
+    def output_measurements(self, product_definitions: Dict[str, Product]) -> Dict[str, Measurement]:
         input_measurements = self._input.output_measurements(product_definitions)
 
         return self._statistic.measurements(input_measurements)
@@ -565,7 +565,7 @@ class Collate(VirtualProduct):
         children = [child._reconstruct() for child in self._children]
         return dict(collate=children, **reject_keys(self, ['collate']))
 
-    def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
+    def output_measurements(self, product_definitions: Dict[str, Product]) -> Dict[str, Measurement]:
         input_measurement_list = [child.output_measurements(product_definitions)
                                   for child in self._children]
 
@@ -679,7 +679,7 @@ class Juxtapose(VirtualProduct):
         children = [child._reconstruct() for child in self._children]
         return dict(juxtapose=children, **reject_keys(self, ['juxtapose']))
 
-    def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
+    def output_measurements(self, product_definitions: Dict[str, Product]) -> Dict[str, Measurement]:
         input_measurement_list = [child.output_measurements(product_definitions)
                                   for child in self._children]
 
@@ -753,10 +753,10 @@ class Reproject(VirtualProduct):
         # pylint: disable=protected-access
         return dict(input=self._input._reconstruct(), **reject_keys(self, ["input"]))
 
-    def output_measurements(self, product_definitions: Dict[str, DatasetType]) -> Dict[str, Measurement]:
+    def output_measurements(self, product_definitions: Dict[str, Product]) -> Dict[str, Measurement]:
         """
         A dictionary mapping names to measurement metadata.
-        :param product_definitions: a dictionary mapping product names to products (`DatasetType` objects)
+        :param product_definitions: a dictionary mapping product names to products (`Product` objects)
         """
         return self._input.output_measurements(product_definitions)
 

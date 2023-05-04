@@ -37,6 +37,7 @@ __all__ = [
 from odc.geo import CRS, BoundingBox, Geometry, wh_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
+from deprecat import deprecat
 
 _LOG = logging.getLogger(__name__)
 
@@ -97,6 +98,9 @@ class Dataset:
         self.archived_time = archived_time
 
     @property
+    @deprecat(
+        reason="The 'type' attribute has been deprecated. Please use the 'product' attribute instead.",
+        version='1.9.0')
     def type(self) -> "Product":
         # For compatibility
         return self.product
@@ -235,6 +239,9 @@ class Dataset:
         return self.archived_time is not None
 
     @property
+    @deprecat(
+        reason="The 'is_active' attribute has been deprecated. Please use 'is_archived' instead.",
+        version="1.9.0")
     def is_active(self) -> bool:
         """
         Is this dataset active?

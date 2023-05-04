@@ -58,3 +58,5 @@ setuptools_scm>=3.4
 toml
 wheel
 twine
+
+deprecat
