@@ -18,7 +18,6 @@ import datacube
 from datacube.api.core import Datacube
 from datacube.index import Index
 from datacube.model import Product, Range, Measurement, IngestorConfig
-from datacube.utils import geometry
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.ui import click as ui
 from datacube.utils import read_documents
@@ -29,15 +28,17 @@ from datacube.drivers import storage_writer_by_name
 
 from datacube.ui.click import cli
 
+from odc.geo.geom import unary_union
+
 _LOG = logging.getLogger('datacube-ingest')
 
 FUSER_KEY = 'fuse_data'
 
 
 def polygon_from_sources_extents(sources, geobox):
-    sources_union = geometry.unary_union(source.extent.to_crs(geobox.crs) for source in sources)
+    sources_union = unary_union(source.extent.to_crs(geobox.crs) for source in sources)
     valid_data = geobox.extent.intersection(sources_union)
-    resolution = min([abs(x) for x in geobox.resolution])
+    resolution = min([abs(x) for x in geobox.resolution.xy])
     return valid_data.simplify(tolerance=resolution * 0.01)
 
 

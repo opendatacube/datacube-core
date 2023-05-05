@@ -16,7 +16,7 @@ from rasterio.io import DatasetReader   # type: ignore[import]
 import rasterio.crs                     # type: ignore[import]
 
 from datacube.storage import BandInfo
-from datacube.utils.geometry import CRS
+from odc.geo import CRS
 from datacube.utils import (
     uri_to_local_path,
     get_part_from_uri,

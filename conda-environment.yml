@@ -36,3 +36,4 @@ dependencies:
   - GeoAlchemy2
   - xarray >=0.9
   - toolz
+  - odc-geo

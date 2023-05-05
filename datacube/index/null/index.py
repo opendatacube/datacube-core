@@ -11,7 +11,7 @@ from datacube.index.null._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction, NoLineageResource
 from datacube.model import MetadataType
 from datacube.model.fields import get_dataset_fields
-from datacube.utils.geometry import CRS
+from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
 

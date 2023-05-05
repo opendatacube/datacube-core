@@ -19,14 +19,15 @@ from datacube.drivers.netcdf import create_netcdf_storage_unit, Variable
 from datacube.storage import reproject_and_fuse
 from datacube.storage._rio import RasterDatasetDataSource, _url2rasterio
 from datacube.storage._read import read_time_slice
-from datacube.utils.geometry import GeoBox
+from odc.geo.geobox import GeoBox
+from odc.geo import wh_
 
 from datacube.testutils.geom import epsg4326, epsg3577
 
 
 def mk_gbox(shape=(2, 2), transform=identity, crs=epsg4326):
     H, W = shape
-    return GeoBox(W, H, transform, crs)
+    return GeoBox(wh_(W, H), transform, crs)
 
 
 def test_first_source_is_priority_in_reproject_and_fuse():
@@ -237,7 +238,7 @@ def assert_same_read_results(source, dst_shape, dst_dtype, dst_transform, dst_no
 
     result = np.full(dst_shape, dst_nodata, dtype=dst_dtype)
     H, W = dst_shape
-    dst_gbox = GeoBox(W, H, dst_transform, dst_projection)
+    dst_gbox = GeoBox(wh_(W, H), dst_transform, dst_projection)
     with source.open() as rdr:
         read_time_slice(rdr,
                         result,
@@ -409,7 +410,7 @@ def _read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, r
     Adapt old signature to new function, so that we can keep old tests at least for now
     """
     H, W = dest.shape
-    gbox = GeoBox(W, H, dst_transform, dst_projection)
+    gbox = GeoBox(wh_(W, H), dst_transform, dst_projection)
     dest[:] = dst_nodata  # new code assumes pre-populated image
     with source.open() as rdr:
         read_time_slice(rdr, dest, gbox, resampling=resampling, dst_nodata=dst_nodata)
@@ -500,7 +501,7 @@ def make_sample_netcdf(tmpdir):
     """Make a test Geospatial NetCDF file, 4000x4000 int16 random data, in a variable named `sample`.
     Return the GDAL access string."""
     sample_nc = str(tmpdir.mkdir('netcdfs').join('sample.nc'))
-    geobox = GeoBox(4000, 4000, affine=Affine(25.0, 0.0, 1200000, 0.0, -25.0, -4200000), crs=epsg3577)
+    geobox = GeoBox(wh_(4000, 4000), affine=Affine(25.0, 0.0, 1200000, 0.0, -25.0, -4200000), crs=epsg3577)
 
     sample_data = np.random.randint(10000, size=(4000, 4000), dtype=np.int16)
 
@@ -520,7 +521,7 @@ def make_sample_geotiff(tmpdir):
     def internal_make_sample_geotiff(nodata=-999):
         sample_geotiff = str(tmpdir.mkdir('tiffs').join('sample.tif'))
 
-        geobox = GeoBox(100, 200, affine=Affine(25.0, 0.0, 0, 0.0, -25.0, 0), crs=epsg3577)
+        geobox = GeoBox(wh_(100, 200), affine=Affine(25.0, 0.0, 0, 0.0, -25.0, 0), crs=epsg3577)
         if np.isnan(nodata):
             out_dtype = 'float64'
             sample_data = 10000 * np.random.random_sample(size=geobox.shape)

@@ -26,7 +26,7 @@ from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
 import datacube
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
-from datacube.utils.geometry import CRS
+from odc.geo import CRS
 
 from . import _api
 from . import _core
@@ -219,7 +219,7 @@ class PostGisDb(object):
             self._refresh_spindexes()
         return self._spindexes
 
-    def create_spatial_index(self, crs: "datacube.utils.geometry.CRS") -> Optional[Type[SpatialIndex]]:
+    def create_spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
         """
         Create a spatial index across the database, for the named CRS.
 

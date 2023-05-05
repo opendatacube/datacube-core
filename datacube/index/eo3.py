@@ -12,15 +12,15 @@ from functools import reduce
 from typing import Dict, Any, Iterable, Optional, Tuple, Union
 from uuid import UUID
 
-from datacube.utils.geometry import (
+from odc.geo import (
     SomeCRS,
     CRS,
     Geometry,
-    polygon,
     CoordList,
     BoundingBox,
-    lonlat_bounds,
 )
+
+from odc.geo.geom import polygon, lonlat_bounds
 
 EO3_SCHEMA = "https://schemas.opendatacube.org/dataset"
 

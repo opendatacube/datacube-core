@@ -20,7 +20,9 @@ from typing import (
 
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.math import invalid_mask
-from datacube.utils.geometry import GeoBox, roi_is_empty
+from odc.geo.geobox import GeoBox
+from odc.geo.roi import roi_is_empty
+from odc.geo.xr import xr_coords
 from datacube.model import Measurement
 from datacube.drivers._types import ReaderDriver
 from ..drivers.datasource import DataSource
@@ -101,7 +103,7 @@ def reproject_and_fuse(datasources: List[DataSource],
 
 def _mk_empty_ds(coords: DataArrayCoordinates, geobox: GeoBox) -> XrDataset:
     cc = OrderedDict(coords.items())
-    cc.update(geobox.xr_coords())
+    cc.update(xr_coords(geobox, None))
     return XrDataset(coords=cast(Mapping[Hashable, Any], cc), attrs={'crs': geobox.crs})
 
 

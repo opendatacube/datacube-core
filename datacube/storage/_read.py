@@ -4,85 +4,35 @@
 # SPDX-License-Identifier: Apache-2.0
 """ Dataset -> Raster
 """
-from affine import Affine
 import numpy as np
 from typing import Optional, Tuple
 
 from ..utils.math import is_almost_int, valid_mask
 
-from ..utils.geometry import (
+from odc.geo import wh_
+from odc.geo.roi import (
     roi_shape,
     roi_is_empty,
     roi_is_full,
     roi_pad,
-    GeoBox,
     w_,
+)
+from odc.geo.geobox import GeoBox, zoom_out
+from odc.geo.warp import (
     warp_affine,
     rio_reproject,
-    compute_reproject_roi)
-
-from ..utils.geometry._warp import is_resampling_nn, Resampling, Nodata
-from ..utils.geometry import gbox as gbx
+    is_resampling_nn,
+    Resampling,
+    Nodata,
+)
+from odc.geo.overlap import compute_reproject_roi, is_affine_st
 
 
 def rdr_geobox(rdr) -> GeoBox:
     """ Construct GeoBox from opened dataset reader.
     """
     h, w = rdr.shape
-    return GeoBox(w, h, rdr.transform, rdr.crs)
-
-
-def can_paste(rr, stol=1e-3, ttol=1e-2):
-    """
-    Take result of compute_reproject_roi and check if can read(possibly with scale) and paste,
-    or do we need to read then reproject.
-
-    :returns: (True, None) if one can just read and paste
-    :returns: (False, Reason) if pasting is not possible, so need to reproject after reading
-    """
-    if not rr.is_st:  # not linear or not Scale + Translation
-        return False, "not ST"
-
-    scale = rr.scale
-    if not is_almost_int(scale, stol):  # non-integer scaling
-        return False, "non-integer scale"
-
-    scale = np.round(scale)
-    A = rr.transform.linear           # src -> dst
-    A = A*Affine.scale(scale, scale)  # src.overview[scale] -> dst
-
-    (sx, _, tx,  # tx, ty are in dst pixel space
-     _, sy, ty,
-     *_) = A
-
-    if any(abs(abs(s) - 1) > stol
-           for s in (sx, sy)):  # not equal scaling across axis?
-        return False, "sx!=sy, probably"
-
-    ny, nx = (n/scale
-              for n in roi_shape(rr.roi_src))
-
-    # src_roi doesn't divide by scale properly:
-    #  example 3x7 scaled down by factor of 2
-    if not all(is_almost_int(n, stol) for n in (nx, ny)):
-        return False, "src_roi doesn't align for scale"
-
-    # TODO: probably need to deal with sub-pixel translation here, if we want
-    # to ignore sub-pixel translation and dst roi is 1 pixel bigger than src it
-    # should still be ok to paste after cropping dst roi by one pixel on the
-    # appropriate side. As it stands sub-pixel translation will be ignored only
-    # in some cases.
-
-    # scaled down shape doesn't match dst shape
-    s_shape = (int(ny), int(nx))
-    if s_shape != roi_shape(rr.roi_dst):
-        return False, "src_roi/scale != dst_roi"
-
-    # final check: sub-pixel translation
-    if not all(is_almost_int(t, ttol) for t in (tx, ty)):
-        return False, "sub-pixel translation"
-
-    return True, None
+    return GeoBox(wh_(w, h), rdr.transform, rdr.crs)
 
 
 def pick_read_scale(scale: float, rdr=None, tol=1e-3):
@@ -122,15 +72,14 @@ def read_time_slice(rdr,
     assert dst.shape == dst_gbox.shape
     src_gbox = rdr_geobox(rdr)
 
-    rr = compute_reproject_roi(src_gbox, dst_gbox)
+    is_nn = is_resampling_nn(resampling)
+
+    rr = compute_reproject_roi(src_gbox, dst_gbox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
         return rr.roi_dst
 
-    is_nn = is_resampling_nn(resampling)
     scale = pick_read_scale(rr.scale, rdr)
-
-    paste_ok, _ = can_paste(rr, ttol=0.9 if is_nn else 0.01)
 
     def norm_read_args(roi, shape, extra_dim_index):
         if roi_is_full(roi, rdr.shape):
@@ -151,7 +100,7 @@ def read_time_slice(rdr,
             # 2D read window
             return w, shape
 
-    if paste_ok:
+    if rr.paste_ok:
         A = rr.transform.linear
         sx, sy = A.a, A.e
 
@@ -168,7 +117,8 @@ def read_time_slice(rdr,
         else:
             np.copyto(dst, pix, where=valid_mask(pix, rdr.nodata))
     else:
-        if rr.is_st:
+        is_st = False if rr.transform.linear is None else is_affine_st(rr.transform.linear)
+        if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
             rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_gbox.shape)
@@ -178,7 +128,7 @@ def read_time_slice(rdr,
         dst_gbox = dst_gbox[rr.roi_dst]
         src_gbox = src_gbox[rr.roi_src]
         if scale > 1:
-            src_gbox = gbx.zoom_out(src_gbox, scale)
+            src_gbox = zoom_out(src_gbox, scale)
 
         pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape, extra_dim_index))
 
@@ -205,15 +155,13 @@ def read_time_slice_v2(rdr,
     # pylint: disable=too-many-locals
     src_gbox = rdr_geobox(rdr)
 
-    rr = compute_reproject_roi(src_gbox, dst_gbox)
+    is_nn = is_resampling_nn(resampling)
+    rr = compute_reproject_roi(src_gbox, dst_gbox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
         return None, rr.roi_dst
 
-    is_nn = is_resampling_nn(resampling)
     scale = pick_read_scale(rr.scale, rdr)
-
-    paste_ok, _ = can_paste(rr, ttol=0.9 if is_nn else 0.01)
 
     def norm_read_args(roi, shape):
         if roi_is_full(roi, rdr.shape):
@@ -224,7 +172,7 @@ def read_time_slice_v2(rdr,
 
         return roi, shape
 
-    if paste_ok:
+    if rr.paste_ok:
         read_shape = roi_shape(rr.roi_dst)
         A = rr.transform.linear
         sx, sy = A.a, A.e
@@ -242,7 +190,8 @@ def read_time_slice_v2(rdr,
 
         dst = pix
     else:
-        if rr.is_st:
+        is_st = False if rr.transform.linear is None else is_affine_st(rr.transform.linear)
+        if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
             rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_gbox.shape)
@@ -251,7 +200,7 @@ def read_time_slice_v2(rdr,
         dst_gbox = dst_gbox[rr.roi_dst]
         src_gbox = src_gbox[rr.roi_src]
         if scale > 1:
-            src_gbox = gbx.zoom_out(src_gbox, scale)
+            src_gbox = zoom_out(src_gbox, scale)
 
         dst = np.full(dst_gbox.shape, dst_nodata, dtype=rdr.dtype)
         pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape)).result()

@@ -111,6 +111,7 @@ setup(
         'toolz',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
         'packaging',
+        'odc-geo',
         'deprecat',
     ],
     extras_require=extras_require,

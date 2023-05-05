@@ -40,7 +40,7 @@ def create_netcdf_storage_unit(filename,
     Create a NetCDF file on disk.
 
     :param pathlib.Path filename: filename to write to
-    :param datacube.utils.geometry.CRS crs: Datacube CRS object defining the spatial projection
+    :param odc.geo.crs.CRS crs: Datacube CRS object defining the spatial projection
     :param dict coordinates: Dict of named `datacube.model.Coordinate`s to create
     :param dict variables: Dict of named `datacube.model.Variable`s to create
     :param dict variable_params:

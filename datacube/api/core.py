@@ -15,10 +15,11 @@ from dask import array as da
 from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
-from datacube.utils import geometry
+from odc.geo import CRS, XY, Resolution
+from odc.geo.xr import xr_coords
 from datacube.utils.dates import normalise_dt
-from datacube.utils.geometry import intersects, GeoBox
-from datacube.utils.geometry.gbox import GeoboxTiles
+from odc.geo.geom import intersects, box, bbox_union
+from odc.geo.geobox import GeoBox, GeoboxTiles
 from datacube.model import ExtraDimensions
 from datacube.model.utils import xr_apply
 
@@ -344,7 +345,7 @@ class Datacube(object):
 
         :param xarray.Dataset like:
             Use the output of a previous :meth:`load()` to load data into the same spatial grid and
-            resolution (i.e. :class:`datacube.utils.geometry.GeoBox`).
+            resolution (i.e. :class:`odc.geo.geobox.GeoBox`).
             E.g.::
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
@@ -604,7 +605,7 @@ class Datacube(object):
             dims_default = tuple(coords) + geobox.dimensions
 
         shape_default = tuple(c.size for k, c in coords.items() if k in dims_default) + geobox.shape
-        coords_default = OrderedDict(**coords, **geobox.xr_coords(with_crs=spatial_ref))
+        coords_default = OrderedDict(**coords, **xr_coords(geobox, spatial_ref))
 
         arrays = []
         ds_coords = deepcopy(coords_default)
@@ -880,7 +881,7 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
     if output_crs is not None:
         if resolution is None:
             raise ValueError("Must specify 'resolution' when specifying 'output_crs'")
-        crs = geometry.CRS(output_crs)
+        crs = CRS(output_crs)
     elif grid_spec is not None:
         # specification from grid_spec
         crs = grid_spec.crs
@@ -907,7 +908,13 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
             geopolygon = get_bounds(datasets, crs)
 
-    return geometry.GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
+    if resolution is not None and type(resolution) is not Resolution:
+        resolution = Resolution(*resolution)
+
+    if align is not None:
+        align = XY(*align)
+
+    return GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
 
 
 def select_datasets_inside_polygon(datasets, polygon):
@@ -961,8 +968,8 @@ def _fuse_measurement(dest, datasets, geobox, measurement,
 
 
 def get_bounds(datasets, crs):
-    bbox = geometry.bbox_union(ds.extent.to_crs(crs).boundingbox for ds in datasets)
-    return geometry.box(*bbox, crs=crs)
+    bbox = bbox_union(ds.extent.to_crs(crs).boundingbox for ds in datasets)
+    return box(*bbox, crs=crs)
 
 
 def _calculate_chunk_sizes(sources: xarray.DataArray,
@@ -1048,11 +1055,11 @@ def _make_dask_array(chunked_srcs,
         key_prefix = (dsk_name, *irr_index)
 
         # all spatial chunks
-        for idx in numpy.ndindex(gbt.shape):
+        for idx in numpy.ndindex(gbt.shape.shape):
             dss = tiled_dss.get(idx, None)
 
             if dss is None:
-                val = _mk_empty(gbt.chunk_shape(idx))
+                val = _mk_empty(gbt.chunk_shape(idx).xy)
                 # 3D case
                 if 'extra_dim' in measurement:
                     index_subset = extra_dims.measurements_index(measurement.extra_dim)

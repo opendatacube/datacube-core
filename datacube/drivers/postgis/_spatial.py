@@ -18,7 +18,8 @@ from sqlalchemy.engine import Connectable
 from sqlalchemy import Column
 from sqlalchemy.orm import Session
 
-from datacube.utils.geometry import CRS, Geometry as Geom, multipolygon, polygon
+from odc.geo import CRS, Geometry as Geom
+from odc.geo.geom import multipolygon, polygon
 from ._core import METADATA
 from .sql import SCHEMA_NAME
 from ._schema import orm_registry, Dataset, SpatialIndex, SpatialIndexRecord

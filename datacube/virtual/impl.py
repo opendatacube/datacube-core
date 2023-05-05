@@ -28,10 +28,10 @@ from datacube.api.query import Query, query_group_by
 from datacube.model import Measurement, Product
 from datacube.model.utils import xr_apply, xr_iter, SafeDumper
 from datacube.testutils.io import native_geobox
-from datacube.utils.geometry import GeoBox, rio_reproject, geobox_union_conservative
-from datacube.utils.geometry import compute_reproject_roi
-from datacube.utils.geometry.gbox import GeoboxTiles
-from datacube.utils.geometry._warp import resampling_s2rio
+from odc.geo.geobox import GeoBox, GeoboxTiles, geobox_union_conservative
+from odc.geo.warp import rio_reproject, resampling_s2rio
+from odc.geo.overlap import compute_reproject_roi, is_affine_st
+from odc.geo.xr import xr_coords
 from datacube.api.core import per_band_load_data_settings
 
 from .utils import qualified_name, merge_dicts
@@ -409,7 +409,7 @@ class Product(VirtualProduct):
                                                                              align=dataset_geobox.alignment,
                                                                              resolution=dataset_geobox.resolution))
 
-                self._assert(reproject_roi.is_st, "native load is not axis-aligned")
+                self._assert(is_affine_st(reproject_roi.transform.linear), "native load is not axis-aligned")
                 self._assert(numpy.isclose(reproject_roi.scale, 1.0), "native load should not require scaling")
 
                 geobox = dataset_geobox[reproject_roi.roi_src]
@@ -819,7 +819,7 @@ class Reproject(VirtualProduct):
         result = xarray.Dataset()
         result.coords['time'] = grouped.box.coords['time']
 
-        coords = OrderedDict(**geobox.xr_coords(with_crs=spatial_ref))
+        coords = OrderedDict(**xr_coords(geobox, spatial_ref))
         result.coords.update(coords)
 
         for measurement in measurements:

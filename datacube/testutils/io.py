@@ -8,12 +8,13 @@ import toolz
 from ..model import Dataset
 from ..storage import reproject_and_fuse, BandInfo
 from ..storage._rio import RasterioDataSource, RasterDatasetDataSource
-from ..utils.geometry._warp import resampling_s2rio
 from ..storage._read import rdr_geobox
-from ..utils.geometry import GeoBox
-from ..utils.geometry import gbox as gbx
 from ..index.eo3 import is_doc_eo3, EO3Grid  # type: ignore[attr-defined]
 from types import SimpleNamespace
+from odc.geo.warp import resampling_s2rio
+from odc.geo.geobox import GeoBox, zoom_to
+from odc.geo import wh_
+from odc.geo.xr import xr_coords
 
 
 class RasterFileDataSource(RasterioDataSource):
@@ -73,9 +74,8 @@ def eo3_geobox(ds: Dataset, band: str) -> GeoBox:
         raise ValueError('Not a valid EO3 dataset')
 
     grid = EO3Grid(grid_spec)
-    h, w = grid.shape
 
-    return GeoBox(w, h, grid.transform, crs)
+    return GeoBox(grid.shape, grid.transform, crs)
 
 
 def native_geobox(ds, measurements=None, basis=None):
@@ -254,7 +254,7 @@ def write_gtiff(fname,
 
 
 def dc_crs_from_rio(crs):
-    from datacube.utils.geometry import CRS
+    from odc.geo import CRS
 
     if crs.is_epsg_code:
         return CRS('EPSG:{}'.format(crs.to_epsg()))
@@ -271,7 +271,7 @@ def rio_geobox(meta):
     crs = dc_crs_from_rio(meta['crs'])
     transform = meta['transform']
 
-    return GeoBox(w, h, transform, crs)
+    return GeoBox(wh_(w, h), transform, crs)
 
 
 def _fix_resampling(kw):
@@ -339,7 +339,7 @@ def rio_slurp_read(fname, out_shape=None, **kw):
         src_gbox = rio_geobox(meta)
 
         same_gbox = out_shape is None or out_shape == src_gbox.shape
-        gbox = src_gbox if same_gbox else gbx.zoom_to(src_gbox, out_shape)
+        gbox = src_gbox if same_gbox else zoom_to(src_gbox, out_shape)
 
         meta['src_gbox'] = src_gbox
         meta['gbox'] = gbox
@@ -399,6 +399,6 @@ def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
 
     return DataArray(im,
                      dims=dims,
-                     coords=mm.gbox.xr_coords(with_crs=True),
+                     coords=xr_coords(mm.gbox),
                      attrs=dict(
                          nodata=mm.nodata))

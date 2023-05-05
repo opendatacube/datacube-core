@@ -21,7 +21,7 @@ import rasterio
 import xarray as xr
 from affine import Affine
 from datacube.api.core import Datacube
-from datacube.utils import geometry
+from odc.geo.geobox import GeoBox
 
 pytest.importorskip("dcio_example.xarray_3d")  # skip this test if 3d driver is not installed
 _LOG = logging.getLogger(__name__)
@@ -383,8 +383,8 @@ def load_with_dc(
     """
     params = SimpleNamespace(
         measurements=[measurement],
-        like=geometry.GeoBox(
-            *product_id.size,
+        like=GeoBox(
+            product_id.size[::-1],
             product_id.affine,
             GEDI_PRODUCT.crs,
         ),

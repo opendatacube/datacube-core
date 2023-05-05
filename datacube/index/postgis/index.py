@@ -16,7 +16,7 @@ from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, default_metadata_type_docs
 from datacube.model import MetadataType
-from datacube.utils.geometry import CRS
+from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
 

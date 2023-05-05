@@ -15,7 +15,8 @@ import pytest
 from affine import Affine
 
 from datacube import Datacube
-from datacube.utils import geometry
+from odc.geo import CRS, wh_
+from odc.geo.geobox import GeoBox
 from datacube.utils.documents import read_documents
 from datacube.model import Measurement, MetadataType, DatasetType, Dataset
 from datacube.index.eo3 import prep_eo3
@@ -302,7 +303,7 @@ def odc_style_xr_dataset(request):
 
     Contains an EPSG:4326, single variable 'B10' of 100x100 int16 pixels."""
     affine = Affine.scale(0.1, 0.1) * Affine.translation(20, 30)
-    geobox = geometry.GeoBox(100, 100, affine, geometry.CRS(GEO_PROJ))
+    geobox = GeoBox(wh_(100, 100), affine, CRS(GEO_PROJ))
 
     return Datacube.create_storage(
         request.param, geobox, [Measurement(name="B10", dtype="int16", nodata=0, units="1")]
