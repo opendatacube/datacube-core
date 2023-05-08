@@ -19,11 +19,11 @@ global_attributes:
     or only sea pixels depending on their analytical requirements, leading to enhanced computationally efficient.
 
     PQ provides  an assessment of the quality of observations at a pixel level and includes information about:
-    -	Spectral Contiguity (lack of signal in any band)
-    -	Saturation in any band
-    -	Presence of cloud
-    -	Presence of cloud shadow
-    -	Land or sea
+    - Spectral Contiguity (lack of signal in any band)
+    - Saturation in any band
+    - Presence of cloud
+    - Presence of cloud shadow
+    - Land or sea
 
     As Landsat Imagery becomes more readily available, there has been a rapid increase in the amount of analyses undertaken
     by researchers around the globe.  Most researchers use some form of quality masking schema in order to remove undesirable
@@ -43,11 +43,11 @@ global_attributes:
     with OLI data, however it uses additional algorithms to detect cloud and cloud shadow, and is available for Landsat 5, 7 and 8.
   source: PQ_25_2
   history: |
-    -	Ground Control Points (GCP): new GCP chips released by USGS in Dec 2015 are used for re-processing
-    -	Geometric QA: each product undergoes geometric assessment and the assessment result will be recorded within v2 AGDC for filtering/masking purposes.
-    -	Processing parameter settings: the minimum number of GCPs for Ortho-rectified product generation has been reduced from 30 to 10.
-    -	DEM: 1 second SRTM DSM is used for Ortho-rectification.
-    -	Updated Calibration Parameter File (CPF): the latest/current CPF is used for processing.
+    - Ground Control Points (GCP): new GCP chips released by USGS in Dec 2015 are used for re-processing
+    - Geometric QA: each product undergoes geometric assessment and the assessment result will be recorded within v2 AGDC for filtering/masking purposes.
+    - Processing parameter settings: the minimum number of GCPs for Ortho-rectified product generation has been reduced from 30 to 10.
+    - DEM: 1 second SRTM DSM is used for Ortho-rectification.
+    - Updated Calibration Parameter File (CPF): the latest/current CPF is used for processing.
   institution: Commonwealth of Australia (Geoscience Australia)
   instrument: ETM
   keywords: AU/GA,NASA/GSFC/SED/ESD/LANDSAT,ETM+,TM,OLI,EARTH SCIENCE
