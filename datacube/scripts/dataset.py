@@ -22,7 +22,7 @@ from datacube.index.eo3 import prep_eo3  # type: ignore[attr-defined]
 from datacube.index import Index
 from datacube.model import Dataset
 from datacube.ui import click as ui
-from datacube.ui.click import cli
+from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
 from datacube.utils import changes, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
@@ -170,7 +170,8 @@ def index_cmd(index, product_names,
               dataset_paths):
 
     if not dataset_paths:
-        click.echo('No datasets provided')
+        click.echo('Error: no datasets provided\n')
+        print_help_msg(index_cmd)
         sys.exit(1)
 
     if confirm_ignore_lineage is False and ignore_lineage is True:
@@ -249,7 +250,8 @@ def parse_update_rules(keys_that_can_change):
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
     if not dataset_paths:
-        click.echo('No datasets provided')
+        click.echo('Error: no datasets provided\n')
+        print_help_msg(update_cmd)
         sys.exit(1)
 
     def loc_action(action, new_ds, existing_ds, action_name):
@@ -416,7 +418,8 @@ def info_cmd(index: Index, show_sources: bool, show_derived: bool,
              max_depth: int,
              ids: Iterable[str]) -> None:
     if not ids:
-        click.echo('No datasets provided')
+        click.echo('Error: no datasets provided\n')
+        print_help_msg(info_cmd)
         sys.exit(1)
 
     # Using an array wrapper to get around the lack of "nonlocal" in py2
@@ -486,7 +489,8 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
     PATHS may be either file paths or URIs
     """
     if not paths:
-        click.echo('No locations provided')
+        click.echo('Error: no locations provided\n')
+        print_help_msg(uri_search_cmd)
         sys.exit(1)
 
     if search_mode == 'guess':
@@ -511,7 +515,8 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
 @ui.pass_index()
 def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
-        click.echo('No datasets provided')
+        click.echo('Error: no datasets provided\n')
+        print_help_msg(archive_cmd)
         sys.exit(1)
 
     derived_dataset_ids: List[UUID] = []
@@ -559,7 +564,8 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
 def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int,
                 dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
-        click.echo('No datasets provided')
+        click.echo('Error: no datasets provided\n')
+        print_help_msg(restore_cmd)
         sys.exit(1)
 
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
@@ -606,7 +612,8 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 @ui.pass_index()
 def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
-        click.echo('No datasets provided')
+        click.echo('Error: no datasets provided\n')
+        print_help_msg(purge_cmd)
         sys.exit(1)
 
     if all_ds:
