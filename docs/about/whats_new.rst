@@ -12,6 +12,7 @@ v1.8.next
 - Setup Dependabot, and Dependabot-generated updates (:pull:`1416`, :pull:`1420`, :pull:`1423`,
             :pull:`1428`)
 - Documentation fixes (:pull:`1417`, :pull:`1418`, :pull:`1430`)
+- ``datacube dataset`` cli commands print error message if missing argument (:pull:`1437`)
 
 
 v1.8.12 (7th March 2023)
