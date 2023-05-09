@@ -362,7 +362,7 @@ def _time_to_open_range(time, lower_bound: bool):
             start = _to_datetime(pandas.Period(time).end_time.to_pydatetime())
             end = _to_datetime(datetime.datetime.now())
         else:  # from earliest available to date provided (not inclusive)
-            start = _to_datetime(pandas.Period('1980-01-01').start_time.to_pydatetime())
+            start = _to_datetime(datetime.datetime.fromtimestamp(0))
             end = _to_datetime(pandas.Period(time).start_time.to_pydatetime())
         return Range(start, end)
 
