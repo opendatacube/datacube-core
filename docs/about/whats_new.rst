@@ -12,6 +12,7 @@ v1.8.next
 - Setup Dependabot, and Dependabot-generated updates (:pull:`1416`, :pull:`1420`, :pull:`1423`,
             :pull:`1428`)
 - Documentation fixes (:pull:`1417`, :pull:`1418`, :pull:`1430`)
+- Support open-ended date ranges in `datacube dataset search` (:pull:`1439`)
 
 
 v1.8.12 (7th March 2023)
