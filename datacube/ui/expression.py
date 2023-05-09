@@ -27,10 +27,14 @@ search_grammar = r"""
     ?expression: equals_expr
                | time_in_expr
                | field_in_expr
+               | time_gt_expr
+               | time_lt_expr
 
     equals_expr: field "=" value
     time_in_expr: time "in" date_range
     field_in_expr: field "in" "[" orderable "," orderable "]"
+    time_gt_expr: time ">" date_range
+    time_lt_expr: time "<" date_range
 
     field: FIELD
     time: TIME
@@ -85,6 +89,12 @@ class TreeToSearchExprs(Transformer):
         return {str(field): Range(lower, upper)}
 
     def time_in_expr(self, time_field, date_range):
+        return {str(time_field): date_range}
+    
+    def time_gt_expr(self, time_field, date_range):
+        return {str(time_field): date_range}
+    
+    def time_lt_expr(self, time_field, date_range):
         return {str(time_field): date_range}
 
     # Convert the literals
