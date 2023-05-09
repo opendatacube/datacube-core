@@ -354,6 +354,19 @@ def _time_to_search_dims(time_range):
         return tr
 
 
+def _time_to_open_range(time, lower_bound: bool):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+
+        if lower_bound:  # from date provided (not inclusive) to latest available
+            start = _to_datetime(pandas.Period(time).end_time.to_pydatetime())
+            end = _to_datetime(datetime.datetime.now())
+        else:  # from earliest available to date provided (not inclusive)
+            start = _to_datetime(pandas.Period('1980-01-01').start_time.to_pydatetime())
+            end = _to_datetime(pandas.Period(time).start_time.to_pydatetime())
+        return Range(start, end)
+
+
 def _convert_to_solar_time(utc, longitude):
     seconds_per_degree = 240
     offset_seconds = int(longitude * seconds_per_degree)

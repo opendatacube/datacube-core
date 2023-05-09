@@ -18,7 +18,7 @@ and START, END are either numbers or dates.
 
 from lark import Lark, v_args, Transformer
 
-from datacube.api.query import _time_to_search_dims
+from datacube.api.query import _time_to_search_dims, _time_to_open_range
 from datacube.model import Range
 
 
@@ -33,8 +33,8 @@ search_grammar = r"""
     equals_expr: field "=" value
     time_in_expr: time "in" date_range
     field_in_expr: field "in" "[" orderable "," orderable "]"
-    time_gt_expr: time ">" date_range
-    time_lt_expr: time "<" date_range
+    time_gt_expr: time ">" date_gt
+    time_lt_expr: time "<" date_lt
 
     field: FIELD
     time: TIME
@@ -51,6 +51,10 @@ search_grammar = r"""
 
     ?date_range: date -> single_date
                | "[" date "," date "]" -> date_pair
+
+    date_gt: date -> range_lower_bound
+
+    date_lt: date -> range_upper_bound
 
     date: YEAR ["-" MONTH ["-" DAY ]]
 
@@ -91,11 +95,11 @@ class TreeToSearchExprs(Transformer):
     def time_in_expr(self, time_field, date_range):
         return {str(time_field): date_range}
     
-    def time_gt_expr(self, time_field, date_range):
-        return {str(time_field): date_range}
+    def time_gt_expr(self, time_field, date_gt):
+        return {str(time_field): date_gt}
     
-    def time_lt_expr(self, time_field, date_range):
-        return {str(time_field): date_range}
+    def time_lt_expr(self, time_field, date_lt):
+        return {str(time_field): date_lt}
 
     # Convert the literals
     def string(self, val):
@@ -111,6 +115,13 @@ class TreeToSearchExprs(Transformer):
 
     def date_pair(self, start, end):
         return _time_to_search_dims((start, end))
+    
+    def range_lower_bound(self, date):
+        return _time_to_open_range(date, lower_bound=True)
+
+    def range_upper_bound(self, date):
+        return _time_to_open_range(date, lower_bound=False)
+
 
     def date(self, y, m=None, d=None):
         return "-".join(x for x in [y, m, d] if x is not None)
