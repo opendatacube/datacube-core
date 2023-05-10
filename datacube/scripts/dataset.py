@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import csv
 import datetime
@@ -170,6 +170,7 @@ def index_cmd(index, product_names,
               dataset_paths):
 
     if not dataset_paths:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(index_cmd)
         sys.exit(1)
 
@@ -249,6 +250,7 @@ def parse_update_rules(keys_that_can_change):
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
     if not dataset_paths:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(update_cmd)
         sys.exit(1)
 
@@ -416,6 +418,7 @@ def info_cmd(index: Index, show_sources: bool, show_derived: bool,
              max_depth: int,
              ids: Iterable[str]) -> None:
     if not ids:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(info_cmd)
         sys.exit(1)
 
@@ -486,6 +489,7 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
     PATHS may be either file paths or URIs
     """
     if not paths:
+        click.echo('Error: no locations provided\n')
         print_help_msg(uri_search_cmd)
         sys.exit(1)
 
@@ -511,6 +515,7 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
 @ui.pass_index()
 def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(archive_cmd)
         sys.exit(1)
 
@@ -559,6 +564,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
 def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int,
                 dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(restore_cmd)
         sys.exit(1)
 
@@ -606,6 +612,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 @ui.pass_index()
 def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(purge_cmd)
         sys.exit(1)
 

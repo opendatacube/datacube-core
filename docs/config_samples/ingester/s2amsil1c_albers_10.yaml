@@ -81,5 +81,5 @@ measurements:
       src_varname: '08'
       zlib: True
       attrs:
-          long_name: "	Level 1 Top of Atmosphere Reflectance 842 nanometers (Near infrared)"
+          long_name: "  Level 1 Top of Atmosphere Reflectance 842 nanometers (Near infrared)"
           alias: "Band8"
