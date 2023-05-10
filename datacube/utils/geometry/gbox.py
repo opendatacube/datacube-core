@@ -12,7 +12,7 @@ from affine import Affine
 
 from . import Geometry, GeoBox, BoundingBox
 from .tools import align_up
-from datacube.utils.math import clamp
+from odc.geo.math import clamp
 
 # pylint: disable=invalid-name
 MaybeInt = Optional[int]

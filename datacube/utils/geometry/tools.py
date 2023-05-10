@@ -446,7 +446,7 @@ def box_overlap(src_shape, dst_shape, ST, tol):  # noqa: N803
                       direction is: Xsrc = ST*Xdst
     :param       tol: Sub-pixel translation tolerance that's scaled by resolution.
     """
-    from datacube.utils.math import maybe_int, snap_scale
+    from odc.geo.math import maybe_int, snap_scale
 
     (sx, _, tx,
      _, sy, ty,
