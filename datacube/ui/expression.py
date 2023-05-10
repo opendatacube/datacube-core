@@ -5,13 +5,15 @@
 """
 Search expression parsing for command line applications.
 
-Three types of expressions are available:
+Four types of expressions are available:
 
     FIELD = VALUE
     FIELD in DATE-RANGE
     FIELD in [START, END]
+    TIME > DATE
+    TIME < DATE
 
-Where DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
+Where DATE or DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
 and START, END are either numbers or dates.
 """
 # flake8: noqa
