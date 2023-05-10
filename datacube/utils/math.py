@@ -3,11 +3,13 @@
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from typing import Tuple, Union, Optional, Any, cast
-from math import ceil, fmod
+from math import ceil
 
 import numpy
 import xarray as xr
-from affine import Affine
+import odc.geo.math as geomath
+
+import deprecat
 
 
 def unsqueeze_data_array(da: xr.DataArray,
@@ -70,70 +72,29 @@ def spatial_dims(xx: Union[xr.DataArray, xr.Dataset],
     return None
 
 
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
 def maybe_zero(x: float, tol: float) -> float:
-    """ Turn almost zeros to actual zeros
-    """
-    if abs(x) < tol:
-        return 0
-    return x
+    return geomath.maybe_zero(x, tol)
 
 
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
 def maybe_int(x: float, tol: float) -> Union[int, float]:
-    """ Turn almost ints to actual ints, pass through other values unmodified
-    """
-    def split(x):
-        x_part = fmod(x, 1.0)
-        x_whole = x - x_part
-        if x_part > 0.5:
-            x_part -= 1
-            x_whole += 1
-        elif x_part < -0.5:
-            x_part += 1
-            x_whole -= 1
-        return (x_whole, x_part)
-
-    x_whole, x_part = split(x)
-
-    if abs(x_part) < tol:  # almost int
-        return int(x_whole)
-    else:
-        return x
+    return geomath.maybe_int(x, tol)
 
 
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
 def snap_scale(s, tol=1e-6):
-    """ Snap scale to the nearest integer and simple fractions in the form 1/<int>
-    """
-    if abs(s) >= 1 - tol:
-        return maybe_int(s, tol)
-    else:
-        # Check of s is 0
-        if abs(s) < tol:
-            return s
-
-        # Check for simple fractions
-        s_inv = 1 / s
-        s_inv_snapped = maybe_int(s_inv, tol)
-        if s_inv_snapped is s_inv:
-            return s
-        return 1 / s_inv_snapped
+    return geomath.snap_scale(s, tol)
 
 
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
 def clamp(x, lo, up):
-    """
-    clamp x to be lo <= x <= up
-    """
-    assert lo <= up
-    return lo if x < lo else up if x > up else x
+    return geomath.clamp(x, lo, up)
 
 
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
 def is_almost_int(x: float, tol: float):
-    """
-    Check if number is close enough to an integer
-    """
-    x = abs(fmod(x, 1))
-    if x > 0.5:
-        x = 1 - x
-    return x < tol
+    return geomath.is_almost_int(x, tol)
 
 
 def dtype_is_float(dtype) -> bool:
@@ -199,65 +160,14 @@ def num2numpy(x, dtype, ignore_range=None):
     return None
 
 
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
 def data_resolution_and_offset(data, fallback_resolution=None):
-    """ Compute resolution and offset from x/y axis data.
-
-        Only uses first two coordinate values, assumes that data is regularly
-        sampled.
-
-        Returns
-        =======
-        (resolution: float, offset: float)
-    """
-    if data.size < 2:
-        if data.size < 1:
-            raise ValueError("Can't calculate resolution for empty data")
-        if fallback_resolution is None:
-            raise ValueError("Can't calculate resolution with data size < 2")
-        res = fallback_resolution
-    else:
-        res = (data[data.size - 1] - data[0]) / (data.size - 1.0)
-        res = res.item()
-
-    off = data[0] - 0.5 * res
-    return res, off.item()
+    return geomath.data_resolution_and_offset(data, fallback_resolution)
 
 
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
 def affine_from_axis(xx, yy, fallback_resolution=None):
-    """ Compute Affine transform from pixel to real space given X,Y coordinates.
-
-        :param xx: X axis coordinates
-        :param yy: Y axis coordinates
-        :param fallback_resolution: None|float|(resx:float, resy:float) resolution to
-                                    assume for single element axis.
-
-        (0, 0) in pixel space is defined as top left corner of the top left pixel
-            \
-            `` 0   1
-             +---+---+
-           0 |   |   |
-             +---+---+
-           1 |   |   |
-             +---+---+
-
-        Only uses first two coordinate values, assumes that data is regularly
-        sampled.
-
-        raises ValueError when any axis is empty
-        raises ValueError when any axis has single value and fallback resolution was not supplied.
-    """
-    if fallback_resolution is not None:
-        if isinstance(fallback_resolution, (float, int)):
-            frx, fry = fallback_resolution, fallback_resolution
-        else:
-            frx, fry = fallback_resolution
-    else:
-        frx, fry = None, None
-
-    xres, xoff = data_resolution_and_offset(xx, frx)
-    yres, yoff = data_resolution_and_offset(yy, fry)
-
-    return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
+    return geomath.affine_from_axis(xx, yy, fallback_resolution)
 
 
 def iter_slices(shape, chunk_size):

@@ -31,7 +31,6 @@ from .math import (
     unsqueeze_data_array,
     spatial_dims,
     iter_slices,
-    data_resolution_and_offset,
 )
 from ._misc import (
     DatacubeException,
@@ -66,7 +65,6 @@ __all__ = (
     "unsqueeze_dataset",
     "spatial_dims",
     "iter_slices",
-    "data_resolution_and_offset",
     "DatacubeException",
     "schema_validated",
     "write_user_secret_file",

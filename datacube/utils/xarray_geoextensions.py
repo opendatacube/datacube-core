@@ -16,7 +16,7 @@ This extension is reliant on an `xarray` object having a `.crs` property of type
 import warnings
 import xarray
 from datacube.utils import spatial_dims
-from datacube.utils.math import affine_from_axis
+from odc.geo.math import affine_from_axis
 from odc.geo._xr_interop import _xarray_geobox as _xr_geobox
 
 

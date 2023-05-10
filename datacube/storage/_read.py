@@ -7,7 +7,7 @@
 import numpy as np
 from typing import Optional, Tuple
 
-from ..utils.math import is_almost_int, valid_mask
+from ..utils.math import valid_mask
 
 from odc.geo import wh_
 from odc.geo.roi import (
@@ -26,6 +26,7 @@ from odc.geo.warp import (
     Nodata,
 )
 from odc.geo.overlap import compute_reproject_roi, is_affine_st
+from odc.geo.math import is_almost_int
 
 
 def rdr_geobox(rdr) -> GeoBox:

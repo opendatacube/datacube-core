@@ -25,18 +25,11 @@ from datacube.model.utils import xr_apply
 from datacube.utils.dates import date_sequence
 from datacube.utils.math import (
     num2numpy,
-    is_almost_int,
-    maybe_zero,
-    maybe_int,
-    snap_scale,
     valid_mask,
     invalid_mask,
-    clamp,
     unsqueeze_data_array,
     unsqueeze_dataset,
     spatial_dims,
-    data_resolution_and_offset,
-    affine_from_axis,
 )
 from datacube.utils.py import sorted_items
 from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
@@ -151,18 +144,6 @@ def test_pick_uri():
 
     with pytest.raises(ValueError):
         pick_uri([s, h], 'file:')
-
-
-@given(integers(), integers(), integers())
-def test_clamp(x, lower_bound, upper_bound):
-    if lower_bound > upper_bound:
-        lower_bound, upper_bound = upper_bound, lower_bound
-    new_x = clamp(x, lower_bound, upper_bound)
-
-    # If x was already between the bounds, it shouldn't have changed
-    if lower_bound <= x <= upper_bound:
-        assert new_x == x
-    assert lower_bound <= new_x <= upper_bound
 
 
 @given(integers(min_value=10, max_value=30))
@@ -494,42 +475,6 @@ def test_is_url(test_input, expected):
         assert as_url(test_input) is test_input
 
 
-def test_is_almost_int():
-    assert is_almost_int(1, 1e-10)
-    assert is_almost_int(1.001, .1)
-    assert is_almost_int(2 - 0.001, .1)
-    assert is_almost_int(-1.001, .1)
-
-
-def test_maybe_zero():
-    assert maybe_zero(0.0001, 0.1) == 0
-    assert maybe_zero(-0.0001, 0.1) == 0
-    assert maybe_zero(1.5, 0.1) == 1.5
-
-
-def test_maybe_int():
-    assert maybe_int(1, 1e-10) == 1
-    assert maybe_int(1.6, .1) == 1.6
-    assert maybe_int(-1.6, .1) == -1.6
-    assert maybe_int(1.001, .1) == 1
-    assert maybe_int(2 - 0.001, .1) == 2
-    assert maybe_int(-1.001, .1) == -1
-    assert maybe_int(1.1, .1) == 1.1
-    for x in [3/7, 7/3, -13.7878]:
-        assert maybe_int(x, 1e-10) is x
-
-
-def test_snap_scale():
-    assert snap_scale(0.9999999) == 1
-    assert snap_scale(-0.9999999) == -1
-    for x in [0.0, 0.999, 0.621612621868, 3/7, 7/3]:
-        assert snap_scale(x) is x
-        x = -x
-        assert snap_scale(x) is x
-    assert snap_scale(0.33333331) == 1/3
-    assert snap_scale(-0.33333331) == -1/3
-
-
 def test_valid_mask():
     xx = np.zeros((4, 8), dtype='float32')
     mm = valid_mask(xx, 0)
@@ -599,55 +544,6 @@ def test_num2numpy():
     assert num2numpy(3.3, np.dtype('float32')).dtype == np.dtype('float32')
     assert num2numpy(3.3, np.float32).dtype == np.dtype('float32')
     assert num2numpy(3.3, np.float64).dtype == np.dtype('float64')
-
-
-def test_utils_datares():
-    assert data_resolution_and_offset(np.array([1.5, 2.5, 3.5])) == (1.0, 1.0)
-    assert data_resolution_and_offset(np.array([5, 3, 1])) == (-2.0, 6.0)
-    assert data_resolution_and_offset(np.array([5, 3])) == (-2.0, 6.0)
-    assert data_resolution_and_offset(np.array([1.5]), 1) == (1.0, 1.0)
-
-    with pytest.raises(ValueError):
-        data_resolution_and_offset(np.array([]))
-
-    with pytest.raises(ValueError):
-        data_resolution_and_offset(np.array([]), 10)
-
-    with pytest.raises(ValueError):
-        data_resolution_and_offset(np.array([1]))
-
-
-def test_utils_affine_from_axis():
-    assert affine_from_axis(np.asarray([1.5, 2.5, 3.5]),
-                            np.asarray([10.5, 11.5])) * (0, 0) == (1.0, 10.0)
-
-    assert affine_from_axis(np.asarray([1.5, 2.5, 3.5]),
-                            np.asarray([10.5, 11.5])) * (2, 1) == (3, 11)
-
-    (sx, z1, tx,
-     z2, sy, ty, *_) = affine_from_axis(np.asarray([1, 2, 3]),
-                                        np.asarray([10, 20]))
-    assert z1 == 0 and z2 == 0
-    assert sx == 1 and sy == 10
-    assert tx == 0.5 and ty == 5
-
-    (sx, _, tx,
-     _, sy, ty, *_) = affine_from_axis(np.asarray([1]),
-                                       np.asarray([10, 20]), 1)
-    assert sx == 1 and sy == 10
-    assert tx == 0.5 and ty == 5
-
-    (sx, _, tx,
-     _, sy, ty, *_) = affine_from_axis(np.asarray([1]),
-                                       np.asarray([10, 20]), (1, 1))
-    assert sx == 1 and sy == 10
-    assert tx == 0.5 and ty == 5
-
-    (sx, _, tx,
-     _, sy, ty, *_) = affine_from_axis(np.asarray([1]),
-                                       np.asarray([10]), (2, 10))
-    assert sx == 2 and sy == 10
-    assert tx == 0 and ty == 5
 
 
 def test_utils_math():
