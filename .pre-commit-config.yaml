@@ -22,3 +22,18 @@ repos:
         rev: v3.0.0a5  # Use the sha / tag you want to point at
         hooks:
         -   id: pylint
+    - repo: https://github.com/Lucas-C/pre-commit-hooks
+      rev: v1.5.1
+      hooks:
+        - id: forbid-crlf
+        - id: remove-crlf
+        - id: forbid-tabs
+        - id: remove-tabs
+          args: [--whitespaces-count, '2'] 
+        - id: insert-license
+          files: ./(.*).py$
+          args:
+            - --license-filepath
+            - license-template.txt
+            - --use-current-year
+            - --no-extra-eol

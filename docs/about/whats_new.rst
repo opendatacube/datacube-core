@@ -13,6 +13,7 @@ v1.8.next
             :pull:`1428`)
 - Documentation fixes (:pull:`1417`, :pull:`1418`, :pull:`1430`)
 - ``datacube dataset`` cli commands print error message if missing argument (:pull:`1437`)
+- Add pre-commit hook to verify license headers (:pull:`1438`)
 
 
 v1.8.12 (7th March 2023)

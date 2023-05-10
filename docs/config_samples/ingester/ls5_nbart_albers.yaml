@@ -45,10 +45,10 @@ global_attributes:
     Surface Reflectance Correction Models
 
     Image radiance values recorded by passive EO sensors are a composite of
-    - 	surface reflectance;
-    -	atmospheric condition;
-    -	interaction between surface land cover, solar radiation and sensor view angle; 
-    -	land surface orientation relative to the imaging sensor.
+    -   surface reflectance;
+    - atmospheric condition;
+    - interaction between surface land cover, solar radiation and sensor view angle; 
+    - land surface orientation relative to the imaging sensor.
     
     It has been traditionally assumed that Landsat imagery display negligible variation in sun and sensor view angles, however these can vary significantly both within 
     and between scenes, especially in different seasons and geographic regions (Li et al., 2012). The SR product delivers modeled surface reflectance from Landsat TM/ETM+/OLI
@@ -63,11 +63,11 @@ global_attributes:
     Given the growing time series of EO imagery, this landmark facility will streamline the process of reliably monitoring long-term  chnges in land and water resources.
   source: SR-NT_25_2
   history: |
-    -	Ground Control Points (GCP): new GCP chips released by USGS in Dec 2015 are used for re-processing
-    -	Geometric QA: each product undergoes geometric assessment and the assessment result will be recorded within v2 AGDC for filtering/masking purposes.
-    -	Processing parameter settings: the minimum number of GCPs for Ortho-rectified product generation has been reduced from 30 to 10.
-    -	DEM: 1 second SRTM DSM is used for Ortho-rectification.
-    -	Updated Calibration Parameter File (CPF): the latest/current CPF is used for processing.
+    - Ground Control Points (GCP): new GCP chips released by USGS in Dec 2015 are used for re-processing
+    - Geometric QA: each product undergoes geometric assessment and the assessment result will be recorded within v2 AGDC for filtering/masking purposes.
+    - Processing parameter settings: the minimum number of GCPs for Ortho-rectified product generation has been reduced from 30 to 10.
+    - DEM: 1 second SRTM DSM is used for Ortho-rectification.
+    - Updated Calibration Parameter File (CPF): the latest/current CPF is used for processing.
   institution: Commonwealth of Australia (Geoscience Australia)
   instrument: TM
   keywords: AU/GA,NASA/GSFC/SED/ESD/LANDSAT,REFLECTANCE,ETM+,TM,OLI,EARTH SCIENCE
@@ -83,30 +83,30 @@ global_attributes:
   product_suite: Surface Reflectance NBAR+T 25m
   acknowledgment: Landsat data is provided by the United States Geological Survey (USGS) through direct reception of the data at Geoscience Australias satellite reception facility or download.
   references: |
-    -	Berk, A., Anderson, G.P., Acharya, P.K., Hoke, M.L., Chetwynd, J.H., Bernstein, L.S., Shettle, E.P., Matthew, M.W., and Adler-Golden, S.M. (2003) Modtran 4 Version 3 Revision 1 User s manual. Airforce Research Laboratory, Hanscom, MA, USA.
-    -	Chander, G., Markham, B.L., and Helder, D.L. (2009) Summary of current radiometric calibration coefficients for Landsat MSS, TM, ETM+, and EO-1 ALI sensors. Remote Sensing of Environment 113, 893-903.
-    -	Edberg, R., and Oliver, S. (2013) Projection-Independent Earth-Solar-Sensor Geometry for Surface Reflectance Correction. Submitted to IGARSS 2013, Melbourne.
-    -	GA and CSIRO (2010) 1 second SRTM Derived Digital Elevation Models User Guide. Version 1.03. GA, Canberra.
-    -	Forrest, R.B. (1981) Simulation of orbital image-sensor geometry, Photogrammetric Engineering and Remote Sensing 47, 1187-93.
-    -	Irish, R. (2000) Landsat 7 Automatic Cloud Cover Assessment, sourced: http://landsathandbook.gsfc.nasa.gov/pdfs/ACCA_SPIE_paper.pdf, last accessed 12/11/2012.
-    -	Irish, R.R., Barker, J.L., Goward, S.N., Arvidson, T. (2006) Characterization of the Landsat-7 ETM+ Automated Cloud -Cover Assessment (ACCA) Algorithm, Photogrammetric Engineering & Remote Sensing 72 (10), 1179-88.
-    -	Irons, J.R., Dwyer, J.L., and Barsi, J.A. (2012) The next Landsat satellite: The Landsat Data Continuity Mission. Remote Sensing of Environment (2012), doi:10.1016/j.rse.2011.08.026.
-    -	Kalnay, E. Kanamitsu, M., Kistler, R., Collins, W., Deaven, D., Gandin, L., Iredell, M., Saha, S., White, G., Woollen, J., Zhu, Y., Chelliah, M., Ebisuzaki, W., Higgins, W., Janowiak, J., Mo, K.C., Ropelewski, C., Wang, J., Leetmaa, A., Reynolds, R. Jenne, R., Joseph, D. (1996) The NCEP/NCAR 40-Year Reanalysis Project. Bulletin of the American Meteorological Society 77, 437-71.
-    -	Li, F., Jupp, D.L.B., Reddy, S., Lymburner, L., Mueller, N., Tan, P., and Islam, A. (2010) An Evaluation of the Use of Atmospheric and BRDF Correction to Standardize Landsat Data. IEEE J. Selected Topics in Applied Earth Observations and Remote Sensing 3, 257-70.
-    -	Li, F. (2010) ARG25 Algorithm Theoretical Basis Document. GA, Canberra.
-    -	Li, F., Jupp, D.L.B., Thankappan, M., Lymburner, L., Mueller, N., Lewis, A., and Held, A. (2012) A physics-based atmopheric and BRDF correction for Landsat data over mountainous terrain. Remote Sensing of Environment 124, 756-70.
-    -	Lubke, M. (2012) Landsat Geometry Calibration/Validation Update. Presentation at LTWG #21, 25 September 2012, Sioux Falls. USGS, USA.
-    -	OGC (2006) OpenGIS Web Map Server Implementation Specification (Ed: Jeff de la Beaujardiere) Ref. OGC 06-042.
-    -	OGC (2010) OGC WCS 2.0 Interface Standard - Core. (Ed: Peter Baumann) Ref. OGC 09-110r3.
-    -	OGC (2013) CF-netCDF3 Data Model Extension Standard (Eds: Ben Domenico and Stefano Nativi) Ref. OGC 11-165r2.
-    -	Strahler, A.H., and Muller, J.-P. (1999) MODIS BRDF/Albedo Product: Algorithm Theoretical Basis Document Version 5.0. http://modis.gsfc.nasa.gov/data/atbd/atbd_mod09.pdf
-    -	TM World Borders vector file: http://thematicmapping.org/downloads/world_borders.php.
-    -	USGS (2012a) Landsat Thematic Mapper (TM) Level 1 (L1) Data Format Control Book (DFCB). LS-DFCB-20 Version 4.0. USGS, USA. http://landsat.usgs.gov/documents/LS-DFCB-20.pdf.
-    -	USGS (2012b) Landsat 7 ETM+ Level 1 Product Data Format Control Book (DFCB). LS-DFCB-04 Version 15.0. http://landsat.usgs.gov/documents/LS-DFCB-04.pdf.
-    -	Vincenty, T. (1975) Direct and Inverse Solutions of Geodesies on the Ellipsoid with Application of Nested Equations. Survey Review 23, 88-93.
-    -	Zhu, Z. and Woodcock, C. E. (2012) Object-based cloud and cloud shadow detection in Landsat imagery. Remote Sensing of Environment 118, 83-94.
-    -	http://dx.doi.org/10.4225/25/5487CC0D4F40B
-    -	http://dx.doi.org/10.1109/JSTARS.2010.2042281
+    - Berk, A., Anderson, G.P., Acharya, P.K., Hoke, M.L., Chetwynd, J.H., Bernstein, L.S., Shettle, E.P., Matthew, M.W., and Adler-Golden, S.M. (2003) Modtran 4 Version 3 Revision 1 User s manual. Airforce Research Laboratory, Hanscom, MA, USA.
+    - Chander, G., Markham, B.L., and Helder, D.L. (2009) Summary of current radiometric calibration coefficients for Landsat MSS, TM, ETM+, and EO-1 ALI sensors. Remote Sensing of Environment 113, 893-903.
+    - Edberg, R., and Oliver, S. (2013) Projection-Independent Earth-Solar-Sensor Geometry for Surface Reflectance Correction. Submitted to IGARSS 2013, Melbourne.
+    - GA and CSIRO (2010) 1 second SRTM Derived Digital Elevation Models User Guide. Version 1.03. GA, Canberra.
+    - Forrest, R.B. (1981) Simulation of orbital image-sensor geometry, Photogrammetric Engineering and Remote Sensing 47, 1187-93.
+    - Irish, R. (2000) Landsat 7 Automatic Cloud Cover Assessment, sourced: http://landsathandbook.gsfc.nasa.gov/pdfs/ACCA_SPIE_paper.pdf, last accessed 12/11/2012.
+    - Irish, R.R., Barker, J.L., Goward, S.N., Arvidson, T. (2006) Characterization of the Landsat-7 ETM+ Automated Cloud -Cover Assessment (ACCA) Algorithm, Photogrammetric Engineering & Remote Sensing 72 (10), 1179-88.
+    - Irons, J.R., Dwyer, J.L., and Barsi, J.A. (2012) The next Landsat satellite: The Landsat Data Continuity Mission. Remote Sensing of Environment (2012), doi:10.1016/j.rse.2011.08.026.
+    - Kalnay, E. Kanamitsu, M., Kistler, R., Collins, W., Deaven, D., Gandin, L., Iredell, M., Saha, S., White, G., Woollen, J., Zhu, Y., Chelliah, M., Ebisuzaki, W., Higgins, W., Janowiak, J., Mo, K.C., Ropelewski, C., Wang, J., Leetmaa, A., Reynolds, R. Jenne, R., Joseph, D. (1996) The NCEP/NCAR 40-Year Reanalysis Project. Bulletin of the American Meteorological Society 77, 437-71.
+    - Li, F., Jupp, D.L.B., Reddy, S., Lymburner, L., Mueller, N., Tan, P., and Islam, A. (2010) An Evaluation of the Use of Atmospheric and BRDF Correction to Standardize Landsat Data. IEEE J. Selected Topics in Applied Earth Observations and Remote Sensing 3, 257-70.
+    - Li, F. (2010) ARG25 Algorithm Theoretical Basis Document. GA, Canberra.
+    - Li, F., Jupp, D.L.B., Thankappan, M., Lymburner, L., Mueller, N., Lewis, A., and Held, A. (2012) A physics-based atmopheric and BRDF correction for Landsat data over mountainous terrain. Remote Sensing of Environment 124, 756-70.
+    - Lubke, M. (2012) Landsat Geometry Calibration/Validation Update. Presentation at LTWG #21, 25 September 2012, Sioux Falls. USGS, USA.
+    - OGC (2006) OpenGIS Web Map Server Implementation Specification (Ed: Jeff de la Beaujardiere) Ref. OGC 06-042.
+    - OGC (2010) OGC WCS 2.0 Interface Standard - Core. (Ed: Peter Baumann) Ref. OGC 09-110r3.
+    - OGC (2013) CF-netCDF3 Data Model Extension Standard (Eds: Ben Domenico and Stefano Nativi) Ref. OGC 11-165r2.
+    - Strahler, A.H., and Muller, J.-P. (1999) MODIS BRDF/Albedo Product: Algorithm Theoretical Basis Document Version 5.0. http://modis.gsfc.nasa.gov/data/atbd/atbd_mod09.pdf
+    - TM World Borders vector file: http://thematicmapping.org/downloads/world_borders.php.
+    - USGS (2012a) Landsat Thematic Mapper (TM) Level 1 (L1) Data Format Control Book (DFCB). LS-DFCB-20 Version 4.0. USGS, USA. http://landsat.usgs.gov/documents/LS-DFCB-20.pdf.
+    - USGS (2012b) Landsat 7 ETM+ Level 1 Product Data Format Control Book (DFCB). LS-DFCB-04 Version 15.0. http://landsat.usgs.gov/documents/LS-DFCB-04.pdf.
+    - Vincenty, T. (1975) Direct and Inverse Solutions of Geodesies on the Ellipsoid with Application of Nested Equations. Survey Review 23, 88-93.
+    - Zhu, Z. and Woodcock, C. E. (2012) Object-based cloud and cloud shadow detection in Landsat imagery. Remote Sensing of Environment 118, 83-94.
+    - http://dx.doi.org/10.4225/25/5487CC0D4F40B
+    - http://dx.doi.org/10.1109/JSTARS.2010.2042281
 
 storage:
   driver: NetCDF CF
