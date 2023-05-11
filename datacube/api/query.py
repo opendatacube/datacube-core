@@ -126,11 +126,16 @@ class Query(object):
             if 'time' not in self.search:
                 time_coord = like.coords.get('time')
                 if time_coord is not None:
-                    self.search['time'] = _time_to_search_dims(
-                        (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
-                         pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
-                         + datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
-                    )
+                    if time_coord.values[0] is None:
+                        self.search['time'] = _time_to_open_range(time_coord.values[1], lower_bound=False)
+                    elif time_coord.values[-1] is None:
+                        self.search['time'] = _time_to_open_range(time_coord.values[0], lower_bound=True)
+                    else:
+                        self.search['time'] = _time_to_search_dims(
+                            (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
+                                pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
+                                + datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
+                        )
 
     @property
     def search_terms(self):
