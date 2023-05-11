@@ -9,7 +9,7 @@ import numpy
 import xarray as xr
 import odc.geo.math as geomath
 
-import deprecat
+from deprecat import deprecat
 
 
 def unsqueeze_data_array(da: xr.DataArray,
