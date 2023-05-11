@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2021 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import warnings
 import uuid
 import collections.abc
 from itertools import groupby
@@ -15,7 +16,7 @@ from dask import array as da
 from datacube.config import LocalConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
-from odc.geo import CRS, XY, Resolution
+from odc.geo import CRS, yx_, res_, resyx_
 from odc.geo.xr import xr_coords
 from datacube.utils.dates import normalise_dt
 from odc.geo.geom import intersects, box, bbox_union
@@ -280,7 +281,7 @@ class Datacube(object):
                         y=(-35.15, -35.2),
                         time=('1990', '1991'),
                         output_crs='EPSG:3577`,
-                        resolution=(-30, 30),
+                        resolution=30,
                         resampling='cubic'
                 )
 
@@ -307,9 +308,9 @@ class Datacube(object):
             This differs from the ``crs`` parameter desribed above, which is used to define the CRS
             of the coordinates in the query itself.
 
-        :param (float,float) resolution:
-            A tuple of the spatial resolution of the returned data. Units are in the coordinate
-            space of ``output_crs``.
+        :param float|(float,float) resolution:
+            A the spatial resolution of the returned data, provided as a tuple if not using square pixels
+            with inverted Y axis. Units are in the coordinate space of ``output_crs``.
 
             This includes the direction (as indicated by a positive or negative number).
             For most CRSs, the first number will be negative, e.g. ``(-30, 30)``.
@@ -429,6 +430,12 @@ class Datacube(object):
             # Check if empty
             if extra_dims.has_empty_dim():
                 return xarray.Dataset()
+
+        # if resolution is square, raise warning to use a single number instead of a tuple
+        if type(resolution) is tuple and resolution[0] == -resolution[1]:
+            warnings.warn("When using square pixels with an inverted Y axis, "
+                          "provide resolution as a single number instead of a tuple.")
+            resolution = resolution[1]
 
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
                                grid_spec=datacube_product.grid_spec,
@@ -908,11 +915,10 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
             geopolygon = get_bounds(datasets, crs)
 
-    if resolution is not None and type(resolution) is not Resolution:
-        resolution = Resolution(*resolution)
+    resolution = resyx_(*resolution) if type(resolution) is tuple else res_(resolution)
 
     if align is not None:
-        align = XY(*align)
+        align = yx_(align)
 
     return GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
 
