@@ -5,9 +5,9 @@
 import pytest
 import numpy
 from datacube.api.grid_workflow import GridWorkflow
-from datacube.model import GridSpec
 from odc.geo import CRS
 from odc.geo.geom import box
+from odc.geo.gridspec import GridSpec
 from unittest.mock import MagicMock
 from datacube.testutils import mk_sample_product
 import datetime
@@ -81,7 +81,7 @@ def test_gridworkflow():
     # and cell indices increase toward upper right,
     # then this will be cell(1,-2).
     gridspec = GridSpec(
-        crs=fakecrs, tile_size=(grid, grid), resolution=(-pixel, pixel)
+        crs=fakecrs, tile_shape=(grid, grid), resolution=pixel
     )  # e.g. product gridspec
 
     fakedataset = MagicMock()
@@ -248,7 +248,7 @@ def test_gridworkflow_with_time_depth():
     # and cell indices increase toward upper right,
     # then this will be cell(1,-2).
     gridspec = GridSpec(
-        crs=fakecrs, tile_size=(grid, grid), resolution=(-pixel, pixel)
+        crs=fakecrs, tile_shape=(grid, grid), resolution=pixel
     )  # e.g. product gridspec
 
     def make_fake_datasets(num_datasets):

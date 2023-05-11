@@ -34,9 +34,10 @@ __all__ = [
     "ExtraDimensions", "IngestorConfig"
 ]
 
-from odc.geo import CRS, BoundingBox, Geometry, wh_
+from odc.geo import CRS, BoundingBox, Geometry, wh_, xy_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
+import odc.geo.gridspec as gridspec
 from deprecat import deprecat
 
 _LOG = logging.getLogger(__name__)
@@ -524,7 +525,7 @@ class Product:
         return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
-    def grid_spec(self) -> Optional['GridSpec']:
+    def grid_spec(self) -> Optional['gridspec.GridSpec']:
         """
         Grid specification for this product
         """
@@ -549,7 +550,13 @@ class Product:
         if not complete:
             return None
 
-        return GridSpec(crs=crs, **gs_params)
+        # tile_size param has been renamed to tile_shape in odc-geo version of GridSpec
+        gs_params['tile_shape'] = gs_params.pop('tile_size')
+
+        # convert origin to XY
+        gs_params['origin'] = xy_(gs_params['origin'])
+
+        return gridspec.GridSpec(crs=crs, **gs_params)
 
     @staticmethod
     def validate_extra_dims(definition: Mapping[str, Any]):
@@ -712,7 +719,7 @@ class Product:
             row.update({
                 'crs': str(self.grid_spec.crs),
                 'spatial_dimensions': self.grid_spec.dimensions,
-                'tile_size': self.grid_spec.tile_size,
+                'tile_size': self.grid_spec.tile_shape,
                 'resolution': self.grid_spec.resolution,
             })
         return row
@@ -750,6 +757,7 @@ class IngestorConfig:
     pass
 
 
+@deprecat(reason='GridSpec is now defined in odc-geo.', version='1.9.0')
 class GridSpec:
     """
     Definition for a regular spatial grid

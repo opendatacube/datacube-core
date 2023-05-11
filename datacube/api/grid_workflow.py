@@ -172,7 +172,7 @@ class GridWorkflow(object):
         :param odc.geo.geom.Geometry geopolygon:
             Only return observations with data inside polygon.
         :param (float,float) tile_buffer:
-            buffer tiles by (y, x) in CRS units
+            buffer tiles by (x, y) in CRS units
         :param (int,int) cell_index:
             The cell index. E.g. (14, -40)
         :param indexers:
@@ -188,6 +188,8 @@ class GridWorkflow(object):
         # pylint: disable=too-many-locals
         # TODO: split this method into 3: cell/polygon/unconstrained querying
 
+        if tile_buffer is not None:
+            _LOG.warning("tile_buffer is now expected in (x, y) order")
         if tile_buffer is not None and geopolygon is not None:
             raise ValueError('Cannot process tile_buffering and geopolygon together.')
         cells = {}
