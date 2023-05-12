@@ -2,12 +2,13 @@
 #
 # Copyright (c) 2015-2020 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Tuple, Union, Optional, Any, cast
+from typing import Tuple, Union, Optional, Any
 from math import ceil
 
 import numpy
 import xarray as xr
 import odc.geo.math as geomath
+from odc.geo.xr import spatial_dims as xr_spatial_dims
 
 from deprecat import deprecat
 
@@ -41,35 +42,10 @@ def unsqueeze_dataset(ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0) ->
     return ds
 
 
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
 def spatial_dims(xx: Union[xr.DataArray, xr.Dataset],
                  relaxed: bool = False) -> Optional[Tuple[str, str]]:
-    """ Find spatial dimensions of `xx`.
-
-        Checks for presence of dimensions named:
-          y, x | latitude, longitude | lat, lon
-
-        Returns
-        =======
-        None -- if no dimensions with expected names are found
-        ('y', 'x') | ('latitude', 'longitude') | ('lat', 'lon')
-
-        If *relaxed* is True and none of the above dimension names are found,
-        assume that last two dimensions are spatial dimensions.
-    """
-    guesses = [('y', 'x'),
-               ('latitude', 'longitude'),
-               ('lat', 'lon')]
-
-    dims = set(xx.dims)
-    for guess in guesses:
-        if dims.issuperset(guess):
-            return guess
-
-    if relaxed and len(xx.dims) >= 2:
-        # This operation is pushing mypy's type-inference engine.
-        return cast(Tuple[str, str], cast(Tuple[str, ...], xx.dims)[-2:])
-
-    return None
+    return xr_spatial_dims(xx, relaxed)
 
 
 @deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
