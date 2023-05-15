@@ -166,7 +166,7 @@ def mk_sample_product(name,
     if storage is None and with_grid_spec is True:
         storage = {'crs': 'EPSG:3577',
                    'resolution': {'x': 25, 'y': -25},
-                   'tile_size': {'x': 100000.0, 'y': 100000.0}}
+                   'tile_size': {'x': 4000.0, 'y': 4000.0}}
 
     common = dict(dtype='int16',
                   nodata=-999,

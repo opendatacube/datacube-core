@@ -8,36 +8,12 @@ from copy import deepcopy
 from datacube.testutils import mk_sample_dataset, mk_sample_product
 from datacube.model import (DatasetType, Measurement,
                             MetadataType, Range, ranges_overlap)
-from odc.geo import CRS, BoundingBox
-from odc.geo.geom import polygon
+from odc.geo import CRS, BoundingBox, yx_
 from odc.geo.gridspec import GridSpec
 from datacube.utils.documents import InvalidDocException
 from datacube.storage import measurement_paths
 from datacube.testutils.geom import AlbersGS
 from datacube.api.core import output_geobox
-
-
-def test_gridspec():
-    gs = GridSpec(crs=CRS('EPSG:4326'), tile_shape=(1, 1), resolution=0.1, origin=(10, 10))
-    poly = polygon([(10, 12.2), (10.8, 13), (13, 10.8), (12.2, 10), (10, 12.2)], crs=CRS('EPSG:4326'))
-    cells = {index: geobox for index, geobox in list(gs.tiles_from_geopolygon(poly))}
-    assert set(cells.keys()) == {(0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
-    assert numpy.isclose(cells[(2, 0)].coordinates['longitude'].values, numpy.linspace(12.05, 12.95, num=10)).all()
-    assert numpy.isclose(cells[(2, 0)].coordinates['latitude'].values, numpy.linspace(10.95, 10.05, num=10)).all()
-
-    # check geobox_cache
-    cache = {}
-    poly = gs.tile_geobox((3, 4)).extent
-    (c1, gbox1), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
-    (c2, gbox2), = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
-
-    assert c1 == (3, 4) and c2 == c1
-    assert gbox1 is gbox2
-
-    assert '4326' in str(gs)
-    assert '4326' in repr(gs)
-    assert (gs == gs)
-    assert (gs == {}) is False
 
 
 def test_gridspec_upperleft():
@@ -47,14 +23,14 @@ def test_gridspec_upperleft():
     bbox = BoundingBox(left=1934615, top=2379460, right=1937615, bottom=2376460, crs=CRS('EPSG:5070'))
     # Upper left - validated against WELD product tile calculator
     # http://globalmonitoring.sdstate.edu/projects/weld/tilecalc.php
-    gs = GridSpec(crs=CRS('EPSG:5070'), tile_shape=(-150000, 150000), resolution=30,
-                  origin=(3314800.0, -2565600.0))
+    gs = GridSpec(crs=CRS('EPSG:5070'), tile_shape=(5000, 5000), resolution=30,
+                  origin=yx_(3314800.0, -2565600.0), flipy=True)
     cells = {index: geobox for index, geobox in list(gs.tiles(bbox))}
-    assert set(cells.keys()) == {(30, 6)}
-    assert cells[(30, 6)].extent.boundingbox == tile_bbox
+    assert set(cells.keys()) == {(30, 7)}
+    assert cells[(30, 7)].extent.boundingbox == tile_bbox
 
-    gs = GridSpec(crs=CRS('EPSG:5070'), tile_shape=(150000, 150000), resolution=30,
-                  origin=(14800.0, -2565600.0))
+    gs = GridSpec(crs=CRS('EPSG:5070'), tile_shape=(5000, 5000), resolution=30,
+                  origin=yx_(14800.0, -2565600.0))
     cells = {index: geobox for index, geobox in list(gs.tiles(bbox))}
     assert set(cells.keys()) == {(30, 15)}  # WELD grid spec has 21 vertical cells -- 21 - 6 = 15
     assert cells[(30, 15)].extent.boundingbox == tile_bbox

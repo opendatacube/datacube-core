@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
 from datacube.index.eo3 import is_doc_eo3
+from odc.geo import resyx_
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
@@ -212,7 +213,8 @@ class Dataset:
         return BoundingBox(left=min(bounds['ur']['x'], bounds['ll']['x']),
                            right=max(bounds['ur']['x'], bounds['ll']['x']),
                            top=max(bounds['ur']['y'], bounds['ll']['y']),
-                           bottom=min(bounds['ur']['y'], bounds['ll']['y']))
+                           bottom=min(bounds['ur']['y'], bounds['ll']['y']),
+                           crs=self.crs)
 
     @property
     def transform(self) -> Optional[Affine]:
@@ -554,7 +556,15 @@ class Product:
         gs_params['tile_shape'] = gs_params.pop('tile_size')
 
         # convert origin to XY
-        gs_params['origin'] = xy_(gs_params['origin'])
+        if gs_params['origin'] is not None:
+            gs_params['origin'] = xy_(gs_params['origin'])
+
+        if type(gs_params['resolution']) is tuple:
+            res = gs_params['resolution']
+            if res[0] == -res[1]:
+                gs_params['resolution'] = res[1]
+            else:
+                gs_params['resolution'] = resyx_(res)
 
         return gridspec.GridSpec(crs=crs, **gs_params)
 

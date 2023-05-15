@@ -19,7 +19,7 @@ epsg3577 = CRS('EPSG:3577')
 epsg3857 = CRS('EPSG:3857')
 
 AlbersGS = GridSpec(crs=epsg3577,
-                    tile_shape=(100000.0, 100000.0),
+                    tile_shape=(4000.0, 4000.0),
                     resolution=25,
                     origin=xy_(0.0, 0.0))
 
