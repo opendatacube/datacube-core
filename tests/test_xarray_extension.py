@@ -30,7 +30,7 @@ single_coord = dict(time=np.array(["2001-01-01"]))
 def test_xr_extension(odc_style_xr_dataset):
     xx = odc_style_xr_dataset
 
-    assert (1,) + xx.geobox.shape == xx.B10.shape
+    assert (1,) + xx.odc.geobox.shape == xx.B10.shape
 
     (sx, zz0, tx, zz1, sy, ty) = xx.affine[:6]
     assert (zz0, zz1) == (0, 0)
@@ -51,8 +51,8 @@ def test_xr_geobox():
 
     ds = mk_sample_xr_dataset(crs=epsg3857, xy=xy, resolution=resolution)
 
-    assert ds.geobox.crs == epsg3857
-    assert ds.band.geobox.crs == epsg3857
+    assert ds.odc.geobox.crs == epsg3857
+    assert ds.band.odc.geobox.crs == epsg3857
     assert ds.band.affine * (0, 0) == xy
     assert ds.band.affine * (1, 1) == tuple(a + b for a, b in zip(xy, rxy))
 
@@ -61,10 +61,10 @@ def test_xr_geobox():
     assert ds.band.isel(time=0, x=0).affine is None
 
     xx = ds.band + 1000
-    assert xx.geobox is not None
-    assert xx.geobox == ds.band.geobox
+    assert xx.odc.geobox is not None
+    assert xx.odc.geobox == ds.band.odc.geobox
 
-    assert mk_sample_xr_dataset(crs=epsg4326).geobox.crs == epsg4326
-    assert mk_sample_xr_dataset(crs=epsg4326).band.geobox.crs == epsg4326
+    assert mk_sample_xr_dataset(crs=epsg4326).odc.geobox.crs == epsg4326
+    assert mk_sample_xr_dataset(crs=epsg4326).band.odc.geobox.crs == epsg4326
 
     assert mk_sample_xr_dataset(crs=None).affine is not None
