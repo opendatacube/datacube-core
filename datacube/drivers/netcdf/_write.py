@@ -108,13 +108,13 @@ def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_
     if not dataset.data_vars.keys():
         raise DatacubeException('Cannot save empty dataset to disk.')
 
-    if dataset.geobox is None:
+    if dataset.odc.geobox is None:
         raise DatacubeException('Dataset geobox property is None, cannot write to NetCDF file.')
 
     try:
         HDF5_LOCK.acquire(blocking=True)
         nco = create_netcdf_storage_unit(filename,
-                                         dataset.geobox.crs,
+                                         dataset.odc.geobox.crs,
                                          dataset.coords,
                                          dataset.data_vars,
                                          variable_params,

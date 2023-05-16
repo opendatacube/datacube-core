@@ -6,7 +6,7 @@ import pytest
 from datacube.testutils.threads import FakeThreadPoolExecutor
 from datacube.testutils import mk_sample_xr_dataset, mk_sample_dataset
 from datacube.testutils.io import native_geobox
-from odc.geo import XY
+from odc.geo import xy_
 
 
 def test_fakethreadpool():
@@ -49,14 +49,14 @@ def test_mk_sample_xr():
     assert 'band' in xx.data_vars
     assert list(xx.coords) == ['time', 'y', 'x', 'spatial_ref']
     assert xx.band.dims == ('time', 'y', 'x')
-    assert xx.geobox is not None
+    assert xx.odc.geobox is not None
 
     assert mk_sample_xr_dataset(name='xx', shape=(3, 7)).xx.shape == (1, 3, 7)
     assert mk_sample_xr_dataset(name='xx', time=None, shape=(3, 7)).xx.shape == (3, 7)
     assert mk_sample_xr_dataset(name='xx', time=None).xx.dims == ('y', 'x')
 
-    assert mk_sample_xr_dataset(resolution=(1, 100)).geobox.resolution == XY(100, 1)
-    assert mk_sample_xr_dataset(resolution=(1, 100), xy=(3, 55)).geobox.transform*(0, 0) == (3, 55)
+    assert mk_sample_xr_dataset(resolution=(1, 100)).odc.geobox.resolution == xy_(100, 1)
+    assert mk_sample_xr_dataset(resolution=(1, 100), xy=(3, 55)).odc.geobox.transform*(0, 0) == (3, 55)
 
 
 def test_native_geobox_ingested():
