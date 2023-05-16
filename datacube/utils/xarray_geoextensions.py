@@ -29,7 +29,7 @@ def _xarray_affine_impl(obj):
     yy, xx = (obj[dim] for dim in sdims)
     fallback_res = (coord.attrs.get('resolution', None) for coord in (xx, yy))
     res_x, res_y = next(fallback_res), next(fallback_res)
-    fallback_res = None if tuple(fallback_res) == (None, None) else resxy_(res_x, res_y)
+    fallback_res = None if (res_x, res_y) == (None, None) else resxy_(res_x, res_y)
     return affine_from_axis(xx.values, yy.values, fallback_res), sdims
 
 
