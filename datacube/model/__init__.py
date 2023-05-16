@@ -545,27 +545,31 @@ class Product:
             xx = storage.get(name, None)
             return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
 
+        # extract both tile_size and tile_shape for backwards compatibility
         gs_params = {name: extract_point(name)
-                     for name in ('tile_size', 'resolution', 'origin')}
+                     for name in ('tile_size', 'tile_shape', 'resolution', 'origin')}
 
-        complete = all(gs_params[k] is not None for k in ('tile_size', 'resolution'))
-        if not complete:
+        # resolution and one of tile_size or tile_shape need to be not None
+        if gs_params['resolution'] is None or all(gs_params[k] is None for k in ('tile_shape', 'tile_size')):
             return None
-
-        # tile_size param has been renamed to tile_shape in odc-geo version of GridSpec
-        gs_params['tile_shape'] = gs_params.pop('tile_size')
 
         # convert origin to XY
         if gs_params['origin'] is not None:
             gs_params['origin'] = xy_(gs_params['origin'])
 
-        if type(gs_params['resolution']) is tuple:
-            res = gs_params['resolution']
-            if res[0] == -res[1]:
-                gs_params['resolution'] = res[1]
-            else:
-                gs_params['resolution'] = resyx_(res)
+        if gs_params['tile_size'] is not None:
+            _LOG.warning('tile_size is now named tile_shape, and should be provided in pixels')
+            # assume tile_size is given in CRS units and convert to pixels
+            gs_params['tile_size'] = tuple(int(abs(s / r))
+                                           for s, r in zip(gs_params['tile_size'], gs_params['resolution']))
+            # rename to tile_shape
+            gs_params['tile_shape'] = gs_params['tile_size']
 
+        del gs_params['tile_size']
+
+        if type(gs_params['resolution']) is tuple:
+            gs_params['resolution'] = resyx_(*gs_params['resolution'])
+        print(gs_params)
         return gridspec.GridSpec(crs=crs, **gs_params)
 
     @staticmethod
@@ -654,7 +658,7 @@ class Product:
             storage = self.definition.get('storage', {})
 
             if 'crs' in storage and 'resolution' in storage:
-                if 'tile_size' in storage:
+                if 'tile_size' in storage or 'tile_shape' in storage:
                     # Fully defined GridSpec, ignore it
                     return None
 
@@ -729,7 +733,7 @@ class Product:
             row.update({
                 'crs': str(self.grid_spec.crs),
                 'spatial_dimensions': self.grid_spec.dimensions,
-                'tile_size': self.grid_spec.tile_shape,
+                'tile_shape': self.grid_spec.tile_shape,
                 'resolution': self.grid_spec.resolution,
             })
         return row

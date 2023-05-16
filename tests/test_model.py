@@ -101,7 +101,7 @@ def test_product_dimensions():
     assert product.dimensions == ('time', 'y', 'x')
 
     partial_storage = product.definition['storage']
-    partial_storage.pop('tile_size')
+    partial_storage.pop('tile_shape')
     product = mk_sample_product('tt', storage=partial_storage)
     assert product.grid_spec is None
 

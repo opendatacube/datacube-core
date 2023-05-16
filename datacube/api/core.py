@@ -873,7 +873,7 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
         if isinstance(like, GeoBox):
             return like
 
-        return like.geobox
+        return like.odc.geobox
 
     if load_hints:
         if output_crs is None:
