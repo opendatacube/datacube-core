@@ -20,7 +20,6 @@ from urllib.parse import urlparse
 from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
 from datacube.index.eo3 import is_doc_eo3
-from odc.geo import resyx_
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
@@ -35,10 +34,9 @@ __all__ = [
     "ExtraDimensions", "IngestorConfig"
 ]
 
-from odc.geo import CRS, BoundingBox, Geometry, wh_, xy_
+from odc.geo import CRS, BoundingBox, Geometry, wh_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
-import odc.geo.gridspec as gridspec
 from deprecat import deprecat
 
 _LOG = logging.getLogger(__name__)
@@ -527,7 +525,7 @@ class Product:
         return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
-    def grid_spec(self) -> Optional['gridspec.GridSpec']:
+    def grid_spec(self) -> Optional['GridSpec']:
         """
         Grid specification for this product
         """
@@ -547,30 +545,13 @@ class Product:
 
         # extract both tile_size and tile_shape for backwards compatibility
         gs_params = {name: extract_point(name)
-                     for name in ('tile_size', 'tile_shape', 'resolution', 'origin')}
+                     for name in ('tile_size', 'resolution', 'origin')}
 
-        # resolution and one of tile_size or tile_shape need to be not None
-        if gs_params['resolution'] is None or all(gs_params[k] is None for k in ('tile_shape', 'tile_size')):
+        complete = all(gs_params[k] is not None for k in ('tile_size', 'resolution'))
+        if not complete:
             return None
 
-        # convert origin to XY
-        if gs_params['origin'] is not None:
-            gs_params['origin'] = xy_(gs_params['origin'])
-
-        if gs_params['tile_size'] is not None:
-            _LOG.warning('tile_size is now named tile_shape, and should be provided in pixels')
-            # assume tile_size is given in CRS units and convert to pixels
-            gs_params['tile_size'] = tuple(int(abs(s / r))
-                                           for s, r in zip(gs_params['tile_size'], gs_params['resolution']))
-            # rename to tile_shape
-            gs_params['tile_shape'] = gs_params['tile_size']
-
-        del gs_params['tile_size']
-
-        if type(gs_params['resolution']) is tuple:
-            gs_params['resolution'] = resyx_(*gs_params['resolution'])
-        print(gs_params)
-        return gridspec.GridSpec(crs=crs, **gs_params)
+        return GridSpec(crs=crs, **gs_params)
 
     @staticmethod
     def validate_extra_dims(definition: Mapping[str, Any]):
@@ -658,7 +639,7 @@ class Product:
             storage = self.definition.get('storage', {})
 
             if 'crs' in storage and 'resolution' in storage:
-                if 'tile_size' in storage or 'tile_shape' in storage:
+                if 'tile_size' in storage:
                     # Fully defined GridSpec, ignore it
                     return None
 
@@ -733,7 +714,7 @@ class Product:
             row.update({
                 'crs': str(self.grid_spec.crs),
                 'spatial_dimensions': self.grid_spec.dimensions,
-                'tile_shape': self.grid_spec.tile_shape,
+                'tile_size': self.grid_spec.tile_size,
                 'resolution': self.grid_spec.resolution,
             })
         return row
@@ -771,7 +752,10 @@ class IngestorConfig:
     pass
 
 
-@deprecat(reason='GridSpec is now defined in odc-geo.', version='1.9.0')
+@deprecat(
+    reason='This version of GridSpec has been deprecated. Please use the GridSpec class definted in odc-geo.',
+    version='1.9.0'
+)
 class GridSpec:
     """
     Definition for a regular spatial grid
@@ -799,8 +783,13 @@ class GridSpec:
                  resolution: Tuple[float, float],
                  origin: Optional[Tuple[float, float]] = None):
         self.crs = crs
+        _LOG.warning('In odc-geo GridSpec, tile_size has been renamed tile_shape and should be provided in pixels.')
         self.tile_size = tile_size
+        _LOG.warning('In odc-geo GridSpec, resolution is expected in (X, Y) order, '
+                     'or simply X if using square pixels with inverted Y axis.')
         self.resolution = resolution
+        if origin is not None:
+            _LOG.warning('In odc-geo GridSpec, origin is expected in (X, Y) order.')
         self.origin = origin or (0.0, 0.0)
 
     def __eq__(self, other):
