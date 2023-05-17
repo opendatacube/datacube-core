@@ -232,12 +232,17 @@ class Datacube(object):
 
                 x=(1516200, 1541300), y=(-3867375, -3867350), crs='EPSG:3577'
 
-            The ``time`` dimension can be specified using a tuple of datetime objects or strings with
-            ``YYYY-MM-DD hh:mm:ss`` format. Data will be loaded inclusive of the start and finish times. E.g::
+            The ``time`` dimension can be specified using a single or tuple of datetime objects or strings with
+            ``YYYY-MM-DD hh:mm:ss`` format. Data will be loaded inclusive of the start and finish times.
+            A ``None`` value in the range indicates an open range, with the provided date serving as either the
+            upper or lower bound. E.g::
 
                 time=('2000-01-01', '2001-12-31')
                 time=('2000-01', '2001-12')
                 time=('2000', '2001')
+                time=('2000')
+                time=('2000', None)  # all data from 2000 onward
+                time=(None, '2000')  # all data before 2000
 
             For 3D datasets, where the product definition contains an ``extra_dimension`` specification,
             these dimensions can be queried using that dimension's name. E.g.::
