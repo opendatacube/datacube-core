@@ -188,8 +188,6 @@ class GridWorkflow(object):
         # pylint: disable=too-many-locals
         # TODO: split this method into 3: cell/polygon/unconstrained querying
 
-        if tile_buffer is not None:
-            _LOG.warning("tile_buffer is now expected in (x, y) order")
         if tile_buffer is not None and geopolygon is not None:
             raise ValueError('Cannot process tile_buffering and geopolygon together.')
         cells = {}
@@ -232,9 +230,8 @@ class GridWorkflow(object):
             else:
                 for dataset in datasets:
                     for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(dataset.extent,
+                                                                                        tile_buffer=tile_buffer,
                                                                                         geobox_cache=geobox_cache):
-                        # since tiles_from_geopolygon no longer includes tile_buffer param, buffer output geobox
-                        tile_geobox = tile_geobox.buffered(*tile_buffer) if tile_buffer else tile_geobox
                         add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             return cells

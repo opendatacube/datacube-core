@@ -7,10 +7,10 @@ from affine import Affine
 from typing import Callable, Union, Tuple
 import warnings
 
-from odc.geo import CRS, xy_
+from odc.geo import CRS
 from odc.geo.geobox import GeoBox
 from odc.geo.math import apply_affine
-from odc.geo.gridspec import GridSpec
+from datacube.model import GridSpec
 
 # pylint: disable=invalid-name
 
@@ -19,9 +19,9 @@ epsg3577 = CRS('EPSG:3577')
 epsg3857 = CRS('EPSG:3857')
 
 AlbersGS = GridSpec(crs=epsg3577,
-                    tile_shape=(4000.0, 4000.0),
-                    resolution=25,
-                    origin=xy_(0.0, 0.0))
+                    tile_size=(100000.0, 100000.0),
+                    resolution=(-25, 25),
+                    origin=(0.0, 0.0))
 
 SAMPLE_WKT_WITHOUT_AUTHORITY = '''PROJCS["unnamed",
        GEOGCS["unnamed ellipse",

@@ -5,9 +5,9 @@
 import pytest
 import numpy
 from datacube.api.grid_workflow import GridWorkflow
+from datacube.model import GridSpec
 from odc.geo import CRS
 from odc.geo.geom import box
-from odc.geo.gridspec import GridSpec
 from unittest.mock import MagicMock
 from datacube.testutils import mk_sample_product
 import datetime
@@ -75,13 +75,13 @@ def test_gridworkflow():
 
     fakecrs = CRS("EPSG:4326")
 
-    grid = 100  # spatial frequency in pixels
+    grid = 100  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units
     # if cell(0,0) has lower left corner at grid origin,
     # and cell indices increase toward upper right,
     # then this will be cell(1,-2).
     gridspec = GridSpec(
-        crs=fakecrs, tile_shape=(grid, grid), resolution=pixel, flipx=True
+        crs=fakecrs, tile_size=(grid, grid), resolution=(-pixel, pixel)
     )  # e.g. product gridspec
 
     fakedataset = MagicMock()
@@ -126,7 +126,7 @@ def test_gridworkflow():
             gw.cell_observations(
                 **query,
                 tile_buffer=(1, 1),
-                geopolygon=gridspec.tile_geobox((0, -1)).extent
+                geopolygon=gridspec.tile_geobox((1, -2)).extent
             ).keys()
         )
     assert str(e.value) == "Cannot process tile_buffering and geopolygon together."
@@ -242,13 +242,13 @@ def test_gridworkflow_with_time_depth():
     """
     fakecrs = CRS("EPSG:4326")
 
-    grid = 10  # spatial frequency in pixels
+    grid = 100  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units
     # if cell(0,0) has lower left corner at grid origin,
     # and cell indices increase toward upper right,
     # then this will be cell(1,-2).
     gridspec = GridSpec(
-        crs=fakecrs, tile_shape=(grid, grid), resolution=pixel
+        crs=fakecrs, tile_size=(grid, grid), resolution=(-pixel, pixel)
     )  # e.g. product gridspec
 
     def make_fake_datasets(num_datasets):
