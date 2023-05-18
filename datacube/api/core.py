@@ -310,14 +310,11 @@ class Datacube(object):
             This differs from the ``crs`` parameter desribed above, which is used to define the CRS
             of the coordinates in the query itself.
 
-        :param float|(float,float) resolution:
-            The spatial resolution of the returned data, provided as a tuple if not using square pixels
-            with inverted Y axis. Units are in the coordinate space of ``output_crs``.
-            Expected in `(x, y)` order
-
-            This includes the direction (as indicated by a positive or negative number).
-            For most CRSs, the Y axis will be inverted, meaning the second number will be negative, e.g. ``(30, -30)``.
-            A resolution of ``(30, -30)`` could also be provided as simply ``30``.
+        :param int|float|(float,float) resolution:
+            The spatial resolution of the returned data. If using square pixels with an inverted Y axis, it
+            should be provided as an int or float. If not, it should be provided as a tuple.
+            Units are in the coordinate space of ``output_crs``. This includes the direction
+            (as indicated by a positive or negative number).
 
         :param str|dict resampling:
             The resampling method to use if re-projection is required. This could be a string or
@@ -436,13 +433,13 @@ class Datacube(object):
             if extra_dims.has_empty_dim():
                 return xarray.Dataset()
 
-        if resolution is not None:
-            _LOG.warning("resolution is now expected in (x, y) order if provided as a tuple, "
-                         "or simply the X axis value if provided as a single float.")
-        if type(resolution) is tuple and resolution[0] == -resolution[1]:
-            _LOG.info("When using square pixels with an inverted Y axis, "
-                      "resolution can be provided as a single float instead of as a tuple.")
-            resolution = resolution[0]
+        if type(resolution) is tuple:
+            if resolution[0] == -resolution[1]:
+                _LOG.warning("When using square pixels with an inverted Y axis, "
+                             "resolution should be provided as a single int or float instead of as a tuple.")
+                resolution = res_(resolution[1])
+            else:
+                resolution = resyx_(*resolution)
 
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
                                grid_spec=datacube_product.grid_spec,
@@ -922,7 +919,14 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
             geopolygon = get_bounds(datasets, crs)
 
-    resolution = resyx_(*resolution) if type(resolution) is tuple else res_(resolution)
+    if type(resolution) is tuple:
+        if resolution[0] == -resolution[1]:
+            _LOG.warning("When using square pixels with an inverted Y axis, "
+                         "resolution should be provided as a single int or float instead of as a tuple.")
+            resolution = res_(resolution[1])
+        else:
+            resolution = resyx_(*resolution)
+    resolution = res_(resolution)
 
     if align is not None:
         align = yx_(align)
