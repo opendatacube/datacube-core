@@ -346,7 +346,7 @@ def _time_to_search_dims(time_range):
             tr_start = datetime.datetime.fromtimestamp(0)
         start = _to_datetime(tr_start)
         if tr_end is None:
-            tr_end = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            tr_end = datetime.datetime.now().strftime("%Y-%m-%d")
         end = _to_datetime(pandas.Period(tr_end)
                            .end_time
                            .to_pydatetime())
