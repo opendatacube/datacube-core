@@ -434,11 +434,13 @@ class Datacube(object):
                 return xarray.Dataset()
 
         if type(resolution) is tuple:
+            _LOG.warning("Resolution should be provided as a single int or float, or the axis order specified "
+                         "using odc.geo.resxy_ or odc.geo.resyx_")
             if resolution[0] == -resolution[1]:
-                _LOG.warning("When using square pixels with an inverted Y axis, "
-                             "resolution should be provided as a single int or float instead of as a tuple.")
                 resolution = res_(resolution[1])
             else:
+                _LOG.warning("Assuming resolution has been provided in (y, x) ordering. Please specify the order "
+                             "with odc.geo.resxy_ or odc.geo.resyx_")
                 resolution = resyx_(*resolution)
 
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
@@ -920,11 +922,13 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
             geopolygon = get_bounds(datasets, crs)
 
     if type(resolution) is tuple:
+        _LOG.warning("Resolution should be provided as a single int or float, or the axis order specified "
+                     "using odc.geo.resxy_ or odc.geo.resyx_")
         if resolution[0] == -resolution[1]:
-            _LOG.warning("When using square pixels with an inverted Y axis, "
-                         "resolution should be provided as a single int or float instead of as a tuple.")
-            resolution = res_(resolution[1])
+            resolution = resolution[1]
         else:
+            _LOG.warning("Assuming resolution has been provided in (y, x) ordering. Please specify the order "
+                         "with odc.geo.resxy_ or odc.geo.resyx_")
             resolution = resyx_(*resolution)
     resolution = res_(resolution)
 
