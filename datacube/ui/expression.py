@@ -20,7 +20,7 @@ and START, END are either numbers or dates.
 
 from lark import Lark, v_args, Transformer
 
-from datacube.api.query import _time_to_search_dims, _time_to_open_range
+from datacube.api.query import _time_to_search_dims
 from datacube.model import Range
 
 
@@ -119,11 +119,10 @@ class TreeToSearchExprs(Transformer):
         return _time_to_search_dims((start, end))
     
     def range_lower_bound(self, date):
-        return _time_to_open_range(date, lower_bound=True)
+        return _time_to_search_dims((date, None))
 
     def range_upper_bound(self, date):
-        return _time_to_open_range(date, lower_bound=False)
-
+        return _time_to_search_dims((None, date))
 
     def date(self, y, m=None, d=None):
         return "-".join(x for x in [y, m, d] if x is not None)

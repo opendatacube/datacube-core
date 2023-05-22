@@ -128,8 +128,8 @@ class Query(object):
                 if time_coord is not None:
                     self.search['time'] = _time_to_search_dims(
                         (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
-                         pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
-                         + datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
+                            pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
+                            + datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
                     )
 
     @property
@@ -342,7 +342,11 @@ def _time_to_search_dims(time_range):
         if hasattr(tr_end, 'isoformat'):
             tr_end = tr_end.isoformat()
 
+        if tr_start is None:
+            tr_start = datetime.datetime.fromtimestamp(0)
         start = _to_datetime(tr_start)
+        if tr_end is None:
+            tr_end = datetime.datetime.now().strftime("%Y-%m-%d")
         end = _to_datetime(pandas.Period(tr_end)
                            .end_time
                            .to_pydatetime())
@@ -352,19 +356,6 @@ def _time_to_search_dims(time_range):
             return tr[0]
 
         return tr
-
-
-def _time_to_open_range(time, lower_bound: bool):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-
-        if lower_bound:  # from date provided (not inclusive) to latest available
-            start = _to_datetime(pandas.Period(time).end_time.to_pydatetime())
-            end = _to_datetime(datetime.datetime.now())
-        else:  # from earliest available to date provided (not inclusive)
-            start = _to_datetime(datetime.datetime.fromtimestamp(0))
-            end = _to_datetime(pandas.Period(time).start_time.to_pydatetime())
-        return Range(start, end)
 
 
 def _convert_to_solar_time(utc, longitude):
