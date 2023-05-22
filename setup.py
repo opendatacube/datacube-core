@@ -30,6 +30,7 @@ extras_require = {
     's3': ['boto3', 'botocore'],
     'test': tests_require,
     'cf': ['compliance-checker>=4.0.0'],
+    'netcdf': ['netcdf4'],
 }
 
 extras_require['dev'] = sorted(set(sum([extras_require[k] for k in [
@@ -38,6 +39,7 @@ extras_require['dev'] = sorted(set(sum([extras_require[k] for k in [
     'performance',
     's3',
     'distributed',
+    'netcdf',
 ]], [])))
 
 # An 'all' option, following ipython naming conventions.
@@ -97,7 +99,6 @@ setup(
         'dask[array]',
         'distributed',
         'jsonschema',
-        'netcdf4',
         'numpy',
         'psycopg2',
         'lark',
