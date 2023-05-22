@@ -242,7 +242,7 @@ class Datacube(object):
                 time=('2000', '2001')
                 time=('2000')
                 time=('2000', None)  # all data from 2000 onward
-                time=(None, '2000')  # all data before 2000
+                time=(None, '2000')  # all data up to and including 2000
 
             For 3D datasets, where the product definition contains an ``extra_dimension`` specification,
             these dimensions can be queried using that dimension's name. E.g.::
