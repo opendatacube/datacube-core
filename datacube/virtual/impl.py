@@ -885,7 +885,7 @@ def reproject_array(src, nodata, s_geobox, d_geobox, resampling):
     """ Reproject a numpy array. """
     dst = numpy.full(d_geobox.shape, fill_value=nodata, dtype=src.dtype)
     rio_reproject(src=src, dst=dst,
-                  s_gbox=s_geobox, d_gbox=d_geobox,
+                  s_gbox=s_geobox, d_gbox=d_geobox,  # TODO: rename s_gbox and d_gbox once odc-geo has been updated
                   resampling=resampling_s2rio(resampling),
                   src_nodata=nodata,
                   dst_nodata=nodata)

@@ -45,7 +45,7 @@ def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata) -> None:
 
 def reproject_and_fuse(datasources: List[DataSource],
                        destination: np.ndarray,
-                       dst_gbox: GeoBox,
+                       dst_geobox: GeoBox,
                        dst_nodata: Optional[Union[int, float]],
                        resampling: str = 'nearest',
                        fuse_func: Optional[FuserFunction] = None,
@@ -57,7 +57,7 @@ def reproject_and_fuse(datasources: List[DataSource],
 
     :param datasources: Data sources to open and read from
     :param destination: ndarray of appropriate size to read data into
-    :param dst_gbox: GeoBox defining destination region
+    :param dst_geobox: GeoBox defining destination region
     :param skip_broken_datasets: Carry on in the face of adversity and failing reads.
     :param progress_cbk: If supplied will be called with 2 integers `Items processed, Total Items`
                          after reading each file.
@@ -77,7 +77,7 @@ def reproject_and_fuse(datasources: List[DataSource],
     elif len(datasources) == 1:
         with ignore_exceptions_if(skip_broken_datasets):
             with datasources[0].open() as rdr:
-                read_time_slice(rdr, destination, dst_gbox, resampling, dst_nodata, extra_dim_index)
+                read_time_slice(rdr, destination, dst_geobox, resampling, dst_nodata, extra_dim_index)
 
         if progress_cbk:
             progress_cbk(1, 1)
@@ -89,7 +89,7 @@ def reproject_and_fuse(datasources: List[DataSource],
         for n_so_far, source in enumerate(datasources, 1):
             with ignore_exceptions_if(skip_broken_datasets):
                 with source.open() as rdr:
-                    roi = read_time_slice(rdr, buffer_, dst_gbox, resampling, dst_nodata, extra_dim_index)
+                    roi = read_time_slice(rdr, buffer_, dst_geobox, resampling, dst_nodata, extra_dim_index)
 
                 if not roi_is_empty(roi):
                     fuse_func(destination[roi], buffer_[roi])

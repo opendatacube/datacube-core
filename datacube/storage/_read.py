@@ -62,7 +62,7 @@ def pick_read_scale(scale: float, rdr=None, tol=1e-3):
 
 def read_time_slice(rdr,
                     dst: np.ndarray,
-                    dst_gbox: GeoBox,
+                    dst_geobox: GeoBox,
                     resampling: Resampling,
                     dst_nodata: Nodata,
                     extra_dim_index: Optional[int] = None) -> Tuple[slice, slice]:
@@ -70,12 +70,12 @@ def read_time_slice(rdr,
 
     :returns: affected destination region
     """
-    assert dst.shape == dst_gbox.shape
-    src_gbox = rdr_geobox(rdr)
+    assert dst.shape == dst_geobox.shape
+    src_geobox = rdr_geobox(rdr)
 
     is_nn = is_resampling_nn(resampling)
 
-    rr = compute_reproject_roi(src_gbox, dst_gbox, ttol=0.9 if is_nn else 0.01)
+    rr = compute_reproject_roi(src_geobox, dst_geobox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
         return rr.roi_dst
@@ -122,42 +122,42 @@ def read_time_slice(rdr,
         if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
-            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_gbox.shape)
-            rr.roi_src = roi_pad(rr.roi_src, 1, src_gbox.shape)
+            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_geobox.shape)
+            rr.roi_src = roi_pad(rr.roi_src, 1, src_geobox.shape)
 
         dst = dst[rr.roi_dst]
-        dst_gbox = dst_gbox[rr.roi_dst]
-        src_gbox = src_gbox[rr.roi_src]
+        dst_geobox = dst_geobox[rr.roi_dst]
+        src_geobox = src_geobox[rr.roi_src]
         if scale > 1:
-            src_gbox = zoom_out(src_gbox, scale)
+            src_geobox = zoom_out(src_geobox, scale)
 
-        pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape, extra_dim_index))
+        pix = rdr.read(*norm_read_args(rr.roi_src, src_geobox.shape, extra_dim_index))
 
         if rr.transform.linear is not None:
-            A = (~src_gbox.transform)*dst_gbox.transform
+            A = (~src_geobox.transform)*dst_geobox.transform
             warp_affine(pix, dst, A, resampling,
                         src_nodata=rdr.nodata, dst_nodata=dst_nodata)
         else:
-            rio_reproject(pix, dst, src_gbox, dst_gbox, resampling,
+            rio_reproject(pix, dst, src_geobox, dst_geobox, resampling,
                           src_nodata=rdr.nodata, dst_nodata=dst_nodata)
 
     return rr.roi_dst
 
 
 def read_time_slice_v2(rdr,
-                       dst_gbox: GeoBox,
+                       dst_geobox: GeoBox,
                        resampling: Resampling,
                        dst_nodata: Nodata) -> Tuple[Optional[np.ndarray],
                                                     Tuple[slice, slice]]:
     """ From opened reader object read into `dst`
 
-    :returns: pixels read and ROI of dst_gbox that was affected
+    :returns: pixels read and ROI of dst_geobox that was affected
     """
     # pylint: disable=too-many-locals
-    src_gbox = rdr_geobox(rdr)
+    src_geobox = rdr_geobox(rdr)
 
     is_nn = is_resampling_nn(resampling)
-    rr = compute_reproject_roi(src_gbox, dst_gbox, ttol=0.9 if is_nn else 0.01)
+    rr = compute_reproject_roi(src_geobox, dst_geobox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
         return None, rr.roi_dst
@@ -195,23 +195,23 @@ def read_time_slice_v2(rdr,
         if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
-            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_gbox.shape)
-            rr.roi_src = roi_pad(rr.roi_src, 1, src_gbox.shape)
+            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_geobox.shape)
+            rr.roi_src = roi_pad(rr.roi_src, 1, src_geobox.shape)
 
-        dst_gbox = dst_gbox[rr.roi_dst]
-        src_gbox = src_gbox[rr.roi_src]
+        dst_geobox = dst_geobox[rr.roi_dst]
+        src_geobox = src_geobox[rr.roi_src]
         if scale > 1:
-            src_gbox = zoom_out(src_gbox, scale)
+            src_geobox = zoom_out(src_geobox, scale)
 
-        dst = np.full(dst_gbox.shape, dst_nodata, dtype=rdr.dtype)
-        pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape)).result()
+        dst = np.full(dst_geobox.shape, dst_nodata, dtype=rdr.dtype)
+        pix = rdr.read(*norm_read_args(rr.roi_src, src_geobox.shape)).result()
 
         if rr.transform.linear is not None:
-            A = (~src_gbox.transform)*dst_gbox.transform
+            A = (~src_geobox.transform)*dst_geobox.transform
             warp_affine(pix, dst, A, resampling,
                         src_nodata=rdr.nodata, dst_nodata=dst_nodata)
         else:
-            rio_reproject(pix, dst, src_gbox, dst_gbox, resampling,
+            rio_reproject(pix, dst, src_geobox, dst_geobox, resampling,
                           src_nodata=rdr.nodata, dst_nodata=dst_nodata)
 
     return dst, rr.roi_dst

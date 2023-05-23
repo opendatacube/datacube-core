@@ -79,7 +79,7 @@ def test_cog_file(tmpdir, opts):
     )
 
     yy, mm = rio_slurp(pp / "cog-2-bands.tif")
-    assert mm.gbox == xx.geobox
+    assert mm.geobox == xx.geobox
     assert yy.shape == (2, *xx.shape)
     np.testing.assert_array_equal(yy[0], xx.values)
     np.testing.assert_array_equal(yy[1], xx.values)
