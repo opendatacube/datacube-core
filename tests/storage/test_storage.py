@@ -186,14 +186,14 @@ def test_read_from_broken_source():
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
 
-    gbox = mk_gbox(shape, crs=crs)
+    geobox = mk_gbox(shape, crs=crs)
 
     # Check exception is raised
     with pytest.raises(OSError):
-        reproject_and_fuse(sources, output_data, gbox, dst_nodata=no_data)
+        reproject_and_fuse(sources, output_data, geobox, dst_nodata=no_data)
 
     # Check can ignore errors
-    reproject_and_fuse(sources, output_data, gbox, dst_nodata=no_data,
+    reproject_and_fuse(sources, output_data, geobox, dst_nodata=no_data,
                        skip_broken_datasets=True)
 
     assert (output_data == [[2, 2], [2, 2]]).all()
@@ -238,11 +238,11 @@ def assert_same_read_results(source, dst_shape, dst_dtype, dst_transform, dst_no
 
     result = np.full(dst_shape, dst_nodata, dtype=dst_dtype)
     H, W = dst_shape
-    dst_gbox = GeoBox(wh_(W, H), dst_transform, dst_projection)
+    dst_geobox = GeoBox(wh_(W, H), dst_transform, dst_projection)
     with source.open() as rdr:
         read_time_slice(rdr,
                         result,
-                        dst_gbox,
+                        dst_geobox,
                         dst_nodata=dst_nodata,
                         resampling=resampling)
 
@@ -410,10 +410,10 @@ def _read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, r
     Adapt old signature to new function, so that we can keep old tests at least for now
     """
     H, W = dest.shape
-    gbox = GeoBox(wh_(W, H), dst_transform, dst_projection)
+    geobox = GeoBox(wh_(W, H), dst_transform, dst_projection)
     dest[:] = dst_nodata  # new code assumes pre-populated image
     with source.open() as rdr:
-        read_time_slice(rdr, dest, gbox, resampling=resampling, dst_nodata=dst_nodata)
+        read_time_slice(rdr, dest, geobox, resampling=resampling, dst_nodata=dst_nodata)
 
 
 class TestRasterDataReading(object):
@@ -657,11 +657,11 @@ def test_rasterio_nodata(tmpdir):
 
     mm = write_gtiff(pp/'absent_nodata.tiff', xx, nodata=None)
 
-    yy = dc_read(mm.path, gbox=mm.gbox, fallback_nodata=None)
+    yy = dc_read(mm.path, geobox=mm.geobox, fallback_nodata=None)
     np.testing.assert_array_equal(xx, yy)
 
     # fallback nodata is outside source range so it shouldn't be used
-    yy = dc_read(mm.path, gbox=mm.gbox, fallback_nodata=-1, dst_nodata=-999, dtype='int16')
+    yy = dc_read(mm.path, geobox=mm.geobox, fallback_nodata=-1, dst_nodata=-999, dtype='int16')
     np.testing.assert_array_equal(xx.astype('int16'), yy)
 
     # treat zeros as no-data + type conversion while reading
