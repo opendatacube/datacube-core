@@ -14,6 +14,7 @@ v1.9.next
 - Clean up deprecated code and add deprecation warnings to legacy methods, simplify DocReader logic (:pull:`#1406`)
 - Mark geometry module as deprecated and replace all usage with odc-geo (:pull:`#1424`)
 - Mark GridSpec as deprecated, replace math and cog functions with odc-geo equivalents, enforce new odc-geo conventions (:pull:`#1441`)
+- Rename `gbox` to `geobox` in parameter names (:pull:`#1441`)
 
 
 v1.8.next
