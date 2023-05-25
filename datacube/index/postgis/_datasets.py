@@ -137,7 +137,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
     def add(self, dataset: Dataset,
-            with_lineage: bool = True) -> Dataset:
+            with_lineage: bool = True, archive_less_mature: bool = False) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
@@ -147,6 +147,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
            - ``True (default)`` attempt adding lineage datasets if missing
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
+
+        :param archive_less_mature:
+            - ``True`` search for less mature versions of the dataset
+             and archive them
 
         :rtype: Dataset
         """
@@ -170,7 +174,36 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 if dataset.uris is not None:
                     self._ensure_new_locations(dataset, transaction=transaction)
 
+            if archive_less_mature:
+                self._archive_less_mature(dataset)
+
         return dataset
+
+    def _archive_less_mature(self, ds: Dataset):
+        less_mature = []
+        dupes = self.search(product=ds.type.name,
+                            region_code=ds.metadata.region_code,
+                            time=ds.metadata.time)
+        for dupe in dupes:
+            if dupe.id == ds.id:
+                continue
+            if dupe.metadata.dataset_maturity == ds.metadata.dataset_maturity:
+                # Duplicate has the same maturity, which one should be archived is unclear
+                raise ValueError(
+                    f"A dataset with the same maturity as dataset {ds.id} already exists, "
+                    f"with id: {dupe.id}"
+                )
+            if dupe.metadata.dataset_maturity < ds.metadata.dataset_maturity:
+                # Duplicate is more mature than dataset
+                # Note that "final" < "nrt"
+                raise ValueError(
+                    f"A more mature version of dataset {ds.id} already exists, with id: "
+                    f"{dupe.id} and maturity: {dupe.metadata.dataset_maturity}"
+                )
+            less_mature.append(dupe.id)
+        self.archive(less_mature)
+        for lm_ds in less_mature:
+            _LOG.info(f"Archived less mature dataset: {lm_ds.id}")
 
     def _init_bulk_add_cache(self):
         return {}
@@ -305,11 +338,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return not bad_changes, good_changes, bad_changes
 
-    def update(self, dataset: Dataset, updates_allowed=None):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature: bool = False):
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset to update
         :param updates_allowed: Allowed updates
+        :param archive_less_mature: Find and archive less mature datasets
         :rtype: Dataset
         """
         existing = self.get(dataset.id)
@@ -342,6 +376,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
             transaction.update_spindex(dsids=[dataset.id])
             transaction.update_search_index(dsids=[dataset.id])
+
+            if archive_less_mature:
+                self._archive_less_mature(dataset)
 
         self._ensure_new_locations(dataset, existing)
 

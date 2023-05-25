@@ -118,6 +118,24 @@ def eo3_ls8_dataset_doc():
 
 
 @pytest.fixture
+def final_dataset_doc():
+    return (
+        get_eo3_test_data_doc("final_dataset.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2023/04/30'
+        'ga_ls8c_ard_3-2-1_090086_2023-04-30_final.stac-item.json'
+    )
+
+
+@pytest.fixture
+def nrt_dataset_doc():
+    return (
+        get_eo3_test_data_doc("nrt_dataset.yaml"),
+        's3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2023/04/30_nrt'
+        'ga_ls8c_ard_3-2-1_090086_2023-04-30_nrt.stac-item.json'
+    )
+
+
+@pytest.fixture
 def eo3_ls8_dataset2_doc():
     return (
         get_eo3_test_data_doc("ls8_dataset2.yaml"),
@@ -271,6 +289,20 @@ def ls8_eo3_dataset4(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8
     return doc_to_ds(index,
                      ls8_eo3_product.name,
                      *eo3_ls8_dataset4_doc)
+
+
+@pytest.fixture
+def nrt_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, nrt_dataset_doc):
+    return doc_to_ds(index,
+                     ls8_eo3_product.name,
+                     *nrt_dataset_doc)
+
+
+@pytest.fixture
+def final_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, final_dataset_doc):
+    return doc_to_ds(index,
+                     ls8_eo3_product.name,
+                     *final_dataset_doc)
 
 
 @pytest.fixture
