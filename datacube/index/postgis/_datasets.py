@@ -181,7 +181,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def _archive_less_mature(self, ds: Dataset):
         less_mature = []
-        dupes = self.search(product=ds.type.name,
+        dupes = self.search(product=ds.product.name,
                             region_code=ds.metadata.region_code,
                             time=ds.metadata.time)
         for dupe in dupes:
@@ -203,7 +203,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             less_mature.append(dupe.id)
         self.archive(less_mature)
         for lm_ds in less_mature:
-            _LOG.info(f"Archived less mature dataset: {lm_ds.id}")
+            _LOG.info(f"Archived less mature dataset: {lm_ds}")
 
     def _init_bulk_add_cache(self):
         return {}

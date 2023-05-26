@@ -293,16 +293,40 @@ def ls8_eo3_dataset4(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8
 
 @pytest.fixture
 def nrt_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, nrt_dataset_doc):
-    return doc_to_ds(index,
-                     ls8_eo3_product.name,
-                     *nrt_dataset_doc)
+    # return doc_to_ds(index,
+    #                  ls8_eo3_product.name,
+    #                  *nrt_dataset_doc)
+    ds_doc = nrt_dataset_doc[0]
+    ds_path = nrt_dataset_doc[1]
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
+    ds, err = resolver(ds_doc, ds_path)
+    assert err is None and ds is not None
+    return ds
+
+
+@pytest.fixture
+def nrt_dataset_path():
+    return str(EO3_TESTDIR / 'nrt_dataset.yaml')
+
+
+@pytest.fixture
+def final_dataset_path():
+    return str(EO3_TESTDIR / 'final_dataset.yaml')
 
 
 @pytest.fixture
 def final_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, final_dataset_doc):
-    return doc_to_ds(index,
-                     ls8_eo3_product.name,
-                     *final_dataset_doc)
+    # return doc_to_ds(index,
+    #                  ls8_eo3_product.name,
+    #                  *final_dataset_doc)
+    ds_doc = final_dataset_doc[0]
+    ds_path = final_dataset_doc[1]
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
+    ds, err = resolver(ds_doc, ds_path)
+    assert err is None and ds is not None
+    return ds
 
 
 @pytest.fixture

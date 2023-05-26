@@ -195,35 +195,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             process_bunch(dss, dataset, transaction)
 
             if archive_less_mature:
-                self._archive_less_mature(dataset)
+                _LOG.warning("archive-less-mature functionality is not defined for postgres driver")
 
         return dataset
-
-    def _archive_less_mature(self, ds: Dataset):
-        less_mature = []
-        dupes = self.search(product=ds.type.name,
-                            region_code=ds.metadata.region_code,
-                            time=ds.metadata.time)
-        for dupe in dupes:
-            if dupe.id == ds.id:
-                continue
-            if dupe.metadata.dataset_maturity == ds.metadata.dataset_maturity:
-                # Duplicate has the same maturity, which one should be archived is unclear
-                raise ValueError(
-                    f"A dataset with the same maturity as dataset {ds.id} already exists, "
-                    f"with id: {dupe.id}"
-                )
-            if dupe.metadata.dataset_maturity < ds.metadata.dataset_maturity:
-                # Duplicate is more mature than dataset
-                # Note that "final" < "nrt"
-                raise ValueError(
-                    f"A more mature version of dataset {ds.id} already exists, with id: "
-                    f"{dupe.id} and maturity: {dupe.metadata.dataset_maturity}"
-                )
-            less_mature.append(dupe.id)
-        self.archive(less_mature)
-        for lm_ds in less_mature:
-            _LOG.info(f"Archived less mature dataset: {lm_ds.id}")
 
     def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
         b_started = monotonic()
@@ -351,7 +325,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
 
             if archive_less_mature:
-                self._archive_less_mature(dataset)
+                _LOG.warning("archive-less-mature functionality is not defined for postgres driver")
 
         self._ensure_new_locations(dataset, existing)
 
