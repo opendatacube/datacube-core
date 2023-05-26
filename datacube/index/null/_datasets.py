@@ -38,7 +38,9 @@ class DatasetResource(AbstractDatasetResource):
     def can_update(self, dataset, updates_allowed=None):
         raise NotImplementedError()
 
-    def update(self, dataset: Dataset, updates_allowed=None):
+    def update(self, dataset: Dataset,
+               updates_allowed=None,
+               archive_less_mature: bool = False):
         raise NotImplementedError()
 
     def archive(self, ids):
