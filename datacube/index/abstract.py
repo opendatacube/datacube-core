@@ -825,7 +825,8 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def add(self, dataset: Dataset,
-            with_lineage: bool = True
+            with_lineage: bool = True,
+            archive_less_mature: bool = False,
            ) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
@@ -836,6 +837,10 @@ class AbstractDatasetResource(ABC):
            - ``True (default)`` attempt adding lineage datasets if missing
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
+
+        :param archive_less_mature:
+            - ``True`` search for less mature versions of the dataset
+            and archive them
 
         :return: Persisted Dataset model
         """
@@ -874,12 +879,14 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def update(self,
                dataset: Dataset,
-               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None
+               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None,
+               archive_less_mature: bool = False,
               ) -> Dataset:
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset model with unpersisted updates
         :param updates_allowed: Allowed updates
+        :param archive_less_mature: Find and archive less mature datasets
         :return: Persisted dataset model
         """
 

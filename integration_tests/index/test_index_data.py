@@ -94,6 +94,23 @@ def test_archive_datasets(index, local_config, ls8_eo3_dataset):
     assert not indexed_dataset.is_archived
 
 
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_archive_less_mature(index, final_dataset, nrt_dataset):
+    # case 1: add nrt then final; nrt should get archived
+    index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
+    index.datasets.get(nrt_dataset.id).is_active
+    index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=True)
+    assert index.datasets.get(nrt_dataset.id).is_archived
+    assert index.datasets.get(final_dataset.id).is_active
+
+    # case 2: purge nrt; re-add with final already there
+    index.datasets.purge([nrt_dataset.id])
+    assert index.datasets.get(nrt_dataset.id) is None
+    with pytest.raises(ValueError):
+        # should error as more mature version of dataset already exists
+        index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
+
+
 def test_purge_datasets(index, ls8_eo3_dataset):
     assert index.datasets.has(ls8_eo3_dataset.id)
     datasets = index.datasets.search_eager()
