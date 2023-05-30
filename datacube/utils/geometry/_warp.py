@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 import rasterio.warp  # type: ignore[import]
 import rasterio.crs   # type: ignore[import]
 import numpy as np
@@ -132,6 +132,7 @@ def rio_reproject(src: np.ndarray,
     :param     s_gbox: GeoBox of source image
     :param     d_gbox: GeoBox of destination image
     :param resampling: str|rasterio.warp.Resampling resampling strategy
+    :param   scale_xy: Integer scale factors in x and y directions, default to (1,1)
     :param src_nodata: Value representing "no data" in the source image
     :param dst_nodata: Value to represent "no data" in the destination image
 
