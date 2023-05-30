@@ -16,7 +16,7 @@ v1.8.next
 - Add pre-commit hook to verify license headers (:pull:`1438`)
 - Support open-ended date ranges in `datacube dataset search`, `dc.load`, and `dc.find_datasets` (:pull:`1439`, :pull:`1443`)
 - Pass Y and Y Scale factors through to rasterio.warp.reproject, to eliminate projection bug affecting non-square AOIs
-  (See https://github.com/opendatacube/datacube-core/issues/1448) (:pull:`1450`)
+  (See `Issue #1448 <https://github.com/opendatacube/datacube-core/issues/1448>`_) (:pull:`1450`)
 
 
 v1.8.12 (7th March 2023)
