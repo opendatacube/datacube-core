@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Union, Optional, Tuple
+from typing import Union, Optional
 import rasterio.warp  # type: ignore[import]
 import rasterio.crs   # type: ignore[import]
 import numpy as np
