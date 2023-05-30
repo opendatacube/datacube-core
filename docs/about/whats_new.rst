@@ -15,6 +15,7 @@ v1.8.next
 - ``datacube dataset`` cli commands print error message if missing argument (:pull:`1437`)
 - Add pre-commit hook to verify license headers (:pull:`1438`)
 - Support open-ended date ranges in `datacube dataset search`, `dc.load`, and `dc.find_datasets` (:pull:`1439`, :pull:`1443`)
+- Add `archive_less_mature` option to `datacube dataset add` and `datacube dataset update` (:pull:`1451`)
 
 
 v1.8.12 (7th March 2023)
