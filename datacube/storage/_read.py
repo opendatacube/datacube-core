@@ -129,6 +129,7 @@ def read_time_slice(rdr,
 
     is_nn = is_resampling_nn(resampling)
     scale = pick_read_scale(rr.scale, rdr)
+    scale_x, scale_y = [pick_read_scale(s) for s in rr.scale2]
 
     paste_ok, _ = can_paste(rr, ttol=0.9 if is_nn else 0.01)
 
@@ -188,7 +189,8 @@ def read_time_slice(rdr,
                         src_nodata=rdr.nodata, dst_nodata=dst_nodata)
         else:
             rio_reproject(pix, dst, src_gbox, dst_gbox, resampling,
-                          src_nodata=rdr.nodata, dst_nodata=dst_nodata)
+                          src_nodata=rdr.nodata, dst_nodata=dst_nodata,
+                          XSCALE=scale_x, YSCALE=scale_y)
 
     return rr.roi_dst
 
