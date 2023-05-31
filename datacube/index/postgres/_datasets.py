@@ -191,9 +191,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         with self._db_connection(transaction=True) as transaction:
             process_bunch(dss, dataset, transaction)
-
-        if archive_less_mature:
-            _LOG.warning("archive-less-mature functionality is not implemented for postgres driver")
+            if archive_less_mature:
+                self.archive_less_mature(dataset)
 
         return dataset
 
