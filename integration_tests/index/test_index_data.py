@@ -94,7 +94,6 @@ def test_archive_datasets(index, local_config, ls8_eo3_dataset):
     assert not indexed_dataset.is_archived
 
 
-@pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_archive_less_mature(index, final_dataset, nrt_dataset):
     # case 1: add nrt then final; nrt should get archived
     index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)

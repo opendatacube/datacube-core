@@ -904,6 +904,20 @@ class AbstractDatasetResource(ABC):
 
         :param Dataset ds: dataset to search
         """
+        less_mature = self.find_less_mature(ds)
+        less_mature_ids = map(lambda x: x.id, less_mature)
+
+        self.archive(less_mature_ids)
+        for lm_ds in less_mature_ids:
+            _LOG.info(f"Archived less mature dataset: {lm_ds}")
+
+    def find_less_mature(self, ds: Dataset) -> Iterable[Dataset]:
+        """
+        Find less mature versions of a dataset
+
+        :param Dataset ds: Dataset to search
+        :return: Iterable of less mature datasets
+        """
         less_mature = []
         dupes = self.search(product=ds.product.name,
                             region_code=ds.metadata.region_code,
@@ -924,10 +938,8 @@ class AbstractDatasetResource(ABC):
                     f"A more mature version of dataset {ds.id} already exists, with id: "
                     f"{dupe.id} and maturity: {dupe.metadata.dataset_maturity}"
                 )
-            less_mature.append(dupe.id)
-        self.archive(less_mature)
-        for lm_ds in less_mature:
-            _LOG.info(f"Archived less mature dataset: {lm_ds}")
+            less_mature.append(dupe)
+        return less_mature
 
     @abstractmethod
     def restore(self, ids: Iterable[DSID]) -> None:
