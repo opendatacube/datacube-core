@@ -158,6 +158,8 @@ def load_datasets_for_update(doc_stream, index):
 @click.option('--confirm-ignore-lineage',
               help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
               is_flag=True, default=False)
+@click.option('--archive-less-mature', help='Archive less mature versions of the dataset',
+              is_flag=True, default=False)
 @click.argument('dataset-paths', type=str, nargs=-1)
 @ui.pass_index()
 def index_cmd(index, product_names,
@@ -167,6 +169,7 @@ def index_cmd(index, product_names,
               dry_run,
               ignore_lineage,
               confirm_ignore_lineage,
+              archive_less_mature,
               dataset_paths):
 
     if not dataset_paths:
@@ -204,7 +207,7 @@ def index_cmd(index, product_names,
         index_datasets(dss,
                        index,
                        auto_add_lineage=auto_add_lineage and not confirm_ignore_lineage,
-                       dry_run=dry_run)
+                       dry_run=dry_run, archive_less_mature=archive_less_mature)
 
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
@@ -214,12 +217,13 @@ def index_cmd(index, product_names,
         run_it(dataset_paths)
 
 
-def index_datasets(dss, index, auto_add_lineage, dry_run):
+def index_datasets(dss, index, auto_add_lineage, dry_run, archive_less_mature):
     for dataset in dss:
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
-                index.datasets.add(dataset, with_lineage=auto_add_lineage)
+                index.datasets.add(dataset, with_lineage=auto_add_lineage,
+                                   archive_less_mature=archive_less_mature)
             except (ValueError, MissingRecordError) as e:
                 _LOG.error('Failed to add dataset %s: %s', dataset.local_uri, e)
 
@@ -246,9 +250,11 @@ def parse_update_rules(keys_that_can_change):
               - 'keep': keep as alternative location [default]
               - 'archive': mark as archived
               - 'forget': remove from the index'''))
+@click.option('--archive-less-mature', help='Archive less mature versions of the dataset',
+              is_flag=True, default=False)
 @click.argument('dataset-paths', nargs=-1)
 @ui.pass_index()
-def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
+def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths, archive_less_mature):
     if not dataset_paths:
         click.echo('Error: no datasets provided\n')
         print_help_msg(update_cmd)
@@ -303,7 +309,8 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
 
         if not dry_run:
             try:
-                index.datasets.update(dataset, updates_allowed=updates_allowed)
+                index.datasets.update(dataset, updates_allowed=updates_allowed,
+                                      archive_less_mature=archive_less_mature)
                 update_loc(dataset, existing_ds)
                 success += 1
                 echo('Updated %s' % dataset.id)

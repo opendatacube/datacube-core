@@ -72,7 +72,8 @@ class DatasetResource(AbstractDatasetResource):
         return (self.has(id_) for id_ in ids_)
 
     def add(self, dataset: Dataset,
-            with_lineage: bool = True) -> Dataset:
+            with_lineage: bool = True,
+            archive_less_mature: bool = False) -> Dataset:
         if with_lineage is None:
             with_lineage = True
         _LOG.info('indexing %s', dataset.id)
@@ -100,6 +101,8 @@ class DatasetResource(AbstractDatasetResource):
                 self.by_product[dataset.product.name].append(dataset.id)
             else:
                 self.by_product[dataset.product.name] = [dataset.id]
+        if archive_less_mature:
+            _LOG.warning("archive-less-mature functionality is not implemented for memory driver")
         return cast(Dataset, self.get(dataset.id))
 
     def persist_source_relationship(self, ds: Dataset, src: Dataset, classifier: str) -> None:
@@ -186,7 +189,8 @@ class DatasetResource(AbstractDatasetResource):
 
     def update(self,
                dataset: Dataset,
-               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None
+               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None,
+               archive_less_mature: bool = False
               ) -> Dataset:
         existing = self.get(dataset.id)
         if not existing:

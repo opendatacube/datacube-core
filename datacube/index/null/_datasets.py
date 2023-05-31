@@ -28,7 +28,8 @@ class DatasetResource(AbstractDatasetResource):
         return [False for id_ in ids_]
 
     def add(self, dataset: Dataset,
-            with_lineage: bool = True) -> Dataset:
+            with_lineage: bool = True,
+            archive_less_mature: bool = False) -> Dataset:
         raise NotImplementedError()
 
     def search_product_duplicates(self, product: DatasetType, *args):
@@ -37,7 +38,7 @@ class DatasetResource(AbstractDatasetResource):
     def can_update(self, dataset, updates_allowed=None):
         raise NotImplementedError()
 
-    def update(self, dataset: Dataset, updates_allowed=None):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=False):
         raise NotImplementedError()
 
     def archive(self, ids):

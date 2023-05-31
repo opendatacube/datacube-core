@@ -18,6 +18,7 @@ v1.8.next
 - Pass Y and Y Scale factors through to rasterio.warp.reproject, to eliminate projection bug affecting
   non-square Areas Of Interest (See `Issue #1448`_) (:pull:`1450`)
 .. _`Issue #1448`: https://github.com/opendatacube/datacube-core/issues/1448
+- Add `archive_less_mature` option to `datacube dataset add` and `datacube dataset update` (:pull:`1451`)
 
 
 v1.8.12 (7th March 2023)
