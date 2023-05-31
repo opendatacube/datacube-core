@@ -101,6 +101,8 @@ class DatasetResource(AbstractDatasetResource):
                 self.by_product[dataset.product.name].append(dataset.id)
             else:
                 self.by_product[dataset.product.name] = [dataset.id]
+        if archive_less_mature:
+            _LOG.warning("archive-less-mature functionality is not implemented for memory driver")
         return cast(Dataset, self.get(dataset.id))
 
     def persist_source_relationship(self, ds: Dataset, src: Dataset, classifier: str) -> None:
