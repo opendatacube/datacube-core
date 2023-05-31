@@ -132,7 +132,5 @@ accessories:
   checksum:sha1:
     path: ga_ls8c_ard_3-2-1_090086_2023-04-30_nrt.sha1
 
-lineage:
-  level1:
-  - 1090d7f4-2db2-58aa-bc09-cf8c446afdbd
+lineage: {}
 ...
