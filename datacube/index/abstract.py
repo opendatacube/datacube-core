@@ -16,6 +16,7 @@ from typing import (Any, Iterable, Iterator,
                     NamedTuple, Optional,
                     Tuple, Union, Sequence)
 from uuid import UUID
+from datetime import timedelta
 
 from datacube.config import LocalConfig
 from datacube.index.exceptions import TransactionException
@@ -919,9 +920,12 @@ class AbstractDatasetResource(ABC):
         :return: Iterable of less mature datasets
         """
         less_mature = []
+        # 'expand' the date range by a millisecond to give a bit more leniency in datetime comparison
+        expanded_time_range = Range(ds.metadata.time.begin - timedelta(milliseconds=1),
+                                    ds.metadata.time.end + timedelta(milliseconds=1))
         dupes = self.search(product=ds.product.name,
                             region_code=ds.metadata.region_code,
-                            time=ds.metadata.time)
+                            time=expanded_time_range)
         for dupe in dupes:
             if dupe.id == ds.id:
                 continue

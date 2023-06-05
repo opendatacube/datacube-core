@@ -38,7 +38,7 @@ class OrExpression(Expression):
 
 def as_expression(field: Field, value) -> Expression:
     """
-    Convert a single field/value to expression, following the "simple" convensions.
+    Convert a single field/value to expression, following the "simple" conventions.
     """
     if isinstance(value, Range):
         return field.between(value.begin, value.end)

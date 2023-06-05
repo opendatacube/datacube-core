@@ -110,6 +110,15 @@ def test_archive_less_mature(index, final_dataset, nrt_dataset):
         index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
 
 
+def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am_ard3_interim):
+    # test archive_less_mature where there's a slight difference in timestamps
+    index.datasets.add(ga_s2am_ard3_interim, with_lineage=False)
+    index.datasets.get(ga_s2am_ard3_interim.id).is_active
+    index.datasets.add(ga_s2am_ard3_final, with_lineage=False, archive_less_mature=True)
+    assert index.datasets.get(ga_s2am_ard3_interim.id).is_archived
+    assert index.datasets.get(ga_s2am_ard3_final.id).is_active
+
+
 def test_purge_datasets(index, ls8_eo3_dataset):
     assert index.datasets.has(ls8_eo3_dataset.id)
     datasets = index.datasets.search_eager()
