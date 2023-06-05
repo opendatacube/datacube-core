@@ -19,6 +19,7 @@ v1.8.next
   non-square Areas Of Interest (See `Issue #1448`_) (:pull:`1450`)
 .. _`Issue #1448`: https://github.com/opendatacube/datacube-core/issues/1448
 - Add `archive_less_mature` option to `datacube dataset add` and `datacube dataset update` (:pull:`1451`, :pull:`1452`)
+- Allow for +-1ms leniency in finding other maturity versions of a dataset (:pull:`1452`)
 
 
 v1.8.12 (7th March 2023)
