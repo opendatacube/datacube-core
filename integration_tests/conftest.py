@@ -78,7 +78,6 @@ def eo3_product_paths():
         str(EO3_TESTDIR / "ard_ls8.odc-product.yaml"),
         str(EO3_TESTDIR / "ga_ls_wo_3.odc-product.yaml"),
         str(EO3_TESTDIR / "s2_africa_product.yaml"),
-        str(EO3_TESTDIR / "ga_s2am_ard_3.odc-product.yaml"),
     ]
 
 
