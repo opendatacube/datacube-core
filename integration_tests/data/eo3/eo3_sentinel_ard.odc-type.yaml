@@ -1,0 +1,361 @@
+---
+# Metadata Type
+# url: https://explorer-aws.dea.ga.gov.au/metadata-types/eo3_sentinel_ard.odc-type.yaml
+name: eo3_sentinel_ard
+description: EO3 for Sentinel 2 ARD
+dataset:
+  id:
+  - id
+  label:
+  - label
+  format:
+  - properties
+  - odc:file_format
+  sources:
+  - lineage
+  - source_datasets
+  creation_dt:
+  - properties
+  - odc:processing_datetime
+  grid_spatial:
+  - grid_spatial
+  - projection
+  measurements:
+  - measurements
+  search_fields:
+    lat:
+      type: double-range
+      max_offset:
+      - - extent
+        - lat
+        - end
+      min_offset:
+      - - extent
+        - lat
+        - begin
+      description: Latitude range
+    lon:
+      type: double-range
+      max_offset:
+      - - extent
+        - lon
+        - end
+      min_offset:
+      - - extent
+        - lon
+        - begin
+      description: Longitude range
+    time:
+      type: datetime-range
+      max_offset:
+      - - properties
+        - dtr:end_datetime
+      - - properties
+        - datetime
+      min_offset:
+      - - properties
+        - dtr:start_datetime
+      - - properties
+        - datetime
+      description: Acquisition time range
+    eo_gsd:
+      type: double
+      offset:
+      - properties
+      - eo:gsd
+      indexed: false
+      description: "Ground sampling distance of the sensor’s best resolution band\n\
+        in metres; represents the size (or spatial resolution) of one pixel.\n"
+    crs_raw:
+      offset:
+      - crs
+      indexed: false
+      description: "The raw CRS string as it appears in metadata\n\n(e.g. ‘epsg:32654’)\n"
+    platform:
+      offset:
+      - properties
+      - eo:platform
+      indexed: false
+      description: Platform code
+    gqa_abs_x:
+      type: double
+      offset:
+      - properties
+      - gqa:abs_x
+      indexed: false
+      description: "Absolute value of the x-axis (east-to-west) GCP residuals, in\
+        \ pixel units based on a 25 metre resolution reference image (i.e. 0.2 = 5\
+        \ metres)\n"
+    gqa_abs_y:
+      type: double
+      offset:
+      - properties
+      - gqa:abs_y
+      indexed: false
+      description: "Absolute value of the y-axis (north-to-south) GCP residuals, in\
+        \ pixel units based on a 25 metre resolution reference image (i.e. 0.2 = 5\
+        \ metres)\n"
+    gqa_cep90:
+      type: double
+      offset:
+      - properties
+      - gqa:cep90
+      indexed: false
+      description: "Circular error probable (90%) of the values of the GCP residuals,\
+        \ in pixel units based on a 25 metre resolution reference image (i.e. 0.2\
+        \ = 5 metres)\n"
+    fmask_snow:
+      type: double
+      offset:
+      - properties
+      - fmask:snow
+      indexed: false
+      description: "The proportion (from 0 to 100) of the dataset's valid data area\
+        \ that contains clear snow pixels according to the Fmask algorithm\n"
+    gqa_abs_xy:
+      type: double
+      offset:
+      - properties
+      - gqa:abs_xy
+      indexed: false
+      description: "Absolute value of the total GCP residuals, in pixel units based\
+        \ on a 25 metre resolution reference image (i.e. 0.2 = 5 metres)\n"
+    gqa_mean_x:
+      type: double
+      offset:
+      - properties
+      - gqa:mean_x
+      indexed: false
+      description: "Mean of the values of the x-axis (east-to-west) GCP residuals,\
+        \ in pixel units based on a 25 metre resolution reference image (i.e. 0.2\
+        \ = 5 metres)\n"
+    gqa_mean_y:
+      type: double
+      offset:
+      - properties
+      - gqa:mean_y
+      indexed: false
+      description: "Mean of the values of the y-axis (north-to-south) GCP residuals,\
+        \ in pixel units based on a 25 metre resolution reference image (i.e. 0.2\
+        \ = 5 metres)\n"
+    instrument:
+      offset:
+      - properties
+      - eo:instrument
+      indexed: false
+      description: Instrument name
+    cloud_cover:
+      type: double
+      offset:
+      - properties
+      - eo:cloud_cover
+      description: "The proportion (from 0 to 100) of the dataset's valid data area\
+        \ that contains cloud pixels.\n\nFor these ARD products, this value comes\
+        \ from the Fmask algorithm.\n"
+    fmask_clear:
+      type: double
+      offset:
+      - properties
+      - fmask:clear
+      indexed: false
+      description: "The proportion (from 0 to 100) of the dataset's valid data area\
+        \ that contains clear land pixels according to the Fmask algorithm\n"
+    fmask_water:
+      type: double
+      offset:
+      - properties
+      - fmask:water
+      indexed: false
+      description: "The proportion (from 0 to 100) of the dataset's valid data area\
+        \ that contains clear water pixels according to the Fmask algorithm\n"
+    gqa_mean_xy:
+      type: double
+      offset:
+      - properties
+      - gqa:mean_xy
+      indexed: false
+      description: "Mean of the values of the GCP residuals, in pixel units based\
+        \ on a 25 metre resolution reference image (i.e. 0.2 = 5 metres)\n"
+    region_code:
+      offset:
+      - properties
+      - odc:region_code
+      description: "Spatial reference code from the provider.\nFor Sentinel it is\
+        \ MGRS code.\n"
+    gqa_stddev_x:
+      type: double
+      offset:
+      - properties
+      - gqa:stddev_x
+      indexed: false
+      description: "Standard Deviation of the values of the x-axis (east-to-west)\
+        \ GCP residuals, in pixel units based on a 25 metre resolution reference image\
+        \ (i.e. 0.2 = 5 metres)\n"
+    gqa_stddev_y:
+      type: double
+      offset:
+      - properties
+      - gqa:stddev_y
+      indexed: false
+      description: "Standard Deviation of the values of the y-axis (north-to-south)\
+        \ GCP residuals, in pixel units based on a 25 metre resolution reference image\
+        \ (i.e. 0.2 = 5 metres)\n"
+    gqa_stddev_xy:
+      type: double
+      offset:
+      - properties
+      - gqa:stddev_xy
+      indexed: false
+      description: "Standard Deviation of the values of the GCP residuals, in pixel\
+        \ units based on a 25 metre resolution reference image (i.e. 0.2 = 5 metres)\n"
+    eo_sun_azimuth:
+      type: double
+      offset:
+      - properties
+      - eo:sun_azimuth
+      indexed: false
+      description: "The azimuth angle of the sun at the moment of acquisition, in\
+        \ degree units measured clockwise from due north\n"
+    product_family:
+      offset:
+      - properties
+      - odc:product_family
+      indexed: false
+      description: Product family code
+    dataset_maturity:
+      offset:
+      - properties
+      - dea:dataset_maturity
+      indexed: false
+      description: One of - final|interim|nrt  (near real time)
+    eo_sun_elevation:
+      type: double
+      offset:
+      - properties
+      - eo:sun_elevation
+      indexed: false
+      description: "The elevation angle of the sun at the moment of acquisition, in\
+        \ degree units relative to the horizon.\n"
+    sentinel_tile_id:
+      offset:
+      - properties
+      - sentinel:sentinel_tile_id
+      indexed: false
+      description: "Granule ID according to the ESA naming convention\n\n(e.g. ‘S2A_OPER_MSI_L1C_TL_SGS__20161214T040601_A007721_T53KRB_N02.04’)\n"
+    s2cloudless_clear:
+      type: double
+      offset:
+      - properties
+      - s2cloudless:clear
+      description: "The proportion (from 0 to 100) of the dataset's valid data area\
+        \ that contains clear land pixels according to s3cloudless\n"
+    s2cloudless_cloud:
+      type: double
+      offset:
+      - properties
+      - s2cloudless:cloud
+      description: "The proportion (from 0 to 100) of the dataset's valid data area\
+        \ that contains cloud land pixels according to s3cloudless\n"
+    fmask_cloud_shadow:
+      type: double
+      offset:
+      - properties
+      - fmask:cloud_shadow
+      indexed: false
+      description: "The proportion (from 0 to 100) of the dataset's valid data area\
+        \ that contains cloud shadow pixels according to the Fmask algorithm\n"
+    gqa_iterative_mean_x:
+      type: double
+      offset:
+      - properties
+      - gqa:iterative_mean_x
+      indexed: false
+      description: "Mean of the values of the x-axis (east-to-west) GCP residuals\
+        \ after removal of outliers, in pixel units based on a 25 metre resolution\
+        \ reference image (i.e. 0.2 = 5 metres)\n"
+    gqa_iterative_mean_y:
+      type: double
+      offset:
+      - properties
+      - gqa:iterative_mean_y
+      indexed: false
+      description: "Mean of the values of the y-axis (north-to-south) GCP residuals\
+        \ after removal of outliers, in pixel units based on a 25 metre resolution\
+        \ reference image (i.e. 0.2 = 5 metres)\n"
+    gqa_iterative_mean_xy:
+      type: double
+      offset:
+      - properties
+      - gqa:iterative_mean_xy
+      indexed: false
+      description: "Mean of the values of the GCP residuals after removal of outliers,\
+        \ in pixel units based on a 25 metre resolution reference image (i.e. 0.2\
+        \ = 5 metres)\n"
+    sentinel_datastrip_id:
+      offset:
+      - properties
+      - sentinel:datastrip_id
+      indexed: false
+      description: "Unique identifier for a datastrip relative to a given Datatake.\n\
+        \n(e.g. ‘S2A_OPER_MSI_L1C_DS_SGS__20161214T040601_S20161214T005840_N02.04’)\n"
+    sentinel_product_name:
+      offset:
+      - properties
+      - sentinel:product_name
+      indexed: false
+      description: "ESA product URI, with the '.SAFE' ending removed.\n\n(e.g. 'S2A_MSIL1C_20220303T000731_N0400_R073_T56LNM_20220303T012845')\n"
+    gqa_iterative_stddev_x:
+      type: double
+      offset:
+      - properties
+      - gqa:iterative_stddev_x
+      indexed: false
+      description: "Standard Deviation of the values of the x-axis (east-to-west)\
+        \ GCP residuals after removal of outliers, in pixel units based on a 25 metre\
+        \ resolution reference image (i.e. 0.2 = 5 metres)\n"
+    gqa_iterative_stddev_y:
+      type: double
+      offset:
+      - properties
+      - gqa:iterative_stddev_y
+      indexed: false
+      description: "Standard Deviation of the values of the y-axis (north-to-south)\
+        \ GCP residuals after removal of outliers, in pixel units based on a 25 metre\
+        \ resolution reference image (i.e. 0.2 = 5 metres)\n"
+    gqa_iterative_stddev_xy:
+      type: double
+      offset:
+      - properties
+      - gqa:iterative_stddev_xy
+      indexed: false
+      description: "Standard Deviation of the values of the GCP residuals after removal\
+        \ of outliers, in pixel units based on a 25 metre resolution reference image\
+        \ (i.e. 0.2 = 5 metres)\n"
+    gqa_abs_iterative_mean_x:
+      type: double
+      offset:
+      - properties
+      - gqa:abs_iterative_mean_x
+      indexed: false
+      description: "Mean of the absolute values of the x-axis (east-to-west) GCP residuals\
+        \ after removal of outliers, in pixel units based on a 25 metre resolution\
+        \ reference image (i.e. 0.2 = 5 metres)\n"
+    gqa_abs_iterative_mean_y:
+      type: double
+      offset:
+      - properties
+      - gqa:abs_iterative_mean_y
+      indexed: false
+      description: "Mean of the absolute values of the y-axis (north-to-south) GCP\
+        \ residuals after removal of outliers, in pixel units based on a 25 metre\
+        \ resolution reference image (i.e. 0.2 = 5 metres)\n"
+    gqa_abs_iterative_mean_xy:
+      type: double
+      offset:
+      - properties
+      - gqa:abs_iterative_mean_xy
+      indexed: false
+      description: "Mean of the absolute values of the GCP residuals after removal\
+        \ of outliers, in pixel units based on a 25 metre resolution reference image\
+        \ (i.e. 0.2 = 5 metres)\n"
+...

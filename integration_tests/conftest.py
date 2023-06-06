@@ -183,6 +183,11 @@ def extended_eo3_metadata_type_doc():
 
 
 @pytest.fixture
+def eo3_sentinel_metadata_type_doc():
+    return get_eo3_test_data_doc("eo3_sentinel_ard.odc-type.yaml")
+
+
+@pytest.fixture
 def extended_eo3_product_doc():
     return get_eo3_test_data_doc("ard_ls8.odc-product.yaml")
 
@@ -195,6 +200,11 @@ def base_eo3_product_doc():
 @pytest.fixture
 def africa_s2_product_doc():
     return get_eo3_test_data_doc("s2_africa_product.yaml")
+
+
+@pytest.fixture
+def s2_ard_product_doc():
+    return get_eo3_test_data_doc("ga_s2am_ard_3.odc-product.yaml")
 
 
 @pytest.fixture
@@ -215,6 +225,24 @@ def nrt_dataset_doc():
     )
 
 
+@pytest.fixture
+def ga_s2am_ard_3_interim_doc():
+    return (
+        get_eo3_test_data_doc("ga_s2am_ard_3_interim.yaml"),
+        's3://dea-public-data/baseline/ga_s2am_ard_3/53/JNN/2021/07/24_interim'
+        '20230222T235626/ga_s2am_ard_3-2-1_53JNN_2021-07-24_interim.odc-metadata.yaml'
+    )
+
+
+@pytest.fixture
+def ga_s2am_ard_3_final_doc():
+    return (
+        get_eo3_test_data_doc("ga_s2am_ard_3_final.yaml"),
+        's3://dea-public-data/baseline/ga_s2am_ard_3/53/JNN/2021/07/24'
+        '20210724T023436/ga_s2am_ard_3-2-1_53JNN_2021-07-24_final.odc-metadata.yaml'
+    )
+
+
 def doc_to_ds(index, product_name, ds_doc, ds_path):
     from datacube.index.hl import Doc2Dataset
     resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
@@ -224,10 +252,25 @@ def doc_to_ds(index, product_name, ds_doc, ds_path):
     return index.datasets.get(ds.id)
 
 
+def doc_to_ds_no_add(index, product_name, ds_doc, ds_path):
+    from datacube.index.hl import Doc2Dataset
+    resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
+    ds, err = resolver(ds_doc, ds_path)
+    assert err is None and ds is not None
+    return ds
+
+
 @pytest.fixture
 def extended_eo3_metadata_type(index, extended_eo3_metadata_type_doc):
     return index.metadata_types.add(
         index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
+    )
+
+
+@pytest.fixture
+def eo3_sentinel_metadata_type(index, eo3_sentinel_metadata_type_doc):
+    return index.metadata_types.add(
+        index.metadata_types.from_doc(eo3_sentinel_metadata_type_doc)
     )
 
 
@@ -244,6 +287,11 @@ def wo_eo3_product(index, base_eo3_product_doc):
 @pytest.fixture
 def africa_s2_eo3_product(index, africa_s2_product_doc):
     return index.products.add_document(africa_s2_product_doc)
+
+
+@pytest.fixture
+def ga_s2am_ard_3_product(index, eo3_sentinel_metadata_type, s2_ard_product_doc):
+    return index.products.add_document(s2_ard_product_doc)
 
 
 @pytest.fixture
@@ -301,24 +349,34 @@ def africa_eo3_dataset(index, africa_s2_eo3_product, eo3_africa_dataset_doc):
 
 @pytest.fixture
 def nrt_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, nrt_dataset_doc):
-    ds_doc = nrt_dataset_doc[0]
-    ds_path = nrt_dataset_doc[1]
-    from datacube.index.hl import Doc2Dataset
-    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
-    ds, err = resolver(ds_doc, ds_path)
-    assert err is None and ds is not None
-    return ds
+    return doc_to_ds_no_add(
+        index,
+        ls8_eo3_product.name,
+        *nrt_dataset_doc)
 
 
 @pytest.fixture
 def final_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, final_dataset_doc):
-    ds_doc = final_dataset_doc[0]
-    ds_path = final_dataset_doc[1]
-    from datacube.index.hl import Doc2Dataset
-    resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
-    ds, err = resolver(ds_doc, ds_path)
-    assert err is None and ds is not None
-    return ds
+    return doc_to_ds_no_add(
+        index,
+        ls8_eo3_product.name,
+        *final_dataset_doc)
+
+
+@pytest.fixture
+def ga_s2am_ard3_final(index, eo3_sentinel_metadata_type, ga_s2am_ard_3_product, ga_s2am_ard_3_final_doc):
+    return doc_to_ds_no_add(
+        index,
+        ga_s2am_ard_3_product.name,
+        *ga_s2am_ard_3_final_doc)
+
+
+@pytest.fixture
+def ga_s2am_ard3_interim(index, eo3_sentinel_metadata_type, ga_s2am_ard_3_product, ga_s2am_ard_3_interim_doc):
+    return doc_to_ds_no_add(
+        index,
+        ga_s2am_ard_3_product.name,
+        *ga_s2am_ard_3_interim_doc)
 
 
 @pytest.fixture
