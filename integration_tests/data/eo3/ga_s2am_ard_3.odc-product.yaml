@@ -1,0 +1,240 @@
+---
+name: ga_s2am_ard_3
+license: CC-BY-4.0
+metadata_type: eo3_sentinel_ard
+description: Geoscience Australia Sentinel 2A MSI Analysis Ready Data Collection 3
+metadata:
+  product:
+    name: ga_s2am_ard_3
+  properties:
+    eo:platform: sentinel-2a
+    odc:producer: ga.gov.au
+    eo:instrument: MSI
+    odc:product_family: ard
+    dea:product_maturity: stable
+measurements:
+- name: nbart_coastal_aerosol
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band01
+  - coastal_aerosol
+- name: nbart_blue
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band02
+  - blue
+- name: nbart_green
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band03
+  - green
+- name: nbart_red
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band04
+  - red
+- name: nbart_red_edge_1
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band05
+  - red_edge_1
+- name: nbart_red_edge_2
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band06
+  - red_edge_2
+- name: nbart_red_edge_3
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band07
+  - red_edge_3
+- name: nbart_nir_1
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band08
+  - nir_1
+  - nbart_common_nir
+- name: nbart_nir_2
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band8a
+  - nir_2
+- name: nbart_swir_2
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band11
+  - swir_2
+  - nbart_common_swir_1
+  - swir2
+- name: nbart_swir_3
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band12
+  - swir_3
+  - nbart_common_swir_2
+- name: oa_fmask
+  dtype: uint8
+  units: '1'
+  nodata: 0
+  aliases:
+  - fmask
+  flags_definition:
+    fmask:
+      bits:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      values:
+        '0': nodata
+        '1': valid
+        '2': cloud
+        '3': shadow
+        '4': snow
+        '5': water
+      description: Fmask
+- name: oa_nbart_contiguity
+  dtype: uint8
+  units: '1'
+  nodata: 255
+  aliases:
+  - nbart_contiguity
+  flags_definition:
+    contiguous:
+      bits:
+      - 0
+      values:
+        '0': false
+        '1': true
+- name: oa_azimuthal_exiting
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - azimuthal_exiting
+- name: oa_azimuthal_incident
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - azimuthal_incident
+- name: oa_combined_terrain_shadow
+  dtype: uint8
+  units: '1'
+  nodata: 255
+  aliases:
+  - combined_terrain_shadow
+- name: oa_exiting_angle
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - exiting_angle
+- name: oa_incident_angle
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - incident_angle
+- name: oa_relative_azimuth
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - relative_azimuth
+- name: oa_relative_slope
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - relative_slope
+- name: oa_satellite_azimuth
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - satellite_azimuth
+- name: oa_satellite_view
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - satellite_view
+- name: oa_solar_azimuth
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - solar_azimuth
+- name: oa_solar_zenith
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - solar_zenith
+- name: oa_time_delta
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - time_delta
+- name: oa_s2cloudless_mask
+  dtype: uint8
+  units: '1'
+  nodata: 0
+  aliases:
+  - s2cloudless_mask
+  flags_definition:
+    s2cloudless_mask:
+      bits:
+      - 0
+      - 1
+      - 2
+      values:
+        '0': nodata
+        '1': valid
+        '2': cloud
+      description: s2cloudless mask
+- name: oa_s2cloudless_prob
+  dtype: float64
+  units: '1'
+  nodata: NaN
+  aliases:
+  - s2cloudless_prob
+# Product
+# url: https://explorer-aws.dea.ga.gov.au/products/ga_s2am_ard_3.odc-product.yaml
+load:
+  crs: EPSG:3577
+  align:
+    x: 0
+    y: 0
+  resolution:
+    x: 10
+    y: -10
+...
