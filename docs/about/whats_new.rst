@@ -8,19 +8,23 @@ What's New
 v1.8.next
 =========
 
-- Fix broken Github action workflows (:pull:`1425`, :pull:`1433`)
+v1.8.13 (6th June 2023)
+=======================
+
+- Fix broken Github action workflows (:pull:`1425`, :pull:`1427`, :pull:`1433`)
 - Setup Dependabot, and Dependabot-generated updates (:pull:`1416`, :pull:`1420`, :pull:`1423`,
-            :pull:`1428`)
+            :pull:`1428`, :pull:`1436`, :pull:`1447`)
 - Documentation fixes (:pull:`1417`, :pull:`1418`, :pull:`1430`)
 - ``datacube dataset`` cli commands print error message if missing argument (:pull:`1437`)
 - Add pre-commit hook to verify license headers (:pull:`1438`)
 - Support open-ended date ranges in `datacube dataset search`, `dc.load`, and `dc.find_datasets` (:pull:`1439`, :pull:`1443`)
 - Pass Y and Y Scale factors through to rasterio.warp.reproject, to eliminate projection bug affecting
   non-square Areas Of Interest (See `Issue #1448`_) (:pull:`1450`)
-.. _`Issue #1448`: https://github.com/opendatacube/datacube-core/issues/1448
-- Add `archive_less_mature` option to `datacube dataset add` and `datacube dataset update` (:pull:`1451`, :pull:`1452`)
+- Add `archive_less_mature` option to `datacube dataset add` and `datacube dataset update` (:pull:`1451`)
 - Allow for +-1ms leniency in finding other maturity versions of a dataset (:pull:`1452`)
+- Update whats_new.rst for release (:pull:`1453`)
 
+.. _`Issue #1448`: https://github.com/opendatacube/datacube-core/issues/1448
 
 v1.8.12 (7th March 2023)
 ========================
