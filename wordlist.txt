@@ -219,6 +219,7 @@ io
 ipynb
 isel
 isinstance
+iu
 jfEZEOkxRXgNsAsHEC
 jpg
 JSON
@@ -258,6 +259,7 @@ LTS
 lv
 macosx
 MakeMask
+Mambaforge
 ManagingODC
 mapbox
 matplotlib
@@ -312,6 +314,7 @@ nx
 ny
 ODC
 odc
+odcintegration
 ODCv
 OGC
 ogr
@@ -325,6 +328,7 @@ osgeo
 osr
 OSX
 ows
+pandoc
 param
 params
 pc
