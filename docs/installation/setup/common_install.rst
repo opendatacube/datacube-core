@@ -7,32 +7,29 @@ Python and packages
 
 Python 3.8+ is required.
 
-Anaconda Python
----------------
-
-`Install Anaconda Python <https://www.anaconda.com/download/>`_
-
-Add conda-forge to package channels::
-
-    conda config --append channels conda-forge
+Conda environment setup
+-----------------------
 
 Conda environments are recommended for use in isolating your ODC development environment from your system installation and other Python environments.
 
-Install required Python packages and create a conda environment named ``odc_env``.
+We recommend you use Mambaforge to set up your conda virtual environment, as all the required packages are obtained from the conda-forge channel.
 
-Python::
+Download and install `Mambaforge <https://github.com/conda-forge/miniforge#mambaforge>`_
 
-    conda create --name odc_env python=3.8 datacube
+Download the latest version of the Open Data Cube from the `repository <https://github.com/opendatacube/datacube-core>`_ ::
 
-Activate the ``odc_env`` conda environment::
+    git clone https://github.com/opendatacube/datacube-core
+    cd datacube-core
 
-    conda activate odc_env
+Create a conda environment named ``cubeenv``::
+
+    mamba env create -f conda-environment.yml
+
+Activate the ``cubeenv`` conda environment::
+
+    conda activate cubeenv
 
 Find out more about conda environments `here <https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/environments.html>`_.
-
-Install other packages::
-
-    conda install jupyter matplotlib scipy pytest-cov hypothesis
 
 
 Postgres database configuration
@@ -44,7 +41,7 @@ If this is a new installation of Postgres on your system it is probably wise to 
 
 In a terminal, type::
 
-    sudo -u postgres psql postgres
+    sudo -iu postgres psql postgres
 
 Set a password for the "postgres" database role using the command::
 
@@ -52,43 +49,52 @@ Set a password for the "postgres" database role using the command::
 
 and set the password when prompted. The password text will be hidden from the console for security purposes.
 
-Type **Control+D** or **\q** to exit the posgreSQL prompt.
+Type **Control+D** or **\\q** to exit the posgreSQL prompt.
 
 By default in Ubuntu, Postgresql is configured to use ``ident sameuser`` authentication for any connections from the same machine which is useful for development. Check out the excellent Postgresql documentation for more information, but essentially this means that if your Ubuntu username is ``foo`` and you add ``foo`` as a Postgresql user then you can connect to a database without requiring a password for many functions.
 
 Since the only user who can connect to a fresh install is the postgres user, here is how to create yourself a database account (which is in this case also a database superuser) with the same name as your login name and then create a password for the user::
 
-    sudo -u postgres createuser --superuser $USER
-    sudo -u postgres psql
+    sudo -iu postgres createuser --superuser $USER
+    sudo -iu postgres psql
 
-    postgres=# \password $USER
+    postgres=# \password <foo>
 
-Now we can create an ``agdcintegration`` database for testing::
+Now we can create the ``agdcintegration`` and ``odcintegration`` databases for testing::
 
-    createdb agdcintegration
+    postgres=# create database agdcintegration;
+    postgres=# create database odcintegration;
+    
+Or, directly from the bash terminal::
+
+    sudo -iu postgres createdb agdcintegration
+    sudo -iu postgres createdb odcintegration
 
 Connecting to your own database to try out some SQL should now be as easy as::
 
-    psql -d agdcintegration
+    sudo -iu postgres psql -d agdcintegration
 
 
 Open Data Cube source and development configuration
 ===================================================
 
-Download the latest version of the software from the `repository <https://github.com/opendatacube/datacube-core>`_ ::
-
-    git clone https://github.com/opendatacube/datacube-core
-    cd datacube-core
-
 We need to specify the database user and password for the ODC integration testing. To do this::
 
     cp integration_tests/agdcintegration.conf ~/.datacube_integration.conf
 
-Then edit the ``~/.datacube_integration.conf`` with a text editor and add the following lines replacing ``<foo>`` with your username and ``<foobar>`` with the database user password you set above (not the postgres one, your ``<foo>`` one)::
+Then edit the ``~/.datacube_integration.conf`` with a text editor and add the following lines, replacing ``<foo>`` with your username and ``<foobar>`` with the database user password you set above (not the postgres one, your ``<foo>`` one)::
 
     [datacube]
     db_hostname: localhost
     db_database: agdcintegration
+    index_driver: default
+    db_username: <foo>
+    db_password: <foobar>
+
+    [experimental]
+    db_hostname: localhost
+    db_database: odcintegration
+    index_driver: postgis
     db_username: <foo>
     db_password: <foobar>
 
@@ -97,15 +103,22 @@ Note: For Ubuntu Setup the db_hostname should be set to "/var/run/postgresql". F
 Verify it all works
 ===================
 
+Install additional test dependencies::
+    
+    cd datacube-core
+    pip install --upgrade -e '.[test]'
+    
 Run the integration tests::
 
-    cd datacube-core
     ./check-code.sh integration_tests
 
 Build the documentation::
 
-    cd datacube-core/docs
+    pip install --upgrade -e '.[doc]'
+    cd docs
     pip install -r requirements.txt
+    sudo apt install make
+    sudo apt install pandoc
     make html
 
 Then open :file:`_build/html/index.html` in your browser to view the Documentation.
