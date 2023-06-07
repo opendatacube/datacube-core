@@ -270,6 +270,7 @@ mk
 mkdir
 MODIS
 mongolia
+moto
 MTL
 multiband
 multigeom
@@ -357,6 +358,7 @@ Proj
 provence
 psql
 pts
+pwd
 py
 pydata
 pyenv

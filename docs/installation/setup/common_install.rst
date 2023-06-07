@@ -41,7 +41,7 @@ If this is a new installation of Postgres on your system it is probably wise to 
 
 In a terminal, type::
 
-    sudo -iu postgres psql postgres
+    sudo -u postgres psql postgres
 
 Set a password for the "postgres" database role using the command::
 
