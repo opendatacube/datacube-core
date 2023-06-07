@@ -25,6 +25,13 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Config
+      id: cfg
+      run: |
+        if "${GITHUB_REF}" in "refs/tags/"*; then
+          echo "push_pypi=yes" >> $GITHUB_OUTPUT
+        fi
+
     - uses: dorny/paths-filter@v2
       id: changes
       if: |
@@ -117,7 +124,7 @@ jobs:
     - name: Publish to PyPi
       if: |
         github.event_name == 'push'
-        && github.ref == 'refs/heads/pypi/publish'
+        && steps.cfg.outputs.push_pypi == 'yes'
       run: |
         if [ -n "${TWINE_PASSWORD}" ]; then
           docker run --rm  \

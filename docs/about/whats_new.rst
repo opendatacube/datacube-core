@@ -8,6 +8,9 @@ What's New
 v1.8.next
 =========
 
+- Fix broken pypi publishing Github action (:pull:`1454`)
+
+
 v1.8.13 (6th June 2023)
 =======================
 
