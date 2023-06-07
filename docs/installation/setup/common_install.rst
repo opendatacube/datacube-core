@@ -55,8 +55,8 @@ By default in Ubuntu, Postgresql is configured to use ``ident sameuser`` authent
 
 Since the only user who can connect to a fresh install is the postgres user, here is how to create yourself a database account (which is in this case also a database superuser) with the same name as your login name and then create a password for the user::
 
-    sudo -iu postgres createuser --superuser $USER
-    sudo -iu postgres psql
+    sudo -u postgres createuser --superuser $USER
+    sudo -u postgres psql
 
     postgres=# \password <foo>
 
@@ -67,12 +67,12 @@ Now we can create the ``agdcintegration`` and ``odcintegration`` databases for t
     
 Or, directly from the bash terminal::
 
-    sudo -iu postgres createdb agdcintegration
-    sudo -iu postgres createdb odcintegration
+    sudo -u postgres createdb agdcintegration
+    sudo -u postgres createdb odcintegration
 
 Connecting to your own database to try out some SQL should now be as easy as::
 
-    sudo -iu postgres psql -d agdcintegration
+    sudo -u postgres psql -d agdcintegration
 
 
 Open Data Cube source and development configuration
@@ -111,6 +111,8 @@ Install additional test dependencies::
 Run the integration tests::
 
     ./check-code.sh integration_tests
+
+Note: if moto-based AWS-mock tests fail, you may need to unset all AWS environment variables.
 
 Build the documentation::
 
