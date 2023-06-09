@@ -13,10 +13,9 @@ Conda environment setup
 Conda environments are recommended for use in isolating your ODC development environment from your system installation and other Python environments.
 
 We recommend you use Mambaforge to set up your conda virtual environment, as all the required packages are obtained from the conda-forge channel.
+Download and install it from `here <https://github.com/conda-forge/miniforge#mambaforge>`_.
 
-Download and install `Mambaforge <https://github.com/conda-forge/miniforge#mambaforge>`_
-
-Download the latest version of the Open Data Cube from the `repository <https://github.com/opendatacube/datacube-core>`_ ::
+Download the latest version of the Open Data Cube from the `repository <https://github.com/opendatacube/datacube-core>`_::
 
     git clone https://github.com/opendatacube/datacube-core
     cd datacube-core
@@ -32,8 +31,8 @@ Activate the ``cubeenv`` conda environment::
 Find out more about conda environments `here <https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/environments.html>`_.
 
 
-Postgres database configuration
-===============================
+Postgres testing database configuration
+=======================================
 
 This configuration supports local development using your login name.
 
@@ -67,60 +66,9 @@ Now we can create the ``agdcintegration`` and ``odcintegration`` databases for t
     
 Or, directly from the bash terminal::
 
-    sudo -u postgres createdb agdcintegration
-    sudo -u postgres createdb odcintegration
+    createdb agdcintegration
+    createdb odcintegration
 
 Connecting to your own database to try out some SQL should now be as easy as::
 
-    sudo -u postgres psql -d agdcintegration
-
-
-Open Data Cube source and development configuration
-===================================================
-
-We need to specify the database user and password for the ODC integration testing. To do this::
-
-    cp integration_tests/agdcintegration.conf ~/.datacube_integration.conf
-
-Then edit the ``~/.datacube_integration.conf`` with a text editor and add the following lines, replacing ``<foo>`` with your username and ``<foobar>`` with the database user password you set above (not the postgres one, your ``<foo>`` one)::
-
-    [datacube]
-    db_hostname: localhost
-    db_database: agdcintegration
-    index_driver: default
-    db_username: <foo>
-    db_password: <foobar>
-
-    [experimental]
-    db_hostname: localhost
-    db_database: odcintegration
-    index_driver: postgis
-    db_username: <foo>
-    db_password: <foobar>
-
-Note: For Ubuntu Setup the db_hostname should be set to "/var/run/postgresql". For more refer: https://github.com/opendatacube/datacube-core/issues/1329
-
-Verify it all works
-===================
-
-Install additional test dependencies::
-    
-    cd datacube-core
-    pip install --upgrade -e '.[test]'
-    
-Run the integration tests::
-
-    ./check-code.sh integration_tests
-
-Note: if moto-based AWS-mock tests fail, you may need to unset all AWS environment variables.
-
-Build the documentation::
-
-    pip install --upgrade -e '.[doc]'
-    cd docs
-    pip install -r requirements.txt
-    sudo apt install make
-    sudo apt install pandoc
-    make html
-
-Then open :file:`_build/html/index.html` in your browser to view the Documentation.
+    psql -d agdcintegration

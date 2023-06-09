@@ -1,4 +1,4 @@
-Data Preperation Scripts
+Data Preparation Scripts
 ========================
 
 .. note::

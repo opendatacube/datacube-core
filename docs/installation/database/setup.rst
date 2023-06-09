@@ -81,6 +81,18 @@ Alternately, you can configure the ODC connection to Postgres using environment 
     DB_PASSWORD
     DB_DATABASE
 
+To configure a database as a single connection url instead of individual environment varialbes::
+    
+    export DATACUBE_DB_URL=postgresql://[username]:[password]@[hostname]:[port]/[database]
+
+Alternatively, for password-less access to a database on localhost::
+
+    export DATACUBE_DB_URL=postgresql:///[database]
+
+Further information on database configuration can be found `here <https://github.com/opendatacube/datacube-core/wiki/ODC-EP-010---Replace-Configuration-Layer>`__.
+Although the enhancement proposal details incoming changes in v1.9 and beyond, it should largely be compatible with the current behaviour, barring a few
+slight discrepancies.
+
 The desired environment can be specified:
 
 1. in code, with the ``env`` argument to the ``datacube.Datacube`` constructor;
