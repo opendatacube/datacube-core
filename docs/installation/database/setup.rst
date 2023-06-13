@@ -81,7 +81,7 @@ Alternately, you can configure the ODC connection to Postgres using environment 
     DB_PASSWORD
     DB_DATABASE
 
-To configure a database as a single connection url instead of individual environment varialbes::
+To configure a database as a single connection url instead of individual environment variables::
     
     export DATACUBE_DB_URL=postgresql://[username]:[password]@[hostname]:[port]/[database]
 

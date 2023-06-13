@@ -259,6 +259,7 @@ lv
 macosx
 MakeMask
 Mambaforge
+mambaforge
 ManagingODC
 mapbox
 matplotlib
@@ -465,6 +466,7 @@ usgs
 USGS's
 usgslsprepare
 UsingODC
+usr
 utils
 UUID
 uuid

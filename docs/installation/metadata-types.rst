@@ -14,7 +14,7 @@ To add or alter metadata types, you can use commands like: ``datacube metadata a
 and to update: ``datacube metadata update <path-to-file>``. Using ``--allow-unsafe`` will allow
 you to update metadata types where the changes may have unexpected consequences.
 
-Note that from version 1.9 onwards, only eo3-compatible metadata types will be accepted.
+Note that from version 1.9 onward, only eo3-compatible metadata types will be accepted.
 
 .. literalinclude:: ../config_samples/metadata_types/bare_bone.yaml
    :language: yaml
