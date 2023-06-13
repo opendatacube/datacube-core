@@ -8,4 +8,4 @@ Metadata Types
 
     Metadata type yaml file must contain name, description and dataset keys.
 
-    Dataset key must contain id, sources, creation_dt, label and search_fields keys.
+    Dataset key must contain id, sources, grid_spatial, measurements, creation_dt, label, format, and search_fields keys.

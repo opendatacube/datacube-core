@@ -43,10 +43,9 @@ If createdb or psql cannot connect to server, check which postgresql installatio
 
     which psql
 
-If it is running the mambaforge installation, you may need to install it and ensure it is installed globally::
+If it is running the mambaforge installation, you may need to run the global installation::
 
-    mamba remove postgresql
-    sudo apt install postgresql
+    /usr/bin/psql -d agdcintegration
 
 
 You can now specify the database user and password for ODC integration testing. To do this::

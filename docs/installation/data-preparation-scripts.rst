@@ -42,11 +42,11 @@ Download the USGS Collection 1 landsat scenes from any of the links below:
 
 The prepare script for collection 1 - level 1 data is available in
 `ls_usgs_prepare.py
-<https://github.com/opendatacube/datacube-dataset-config/blob/master/old-prep-scripts/ls_usgs_prepare.py>`_.
+<https://github.com/opendatacube/datacube-dataset-config/blob/main/old-prep-scripts/ls_usgs_prepare.py>`_.
 
 ::
 
-    $ wget https://github.com/opendatacube/datacube-dataset-config/raw/master/old-prep-scripts/ls_usgs_prepare.py
+    $ wget https://github.com/opendatacube/datacube-dataset-config/raw/main/old-prep-scripts/ls_usgs_prepare.py
     $ python ls_usgs_prepare.py --help
     Usage: ls_usgs_prepare.py [OPTIONS] [DATASETS]...
 
@@ -85,14 +85,14 @@ For Landsat collection 1 level 1 product:
 To prepare downloaded USGS LEDAPS Landsat scenes for use with the Data Cube, use
 the script provided in
 `usgs_ls_ard_prepare.py
-<https://github.com/opendatacube/datacube-dataset-config/blob/master/agdcv2-ingest/prepare_scripts/landsat_collection/usgs_ls_ard_prepare.py>`_
+<https://github.com/opendatacube/datacube-dataset-config/blob/main/agdcv2-ingest/prepare_scripts/landsat_collection/usgs_ls_ard_prepare.py>`_
 
 The following example generates the required Dataset Metadata files, named
 `agdc-metadata.yaml` for three landsat scenes.
 
 ::
 
-    $ wget https://github.com/opendatacube/datacube-dataset-config/raw/master/agdcv2-ingest/prepare_scripts/landsat_collection/usgs_ls_ard_prepare.py
+    $ wget https://github.com/opendatacube/datacube-dataset-config/raw/main/agdcv2-ingest/prepare_scripts/landsat_collection/usgs_ls_ard_prepare.py
     $ python USGS_precollection_oldscripts/usgslsprepare.py --help
     Usage: usgslsprepare.py [OPTIONS] [DATASETS]...
 
@@ -134,7 +134,7 @@ Then :ref:`index the data <indexing>`.
 To view an example of how to `index Sentinel-2 data from S3`_ check out the documentation
 available in the datacube-dataset-config_ repository.
 
-.. _`index Sentinel-2 data from S3`: https://github.com/opendatacube/datacube-dataset-config/blob/master/sentinel-2-l2a-cogs.md
+.. _`index Sentinel-2 data from S3`: https://github.com/opendatacube/datacube-dataset-config/blob/main/sentinel-2-l2a-cogs.md
 .. _datacube-dataset-config: https://github.com/opendatacube/datacube-dataset-config/
 
 Custom Prepare Scripts

@@ -350,8 +350,6 @@ pq
 pre
 precollection
 prefetch
-Preperation
-preperation
 PRIMEM
 prog
 Proj
