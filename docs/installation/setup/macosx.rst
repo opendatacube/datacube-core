@@ -33,14 +33,14 @@ Then edit the ``~/.datacube_integration.conf`` with a text editor and add the fo
 
     [datacube]
     db_hostname: localhost
-    db_database: agdcintegration
+    db_database: pgintegration
     index_driver: default
     db_username: <foo>
     db_password: <foobar>
 
     [experimental]
     db_hostname: localhost
-    db_database: odcintegration
+    db_database: pgisintegration
     index_driver: postgis
     db_username: <foo>
     db_password: <foobar>

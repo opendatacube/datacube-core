@@ -25,7 +25,7 @@ Ubuntu distribution, eg::
 
     sudo apt-get install postgresql-14
 
-    # Optionally, Postgis too
+    # Optionally, Postgis too (required for the postgis/experimental index driver)
     sudo apt-get install postgresql-14-postgis-3
 
 Ubuntu's official repositories usually ship older versions of Postgres. You can alternatively get the most recent version from
@@ -45,7 +45,7 @@ If createdb or psql cannot connect to server, check which postgresql installatio
 
 If it is running the mambaforge installation, you may need to run the global installation::
 
-    /usr/bin/psql -d agdcintegration
+    /usr/bin/psql -d pgintegration
 
 
 You can now specify the database user and password for ODC integration testing. To do this::
@@ -56,14 +56,14 @@ Then edit the ``~/.datacube_integration.conf`` with a text editor and add the fo
 
     [datacube]
     db_hostname: /var/run/postgresql
-    db_database: agdcintegration
+    db_database: pgintegration
     index_driver: default
     db_username: <foo>
     db_password: <foobar>
 
     [experimental]
     db_hostname: /var/run/postgresql
-    db_database: odcintegration
+    db_database: pgisintegration
     index_driver: postgis
     db_username: <foo>
     db_password: <foobar>

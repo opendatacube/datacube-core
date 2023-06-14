@@ -59,16 +59,17 @@ Since the only user who can connect to a fresh install is the postgres user, her
 
     postgres=# \password <foo>
 
-Now we can create the ``agdcintegration`` and ``odcintegration`` databases for testing::
+Now we can create databases for integration testing. You will need 2 databases - one for the Postgres driver and one for the PostGIS driver. You can name these databases however you want.
+In this example we will call the databases ``pgintegration`` and ``pgisintegration``::
 
-    postgres=# create database agdcintegration;
-    postgres=# create database odcintegration;
+    postgres=# create database pgintegration;
+    postgres=# create database pgisintegration;
     
 Or, directly from the bash terminal::
 
-    createdb agdcintegration
-    createdb odcintegration
+    createdb pgintegration
+    createdb pgisintegration
 
 Connecting to your own database to try out some SQL should now be as easy as::
 
-    psql -d agdcintegration
+    psql -d pgintegration

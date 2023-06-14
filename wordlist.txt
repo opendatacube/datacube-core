@@ -335,6 +335,8 @@ params
 pc
 petewa
 pgadmin
+pgintegration
+pgisintegration
 pixelquality
 pkgs
 Pluggable
