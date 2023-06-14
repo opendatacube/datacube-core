@@ -5,11 +5,12 @@ dataset:
   id: [id]  # No longer configurable in newer ODCs.
   sources: [lineage, source_datasets]  # No longer configurable in newer ODCs.
 
-  grid_spatial: [grid_spatial, projection]
-  measurements: [measurements]
   creation_dt: [properties, 'odc:processing_datetime']
   label: [label]
-  format: [properties, 'odc:file_format']
+  # The following keys are necessary if describing spatial datasets
+  # grid_spatial: [grid_spatial, projection]
+  # measurements: [measurements]
+  # format: [properties, 'odc:file_format']
 
   search_fields:
     platform:

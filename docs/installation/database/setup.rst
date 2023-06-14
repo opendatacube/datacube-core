@@ -91,7 +91,7 @@ Alternatively, for password-less access to a database on localhost::
 
 Further information on database configuration can be found `here <https://github.com/opendatacube/datacube-core/wiki/ODC-EP-010---Replace-Configuration-Layer>`__.
 Although the enhancement proposal details incoming changes in v1.9 and beyond, it should largely be compatible with the current behaviour, barring a few
-slight discrepancies.
+obscure corner cases.
 
 The desired environment can be specified:
 
