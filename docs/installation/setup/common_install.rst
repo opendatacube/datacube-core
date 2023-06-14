@@ -59,8 +59,8 @@ Since the only user who can connect to a fresh install is the postgres user, her
 
     postgres=# \password <foo>
 
-Now we can create databases for integration testing. You will need 2 databases - one for the Postgres driver and one for the PostGIS driver. You can name these databases however you want.
-In this example we will call the databases ``pgintegration`` and ``pgisintegration``::
+Now we can create databases for integration testing. You will need 2 databases - one for the Postgres driver and one for the PostGIS driver.
+By default, these databases are called ``pgintegration`` and ``pgisintegration``, but you can name them however you want::
 
     postgres=# create database pgintegration;
     postgres=# create database pgisintegration;

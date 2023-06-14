@@ -83,7 +83,7 @@ Run unit tests with:
 
    ``./check-code.sh``
 
-   (this script approximates what is run by Travis. You can
+   (this script approximates what is run by GitHub Actions. You can
    alternatively run ``pytest`` yourself). 
 
 6. **(or)** Run all tests, including integration tests.
@@ -92,9 +92,9 @@ Run unit tests with:
 
    -  Assumes a password-less Postgres database running on localhost called
 
-   ``agdcintegration``
+   ``pgintegration``
 
-   -  Otherwise copy ``integration_tests/agdcintegration.conf`` to
+   -  Otherwise copy ``integration_tests/integration.conf`` to
       ``~/.datacube_integration.conf`` and edit to customise.
 
    - For instructions on setting up a password-less Postgres database, see

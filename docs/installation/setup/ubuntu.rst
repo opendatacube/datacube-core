@@ -50,7 +50,7 @@ If it is running the mambaforge installation, you may need to run the global ins
 
 You can now specify the database user and password for ODC integration testing. To do this::
 
-    cp integration_tests/agdcintegration.conf ~/.datacube_integration.conf
+    cp integration_tests/integration.conf ~/.datacube_integration.conf
 
 Then edit the ``~/.datacube_integration.conf`` with a text editor and add the following lines, replacing ``<foo>`` with your username and ``<foobar>`` with the database user password you set above (not the postgres one, your ``<foo>`` one)::
 
