@@ -9,7 +9,7 @@ v1.8.next
 =========
 
 - Second attempt to address unexpected handling of image aspect ratios in rasterio and
-  GDAL. (:pull:`XXX`)
+  GDAL. (:pull:`1457`)
 - Fix broken pypi publishing Github action (:pull:`1454`)
 
 
