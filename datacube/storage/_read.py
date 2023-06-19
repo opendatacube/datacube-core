@@ -129,7 +129,6 @@ def read_time_slice(rdr,
 
     is_nn = is_resampling_nn(resampling)
     scale = pick_read_scale(rr.scale, rdr)
-    scale_x, scale_y = [pick_read_scale(s) for s in rr.scale2]
 
     paste_ok, _ = can_paste(rr, ttol=0.9 if is_nn else 0.01)
 
@@ -183,14 +182,32 @@ def read_time_slice(rdr,
 
         pix = rdr.read(*norm_read_args(rr.roi_src, src_gbox.shape, extra_dim_index))
 
+        # XSCALE and YSCALE are (currently) undocumented arguments that rasterio passed through to
+        # GDAL.  Not using them results in very inaccurate warping in images with highly
+        # non-square (i.e. long and thin) aspect ratios.
+        #
+        # See https://github.com/OSGeo/gdal/issues/7750 as well as
+        # https://github.com/opendatacube/datacube-core/pull/1450 and
+        # https://github.com/opendatacube/datacube-core/issues/1456
+        #
+        # In theory we might be able to get better results for queries with significantly
+        # different vertical and horizontal scales, but explicitly using XSCALE=1, YSCALE=1
+        # appears to be most appropriate for most requests, and is demonstrably better
+        # than not setting them at all.
+        gdal_scale_params = {
+            "XSCALE": 1,
+            "YSCALE": 1,
+        }
         if rr.transform.linear is not None:
             A = (~src_gbox.transform)*dst_gbox.transform
             warp_affine(pix, dst, A, resampling,
-                        src_nodata=rdr.nodata, dst_nodata=dst_nodata)
+                        src_nodata=rdr.nodata, dst_nodata=dst_nodata,
+                        **gdal_scale_params)
         else:
+
             rio_reproject(pix, dst, src_gbox, dst_gbox, resampling,
                           src_nodata=rdr.nodata, dst_nodata=dst_nodata,
-                          XSCALE=scale_x, YSCALE=scale_y)
+                          **gdal_scale_params)
 
     return rr.roi_dst
 
