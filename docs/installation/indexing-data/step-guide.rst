@@ -73,7 +73,7 @@ The data from Geoscience Australia already comes with relevant files (named ``ga
 no further steps are required for indexing them.
 
 For third party datasets, see the examples detailed `here <https://github.com/opendatacube/datacube-dataset-config#documented-examples>`__.
-For common distribution formations, data can be indexed using one of the tools from `odc-apps-dc-tools <https://github.com/opendatacube/odc-tools/tree/develop/apps/dc_tools>`__.
+For common distribution formats, data can be indexed using one of the tools from `odc-apps-dc-tools <https://github.com/opendatacube/odc-tools/tree/develop/apps/dc_tools>`__.
 In other cases, the metadata may need to be mapped to an ODC-compatible format. You can find examples of data preparation scripts `here <https://github.com/opendatacube/datacube-dataset-config/tree/main/old-prep-scripts>`__. 
 
 
