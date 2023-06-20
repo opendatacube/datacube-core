@@ -49,12 +49,12 @@ Developer setup
 
    -  ``git clone https://github.com/opendatacube/datacube-core.git``
 
-2. Create a Python environment for using the ODC.  We recommend `conda <https://docs.conda.io/en/latest/miniconda.html>`__ as the
+2. Create a Python environment for using the ODC.  We recommend `Mambaforge <https://mamba.readthedocs.io/en/latest/user_guide/mamba.html>`__ as the
    easiest way to handle Python dependencies.
 
 ::
 
-   conda create -f conda-environment.yml
+   mamba env create -f conda-environment.yml
    conda activate cubeenv
 
 3. Install a develop version of datacube-core.
@@ -72,14 +72,19 @@ Developer setup
    pre-commit install
 
 5. Run unit tests + PyLint
-   ``./check-code.sh``
 
-   (this script approximates what is run by Travis. You can
-   alternatively run ``pytest`` yourself). Some test dependencies may need to be installed, attempt to install these using:
-
+Install test dependencies using:
+   
    ``pip install --upgrade -e '.[test]'``
 
-   If install for these fails please lodge them as issues.
+If install for these fails, please lodge them as issues.
+   
+Run unit tests with:
+
+   ``./check-code.sh``
+
+   (this script approximates what is run by GitHub Actions. You can
+   alternatively run ``pytest`` yourself). 
 
 6. **(or)** Run all tests, including integration tests.
 
@@ -87,10 +92,13 @@ Developer setup
 
    -  Assumes a password-less Postgres database running on localhost called
 
-   ``agdcintegration``
+   ``pgintegration``
 
-   -  Otherwise copy ``integration_tests/agdcintegration.conf`` to
+   -  Otherwise copy ``integration_tests/integration.conf`` to
       ``~/.datacube_integration.conf`` and edit to customise.
+
+   - For instructions on setting up a password-less Postgres database, see
+      the `developer setup instructions <https://datacube-core.readthedocs.io/en/latest/installation/setup/ubuntu.html#postgres-database-configuration>`__.
 
 
 Alternatively one can use the ``opendatacube/datacube-tests`` docker image to run
@@ -103,11 +111,13 @@ to ``./check-code.sh`` script.
    ./check-code.sh --with-docker integration_tests
 
 
-To run individual test in docker container
+To run individual tests in a docker container
 
 ::
 
-    docker run -ti -v /home/ubuntu/datacube-core:/code opendatacube/datacube-tests:latest pytest integration_tests/test_filename.py::test_function_name
+    docker build --tag=opendatacube/datacube-tests-local --no-cache --progress plain -f docker/Dockerfile .
+
+    docker run -ti -v $(pwd):/code opendatacube/datacube-tests-local:latest pytest integration_tests/test_filename.py::test_function_name
 
 
 Developer setup on Ubuntu

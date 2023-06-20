@@ -14,8 +14,8 @@ launch_db () {
     sudo -u postgres createuser --superuser "${dbuser}"
     sudo -u postgres createdb "${dbuser}"
     sudo -u postgres createdb datacube
-    sudo -u postgres createdb agdcintegration
-    sudo -u postgres createdb odcintegration
+    sudo -u postgres createdb pgintegration
+    sudo -u postgres createdb pgisintegration
 }
 
 # Become `odc` user with UID/GID compatible to datacube-core volume
@@ -58,12 +58,12 @@ launch_db () {
 cat <<EOL > $HOME/.datacube_integration.conf
 [datacube]
 db_hostname:
-db_database: agdcintegration
+db_database: pgintegration
 index_driver: default
 
 [experimental]
 db_hostname:
-db_database: odcintegration
+db_database: pgisintegration
 index_driver: postgis
 
 [no_such_driver_env]
