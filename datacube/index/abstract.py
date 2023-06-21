@@ -921,8 +921,8 @@ class AbstractDatasetResource(ABC):
         """
         less_mature = []
         # 'expand' the date range by a millisecond to give a bit more leniency in datetime comparison
-        expanded_time_range = Range(ds.metadata.time.begin - timedelta(milliseconds=1),
-                                    ds.metadata.time.end + timedelta(milliseconds=1))
+        expanded_time_range = Range(ds.metadata.time.begin - timedelta(milliseconds=500),
+                                    ds.metadata.time.end + timedelta(milliseconds=500))
         dupes = self.search(product=ds.product.name,
                             region_code=ds.metadata.region_code,
                             time=expanded_time_range)
