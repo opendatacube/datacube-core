@@ -158,10 +158,10 @@ def load_datasets_for_update(doc_stream, index):
 @click.option('--confirm-ignore-lineage',
               help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
               is_flag=True, default=False)
-@click.option('--archive-less-mature', is_flag=False, flag_value=0, default=None,
+@click.option('--archive-less-mature', is_flag=False, flag_value=500, default=None,
               help=('Find and archive less mature versions of the dataset, will fail if more mature versions '
-                    'of the dataset already exist. Can also specify a millisecond buffer amount to be taken '
-                    'into acount when comparing timestamps. Default buffer is 0.'))
+                    'of the dataset already exist. Can also specify a millisecond delta amount to be taken '
+                    'into acount when comparing timestamps. Default delta is 500ms.'))
 @click.argument('dataset-paths', type=str, nargs=-1)
 @ui.pass_index()
 def index_cmd(index, product_names,
@@ -260,10 +260,10 @@ def parse_update_rules(keys_that_can_change):
               - 'keep': keep as alternative location [default]
               - 'archive': mark as archived
               - 'forget': remove from the index'''))
-@click.option('--archive-less-mature', is_flag=False, flag_value=0, default=None,
+@click.option('--archive-less-mature', is_flag=False, flag_value=500, default=None,
               help=('Find and archive less mature versions of the dataset, will fail if more mature versions '
-                    'of the dataset already exist. Can also specify a millisecond buffer amount to be taken '
-                    'into acount when comparing timestamps. Default buffer is 0.'))
+                    'of the dataset already exist. Can also specify a millisecond delta amount to be taken '
+                    'into acount when comparing timestamps. Default delta is 500ms.'))
 @click.argument('dataset-paths', nargs=-1)
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths, archive_less_mature):
