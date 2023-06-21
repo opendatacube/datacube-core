@@ -137,7 +137,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
     def add(self, dataset: Dataset,
-            with_lineage: bool = True, archive_less_mature: bool = False) -> Dataset:
+            with_lineage: bool = True, archive_less_mature: Optional[int] = None) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
@@ -148,9 +148,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
 
-        :param archive_less_mature:
-            - ``True`` search for less mature versions of the dataset
-            and archive them
+        :param archive_less_mature: if integer, search for less
+        mature versions of the dataset with the int value as a millisecond
+        delta in timestamp comparison
 
         :rtype: Dataset
         """
@@ -174,7 +174,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 if dataset.uris is not None:
                     self._ensure_new_locations(dataset, transaction=transaction)
             if archive_less_mature:
-                self.archive_less_mature(dataset)
+                self.archive_less_mature(dataset, archive_less_mature)
 
         return dataset
 
@@ -311,12 +311,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return not bad_changes, good_changes, bad_changes
 
-    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=False):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=None):
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset to update
         :param updates_allowed: Allowed updates
-        :param archive_less_mature: Find and archive less mature datasets
+        :param archive_less_mature: Find and archive less mature datasets with ms delta
         :rtype: Dataset
         """
         existing = self.get(dataset.id)
@@ -350,7 +350,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             transaction.update_spindex(dsids=[dataset.id])
             transaction.update_search_index(dsids=[dataset.id])
             if archive_less_mature:
-                self._archive_less_mature(dataset)
+                self.archive_less_mature(dataset, archive_less_mature)
 
         self._ensure_new_locations(dataset, existing)
 

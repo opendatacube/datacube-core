@@ -158,8 +158,10 @@ def load_datasets_for_update(doc_stream, index):
 @click.option('--confirm-ignore-lineage',
               help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
               is_flag=True, default=False)
-@click.option('--archive-less-mature', help='Archive less mature versions of the dataset',
-              is_flag=True, default=False)
+@click.option('--archive-less-mature', is_flag=False, flag_value=0, default=None,
+              help=('Find and archive less mature versions of the dataset, will fail if more mature versions '
+                    'of the dataset already exist. Can also specify a millisecond buffer amount to be taken '
+                    'into acount when comparing timestamps. Default buffer is 0.'))
 @click.argument('dataset-paths', type=str, nargs=-1)
 @ui.pass_index()
 def index_cmd(index, product_names,
@@ -199,6 +201,14 @@ def index_cmd(index, product_names,
     except ValueError as e:
         _LOG.error(e)
         sys.exit(2)
+
+    if archive_less_mature is not None:
+        if type(archive_less_mature) is not int:
+            click.echo('Error: millisecond delta value must be an integer')
+            sys.exit(1)
+        if archive_less_mature < 0:
+            click.echo('Error: millisecond delta value must be a positive integer')
+            sys.exit(1)
 
     def run_it(dataset_paths):
         doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
@@ -250,8 +260,10 @@ def parse_update_rules(keys_that_can_change):
               - 'keep': keep as alternative location [default]
               - 'archive': mark as archived
               - 'forget': remove from the index'''))
-@click.option('--archive-less-mature', help='Archive less mature versions of the dataset',
-              is_flag=True, default=False)
+@click.option('--archive-less-mature', is_flag=False, flag_value=0, default=None,
+              help=('Find and archive less mature versions of the dataset, will fail if more mature versions '
+                    'of the dataset already exist. Can also specify a millisecond buffer amount to be taken '
+                    'into acount when comparing timestamps. Default buffer is 0.'))
 @click.argument('dataset-paths', nargs=-1)
 @ui.pass_index()
 def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths, archive_less_mature):
@@ -298,6 +310,14 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
     success, fail = 0, 0
     doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
     doc_stream = remap_uri_from_doc(doc_stream)
+
+    if archive_less_mature is not None:
+        if type(archive_less_mature) is not int:
+            click.echo('Error: millisecond delta value must be an integer')
+            sys.exit(1)
+        if archive_less_mature < 0:
+            click.echo('Error: millisecond delta value must be a positive integer')
+            sys.exit(1)
 
     for dataset, existing_ds in load_datasets_for_update(doc_stream, index):
         _LOG.info('Matched %s', dataset)
