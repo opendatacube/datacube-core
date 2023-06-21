@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
 from datacube.index.abstract import AbstractDatasetResource, DSID
@@ -28,7 +28,8 @@ class DatasetResource(AbstractDatasetResource):
         return [False for id_ in ids_]
 
     def add(self, dataset: Dataset,
-            with_lineage: bool = True) -> Dataset:
+            with_lineage: bool = True,
+            archive_less_mature: bool = False) -> Dataset:
         raise NotImplementedError()
 
     def search_product_duplicates(self, product: Product, *args):
@@ -37,7 +38,7 @@ class DatasetResource(AbstractDatasetResource):
     def can_update(self, dataset, updates_allowed=None):
         raise NotImplementedError()
 
-    def update(self, dataset: Dataset, updates_allowed=None):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=False):
         raise NotImplementedError()
 
     def archive(self, ids):

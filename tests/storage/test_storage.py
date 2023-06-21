@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from contextlib import contextmanager
 
@@ -234,7 +234,8 @@ def assert_same_read_results(source, dst_shape, dst_dtype, dst_transform, dst_no
                                 dst_transform=dst_transform,
                                 dst_crs=str(dst_projection),
                                 dst_nodata=dst_nodata,
-                                resampling=resampling)
+                                resampling=resampling,
+                                XSCALE=1, YSCALE=1)
 
     result = np.full(dst_shape, dst_nodata, dtype=dst_dtype)
     H, W = dst_shape

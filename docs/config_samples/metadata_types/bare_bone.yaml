@@ -2,10 +2,16 @@
 name: barebone
 description: A minimalist metadata type file
 dataset:
-  id: [id] # No longer configurable in newer ODCs.
-  sources: [lineage, source_datasets] # No longer configurable in newer ODCs.
+  id: [id]  # No longer configurable in newer ODCs.
+  sources: [lineage, source_datasets]  # No longer configurable in newer ODCs.
+
   creation_dt: [properties, 'odc:processing_datetime']
   label: [label]
+  # The following keys are necessary if describing spatial datasets
+  # grid_spatial: [grid_spatial, projection]
+  # measurements: [measurements]
+  # format: [properties, 'odc:file_format']
+
   search_fields:
     platform:
       description: Platform code

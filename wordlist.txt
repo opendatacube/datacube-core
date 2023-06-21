@@ -258,6 +258,8 @@ LTS
 lv
 macosx
 MakeMask
+Mambaforge
+mambaforge
 ManagingODC
 mapbox
 matplotlib
@@ -269,6 +271,7 @@ mk
 mkdir
 MODIS
 mongolia
+moto
 MTL
 multiband
 multigeom
@@ -312,6 +315,7 @@ nx
 ny
 ODC
 odc
+odcintegration
 ODCv
 OGC
 ogr
@@ -325,11 +329,14 @@ osgeo
 osr
 OSX
 ows
+pandoc
 param
 params
 pc
 petewa
 pgadmin
+pgintegration
+pgisintegration
 pixelquality
 pkgs
 Pluggable
@@ -346,14 +353,13 @@ pq
 pre
 precollection
 prefetch
-Preperation
-preperation
 PRIMEM
 prog
 Proj
 provence
 psql
 pts
+pwd
 py
 pydata
 pyenv
@@ -462,6 +468,7 @@ usgs
 USGS's
 usgslsprepare
 UsingODC
+usr
 utils
 UUID
 uuid

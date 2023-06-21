@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 """
 Common datatypes for DB drivers.
@@ -38,7 +38,7 @@ class OrExpression(Expression):
 
 def as_expression(field: Field, value) -> Expression:
     """
-    Convert a single field/value to expression, following the "simple" convensions.
+    Convert a single field/value to expression, following the "simple" conventions.
     """
     if isinstance(value, Range):
         return field.between(value.begin, value.end)

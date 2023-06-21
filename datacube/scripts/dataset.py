@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import csv
 import datetime
@@ -158,6 +158,8 @@ def load_datasets_for_update(doc_stream, index):
 @click.option('--confirm-ignore-lineage',
               help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
               is_flag=True, default=False)
+@click.option('--archive-less-mature', help='Archive less mature versions of the dataset',
+              is_flag=True, default=False)
 @click.argument('dataset-paths', type=str, nargs=-1)
 @ui.pass_index()
 def index_cmd(index, product_names,
@@ -167,9 +169,11 @@ def index_cmd(index, product_names,
               dry_run,
               ignore_lineage,
               confirm_ignore_lineage,
+              archive_less_mature,
               dataset_paths):
 
     if not dataset_paths:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(index_cmd)
         sys.exit(1)
 
@@ -203,7 +207,7 @@ def index_cmd(index, product_names,
         index_datasets(dss,
                        index,
                        auto_add_lineage=auto_add_lineage and not confirm_ignore_lineage,
-                       dry_run=dry_run)
+                       dry_run=dry_run, archive_less_mature=archive_less_mature)
 
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
@@ -213,12 +217,13 @@ def index_cmd(index, product_names,
         run_it(dataset_paths)
 
 
-def index_datasets(dss, index, auto_add_lineage, dry_run):
+def index_datasets(dss, index, auto_add_lineage, dry_run, archive_less_mature):
     for dataset in dss:
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
-                index.datasets.add(dataset, with_lineage=auto_add_lineage)
+                index.datasets.add(dataset, with_lineage=auto_add_lineage,
+                                   archive_less_mature=archive_less_mature)
             except (ValueError, MissingRecordError) as e:
                 _LOG.error('Failed to add dataset %s: %s', dataset.local_uri, e)
 
@@ -245,10 +250,13 @@ def parse_update_rules(keys_that_can_change):
               - 'keep': keep as alternative location [default]
               - 'archive': mark as archived
               - 'forget': remove from the index'''))
+@click.option('--archive-less-mature', help='Archive less mature versions of the dataset',
+              is_flag=True, default=False)
 @click.argument('dataset-paths', nargs=-1)
 @ui.pass_index()
-def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths):
+def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths, archive_less_mature):
     if not dataset_paths:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(update_cmd)
         sys.exit(1)
 
@@ -301,7 +309,8 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
 
         if not dry_run:
             try:
-                index.datasets.update(dataset, updates_allowed=updates_allowed)
+                index.datasets.update(dataset, updates_allowed=updates_allowed,
+                                      archive_less_mature=archive_less_mature)
                 update_loc(dataset, existing_ds)
                 success += 1
                 echo('Updated %s' % dataset.id)
@@ -416,6 +425,7 @@ def info_cmd(index: Index, show_sources: bool, show_derived: bool,
              max_depth: int,
              ids: Iterable[str]) -> None:
     if not ids:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(info_cmd)
         sys.exit(1)
 
@@ -486,6 +496,7 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
     PATHS may be either file paths or URIs
     """
     if not paths:
+        click.echo('Error: no locations provided\n')
         print_help_msg(uri_search_cmd)
         sys.exit(1)
 
@@ -511,6 +522,7 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
 @ui.pass_index()
 def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(archive_cmd)
         sys.exit(1)
 
@@ -559,6 +571,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
 def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int,
                 dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(restore_cmd)
         sys.exit(1)
 
@@ -606,6 +619,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 @ui.pass_index()
 def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
     if not ids and not all_ds:
+        click.echo('Error: no datasets provided\n')
         print_help_msg(purge_cmd)
         sys.exit(1)
 

@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 """
 Test database methods.
@@ -92,6 +92,31 @@ def test_archive_datasets(index, ls8_eo3_dataset):
     indexed_dataset = index.datasets.get(ls8_eo3_dataset.id)
     assert indexed_dataset.is_active
     assert not indexed_dataset.is_archived
+
+
+def test_archive_less_mature(index, final_dataset, nrt_dataset):
+    # case 1: add nrt then final; nrt should get archived
+    index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
+    index.datasets.get(nrt_dataset.id).is_active
+    index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=True)
+    assert index.datasets.get(nrt_dataset.id).is_archived
+    assert index.datasets.get(final_dataset.id).is_active
+
+    # case 2: purge nrt; re-add with final already there
+    index.datasets.purge([nrt_dataset.id])
+    assert index.datasets.get(nrt_dataset.id) is None
+    with pytest.raises(ValueError):
+        # should error as more mature version of dataset already exists
+        index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
+
+
+def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am_ard3_interim):
+    # test archive_less_mature where there's a slight difference in timestamps
+    index.datasets.add(ga_s2am_ard3_interim, with_lineage=False)
+    index.datasets.get(ga_s2am_ard3_interim.id).is_active
+    index.datasets.add(ga_s2am_ard3_final, with_lineage=False, archive_less_mature=True)
+    assert index.datasets.get(ga_s2am_ard3_interim.id).is_archived
+    assert index.datasets.get(ga_s2am_ard3_final.id).is_active
 
 
 def test_purge_datasets(index, ls8_eo3_dataset):

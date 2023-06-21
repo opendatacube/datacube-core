@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2022 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import logging
@@ -15,6 +15,7 @@ from typing import (Any, Iterable, Iterator,
                     NamedTuple, Optional,
                     Tuple, Union, Sequence)
 from uuid import UUID
+from datetime import timedelta
 
 from datacube.config import LocalConfig
 from datacube.index.exceptions import TransactionException
@@ -1067,7 +1068,8 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def add(self, dataset: Dataset,
-            with_lineage: bool = True
+            with_lineage: bool = True,
+            archive_less_mature: bool = False,
            ) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
@@ -1078,6 +1080,10 @@ class AbstractDatasetResource(ABC):
            - ``True (default)`` attempt adding lineage datasets if missing
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
+
+        :param archive_less_mature:
+            - ``True`` search for less mature versions of the dataset
+            and archive them
 
         :return: Persisted Dataset model
         """
@@ -1116,12 +1122,14 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def update(self,
                dataset: Dataset,
-               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None
+               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None,
+               archive_less_mature: bool = False,
               ) -> Dataset:
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset model with unpersisted updates
         :param updates_allowed: Allowed updates
+        :param archive_less_mature: Find and archive less mature datasets
         :return: Persisted dataset model
         """
 
@@ -1132,6 +1140,52 @@ class AbstractDatasetResource(ABC):
 
         :param Iterable[Union[str,UUID]] ids: list of dataset ids to archive
         """
+
+    def archive_less_mature(self, ds: Dataset) -> None:
+        """
+        Archive less mature versions of a dataset
+
+        :param Dataset ds: dataset to search
+        """
+        less_mature = self.find_less_mature(ds)
+        less_mature_ids = map(lambda x: x.id, less_mature)
+
+        self.archive(less_mature_ids)
+        for lm_ds in less_mature_ids:
+            _LOG.info(f"Archived less mature dataset: {lm_ds}")
+
+    def find_less_mature(self, ds: Dataset) -> Iterable[Dataset]:
+        """
+        Find less mature versions of a dataset
+
+        :param Dataset ds: Dataset to search
+        :return: Iterable of less mature datasets
+        """
+        less_mature = []
+        # 'expand' the date range by a millisecond to give a bit more leniency in datetime comparison
+        expanded_time_range = Range(ds.metadata.time.begin - timedelta(milliseconds=500),
+                                    ds.metadata.time.end + timedelta(milliseconds=500))
+        dupes = self.search(product=ds.product.name,
+                            region_code=ds.metadata.region_code,
+                            time=expanded_time_range)
+        for dupe in dupes:
+            if dupe.id == ds.id:
+                continue
+            if dupe.metadata.dataset_maturity == ds.metadata.dataset_maturity:
+                # Duplicate has the same maturity, which one should be archived is unclear
+                raise ValueError(
+                    f"A dataset with the same maturity as dataset {ds.id} already exists, "
+                    f"with id: {dupe.id}"
+                )
+            if dupe.metadata.dataset_maturity < ds.metadata.dataset_maturity:
+                # Duplicate is more mature than dataset
+                # Note that "final" < "nrt"
+                raise ValueError(
+                    f"A more mature version of dataset {ds.id} already exists, with id: "
+                    f"{dupe.id} and maturity: {dupe.metadata.dataset_maturity}"
+                )
+            less_mature.append(dupe)
+        return less_mature
 
     @abstractmethod
     def restore(self, ids: Iterable[DSID]) -> None:

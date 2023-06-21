@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 """
 Storage Query and Access API module
@@ -136,8 +136,8 @@ class Query(object):
                 if time_coord is not None:
                     self.search['time'] = _time_to_search_dims(
                         (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
-                         pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
-                         + datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
+                            pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
+                            + datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
                     )
 
     @property
@@ -350,7 +350,11 @@ def _time_to_search_dims(time_range):
         if hasattr(tr_end, 'isoformat'):
             tr_end = tr_end.isoformat()
 
+        if tr_start is None:
+            tr_start = datetime.datetime.fromtimestamp(0)
         start = _to_datetime(tr_start)
+        if tr_end is None:
+            tr_end = datetime.datetime.now().strftime("%Y-%m-%d")
         end = _to_datetime(pandas.Period(tr_end)
                            .end_time
                            .to_pydatetime())
