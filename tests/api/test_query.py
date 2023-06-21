@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import pandas
@@ -140,7 +140,11 @@ testdata = [
     ((datetime.datetime(2008, 1, 1), datetime.datetime(2008, 1, 10, 23, 59, 40)),
      format_test('2008-01-01T00:00:00', '2008-01-10T23:59:40.999999')),
     ((datetime.date(2008, 1, 1)),
-     format_test('2008-01-01T00:00:00', '2008-01-01T23:59:59.999999'))
+     format_test('2008-01-01T00:00:00', '2008-01-01T23:59:59.999999')),
+    ((datetime.date(2008, 1, 1), None),
+     format_test('2008-01-01T00:00:00', datetime.datetime.now().strftime("%Y-%m-%dT23:59:59.999999"))),
+    ((None, '2008'),
+     format_test(datetime.datetime.fromtimestamp(0).strftime("%Y-%m-%dT%H:%M:%S"), '2008-12-31T23:59:59.999999'))
 ]
 
 

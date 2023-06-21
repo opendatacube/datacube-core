@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2020 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 """
 Common functions for click-based cli scripts.
@@ -340,16 +340,19 @@ def parsed_search_expressions(f):
         FIELD = VALUE
         FIELD in DATE-RANGE
         FIELD in [START, END]
+        TIME < DATE
+        TIME > DATE
 
     \b
-    DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
     START and END can be either numbers or dates
+    Dates follow YYYY, YYYY-MM, or YYYY-MM-DD format
 
     FIELD: x, y, lat, lon, time, product, ...
 
     \b
     eg. 'time in [1996-01-01, 1996-12-31]'
         'time in 1996'
+        'time > 2020-01'
         'lon in [130, 140]' 'lat in [-40, -30]'
         product=ls5_nbar_albers
 

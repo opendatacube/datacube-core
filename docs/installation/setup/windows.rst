@@ -62,14 +62,22 @@ Download the latest version of the software from the `repository <https://github
 
 We need to specify the database user and password for the ODC integration testing. To do this::
 
-    copy integration_tests\agdcintegration.conf %HOME%\.datacube_integration.conf
+    copy integration_tests\integration.conf %HOME%\.datacube_integration.conf
 
 
 Then edit the ``%HOME%\.datacube_integration.conf`` with a text editor and add the following lines replacing ``<foo>`` with your username and ``<foobar>`` with the database user password you set above (not the postgres one, your ``<foo>`` one)::
 
     [datacube]
     db_hostname: localhost
-    db_database: agdcintegration
+    db_database: pgintegration
+    index_driver: default
+    db_username: <foo>
+    db_password: <foobar>
+
+    [experimental]
+    db_hostname: localhost
+    db_database: pgisintegration
+    index_driver: postgis
     db_username: <foo>
     db_password: <foobar>
 

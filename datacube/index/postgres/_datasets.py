@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2022 ODC Contributors
+# Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 """
 API for dataset indexing, access and search.
@@ -133,7 +133,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
     def add(self, dataset: Dataset,
-            with_lineage: bool = True) -> Dataset:
+            with_lineage: bool = True, archive_less_mature: bool = False) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
@@ -143,6 +143,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
            - ``True (default)`` attempt adding lineage datasets if missing
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
+
+        :param archive_less_mature:
+            - ``True`` search for less mature versions of the dataset
+            and archive them
 
         :rtype: Dataset
         """
@@ -188,6 +192,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         with self._db_connection(transaction=True) as transaction:
             process_bunch(dss, dataset, transaction)
+            if archive_less_mature:
+                self.archive_less_mature(dataset)
 
         return dataset
 
@@ -279,11 +285,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return not bad_changes, good_changes, bad_changes
 
-    def update(self, dataset: Dataset, updates_allowed=None):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=False):
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset to update
         :param updates_allowed: Allowed updates
+        :param archive_less_mature: Find and archive less mature datasets
         :rtype: Dataset
         """
         existing = self.get(dataset.id)

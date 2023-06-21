@@ -27,6 +27,13 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Config
+      id: cfg
+      run: |
+        if "${GITHUB_REF}" in "refs/tags/"*; then
+          echo "push_pypi=yes" >> $GITHUB_OUTPUT
+        fi
+
     - uses: dorny/paths-filter@v2
       id: changes
       if: |
@@ -112,10 +119,11 @@ jobs:
         ls -lh ./dist/
         twine check ./dist/*
         EOF
+
     - name: Publish to PyPi
       if: |
         github.event_name == 'push'
-        && github.ref == 'refs/heads/pypi/publish'
+        && steps.cfg.outputs.push_pypi == 'yes'
       run: |
         if [ -n "${TWINE_PASSWORD}" ]; then
           docker run --rm  \
@@ -132,6 +140,7 @@ jobs:
         else
            echo "Skipping upload as 'PyPiToken' is not set"
         fi
+
       env:
         TWINE_PASSWORD: ${{ secrets.PyPiToken }}
 

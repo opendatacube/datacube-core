@@ -1,0 +1,151 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: c0324cbb-f499-4e8d-8001-a38206ff6904
+
+label: ga_s2am_ard_3-2-1_53JNN_2021-07-24_interim
+product:
+  name: ga_s2am_ard_3
+  href: https://collections.dea.ga.gov.au/product/ga_s2am_ard_3
+
+crs: epsg:32753
+geometry:
+  type: Polygon
+  coordinates: [[[499980.0, 7300000.0], [609780.0, 7300000.0], [609780.0, 7190200.0],
+      [499980.0, 7190200.0], [499980.0, 7300000.0]]]
+grids:
+  default:
+    shape: [5490, 5490]
+    transform: [20.0, 0.0, 499980.0, 0.0, -20.0, 7300000.0, 0.0, 0.0, 1.0]
+  '10':
+    shape: [10980, 10980]
+    transform: [10.0, 0.0, 499980.0, 0.0, -10.0, 7300000.0, 0.0, 0.0, 1.0]
+  '60':
+    shape: [1830, 1830]
+    transform: [60.0, 0.0, 499980.0, 0.0, -60.0, 7300000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 2021-07-24 01:14:10.195809Z
+  dea:dataset_maturity: interim
+  dea:product_maturity: stable
+  eo:cloud_cover: 0.0
+  eo:constellation: sentinel-2
+  eo:gsd: 10.0  # Ground sample distance (m)
+  eo:instrument: MSI
+  eo:platform: sentinel-2a
+  eo:sun_azimuth: 33.4134402697606
+  eo:sun_elevation: 52.1647723037447
+  fmask:clear: 99.99995355025365
+  fmask:cloud: 0.0
+  fmask:cloud_shadow: 0.0
+  fmask:snow: 0.0
+  fmask:water: 4.6449746351206534e-05
+  gqa:abs_iterative_mean_x: 0.48
+  gqa:abs_iterative_mean_xy: 1.02
+  gqa:abs_iterative_mean_y: 0.91
+  gqa:abs_x: 0.81
+  gqa:abs_xy: 2.04
+  gqa:abs_y: 1.87
+  gqa:cep90: 2.56
+  gqa:iterative_mean_x: 0.33
+  gqa:iterative_mean_xy: 0.41
+  gqa:iterative_mean_y: 0.24
+  gqa:iterative_stddev_x: 0.6
+  gqa:iterative_stddev_xy: 1.7
+  gqa:iterative_stddev_y: 1.6
+  gqa:mean_x: 0.41
+  gqa:mean_xy: 0.41
+  gqa:mean_y: 0.03
+  gqa:stddev_x: 3.58
+  gqa:stddev_xy: 10.73
+  gqa:stddev_y: 10.12
+  odc:dataset_version: 3.2.1
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2023-05-31 21:12:25.979068Z
+  odc:producer: ga.gov.au
+  odc:product_family: ard
+  odc:region_code: 53JNN
+  s2cloudless:clear: 100.0
+  s2cloudless:cloud: 0.0
+  sentinel:datastrip_id: S2A_OPER_MSI_L1C_DS_S2RP_20230222T235626_S20210724T010731_N05.00
+  sentinel:datatake_start_datetime: 2023-02-22 23:56:26Z
+  sentinel:grid_square: NN
+  sentinel:latitude_band: J
+  sentinel:product_name: S2A_MSIL1C_20210724T010731_N0500_R045_T53JNN_20230222T235626.SAFE
+  sentinel:sentinel_tile_id: S2A_OPER_MSI_L1C_TL_S2RP_20230222T235626_A031788_T53JNN_N05.00
+  sentinel:utm_zone: 53
+
+measurements:
+  nbart_blue:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band02.tif
+    grid: '10'
+  nbart_coastal_aerosol:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band01.tif
+    grid: '60'
+  nbart_green:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band03.tif
+    grid: '10'
+  nbart_nir_1:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band08.tif
+    grid: '10'
+  nbart_nir_2:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band08a.tif
+  nbart_red:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band04.tif
+    grid: '10'
+  nbart_red_edge_1:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band05.tif
+  nbart_red_edge_2:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band06.tif
+  nbart_red_edge_3:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band07.tif
+  nbart_swir_2:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band11.tif
+  nbart_swir_3:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_band12.tif
+  oa_azimuthal_exiting:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_azimuthal-exiting.tif
+  oa_azimuthal_incident:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_azimuthal-incident.tif
+  oa_combined_terrain_shadow:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_combined-terrain-shadow.tif
+  oa_exiting_angle:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_exiting-angle.tif
+  oa_fmask:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_fmask.tif
+  oa_incident_angle:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_incident-angle.tif
+  oa_nbart_contiguity:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_nbart-contiguity.tif
+    grid: '10'
+  oa_relative_azimuth:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_relative-azimuth.tif
+  oa_relative_slope:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_relative-slope.tif
+  oa_s2cloudless_mask:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_s2cloudless-mask.tif
+    grid: '60'
+  oa_s2cloudless_prob:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_s2cloudless-prob.tif
+    grid: '60'
+  oa_satellite_azimuth:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_satellite-azimuth.tif
+  oa_satellite_view:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_satellite-view.tif
+  oa_solar_azimuth:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_solar-azimuth.tif
+  oa_solar_zenith:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_solar-zenith.tif
+  oa_time_delta:
+    path: ga_s2am_oa_3-2-1_53JNN_2021-07-24_interim_time-delta.tif
+
+accessories:
+  thumbnail:nbart:
+    path: ga_s2am_nbart_3-2-1_53JNN_2021-07-24_interim_thumbnail.jpg
+  metadata:processor:
+    path: ga_s2am_ard_3-2-1_53JNN_2021-07-24_interim.proc-info.yaml
+  checksum:sha1:
+    path: ga_s2am_ard_3-2-1_53JNN_2021-07-24_interim.sha1
+
+lineage: {}
+...
