@@ -173,7 +173,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 # 1c. Store locations
                 if dataset.uris is not None:
                     self._ensure_new_locations(dataset, transaction=transaction)
-            if archive_less_mature:
+            if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
 
         return dataset
@@ -349,7 +349,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
             transaction.update_spindex(dsids=[dataset.id])
             transaction.update_search_index(dsids=[dataset.id])
-            if archive_less_mature:
+            if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
 
         self._ensure_new_locations(dataset, existing)

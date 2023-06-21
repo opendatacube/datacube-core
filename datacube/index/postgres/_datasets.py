@@ -191,7 +191,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         with self._db_connection(transaction=True) as transaction:
             process_bunch(dss, dataset, transaction)
-            if archive_less_mature:
+            if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
 
         return dataset
@@ -320,7 +320,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection(transaction=True) as transaction:
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
-            if archive_less_mature:
+            if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
 
         self._ensure_new_locations(dataset, existing)
