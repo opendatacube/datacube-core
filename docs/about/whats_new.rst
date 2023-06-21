@@ -11,6 +11,8 @@ v1.8.next
 - Second attempt to address unexpected handling of image aspect ratios in rasterio and
   GDAL. (:pull:`1457`)
 - Fix broken pypi publishing Github action (:pull:`1454`)
+- Documentation improvements (:pull:`1455`)
+- Increase maturity leniency to +-500ms (:pull:`1458`)
 
 
 v1.8.13 (6th June 2023)
