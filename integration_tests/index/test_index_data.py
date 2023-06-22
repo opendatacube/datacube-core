@@ -96,9 +96,9 @@ def test_archive_datasets(index, local_config, ls8_eo3_dataset):
 
 def test_archive_less_mature(index, final_dataset, nrt_dataset):
     # case 1: add nrt then final; nrt should get archived
-    index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
+    index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=0)
     index.datasets.get(nrt_dataset.id).is_active
-    index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=True)
+    index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=0)
     assert index.datasets.get(nrt_dataset.id).is_archived
     assert index.datasets.get(final_dataset.id).is_active
 
@@ -107,14 +107,14 @@ def test_archive_less_mature(index, final_dataset, nrt_dataset):
     assert index.datasets.get(nrt_dataset.id) is None
     with pytest.raises(ValueError):
         # should error as more mature version of dataset already exists
-        index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
+        index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=0)
 
 
 def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am_ard3_interim):
     # test archive_less_mature where there's a slight difference in timestamps
     index.datasets.add(ga_s2am_ard3_interim, with_lineage=False)
     index.datasets.get(ga_s2am_ard3_interim.id).is_active
-    index.datasets.add(ga_s2am_ard3_final, with_lineage=False, archive_less_mature=True)
+    index.datasets.add(ga_s2am_ard3_final, with_lineage=False, archive_less_mature=1)
     assert index.datasets.get(ga_s2am_ard3_interim.id).is_archived
     assert index.datasets.get(ga_s2am_ard3_final.id).is_active
 

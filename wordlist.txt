@@ -440,6 +440,7 @@ Terria
 th
 TIF
 tif
+timedelta
 timeslice
 timeslot
 TIRS
