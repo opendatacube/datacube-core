@@ -5,10 +5,12 @@
 #
 # type: ignore
 import sys
+from deprecat import deprecat
 
 _REMOTE_LOG_FORMAT_STRING = '%(asctime)s {} %(process)d %(name)s %(levelname)s %(message)s'
 
 
+@deprecat(reason="Executors have been deprecated and will be removed in v1.9", version='1.8.14')
 class SerialExecutor(object):
     def __repr__(self):
         return 'SerialExecutor'
@@ -73,6 +75,7 @@ def setup_logging():
     logging.root.handlers = [handler]
 
 
+@deprecat(reason="Executors have been deprecated and will be removed in v1.9", version='1.8.14')
 def _get_distributed_executor(scheduler):
     """
     :param scheduler: Address of a scheduler
@@ -144,6 +147,7 @@ def _run_cloud_pickled_function(f_data, *args, **kwargs):
     return func(*args, **kwargs)
 
 
+@deprecat(reason="Executors have been deprecated and will be removed in v1.9", version='1.8.14')
 def _get_concurrent_executor(workers, use_cloud_pickle=False):
     try:
         from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -221,6 +225,7 @@ def _get_concurrent_executor(workers, use_cloud_pickle=False):
     return MultiprocessingExecutor(ProcessPoolExecutor(workers), use_cloud_pickle)
 
 
+@deprecat(reason="Executors have been deprecated and will be removed in v1.9", version='1.8.14')
 def get_executor(scheduler, workers, use_cloud_pickle=True):
     """
     Return a task executor based on input parameters. Falling back as required.

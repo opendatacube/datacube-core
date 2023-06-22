@@ -7,6 +7,7 @@
 """
 
 import click
+from deprecat import deprecat
 
 KNOWN_WORKER_TYPES = ['distributed', 'dask', 'celery']
 
@@ -25,11 +26,7 @@ def parse_executor_opt(ctx, param, value):
     return ex_type, host, port
 
 
-def launch_celery_worker(host, port, nprocs, password=''):
-    from datacube import _celery_runner as cr
-    cr.launch_worker(host, port, password=password, nprocs=nprocs)
-
-
+@deprecat(reason="Executors have been deprecated and will be removed in v1.9", version='1.8.14')
 def launch_distributed_worker(host, port, nprocs, nthreads=1):
     import subprocess
 
@@ -45,13 +42,13 @@ def launch_distributed_worker(host, port, nprocs, nthreads=1):
 
 @click.command(name='worker')
 @click.option('--executor', type=(click.Choice(KNOWN_WORKER_TYPES), str),  # type: ignore
-              help="(distributed|dask(alias for distributed)|celery) host:port",
+              help="WARNING: executors have been deprecated in v1.8.14, and will be removed in v1.9.\n"
+              "(distributed|dask(alias for distributed)) host:port",
               default=(None, None),
               callback=parse_executor_opt)
 @click.option('--nprocs', type=int, default=0, help='Number of worker processes to launch')
 def main(executor, nprocs):
-    launchers = dict(celery=launch_celery_worker,
-                     dask=launch_distributed_worker,
+    launchers = dict(dask=launch_distributed_worker,
                      distributed=launch_distributed_worker)
     ex_type, host, port = executor
     return launchers[ex_type](host, port, nprocs)

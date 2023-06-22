@@ -14,6 +14,7 @@ v1.8.next
 - Documentation improvements (:pull:`1455`)
 - Increase default maturity leniency to +-500ms (:pull:`1458`)
 - Add option to specify maturity timedelta when using ``--archive-less-mature`` option (:pull:`1460`)
+- Mark executors as deprecated (:pull:`1461`)
 
 
 v1.8.13 (6th June 2023)
