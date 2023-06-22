@@ -285,7 +285,9 @@ def _setup_executor(ctx, param, value):
 executor_cli_options = click.option('--executor',  # type: ignore
                                     type=(click.Choice(list(EXECUTOR_TYPES)), str),
                                     default=['serial', None],
-                                    help="Run parallelized, either locally or distributed. eg:\n"
+                                    help="WARNING: executors have been deprecated in v1.8.14, "
+                                    "and will be removed in v1.9.\n"
+                                    "Run parallelized, either locally or distributed. eg:\n"
                                          "--executor multiproc 4 (OR)\n"
                                          "--executor distributed 10.0.0.8:8888",
                                     callback=_setup_executor)
