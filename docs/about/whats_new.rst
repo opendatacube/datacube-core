@@ -13,6 +13,7 @@ v1.8.next
 - Fix broken pypi publishing Github action (:pull:`1454`)
 - Documentation improvements (:pull:`1455`)
 - Increase maturity leniency to +-500ms (:pull:`1458`)
+- Mark executors as deprecated (:pull:`1461`)
 
 
 v1.8.13 (6th June 2023)
