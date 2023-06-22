@@ -405,7 +405,6 @@ def get_driver_from_config(config):
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @click.option('--allow-product-changes', is_flag=True, default=False,
               help='Allow the output product definition to be updated if it differs.')
-@ui.executor_cli_options
 @ui.pass_index(app_name='datacube-ingest')
 def ingest_cmd(index,
                config_file,

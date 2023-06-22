@@ -16,7 +16,6 @@ import click
 from datacube import config, __version__
 from datacube.api.core import Datacube
 
-from datacube.executor import get_executor  # type: ignore[attr-defined]
 from datacube.index import index_connect
 
 from datacube.ui.expression import parse_expressions
@@ -264,31 +263,6 @@ def pass_datacube(app_name=None, expect_initialised=True):
 def parse_endpoint(value):
     ip, port = tuple(value.split(':'))
     return ip, int(port)
-
-
-EXECUTOR_TYPES = {
-    'serial': lambda _: get_executor(None, None),
-    'multiproc': lambda workers: get_executor(None, int(workers)),
-    'distributed': lambda addr: get_executor(addr, True),
-}
-
-EXECUTOR_TYPES['dask'] = EXECUTOR_TYPES['distributed']  # Add alias "dask" for distributed
-
-
-def _setup_executor(ctx, param, value):
-    try:
-        return EXECUTOR_TYPES[value[0]](value[1])
-    except ValueError:
-        ctx.fail("Failed to create '%s' executor with '%s'" % value)
-
-
-executor_cli_options = click.option('--executor',  # type: ignore
-                                    type=(click.Choice(list(EXECUTOR_TYPES)), str),
-                                    default=['serial', None],
-                                    help="Run parallelized, either locally or distributed. eg:\n"
-                                         "--executor multiproc 4 (OR)\n"
-                                         "--executor distributed 10.0.0.8:8888",
-                                    callback=_setup_executor)
 
 
 def handle_exception(msg, e):
