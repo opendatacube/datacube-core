@@ -10,7 +10,7 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, List, Union, Mapping, Any
+from typing import Iterable, List, Union, Mapping, Optional, Any
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -132,7 +132,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
     def add(self, dataset: Dataset,
-            with_lineage: bool = True, archive_less_mature: bool = False) -> Dataset:
+            with_lineage: bool = True, archive_less_mature: Optional[int] = None) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
@@ -143,9 +143,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
 
-        :param archive_less_mature:
-            - ``True`` search for less mature versions of the dataset
-            and archive them
+        :param archive_less_mature: if integer, search for less
+        mature versions of the dataset with the int value as a millisecond
+        delta in timestamp comparison
 
         :rtype: Dataset
         """
@@ -191,8 +191,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         with self._db_connection(transaction=True) as transaction:
             process_bunch(dss, dataset, transaction)
-            if archive_less_mature:
-                self.archive_less_mature(dataset)
+            if archive_less_mature is not None:
+                self.archive_less_mature(dataset, archive_less_mature)
 
         return dataset
 
@@ -284,12 +284,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return not bad_changes, good_changes, bad_changes
 
-    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=False):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=None):
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset to update
         :param updates_allowed: Allowed updates
-        :param archive_less_mature: Find and archive less mature datasets
+        :param archive_less_mature: Find and archive less mature datasets with ms delta
         :rtype: Dataset
         """
         existing = self.get(dataset.id)
@@ -320,6 +320,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection(transaction=True) as transaction:
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
+            if archive_less_mature is not None:
+                self.archive_less_mature(dataset, archive_less_mature)
 
         self._ensure_new_locations(dataset, existing)
 

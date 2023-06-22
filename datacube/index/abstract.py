@@ -827,7 +827,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def add(self, dataset: Dataset,
             with_lineage: bool = True,
-            archive_less_mature: bool = False,
+            archive_less_mature: Optional[int] = None,
            ) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
@@ -839,9 +839,9 @@ class AbstractDatasetResource(ABC):
            - ``False`` record lineage relations, but do not attempt
              adding lineage datasets to the db
 
-        :param archive_less_mature:
-            - ``True`` search for less mature versions of the dataset
-            and archive them
+        :param archive_less_mature: if integer, search for less
+        mature versions of the dataset with the int value as a millisecond
+        delta in timestamp comparison
 
         :return: Persisted Dataset model
         """
@@ -881,13 +881,13 @@ class AbstractDatasetResource(ABC):
     def update(self,
                dataset: Dataset,
                updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None,
-               archive_less_mature: bool = False,
+               archive_less_mature: Optional[int] = None,
               ) -> Dataset:
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset model with unpersisted updates
         :param updates_allowed: Allowed updates
-        :param archive_less_mature: Find and archive less mature datasets
+        :param archive_less_mature: Find and archive less mature datasets with ms delta
         :return: Persisted dataset model
         """
 
@@ -899,30 +899,32 @@ class AbstractDatasetResource(ABC):
         :param Iterable[Union[str,UUID]] ids: list of dataset ids to archive
         """
 
-    def archive_less_mature(self, ds: Dataset) -> None:
+    def archive_less_mature(self, ds: Dataset, delta: int) -> None:
         """
         Archive less mature versions of a dataset
 
         :param Dataset ds: dataset to search
         """
-        less_mature = self.find_less_mature(ds)
+        less_mature = self.find_less_mature(ds, delta)
         less_mature_ids = map(lambda x: x.id, less_mature)
 
         self.archive(less_mature_ids)
         for lm_ds in less_mature_ids:
             _LOG.info(f"Archived less mature dataset: {lm_ds}")
 
-    def find_less_mature(self, ds: Dataset) -> Iterable[Dataset]:
+    def find_less_mature(self, ds: Dataset, delta: int) -> Iterable[Dataset]:
         """
         Find less mature versions of a dataset
 
         :param Dataset ds: Dataset to search
+        :param int delta: millisecond delta for time range
         :return: Iterable of less mature datasets
         """
         less_mature = []
-        # 'expand' the date range by a millisecond to give a bit more leniency in datetime comparison
-        expanded_time_range = Range(ds.metadata.time.begin - timedelta(milliseconds=500),
-                                    ds.metadata.time.end + timedelta(milliseconds=500))
+        assert delta >= 0
+        # 'expand' the date range by `delta` milliseconds to give a bit more leniency in datetime comparison
+        expanded_time_range = Range(ds.metadata.time.begin - timedelta(milliseconds=delta),
+                                    ds.metadata.time.end + timedelta(milliseconds=delta))
         dupes = self.search(product=ds.product.name,
                             region_code=ds.metadata.region_code,
                             time=expanded_time_range)
