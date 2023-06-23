@@ -439,8 +439,8 @@ class Product:
     def license(self) -> str:
         return self.definition.get("license", None)
 
-    @deprecat(reason="Ingestion has been deprecated and will be removed in a future version.", version="1.8.14")
     @property
+    @deprecat(reason="Ingestion has been deprecated and will be removed in a future version.", version="1.8.14")
     def managed(self) -> bool:
         return self.definition.get('managed', False)
 
