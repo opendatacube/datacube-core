@@ -26,14 +26,9 @@ def load_drivers(group: str) -> Dict[str, Any]:
     """
 
     def safe_load(ep):
-        from importlib.metadata import PackageNotFoundError
         # pylint: disable=broad-except,bare-except
         try:
             driver_init = ep.load()
-        except PackageNotFoundError:
-            # This happens when entry points were marked with extra features,
-            # but extra feature were not requested for installation
-            return None
         except Exception as e:
             _LOG.warning('Failed to resolve driver %s::%s', group, ep.name)
             _LOG.warning('Error was: %s', repr(e))
@@ -52,7 +47,7 @@ def load_drivers(group: str) -> Dict[str, Any]:
 
     def resolve_all(group: str) -> Iterable[Tuple[str, Any]]:
         from importlib.metadata import entry_points
-        for ep in entry_points(group=group, name=None):
+        for ep in entry_points(group=group):
             driver = safe_load(ep)
             if driver is not None:
                 yield (ep.name, driver)
