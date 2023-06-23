@@ -36,6 +36,7 @@ properties:
         items:
             "$ref": "#/definitions/measurement"
     managed:
+        # Indicates ingested product - deprecated
         type: boolean
 
 required:
