@@ -26,11 +26,11 @@ def load_drivers(group: str) -> Dict[str, Any]:
     """
 
     def safe_load(ep):
-        from pkg_resources import DistributionNotFound
+        from importlib.metadata import PackageNotFoundError
         # pylint: disable=broad-except,bare-except
         try:
             driver_init = ep.load()
-        except DistributionNotFound:
+        except PackageNotFoundError:
             # This happens when entry points were marked with extra features,
             # but extra feature were not requested for installation
             return None
@@ -51,8 +51,8 @@ def load_drivers(group: str) -> Dict[str, Any]:
         return driver
 
     def resolve_all(group: str) -> Iterable[Tuple[str, Any]]:
-        from pkg_resources import iter_entry_points
-        for ep in iter_entry_points(group=group, name=None):
+        from importlib.metadata import entry_points
+        for ep in entry_points(group=group, name=None):
             driver = safe_load(ep)
             if driver is not None:
                 yield (ep.name, driver)
