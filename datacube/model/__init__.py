@@ -744,14 +744,6 @@ class Product:
 DatasetType = Product
 
 
-@schema_validated(SCHEMA_PATH / 'ingestor-config-type-schema.yaml')
-class IngestorConfig:
-    """
-    Ingestor configuration definition
-    """
-    pass
-
-
 @deprecat(
     reason='This version of GridSpec has been deprecated. Please use the GridSpec class definted in odc-geo.',
     version='1.9.0'
