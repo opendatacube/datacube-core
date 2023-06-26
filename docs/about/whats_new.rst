@@ -16,6 +16,7 @@ v1.8.next
 - Add option to specify maturity timedelta when using ``--archive-less-mature`` option (:pull:`1460`)
 - Mark executors as deprecated (:pull:`1461`)
 - Mark ingestion as deprecated (:pull:`1463`)
+- Replace deprecated ``pkg_resources`` with ``importlib.resources`` and ``importlib.metadata`` (:pull:`1466`)
 
 
 v1.8.13 (6th June 2023)

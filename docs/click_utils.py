@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import pkg_resources
+from importlib.metadata import entry_points
 from docutils.nodes import literal_block, section, title, make_id
 from sphinx.domains import Domain
 from docutils.parsers.rst import Directive
@@ -34,8 +34,8 @@ def find_script_callable_from_env(name, env):
 
 
 def find_script_callable(name):
-    return list(pkg_resources.iter_entry_points(
-        'console_scripts', name))[0].load()
+    return list(entry_points(
+        group='console_scripts', name=name))[0].load()
 
 
 def generate_help_text(command, prefix):
