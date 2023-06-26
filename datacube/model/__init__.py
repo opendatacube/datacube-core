@@ -24,6 +24,8 @@ from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
 
+from deprecat import deprecat
+
 _LOG = logging.getLogger(__name__)
 
 DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
@@ -438,6 +440,7 @@ class Product:
         return self.definition.get("license", None)
 
     @property
+    @deprecat(reason="Ingestion has been deprecated and will be removed in a future version.", version="1.8.14")
     def managed(self) -> bool:
         return self.definition.get('managed', False)
 
@@ -713,6 +716,7 @@ class Product:
 DatasetType = Product
 
 
+@deprecat(reason="Ingestion has been deprecated and will be removed in a future version.", version="1.8.14")
 @schema_validated(SCHEMA_PATH / 'ingestor-config-type-schema.yaml')
 class IngestorConfig:
     """
