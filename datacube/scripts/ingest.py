@@ -391,7 +391,8 @@ def get_driver_from_config(config):
     return driver
 
 
-@cli.command('ingest', help="Ingest datasets")
+@cli.command('ingest', help="WARNING: Ingestion has been deprecated in v1.8.14 and will be removed in v1.9\n"
+                            "Ingest datasets")
 @click.option('--config-file', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
               help='Ingest configuration file')
