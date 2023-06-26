@@ -5,7 +5,7 @@
 import pytest
 from pathlib import PurePosixPath
 
-from integration_tests.test_full_ingestion import ensure_datasets_are_indexed
+from integration_tests.utils import ensure_datasets_are_indexed
 
 
 # Current formulation of this test relies on non-EO3 test data

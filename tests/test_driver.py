@@ -73,9 +73,7 @@ def test_writer_driver_mk_uri():
     assert writer_driver.uri_scheme == 'file'
 
     file_path = '/path/to/my_file.nc'
-    driver_alias = 'NetCDF CF'
-    storage_config = {'driver': driver_alias}
-    file_uri = writer_driver.mk_uri(file_path=file_path, storage_config=storage_config)
+    file_uri = writer_driver.mk_uri(file_path=file_path)
     assert file_uri == f'file://{file_path}'
 
 

@@ -31,7 +31,7 @@ __all__ = [
     "LineageDirection", "LineageTree", "LineageRelation", "InconsistentLineageException",
     "Dataset", "Product", "MetadataType", "Measurement", "GridSpec",
     "metadata_from_doc",
-    "ExtraDimensions", "IngestorConfig"
+    "ExtraDimensions"
 ]
 
 from odc.geo import CRS, BoundingBox, Geometry, wh_

@@ -462,16 +462,6 @@ def in_memory_config():
     return LocalConfig.find(CONFIG_FILE_PATHS, env="local_memory")
 
 
-@pytest.fixture
-def ingest_configs(datacube_env_name):
-    """ Provides dictionary product_name => config file name
-    """
-    return {
-        'ls5_nbar_albers': 'ls5_nbar_albers.yaml',
-        'ls5_pq_albers': 'ls5_pq_albers.yaml',
-    }
-
-
 def reset_db(local_cfg, tz=None) -> Union[PostgresDb, PostGisDb]:
     if local_cfg._env in ('datacube', 'default', 'postgres'):
         db = PostgresDb.from_config(
