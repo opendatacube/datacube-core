@@ -48,9 +48,3 @@ This section contains information on setting up and managing the Open Data Cube.
     :caption: Advanced Topics
 
     extending-odc
-
-
-.. toctree::
-    :caption: Legacy Approaches
-
-    ingesting-data/index

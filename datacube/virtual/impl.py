@@ -20,10 +20,10 @@ import xarray
 import dask.array
 from dask.core import flatten
 import yaml
+from collections import OrderedDict
 
 from datacube import Datacube
 from datacube.api.core import output_geobox
-from datacube.api.grid_workflow import _fast_slice
 from datacube.api.query import Query, query_group_by
 from datacube.model import Measurement, Product
 from datacube.model.utils import xr_apply, xr_iter, SafeDumper
@@ -923,3 +923,15 @@ def from_validated_recipe(recipe):
     lookup = dict(product=Product, transform=Transform, collate=Collate,
                   juxtapose=Juxtapose, aggregate=Aggregate, reproject=Reproject)
     return lookup[virtual_product_kind(recipe)](recipe)
+
+
+def _fast_slice(array, indexers):
+    data = array.values[indexers]
+    dims = [dim for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice)]
+    coords = OrderedDict((dim,
+                          xarray.Variable((dim,),
+                                          array.coords[dim].values[indexer],
+                                          attrs=array.coords[dim].attrs,
+                                          fastpath=True))
+                         for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice))
+    return xarray.DataArray(data, dims=dims, coords=coords, attrs=array.attrs)

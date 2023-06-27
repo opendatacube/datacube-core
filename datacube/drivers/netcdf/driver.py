@@ -46,7 +46,7 @@ class NetcdfWriterDriver(object):
     def uri_scheme(self):
         return PROTOCOL
 
-    def mk_uri(self, file_path, storage_config):
+    def mk_uri(self, file_path):
         """
         Constructs a URI from the file_path and storage config.
 
@@ -54,12 +54,10 @@ class NetcdfWriterDriver(object):
 
         Example:
             file_path = '/path/to/my_file.nc'
-            storage_config = {'driver': 'NetCDF CF'}
 
-            mk_uri(file_path, storage_config) should return 'file:///path/to/my_file.nc'
+            mk_uri(file_path) should return 'file:///path/to/my_file.nc'
 
         :param Path file_path: The file path of the file to be converted into a URI.
-        :param dict storage_config: The dict holding the storage config found in the ingest definition.
         :return: file_path as a URI that the Driver understands.
         :rtype: str
         """
@@ -68,10 +66,7 @@ class NetcdfWriterDriver(object):
     def write_dataset_to_storage(self, dataset, file_uri,
                                  global_attributes=None,
                                  variable_params=None,
-                                 storage_config=None,
                                  **kwargs):
-        # TODO: Currently ingestor copies chunking info from storage_config to
-        # variable_params, this logic should probably happen here.
 
         write_dataset_to_netcdf(dataset, urlsplit(file_uri).path,
                                 global_attributes=global_attributes,

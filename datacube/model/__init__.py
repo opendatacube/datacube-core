@@ -31,7 +31,7 @@ __all__ = [
     "LineageDirection", "LineageTree", "LineageRelation", "InconsistentLineageException",
     "Dataset", "Product", "MetadataType", "Measurement", "GridSpec",
     "metadata_from_doc",
-    "ExtraDimensions", "IngestorConfig"
+    "ExtraDimensions"
 ]
 
 from odc.geo import CRS, BoundingBox, Geometry, wh_
@@ -742,14 +742,6 @@ class Product:
 
 # Type alias for backwards compatibility
 DatasetType = Product
-
-
-@schema_validated(SCHEMA_PATH / 'ingestor-config-type-schema.yaml')
-class IngestorConfig:
-    """
-    Ingestor configuration definition
-    """
-    pass
 
 
 @deprecat(

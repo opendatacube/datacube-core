@@ -25,10 +25,6 @@ Steps Overview
  * Index the data
     Run the actual indexing process
 
- * (OPTIONAL) :ref:`Ingest <ingestion>` the data
-    After indexing the data you can choose to ingest. This provides the ability to tile the original data into a faster storage format or a new projection system.
-    Requires creation of an ingestion configuration file (yaml). This is not recommended.
-
 
 Step 1. Creating a Product Definition
 ****************************************
