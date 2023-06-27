@@ -16,6 +16,7 @@ v1.9.next
 - Mark GridSpec as deprecated, replace math and cog functions with odc-geo equivalents, enforce new odc-geo conventions (:pull:`#1441`)
 - Rename `gbox` to `geobox` in parameter names (:pull:`#1441`)
 - Remove executor API (:pull:`#1462`)
+- Remove ingestion methods, `GridWorkflow` and `Tile` classes (:pull:`1465`)
 
 
 v1.8.next
