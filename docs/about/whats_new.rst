@@ -8,6 +8,9 @@ What's New
 v1.8.next
 =========
 
+v1.8.14 (28th June 2023)
+========================
+
 - Second attempt to address unexpected handling of image aspect ratios in rasterio and
   GDAL. (:pull:`1457`)
 - Fix broken pypi publishing Github action (:pull:`1454`)
@@ -17,6 +20,7 @@ v1.8.next
 - Mark executors as deprecated (:pull:`1461`)
 - Mark ingestion as deprecated (:pull:`1463`)
 - Replace deprecated ``pkg_resources`` with ``importlib.resources`` and ``importlib.metadata`` (:pull:`1466`)
+- Update whats_new.rst for release (:pull:`1467`)
 
 
 v1.8.13 (6th June 2023)
