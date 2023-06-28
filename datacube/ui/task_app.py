@@ -97,7 +97,6 @@ task_app_options = dc_ui.compose(
     dc_ui.config_option,
     dc_ui.verbose_option,
     dc_ui.log_queries_option,
-    dc_ui.executor_cli_options,
 )
 
 
@@ -260,49 +259,3 @@ def wrap_task(f, *args, **kwargs):
     Turn function `f(task, *args, **kwargs)` into `g(task)` in pickle-able fashion
     """
     return functools.partial(_wrap_impl, f, args, kwargs)
-
-
-def run_tasks(tasks, executor, run_task, process_result=None, queue_size=50):
-    """
-    :param tasks: iterable of tasks. Usually a generator to create them as required.
-    :param executor: a datacube executor, similar to `distributed.Client` or `concurrent.futures`
-    :param run_task: the function used to run a task. Expects a single argument of one of the tasks
-    :param process_result: a function to do something based on the result of a completed task. It
-                           takes a single argument, the return value from `run_task(task)`
-    :param queue_size: How large the queue of tasks should be. Will depend on how fast tasks are
-                       processed, and how much memory is available to buffer them.
-    """
-    click.echo('Starting processing...')
-    process_result = process_result or do_nothing
-    results = []
-    task_queue = itertools.islice(tasks, queue_size)
-    for task in task_queue:
-        _LOG.info('Running task: %s', task.get('tile_index', str(task)))
-        results.append(executor.submit(run_task, task=task))
-
-    click.echo('Task queue filled, waiting for first result...')
-
-    successful = failed = 0
-    while results:
-        result, results = executor.next_completed(results, None)
-
-        # submit a new _task to replace the one we just finished
-        task = next(tasks, None)
-        if task:
-            _LOG.info('Running task: %s', task.get('tile_index', str(task)))
-            results.append(executor.submit(run_task, task=task))
-
-        # Process the result
-        try:
-            actual_result = executor.result(result)
-            process_result(actual_result)
-            successful += 1
-        except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception('Task failed: %s', err)
-            failed += 1
-            continue
-        finally:
-            # Release the _task to free memory so there is no leak in executor/scheduler/worker process
-            executor.release(result)
-
-    click.echo('%d successful, %d failed' % (successful, failed))
