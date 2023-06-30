@@ -47,7 +47,7 @@ def load_drivers(group: str) -> Dict[str, Any]:
 
     def resolve_all(group: str) -> Iterable[Tuple[str, Any]]:
         from importlib.metadata import entry_points
-        for ep in entry_points(group=group):
+        for ep in entry_points().select(group=group):
             driver = safe_load(ep)
             if driver is not None:
                 yield (ep.name, driver)

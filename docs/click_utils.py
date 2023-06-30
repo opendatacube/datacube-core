@@ -34,7 +34,7 @@ def find_script_callable_from_env(name, env):
 
 
 def find_script_callable(name):
-    return list(entry_points(
+    return list(entry_points().select(
         group='console_scripts', name=name))[0].load()
 
 
