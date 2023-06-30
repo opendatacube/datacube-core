@@ -112,6 +112,7 @@ setup(
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
         'packaging',
         'deprecat',
+        'importlib_metadata>3.5;python_version<"3.10"',
     ],
     extras_require=extras_require,
     tests_require=tests_require,
