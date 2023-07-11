@@ -10,7 +10,7 @@ v1.8.next
 
 v1.8.15 (11th July 2023)
 ========================
-- Replace `entry_points(group=group)` with `entry_points().select(group=group)` for python <3.10 compatibility
+- Replace `importlib_metadata` for python <3.10 compatibility
   (:pull:`1469`)
 - Update whats_new.rst for release (:pull:`1470`)
 
