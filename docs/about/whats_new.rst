@@ -8,6 +8,12 @@ What's New
 v1.8.next
 =========
 
+v1.8.15 (11th July 2023)
+========================
+- Replace `importlib_metadata` for python <3.10 compatibility
+  (:pull:`1469`)
+- Update whats_new.rst for release (:pull:`1470`)
+
 v1.8.14 (28th June 2023)
 ========================
 
@@ -21,7 +27,6 @@ v1.8.14 (28th June 2023)
 - Mark ingestion as deprecated (:pull:`1463`)
 - Replace deprecated ``pkg_resources`` with ``importlib.resources`` and ``importlib.metadata`` (:pull:`1466`)
 - Update whats_new.rst for release (:pull:`1467`)
-
 
 v1.8.13 (6th June 2023)
 =======================
