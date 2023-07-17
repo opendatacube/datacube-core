@@ -42,29 +42,18 @@ def report_old_options(mapping):
     return maybe_remap
 
 
-def _resolve_uri(uri, doc):
-    loc = doc.location
-    if loc is None:
-        return uri
-
-    if isinstance(loc, str):
-        return loc
-
-    if isinstance(loc, (list, tuple)):
-        if len(loc) > 0:
-            return loc[0]
-        else:
-            return uri
-
-    return uri
-
-
 def remap_uri_from_doc(doc_stream):
     """
     Given a stream of `uri: str, doc: dict` tuples, replace `uri` with `doc.location` if it is set.
     """
     for uri, doc in doc_stream:
-        real_uri = _resolve_uri(uri, doc)
+        real_uri = uri
+        loc = doc.location
+        if isinstance(loc, str):
+            real_uri = loc
+        elif isinstance(loc, (list, tuple)):
+            if len(loc) > 0:
+                real_uri = loc[0]
         yield real_uri, doc.without_location()
 
 
@@ -144,11 +133,13 @@ def load_datasets_for_update(doc_stream, index):
                     'you can supply several by repeating this option with a new product name'),
               multiple=True)
 @click.option('--auto-add-lineage/--no-auto-add-lineage', is_flag=True, default=True,
-              help=('Default behaviour is to automatically add lineage datasets if they are missing from the database, '
+              help=('WARNING: will be deprecated in datacube v1.9.\n'
+                    'Default behaviour is to automatically add lineage datasets if they are missing from the database, '
                     'but this can be disabled if lineage is expected to be present in the DB, '
                     'in this case add will abort when encountering missing lineage dataset'))
 @click.option('--verify-lineage/--no-verify-lineage', is_flag=True, default=True,
-              help=('Lineage referenced in the metadata document should be the same as in DB, '
+              help=('WARNING: will be deprecated in datacube v1.9.\n'
+                    'Lineage referenced in the metadata document should be the same as in DB, '
                     'default behaviour is to skip those top-level datasets that have lineage data '
                     'different from the version in the DB. This option allows omitting verification step.'))
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
@@ -156,7 +147,8 @@ def load_datasets_for_update(doc_stream, index):
               help="Pretend that there is no lineage data in the datasets being indexed",
               is_flag=True, default=False)
 @click.option('--confirm-ignore-lineage',
-              help="Pretend that there is no lineage data in the datasets being indexed, without confirmation",
+              help=('WARNING: this flag has been deprecated and will be removed in datacube v1.9.\n'
+                    'Pretend that there is no lineage data in the datasets being indexed, without confirmation'),
               is_flag=True, default=False)
 @click.option('--archive-less-mature', is_flag=False, flag_value=500, default=None,
               help=('Find and archive less mature versions of the dataset, will fail if more mature versions '
@@ -179,17 +171,7 @@ def index_cmd(index, product_names,
         print_help_msg(index_cmd)
         sys.exit(1)
 
-    if confirm_ignore_lineage is False and ignore_lineage is True:
-        if sys.stdin.isatty():
-            confirmed = click.confirm("Requested to skip lineage information, Are you sure?", default=False)
-            if not confirmed:
-                click.echo('OK aborting', err=True)
-                sys.exit(1)
-        else:
-            click.echo("Use --confirm-ignore-lineage from non-interactive scripts. Aborting.")
-            sys.exit(1)
-
-        confirm_ignore_lineage = True
+    confirm_ignore_lineage = ignore_lineage
 
     try:
         ds_resolve = Doc2Dataset(index,

@@ -76,7 +76,7 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs, datacube_env
 
     #  - this will be no-op but with ignore lineage
     clirunner(['-v', 'dataset', 'add',
-               '--confirm-ignore-lineage',
+               '--ignore-lineage',
                str(lbg_nbar), str(lbg_pq)])
 
     # Test no-op update

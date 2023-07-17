@@ -63,11 +63,10 @@ def product_matcher(rules: Sequence[ProductRule]) -> Callable[[Mapping[str, Any]
             if matches(doc, rule):
                 return rule.product
 
-            relevant_doc = {k: v for k, v in doc.items() if k in rule.signature}
             raise BadMatch('Dataset metadata did not match product signature.'
                            '\nDataset definition:\n %s\n'
                            '\nProduct signature:\n %s\n'
-                           % (json.dumps(relevant_doc, indent=4),
+                           % (json.dumps(doc, indent=4),
                               json.dumps(rule.signature, indent=4)))
 
         return match
