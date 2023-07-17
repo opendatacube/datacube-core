@@ -42,18 +42,27 @@ def report_old_options(mapping):
     return maybe_remap
 
 
+def _resolve_uri(uri, doc):
+    loc = doc.location
+    if loc is None:
+        return uri
+
+    if isinstance(loc, str):
+        return loc
+
+    if isinstance(loc, (list, tuple)):
+        if len(loc) > 0:
+            return loc[0]
+
+    return uri
+
+
 def remap_uri_from_doc(doc_stream):
     """
     Given a stream of `uri: str, doc: dict` tuples, replace `uri` with `doc.location` if it is set.
     """
     for uri, doc in doc_stream:
-        real_uri = uri
-        loc = doc.location
-        if isinstance(loc, str):
-            real_uri = loc
-        elif isinstance(loc, (list, tuple)):
-            if len(loc) > 0:
-                real_uri = loc[0]
+        real_uri = _resolve_uri(uri, doc)
         yield real_uri, doc.without_location()
 
 
