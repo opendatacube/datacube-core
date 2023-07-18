@@ -5,7 +5,7 @@
 
 from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, Product
-from typing import Iterable
+from typing import Iterable, Optional
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -29,7 +29,7 @@ class DatasetResource(AbstractDatasetResource):
 
     def add(self, dataset: Dataset,
             with_lineage: bool = True,
-            archive_less_mature: bool = False) -> Dataset:
+            archive_less_mature: Optional[int] = None) -> Dataset:
         raise NotImplementedError()
 
     def search_product_duplicates(self, product: Product, *args):
@@ -38,7 +38,7 @@ class DatasetResource(AbstractDatasetResource):
     def can_update(self, dataset, updates_allowed=None):
         raise NotImplementedError()
 
-    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=False):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=None):
         raise NotImplementedError()
 
     def archive(self, ids):
