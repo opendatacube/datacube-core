@@ -226,7 +226,6 @@ class DatasetResource(AbstractDatasetResource):
             unsafe_txt = ", ".join(_readable_offset(offset) for offset, _, _ in unsafe_changes)
             raise ValueError(f"Unsafe metadata changes in {dataset.id}: {unsafe_txt}")
 
-
         # Apply update
         _LOG.info("Updating dataset %s", dataset.id)
         self._update_locations(dataset, existing)
