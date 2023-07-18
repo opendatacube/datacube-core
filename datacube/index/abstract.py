@@ -1141,7 +1141,7 @@ class AbstractDatasetResource(ABC):
         :param Iterable[Union[str,UUID]] ids: list of dataset ids to archive
         """
 
-    def archive_less_mature(self, ds: Dataset, delta: int) -> None:
+    def archive_less_mature(self, ds: Dataset, delta: int = 500) -> None:
         """
         Archive less mature versions of a dataset
 
@@ -1154,7 +1154,7 @@ class AbstractDatasetResource(ABC):
         for lm_ds in less_mature_ids:
             _LOG.info(f"Archived less mature dataset: {lm_ds}")
 
-    def find_less_mature(self, ds: Dataset, delta: int) -> Iterable[Dataset]:
+    def find_less_mature(self, ds: Dataset, delta: int = 500) -> Iterable[Dataset]:
         """
         Find less mature versions of a dataset
 
