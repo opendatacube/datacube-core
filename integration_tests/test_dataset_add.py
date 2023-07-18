@@ -21,7 +21,7 @@ def check_skip_lineage_test(clirunner, index):
 
     prefix = write_files({'agdc-metadata.yml': yaml.safe_dump(ds.doc)})
 
-    clirunner(['dataset', 'add', '--confirm-ignore-lineage', '--product', 'A', str(prefix)])
+    clirunner(['dataset', 'add', '--ignore-lineage', '--product', 'A', str(prefix)])
 
     ds_ = index.datasets.get(ds.id, include_sources=True)
     assert ds_ is not None
@@ -58,7 +58,7 @@ def check_no_product_match(clirunner, index):
     # Ignore lineage but fail to match main dataset
     r = clirunner(['dataset', 'add',
                    '--product', 'B',
-                   '--confirm-ignore-lineage',
+                   '--ignore-lineage',
                    str(prefix)])
 
     assert 'ERROR' in r.output
@@ -184,12 +184,6 @@ def check_missing_metadata_doc(clirunner):
     assert "ERROR No supported metadata docs found for dataset" in r.output
 
 
-def check_no_confirm(clirunner, path):
-    r = clirunner(['dataset', 'add', '--ignore-lineage', str(path)], expect_success=False)
-    assert r.exit_code != 0
-    assert 'Use --confirm-ignore-lineage from non-interactive scripts' in r.output
-
-
 def check_bad_yaml(clirunner, index):
     prefix = write_files({'broken.yml': '"'})
     r = clirunner(['dataset', 'add', str(prefix / 'broken.yml')])
@@ -266,7 +260,6 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     check_inconsistent_lineage(clirunner, index)
     check_missing_metadata_doc(clirunner)
     check_missing_lineage(clirunner, index)
-    check_no_confirm(clirunner, p.datasets)
     check_bad_yaml(clirunner, index)
 
     # check --product=nosuchproduct
