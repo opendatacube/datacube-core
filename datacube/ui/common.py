@@ -89,34 +89,24 @@ def ui_path_doc_stream(paths, logger=None, uri=True, raw=False):
 
     """
 
-    def on_error1(p, e):
-        if logger is not None:
-            logger.error(str(e))
+    def _resolve_doc_files(paths):
+        for p in paths:
+            try:
+                yield get_metadata_path(p)
+            except ValueError as e:
+                if logger is not None:
+                    logger.error(str(e))
 
-    def on_error2(p, e):
-        if logger is not None:
-            logger.error('Failed reading documents from %s', str(p))
+    def _path_doc_stream(files, uri=True, raw=False):
+        maybe_wrap = identity if raw else SimpleDocNav
 
-    yield from _path_doc_stream(_resolve_doc_files(paths, on_error=on_error1),
-                                on_error=on_error2, uri=uri, raw=raw)
+        for fname in files:
+            try:
+                for p, doc in read_documents(fname, uri=uri):
+                    yield p, maybe_wrap(doc)
 
+            except InvalidDocException as e:
+                if logger is not None:
+                    logger.error('Failed reading documents from %s', str(fname))
 
-def _resolve_doc_files(paths, on_error):
-    for p in paths:
-        try:
-            yield get_metadata_path(p)
-        except ValueError as e:
-            on_error(p, e)
-
-
-def _path_doc_stream(files, on_error, uri=True, raw=False):
-    """See :func:`ui_path_doc_stream` for documentation"""
-    maybe_wrap = identity if raw else SimpleDocNav
-
-    for fname in files:
-        try:
-            for p, doc in read_documents(fname, uri=uri):
-                yield p, maybe_wrap(doc)
-
-        except InvalidDocException as e:
-            on_error(fname, e)
+    yield from _path_doc_stream(_resolve_doc_files(paths), uri=uri, raw=raw)

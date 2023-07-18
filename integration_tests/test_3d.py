@@ -265,7 +265,7 @@ def test_indexing(clirunner, index, product_def):
             "-v",
             "dataset",
             "add",
-            "--confirm-ignore-lineage",
+            "--ignore-lineage",
             str(index_yaml),
         ]
     )
@@ -315,7 +315,7 @@ def test_indexing_with_spectral_map(clirunner, index, dataset_types):
     clirunner(["-v", "product", "add", str(dataset_types)])
 
     # Index the Dataset
-    clirunner(["-v", "dataset", "add", '--confirm-ignore-lineage', str(index_yaml)])
+    clirunner(["-v", "dataset", "add", '--ignore-lineage', str(index_yaml)])
     dc = Datacube(index=index)
     check_open_with_dc_simple(dc, product_def, [product_id], measurement)
 
@@ -335,7 +335,7 @@ def test_end_to_end_multitime(clirunner, index, product_def, original_data):
                 measurement=measurement,
             )
             # Index the Datasets
-            clirunner(["-v", "dataset", "add", '--confirm-ignore-lineage', str(index_yaml)])
+            clirunner(["-v", "dataset", "add", '--ignore-lineage', str(index_yaml)])
 
         if idx == 0:  # Full check for the first measurement only
             # Check data for all product IDs
