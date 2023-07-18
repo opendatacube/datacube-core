@@ -352,7 +352,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             transaction.update_spindex(dsids=[dataset.id])
             transaction.update_search_index(dsids=[dataset.id])
             if archive_less_mature is not None:
-                self._archive_less_mature(dataset, archive_less_mature)
+                self.archive_less_mature(dataset, archive_less_mature)
 
         self._ensure_new_locations(dataset, existing)
 
