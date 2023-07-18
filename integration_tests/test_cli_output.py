@@ -81,7 +81,7 @@ def test_cli_dataset_subcommand(index, clirunner,
 
     # Insert datasets
     for path in eo3_dataset_paths:
-        result = clirunner(['dataset', 'add', "--confirm-ignore-lineage", path])
+        result = clirunner(['dataset', 'add', "--ignore-lineage", path])
 
     runner = clirunner(['dataset', 'archive'], verbose_flag=False, expect_success=False)
     assert "Completed dataset archival." not in runner.output
@@ -146,8 +146,8 @@ def test_readd_and_update_metadata_product_dataset_command(index, clirunner,
         assert "No such dataset in the database" in update.output
         assert "Failure while processing" in update.output
 
-        clirunner(['dataset', 'add', '--confirm-ignore-lineage', ds_path])
-        rerun_add = clirunner(['dataset', 'add', '--confirm-ignore-lineage', ds_path])
+        clirunner(['dataset', 'add', '--ignore-lineage', ds_path])
+        rerun_add = clirunner(['dataset', 'add', '--ignore-lineage', ds_path])
         assert "WARNING Dataset" in rerun_add.output
         assert "is already in the database" in rerun_add.output
 

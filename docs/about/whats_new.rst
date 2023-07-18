@@ -8,26 +8,43 @@ What's New
 v1.9.next
 =========
 
-- External Lineage API (:pull:`#1401`)
-- Add lineage support to index clone operation (:pull:`#1429`)
-- Migrate to SQLAlchemy 2.0 (:pull:`#1432`)
-- Clean up deprecated code and add deprecation warnings to legacy methods, simplify DocReader logic (:pull:`#1406`)
-- Mark geometry module as deprecated and replace all usage with odc-geo (:pull:`#1424`)
-- Mark GridSpec as deprecated, replace math and cog functions with odc-geo equivalents, enforce new odc-geo conventions (:pull:`#1441`)
-- Rename `gbox` to `geobox` in parameter names (:pull:`#1441`)
-- Remove executor API (:pull:`#1462`)
+- Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`)
+- External Lineage API (:pull:`1401`)
+- Add lineage support to index clone operation (:pull:`1429`)
+- Migrate to SQLAlchemy 2.0 (:pull:`1432`)
+- Clean up deprecated code and add deprecation warnings to legacy methods, simplify DocReader logic (:pull:`1406`)
+- Mark geometry module as deprecated and replace all usage with odc-geo (:pull:`1424`)
+- Mark GridSpec as deprecated, replace math and cog functions with odc-geo equivalents, enforce new odc-geo conventions (:pull:`1441`)
+- Rename `gbox` to `geobox` in parameter names (:pull:`1441`)
+- Remove executor API (:pull:`1462`)
 - Remove ingestion methods, `GridWorkflow` and `Tile` classes (:pull:`1465`)
 
 
 v1.8.next
 =========
 
+- Improve error message for mismatch between dataset metadata and product signature (:pull:`1472`)
+- Mark ``--confirm-ignore-lineage``, ``--auto-add-lineage``, and ``--verify-lineage`` as deprecated or to be deprecated (:pull:`1472`)
+- Default delta values in ``archive_less_mature`` and ``find_less_mature`` (:pull:`1472`)
+
+v1.8.15 (11th July 2023)
+========================
+- Replace `importlib_metadata` for python <3.10 compatibility (:pull:`1469`)
+- Update whats_new.rst for release (:pull:`1470`)
+
+v1.8.14 (28th June 2023)
+========================
+
 - Second attempt to address unexpected handling of image aspect ratios in rasterio and
   GDAL. (:pull:`1457`)
 - Fix broken pypi publishing Github action (:pull:`1454`)
 - Documentation improvements (:pull:`1455`)
-- Increase maturity leniency to +-500ms (:pull:`1458`)
-
+- Increase default maturity leniency to +-500ms (:pull:`1458`)
+- Add option to specify maturity timedelta when using ``--archive-less-mature`` option (:pull:`1460`)
+- Mark executors as deprecated (:pull:`1461`)
+- Mark ingestion as deprecated (:pull:`1463`)
+- Replace deprecated ``pkg_resources`` with ``importlib.resources`` and ``importlib.metadata`` (:pull:`1466`)
+- Update whats_new.rst for release (:pull:`1467`)
 
 v1.8.13 (6th June 2023)
 =======================

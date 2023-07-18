@@ -75,7 +75,7 @@ class DatasetResource(AbstractDatasetResource):
 
     def add(self, dataset: Dataset,
             with_lineage: bool = True,
-            archive_less_mature: bool = False) -> Dataset:
+            archive_less_mature: Optional[int] = None) -> Dataset:
         if with_lineage is None:
             with_lineage = True
         _LOG.info('indexing %s', dataset.id)
@@ -103,7 +103,7 @@ class DatasetResource(AbstractDatasetResource):
                 self.by_product[dataset.product.name].append(dataset.id)
             else:
                 self.by_product[dataset.product.name] = [dataset.id]
-        if archive_less_mature:
+        if archive_less_mature is not None:
             _LOG.warning("archive-less-mature functionality is not implemented for memory driver")
         return cast(Dataset, self.get(dataset.id))
 
@@ -192,7 +192,7 @@ class DatasetResource(AbstractDatasetResource):
     def update(self,
                dataset: Dataset,
                updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None,
-               archive_less_mature: bool = False
+               archive_less_mature: Optional[int] = None
               ) -> Dataset:
         existing = self.get(dataset.id)
         if not existing:
@@ -232,6 +232,8 @@ class DatasetResource(AbstractDatasetResource):
         persistable = self.clone(dataset, for_save=True)
         self.by_id[dataset.id] = persistable
         self.active_by_id[dataset.id] = persistable
+        if archive_less_mature is not None:
+            _LOG.warning("archive-less-mature functionality is not implemented for memory driver")
         return cast(Dataset, self.get(dataset.id))
 
     def _update_locations(self,
