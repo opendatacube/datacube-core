@@ -14,8 +14,8 @@ dask>=2021.10.1
 distributed>=2021.10.0
 fiona
 geoalchemy2
-jsonschema<4.18
-# Was lark-parser>=0.6.7
+# New reference resolution API
+jsonschema>=4.18
 lark
 matplotlib
 moto
