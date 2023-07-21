@@ -17,7 +17,7 @@ from datacube.drivers.postgres.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                            pg_column_exists)
 from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.schema import CreateSchema, DropSchema
+from sqlalchemy.schema import CreateSchema
 
 
 USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
