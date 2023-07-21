@@ -266,7 +266,9 @@ class NumericDocField(SimpleDocField):
         )
 
     def between(self, low, high):
-        return ValueBetweenExpression(self, low, high)
+        # Numeric fields actually stored as ranges in current schema.
+        # return ValueBetweenExpression(self, low, high)
+        return RangeBetweenExpression(self, low, high, _range_class=NumericRange)
 
     def parse_value(self, value):
         return Decimal(value)

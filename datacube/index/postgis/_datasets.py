@@ -17,7 +17,7 @@ from sqlalchemy import select, func
 
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
-from datacube.drivers.postgis._api import extract_dataset_search_fields
+from datacube.drivers.postgis._api import extract_dataset_search_fields, non_native_fields, extract_dataset_fields
 from datacube.utils.uris import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 
@@ -226,10 +226,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     if values is not None:
                         batch["spatial_indexes"][crs].append(values)
             if prod.metadata_type.name in cache:
-                search_field_vals = cache[prod.metadata_type.name]
+                search_fields = cache[prod.metadata_type.name]
             else:
-                search_field_vals = extract_dataset_search_fields(metadata_doc, prod.metadata_type.definition)
-                cache[prod.metadata_type.name] = search_field_vals
+                search_fields = non_native_fields(prod.metadata_type.definition)
+                cache[prod.metadata_type.name] = search_fields
+            search_field_vals = extract_dataset_fields(metadata_doc, search_fields)
             for fname, finfo in search_field_vals.items():
                 ftype, fval = finfo
                 if isinstance(fval, Range):
