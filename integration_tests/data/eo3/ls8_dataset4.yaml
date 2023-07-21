@@ -36,7 +36,7 @@ grids:
 properties:
   datetime: '2013-07-21T00:57:26.432563Z'
   dea:dataset_maturity: final
-  eo:cloud_cover: 1.828773330949106e+01
+  eo:cloud_cover: 18.28773330949106
   eo:gsd: 1.5e+01  # Ground sample distance (m)
   eo:instrument: OLI_TIRS
   eo:platform: landsat-8

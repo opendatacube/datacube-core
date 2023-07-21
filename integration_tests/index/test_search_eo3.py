@@ -58,6 +58,43 @@ def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset):
         )
 
 
+def test_search_dataset_range_eo3(index: Index,
+                                  ls8_eo3_dataset: Dataset,
+                                  ls8_eo3_dataset2: Dataset,
+                                  ls8_eo3_dataset3: Dataset,
+                                  ls8_eo3_dataset4: Dataset,
+                                  ):
+    # Less Than
+    datasets = index.datasets.search_eager(
+        product=ls8_eo3_dataset.product.name,
+        cloud_cover=Range(None, 50.0)
+    )
+    assert len(datasets) == 2
+    ids = [ds.id for ds in datasets]
+    assert ls8_eo3_dataset3.id in ids
+    assert ls8_eo3_dataset4.id in ids
+
+    # Greater than
+    datasets = index.datasets.search_eager(
+        product=ls8_eo3_dataset.product.name,
+        cloud_cover=Range(50.0, None)
+    )
+    assert len(datasets) == 2
+    ids = [ds.id for ds in datasets]
+    assert ls8_eo3_dataset.id in ids
+    assert ls8_eo3_dataset2.id in ids
+
+    # Full Range comparison
+    datasets = index.datasets.search_eager(
+        product=ls8_eo3_dataset.product.name,
+        cloud_cover=Range(20.0, 55.0)
+    )
+    assert len(datasets) == 2
+    ids = [ds.id for ds in datasets]
+    assert ls8_eo3_dataset2.id in ids
+    assert ls8_eo3_dataset3.id in ids
+
+
 def test_search_dataset_by_metadata_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
     datasets = index.datasets.search_by_metadata(
         {"properties": {"eo:platform": "landsat-8", "eo:instrument": "OLI_TIRS"}}
