@@ -709,8 +709,9 @@ class PostgisDbAPI(object):
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
         join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
 
+        cols = (func.array_agg(Dataset.id),) + group_expressions
         query = select(
-            (func.array_agg(Dataset.id),) + group_expressions
+            *cols
         ).select_from(Dataset)
         for joins in join_tables:
             query = query.join(*joins)
