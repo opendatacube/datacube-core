@@ -18,6 +18,7 @@ v1.9.next
 - Rename `gbox` to `geobox` in parameter names (:pull:`1441`)
 - Remove executor API (:pull:`1462`)
 - Remove ingestion methods, `GridWorkflow` and `Tile` classes (:pull:`1465`)
+- Fix postgis queries for numeric custom search fields (:pull:`1475`)
 
 
 v1.8.next
