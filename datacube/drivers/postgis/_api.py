@@ -182,6 +182,14 @@ def get_dataset_fields(metadata_type_definition):
     return fields
 
 
+def non_native_fields(mdt_metadata):
+    return {
+        name: field
+        for name, field in get_dataset_fields(mdt_metadata).items()
+        if not isinstance(field, NativeField)
+    }
+
+
 def extract_dataset_search_fields(ds_metadata, mdt_metadata):
     """
     :param ds_metdata: A Dataset metadata document
@@ -189,18 +197,13 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata):
 
     :return: A dictionary mapping search field names to (type_name, value) tuples.
     """
-    fields = {
-        name: field
-        for name, field in get_dataset_fields(mdt_metadata).items()
-        if not isinstance(field, NativeField)
-    }
-    return extract_dataset_fields(ds_metadata, fields)
+    return extract_dataset_fields(ds_metadata, non_native_fields(mdt_metadata))
 
 
 def extract_dataset_fields(ds_metadata, fields):
     """
     :param ds_metdata: A Dataset metadata document
-    :param mdt_metadata: The corresponding metadata-type definition document
+    :param fields: A dictionary of field names to Field objects
 
     :return: A dictionary mapping search field names to (type_name, value) tuples.
     """
@@ -208,8 +211,9 @@ def extract_dataset_fields(ds_metadata, fields):
     for field_name, field in fields.items():
         try:
             fld_type = field.type_name
-            fld_val = field.search_value_to_alchemy(field.extract(ds_metadata))
-            result[field_name] = (fld_type, fld_val)
+            raw_val = field.extract(ds_metadata)
+            sqla_val = field.search_value_to_alchemy(raw_val)
+            result[field_name] = (fld_type, sqla_val)
         except UnindexableValue:
             continue
     return result
@@ -640,7 +644,8 @@ class PostgisDbAPI(object):
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids,
                                                   limit, geom=geom)
-        _LOG.debug("search_datasets SQL: %s", str(select_query))
+        str_qry = str(select_query)
+        _LOG.debug("search_datasets SQL: %s", str_qry)
         return self._connection.execute(select_query)
 
     def bulk_simple_dataset_search(self, products=None, batch_size=0):
