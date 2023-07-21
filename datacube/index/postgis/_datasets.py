@@ -17,7 +17,7 @@ from sqlalchemy import select, func
 
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
-from datacube.drivers.postgis._api import extract_dataset_search_fields, non_native_fields, extract_dataset_fields
+from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fields
 from datacube.utils.uris import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 
