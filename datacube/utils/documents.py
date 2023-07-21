@@ -202,6 +202,7 @@ def read_strings_from_netcdf(path, variable):
 
 def validate_document(document, schema, schema_folder=None):
     import jsonschema
+    import referencing
 
     try:
         # Allow schemas to reference other schemas in the given folder.
@@ -212,12 +213,12 @@ def validate_document(document, schema, schema_folder=None):
             referenced_schema = next(iter(read_documents(path)))[1]
             return referenced_schema
 
+        if schema_folder:
+            registry = referencing.Registry(retrieve=doc_reference)
+        else:
+            registry = referencing.Registry()
         jsonschema.Draft4Validator.check_schema(schema)
-        ref_resolver = jsonschema.RefResolver.from_schema(
-            schema,
-            handlers={'': doc_reference} if schema_folder else ()
-        )
-        validator = jsonschema.Draft4Validator(schema, resolver=ref_resolver)
+        validator = jsonschema.Draft4Validator(schema, registry=registry)
         validator.validate(document)
     except jsonschema.ValidationError as e:
         raise InvalidDocException(e)
