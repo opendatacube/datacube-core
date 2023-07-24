@@ -97,7 +97,6 @@ def ensure_db(engine, with_permissions=True):
         grant all on database {db} to agdc_admin;
         """.format(db=quoted_db_name)))
 
-    if not has_schema(engine):
         is_new = True
         try:
             sqla_txn = c.begin()
@@ -239,7 +238,9 @@ def has_schema(engine):
 
 
 def drop_db(connection):
-    connection.execute(DropSchema(SCHEMA_NAME, cascade=True))
+    # if_exists parameter seems to not be working in SQLA1.4?
+    if has_schema(connection.engine):
+        connection.execute(DropSchema(SCHEMA_NAME, cascade=True, if_exists=True))
 
 
 def to_pg_role(role):
