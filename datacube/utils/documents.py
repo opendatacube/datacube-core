@@ -211,7 +211,7 @@ def validate_document(document, schema, schema_folder=None):
             if not path.exists():
                 raise ValueError("Reference not found: %s" % path)
             referenced_schema = next(iter(read_documents(path)))[1]
-            return referenced_schema
+            return referencing.Resource(referenced_schema, referencing.jsonschema.DRAFT4)
 
         if schema_folder:
             registry = referencing.Registry(retrieve=doc_reference)
