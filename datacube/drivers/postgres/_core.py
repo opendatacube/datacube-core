@@ -17,7 +17,7 @@ from datacube.drivers.postgres.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                            pg_column_exists)
 from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.schema import CreateSchema
+from sqlalchemy.schema import CreateSchema, DropSchema
 
 
 USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
@@ -233,7 +233,9 @@ def has_schema(engine):
 
 
 def drop_db(connection):
-    connection.execute(text(f'drop schema if exists {SCHEMA_NAME} cascade;'))
+    # if_exists parameter seems to not be working in SQLA1.4?
+    if has_schema(connection.engine):
+        connection.execute(DropSchema(SCHEMA_NAME, cascade=True, if_exists=True))
 
 
 def to_pg_role(role):

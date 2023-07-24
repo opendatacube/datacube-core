@@ -22,7 +22,7 @@ dependencies:
   - dask
   - pyproj >=2.5
   - shapely >=2.0
-  - jsonschema
+  - jsonschema <4.18
   - lark
   - netcdf4
   - numpy
