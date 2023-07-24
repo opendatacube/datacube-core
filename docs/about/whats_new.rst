@@ -10,6 +10,7 @@ v1.8.next
 - Improve error message for mismatch between dataset metadata and product signature (:pull:`1472`)
 - Mark ``--confirm-ignore-lineage``, ``--auto-add-lineage``, and ``--verify-lineage`` as deprecated or to be deprecated (:pull:`1472`)
 - Default delta values in ``archive_less_mature`` and ``find_less_mature`` (:pull:`1472`)
+- Fix SQLAlchemy calls and pin jsonschema version to suppress deprecation warnings (:pull:`1476`)
 
 v1.8.15 (11th July 2023)
 ========================

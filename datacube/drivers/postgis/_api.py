@@ -389,9 +389,9 @@ class PostgisDbAPI(object):
         if SpatialIndex is None:
             return None
         result = self._connection.execute(
-            select([
+            select(
                 func.ST_AsGeoJSON(func.ST_Union(SpatialIndex.extent))
-            ]).select_from(
+            ).select_from(
                 SpatialIndex
             ).where(
                 SpatialIndex.dataset_ref.in_(ids)
@@ -528,12 +528,12 @@ class PostgisDbAPI(object):
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
-            select(_dataset_select_fields()).where(Dataset.id == dataset_id)
+            select(*_dataset_select_fields()).where(Dataset.id == dataset_id)
         ).first()
 
     def get_datasets(self, dataset_ids):
         return self._connection.execute(
-            select(_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
+            select(*_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
         ).fetchall()
 
     def get_derived_datasets(self, dataset_id):
@@ -551,7 +551,7 @@ class PostgisDbAPI(object):
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
-            select(_dataset_select_fields()).where(Dataset.metadata_doc.contains(metadata))
+            select(*_dataset_select_fields()).where(Dataset.metadata_doc.contains(metadata))
         ).fetchall()
 
     def search_products_by_metadata(self, metadata):
@@ -622,7 +622,7 @@ class PostgisDbAPI(object):
         raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
         join_tables = PostgisDbAPI._join_tables(expressions, select_fields)
         where_expr = and_(Dataset.archived == None, *raw_expressions)
-        query = select(select_columns).select_from(Dataset)
+        query = select(*select_columns).select_from(Dataset)
         for joins in join_tables:
             query = query.join(*joins)
         if spatialquery is not None:
@@ -664,7 +664,7 @@ class PostgisDbAPI(object):
         if batch_size > 0 and not self.in_transaction:
             raise ValueError("Postgresql bulk reads must occur within a transaction.")
         query = select(
-            _dataset_bulk_select_fields()
+            *_dataset_bulk_select_fields()
         ).select_from(Dataset).where(
             Dataset.archived == None
         )
@@ -709,8 +709,9 @@ class PostgisDbAPI(object):
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
         join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
 
+        cols = (func.array_agg(Dataset.id),) + group_expressions
         query = select(
-            (func.array_agg(Dataset.id),) + group_expressions
+            *cols
         ).select_from(Dataset)
         for joins in join_tables:
             query = query.join(*joins)
@@ -763,24 +764,24 @@ class PostgisDbAPI(object):
     def count_datasets_through_time_query(self, start, end, period, time_field, expressions):
         raw_expressions = self._alchemify_expressions(expressions)
 
-        start_times = select((
+        start_times = select(
             func.generate_series(start, end, cast(period, INTERVAL)).label('start_time'),
-        )).alias('start_times')
+        ).alias('start_times')
 
         time_range_select = (
-            select((
+            select(
                 func.tstzrange(
                     start_times.c.start_time,
                     func.lead(start_times.c.start_time).over()
                 ).label('time_period'),
-            ))
+            )
         ).alias('all_time_ranges')
 
         # Exclude the trailing (end time to infinite) row. Is there a simpler way?
         time_ranges = (
-            select((
+            select(
                 time_range_select,
-            )).where(
+            ).where(
                 ~func.upper_inf(time_range_select.c.time_period)
             )
         ).alias('time_ranges')
@@ -797,7 +798,7 @@ class PostgisDbAPI(object):
             )
         )
 
-        return select((time_ranges.c.time_period, count_query.label('dataset_count')))
+        return select(time_ranges.c.time_period, count_query.label('dataset_count'))
 
     def update_search_index(self, product_names: Sequence[str] = [], dsids: Sequence[DSID] = []):
         """
