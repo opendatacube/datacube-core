@@ -276,7 +276,7 @@ class DatasetSearchNumeric:
                         comment="The name of the search field")
     search_val = Column(NUMRANGE,
                         nullable=True,
-                        comment="The value of the numeric range search field")
+                        comment="The value of the numeric range search field",)
 
 
 @orm_registry.mapped
