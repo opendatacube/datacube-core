@@ -40,7 +40,7 @@ _LOG = logging.getLogger(__name__)
 class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     """
     :type _db: datacube.drivers.postgis._connections.PostgresDb
-    :type types: datacube.index._products.ProductResource
+    :type products: datacube.index._products.ProductResource
     """
 
     def __init__(self, db, index):
@@ -346,7 +346,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         _LOG.info("Updating dataset %s", dataset.id)
 
-        product = self.types.get_by_name(dataset.product.name)
+        product = self.products.get_by_name(dataset.product.name)
         with self._db_connection(transaction=True) as transaction:
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
@@ -426,13 +426,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: set[str]
         """
         if product_name is None:
-            types = self.types.get_all()
+            products = self.products.get_all()
         else:
-            types = [self.types.get_by_name(product_name)]
+            products = [self.products.get_by_name(product_name)]
 
         out = set()
-        for type_ in types:
-            out.update(type_.metadata_type.dataset_fields)
+        for prod_ in products:
+            out.update(prod_.metadata_type.dataset_fields)
         return out
 
     def get_locations(self, id_):
@@ -538,7 +538,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         else:
             uris = []
 
-        product = product or self.types.get(dataset_res.product_ref)
+        product = product or self.products.get(dataset_res.product_ref)
 
         return Dataset(
             product=product,
@@ -665,19 +665,19 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return next(self._do_time_count(period, query, ensure_single=True))[1]
 
     def _get_products(self, q):
-        types = set()
+        products = set()
         if 'product' in q.keys():
-            types.add(self.types.get_by_name(q['product']))
+            products.add(self.products.get_by_name(q['product']))
         else:
             # Otherwise search any metadata type that has all the given search fields.
-            types = self.types.get_with_fields(tuple(q.keys()))
-            if not types:
+            products = self.products.get_with_fields(tuple(q.keys()))
+            if not products:
                 raise ValueError('No type of dataset has fields: {}'.format(q.keys()))
 
-        return types
+        return products
 
     def _get_product_queries(self, query):
-        for product, q in self.types.search_robust(**query):
+        for product, q in self.products.search_robust(**query):
             q['product_id'] = product.id
             yield q, product
 
@@ -782,7 +782,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
 
         # Get the offsets from dataset doc
-        product = self.types.get_by_name(product)
+        product = self.products.get_by_name(product)
         dataset_section = product.metadata_type.definition['dataset']
         min_offset = dataset_section['search_fields']['time']['min_offset']
         max_offset = dataset_section['search_fields']['time']['max_offset']

@@ -263,7 +263,7 @@ class DatasetSearchNumeric:
     __table_args__ = (
         _core.METADATA,
         PrimaryKeyConstraint("dataset_ref", "search_key"),
-        Index("ix_num_search", "search_key", "search_val"),
+        Index("ix_num_search", "search_val", postgresql_using="gist"),
         {
             "schema": sql.SCHEMA_NAME,
             "comment": "Index for searching datasets by search fields of numeric type"
@@ -276,7 +276,7 @@ class DatasetSearchNumeric:
                         comment="The name of the search field")
     search_val = Column(NUMRANGE,
                         nullable=True,
-                        comment="The value of the numeric range search field")
+                        comment="The value of the numeric range search field",)
 
 
 @orm_registry.mapped
@@ -285,7 +285,7 @@ class DatasetSearchDateTime:
     __table_args__ = (
         _core.METADATA,
         PrimaryKeyConstraint("dataset_ref", "search_key"),
-        Index("ix_dt_search", "search_key", "search_val"),
+        Index("ix_dt_search", "search_val", postgresql_using="gist"),
         {
             "schema": sql.SCHEMA_NAME,
             "comment": "Index for searching datasets by search fields of datetime type"
