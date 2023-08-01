@@ -1862,6 +1862,8 @@ class AbstractIndex(ABC):
     supports_external_home = False
     # Supports ACID transactions
     supports_transactions = False
+    # Supports per-CRS spatial indexes
+    supports_spatial_indexes = False
 
     @property
     @abstractmethod
@@ -1921,6 +1923,30 @@ class AbstractIndex(ABC):
         :return: true if the database was created, false if already exists
         """
 
+    # Spatial Index API
+
+    def create_spatial_index(self, crs: CRS) -> bool:
+        if not self.supports_spatial_indexes:
+            raise NotImplementedError("This index driver does not support the Spatial Index API")
+        else:
+            raise NotImplementedError()
+
+    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
+        if not self.supports_spatial_indexes:
+            raise NotImplementedError("This index driver does not support the Spatial Index API")
+        else:
+            raise NotImplementedError()
+
+    def update_spatial_index(self,
+                             crses: Sequence[CRS] = [],
+                             product_names: Sequence[str] = [],
+                             dataset_ids: Sequence[DSID] = []
+                             ) -> int:
+        if not self.supports_spatial_indexes:
+            raise NotImplementedError("This index driver does not support the Spatial Index API")
+        else:
+            raise NotImplementedError()
+
     def clone(self,
               origin_index: "AbstractIndex",
               batch_size: int = 1000,
@@ -1957,6 +1983,11 @@ class AbstractIndex(ABC):
         """
         results = {}
         if not lineage_only:
+            if self.supports_spatial_indexes and origin_index.supports_spatial_indexes:
+                for crs in origin_index.spatial_indexes(refresh=True):
+                    report_to_user(f"Creating spatial index for CRS {crs}")
+                    self.create_spatial_index(crs)
+                    self.update_spatial_index(crs)
             # Clone Metadata Types
             report_to_user("Cloning Metadata Types:")
             results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),

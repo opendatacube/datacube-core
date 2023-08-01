@@ -58,6 +58,8 @@ class Index(AbstractIndex):
     supports_external_home = True
     # Postgis driver supports ACID database transactions
     supports_transactions = True
+    # Postgis supports per-CRS spatial indexes
+    supports_spatial_indexes = True
 
     def __init__(self, db: PostGisDb) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
