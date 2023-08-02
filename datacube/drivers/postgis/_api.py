@@ -219,7 +219,7 @@ def extract_dataset_fields(ds_metadata, fields):
     return result
 
 
-class PostgisDbAPI(object):
+class PostgisDbAPI:
     def __init__(self, parentdb, connection):
         self._db = parentdb
         self._connection = connection

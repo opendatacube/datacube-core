@@ -1926,12 +1926,31 @@ class AbstractIndex(ABC):
     # Spatial Index API
 
     def create_spatial_index(self, crs: CRS) -> bool:
+        """
+        Create a spatial index for a CRS.
+
+        Note that a newly created spatial index is empty.  If there are already datatsets in the index whose
+        extents can be safely projected into the CRS, then it is necessary to also call update_spatial_index
+        otherwise they will not be found by queries against that CRS.
+
+        Only implemented by index drivers with supports_spatial_indexes set to True.
+
+        :param crs: The coordinate reference system to create a spatial index for.
+        :return: True if the spatial index was successfully created (or already exists)
+        """
         if not self.supports_spatial_indexes:
             raise NotImplementedError("This index driver does not support the Spatial Index API")
         else:
             raise NotImplementedError()
 
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
+        """
+        Return the CRSs for which spatial indexes have been created.
+
+        :param refresh: If true, query the backend for the list of current spatial indexes.  If false (the default)
+                        a cached list of spatial index CRSs may be returned.
+        :return: An iterable of CRSs for which spatial indexes exist in the index
+        """
         if not self.supports_spatial_indexes:
             raise NotImplementedError("This index driver does not support the Spatial Index API")
         else:
@@ -1942,6 +1961,45 @@ class AbstractIndex(ABC):
                              product_names: Sequence[str] = [],
                              dataset_ids: Sequence[DSID] = []
                              ) -> int:
+        """
+        Populate a newly created spatial index (or indexes).
+
+        Spatial indexes are automatically populated with new datasets as they are indexed, but if there were
+        datasets already in the index when a new spatial index is created, or if geometries have been added or
+        modified outside of the ODC in a populated index (e.g. with SQL) then the spatial indexies must be
+        updated manually with this method.
+
+        This is a very slow operation.  The product_names and dataset_ids lists can be used to break the
+        operation up into chunks or allow faster updating when the spatial index is only relevant to a
+        small portion of the entire index.
+
+        :param crses: A list of CRSes whose spatial indexes are to be updated.
+                      Default is to update all spatial indexes
+        :param product_names: A list of product names to update the spatial indexes.
+                              Default is to update for all products
+        :param dataset_ids: A list of ids of specific datasets to update in the spatial index.
+                            Default is to update for all datasets (or all datasts in the products
+                            in the product_names list)
+        :return: The number of dataset extents processed - i.e. the number of datasets updated multiplied by the
+                 number of spatial indexes updated.
+        """
+        if not self.supports_spatial_indexes:
+            raise NotImplementedError("This index driver does not support the Spatial Index API")
+        else:
+            raise NotImplementedError()
+
+    def drop_spatial_index(self, crs:CRS) -> bool:
+        """
+        Remove a spatial index from the database.
+
+        Note that creating spatial indexes on an existing index is a slow and expensive operation.  Do not
+        delete spatial indexes unless you are absolutely certain it is no longer required by any users of
+        this ODC index.
+
+        :param crs: The CRS whose spatial index is to be deleted.
+        :return: True if the spatial index was successfully dropped.
+                 False if spatial index could not be dropped.
+        """
         if not self.supports_spatial_indexes:
             raise NotImplementedError("This index driver does not support the Spatial Index API")
         else:

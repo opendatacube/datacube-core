@@ -10,7 +10,7 @@ import logging
 from threading import Lock
 from typing import Mapping, Optional, Type, Union
 
-from sqlalchemy import ForeignKey, select
+from sqlalchemy import ForeignKey, select, delete
 from sqlalchemy.dialects import postgresql as postgres
 from geoalchemy2 import Geometry
 
@@ -20,6 +20,8 @@ from sqlalchemy.orm import Session
 
 from odc.geo import CRS, Geometry as Geom
 from odc.geo.geom import multipolygon, polygon
+from sqlalchemy.sql.ddl import DropTable
+
 from ._core import METADATA
 from .sql import SCHEMA_NAME
 from ._schema import orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
@@ -129,6 +131,31 @@ def ensure_spindex(engine: Connectable, sp_idx: Type[SpatialIndex]) -> None:
         session.commit()
         session.flush()
     return
+
+
+def drop_spindex(engine: Connectable, sp_idx: Type[SpatialIndex]):
+    with Session(engine) as session:
+        results = session.execute(
+            select(SpatialIndexRecord).where(SpatialIndexRecord.srid == sp_idx.__tablename__[8:])
+        )
+        spidx_record = None
+        for result in results:
+            spidx_record = result[0]
+            break
+        record_del_result = False
+        if spidx_record:
+            result = session.execute(
+                delete(SpatialIndexRecord).where(SpatialIndexRecord.srid == spidx_record.srid)
+            )
+            record_del_result = (result.rowcount == 1)
+
+        result = session.execute(
+            DropTable(sp_idx.__table__, if_exists=True)
+        )
+        drop_table_result = (result.rowcount == 1)
+        print(f"spindex record deleted: {record_del_result}   table dropped: {drop_table_result}")
+
+    return True
 
 
 def spindexes(engine: Connectable) -> Mapping[CRS, Type[SpatialIndex]]:

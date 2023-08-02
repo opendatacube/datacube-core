@@ -157,6 +157,9 @@ WARNING: Database schema and internal APIs may change significantly between rele
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
 
+    def drop_spatial_index(self, crs:CRS) -> bool:
+        return self._db.drop_spatial_index(crs)
+
     @contextmanager
     def _active_connection(self, transaction: bool = False) -> PostgisDbAPI:
         """
