@@ -30,7 +30,7 @@ from odc.geo import CRS
 
 from . import _api
 from . import _core
-from ._spatial import ensure_spindex, spindexes, spindex_for_crs, drop_spindex
+from ._spatial import ensure_spindex, spindexes, spindex_for_crs, drop_spindex, normalise_crs
 from ._schema import SpatialIndex
 
 _LIB_ID = 'odc-' + str(datacube.__version__)
@@ -47,6 +47,7 @@ except (ImportError, KeyError):
 DEFAULT_DB_PORT = 5432
 DEFAULT_IAM_AUTH = False
 DEFAULT_IAM_TIMEOUT = 600
+
 
 
 class PostGisDb(object):
@@ -233,7 +234,7 @@ class PostGisDb(object):
                 _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)
                 return None
             ensure_spindex(self._engine, spidx)
-            self.spindexes[crs] = spidx
+            self._refresh_spindexes()
         return spidx
 
     def drop_spatial_index(self, crs: CRS) -> bool:
@@ -251,7 +252,7 @@ class PostGisDb(object):
         return result
 
     def spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
-        return self.spindexes.get(crs)
+        return self.spindexes.get(normalise_crs(crs))
 
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
         if refresh:
