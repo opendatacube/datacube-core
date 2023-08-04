@@ -1988,7 +1988,7 @@ class AbstractIndex(ABC):
         else:
             raise NotImplementedError()
 
-    def drop_spatial_index(self, crs:CRS) -> bool:
+    def drop_spatial_index(self, crs: CRS) -> bool:
         """
         Remove a spatial index from the database.
 
@@ -2109,54 +2109,11 @@ class AbstractIndex(ABC):
         :return: a Transaction context manager for this index.
         """
 
-    @abstractmethod
-    def create_spatial_index(self, crs: CRS) -> bool:
-        """
-        Create a spatial index using the nominated CRS.
-
-        :param crs: The CRS to use in the spatial index.
-        :return: True is the index was successfully created or already exists.
-                 None if spatial indexes are not supported.
-        """
-
     def thread_transaction(self) -> Optional["AbstractTransaction"]:
         """
         :return: The existing Transaction object cached in thread-local storage for this index, if there is one.
         """
         return thread_local_cache(f"txn-{self.index_id}", None)
-
-    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
-        """
-        Return a list of CRSs for which spatiotemporal indexes exist in the database.
-
-        :param refresh: If true, re-read from database record (e.g. to catch spatial
-                        indexes recently created in another datacube session.
-        :return:
-        """
-        _LOG.warning("Spatial index API is unstable and may change between releases.")
-        return []
-
-    def update_spatial_index(self,
-                             crses: Sequence[CRS] = [],
-                             product_names: Sequence[str] = [],
-                             dataset_ids: Sequence[DSID] = []
-                             ) -> int:
-        """
-        Update a spatial index
-        :param crs: CRSs for Spatial Indexes to update. Default=all indexes
-        :param product_names: Product names to update
-        :param dsids: Dataset IDs to update
-
-        If neither product_names nor dataset ids are supplied, update for all datasets.
-
-        If both are supplied, both the named products and identified datasets are updated.
-
-        If spatial indexes are not supported by the index driver, always return zero.
-
-        :return:  Number of spatial index entries updated or verified as unindexed.
-        """
-        _LOG.warning("Spatial index API is unstable and may change between releases.")
-        return 0
 
     def __enter__(self):
         return self

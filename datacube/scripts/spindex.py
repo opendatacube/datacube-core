@@ -7,16 +7,12 @@ import sys
 from typing import Sequence
 
 import click
-from click import echo, style, confirm
+from click import echo, confirm
 from odc.geo import CRS
-from sqlalchemy.exc import OperationalError
 
-import datacube
-from datacube.index import Index, index_connect
-from datacube.drivers.postgres._connections import IndexSetupError
+from datacube.index import Index
 from datacube.ui import click as ui
-from datacube.ui.click import cli, handle_exception
-from datacube.config import LocalConfig
+from datacube.ui.click import cli
 
 _LOG = logging.getLogger('datacube-system')
 
@@ -151,7 +147,8 @@ def drop(index: Index, force: bool, srids: Sequence[int]):
             echo(f"No spatial index exists for CRS epsg:{crs.epsg} - skipping")
     if for_deletion and not force:
         echo("WARNING: Recreating spatial indexes may be slow and expensive for large databases.")
-        echo(f"You have requested to delete spatial indexes for the following CRSes: {','.join(str(crs.epsg) for crs in for_deletion)}")
+        echo("You have requested to delete spatial indexes for the following "
+             f"CRSes: {','.join(str(crs.epsg) for crs in for_deletion)}")
         if sys.stdin.isatty():
             confirmed = confirm(
                 "Are you sure you want to delete these spatial indexes?",

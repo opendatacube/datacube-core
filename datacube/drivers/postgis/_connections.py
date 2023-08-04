@@ -49,7 +49,6 @@ DEFAULT_IAM_AUTH = False
 DEFAULT_IAM_TIMEOUT = 600
 
 
-
 class PostGisDb(object):
     """
     A thin database access api.
