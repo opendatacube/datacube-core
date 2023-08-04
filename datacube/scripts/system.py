@@ -133,8 +133,3 @@ def clone(index: Index, batch_size: int, skip_lineage: bool, lineage_only: bool,
         handle_exception('Error Connecting to Source Database: %s', e)
     except IndexSetupError as e:
         handle_exception('Source database not initialised: %s', e)
-
-
-@system.command('spindex', help='Create and/or update a spatial index for a particular CRS.')
-def spindex():
-    pass
