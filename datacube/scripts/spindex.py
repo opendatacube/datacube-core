@@ -53,15 +53,15 @@ def create(index: Index, update: bool, srids: Sequence[int]):
             # A spatial index for crs already exists: skip silently
             confirmed.append(crs)
         elif index.create_spatial_index(crs):
-            # Creation attempted but failed
-            failed.append(crs)
-        else:
             # Creation succeeded
             confirmed.append(crs)
+        else:
+            # Creation attempted but failed
+            failed.append(crs)
     if failed:
-        echo(f"Could not create spatial indexes for: {','.join(crs.epsg for crs in failed)}")
+        echo(f"Could not create spatial indexes for: {','.join(str(crs.epsg) for crs in failed)}")
     if confirmed:
-        echo(f"Spatial indexes created for: {','.join(crs.epsg for crs in confirmed)}")
+        echo(f"Spatial indexes created for: {','.join(str(crs.epsg) for crs in confirmed)}")
     if update and failed:
         echo("Skipping update")
     elif update:
@@ -69,7 +69,7 @@ def create(index: Index, update: bool, srids: Sequence[int]):
         echo(f'{result} extents checked and updated in spatial indexes')
     else:
         echo("Newly created spatial indexes are unpopulated - run 'datacube spindex update' before use.")
-    exit(int(failed))
+    exit(len(failed))
 
 
 @system.command(
@@ -151,7 +151,7 @@ def drop(index: Index, force: bool, srids: Sequence[int]):
             echo(f"No spatial index exists for CRS epsg:{crs.epsg} - skipping")
     if for_deletion and not force:
         echo("WARNING: Recreating spatial indexes may be slow and expensive for large databases.")
-        echo(f"You have requested to delete spatial indexes for the following CRSes: {','.join(crs.epsg for crs in for_deletion)}")
+        echo(f"You have requested to delete spatial indexes for the following CRSes: {','.join(str(crs.epsg) for crs in for_deletion)}")
         if sys.stdin.isatty():
             confirmed = confirm(
                 "Are you sure you want to delete these spatial indexes?",
