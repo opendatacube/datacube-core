@@ -20,6 +20,14 @@ def test_cli_spatial_indexes(index, clirunner):
     runner = clirunner(['spindex', 'create', '3577'], verbose_flag=False, expect_success=True)
     assert runner.exit_code == 0
 
+    # Double creation succeeds silently
+    runner = clirunner(['spindex', 'update', '3577'], verbose_flag=False, expect_success=True)
+    assert runner.exit_code == 0
+
+    # Double creation succeeds silently
+    runner = clirunner(['spindex', 'update', '3857'], verbose_flag=False, expect_success=False)
+    assert runner.exit_code == 1
+
     runner = clirunner(['spindex', 'list'], verbose_flag=False, expect_success=True)
     assert "epsg:4326" in runner.output
     assert "epsg:3577" in runner.output
@@ -33,6 +41,10 @@ def test_cli_spatial_indexes(index, clirunner):
     runner = clirunner(['spindex', 'list'], verbose_flag=False, expect_success=True)
     assert "epsg:4326" in runner.output
     assert "epsg:3577" not in runner.output
+    assert runner.exit_code == 0
+
+    # Drop non-existent spindex ignored.
+    runner = clirunner(['spindex', 'drop', '--force', '3577'], verbose_flag=False, expect_success=True)
     assert runner.exit_code == 0
 
 

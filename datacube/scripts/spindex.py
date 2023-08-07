@@ -125,7 +125,6 @@ def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: 
         else:
             cant_update.append(srid)
             echo(f"No spatial index for crs {srid} exists: skipping")
-            cant_update.append(srid)
     if not for_update:
         echo("Nothing to update!")
         exit(len(cant_update))
