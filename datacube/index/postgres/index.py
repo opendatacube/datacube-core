@@ -117,9 +117,6 @@ class Index(AbstractIndex):
     def transaction(self) -> AbstractTransaction:
         return PostgresTransaction(self._db, self.index_id)
 
-    def create_spatial_index(self, crs: CRS) -> None:
-        _LOG.warning("postgres driver does not support spatio-temporal indexes")
-
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
 
