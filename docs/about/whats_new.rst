@@ -21,6 +21,7 @@ v1.9.next
 - Fix postgis queries for numeric custom search fields (:pull:`1475`)
 - Document best practice for pulling in changes from develop and update constraints.txt (:pull:`1478`)
 - Postgis index driver performance tuning (:pull:`1480`)
+- Cleanup and formalise spatial index API and expose in CLI (:pull:`1481`)
 
 
 v1.8.next
