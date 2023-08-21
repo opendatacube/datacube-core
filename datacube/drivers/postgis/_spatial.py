@@ -110,10 +110,6 @@ def spindex_for_crs(crs: CRS) -> Type[SpatialIndex]:
     return spindex_for_epsg(crs.epsg)
 
 
-def normalise_crs(crs_in: CRS) -> CRS:
-    return CRS(f'epsg:{crs_in.epsg}')
-
-
 def spindex_for_record(rec: SpatialIndexRecord) -> Type[SpatialIndex]:
     """Convert a Record of a SpatialIndex created in a particular database to an ORM class"""
     return spindex_for_crs(rec.crs)
@@ -162,9 +158,9 @@ def drop_spindex(engine: Connectable, sp_idx: Type[SpatialIndex]):
     return True
 
 
-def spindexes(engine: Connectable) -> Mapping[CRS, Type[SpatialIndex]]:
+def spindexes(engine: Connectable) -> Mapping[int, Type[SpatialIndex]]:
     """
-    Return a CRS-to-Spatial Index ORM class mapping for indexes that exist in a particular database.
+    Return a SRID-to-Spatial Index ORM class mapping for indexes that exist in a particular database.
     """
     out = {}
     with Session(engine) as session:
@@ -172,8 +168,7 @@ def spindexes(engine: Connectable) -> Mapping[CRS, Type[SpatialIndex]]:
         for result in results:
             epsg = int(result[0])
             spindex = spindex_for_epsg(epsg)
-            crs = CRS(f'epsg:{epsg}')
-            out[crs] = spindex
+            out[epsg] = spindex
     return out
 
 

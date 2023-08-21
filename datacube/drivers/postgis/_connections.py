@@ -70,7 +70,7 @@ class PostGisDb(object):
         # We don't recommend using this constructor directly as it may change.
         # Use static methods PostGisDb.create() or PostGisDb.from_config()
         self._engine = engine
-        self._spindexes: Optional[Mapping[CRS, Any]] = None
+        self._spindexes: Optional[Mapping[int, Any]] = None
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
@@ -214,7 +214,7 @@ class PostGisDb(object):
         self._spindexes = spindexes(self._engine)
 
     @property
-    def spindexes(self) -> Mapping[CRS, Type[SpatialIndex]]:
+    def spindexes(self) -> Mapping[int, Type[SpatialIndex]]:
         if self._spindexes is None:
             self._refresh_spindexes()
         return self._spindexes
@@ -226,7 +226,7 @@ class PostGisDb(object):
         :param crs:
         :return:
         """
-        spidx = self.spindexes.get(crs)
+        spidx = self.spindexes.get(crs.epsg)
         if spidx is None:
             spidx = spindex_for_crs(crs)
             if spidx is None:
@@ -243,20 +243,20 @@ class PostGisDb(object):
         :param crs:
         :return:
         """
-        spidx = self.spindexes.get(crs)
+        spidx = self.spindexes.get(crs.epsg)
         if spidx is None:
             return False
         result = drop_spindex(self._engine, spidx)
         self._refresh_spindexes()
         return result
 
-    def spatial_index_orm(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
-        return self.spindexes.get(crs)
+    def spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
+        return self.spindexes.get(crs.epsg)
 
-    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
+    def spatially_indexed_crses(self, refresh=False) -> Iterable[CRS]:
         if refresh:
             self._refresh_spindexes()
-        return list(self.spindexes.keys())
+        return list(CRS(epsg) for epsg in self.spindexes.keys())
 
     @contextmanager
     def _connect(self):

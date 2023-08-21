@@ -144,7 +144,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
         return sp_idx is not None
 
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
-        return self._db.spatial_indexes(refresh)
+        return self._db.spatially_indexed_crses(refresh)
 
     def update_spatial_index(self,
                              crses: Sequence[CRS] = [],
