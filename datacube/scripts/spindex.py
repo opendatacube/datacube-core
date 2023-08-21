@@ -25,16 +25,15 @@ def system():
 
 @system.command(
     'create',
-    help='Create unpopulated spatial index for particular CRSes '
-         '(express CRSes as EPSG numbers - e.g. 3857, not "epsg:3857").')
+    help='Create unpopulated spatial index for particular CRSes')
 @click.option(
     '--update/--no-update', '-u', is_flag=True, default=False,
     help="Populate the spatial index after creation (slow). "
          "For finer grained updating, use the 'spindex update' command"
 )
-@click.argument('srids', type=int, nargs=-1)
+@click.argument('srids', nargs=-1)
 @ui.pass_index()
-def create(index: Index, update: bool, srids: Sequence[int]):
+def create(index: Index, update: bool, srids: Sequence[str]):
     if not index.supports_spatial_indexes:
         echo("The active index driver does not support spatial indexes")
         exit(1)
@@ -46,9 +45,14 @@ def create(index: Index, update: bool, srids: Sequence[int]):
     failed = []
     for srid in srids:
         try:
-            crs = CRS(f"epsg:{srid}")
+            crs = CRS(srid)
         except pyproj.exceptions.CRSError:
             failed.append(srid)
+            echo(f"{srid} cannot be converted to a valid CRS")
+            continue
+        if not crs.epsg:
+            failed.append(srid)
+            echo(f"{srid} cannot be converted to a CRS with an EPSG number")
             continue
         if crs in index.spatial_indexes():
             # A spatial index for crs already exists: skip silently
@@ -60,7 +64,7 @@ def create(index: Index, update: bool, srids: Sequence[int]):
             # Creation attempted but failed
             failed.append(srid)
     if failed:
-        str_failed = ','.join(f'epsg:{srid}' for srid in failed)
+        str_failed = ','.join(f'{srid}' for srid in failed)
         echo(f"Could not create spatial indexes for: {str_failed}")
     if confirmed:
         echo(f"Spatial indexes created for: {','.join(str(crs.epsg) for crs in confirmed)}")
@@ -84,25 +88,24 @@ def list_spindex(index):
         echo("The active index driver does not support spatial indexes")
         exit(1)
     for crs in index.spatial_indexes():
-        echo(f'epsg:{crs.epsg}')
+        echo(f'EPSG:{crs.epsg}')
     exit(0)
 
 
 @system.command(
     'update',
-    help='Update a spatial index for particular CRSs '
-         '(express CRSs as EPSG numbers - e.g. 3857, not "epsg:3857").')
+    help='Update a spatial index for particular CRSs.')
 @click.option(
     '--product', '-p', multiple=True,
-    help="The name of a product to update the spatial index for (can be used multiple times for multiple products"
+    help="The name of a product to update the spatial index for (can be used multiple times for multiple products)"
 )
 @click.option(
     '--dataset', '-d', multiple=True,
-    help="The id of a dataset to update the spatial index for (can be used multiple times for multiple datasets"
+    help="The id of a dataset to update the spatial index for (can be used multiple times for multiple datasets)"
 )
-@click.argument('srids', type=int, nargs=-1)
+@click.argument('srids', nargs=-1)
 @ui.pass_index()
-def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: Sequence[int]):
+def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: Sequence[str]):
     if not index.supports_spatial_indexes:
         echo("The active index driver does not support spatial indexes")
         exit(1)
@@ -114,11 +117,16 @@ def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: 
     cant_update = []
     for srid in srids:
         try:
-            crs = CRS(f"epsg:{srid}")
+            crs = CRS(srid)
         except pyproj.exceptions.CRSError:
-            echo(f"epsg:{srid} is not a valid CRS: skipping")
+            echo(f"{srid} is not a valid CRS: skipping")
             cant_update.append(srid)
             continue
+        if not crs.epsg:
+            echo(f"{srid} cannot be converted to a CRS with an EPSG number")
+            cant_update.append(srid)
+            continue
+
         if crs in index.spatial_indexes():
             for_update.append(crs)
         else:
@@ -134,15 +142,14 @@ def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: 
 
 @system.command(
     'drop',
-    help='Drop existing spatial indexes for particular CRSs '
-         '(express CRSs as EPSG numbers - e.g. 3857, not "epsg:3857").')
+    help='Drop existing spatial indexes for particular CRSs')
 @click.option(
     '--force/--no-force', '-f', is_flag=True, default=False,
     help="If set, does not ask the user to confirm deletion"
 )
-@click.argument('srids', type=int, nargs=-1)
+@click.argument('srids', nargs=-1)
 @ui.pass_index()
-def drop(index: Index, force: bool, srids: Sequence[int]):
+def drop(index: Index, force: bool, srids: Sequence[str]):
     if not index.supports_spatial_indexes:
         echo("The active index driver does not support spatial indexes")
         exit(1)
@@ -153,15 +160,19 @@ def drop(index: Index, force: bool, srids: Sequence[int]):
     errors = False
     for srid in srids:
         try:
-            crs = CRS(f"epsg:{srid}")
+            crs = CRS(srid)
         except pyproj.exceptions.CRSError:
-            echo(f"epsg:{srid} is not a valid CRS: skipping")
+            echo(f"{srid} is not a valid CRS: skipping")
+            errors = True
+            continue
+        if not crs.epsg:
+            echo(f"{srid} cannot be converted to a CRS with an EPSG number")
             errors = True
             continue
         if crs in index.spatial_indexes():
             for_deletion.append(crs)
         else:
-            echo(f"No spatial index exists for CRS epsg:{srid} - skipping")
+            echo(f"No spatial index exists for CRS {srid} - skipping")
     if for_deletion and not force:
         echo("WARNING: Recreating spatial indexes may be slow and expensive for large databases.")
         echo("You have requested to delete spatial indexes for the following "

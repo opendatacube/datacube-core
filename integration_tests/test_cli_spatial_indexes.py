@@ -9,11 +9,11 @@ import pytest
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_cli_spatial_indexes(index, clirunner):
     runner = clirunner(['spindex', 'list'], verbose_flag=False, expect_success=True)
-    assert "epsg:4326" in runner.output
-    assert "epsg:3577" not in runner.output
+    assert "EPSG:4326" in runner.output
+    assert "EPSG:3577" not in runner.output
     assert runner.exit_code == 0
 
-    runner = clirunner(['spindex', 'create', '3577'], verbose_flag=False, expect_success=True)
+    runner = clirunner(['spindex', 'create', 'epsg:3577'], verbose_flag=False, expect_success=True)
     assert runner.exit_code == 0
 
     # Double creation succeeds silently
@@ -25,12 +25,12 @@ def test_cli_spatial_indexes(index, clirunner):
     assert runner.exit_code == 0
 
     # Double creation succeeds silently
-    runner = clirunner(['spindex', 'update', '3857'], verbose_flag=False, expect_success=False)
+    runner = clirunner(['spindex', 'update', 'EPSG:3857'], verbose_flag=False, expect_success=False)
     assert runner.exit_code == 1
 
     runner = clirunner(['spindex', 'list'], verbose_flag=False, expect_success=True)
-    assert "epsg:4326" in runner.output
-    assert "epsg:3577" in runner.output
+    assert "EPSG:4326" in runner.output
+    assert "EPSG:3577" in runner.output
     assert runner.exit_code == 0
 
     runner = clirunner(['spindex', 'drop', '3577'], verbose_flag=False, expect_success=False)
@@ -39,8 +39,8 @@ def test_cli_spatial_indexes(index, clirunner):
     assert runner.exit_code == 0
 
     runner = clirunner(['spindex', 'list'], verbose_flag=False, expect_success=True)
-    assert "epsg:4326" in runner.output
-    assert "epsg:3577" not in runner.output
+    assert "EPSG:4326" in runner.output
+    assert "EPSG:3577" not in runner.output
     assert runner.exit_code == 0
 
     # Drop non-existent spindex ignored.
@@ -51,16 +51,16 @@ def test_cli_spatial_indexes(index, clirunner):
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_cli_spatial_index_create_and_update(index, clirunner):
     runner = clirunner(['spindex', 'list'], verbose_flag=False, expect_success=True)
-    assert "epsg:4326" in runner.output
-    assert "epsg:3577" not in runner.output
+    assert "EPSG:4326" in runner.output
+    assert "EPSG:3577" not in runner.output
     assert runner.exit_code == 0
 
     runner = clirunner(['spindex', 'create', '--update', '3577'], verbose_flag=False, expect_success=True)
     assert runner.exit_code == 0
 
     runner = clirunner(['spindex', 'list'], verbose_flag=False, expect_success=True)
-    assert "epsg:4326" in runner.output
-    assert "epsg:3577" in runner.output
+    assert "EPSG:4326" in runner.output
+    assert "EPSG:3577" in runner.output
     assert runner.exit_code == 0
 
     runner = clirunner(['spindex', 'drop', '3577'], verbose_flag=False, expect_success=False)
