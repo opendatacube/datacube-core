@@ -13,18 +13,22 @@ from datacube.model.lineage import LineageRelations
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
-def test_create_spatial_index(index: Index):
+def test_create_drop_spatial_index(index: Index):
     # Default spatial index for 4326
-    assert list(index.spatial_indexes()) == [CRS("EPSG:4326")]
+    assert list(index.spatial_indexes()) == [CRS("epsg:4326")]
     # WKT CRS which cannot be mapped to an EPSG number.
     assert not index.create_spatial_index(CRS(
         'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]]'
         ',PRIMEM["Weird",22.3],UNIT["Degree",0.017453292519943295]]'
     ))
-    assert list(index.spatial_indexes()) == [CRS("EPSG:4326")]
-    assert index.create_spatial_index(CRS("EPSG:3577"))
+    assert list(index.spatial_indexes()) == [CRS("epsg:4326")]
+    assert index.create_spatial_index(CRS("epsg:3577"))
     assert index.create_spatial_index(CRS("WGS-84"))
-    assert set(index.spatial_indexes(refresh=True)) == {CRS("EPSG:3577"), CRS("EPSG:4326")}
+    assert set(index.spatial_indexes()) == {CRS("epsg:3577"), CRS("epsg:4326")}
+    assert set(index.spatial_indexes(refresh=True)) == {CRS("epsg:3577"), CRS("epsg:4326")}
+    assert index.drop_spatial_index(CRS("epsg:3577"))
+    assert index.spatial_indexes() == [CRS("epsg:4326")]
+    assert index.spatial_indexes(refresh=True) == [CRS("epsg:4326")]
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))

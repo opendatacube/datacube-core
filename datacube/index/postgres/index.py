@@ -15,7 +15,6 @@ from datacube.index.postgres._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, \
     default_metadata_type_docs
 from datacube.model import MetadataType
-from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
 
@@ -116,9 +115,6 @@ class Index(AbstractIndex):
 
     def transaction(self) -> AbstractTransaction:
         return PostgresTransaction(self._db, self.index_id)
-
-    def create_spatial_index(self, crs: CRS) -> None:
-        _LOG.warning("postgres driver does not support spatio-temporal indexes")
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)

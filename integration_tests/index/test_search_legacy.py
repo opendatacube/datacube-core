@@ -15,6 +15,7 @@ from typing import List, Any
 import pytest
 import yaml
 from dateutil import tz
+from odc.geo import CRS
 from sqlalchemy.dialects.postgresql.ranges import Range as SQLARange
 
 from datacube.config import LocalConfig
@@ -1061,3 +1062,19 @@ def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Datas
     # Can we query multiple products in a tuple
     datasets = dc.find_datasets(product=('ls5_nbar_scene', 'ls5_level1_scene'))
     assert len(datasets) == 2
+
+
+@pytest.mark.parametrize('datacube_env_name', ('datacube',))
+def test_spatial_index_api_defaults(index: Index):
+    with pytest.raises(NotImplementedError) as e:
+        index.spatial_indexes()
+    assert "does not support the Spatial Index API" in str(e.value)
+    with pytest.raises(NotImplementedError) as e:
+        index.create_spatial_index(CRS("epsg:3577"))
+    assert "does not support the Spatial Index API" in str(e.value)
+    with pytest.raises(NotImplementedError) as e:
+        index.update_spatial_index([CRS("epsg:3577")])
+    assert "does not support the Spatial Index API" in str(e.value)
+    with pytest.raises(NotImplementedError) as e:
+        index.drop_spatial_index(CRS("epsg:3577"))
+    assert "does not support the Spatial Index API" in str(e.value)

@@ -219,7 +219,7 @@ def extract_dataset_fields(ds_metadata, fields):
     return result
 
 
-class PostgisDbAPI(object):
+class PostgisDbAPI:
     def __init__(self, parentdb, connection):
         self._db = parentdb
         self._connection = connection
@@ -511,7 +511,7 @@ class PostgisDbAPI(object):
             self._connection.execute(
                 delete(table).where(table.dataset_ref == dataset_id)
             )
-        for crs in self._db.spatial_indexes():
+        for crs in self._db.spatially_indexed_crses():
             SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
             self._connection.execute(
                 delete(
@@ -901,7 +901,7 @@ class PostgisDbAPI(object):
         if crs_seq:
             crses = [crs for crs in crs_seq]
         else:
-            crses = self._db.spatial_indexes()
+            crses = self._db.spatially_indexed_crses()
 
         # Update implementation.
         # Design will change, but this method should be fairly low level to be as efficient as possible

@@ -1862,6 +1862,8 @@ class AbstractIndex(ABC):
     supports_external_home = False
     # Supports ACID transactions
     supports_transactions = False
+    # Supports per-CRS spatial indexes
+    supports_spatial_indexes = False
 
     @property
     @abstractmethod
@@ -1921,6 +1923,88 @@ class AbstractIndex(ABC):
         :return: true if the database was created, false if already exists
         """
 
+    # Spatial Index API
+
+    def create_spatial_index(self, crs: CRS) -> bool:
+        """
+        Create a spatial index for a CRS.
+
+        Note that a newly created spatial index is empty.  If there are already datatsets in the index whose
+        extents can be safely projected into the CRS, then it is necessary to also call update_spatial_index
+        otherwise they will not be found by queries against that CRS.
+
+        Only implemented by index drivers with supports_spatial_indexes set to True.
+
+        :param crs: The coordinate reference system to create a spatial index for.
+        :return: True if the spatial index was successfully created (or already exists)
+        """
+        if not self.supports_spatial_indexes:
+            raise NotImplementedError("This index driver does not support the Spatial Index API")
+        else:
+            raise NotImplementedError()
+
+    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
+        """
+        Return the CRSs for which spatial indexes have been created.
+
+        :param refresh: If true, query the backend for the list of current spatial indexes.  If false (the default)
+                        a cached list of spatial index CRSs may be returned.
+        :return: An iterable of CRSs for which spatial indexes exist in the index
+        """
+        if not self.supports_spatial_indexes:
+            raise NotImplementedError("This index driver does not support the Spatial Index API")
+        else:
+            raise NotImplementedError()
+
+    def update_spatial_index(self,
+                             crses: Sequence[CRS] = [],
+                             product_names: Sequence[str] = [],
+                             dataset_ids: Sequence[DSID] = []
+                             ) -> int:
+        """
+        Populate a newly created spatial index (or indexes).
+
+        Spatial indexes are automatically populated with new datasets as they are indexed, but if there were
+        datasets already in the index when a new spatial index is created, or if geometries have been added or
+        modified outside of the ODC in a populated index (e.g. with SQL) then the spatial indexies must be
+        updated manually with this method.
+
+        This is a very slow operation.  The product_names and dataset_ids lists can be used to break the
+        operation up into chunks or allow faster updating when the spatial index is only relevant to a
+        small portion of the entire index.
+
+        :param crses: A list of CRSes whose spatial indexes are to be updated.
+                      Default is to update all spatial indexes
+        :param product_names: A list of product names to update the spatial indexes.
+                              Default is to update for all products
+        :param dataset_ids: A list of ids of specific datasets to update in the spatial index.
+                            Default is to update for all datasets (or all datasts in the products
+                            in the product_names list)
+        :return: The number of dataset extents processed - i.e. the number of datasets updated multiplied by the
+                 number of spatial indexes updated.
+        """
+        if not self.supports_spatial_indexes:
+            raise NotImplementedError("This index driver does not support the Spatial Index API")
+        else:
+            raise NotImplementedError()
+
+    def drop_spatial_index(self, crs: CRS) -> bool:
+        """
+        Remove a spatial index from the database.
+
+        Note that creating spatial indexes on an existing index is a slow and expensive operation.  Do not
+        delete spatial indexes unless you are absolutely certain it is no longer required by any users of
+        this ODC index.
+
+        :param crs: The CRS whose spatial index is to be deleted.
+        :return: True if the spatial index was successfully dropped.
+                 False if spatial index could not be dropped.
+        """
+        if not self.supports_spatial_indexes:
+            raise NotImplementedError("This index driver does not support the Spatial Index API")
+        else:
+            raise NotImplementedError()
+
     def clone(self,
               origin_index: "AbstractIndex",
               batch_size: int = 1000,
@@ -1957,6 +2041,11 @@ class AbstractIndex(ABC):
         """
         results = {}
         if not lineage_only:
+            if self.supports_spatial_indexes and origin_index.supports_spatial_indexes:
+                for crs in origin_index.spatial_indexes(refresh=True):
+                    report_to_user(f"Creating spatial index for CRS {crs}")
+                    self.create_spatial_index(crs)
+                    self.update_spatial_index(crs)
             # Clone Metadata Types
             report_to_user("Cloning Metadata Types:")
             results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
@@ -2020,54 +2109,11 @@ class AbstractIndex(ABC):
         :return: a Transaction context manager for this index.
         """
 
-    @abstractmethod
-    def create_spatial_index(self, crs: CRS) -> bool:
-        """
-        Create a spatial index using the nominated CRS.
-
-        :param crs: The CRS to use in the spatial index.
-        :return: True is the index was successfully created or already exists.
-                 None if spatial indexes are not supported.
-        """
-
     def thread_transaction(self) -> Optional["AbstractTransaction"]:
         """
         :return: The existing Transaction object cached in thread-local storage for this index, if there is one.
         """
         return thread_local_cache(f"txn-{self.index_id}", None)
-
-    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
-        """
-        Return a list of CRSs for which spatiotemporal indexes exist in the database.
-
-        :param refresh: If true, re-read from database record (e.g. to catch spatial
-                        indexes recently created in another datacube session.
-        :return:
-        """
-        _LOG.warning("Spatial index API is unstable and may change between releases.")
-        return []
-
-    def update_spatial_index(self,
-                             crses: Sequence[CRS] = [],
-                             product_names: Sequence[str] = [],
-                             dataset_ids: Sequence[DSID] = []
-                             ) -> int:
-        """
-        Update a spatial index
-        :param crs: CRSs for Spatial Indexes to update. Default=all indexes
-        :param product_names: Product names to update
-        :param dsids: Dataset IDs to update
-
-        If neither product_names nor dataset ids are supplied, update for all datasets.
-
-        If both are supplied, both the named products and identified datasets are updated.
-
-        If spatial indexes are not supported by the index driver, always return zero.
-
-        :return:  Number of spatial index entries updated or verified as unindexed.
-        """
-        _LOG.warning("Spatial index API is unstable and may change between releases.")
-        return 0
 
     def __enter__(self):
         return self

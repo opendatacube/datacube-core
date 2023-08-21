@@ -184,7 +184,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
         # Add a "batch" of datasets.
         b_started = monotonic()
-        crses = self._db.spatial_indexes()
+        crses = self._db.spatially_indexed_crses()
         batch = {
             "datasets": [],
             "uris": [],

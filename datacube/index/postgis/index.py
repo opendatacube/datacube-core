@@ -58,6 +58,8 @@ class Index(AbstractIndex):
     supports_external_home = True
     # Postgis driver supports ACID database transactions
     supports_transactions = True
+    # Postgis supports per-CRS spatial indexes
+    supports_spatial_indexes = True
 
     def __init__(self, db: PostGisDb) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
@@ -142,7 +144,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
         return sp_idx is not None
 
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
-        return self._db.spatial_indexes(refresh)
+        return self._db.spatially_indexed_crses(refresh)
 
     def update_spatial_index(self,
                              crses: Sequence[CRS] = [],
@@ -154,6 +156,9 @@ WARNING: Database schema and internal APIs may change significantly between rele
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
+
+    def drop_spatial_index(self, crs: CRS) -> bool:
+        return self._db.drop_spatial_index(crs)
 
     @contextmanager
     def _active_connection(self, transaction: bool = False) -> PostgisDbAPI:

@@ -30,7 +30,7 @@ from odc.geo import CRS
 
 from . import _api
 from . import _core
-from ._spatial import ensure_spindex, spindexes, spindex_for_crs
+from ._spatial import ensure_spindex, spindexes, spindex_for_crs, drop_spindex
 from ._schema import SpatialIndex
 
 _LIB_ID = 'odc-' + str(datacube.__version__)
@@ -70,7 +70,7 @@ class PostGisDb(object):
         # We don't recommend using this constructor directly as it may change.
         # Use static methods PostGisDb.create() or PostGisDb.from_config()
         self._engine = engine
-        self._spindexes: Optional[Mapping[CRS, Any]] = None
+        self._spindexes: Optional[Mapping[int, Any]] = None
 
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
@@ -214,7 +214,7 @@ class PostGisDb(object):
         self._spindexes = spindexes(self._engine)
 
     @property
-    def spindexes(self) -> Mapping[CRS, Type[SpatialIndex]]:
+    def spindexes(self) -> Mapping[int, Type[SpatialIndex]]:
         if self._spindexes is None:
             self._refresh_spindexes()
         return self._spindexes
@@ -223,26 +223,40 @@ class PostGisDb(object):
         """
         Create a spatial index across the database, for the named CRS.
 
-        :param crs_str:
+        :param crs:
         :return:
         """
-        spidx = self.spindexes.get(crs)
+        spidx = self.spindexes.get(crs.epsg)
         if spidx is None:
             spidx = spindex_for_crs(crs)
             if spidx is None:
                 _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)
                 return None
             ensure_spindex(self._engine, spidx)
-            self.spindexes[crs] = spidx
+            self._refresh_spindexes()
         return spidx
 
-    def spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
-        return self.spindexes.get(crs)
+    def drop_spatial_index(self, crs: CRS) -> bool:
+        """
+        Create a spatial index across the database, for the named CRS.
 
-    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
+        :param crs:
+        :return:
+        """
+        spidx = self.spindexes.get(crs.epsg)
+        if spidx is None:
+            return False
+        result = drop_spindex(self._engine, spidx)
+        self._refresh_spindexes()
+        return result
+
+    def spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
+        return self.spindexes.get(crs.epsg)
+
+    def spatially_indexed_crses(self, refresh=False) -> Iterable[CRS]:
         if refresh:
             self._refresh_spindexes()
-        return list(self.spindexes.keys())
+        return list(CRS(epsg) for epsg in self.spindexes.keys())
 
     @contextmanager
     def _connect(self):
