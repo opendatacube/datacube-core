@@ -372,7 +372,7 @@ class PostgisDbAPI:
         values = generate_dataset_spatial_values(dataset_id, crs, extent)
         if values is None:
             return False
-        SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+        SpatialIndex = self._db.spatial_index_orm(crs)  # noqa: N806
         r = self._connection.execute(
             insert(
                 SpatialIndex
@@ -386,12 +386,12 @@ class PostgisDbAPI:
         return r.rowcount > 0
 
     def insert_dataset_spatial_bulk(self, crs, values):
-        SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+        SpatialIndex = self._db.spatial_index_orm(crs)  # noqa: N806
         r = self._connection.execute(insert(SpatialIndex).values(values))
         return r.rowcount
 
     def spatial_extent(self, ids, crs):
-        SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+        SpatialIndex = self._db.spatial_index_orm(crs)  # noqa: N806
         if SpatialIndex is None:
             return None
         result = self._connection.execute(
@@ -512,7 +512,7 @@ class PostgisDbAPI:
                 delete(table).where(table.dataset_ref == dataset_id)
             )
         for crs in self._db.spatial_indexes():
-            SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
+            SpatialIndex = self._db.spatial_index_orm(crs)  # noqa: N806
             self._connection.execute(
                 delete(
                     SpatialIndex
@@ -607,12 +607,12 @@ class PostgisDbAPI:
             #           No? Convert to 4326 which we should always have a spatial index for by default
             if not geom.crs:
                 raise ValueError("Search geometry must have a CRS")
-            SpatialIndex = self._db.spatial_index(geom.crs)   # noqa: N806
+            SpatialIndex = self._db.spatial_index_orm(geom.crs)   # noqa: N806
             if SpatialIndex is None:
                 _LOG.info("No spatial index for crs %s - converting to 4326", geom.crs)
                 default_crs = CRS("EPSG:4326")
                 geom = geom.to_crs(default_crs)
-                SpatialIndex = self._db.spatial_index(default_crs)  # noqa: N806
+                SpatialIndex = self._db.spatial_index_orm(default_crs)  # noqa: N806
             geom_sql = geom_alchemy(geom)
             _LOG.info("query geometry = %s (%s)", geom.json, geom.crs)
             spatialquery = func.ST_Intersects(SpatialIndex.extent, geom_sql)

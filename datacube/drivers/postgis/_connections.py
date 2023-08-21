@@ -30,7 +30,7 @@ from odc.geo import CRS
 
 from . import _api
 from . import _core
-from ._spatial import ensure_spindex, spindexes, spindex_for_crs, drop_spindex, normalise_crs
+from ._spatial import ensure_spindex, spindexes, spindex_for_crs, drop_spindex
 from ._schema import SpatialIndex
 
 _LIB_ID = 'odc-' + str(datacube.__version__)
@@ -250,8 +250,8 @@ class PostGisDb(object):
         self._refresh_spindexes()
         return result
 
-    def spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
-        return self.spindexes.get(normalise_crs(crs))
+    def spatial_index_orm(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
+        return self.spindexes.get(crs)
 
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
         if refresh:

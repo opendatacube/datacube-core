@@ -107,10 +107,9 @@ def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: 
         echo("The active index driver does not support spatial indexes")
         exit(1)
     if not srids:
-        echo("Must supply at least one CRS to create/update")
+        echo("Must supply at least one CRS to update")
         exit(1)
 
-    # crses = [CRS(f"epsg:{srid}") for srid in srids]
     for_update = []
     cant_update = []
     for srid in srids:
