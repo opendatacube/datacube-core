@@ -23,7 +23,7 @@ repos:
         hooks:
         -   id: pylint
     - repo: https://github.com/Lucas-C/pre-commit-hooks
-      rev: v1.5.4
+      rev: v1.5.4  #v1.5.2 and above refuse to cooperate
       hooks:
         - id: forbid-crlf
         - id: remove-crlf
