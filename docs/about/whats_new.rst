@@ -11,7 +11,7 @@ v1.8.next
 - Mark ``--confirm-ignore-lineage``, ``--auto-add-lineage``, and ``--verify-lineage`` as deprecated or to be deprecated (:pull:`1472`)
 - Default delta values in ``archive_less_mature`` and ``find_less_mature`` (:pull:`1472`)
 - Fix SQLAlchemy calls and pin jsonschema version to suppress deprecation warnings (:pull:`1476`)
-- Throw a better error if a dataset is not compatible ewith ``archive_less_mature`` logic (:pull:`1491`)
+- Throw a better error if a dataset is not compatible with ``archive_less_mature`` logic (:pull:`1491`)
 
 v1.8.15 (11th July 2023)
 ========================
