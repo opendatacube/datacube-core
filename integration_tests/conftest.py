@@ -364,6 +364,16 @@ def final_dataset(index, extended_eo3_metadata_type, ls8_eo3_product, final_data
 
 
 @pytest.fixture
+def ds_no_region(index, extended_eo3_metadata_type, ls8_eo3_product, final_dataset_doc):
+    doc_no_region = deepcopy(final_dataset_doc)
+    doc_no_region[0]["properties"]["odc:region_code"] = None
+    return doc_to_ds_no_add(
+        index,
+        ls8_eo3_product.name,
+        *doc_no_region)
+
+
+@pytest.fixture
 def ga_s2am_ard3_final(index, eo3_sentinel_metadata_type, ga_s2am_ard_3_product, ga_s2am_ard_3_final_doc):
     return doc_to_ds_no_add(
         index,
