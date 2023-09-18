@@ -70,7 +70,7 @@ jobs:
         password: ${{ secrets.GADOCKERSVC_PASSWORD }}
 
     - name: Build Docker
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         file: docker/Dockerfile
         context: .
@@ -102,7 +102,7 @@ jobs:
         github.event_name == 'push'
         && github.ref == 'refs/heads/develop'
         && steps.changes.outputs.docker == 'true'
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         file: docker/Dockerfile
         context: .
