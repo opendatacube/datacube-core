@@ -27,8 +27,8 @@ jobs:
       with:
         fetch-depth: 0
     
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    - name: Setup upterm session
+      uses: lhotari/action-upterm@v1
 
     - name: Config
       id: cfg
