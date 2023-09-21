@@ -30,9 +30,20 @@ jobs:
     - name: Config
       id: cfg
       run: |
-        if "${GITHUB_REF}" in "refs/tags/"*; then
-          echo "push_pypi=yes" >> $GITHUB_OUTPUT
+        push_test_pypi=no
+        push_pypi=no
+
+        if "${GITHUB_REF}" in "refs/heads/fix_pypi_action"; then
+          push_test_pypi=yes
         fi
+        if "${GITHUB_REF}" in "refs/tags/"*; then
+          push_test_pypi=yes
+          push_pypi=yes
+        fi
+
+        for x in push_test_pypi push_pypi; do
+          echo "${x}=${!x}" >> $GITHUB_OUTPUT
+        done
 
     - uses: dorny/paths-filter@v2
       id: changes
@@ -119,6 +130,30 @@ jobs:
         ls -lh ./dist/
         twine check ./dist/*
         EOF
+
+    - name: Publish to Test PyPi
+      if: |
+        steps.cfg.outputs.push_test_pypi == 'yes'
+      run: |
+        if [ -n "${TWINE_PASSWORD}" ]; then
+          docker run --rm  \
+            -v $(pwd):/code \
+            -e SKIP_DB=yes \
+            ${{ env.DOCKER_IMAGE }} \
+            twine upload \
+              --verbose \
+              --non-interactive \
+              --disable-progress-bar \
+              --username=__token__ \
+              --password=${TWINE_PASSWORD} \
+              --repository-url=${TWINE_REPOSITORY_URL} \
+              --skip-existing dist/* || true
+        else
+           echo "Skipping upload as 'TestPyPiToken' is not set"
+        fi
+      env:
+        TWINE_PASSWORD: ${{ secrets.TestPyPiToken }}
+        TWINE_REPOSITORY_URL: 'https://test.pypi.org/legacy/'
 
     - name: Publish to PyPi
       if: |
