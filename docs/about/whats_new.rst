@@ -33,6 +33,7 @@ v1.8.next
 - Fix SQLAlchemy calls and pin jsonschema version to suppress deprecation warnings (:pull:`1476`)
 - Throw a better error if a dataset is not compatible with ``archive_less_mature`` logic (:pull:`1491`)
 - Fix broken Github action workflow (:pull:`1496`)
+- Support ``like=<GeoBox>`` in virtual product ``load`` (:pull:`1497`)
 
 v1.8.15 (11th July 2023)
 ========================
