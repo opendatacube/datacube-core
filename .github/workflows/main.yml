@@ -10,6 +10,8 @@ on:
       - '**'
       - '!docs/**'
       - '!contrib/**'
+
+  workflow_dispatch:
   
 env:
   DOCKER_USER: gadockersvc
@@ -26,6 +28,9 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
+    
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
 
     - name: Config
       id: cfg
@@ -34,16 +39,12 @@ jobs:
         push_pypi=no
 
         if "${GITHUB_REF}" in "refs/heads/fix_pypi_action"; then
-          push_test_pypi=yes
+          echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
         fi
         if "${GITHUB_REF}" in "refs/tags/"*; then
-          push_test_pypi=yes
-          push_pypi=yes
+          echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
+          echo "push_pypi=yes" >> $GITHUB_OUTPUT
         fi
-
-        for x in push_test_pypi push_pypi; do
-          echo "${x}=${!x}" >> $GITHUB_OUTPUT
-        done
 
     - uses: dorny/paths-filter@v2
       id: changes
