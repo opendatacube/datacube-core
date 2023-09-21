@@ -356,9 +356,12 @@ class Product(VirtualProduct):
         merged = merge_search_terms(self, group_settings)
 
         try:
-            geobox = output_geobox(datasets=selected,
-                                   grid_spec=datasets.product_definitions[self._product].grid_spec,
-                                   geopolygon=geopolygon, **select_keys(merged, self._GEOBOX_KEYS))
+            if isinstance(merged.get("like"), GeoBox):
+                geobox = merged["like"]
+            else:
+                geobox = output_geobox(datasets=selected,
+                                       grid_spec=datasets.product_definitions[self._product].grid_spec,
+                                       geopolygon=geopolygon, **select_keys(merged, self._GEOBOX_KEYS))
             load_natively = False
 
         except ValueError:
