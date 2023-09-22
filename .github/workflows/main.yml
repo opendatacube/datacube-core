@@ -33,7 +33,7 @@ jobs:
         push_test_pypi=no
         push_pypi=no
 
-        if [[ "${GITHUB_REF}" == refs/heads/fix_pypi_action ]; then
+        if [[ "${GITHUB_REF}" == refs/heads/fix_pypi_action ]]; then
           echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
         fi
         if [[ "${GITHUB_REF}" =~ refs/tags/.* ]]; then
