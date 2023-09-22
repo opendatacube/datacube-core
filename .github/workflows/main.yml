@@ -33,10 +33,10 @@ jobs:
         push_test_pypi=no
         push_pypi=no
 
-        if "${GITHUB_REF}" in "refs/heads/*"; then
+        if [ "${GITHUB_REF}" in "refs/heads/"* ]; then
           echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
         fi
-        if "${GITHUB_REF}" in "refs/tags/"*; then
+        if [ "${GITHUB_REF}" in "refs/tags/"* ]; then
           echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
           echo "push_pypi=yes" >> $GITHUB_OUTPUT
         fi
