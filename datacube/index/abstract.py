@@ -923,6 +923,12 @@ class AbstractDatasetResource(ABC):
         less_mature = []
         assert delta >= 0
 
+        # in case value winds up getting passed in as a bool
+        if delta is True:
+            delta = 500
+        if delta is False:
+            return []
+
         def check_maturity_information(dataset, props):
             # check that the dataset metadata includes all maturity-related properties
             # passing in the required props to enable greater extensibility should it be needed
