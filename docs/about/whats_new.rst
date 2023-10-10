@@ -15,6 +15,7 @@ v1.8.next
 - Fix broken Github action workflow (:pull:`1496`)
 - Support ``like=<GeoBox>`` in virtual product ``load`` (:pull:`1497`)
 - Don't archive less mature if archive_less_mature is provided as `False` instead of `None` (:pull:`1498`)
+- Raise minimum supported Python version to 3.9 (:pull:`???`)
 
 v1.8.15 (11th July 2023)
 ========================
