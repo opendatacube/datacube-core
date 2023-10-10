@@ -129,6 +129,24 @@ def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am
     assert index.datasets.get(ga_s2am_ard3_final.id).is_active
 
 
+def test_dont_archive_less_mature(index, final_dataset, nrt_dataset):
+    # ensure datasets aren't archive if no archive_less_mature value is provided
+    index.datasets.add(nrt_dataset, with_lineage=False)
+    index.datasets.get(nrt_dataset.id).is_active
+    index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=None)
+    assert index.datasets.get(nrt_dataset.id).is_active
+    assert index.datasets.get(final_dataset.id).is_active
+
+
+def test_archive_less_mature_bool(index, final_dataset, nrt_dataset):
+    # if archive_less_mature value gets passed as a bool via an outdated script
+    index.datasets.add(nrt_dataset, with_lineage=False)
+    index.datasets.get(nrt_dataset.id).is_active
+    index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=False)
+    assert index.datasets.get(nrt_dataset.id).is_active
+    assert index.datasets.get(final_dataset.id).is_active
+
+
 def test_purge_datasets(index, ls8_eo3_dataset):
     assert index.datasets.has(ls8_eo3_dataset.id)
     datasets = index.datasets.search_eager()
