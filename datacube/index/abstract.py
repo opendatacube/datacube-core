@@ -925,15 +925,15 @@ class AbstractDatasetResource(ABC):
         Bool value accepted only for improving backwards compatibility, int preferred.
         :return: Iterable of less mature datasets
         """
-        if isinstance(delta, int):
-            if delta < 0:
-                raise ValueError("timedelta must be a positive integer")
         if isinstance(delta, bool):
             _LOG.warning("received delta as a boolean value. Int is prefered")
             if delta is True:  # treat True as default
                 delta = 500
             else:  # treat False the same as None
                 return []
+        elif isinstance(delta, int):
+            if delta < 0:
+                raise ValueError("timedelta must be a positive integer")
         elif delta is None:
             return []
         else:
