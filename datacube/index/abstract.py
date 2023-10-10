@@ -927,9 +927,13 @@ class AbstractDatasetResource(ABC):
         """
         if isinstance(delta, int) and delta < 0:
             raise ValueError("timedelta must be a positive integer")
-        elif delta is True:
-            delta = 500
-        elif delta is False or delta is None:
+        elif isinstance(delta, bool):
+            _LOG.warning("received delta as a boolean value. Int is prefered")
+            if delta is True:  # treat True as default
+                delta = 500
+            else:  # treat False the same as None
+                return []
+        elif delta is None:
             return []
         else:
             raise TypeError("timedelta must be None, a positive integer, or a boolean")
