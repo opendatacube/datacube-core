@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from datacube.cfg import config_options_for_psql_driver, ODCEnvironment, ODCOptionHandler
 from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
 from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore
@@ -217,6 +218,10 @@ class DefaultIndexDriver(AbstractIndexDriver):
         MetadataType.validate(definition)  # type: ignore
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))
+
+    @staticmethod
+    def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
+        return config_options_for_psql_driver(env)
 
 
 def index_driver_init():

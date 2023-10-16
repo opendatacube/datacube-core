@@ -30,7 +30,7 @@ from datacube.utils import jsonify_document
 from . import _api
 from . import _core
 
-_LIB_ID = 'agdc-' + str(datacube.__version__)
+_LIB_ID = 'odc-' + str(datacube.__version__)
 
 _LOG = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ try:
 except (ImportError, KeyError):
     # No default on Windows and some other systems
     DEFAULT_DB_USER = None
+
 DEFAULT_DB_PORT = 5432
 DEFAULT_IAM_AUTH = False
 DEFAULT_IAM_TIMEOUT = 600
