@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
+from typing import Iterable
 
+from datacube.cfg import ODCEnvironment, ODCOptionHandler, config_options_for_psql_driver
 from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
 from datacube.index.postgres._transaction import PostgresTransaction
 from datacube.index.postgres._datasets import DatasetResource  # type: ignore
@@ -162,7 +164,7 @@ class Index(AbstractIndex):
 
 
 class DefaultIndexDriver(AbstractIndexDriver):
-    aliases = ['postgres']
+    aliases = ['postgres', 'legacy']
 
     @staticmethod
     def connect_to_index(config, application_name=None, validate_connection=True):
@@ -176,6 +178,10 @@ class DefaultIndexDriver(AbstractIndexDriver):
         MetadataType.validate(definition)  # type: ignore
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))
+
+    @staticmethod
+    def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
+        return config_options_for_psql_driver(env)
 
 
 def index_driver_init():

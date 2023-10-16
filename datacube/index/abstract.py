@@ -17,6 +17,7 @@ from typing import (Any, Iterable, Iterator,
 from uuid import UUID
 from datetime import timedelta
 
+from datacube.cfg import ODCEnvironment, ODCOptionHandler
 from datacube.config import LocalConfig
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
@@ -2140,6 +2141,14 @@ class AbstractIndexDriver(ABC):
     def metadata_type_from_doc(definition: dict
                               ) -> MetadataType:
         ...
+
+    @staticmethod
+    def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
+        """
+        Default Implementation does nothing.
+        Override for driver-specific config handling (e.g. for db connection)
+        """
+        return []
 
 
 # The special handling of grid_spatial, etc appears to NOT apply to EO3.

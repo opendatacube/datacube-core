@@ -52,9 +52,9 @@ def index_drivers() -> List[str]:
 
 
 def index_driver_by_name(name: str) -> Optional[AbstractIndexDriver]:
-    """ Lookup writer driver by name
+    """ Lookup index driver by name
 
-    :returns: Initialised writer driver instance
+    :returns: Initialised index driver instance
     :returns: None if driver with this name doesn't exist
     """
     return index_cache()(name)
