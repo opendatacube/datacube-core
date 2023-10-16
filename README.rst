@@ -40,7 +40,7 @@ System
 ~~~~~~
 
 -  PostgreSQL 10+
--  Python 3.8+
+-  Python 3.9+
 
 Developer setup
 ===============
@@ -74,17 +74,17 @@ Developer setup
 5. Run unit tests + PyLint
 
 Install test dependencies using:
-   
+
    ``pip install --upgrade -e '.[test]'``
 
 If install for these fails, please lodge them as issues.
-   
+
 Run unit tests with:
 
    ``./check-code.sh``
 
    (this script approximates what is run by GitHub Actions. You can
-   alternatively run ``pytest`` yourself). 
+   alternatively run ``pytest`` yourself).
 
 6. **(or)** Run all tests, including integration tests.
 
