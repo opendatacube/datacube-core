@@ -7,8 +7,12 @@ What's New
 
 v1.8.next
 =========
+
+v1.8.16 (17th October 2023)
+===========================
 - Improve error message for mismatch between dataset metadata and product signature (:pull:`1472`)
-- Mark ``--confirm-ignore-lineage``, ``--auto-add-lineage``, and ``--verify-lineage`` as deprecated or to be deprecated (:pull:`1472`)
+- Mark ``--confirm-ignore-lineage``, ``--auto-add-lineage``, and ``--verify-lineage`` as deprecated
+  or to be deprecated (:pull:`1472`)
 - Default delta values in ``archive_less_mature`` and ``find_less_mature`` (:pull:`1472`)
 - Fix SQLAlchemy calls and pin jsonschema version to suppress deprecation warnings (:pull:`1476`)
 - Throw a better error if a dataset is not compatible with ``archive_less_mature`` logic (:pull:`1491`)
@@ -16,6 +20,7 @@ v1.8.next
 - Support ``like=<GeoBox>`` in virtual product ``load`` (:pull:`1497`)
 - Don't archive less mature if archive_less_mature is provided as `False` instead of `None` (:pull:`1498`)
 - Raise minimum supported Python version to 3.9 (:pull:`1500`)
+- Manually apply Dependabot updates, and update whats_new.rst for 1.8.16 release (:pull:`1501`)
 
 v1.8.15 (11th July 2023)
 ========================
