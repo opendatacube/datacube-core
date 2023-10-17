@@ -10,6 +10,7 @@ from typing import Any, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from .exceptions import ConfigException
+from .utils import check_valid_field_name
 
 if TYPE_CHECKING:
     from .api import ODCEnvironment
@@ -23,6 +24,7 @@ class ODCOptionHandler:
     def __init__(self, name: str, env: "ODCEnvironment", default: Any = None,
                  env_aliases=None,
                  legacy_env_aliases=None):
+        check_valid_field_name(name)
         self.name: str = name
         self.env: "ODCEnvironment" = env
         self.default: Any = default
@@ -86,29 +88,6 @@ class IndexDriverOptionHandler(ODCOptionHandler):
             self.env._option_handlers.append(option)
 
 
-class PostgresURLOptionHandler(ODCOptionHandler):
-    def validate_and_normalise(self, value: Any) -> Any:
-        if not value:
-            return None
-        components = urlparse(value)
-        # Check URL scheme is postgresql:
-        if components.scheme != "postgresql":
-            raise ConfigException("Database URL is not a postgresql connection URL")
-        # Don't bother splitting up the url, we'd just have to put it back together again later
-        return value
-
-    def handle_dependent_options(self, value: Any) -> None:
-        if value is None:
-            for handler in (
-                    ODCOptionHandler("db_username", self.env, env_aliases=['DB_USERNAME']),
-                    ODCOptionHandler("db_password", self.env, env_aliases=['DB_PASSWORD']),
-                    ODCOptionHandler("db_hostname", self.env, env_aliases=['DB_HOSTNAME']),
-                    IntOptionHandler("db_port", self.env, default=5432, env_aliases=['DB_PORT'],
-                                     minval=1, maxval=49151),
-                    ODCOptionHandler("db_database", self.env, env_aliases=['DB_DATABASE']),
-            ):
-                self.env._option_handlers.append(handler)
-
 
 class IntOptionHandler(ODCOptionHandler):
     def __init__(self, *args, minval: int | None = None, maxval: int | None = None, **kwargs):
@@ -147,6 +126,31 @@ class IAMAuthenticationOptionHandler(ODCOptionHandler):
             )
 
 
+class PostgresURLOptionHandler(ODCOptionHandler):
+    def validate_and_normalise(self, value: Any) -> Any:
+        if not value:
+            return None
+        components = urlparse(value)
+        # Check URL scheme is postgresql:
+        if components.scheme != "postgresql":
+            raise ConfigException("Database URL is not a postgresql connection URL")
+        # Don't bother splitting up the url, we'd just have to put it back together again later
+        return value
+
+    def handle_dependent_options(self, value: Any) -> None:
+        if value is None:
+            for handler in (
+                    ODCOptionHandler("db_username", self.env, env_aliases=['DB_USERNAME']),
+                    ODCOptionHandler("db_password", self.env, env_aliases=['DB_PASSWORD']),
+                    ODCOptionHandler("db_hostname", self.env, env_aliases=['DB_HOSTNAME'],
+                                     default='localhost'),
+                    IntOptionHandler("db_port", self.env, default=5432, env_aliases=['DB_PORT'],
+                                     minval=1, maxval=49151),
+                    ODCOptionHandler("db_database", self.env, env_aliases=['DB_DATABASE']),
+            ):
+                self.env._option_handlers.append(handler)
+
+
 def config_options_for_psql_driver(env: "ODCEnvironment"):
     """
        Config options for shared use by postgres-based index drivers
@@ -159,3 +163,18 @@ def config_options_for_psql_driver(env: "ODCEnvironment"):
                                        env_aliases=['DATACUBE_IAM_AUTHENTICATION']),
         IntOptionHandler("db_connection_timeout", env, default=60, minval=1)
     ]
+
+
+def psql_url_from_config(env: "ODCEnvironment"):
+    if env.db_url:
+        return env.db_url
+    if not env.db_database:
+        raise ConfigException(f"No database name supplied for environment {env._name}")
+    url = "postgresql://"
+    if env.db_username:
+        if env.db_password:
+            url += f"{env.db_username}:{env.db_password}@"
+        else:
+            url += f"{env.db_username}@"
+    url += f"{env.db_hostname}:{env.db_port}/{env.db_database}"
+    return url

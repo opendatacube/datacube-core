@@ -7,7 +7,7 @@ import pytest
 
 
 def test_smells_like_ini():
-    from datacube.cfg.cfg import smells_like_ini
+    from datacube.cfg.utils import smells_like_ini
     assert smells_like_ini("""[an_ini_file]
 key: value
 other-key: 12
@@ -155,6 +155,7 @@ def test_aliases(simple_config):
     assert cfg['memory']._name == 'memory'
     assert cfg['exp2']._name == 'exp2'
     assert cfg['dynamic']._name == 'dynamic'
+    assert cfg[None]._name == 'legacy'
 
 
 def test_options(simple_config):
