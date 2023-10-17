@@ -7,7 +7,7 @@ import pytest
 
 
 def test_smells_like_ini():
-    from datacube.cfg import smells_like_ini
+    from datacube.cfg.cfg import smells_like_ini
     assert smells_like_ini("""[an_ini_file]
 key: value
 other-key: 12
@@ -74,7 +74,9 @@ goo:
 
 
 def test_parse_text(simple_valid_ini, simple_valid_yaml):
-    from datacube.cfg import parse_text, CfgFormat, ConfigException
+    from datacube.cfg.api import ConfigException
+    from datacube.cfg.cfg import parse_text
+    from datacube.cfg.cfg import CfgFormat
     ini = parse_text(simple_valid_ini)
     yaml = parse_text(simple_valid_yaml)
     assert ini["foo"]["bar"] == yaml["foo"]["bar"]
@@ -131,7 +133,7 @@ exp2:
 
 
 def test_single_env(single_env_config):
-    from datacube.cfg import ODCConfig
+    from datacube.cfg.api import ODCConfig
     cfg = ODCConfig(text=single_env_config)
 
     assert cfg['experimental'].index_driver == "postgis"
@@ -144,7 +146,7 @@ def test_single_env(single_env_config):
 
 
 def test_aliases(simple_config):
-    from datacube.cfg import ODCConfig
+    from datacube.cfg.api import ODCConfig
     cfg = ODCConfig(text=simple_config)
     assert cfg['default']._name == 'legacy'
     assert cfg['legacy']._name == 'legacy'
@@ -156,7 +158,7 @@ def test_aliases(simple_config):
 
 
 def test_options(simple_config):
-    from datacube.cfg import ODCConfig
+    from datacube.cfg.api import ODCConfig
     cfg = ODCConfig(text=simple_config)
 
     assert cfg['default']['index_driver'] == 'default'
