@@ -17,7 +17,7 @@ from typing import (Any, Iterable, Iterator,
 from uuid import UUID
 from datetime import timedelta
 
-from datacube.cfg import ODCEnvironment, ODCOptionHandler
+from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.config import LocalConfig
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field

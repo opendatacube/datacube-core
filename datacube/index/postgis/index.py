@@ -7,7 +7,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from datacube.cfg import config_options_for_psql_driver, ODCEnvironment, ODCOptionHandler
+from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
+from datacube.cfg.opt import config_options_for_psql_driver
 from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
 from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore

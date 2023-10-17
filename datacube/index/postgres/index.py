@@ -6,7 +6,8 @@ import logging
 from contextlib import contextmanager
 from typing import Iterable
 
-from datacube.cfg import ODCEnvironment, ODCOptionHandler, config_options_for_psql_driver
+from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
+from datacube.cfg.api import ODCEnvironment
 from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
 from datacube.index.postgres._transaction import PostgresTransaction
 from datacube.index.postgres._datasets import DatasetResource  # type: ignore
