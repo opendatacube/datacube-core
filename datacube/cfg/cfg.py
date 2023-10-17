@@ -9,6 +9,7 @@ from os.path import expanduser
 from typing import Any
 
 from datacube.cfg.exceptions import ConfigException
+from datacube.cfg.utils import smells_like_ini
 
 _DEFAULT_CONFIG_SEARCH_PATH = [
     "datacube.conf",      # i.e. in the current working directory.
@@ -56,19 +57,6 @@ class CfgFormat(Enum):
     INI = 1
     YAML = 2
     JSON = 2   # JSON is a subset of YAML
-
-
-def smells_like_ini(cfg_text: str):
-    for line in cfg_text.split('\n'):
-        line = line.strip()
-        if not line:
-            continue
-        if line[0] in [";", "["]:
-            return True
-        else:
-            return False
-    # Doesn't smell like anything
-    return False
 
 
 def parse_text(cfg_text, fmt: CfgFormat = CfgFormat.AUTO) -> dict[str, dict[str, Any]]:

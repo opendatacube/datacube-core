@@ -7,6 +7,7 @@
 Datacube configuration
 """
 import os
+import warnings
 
 from os import PathLike
 from typing import Any
@@ -14,6 +15,7 @@ from typing import Any
 from .cfg import find_config, parse_text
 from .exceptions import ConfigException
 from .opt import ODCOptionHandler, AliasOptionHandler, IndexDriverOptionHandler
+from .utils import check_valid_env_name
 
 
 class ODCConfig:
@@ -22,7 +24,7 @@ class ODCConfig:
             paths: None | str | PathLike | list[str | PathLike] = None,
             text: str | None = None):
         """
-        Configuration reader/parser.
+        Configuration finder/reader/parser.
 
         :param paths: Optional
         :param text:
@@ -52,12 +54,25 @@ class ODCConfig:
         self.aliases[alias] = canonical
 
     def __getitem__(self, item):
+        if item is None:
+            # Get default.
+            if os.environ.get("ODC_ENVIRONMENT"):
+                item = os.environ["ODC_ENVIRONMENT"]
+            elif os.environ.get("DATACUBE_ENVIRONMENT"):
+                warnings.warn("Setting the default environment with $DATACUBE_ENVIRONMENT is deprecated.  Please use $ODC_ENVIRONMENT instead.")
+                item = os.environ["DATACUBE_ENVIRONMENT"]
+            elif "default" in self.known_environments:
+                item = "default"
+            elif "datacube" in self.known_environments:
+                warnings.warn("Defaulting to the 'datacube' environment - this fallback behaviour is deprecated and may change in a future release.")
+                item = "datacube"
+            else:
+                return ConfigException("No environment specified and no default environment could be identified.")
         if item not in self.known_environments:
             self.known_environments[item] = ODCEnvironment(self, item, {}, True)
         return self.known_environments[item]
 
 
-# dataclassify?
 class ODCEnvironment:
     def __init__(self,
                  cfg: ODCConfig,
@@ -65,6 +80,7 @@ class ODCEnvironment:
                  raw: dict[str, Any],
                  allow_env_overrides: bool = True):
         self._cfg: ODCConfig = cfg
+        check_valid_env_name(name)
         self._name: str = name
         self._raw: dict[str, Any] = raw
         self._allow_envvar_overrides: bool = allow_env_overrides
