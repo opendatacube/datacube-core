@@ -96,29 +96,30 @@ def ensure_db(engine, with_permissions=True):
         c.execute(text("""
         grant all on database {db} to agdc_admin;
         """.format(db=quoted_db_name)))
-        if not has_schema(engine):
-            is_new = True
-            try:
-                sqla_txn = c.begin()
-                if with_permissions:
-                    # Switch to 'agdc_admin', so that all items are owned by them.
-                    c.execute(text('set role agdc_admin'))
-                _LOG.info('Creating schema.')
-                c.execute(CreateSchema(SCHEMA_NAME, if_not_exists=True))
-                _LOG.info('Creating tables.')
-                c.execute(text(TYPES_INIT_SQL))
-                METADATA.create_all(c)
-                _LOG.info("Creating triggers.")
-                install_timestamp_trigger(c)
-                _LOG.info("Creating added column.")
-                install_added_column(c)
-                sqla_txn.commit()
-            except:  # noqa: E722
-                sqla_txn.rollback()
-                raise
-            finally:
-                if with_permissions:
-                    c.execute(text('set role {}'.format(quoted_user)))
+
+    if not has_schema(engine):
+        is_new = True
+        try:
+            sqla_txn = c.begin()
+            if with_permissions:
+                # Switch to 'agdc_admin', so that all items are owned by them.
+                c.execute(text('set role agdc_admin'))
+            _LOG.info('Creating schema.')
+            c.execute(CreateSchema(SCHEMA_NAME, if_not_exists=True))
+            _LOG.info('Creating tables.')
+            c.execute(text(TYPES_INIT_SQL))
+            METADATA.create_all(c)
+            _LOG.info("Creating triggers.")
+            install_timestamp_trigger(c)
+            _LOG.info("Creating added column.")
+            install_added_column(c)
+            sqla_txn.commit()
+        except:  # noqa: E722
+            sqla_txn.rollback()
+            raise
+        finally:
+            if with_permissions:
+                c.execute(text('set role {}'.format(quoted_user)))
 
     if with_permissions:
         _LOG.info('Adding role grants.')
