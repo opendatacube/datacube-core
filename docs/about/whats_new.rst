@@ -7,6 +7,7 @@ What's New
 
 v1.8.next
 =========
+- Fix schema creation with postgres driver when initialising system with ``--no-init-users`` (:pull:`1504`)
 
 v1.8.16 (17th October 2023)
 ===========================
