@@ -22,6 +22,7 @@ class ODCConfig:
     def __init__(
             self,
             paths: None | str | PathLike | list[str | PathLike] = None,
+            raw_dict: None | dict[str, dict[str, Any]] = None,
             text: str | None = None):
         """
         Configuration finder/reader/parser.
@@ -30,17 +31,21 @@ class ODCConfig:
         :param text:
         """
         # Cannot supply both text AND paths.
-        if text is not None and paths is not None:
-            raise ConfigException("Cannot supply both configuration path(s) and explicit configuration text.")
+        args_supplied = int(paths is not None) + int(raw_dict is not None) + int(text is not None)
+        if args_supplied > 1:
+            raise ConfigException("Can only supply one of configuration path(s), raw dictionary, "
+                                  "and explicit configuration text.")
 
         # Only suppress environment variable overrides if explicit config text is supplied.
         self.allow_envvar_overrides = text is None
 
-        if text is None:
+        if raw_dict is None and text is None:
             text = find_config(paths)
 
-        self.raw_text: str = text
-        self.raw_config: dict[str, dict[str, Any]] = parse_text(self.raw_text)
+        self.raw_text: str | None = text
+        self.raw_config: dict[str, dict[str, Any]] = raw_dict
+        if self.raw_config is None:
+            self.raw_config = parse_text(self.raw_text)
 
         self.aliases = {}
         self.known_environments = {
@@ -87,7 +92,9 @@ class ODCEnvironment:
         self._normalised: dict[str, Any] = {}
 
         if "alias" in self._raw:
-            self._cfg.add_alias(self._name, self._raw["alias"])
+            alias = self._raw['alias']
+            check_valid_env_name(alias)
+            self._cfg.add_alias(self._name, alias)
 
         self._option_handlers: list[ODCOptionHandler] = [
             AliasOptionHandler("alias", self),
@@ -100,21 +107,13 @@ class ODCEnvironment:
             # Loop through content handlers.
             # Note that handlers may add more handlers to the end of the list while we are iterating over it.
             for handler in self._option_handlers:
+                print(f"Handling option {handler.name}")
                 self._handle_option(handler)
 
         # Config already processed
         # 1. From Normalised
         if key in self._normalised:
             return self._normalised[key]
-        # 2. from Environment variables (if allowed)
-        if self._allow_envvar_overrides:
-            try:
-                return os.environ[key]
-            except KeyError:
-                pass
-        # 3. from raw config
-        if key in self._raw:
-            return self._raw[key]
         # No config, no default.
         raise KeyError(key)
 
