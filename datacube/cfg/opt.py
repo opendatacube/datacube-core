@@ -49,6 +49,7 @@ class ODCOptionHandler:
         if self.allow_envvar_lookup and self.env._allow_envvar_overrides:
             canonical_name = (f"odc_{self.env._name}_{self.name}".upper())
             for env_name in chain([canonical_name], self.env_aliases):
+                print(f"Checking for environment override in ${env_name}")
                 val = os.environ.get(env_name)
                 if val is not None:
                     return val
@@ -84,7 +85,9 @@ class IndexDriverOptionHandler(ODCOptionHandler):
         # Get driver-specific config options
         from datacube.drivers.indexes import index_driver_by_name
         driver = index_driver_by_name(value)
+        print(f"driver {value}: {driver.__class__}")
         for option in driver.get_config_option_handlers(self.env):
+            print(f"Option {self.name} is adding option {option.name}")
             self.env._option_handlers.append(option)
 
 

@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -132,6 +133,63 @@ exp2:
 """
 
 
+@pytest.fixture
+def simple_dict():
+    return {
+        "default": {"alias": "legacy"},
+        "legacy": {
+            "index_driver": "default",
+            "db_username": "foo",
+            "db_password": "bar",
+            "db_hostname": "server.subdomain.domain",
+            "db_port": 5433,
+            "db_database": "mytestdb",
+            "db_connection_timeout": 20
+        },
+        "experimental": {
+            "index_driver": "postgis",
+            "db_url": "postgresql://foo:bar@server.subdomain.domain/mytestdb",
+            "db_iam_authentication": "yes"
+        },
+        "postgis": {"alias": "experimental"},
+        "memory": {
+            "index_driver": "memory",
+            "db_url": "@nota?valid:url//foo&bar%%%"
+        },
+        "exp2": {
+            "index_driver": "postgis",
+            "db_url": "postgresql://foo:bar@server.subdomain.domain/mytestdb",
+            "db_database": "not_read",
+            "db_port": "ignored",
+            "db_iam_authentication": "yes",
+            "db_iam_timeout": 300
+        }
+    }
+
+
+def test_invalid_env():
+    from datacube.cfg.api import ODCConfig, ConfigException
+    with pytest.raises(ConfigException):
+        cfg = ODCConfig(text="""
+default:
+    alias: royale_avec_fromage
+            """)
+    with pytest.raises(ConfigException):
+        cfg = ODCConfig(text="""
+default:
+    alias: legit00
+non_legit:
+    index_driver: null
+        """)
+
+
+def test_invalid_option():
+    from datacube.cfg.opt import ODCOptionHandler, ConfigException
+    mockenv = MagicMock()
+    with pytest.raises(ConfigException):
+        handler = ODCOptionHandler("NO_CAPS", mockenv)
+
+
 def test_single_env(single_env_config):
     from datacube.cfg.api import ODCConfig
     cfg = ODCConfig(text=single_env_config)
@@ -145,9 +203,7 @@ def test_single_env(single_env_config):
     assert cfg['experimental']['db_connection_timeout'] == 60
 
 
-def test_aliases(simple_config):
-    from datacube.cfg.api import ODCConfig
-    cfg = ODCConfig(text=simple_config)
+def assert_simple_aliases(cfg):
     assert cfg['default']._name == 'legacy'
     assert cfg['legacy']._name == 'legacy'
     assert cfg['postgis']._name == 'experimental'
@@ -158,10 +214,13 @@ def test_aliases(simple_config):
     assert cfg[None]._name == 'legacy'
 
 
-def test_options(simple_config):
+def test_aliases(simple_config):
     from datacube.cfg.api import ODCConfig
     cfg = ODCConfig(text=simple_config)
+    assert_simple_aliases(cfg)
 
+
+def assert_simple_options(cfg):
     assert cfg['default']['index_driver'] == 'default'
     assert cfg['default'].db_username == 'foo'
     assert not cfg['default']['db_iam_authentication']
@@ -174,3 +233,150 @@ def test_options(simple_config):
     assert cfg['exp2']['db_iam_authentication']
     assert cfg['exp2'].db_iam_timeout == 300
     assert cfg['exp2']['db_connection_timeout'] == 60
+
+
+def test_options(simple_config):
+    from datacube.cfg.api import ODCConfig
+    cfg = ODCConfig(text=simple_config)
+    assert_simple_options(cfg)
+
+
+def test_rawdict(simple_dict):
+    from datacube.cfg.api import ODCConfig
+    cfg = ODCConfig(raw_dict=simple_dict)
+    assert_simple_aliases(cfg)
+    assert_simple_options(cfg)
+
+
+def test_noenv_overrides_in_text(simple_config, monkeypatch):
+    monkeypatch.setenv("ODC_LEGACY_DB_USERNAME", "bar")
+    monkeypatch.setenv("ODC_EXPERIMENTAL_DB_USERNAME", "bar")
+    from datacube.cfg.api import ODCConfig
+    cfg = ODCConfig(text=simple_config)
+
+    assert cfg["legacy"].db_username != 'bar'
+    with pytest.raises(AttributeError):
+        cfg["experimental"].db_username
+
+
+@pytest.fixture
+def path_to_yaml_config():
+    import os.path
+    return [
+        "/a/non-existent/path/cfg.yml",
+        os.path.join(os.path.dirname(__file__), "cfg", "simple_cfg.yaml")
+    ]
+
+
+@pytest.fixture
+def path_to_ini_config():
+    import os.path
+    return [
+        "/a/non-existent/path/cfg.ini",
+        os.path.join(os.path.dirname(__file__), "cfg", "simple_cfg.ini")
+    ]
+
+
+def test_yaml_from_path(path_to_yaml_config):
+    from datacube.cfg.api import ODCConfig
+    cfg = ODCConfig(paths=path_to_yaml_config)
+    assert_simple_aliases(cfg)
+    assert_simple_options(cfg)
+
+
+def test_ini_from_path(path_to_ini_config):
+    from datacube.cfg.api import ODCConfig
+    cfg = ODCConfig(paths=path_to_ini_config)
+    assert_simple_aliases(cfg)
+    assert_simple_options(cfg)
+
+
+def test_envvar_overrides(path_to_yaml_config, monkeypatch):
+    monkeypatch.setenv("ODC_LEGACY_DB_USERNAME", "bar")
+    monkeypatch.setenv("ODC_EXPERIMENTAL_DB_USERNAME", "bar")
+    monkeypatch.setenv("ODC_EXP2_DB_CONNECTION_TIMEOUT", "20")
+    monkeypatch.setenv("DATACUBE_IAM_AUTHENTICATION", "yes")
+
+    from datacube.cfg.api import ODCConfig
+    cfg = ODCConfig(paths=path_to_yaml_config)
+    assert cfg["legacy"].db_username == 'bar'
+    assert cfg["legacy"].db_iam_authentication
+    assert cfg["experimental"].db_iam_authentication
+    assert cfg["exp2"].db_iam_authentication
+    assert cfg["exp2"].db_connection_timeout == 20
+    with pytest.raises(AttributeError):
+        assert cfg["experimental"].db_username == 'bar'
+
+
+def test_intopt_validation():
+    from datacube.cfg.api import ODCConfig, ConfigException
+    cfg = ODCConfig(text="""
+env1:
+    db_hostname: localhost
+    db_port: seven
+""")
+    with pytest.raises(ConfigException):
+        assert cfg["env1"].db_hostname == 'localhost'
+    cfg = ODCConfig(text="""
+env1:
+    db_hostname: localhost
+    db_port: -7
+""")
+    with pytest.raises(ConfigException):
+        assert cfg["env1"].db_hostname == 'localhost'
+    cfg = ODCConfig(text="""
+env1:
+    db_hostname: localhost
+    db_port: 4425542239934
+""")
+    with pytest.raises(ConfigException):
+        assert cfg["env1"].db_hostname == 'localhost'
+    cfg = ODCConfig(text="""
+env1:
+    db_hostname: localhost
+    db_port: 0
+""")
+    with pytest.raises(ConfigException):
+        assert cfg["env1"].db_hostname == 'localhost'
+
+
+def test_invalid_pg_url():
+    from datacube.cfg.api import ODCConfig, ConfigException
+    cfg = ODCConfig(raw_dict={
+            "default": {"alias": "foo"},
+            "foo": {
+                "index_driver": "postgres",
+                "db_url": "https://www.google.com"
+            }
+        })
+    with pytest.raises(ConfigException):
+        assert cfg["default"].index_driver == "postgres"
+
+
+def test_pgurl_from_config(simple_dict):
+    from datacube.cfg.api import ODCConfig, ConfigException
+    from datacube.cfg.opt import psql_url_from_config
+    cfg = ODCConfig(raw_dict=simple_dict)
+    assert psql_url_from_config(
+            cfg["legacy"]
+    ) == "postgresql://foo:bar@server.subdomain.domain:5433/mytestdb"
+    assert psql_url_from_config(
+        cfg["experimental"]
+    ) == "postgresql://foo:bar@server.subdomain.domain/mytestdb"
+    with pytest.raises(AttributeError):
+        psql_url_from_config(
+            cfg["memory"]
+        )
+
+    cfg = ODCConfig(raw_dict={
+        "foo": {
+            "db_hostname": "remotehost.local",
+            "db_username": "penelope",
+            "db_port": 5544,
+        }
+    })
+    with pytest.raises(ConfigException) as e:
+        psql_url_from_config(
+            cfg["foo"]
+        )
+    assert "No database name supplied for environment foo" in str(e.value)

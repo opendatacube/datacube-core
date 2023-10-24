@@ -67,16 +67,14 @@ def parse_text(cfg_text, fmt: CfgFormat = CfgFormat.AUTO) -> dict[str, dict[str,
         try:
             ini_config = configparser.ConfigParser()
             ini_config.read_string(cfg_text)
+            for section in ini_config.sections():
+                sect = {}
+                for key, value in ini_config.items(section):
+                    sect[key] = value
+
+                raw_config[section] = sect
         except configparser.Error as e:
             raise ConfigException(f"Invalid INI file: {e}")
-        for section in ini_config.sections():
-            sect = {}
-            for key, value in ini_config.items(section):
-                sect[key] = value
-            if section == "DEFAULT":
-                # Normalise "DEFAULT" section (which has ini-specific behaviour) to lowercase for internal use.
-                section = section.lower()
-            raw_config[section] = sect
     else:
         import yaml
         try:
