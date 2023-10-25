@@ -5,7 +5,6 @@
 
 import os
 import warnings
-from itertools import chain
 from typing import Any, TYPE_CHECKING
 from urllib.parse import urlparse
 
