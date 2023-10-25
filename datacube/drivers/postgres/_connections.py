@@ -172,13 +172,13 @@ class PostgresDb(object):
     def _expand_app_name(cls, application_name):
         """
         >>> PostgresDb._expand_app_name(None) #doctest: +ELLIPSIS
-        'agdc-...'
+        'odc-...'
         >>> PostgresDb._expand_app_name('') #doctest: +ELLIPSIS
-        'agdc-...'
+        'odc-...'
         >>> PostgresDb._expand_app_name('cli') #doctest: +ELLIPSIS
-        'cli agdc-...'
+        'cli odc-...'
         >>> PostgresDb._expand_app_name('a b.c/d')
-        'a-b-c-d agdc-...'
+        'a-b-c-d odc-...'
         >>> PostgresDb._expand_app_name(5)
         Traceback (most recent call last):
         ...
