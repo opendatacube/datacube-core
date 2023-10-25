@@ -64,12 +64,15 @@ class ODCConfig:
             if os.environ.get("ODC_ENVIRONMENT"):
                 item = os.environ["ODC_ENVIRONMENT"]
             elif os.environ.get("DATACUBE_ENVIRONMENT"):
-                warnings.warn("Setting the default environment with $DATACUBE_ENVIRONMENT is deprecated.  Please use $ODC_ENVIRONMENT instead.")
+                warnings.warn(
+                    "Setting the default environment with $DATACUBE_ENVIRONMENT is deprecated. "
+                    "Please use $ODC_ENVIRONMENT instead.")
                 item = os.environ["DATACUBE_ENVIRONMENT"]
             elif "default" in self.known_environments:
                 item = "default"
             elif "datacube" in self.known_environments:
-                warnings.warn("Defaulting to the 'datacube' environment - this fallback behaviour is deprecated and may change in a future release.")
+                warnings.warn("Defaulting to the 'datacube' environment - "
+                              "this fallback behaviour is deprecated and may change in a future release.")
                 item = "datacube"
             else:
                 return ConfigException("No environment specified and no default environment could be identified.")

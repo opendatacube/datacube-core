@@ -14,7 +14,9 @@ def check_valid_env_name(name: str) -> None:
 
 def check_valid_field_name(name: str) -> None:
     if not re.fullmatch(r"^[a-z][a-z_]*$", name):
-        raise ConfigException(f'Config option names must consist of only lower case letters, numbers and underscores: {name}')
+        raise ConfigException(
+            f'Config option names must consist of only lower case letters, numbers and underscores: {name}'
+        )
 
 
 def smells_like_ini(cfg_text: str):

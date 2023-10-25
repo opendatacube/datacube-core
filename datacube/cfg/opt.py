@@ -91,7 +91,6 @@ class IndexDriverOptionHandler(ODCOptionHandler):
             self.env._option_handlers.append(option)
 
 
-
 class IntOptionHandler(ODCOptionHandler):
     def __init__(self, *args, minval: int | None = None, maxval: int | None = None, **kwargs):
         super().__init__(*args, **kwargs)

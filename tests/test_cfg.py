@@ -343,12 +343,12 @@ env1:
 def test_invalid_pg_url():
     from datacube.cfg.api import ODCConfig, ConfigException
     cfg = ODCConfig(raw_dict={
-            "default": {"alias": "foo"},
-            "foo": {
-                "index_driver": "postgres",
-                "db_url": "https://www.google.com"
-            }
-        })
+        "default": {"alias": "foo"},
+        "foo": {
+            "index_driver": "postgres",
+            "db_url": "https://www.google.com"
+        }
+    })
     with pytest.raises(ConfigException):
         assert cfg["default"].index_driver == "postgres"
 
@@ -358,7 +358,7 @@ def test_pgurl_from_config(simple_dict):
     from datacube.cfg.opt import psql_url_from_config
     cfg = ODCConfig(raw_dict=simple_dict)
     assert psql_url_from_config(
-            cfg["legacy"]
+        cfg["legacy"]
     ) == "postgresql://foo:bar@server.subdomain.domain:5433/mytestdb"
     assert psql_url_from_config(
         cfg["experimental"]
