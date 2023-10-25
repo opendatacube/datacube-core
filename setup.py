@@ -49,7 +49,7 @@ extra_plugins = dict(read=[], write=[], index=[])
 
 setup(
     name='datacube',
-    python_requires='>=3.9.0',
+    python_requires='>=3.10.0',
 
     url='https://github.com/opendatacube/datacube-core',
     author='Open Data Cube',
@@ -72,7 +72,6 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
