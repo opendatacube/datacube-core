@@ -340,6 +340,22 @@ env1:
         assert cfg["env1"].db_hostname == 'localhost'
 
 
+def test_invalid_idx_driver():
+    from datacube.cfg.api import ODCConfig, ConfigException
+    cfg = ODCConfig(raw_dict={
+        "default": {"alias": "foo"},
+        "foo": {
+            "index_driver": "phillips_head",
+        }
+    })
+    with pytest.raises(ConfigException) as e:
+        cfg["default"].index_driver
+    estr = str(e.value)
+    assert "Unknown index driver" in estr
+    assert "phillips_head" in estr
+    assert "legacy" in estr
+
+
 def test_invalid_pg_url():
     from datacube.cfg.api import ODCConfig, ConfigException
     cfg = ODCConfig(raw_dict={
@@ -368,6 +384,17 @@ def test_pgurl_from_config(simple_dict):
             cfg["memory"]
         )
 
+    cfg = ODCConfig(raw_dict={
+        "foo": {
+            "db_hostname": "remotehost.local",
+            "db_username": "penelope",
+            "db_database": "mydb",
+            "db_port": 5544,
+        }
+    })
+    assert psql_url_from_config(
+        cfg["foo"]
+    ) == "postgresql://penelope@remotehost.local:5544/mydb"
     cfg = ODCConfig(raw_dict={
         "foo": {
             "db_hostname": "remotehost.local",

@@ -31,13 +31,13 @@ class ODCConfig:
         :param text:
         """
         # Cannot supply both text AND paths.
-        args_supplied = int(paths is not None) + int(raw_dict is not None) + int(text is not None)
+        args_supplied: int = int(paths is not None) + int(raw_dict is not None) + int(text is not None)
         if args_supplied > 1:
             raise ConfigException("Can only supply one of configuration path(s), raw dictionary, "
                                   "and explicit configuration text.")
 
         # Only suppress environment variable overrides if explicit config text is supplied.
-        self.allow_envvar_overrides = text is None
+        self.allow_envvar_overrides: bool = text is None
 
         if raw_dict is None and text is None:
             text = find_config(paths)
@@ -47,16 +47,27 @@ class ODCConfig:
         if self.raw_config is None:
             self.raw_config = parse_text(self.raw_text)
 
-        self.aliases = {}
-        self.known_environments = {
+        self.aliases: dict[str, str] = {}
+        self.known_environments: dict[str, ODCEnvironment] = {
             section: ODCEnvironment(self, section, self.raw_config[section], self.allow_envvar_overrides)
             for section in self.raw_config
         }
+        self.canonical_names: dict[str, list[str]] = {}
         for alias, canonical in self.aliases.items():
             self.known_environments[alias] = self[canonical]
+            if canonical in self.canonical_names:
+                self.canonical_names[canonical].append(alias)
+            else:
+                self.canonical_names[canonical] = [canonical, alias]
 
     def add_alias(self, alias, canonical):
         self.aliases[alias] = canonical
+
+    def get_aliases(self, canonical_name: str) -> list[str]:
+        if canonical_name in self.canonical_names:
+            return self.canonical_names[canonical_name]
+        else:
+            return [canonical_name]
 
     def __getitem__(self, item):
         if item is None:
@@ -103,6 +114,9 @@ class ODCEnvironment:
             AliasOptionHandler("alias", self),
             IndexDriverOptionHandler("index_driver", self, default="default")
         ]
+
+    def get_all_aliases(self):
+        return self._cfg.get_aliases(self._name)
 
     def __getitem__(self, key: str) -> Any:
         if not self._normalised:

@@ -22,16 +22,11 @@ class ODCOptionHandler:
     allow_envvar_lookup: bool = True
 
     def __init__(self, name: str, env: "ODCEnvironment", default: Any = None,
-                 env_aliases=None,
                  legacy_env_aliases=None):
         check_valid_field_name(name)
         self.name: str = name
         self.env: "ODCEnvironment" = env
         self.default: Any = default
-        if env_aliases:
-            self.env_aliases = env_aliases
-        else:
-            self.env_aliases = []
         if legacy_env_aliases:
             self.legacy_env_aliases = legacy_env_aliases
         else:
@@ -47,10 +42,11 @@ class ODCOptionHandler:
 
     def get_val_from_environment(self) -> str | None:
         if self.allow_envvar_lookup and self.env._allow_envvar_overrides:
-            canonical_name = (f"odc_{self.env._name}_{self.name}".upper())
-            for env_name in chain([canonical_name], self.env_aliases):
-                print(f"Checking for environment override in ${env_name}")
-                val = os.environ.get(env_name)
+            canonical_name = f"odc_{self.env._name}_{self.name}".upper()
+            for env_name in self.env.get_all_aliases():
+                envvar_name = f"odc_{env_name}_{self.name}".upper()
+                print(f"Checking for environment override in ${envvar_name}")
+                val = os.environ.get(envvar_name)
                 if val is not None:
                     return val
             for env_name in self.legacy_env_aliases:
@@ -123,7 +119,7 @@ class IAMAuthenticationOptionHandler(ODCOptionHandler):
         if value:
             self.env._option_handlers.append(
                 IntOptionHandler("db_iam_timeout", self.env, default=_DEFAULT_IAM_TIMEOUT,
-                                 env_aliases=['DATACUBE_IAM_TIMEOUT'],
+                                 legacy_env_aliases=['DATACUBE_IAM_TIMEOUT'],
                                  minval=1)
             )
 
@@ -142,13 +138,13 @@ class PostgresURLOptionHandler(ODCOptionHandler):
     def handle_dependent_options(self, value: Any) -> None:
         if value is None:
             for handler in (
-                    ODCOptionHandler("db_username", self.env, env_aliases=['DB_USERNAME']),
-                    ODCOptionHandler("db_password", self.env, env_aliases=['DB_PASSWORD']),
-                    ODCOptionHandler("db_hostname", self.env, env_aliases=['DB_HOSTNAME'],
+                    ODCOptionHandler("db_username", self.env, legacy_env_aliases=['DB_USERNAME']),
+                    ODCOptionHandler("db_password", self.env, legacy_env_aliases=['DB_PASSWORD']),
+                    ODCOptionHandler("db_hostname", self.env, legacy_env_aliases=['DB_HOSTNAME'],
                                      default='localhost'),
-                    IntOptionHandler("db_port", self.env, default=5432, env_aliases=['DB_PORT'],
+                    IntOptionHandler("db_port", self.env, default=5432, legacy_env_aliases=['DB_PORT'],
                                      minval=1, maxval=49151),
-                    ODCOptionHandler("db_database", self.env, env_aliases=['DB_DATABASE']),
+                    ODCOptionHandler("db_database", self.env, legacy_env_aliases=['DB_DATABASE']),
             ):
                 self.env._option_handlers.append(handler)
 
@@ -160,9 +156,9 @@ def config_options_for_psql_driver(env: "ODCEnvironment"):
     """
     return [
         PostgresURLOptionHandler("db_url", env,
-                                 env_aliases=['DATACUBE_DB_URL']),
+                                 legacy_env_aliases=['DATACUBE_DB_URL']),
         IAMAuthenticationOptionHandler("db_iam_authentication", env,
-                                       env_aliases=['DATACUBE_IAM_AUTHENTICATION']),
+                                       legacy_env_aliases=['DATACUBE_IAM_AUTHENTICATION']),
         IntOptionHandler("db_connection_timeout", env, default=60, minval=1)
     ]
 
