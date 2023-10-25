@@ -92,7 +92,7 @@ def test_archive_datasets(index, ls8_eo3_dataset):
     assert not indexed_dataset.is_archived
 
 
-def test_archive_less_mature(index, final_dataset, nrt_dataset):
+def test_archive_less_mature(index, final_dataset, nrt_dataset, ds_no_region):
     # case 1: add nrt then final; nrt should get archived
     index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
     assert not index.datasets.get(nrt_dataset.id).is_archived
@@ -108,6 +108,16 @@ def test_archive_less_mature(index, final_dataset, nrt_dataset):
         index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
 
 
+def test_cannot_search_for_less_mature(index, nrt_dataset, ds_no_region):
+    # if a dataset is missing a property required for finding less mature datasets,
+    # it should error
+    index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=0)
+    index.datasets.get(nrt_dataset.id).is_active
+    assert ds_no_region.metadata.region_code is None
+    with pytest.raises(ValueError, match="region_code"):
+        index.datasets.add(ds_no_region, with_lineage=False, archive_less_mature=0)
+
+
 def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am_ard3_interim):
     # test archive_less_mature where there's a slight difference in timestamps
     index.datasets.add(ga_s2am_ard3_interim, with_lineage=False)
@@ -115,6 +125,24 @@ def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am
     index.datasets.add(ga_s2am_ard3_final, with_lineage=False, archive_less_mature=True)
     assert index.datasets.get(ga_s2am_ard3_interim.id).is_archived
     assert not index.datasets.get(ga_s2am_ard3_final.id).is_archived
+
+
+def test_dont_archive_less_mature(index, final_dataset, nrt_dataset):
+    # ensure datasets aren't archive if no archive_less_mature value is provided
+    index.datasets.add(nrt_dataset, with_lineage=False)
+    index.datasets.get(nrt_dataset.id).is_active
+    index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=None)
+    assert index.datasets.get(nrt_dataset.id).is_active
+    assert index.datasets.get(final_dataset.id).is_active
+
+
+def test_archive_less_mature_bool(index, final_dataset, nrt_dataset):
+    # if archive_less_mature value gets passed as a bool via an outdated script
+    index.datasets.add(nrt_dataset, with_lineage=False)
+    index.datasets.get(nrt_dataset.id).is_active
+    index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=False)
+    assert index.datasets.get(nrt_dataset.id).is_active
+    assert index.datasets.get(final_dataset.id).is_active
 
 
 def test_purge_datasets(index, ls8_eo3_dataset):

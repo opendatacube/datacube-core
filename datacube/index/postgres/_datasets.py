@@ -192,7 +192,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         with self._db_connection(transaction=True) as transaction:
             process_bunch(dss, dataset, transaction)
-            if archive_less_mature:
+            if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
 
         return dataset

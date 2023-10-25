@@ -10,6 +10,8 @@ on:
       - '**'
       - '!docs/**'
       - '!contrib/**'
+
+  workflow_dispatch:
   
 env:
   DOCKER_USER: gadockersvc
@@ -30,7 +32,11 @@ jobs:
     - name: Config
       id: cfg
       run: |
-        if "${GITHUB_REF}" in "refs/tags/"*; then
+        push_test_pypi=no
+        push_pypi=no
+
+        if [[ "${GITHUB_REF}" =~ refs/tags/.* ]]; then
+          echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
           echo "push_pypi=yes" >> $GITHUB_OUTPUT
         fi
 
@@ -49,7 +55,7 @@ jobs:
 
     - name: Set up Docker Buildx
       if: steps.changes.outputs.docker == 'true'
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
 
     - name: Cache Docker layers
       if: steps.changes.outputs.docker == 'true'
@@ -65,13 +71,13 @@ jobs:
       if: |
         github.event_name == 'push'
         && github.ref == 'refs/heads/develop'
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         username: ${{ env.DOCKER_USER }}
         password: ${{ secrets.GADOCKERSVC_PASSWORD }}
 
     - name: Build Docker
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         file: docker/Dockerfile
         context: .
@@ -102,7 +108,7 @@ jobs:
         github.event_name == 'push'
         && github.ref == 'refs/heads/develop'
         && steps.changes.outputs.docker == 'true'
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         file: docker/Dockerfile
         context: .
@@ -119,6 +125,30 @@ jobs:
         ls -lh ./dist/
         twine check ./dist/*
         EOF
+
+    - name: Publish to Test PyPi
+      if: |
+        steps.cfg.outputs.push_test_pypi == 'yes'
+      run: |
+        if [ -n "${TWINE_PASSWORD}" ]; then
+          docker run --rm  \
+            -v $(pwd):/code \
+            -e SKIP_DB=yes \
+            ${{ env.DOCKER_IMAGE }} \
+            twine upload \
+              --verbose \
+              --non-interactive \
+              --disable-progress-bar \
+              --username=__token__ \
+              --password=${TWINE_PASSWORD} \
+              --repository-url=${TWINE_REPOSITORY_URL} \
+              --skip-existing dist/* || true
+        else
+           echo "Skipping upload as 'TestPyPiToken' is not set"
+        fi
+      env:
+        TWINE_PASSWORD: ${{ secrets.TestPyPiToken }}
+        TWINE_REPOSITORY_URL: 'https://test.pypi.org/legacy/'
 
     - name: Publish to PyPi
       if: |

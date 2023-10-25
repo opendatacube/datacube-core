@@ -1141,11 +1141,14 @@ class AbstractDatasetResource(ABC):
         :param Iterable[Union[str,UUID]] ids: list of dataset ids to archive
         """
 
-    def archive_less_mature(self, ds: Dataset, delta: int = 500) -> None:
+    def archive_less_mature(self, ds: Dataset, delta: Union[int, bool] = 500) -> None:
         """
         Archive less mature versions of a dataset
 
         :param Dataset ds: dataset to search
+        :param Union[int,bool] delta: millisecond delta for time range.
+        If True, default to 500ms. If False, do not find or archive less mature datasets.
+        Bool value accepted only for improving backwards compatibility, int preferred.
         """
         less_mature = self.find_less_mature(ds, delta)
         less_mature_ids = map(lambda x: x.id, less_mature)
@@ -1154,31 +1157,65 @@ class AbstractDatasetResource(ABC):
         for lm_ds in less_mature_ids:
             _LOG.info(f"Archived less mature dataset: {lm_ds}")
 
-    def find_less_mature(self, ds: Dataset, delta: int = 500) -> Iterable[Dataset]:
+    def find_less_mature(self, ds: Dataset, delta: Union[int, bool] = 500) -> Iterable[Dataset]:
         """
         Find less mature versions of a dataset
 
         :param Dataset ds: Dataset to search
-        :param int delta: millisecond delta for time range
+        :param Union[int,bool] delta: millisecond delta for time range.
+        If True, default to 500ms. If None or False, do not find or archive less mature datasets.
+        Bool value accepted only for improving backwards compatibility, int preferred.
         :return: Iterable of less mature datasets
         """
-        less_mature = []
-        assert delta >= 0
+        if isinstance(delta, bool):
+            _LOG.warning("received delta as a boolean value. Int is prefered")
+            if delta is True:  # treat True as default
+                delta = 500
+            else:  # treat False the same as None
+                return []
+        elif isinstance(delta, int):
+            if delta < 0:
+                raise ValueError("timedelta must be a positive integer")
+        elif delta is None:
+            return []
+        else:
+            raise TypeError("timedelta must be None, a positive integer, or a boolean")
+
+        def check_maturity_information(dataset, props):
+            # check that the dataset metadata includes all maturity-related properties
+            # passing in the required props to enable greater extensibility should it be needed
+            for prop in props:
+                if hasattr(dataset.metadata, prop) and (getattr(dataset.metadata, prop) is not None):
+                    return
+                raise ValueError(
+                    f"Dataset {dataset.id} is missing property {prop} required for maturity check"
+                )
+
+        check_maturity_information(ds, ["region_code", "time", "dataset_maturity"])
+
         # 'expand' the date range by `delta` milliseconds to give a bit more leniency in datetime comparison
         expanded_time_range = Range(ds.metadata.time.begin - timedelta(milliseconds=delta),
                                     ds.metadata.time.end + timedelta(milliseconds=delta))
         dupes = self.search(product=ds.product.name,
                             region_code=ds.metadata.region_code,
                             time=expanded_time_range)
+
+        less_mature = []
         for dupe in dupes:
             if dupe.id == ds.id:
                 continue
+
+            # only need to check that dupe has dataset maturity, missing/null region_code and time
+            # would already have been filtered out during the search query
+            check_maturity_information(dupe, ["dataset_maturity"])
+
             if dupe.metadata.dataset_maturity == ds.metadata.dataset_maturity:
                 # Duplicate has the same maturity, which one should be archived is unclear
                 raise ValueError(
                     f"A dataset with the same maturity as dataset {ds.id} already exists, "
                     f"with id: {dupe.id}"
                 )
+
             if dupe.metadata.dataset_maturity < ds.metadata.dataset_maturity:
                 # Duplicate is more mature than dataset
                 # Note that "final" < "nrt"
@@ -1186,6 +1223,7 @@ class AbstractDatasetResource(ABC):
                     f"A more mature version of dataset {ds.id} already exists, with id: "
                     f"{dupe.id} and maturity: {dupe.metadata.dataset_maturity}"
                 )
+
             less_mature.append(dupe)
         return less_mature
 
