@@ -266,19 +266,19 @@ def test_noenv_overrides_in_text(simple_config, monkeypatch):
 @pytest.fixture
 def path_to_yaml_config():
     import os.path
-    return [
-        "/a/non-existent/path/cfg.yml",
-        os.path.join(os.path.dirname(__file__), "cfg", "simple_cfg.yaml")
-    ]
+    return os.path.join(os.path.dirname(__file__), "cfg", "simple_cfg.yaml")
 
 
 @pytest.fixture
 def path_to_ini_config():
     import os.path
-    return [
-        "/a/non-existent/path/cfg.ini",
-        os.path.join(os.path.dirname(__file__), "cfg", "simple_cfg.ini")
-    ]
+    return os.path.join(os.path.dirname(__file__), "cfg", "simple_cfg.ini")
+
+
+@pytest.fixture
+def path_to_different_config():
+    import os.path
+    return os.path.join(os.path.dirname(__file__), "cfg", "different_cfg.yaml")
 
 
 def test_yaml_from_path(path_to_yaml_config):
@@ -293,6 +293,50 @@ def test_ini_from_path(path_to_ini_config):
     cfg = ODCConfig(paths=path_to_ini_config)
     assert_simple_aliases(cfg)
     assert_simple_options(cfg)
+
+
+def test_ini_from_paths(path_to_ini_config, path_to_yaml_config, path_to_different_config, monkeypatch):
+    from datacube.cfg.api import ODCConfig, ConfigException
+    cfg = ODCConfig(paths=[
+        "/non/existent/path.yml",
+        path_to_yaml_config,
+        path_to_different_config,
+        path_to_ini_config
+    ])
+    assert cfg[None]._name == 'legacy'
+
+    cfg = ODCConfig(paths=[
+        path_to_different_config,
+        "/non/existent/path.yml",
+        path_to_yaml_config,
+    ])
+    assert cfg[None]._name == 'experimental'
+
+    with pytest.raises(ConfigException):
+        cfg = ODCConfig(paths=[
+            "/non/existent/path.yml",
+            "/etc/shadow",  # A path that exists that we can't read
+            "/another/nonexistent/path.yml"
+        ])
+
+    with monkeypatch.context() as mp:
+        mp.setattr("datacube.cfg.cfg._DEFAULT_CONFIG_SEARCH_PATH", [
+            "/non/existent/path.yml",
+            "/etc/shadow",  # A path that exists that we can't read
+            "/another/nonexistent/path.yml",
+            path_to_yaml_config,
+        ])
+        cfg = ODCConfig()
+        assert cfg[None]._name == 'legacy'
+
+    with monkeypatch.context() as mp:
+        mp.setattr("datacube.cfg.cfg._DEFAULT_CONFIG_SEARCH_PATH", [
+            "/non/existent/path.yml",
+            "/etc/shadow",  # A path that exists that we can't read
+            "/another/nonexistent/path.yml",
+        ])
+        cfg = ODCConfig()
+        assert cfg[None]._name == 'default'
 
 
 def test_envvar_overrides(path_to_yaml_config, monkeypatch):

@@ -14,6 +14,7 @@ from datacube.cfg.utils import smells_like_ini
 _DEFAULT_CONFIG_SEARCH_PATH = [
     "datacube.conf",      # i.e. in the current working directory.
     expanduser("~/.datacube.conf"),   # i.e. in user's home directory.
+    # Check if we are running under a Windows and use Windowsy default paths?
     "/etc/default/datacube.conf",  # Preferred location for global config file
     "/etc/datacube.conf",          # Legacy location for global config file
 ]
