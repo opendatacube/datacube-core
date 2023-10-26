@@ -1,6 +1,8 @@
 # Simple but thorough test config
 default:
    alias: legacy
+postgres:
+   alias: legacy
 legacy:
    index_driver: default
    db_username: foo

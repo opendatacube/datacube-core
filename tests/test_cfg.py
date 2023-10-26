@@ -106,6 +106,8 @@ def simple_config():
     return """# Simple but thorough test config
 default:
    alias: legacy
+postgres:
+   alias: legacy
 legacy:
    index_driver: default
    db_username: foo
@@ -137,6 +139,7 @@ exp2:
 def simple_dict():
     return {
         "default": {"alias": "legacy"},
+        "postgres": {"alias": "legacy"},
         "legacy": {
             "index_driver": "default",
             "db_username": "foo",
@@ -205,6 +208,7 @@ def test_single_env(single_env_config):
 
 def assert_simple_aliases(cfg):
     assert cfg['default']._name == 'legacy'
+    assert cfg['postgres']._name == 'legacy'
     assert cfg['legacy']._name == 'legacy'
     assert cfg['postgis']._name == 'experimental'
     assert cfg['experimental']._name == 'experimental'
@@ -407,3 +411,41 @@ def test_pgurl_from_config(simple_dict):
             cfg["foo"]
         )
     assert "No database name supplied for environment foo" in str(e.value)
+
+
+def test_multiple_sourcetypes(simple_config, path_to_ini_config, simple_dict):
+    from datacube.cfg.api import ODCConfig, ConfigException
+    with pytest.raises(ConfigException) as e:
+        cfg = ODCConfig(paths=path_to_ini_config, raw_dict=simple_dict, text=simple_config)
+    assert "Can only supply one of" in str(e.value)
+    with pytest.raises(ConfigException) as e:
+        cfg = ODCConfig(raw_dict=simple_dict, text=simple_config)
+    assert "Can only supply one of" in str(e.value)
+    with pytest.raises(ConfigException) as e:
+        cfg = ODCConfig(paths=path_to_ini_config, text=simple_config)
+    assert "Can only supply one of" in str(e.value)
+    with pytest.raises(ConfigException) as e:
+        cfg = ODCConfig(paths=path_to_ini_config, raw_dict=simple_dict)
+    assert "Can only supply one of" in str(e.value)
+
+
+def test_default_environment(simple_config, monkeypatch):
+    from datacube.cfg.api import ODCConfig, ConfigException
+    cfg = ODCConfig(text=simple_config)
+    assert cfg[None]._name == 'legacy'
+    monkeypatch.setenv('ODC_ENVIRONMENT', 'exp2')
+    assert cfg[None]._name == 'exp2'
+    monkeypatch.setenv('ODC_ENVIRONMENT', '')
+    monkeypatch.setenv('DATACUBE_ENVIRONMENT', 'postgis')
+    assert cfg[None]._name == 'experimental'
+    cfg = ODCConfig(raw_dict={
+        'datacube': {"index_driver": "memory"}
+    })
+    monkeypatch.setenv('DATACUBE_ENVIRONMENT', '')
+    assert cfg[None]._name == 'datacube'
+    cfg = ODCConfig(raw_dict={
+        'weirdname': {"index_driver": "memory"},
+        'stupidenv': {"index_driver": "null"},
+    })
+    with pytest.raises(ConfigException):
+        cfg[None]._name
