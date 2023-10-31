@@ -60,8 +60,16 @@ class ODCConfig:
             text: str | None = None):
         """
 
-        When called with no args, reads the first config file found in the default config path list
-        (.cfg._DEFAULT_CONFIG_SEARCH_PATH), or if no such config file exists, use the default configuration
+        When called with no args, reads the first config file found in the config path list is used.
+        The config path list is taken from:
+
+        1) Environment variable $ODC_CONFIG_PATH (as a UNIX path style colon-separated path list)
+        2) Environment variable $DATACUBE_CONFIG_PATH (as a UNIX path style colon-separated path list)
+           This is a deprecated legacy environment variable, and please note that it's behaviour has changed
+           slightly from datacube 1.8.x.
+        3) The default config search path (i.e. .cfg._DEFAULT_CONFIG_SEARCH_PATH)
+
+        If no config file is found at any of the paths in active path list, use the default configuration
         at , or if no such config file exists, use the default configuration (.cfg._DEFAULT_CONF). Configuration
         files may be in ini or yaml format. Environment variable overrides ARE applied.
 
@@ -177,7 +185,17 @@ class ODCConfig:
 
 class ODCEnvironment:
     """
+    Configuration reader for an individual ODC environment.
 
+    Only configuration options with a registered option handler are able to be read.  Configuration options
+    may be read either as attributes on the ODCEnvironment objects or via the getitem dunder method.
+
+    E.g.    env.index_driver   or    env["index_driver"]
+
+    Attempting to access an unhandled or invalid option will raise a KeyError or AttributeError, as
+    appropriate for the access method.
+
+    ODCEnvironment objects should only be instantiated by and acquired from an ODCConfig object.
     """
     def __init__(self,
                  cfg: ODCConfig,
@@ -191,6 +209,7 @@ class ODCEnvironment:
         self._allow_envvar_overrides: bool = allow_env_overrides
         self._normalised: dict[str, Any] = {}
 
+        # Aliases are handled here, the alias OptionHandler is a place-holder.
         if "alias" in self._raw:
             alias = self._raw['alias']
             check_valid_env_name(alias)
