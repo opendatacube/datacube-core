@@ -338,6 +338,18 @@ def test_ini_from_paths(path_to_ini_config, path_to_yaml_config, path_to_differe
         cfg = ODCConfig()
         assert cfg[None]._name == 'default'
 
+    with monkeypatch.context() as mp:
+        mp.setenv("ODC_CONFIG_PATH",
+                  f"/non/existent/path.yml:{path_to_yaml_config}:{path_to_different_config}")
+        cfg = ODCConfig()
+        assert cfg[None]._name == 'legacy'
+
+    with monkeypatch.context() as mp:
+        mp.setenv("DATACUBE_CONFIG_PATH",
+                  f"/non/existent/path.yml:{path_to_yaml_config}:{path_to_different_config}")
+        cfg = ODCConfig()
+        assert cfg[None]._name == 'legacy'
+
 
 def test_envvar_overrides(path_to_yaml_config, monkeypatch):
     monkeypatch.setenv("ODC_LEGACY_DB_USERNAME", "bar")

@@ -54,8 +54,18 @@ def find_config(paths_in: None | str | PathLike | list[str | PathLike]) -> str:
     """
     using_default_paths: bool = False
     if paths_in is None:
-        paths: list[str | PathLike] = _DEFAULT_CONFIG_SEARCH_PATH
-        using_default_paths = True
+        if os.environ.get("ODC_CONFIG_PATH"):
+            paths: list[str | PathLike] = os.environ["ODC_CONFIG_PATH"].split(':')
+        elif os.environ.get("DATACUBE_CONFIG_PATH"):
+            warnings.warn(
+                "Datacube config path being determined by legacy $DATACUBE_CONFIG_PATH environment variable. "
+                "This environment variable is deprecated and the behaviour of it has changed somewhat since datacube "
+                "1.8.x.   Please refer to the documentation for details and switch to $ODC_CONFIG_PATH"
+            )
+            paths = os.environ["DATACUBE_CONFIG_PATH"].split(':')
+        else:
+            paths: list[str | PathLike] = _DEFAULT_CONFIG_SEARCH_PATH
+            using_default_paths = True
     elif isinstance(paths_in, str) or isinstance(paths_in, PathLike):
         paths = [paths_in]
     else:
