@@ -2,6 +2,12 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+"""
+Low level config path resolution, loading and multi-format parsing functions.
+
+The default search path and default config also live here.
+"""
+
 import os
 import warnings
 from enum import Enum
@@ -12,12 +18,6 @@ from typing import Any
 from datacube.cfg.exceptions import ConfigException
 from datacube.cfg.utils import smells_like_ini
 
-"""
-Low level config path resolution, loading and multi-format parsing functions.
-
-The default search path and default config also live here.
-"""
-
 _DEFAULT_CONFIG_SEARCH_PATH = [
     "datacube.conf",      # i.e. in the current working directory.
     expanduser("~/.datacube.conf"),   # i.e. in user's home directory.
@@ -25,6 +25,7 @@ _DEFAULT_CONFIG_SEARCH_PATH = [
     "/etc/default/datacube.conf",  # Preferred location for global config file
     "/etc/datacube.conf",          # Legacy location for global config file
 ]
+
 _DEFAULT_CONF = """
 default:
    db_hostname: ''

@@ -2,10 +2,10 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-
 """
 Config reading/loading exceptions
 """
+
 
 class ConfigException(Exception):
     """
