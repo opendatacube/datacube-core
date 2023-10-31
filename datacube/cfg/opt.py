@@ -9,20 +9,34 @@ from typing import Any, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from .exceptions import ConfigException
-from .utils import check_valid_field_name
+from .utils import check_valid_option
 
 if TYPE_CHECKING:
     from .api import ODCEnvironment
+
 
 _DEFAULT_IAM_TIMEOUT = 600
 
 
 class ODCOptionHandler:
+    """
+    Base option handler class.  Sufficient for basic option with no validation.
+
+    Smarter or more specialised option handlers extend this class.
+    """
+    # If overridden by subclass to False, then no environment variable overrides apply.
     allow_envvar_lookup: bool = True
 
     def __init__(self, name: str, env: "ODCEnvironment", default: Any = None,
                  legacy_env_aliases=None):
-        check_valid_field_name(name)
+        """
+
+        :param name: Name of the option
+        :param env: The ODCEnvironment the option is being read from
+        :param default: The default value if not specified in the config file
+        :param legacy_env_aliases:  Any legacy (pre odc-1.9) environment variable aliases for the option
+        """
+        check_valid_option(name)
         self.name: str = name
         self.env: "ODCEnvironment" = env
         self.default: Any = default
@@ -32,25 +46,52 @@ class ODCOptionHandler:
             self.legacy_env_aliases = []
 
     def validate_and_normalise(self, value: Any) -> Any:
+        """
+        Given a value read from a raw dictionary, return a normalised form.
+
+        Subclasses should replace and call this implementation through super() for default handling.
+        :param value: The value read from the raw dictionary (None if not present)
+        :return: the normalised value.
+        """
         if self.default is not None and value is None:
             return self.default
         return value
 
     def handle_dependent_options(self, value: Any) -> None:
+        """
+        Default implementation is no-op
+
+        In subclasses:
+        If the value of this option implies that dependent OptionHandlers should be run, they
+        should be constructed here, and appended to self.env._option_handlers  (See examples below)
+
+        :param value: The normalised value, as returned by validate_and_normalise
+        :return: None
+        """
         pass
 
     def get_val_from_environment(self) -> str | None:
+        """
+        Handle environment lookups.
+
+        1. Returns None unless self.allow_envvar_lookups and self.env._allow_envvar_overrides are both set.
+        2. Check canonical envvar name first.  E.g. option "bar" in environment "foo" -> $ODC_FOO_BAR
+        3. Check canonical envvar name for any alias environments that point to this one.
+        4. Check any legacy envvar names, and raise warnings if found.
+
+        :return: First environment variable with non-empty value, or None if none found.
+        """
         if self.allow_envvar_lookup and self.env._allow_envvar_overrides:
             canonical_name = f"odc_{self.env._name}_{self.name}".upper()
             for env_name in self.env.get_all_aliases():
                 envvar_name = f"odc_{env_name}_{self.name}".upper()
                 print(f"Checking for environment override in ${envvar_name}")
                 val = os.environ.get(envvar_name)
-                if val is not None:
+                if val:
                     return val
             for env_name in self.legacy_env_aliases:
                 val = os.environ.get(env_name)
-                if val is not None:
+                if val:
                     warnings.warn(
                         f"Config being passed in by legacy environment variable ${env_name}. "
                         f"Please use ${canonical_name} instead.")
@@ -59,6 +100,9 @@ class ODCOptionHandler:
 
 
 class AliasOptionHandler(ODCOptionHandler):
+    """
+    Alias option is handled at the environment level.
+    """
     allow_envvar_lookup: bool = False
 
     def validate_and_normalise(self, value: Any) -> Any:
@@ -69,6 +113,11 @@ class AliasOptionHandler(ODCOptionHandler):
 
 
 class IndexDriverOptionHandler(ODCOptionHandler):
+    """
+    Index Driver option.  Must be a valid index driver name, and index drivers may support further configuration.
+
+    Example implementation for Postgresql/Postgis-based index drivers shown below.
+    """
     def validate_and_normalise(self, value: Any) -> Any:
         value = super().validate_and_normalise(value)
         from datacube.drivers.indexes import index_drivers
@@ -87,12 +136,16 @@ class IndexDriverOptionHandler(ODCOptionHandler):
 
 
 class IntOptionHandler(ODCOptionHandler):
+    """
+    Require an integer value, with optional min and max vals.
+    """
     def __init__(self, *args, minval: int | None = None, maxval: int | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.minval = minval
         self.maxval = maxval
 
     def validate_and_normalise(self, value: Any) -> Any:
+        # Call super() to get handle default value
         value = super().validate_and_normalise(value)
         try:
             ival = int(value)
@@ -106,6 +159,14 @@ class IntOptionHandler(ODCOptionHandler):
 
 
 class IAMAuthenticationOptionHandler(ODCOptionHandler):
+    """
+    A simple boolean, compatible with the historic behaviour of the IAM Autentication on/off option.
+
+    y/yes (case-insensitive): True
+    Anything else: False
+
+    If true, adds an IAM Timeout Option to the Environment.
+    """
     def validate_and_normalise(self, value: Any) -> Any:
         if isinstance(value, bool):
             return value

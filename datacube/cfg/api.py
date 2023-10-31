@@ -19,16 +19,63 @@ from .utils import check_valid_env_name
 
 
 class ODCConfig:
+    """
+    Configuration finder/reader/parser.
+
+    Attributes:
+        allow_envvar_overrides: bool        If True, environment variables can override the values explicitly specified
+                                            in the supplied configuration.
+
+                                            Note that environments not explicitly specified in the supplied
+                                            configuration (dynamic environments) can still be read from
+                                            environment variables, even if this attribute is False.
+
+        raw_text: str | None                The raw configuration text being used, as read from the configuration
+                                            file or supplied directly by the user.  May be None if the user
+                                            directly supplied configuration as a dictionary. May be in ini or yaml
+                                            format.  Does not include dynamic environments or values overridden by
+                                            environment variables.
+
+        raw_config: dict[str, dict[str, Any]]   The raw dictionary form of the configuration, as supplied directly
+                                                by the user, or as parsed from raw_text. Does not include dynamic
+                                                environments or values overridden by environment variables.
+
+        known_environments: dict[str, "ODCEnvironment"] A dictionary containing all environments defined in raw_config,
+                                                        plus any dynamic environments read so far.
+                                                        Environment themselves are not validated until read from.
+
+        canonical_names: dict[str, list[str]]   A dictionary mapping canonical environment names to all aliases for
+                                                that environment.
+    """
+    allow_envvar_overrides: bool = True
+    raw_text: str | None = None
+    raw_config: dict[str, dict[str, Any]] = {}
+    known_environments: dict[str, "ODCEnvironment"] = {}
+    canonical_names: dict[str, list[str]] = {}
+
     def __init__(
             self,
             paths: None | str | PathLike | list[str | PathLike] = None,
             raw_dict: None | dict[str, dict[str, Any]] = None,
             text: str | None = None):
         """
-        Configuration finder/reader/parser.
 
-        :param paths: Optional
-        :param text:
+        When called with no args, reads the first config file found in the default config path list
+        (.cfg._DEFAULT_CONFIG_SEARCH_PATH), or if no such config file exists, use the default configuration
+        at , or if no such config file exists, use the default configuration (.cfg._DEFAULT_CONF). Configuration
+        files may be in ini or yaml format. Environment variable overrides ARE applied.
+
+        Otherwise, user may supply one (and only one) of the following:
+
+        :param paths: The path of the configuration file, or a list of paths of candidate configuration files (the
+                      first in the list that can be read is used).  If none of the supplied paths can be read, an
+                      error is raised.  (Unlike calling with no arguments, the fallback default config is NOT
+                      used.) Configuration file may be in ini or yaml format. Environment variable overrides ARE
+                      applied.
+        :param raw_dict: A raw dictionary containing configuration data.
+                         Used as is - environment variable overrides are NOT applied.
+        :param text: A string containing configuration data in ini or yaml format.
+                     Used as is - environment variable overrides are NOT applied.
         """
         # Cannot supply both text AND paths.
         args_supplied: int = int(paths is not None) + int(raw_dict is not None) + int(text is not None)
@@ -36,40 +83,76 @@ class ODCConfig:
             raise ConfigException("Can only supply one of configuration path(s), raw dictionary, "
                                   "and explicit configuration text.")
 
-        # Only suppress environment variable overrides if explicit config text is supplied.
-        self.allow_envvar_overrides: bool = text is None
+        # Suppress environment variable overrides if explicit config text or dictionary is supplied.
+        self.allow_envvar_overrides = text is None and raw_dict is None
 
         if raw_dict is None and text is None:
             text = find_config(paths)
 
-        self.raw_text: str | None = text
-        self.raw_config: dict[str, dict[str, Any]] = raw_dict
+        self.raw_text = text
+        self.raw_config = raw_dict
         if self.raw_config is None:
             self.raw_config = parse_text(self.raw_text)
 
-        self.aliases: dict[str, str] = {}
+        self._aliases: dict[str, str] = {}
         self.known_environments: dict[str, ODCEnvironment] = {
             section: ODCEnvironment(self, section, self.raw_config[section], self.allow_envvar_overrides)
             for section in self.raw_config
         }
         self.canonical_names: dict[str, list[str]] = {}
-        for alias, canonical in self.aliases.items():
+        for alias, canonical in self._aliases.items():
             self.known_environments[alias] = self[canonical]
             if canonical in self.canonical_names:
                 self.canonical_names[canonical].append(alias)
             else:
                 self.canonical_names[canonical] = [canonical, alias]
 
-    def add_alias(self, alias, canonical):
-        self.aliases[alias] = canonical
+    def _add_alias(self, alias: str, canonical: str) -> None:
+        """
+        Register an environment alias during ODCConfig class construction.
+
+        Used internally by the Configuration library during class initialisation. Has no effect after initialisation.
+
+        :param alias: The alias for the environment
+        :param canonical: The canonical environment name the alias refers to
+        """
+        self._aliases[alias] = canonical
 
     def get_aliases(self, canonical_name: str) -> list[str]:
+        """
+        Get list of all possible names for a given canonical name.
+
+        :param canonical_name: The canonical name of the target environment
+        :return: A list of all known names for the target environment, including the canonical name itself and
+                 any aliases.
+        """
         if canonical_name in self.canonical_names:
             return self.canonical_names[canonical_name]
         else:
             return [canonical_name]
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str | None) -> "ODCEnvironment":
+        """
+        Environments can be accessed by name (canonical or aliases) with the getitem dunder method.
+
+        E.g. cfg["env"]
+
+        Passing in None returns the default environment, which is the first resolvable environment of:
+
+        1. The environment named by the $ODC_ENVIRONMENT variable
+        2. The environment named by the $DATACUBE_ENVIRONMENT variable
+           (legacy environment variable name - now deprecated)
+        3. The environment called `default` (dynamic environment lookup not supported)
+        4. The environment called `datacube` (dynamic environment lookup not supported)
+
+        If none of the above environment names are known, then a ConfigException is raised.
+
+        If an explicit environment name is passed in that does not exist, dynamic environment lookup is attempted.
+        Dynamic environment lookup always succeeds, but may return an environment which cannot connect to a database.
+
+        :param item: A canonical environment name, an environment alias, or None.
+        :return: A ODCEnvironment object
+        """
         if item is None:
             # Get default.
             if os.environ.get("ODC_ENVIRONMENT"):
@@ -93,6 +176,9 @@ class ODCConfig:
 
 
 class ODCEnvironment:
+    """
+
+    """
     def __init__(self,
                  cfg: ODCConfig,
                  name: str,
@@ -108,7 +194,7 @@ class ODCEnvironment:
         if "alias" in self._raw:
             alias = self._raw['alias']
             check_valid_env_name(alias)
-            self._cfg.add_alias(self._name, alias)
+            self._cfg._add_alias(self._name, alias)
 
         self._option_handlers: list[ODCOptionHandler] = [
             AliasOptionHandler("alias", self),
