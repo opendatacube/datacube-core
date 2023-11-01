@@ -214,7 +214,7 @@ class ODCEnvironment:
         self._allow_envvar_overrides: bool = allow_env_overrides
         self._normalised: dict[str, Any] = {}
 
-        if name == "user" and "default_environment" in  raw:
+        if name == "user" and "default_environment" in raw:
             warnings.warn("The 'default_environment' setting in the 'user' section is no longer supported - "
                           "please refer to the documentation for more information")
 

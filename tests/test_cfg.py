@@ -187,7 +187,7 @@ non_legit:
 
 
 def test_oldstyle_cfg():
-    from datacube.cfg.api import ODCConfig, ConfigException
+    from datacube.cfg.api import ODCConfig
     with pytest.warns(UserWarning, match=r'default_environment.*no longer supported'):
         cfg = ODCConfig(text="""
 default:
