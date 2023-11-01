@@ -186,6 +186,23 @@ non_legit:
         """)
 
 
+def test_oldstyle_cfg():
+    from datacube.cfg.api import ODCConfig, ConfigException
+    with pytest.warns(UserWarning, match=r'default_environment.*no longer supported'):
+        cfg = ODCConfig(text="""
+default:
+    index_driver: memory
+env2:
+    index_driver: memory
+env3:
+    index_driver: memory
+user:
+    default_environment: env3
+"""
+        )
+        assert cfg[None]._name == 'default'
+
+
 def test_invalid_option():
     from datacube.cfg.opt import ODCOptionHandler, ConfigException
     mockenv = MagicMock()

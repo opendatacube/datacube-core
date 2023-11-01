@@ -95,7 +95,12 @@ class ODCConfig:
         self.allow_envvar_overrides = text is None and raw_dict is None
 
         if raw_dict is None and text is None:
-            text = find_config(paths)
+            # No explict config passed in.  Check for ODC_CONFIG environmnet variables
+            if os.environ.get("ODC_CONFIG"):
+                text = os.environ["ODC_CONFIG"]
+            else:
+                # Read config text from config file
+                text = find_config(paths)
 
         self.raw_text = text
         self.raw_config = raw_dict
@@ -208,6 +213,10 @@ class ODCEnvironment:
         self._raw: dict[str, Any] = raw
         self._allow_envvar_overrides: bool = allow_env_overrides
         self._normalised: dict[str, Any] = {}
+
+        if name == "user" and "default_environment" in  raw:
+            warnings.warn("The 'default_environment' setting in the 'user' section is no longer supported - "
+                          "please refer to the documentation for more information")
 
         # Aliases are handled here, the alias OptionHandler is a place-holder.
         if "alias" in self._raw:
