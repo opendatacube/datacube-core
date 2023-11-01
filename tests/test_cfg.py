@@ -190,16 +190,15 @@ def test_oldstyle_cfg():
     from datacube.cfg.api import ODCConfig
     with pytest.warns(UserWarning, match=r'default_environment.*no longer supported'):
         cfg = ODCConfig(text="""
-default:
-    index_driver: memory
-env2:
-    index_driver: memory
-env3:
-    index_driver: memory
-user:
-    default_environment: env3
-"""
-        )
+        default:
+            index_driver: memory
+        env2:
+            index_driver: memory
+        env3:
+            index_driver: memory
+        user:
+            default_environment: env3
+        """)
         assert cfg[None]._name == 'default'
 
 
