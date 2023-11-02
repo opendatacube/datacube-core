@@ -6,14 +6,15 @@ import logging
 import uuid
 import collections.abc
 from itertools import groupby
-from typing import Set, Union, Optional, Dict, Tuple, cast
+from os import PathLike
+from typing import Any, Set, Union, Optional, Dict, Tuple, cast
 import datetime
 
 import numpy
 import xarray
 from dask import array as da
 
-from datacube.config import LocalConfig
+from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
 from odc.geo import CRS, yx_, res_, resyx_
@@ -25,7 +26,7 @@ from datacube.model import ExtraDimensions
 from datacube.model.utils import xr_apply
 
 from .query import Query, query_group_by, query_geopolygon
-from ..index import index_connect
+from ..index import index_connect, Index
 from ..drivers import new_datasource
 
 _LOG = logging.getLogger(__name__)
@@ -46,53 +47,107 @@ class Datacube(object):
     """
 
     def __init__(self,
-                 index=None,
-                 config=None,
-                 app=None,
-                 env=None,
-                 validate_connection=True):
+                 index: Index | None =None,
+                 config: ODCConfig | PathLike | str | list[PathLike | str] | None = None,
+                 app: str | None =None,
+                 env: str | ODCEnvironment | None =None,
+                 raw_config: str | dict[str, dict[str, Any]] | None = None,
+                 validate_connection: bool = True) -> None:
         """
         Create the interface for the query and storage access.
 
-        If no index or config is given, the default configuration is used for database connection.
+        :param Index index: The database index to use. If provided, config, app, env and raw_config should all be None.
 
-        :param Index index: The database index to use.
-        :type index: :py:class:`datacube.index.Index` or None.
+        :type index: :py:class:`datacube.index.Index` or None.  The index to use.
 
-        :param Union[LocalConfig|str] config: A config object or a path to a config file that defines the connection.
+        :param config: One of:
+            - None (Use provided ODCEnvironment or Index, or perform default config loading.)
+            - An ODCConfig objece
+            - A file system path pointing to the location of the config file.
+            - A list of file system paths to search for config files. The first readable file found will be used.
+            If an index or an explicit ODCEnvironment is supplied, config and raw_config should be None.
 
-            If an index is supplied, config is ignored.
         :param str app: A short, alphanumeric name to identify this application.
 
             The application name is used to track down problems with database queries, so it is strongly
-            advised that be used.  Required if an index is not supplied, otherwise ignored.
+            advised that be used.  Should be None if an index is supplied.
 
-        :param str env: Name of the datacube environment to use.
-            ie. the section name in any config files. Defaults to 'datacube' for backwards
-            compatibility with old config files.
+        :param str env: The datacube environment to use.
+            Either an ODCEnvironment object, or a section name in the loaded config file.
+
+            Defaults to 'default'. Falls back to 'datacube' with a deprecation warning if config file does not
+            contain a 'default' section.
 
             Allows you to have multiple datacube instances in one configuration, specified on load,
             eg. 'dev', 'test' or 'landsat', 'modis' etc.
 
-        :param bool validate_connection: Should we check that the database connection is available and valid
+            If env is an ODCEnvironment object, config and index should both None.
+
+        :param raw_config: Explicit configuration to use.  Either as a string (serialised in ini or yaml format) or
+            a dictionary (deserialised).  If provided, config should be None.
+
+        :param bool validate_connection: Should we check that the database connection is available and valid.
+            Defaults to True. Ignored if index is passed.
 
         :return: Datacube object
 
         """
 
-        def normalise_config(config):
-            if config is None:
-                return LocalConfig.find(env=env)
-            if isinstance(config, str):
-                return LocalConfig.find([config], env=env)
-            return config
+        # Validate arguments
 
-        if index is None:
-            index = index_connect(normalise_config(config),
+        if index is not None:
+            # If an explicit index is provided, all other index-creation arguments should be None.
+            should_be_none: list[str] = []
+            if config is not None:
+                should_be_none.append["config"]
+            if raw_config is not None:
+                should_be_none.append["raw_config"]
+            if app is not None:
+                should_be_none.append["app"]
+            if env is not None:
+                should_be_none.append["env"]
+            if should_be_none:
+                raise ValueError(
+                    f"When an explicit index is provided, these arguments should be None: {','.join(should_be_none)}"
+                )
+        else:
+            # If an explicit index is not provided, app must be provided.
+            raise ValueError("An app string must be provided")
+
+        if config is not None and raw_config is not None:
+            # Cannot supply both config (file paths) and raw_config (explicit text/dictionary)
+            raise ValueError("Cannot supply both the 'config' and 'raw_config' arguments")
+
+        if config is not None and raw_config is not None:
+            # if config or raw_config provided, env cannot be an ODCEnvironment
+            if isinstance(env, ODCEnvironment):
+                raise ValueError(
+                    "If env is passed as an ODCEnvironment object, config and raw_config must both be None"
+                )
+
+
+        if index is not None:
+            # Explicit index passed in?  Use it.
+            self.index = index
+            return
+
+        # Obtain an ODCEnvironment object:
+        if isinstance(env, ODCEnvironment):
+            cfg_env = env
+        elif isinstance(config, ODCConfig):
+            cfg_env = config[env]
+        elif config is not None:
+            cfg_env = ODCConfig(paths=config)[env]
+        elif isinstance(raw_config, str):
+            cfg_env = ODCConfig(text=raw_config)[env]
+        elif raw_config is not None:
+            cfg_env = ODCConfig(raw_dict=raw_config)[env]
+        else:
+            cfg_env = ODCConfig()[env]
+
+        self.index = index_connect(ODCEnvironment,
                                   application_name=app,
                                   validate_connection=validate_connection)
-
-        self.index = index
 
     def list_products(self, with_pandas=True, dataset_count=False):
         """
