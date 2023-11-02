@@ -16,6 +16,15 @@ if TYPE_CHECKING:
 
 
 _DEFAULT_IAM_TIMEOUT = 600
+_DEFAULT_CONN_TIMEOUT = 60
+
+try:
+    import pwd
+
+    _DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name  # type: Optional[str]
+except (ImportError, KeyError):
+    # No default on Windows and some other systems
+    _DEFAULT_DB_USER = None
 
 
 class ODCOptionHandler:
@@ -198,7 +207,8 @@ class PostgresURLOptionHandler(ODCOptionHandler):
     def handle_dependent_options(self, value: Any) -> None:
         if value is None:
             for handler in (
-                    ODCOptionHandler("db_username", self.env, legacy_env_aliases=['DB_USERNAME']),
+                    ODCOptionHandler("db_username", self.env, legacy_env_aliases=['DB_USERNAME'],
+                                     default=_DEFAULT_DB_USER),
                     ODCOptionHandler("db_password", self.env, legacy_env_aliases=['DB_PASSWORD']),
                     ODCOptionHandler("db_hostname", self.env, legacy_env_aliases=['DB_HOSTNAME'],
                                      default='localhost'),
@@ -219,7 +229,7 @@ def config_options_for_psql_driver(env: "ODCEnvironment"):
                                  legacy_env_aliases=['DATACUBE_DB_URL']),
         IAMAuthenticationOptionHandler("db_iam_authentication", env,
                                        legacy_env_aliases=['DATACUBE_IAM_AUTHENTICATION']),
-        IntOptionHandler("db_connection_timeout", env, default=60, minval=1)
+        IntOptionHandler("db_connection_timeout", env, default=_DEFAULT_CONN_TIMEOUT, minval=1)
     ]
 
 
@@ -231,7 +241,8 @@ def psql_url_from_config(env: "ODCEnvironment"):
     url = "postgresql://"
     if env.db_username:
         if env.db_password:
-            url += f"{env.db_username}:{env.db_password}@"
+            escaped_password = urlparse.quote_plus(env.db_password)
+            url += f"{env.db_username}:{escaped_password}@"
         else:
             url += f"{env.db_username}@"
     url += f"{env.db_hostname}:{env.db_port}/{env.db_database}"

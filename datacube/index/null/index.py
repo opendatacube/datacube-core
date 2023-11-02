@@ -62,7 +62,7 @@ class Index(AbstractIndex):
         return UnhandledTransaction(self.index_id)
 
     @classmethod
-    def from_config(cls, config, application_name=None, validate_connection=True):
+    def from_config(cls, config_env, application_name=None, validate_connection=True):
         return cls()
 
     @classmethod
@@ -85,8 +85,8 @@ class Index(AbstractIndex):
 
 class NullIndexDriver(AbstractIndexDriver):
     @staticmethod
-    def connect_to_index(config, application_name=None, validate_connection=True):
-        return Index.from_config(config, application_name, validate_connection)
+    def connect_to_index(config_env, application_name=None, validate_connection=True):
+        return Index.from_config(config_env, application_name, validate_connection)
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:

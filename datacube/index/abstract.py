@@ -2168,7 +2168,7 @@ class AbstractIndexDriver(ABC):
     """
     @staticmethod
     @abstractmethod
-    def connect_to_index(config: LocalConfig,
+    def connect_to_index(config_env: ODCEnvironment,
                          application_name: Optional[str] = None,
                          validate_connection: bool = True
                         ) -> "AbstractIndex":

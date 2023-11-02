@@ -5,6 +5,7 @@
 import logging
 from threading import Lock
 
+from datacube.cfg import ODCEnvironment
 from datacube.index.memory._datasets import DatasetResource, LineageResource  # type: ignore
 from datacube.index.memory._fields import get_dataset_fields
 from datacube.index.memory._metadata_types import MetadataTypeResource
@@ -69,7 +70,7 @@ class Index(AbstractIndex):
         return UnhandledTransaction(self.index_id)
 
     @classmethod
-    def from_config(cls, config, application_name=None, validate_connection=True):
+    def from_config(cls, config_env, application_name=None, validate_connection=True):
         return cls()
 
     @classmethod
@@ -92,8 +93,8 @@ class Index(AbstractIndex):
 
 class MemoryIndexDriver(AbstractIndexDriver):
     @staticmethod
-    def connect_to_index(config, application_name=None, validate_connection=True):
-        return Index.from_config(config, application_name, validate_connection)
+    def connect_to_index(config_env: ODCEnvironment, application_name=None, validate_connection=True):
+        return Index.from_config(config_env, application_name, validate_connection)
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:

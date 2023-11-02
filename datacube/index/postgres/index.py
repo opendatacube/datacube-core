@@ -82,8 +82,11 @@ class Index(AbstractIndex):
         return str(self._db.url)
 
     @classmethod
-    def from_config(cls, config, application_name=None, validate_connection=True):
-        db = PostgresDb.from_config(config, application_name=application_name,
+    def from_config(cls,
+                    config_env: ODCEnvironment,
+                    application_name: str | None = None,
+                    validate_connection: bool = True):
+        db = PostgresDb.from_config(config_env, application_name=application_name,
                                     validate_connection=validate_connection)
         return cls(db)
 
@@ -106,7 +109,7 @@ class Index(AbstractIndex):
         Close any idle connections database connections.
 
         This is good practice if you are keeping the Index instance in scope
-        but wont be using it for a while.
+        but won't be using it for a while.
 
         (Connections are normally closed automatically when this object is deleted: ie. no references exist)
         """
@@ -168,8 +171,10 @@ class DefaultIndexDriver(AbstractIndexDriver):
     aliases = ['postgres', 'legacy']
 
     @staticmethod
-    def connect_to_index(config, application_name=None, validate_connection=True):
-        return Index.from_config(config, application_name, validate_connection)
+    def connect_to_index(config_env: ODCEnvironment,
+                         application_name: str | None = None,
+                         validate_connection: bool = True):
+        return Index.from_config(config_env, application_name, validate_connection)
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:

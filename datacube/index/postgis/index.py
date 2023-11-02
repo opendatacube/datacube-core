@@ -101,8 +101,11 @@ WARNING: Database schema and internal APIs may change significantly between rele
         return str(self._db.url)
 
     @classmethod
-    def from_config(cls, config, application_name=None, validate_connection=True):
-        db = PostGisDb.from_config(config, application_name=application_name,
+    def from_config(cls,
+                    config_env: ODCEnvironment,
+                    application_name: str | None = None,
+                    validate_connection: bool = True):
+        db = PostGisDb.from_config(config_env, application_name=application_name,
                                    validate_connection=validate_connection)
         return cls(db)
 
@@ -207,8 +210,10 @@ WARNING: Database schema and internal APIs may change significantly between rele
 
 class DefaultIndexDriver(AbstractIndexDriver):
     @staticmethod
-    def connect_to_index(config, application_name=None, validate_connection=True):
-        return Index.from_config(config, application_name, validate_connection)
+    def connect_to_index(config_env: ODCEnvironment,
+                         application_name: str | None = None,
+                         validate_connection: bool = True):
+        return Index.from_config(config_env, application_name, validate_connection)
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:
