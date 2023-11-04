@@ -27,7 +27,8 @@ class Index(AbstractIndex):
     Lightweight in-memory index driver
     """
 
-    def __init__(self) -> None:
+    def __init__(self, env: ODCEnvironment) -> None:
+        self._env = env
         self._users = UserResource()
         self._metadata_types = MetadataTypeResource()
         self._products = ProductResource(self.metadata_types)
@@ -37,6 +38,10 @@ class Index(AbstractIndex):
         with counter_lock:
             counter = counter + 1
             self._index_id = f"memory={counter}"
+
+    @property
+    def environment(self) -> ODCEnvironment:
+        return self._env
 
     @property
     def users(self) -> UserResource:
@@ -70,8 +75,8 @@ class Index(AbstractIndex):
         return UnhandledTransaction(self.index_id)
 
     @classmethod
-    def from_config(cls, config_env, application_name=None, validate_connection=True):
-        return cls()
+    def from_config(cls, config_env: ODCEnvironment, application_name: str = None, validate_connection: bool = True):
+        return cls(config_env)
 
     @classmethod
     def get_dataset_fields(cls, doc):

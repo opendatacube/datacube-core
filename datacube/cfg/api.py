@@ -86,15 +86,15 @@ class ODCConfig:
                      Used as is - environment variable overrides are NOT applied.
         """
         # Cannot supply both text AND paths.
-        args_supplied: int = int(paths is not None) + int(raw_dict is not None) + int(text is not None)
+        args_supplied: int = sum(map(lambda x: int(bool(x)), (paths, raw_dict, text)))
         if args_supplied > 1:
             raise ConfigException("Can only supply one of configuration path(s), raw dictionary, "
                                   "and explicit configuration text.")
 
         # Suppress environment variable overrides if explicit config text or dictionary is supplied.
-        self.allow_envvar_overrides = text is None and raw_dict is None
+        self.allow_envvar_overrides = not text and not raw_dict
 
-        if raw_dict is None and text is None:
+        if not raw_dict and not text:
             # No explict config passed in.  Check for ODC_CONFIG environmnet variables
             if os.environ.get("ODC_CONFIG"):
                 text = os.environ["ODC_CONFIG"]
@@ -104,7 +104,7 @@ class ODCConfig:
 
         self.raw_text = text
         self.raw_config = raw_dict
-        if self.raw_config is None:
+        if not self.raw_config:
             self.raw_config = parse_text(self.raw_text)
 
         self._aliases: dict[str, str] = {}
@@ -238,7 +238,6 @@ class ODCEnvironment:
             # Loop through content handlers.
             # Note that handlers may add more handlers to the end of the list while we are iterating over it.
             for handler in self._option_handlers:
-                print(f"Handling option {handler.name}")
                 self._handle_option(handler)
 
         # Config already processed

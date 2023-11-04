@@ -7,6 +7,7 @@ import os
 import warnings
 from typing import Any, TYPE_CHECKING
 from urllib.parse import urlparse
+from urllib.parse import quote_plus
 
 from .exceptions import ConfigException
 from .utils import check_valid_option
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
 
 _DEFAULT_IAM_TIMEOUT = 600
 _DEFAULT_CONN_TIMEOUT = 60
+_DEFAULT_HOSTNAME = 'localhost'
+_DEFAULT_DATABASE = 'datacube'
 
 try:
     import pwd
@@ -94,7 +97,6 @@ class ODCOptionHandler:
             canonical_name = f"odc_{self.env._name}_{self.name}".upper()
             for env_name in self.env.get_all_aliases():
                 envvar_name = f"odc_{env_name}_{self.name}".upper()
-                print(f"Checking for environment override in ${envvar_name}")
                 val = os.environ.get(envvar_name)
                 if val:
                     return val
@@ -138,9 +140,7 @@ class IndexDriverOptionHandler(ODCOptionHandler):
         # Get driver-specific config options
         from datacube.drivers.indexes import index_driver_by_name
         driver = index_driver_by_name(value)
-        print(f"driver {value}: {driver.__class__}")
         for option in driver.get_config_option_handlers(self.env):
-            print(f"Option {self.name} is adding option {option.name}")
             self.env._option_handlers.append(option)
 
 
@@ -211,10 +211,11 @@ class PostgresURLOptionHandler(ODCOptionHandler):
                                      default=_DEFAULT_DB_USER),
                     ODCOptionHandler("db_password", self.env, legacy_env_aliases=['DB_PASSWORD']),
                     ODCOptionHandler("db_hostname", self.env, legacy_env_aliases=['DB_HOSTNAME'],
-                                     default='localhost'),
+                                     default=_DEFAULT_HOSTNAME),
                     IntOptionHandler("db_port", self.env, default=5432, legacy_env_aliases=['DB_PORT'],
                                      minval=1, maxval=49151),
-                    ODCOptionHandler("db_database", self.env, legacy_env_aliases=['DB_DATABASE']),
+                    ODCOptionHandler("db_database", self.env, legacy_env_aliases=['DB_DATABASE'],
+                                     default=_DEFAULT_DATABASE),
             ):
                 self.env._option_handlers.append(handler)
 
@@ -241,7 +242,7 @@ def psql_url_from_config(env: "ODCEnvironment"):
     url = "postgresql://"
     if env.db_username:
         if env.db_password:
-            escaped_password = urlparse.quote_plus(env.db_password)
+            escaped_password = quote_plus(env.db_password)
             url += f"{env.db_username}:{escaped_password}@"
         else:
             url += f"{env.db_username}@"

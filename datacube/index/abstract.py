@@ -14,6 +14,7 @@ from typing import (Any, Iterable, Iterator,
                     List, Mapping, MutableMapping,
                     NamedTuple, Optional,
                     Tuple, Union, Sequence)
+from urllib.parse import urlparse, ParseResult
 from uuid import UUID
 from datetime import timedelta
 
@@ -1882,7 +1883,8 @@ class UnhandledTransaction(AbstractTransaction):
 class AbstractIndex(ABC):
     """
     Abstract base class for an Index.  All Index implementations should
-    inherit from this base class and implement all abstract methods.
+    inherit from this base class, and implement all abstract methods (and
+    override other methods and contract flags as required.
     """
 
     # Interface contracts
@@ -1904,10 +1906,20 @@ class AbstractIndex(ABC):
     # Supports per-CRS spatial indexes
     supports_spatial_indexes = False
 
+
+    @property
+    @abstractmethod
+    def environment(self) -> ODCEnvironment:
+        """The cfg.ODCEnvironment object this Index was initialised from."""
+
     @property
     @abstractmethod
     def url(self) -> str:
         """A string representing the index"""
+
+    @cached_property
+    def url_parts(self) -> ParseResult:
+        return urlparse(self.url)
 
     @property
     @abstractmethod
@@ -1937,7 +1949,7 @@ class AbstractIndex(ABC):
     @classmethod
     @abstractmethod
     def from_config(cls,
-                    config: LocalConfig,
+                    cfg_env: ODCEnvironment,
                     application_name: Optional[str] = None,
                     validate_connection: bool = True
                    ) -> "AbstractIndex":

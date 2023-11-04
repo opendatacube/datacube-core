@@ -62,7 +62,7 @@ class Datacube(object):
 
         :param config: One of:
             - None (Use provided ODCEnvironment or Index, or perform default config loading.)
-            - An ODCConfig objece
+            - An ODCConfig object
             - A file system path pointing to the location of the config file.
             - A list of file system paths to search for config files. The first readable file found will be used.
             If an index or an explicit ODCEnvironment is supplied, config and raw_config should be None.
@@ -110,15 +110,12 @@ class Datacube(object):
                 raise ValueError(
                     f"When an explicit index is provided, these arguments should be None: {','.join(should_be_none)}"
                 )
-        else:
-            # If an explicit index is not provided, app must be provided.
-            raise ValueError("An app string must be provided")
 
         if config is not None and raw_config is not None:
             # Cannot supply both config (file paths) and raw_config (explicit text/dictionary)
             raise ValueError("Cannot supply both the 'config' and 'raw_config' arguments")
 
-        if config is not None and raw_config is not None:
+        if config is not None or raw_config is not None:
             # if config or raw_config provided, env cannot be an ODCEnvironment
             if isinstance(env, ODCEnvironment):
                 raise ValueError(
@@ -145,7 +142,7 @@ class Datacube(object):
         else:
             cfg_env = ODCConfig()[env]
 
-        self.index = index_connect(ODCEnvironment,
+        self.index = index_connect(cfg_env,
                                   application_name=app,
                                   validate_connection=validate_connection)
 

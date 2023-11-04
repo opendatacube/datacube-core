@@ -63,7 +63,7 @@ def drop_column(conn, table: str, column: str):
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_added_column(clirunner, uninitialised_postgres_db):
     # Run on an empty database.
-    result = clirunner(["system", "init"])
+    result = clirunner(["--env", "datacube", "system", "init"])
     assert "Created." in result.output
 
     with uninitialised_postgres_db._connect() as connection:
@@ -86,7 +86,7 @@ def test_added_column(clirunner, uninitialised_postgres_db):
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_readd_column(clirunner, uninitialised_postgres_db):
     # Run on an empty database. drop columns and readd
-    result = clirunner(["system", "init"])
+    result = clirunner(["--env", "datacube", "system", "init"])
     assert "Created." in result.output
 
     with uninitialised_postgres_db._connect() as connection:
@@ -101,7 +101,7 @@ def test_readd_column(clirunner, uninitialised_postgres_db):
         assert not check_column(connection, _schema.DATASET.name, "updated")
         assert not check_column(connection, _schema.DATASET_LOCATION.name, "added")
 
-    result = clirunner(["system", "init"])
+    result = clirunner(["--env", "datacube", "system", "init"])
 
     with uninitialised_postgres_db._connect() as connection:
         assert check_column(connection, _schema.METADATA_TYPE.name, "updated")

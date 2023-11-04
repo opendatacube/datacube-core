@@ -15,6 +15,7 @@ import click
 
 from datacube import config, __version__
 from datacube.api.core import Datacube
+from datacube.cfg import ODCConfig, ODCEnvironment, ConfigException
 
 from datacube.index import index_connect
 
@@ -139,6 +140,12 @@ def _set_environment(ctx, param, value):
     ctx.obj['config_environment'] = value
 
 
+def _set_config_text(ctx, param, value):
+    if not ctx.obj:
+        ctx.obj = {}
+    ctx.obj['config_text'] = value
+
+
 #: pylint: disable=invalid-name
 version_option = click.option('--version', is_flag=True, callback=_print_version,
                               expose_value=False, is_eager=True)
@@ -149,10 +156,12 @@ verbose_option = click.option('--verbose', '-v', count=True, callback=_init_logg
 logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile,
                               is_eager=True, expose_value=False, help="Specify log file")
 #: pylint: disable=invalid-name
-config_option = click.option('--config', '--config_file', '-C', multiple=True, default=[], callback=_set_config,
+config_option = click.option('--config', '--config-file', '-C', multiple=True, default=[], callback=_set_config,
                              expose_value=False)
-config_option_exposed = click.option('--config', '--config_file', '-C', multiple=True, default=[], callback=_set_config)
-
+#: pylint: disable=invalid-name
+raw_config_option = click.option('--raw-config', '--config-text', '-R', default='', callback=_set_config_text,
+                             expose_value=False)
+#: pylint: disable=invalid-name
 environment_option = click.option('--env', '-E', callback=_set_environment,
                                   expose_value=False)
 #: pylint: disable=invalid-name
@@ -167,6 +176,7 @@ global_cli_options = compose(
     logfile_option,
     environment_option,
     config_option,
+    raw_config_option,
     log_queries_option
 )
 
@@ -178,25 +188,29 @@ def cli():
 
 
 def pass_config(f):
-    """Get a datacube config as the first argument. """
+    """Get an ODCEnvironment object as the first argument. """
 
     def new_func(*args, **kwargs):
         obj = click.get_current_context().obj
 
-        paths = obj.get('config_files', None)
-        # If the user is overriding the defaults
+        # Config options from context
+        text = obj.get('config_text')
+        paths = obj.get('config_files')
         specific_environment = obj.get('config_environment')
 
-        try:
-            parsed_config = config.LocalConfig.find(paths=paths, env=specific_environment)
-        except ValueError:
-            if specific_environment:
-                raise click.ClickException("No datacube config found for '{}'".format(specific_environment))
-            else:
-                raise click.ClickException("No datacube config found")
+        if text and paths:
+            raise click.ClickException(
+                "Both config file paths AND explicit config text provided - choose one configuration approach"
+            )
 
-        _LOG.debug("Loaded datacube config: %r", parsed_config)
-        return f(parsed_config, *args, **kwargs)
+        try:
+            cfg = ODCConfig(paths=paths, text=text)
+            cfg_env = cfg[specific_environment]
+        except ConfigException as e:
+            raise click.ClickException(f"Configuration Error: {e}")
+
+        _LOG.debug("Loaded datacube config: %r", cfg_env._name)
+        return f(cfg_env, *args, **kwargs)
 
     return functools.update_wrapper(new_func, f)
 
@@ -214,16 +228,16 @@ def pass_index(app_name=None, expect_initialised=True):
 
     def decorate(f):
         @pass_config
-        def with_index(local_config: config.LocalConfig,
+        def with_index(config_env: ODCEnvironment,
                        *args,
                        **kwargs):
             command_path = click.get_current_context().command_path
             try:
-                index = index_connect(local_config,
+                index = index_connect(config_env,
                                       application_name=app_name or command_path,
                                       validate_connection=expect_initialised)
                 _LOG.debug("Connected to datacube index: %s", index)
-            except (OperationalError, ProgrammingError) as e:
+            except (OperationalError, ProgrammingError, ConfigException) as e:
                 handle_exception('Error Connecting to database: %s', e)
                 return
 

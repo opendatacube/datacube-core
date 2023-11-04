@@ -9,6 +9,7 @@ from click import echo, style
 from sqlalchemy.exc import OperationalError
 
 import datacube
+from datacube.cfg import ODCEnvironment, psql_url_from_config
 from datacube.index import Index, index_connect
 from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
@@ -67,7 +68,7 @@ def database_init(index, default_types, init_users, recreate_views, rebuild, loc
 
 @system.command('check', help='Check and display current configuration')
 @ui.pass_config
-def check(local_config: LocalConfig):
+def check(cfg_env: ODCEnvironment):
     """
     Verify & view current configuration
     """
@@ -76,23 +77,19 @@ def check(local_config: LocalConfig):
         echo('{:<15}'.format(name + ':') + style(str(value), bold=True))
 
     echo_field('Version', datacube.__version__)
-    echo_field('Config files', ','.join(local_config.files_loaded))
-    echo_field('Host',
-               '{}:{}'.format(local_config['db_hostname'] or 'localhost', local_config.get('db_port', None) or '5432'))
-
-    echo_field('Database', local_config['db_database'])
-    echo_field('User', local_config['db_username'])
-    echo_field('Environment', local_config['env'])
-    echo_field('Index Driver', local_config['index_driver'])
+    echo_field('Index Driver', cfg_env.index_driver)
+    db_url = psql_url_from_config(cfg_env)
+    echo_field('Database URL:', db_url)
 
     echo()
     echo('Valid connection:\t', nl=False)
     try:
-        index = index_connect(local_config=local_config)
+        index = index_connect(config_env=cfg_env)
         echo(style('YES', bold=True))
-        for role, user, description in index.users.list_users():
-            if user == local_config['db_username']:
-                echo('You have %s privileges.' % style(role.upper(), bold=True))
+        if index.url_parts.username:
+            for role, user, description in index.users.list_users():
+                if user == index.url_parts.username:
+                    echo('You have %s privileges.' % style(role.upper(), bold=True))
     except OperationalError as e:
         handle_exception('Error Connecting to Database: %s', e)
     except IndexSetupError as e:
@@ -113,23 +110,34 @@ def check(local_config: LocalConfig):
     help="Clone lineage data only. (default: false)"
 )
 @click.argument('source-env', type=str, nargs=1)
-@ui.pass_index()
-def clone(index: Index, batch_size: int, skip_lineage: bool, lineage_only: bool, source_env: str):
+@ui.pass_config
+def clone(env: ODCEnvironment, batch_size: int, skip_lineage: bool, lineage_only: bool, source_env: str):
     if skip_lineage and lineage_only:
         echo("Cannot set both lineage-only and skip-lineage")
         exit(1)
-    obj = click.get_current_context().obj
-    paths = obj.get('config_files', None)
     try:
-        source_config = LocalConfig.find(paths=paths, env=source_env)
-    except ValueError:
+        destination_index = index_connect(env, validate_connection=True)
+    except OperationalError as e:
+        handle_exception('Error Connecting to Destination Database: %s', e)
+        exit(1)
+    except IndexSetupError as e:
+        handle_exception('Destination database not initialised: %s', e)
+        exit(1)
+
+    try:
+        source_config = env._cfg[source_env]
+    except KeyError:
         raise click.ClickException("No datacube config found for '{}'".format(source_env))
+        exit(1)
 
     try:
         src_index = index_connect(source_config, validate_connection=True)
-        index.clone(src_index, batch_size=batch_size, skip_lineage=skip_lineage, lineage_only=lineage_only)
-        exit(0)
     except OperationalError as e:
         handle_exception('Error Connecting to Source Database: %s', e)
+        exit(1)
     except IndexSetupError as e:
         handle_exception('Source database not initialised: %s', e)
+        exit(1)
+    # Any errors will have be logged.
+    destination_index.clone(src_index, batch_size=batch_size, skip_lineage=skip_lineage, lineage_only=lineage_only)
+    exit(0)

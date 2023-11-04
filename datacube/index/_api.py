@@ -9,7 +9,7 @@ Access methods for indexing datasets & products.
 import logging
 
 from datacube.cfg import ODCConfig, ODCEnvironment
-from datacube.index import Index
+from .abstract import AbstractIndex as Index
 
 _LOG = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def index_connect(config_env: ODCEnvironment = None,
     :param validate_connection: Validate database connection and schema immediately
     :raises datacube.index.Exceptions.IndexSetupError:
     """
-    from datacube.drivers import index_driver_by_name, index_drivers
+    from datacube.drivers import index_driver_by_name
 
     if config_env is None:
         config_env = ODCConfig()[None]

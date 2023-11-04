@@ -48,14 +48,18 @@ class Index(AbstractIndex):
 
     supports_transactions = True
 
-    def __init__(self, db: PostgresDb) -> None:
+    def __init__(self, db: PostgresDb, env = ODCEnvironment) -> None:
         self._db = db
-
+        self._env = env
         self._users = UserResource(db, self)
         self._metadata_types = MetadataTypeResource(db, self)
         self._products = ProductResource(db, self)
         self._lineage = LineageResource(db, self)
         self._datasets = DatasetResource(db, self)
+
+    @property
+    def environment(self) -> ODCEnvironment:
+        return self._env
 
     @property
     def users(self) -> UserResource:
@@ -88,7 +92,7 @@ class Index(AbstractIndex):
                     validate_connection: bool = True):
         db = PostgresDb.from_config(config_env, application_name=application_name,
                                     validate_connection=validate_connection)
-        return cls(db)
+        return cls(db, config_env)
 
     @classmethod
     def get_dataset_fields(cls, doc):

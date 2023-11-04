@@ -24,26 +24,26 @@ def test_index_clone_small_batch(index_pair_populated_empty):
     assert results["datasets"].skipped == 0
 
 
-def test_index_clone_cli(local_config_pair, index_pair_populated_empty, clirunner):
-    source_cfg, target_cfg = local_config_pair
+def test_index_clone_cli(cfg_env_pair, index_pair_populated_empty, clirunner):
+    source_cfg, target_cfg = cfg_env_pair
     clirunner([
-        '-E', target_cfg._env,
+        '-E', target_cfg._name,
         'system', 'clone',
         '--lineage-only', '--skip-lineage',
-        source_cfg._env
-    ], expect_success=False)
+        source_cfg._name
+    ], skip_env=True, expect_success=False)
     clirunner([
-        '-E', target_cfg._env,
+        '-E', target_cfg._name,
         'system', 'clone',
-        source_cfg._env
-    ], expect_success=True)
+        source_cfg._name
+    ], skip_env=True, expect_success=True)
 
 
-def test_index_clone_cli_small_batch(local_config_pair, index_pair_populated_empty, clirunner):
-    source_cfg, target_cfg = local_config_pair
+def test_index_clone_cli_small_batch(cfg_env_pair, index_pair_populated_empty, clirunner):
+    source_cfg, target_cfg = cfg_env_pair
     clirunner([
-        '-E', target_cfg._env,
+        '-E', target_cfg._name,
         'system', 'clone',
         '--batch-size', '2',
-        source_cfg._env
-    ], expect_success=True)
+        source_cfg._name
+    ], skip_env=True, expect_success=True)

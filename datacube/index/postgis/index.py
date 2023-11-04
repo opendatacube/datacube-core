@@ -63,18 +63,23 @@ class Index(AbstractIndex):
     # Postgis supports per-CRS spatial indexes
     supports_spatial_indexes = True
 
-    def __init__(self, db: PostGisDb) -> None:
+    def __init__(self, db: PostGisDb, env: ODCEnvironment) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
         _LOG.warning("""WARNING: The POSTGIS index driver implementation is considered EXPERIMENTAL.
 WARNING:
 WARNING: Database schema and internal APIs may change significantly between releases. Use at your own risk.""")
         self._db = db
+        self._env = env
 
         self._users = UserResource(db, self)
         self._metadata_types = MetadataTypeResource(db, self)
         self._products = ProductResource(db, self)
         self._lineage = LineageResource(db, self)
         self._datasets = DatasetResource(db, self)
+
+    @property
+    def environment(self) -> ODCEnvironment:
+        return self._env
 
     @property
     def users(self) -> UserResource:
@@ -107,7 +112,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
                     validate_connection: bool = True):
         db = PostGisDb.from_config(config_env, application_name=application_name,
                                    validate_connection=validate_connection)
-        return cls(db)
+        return cls(db, config_env)
 
     @classmethod
     def get_dataset_fields(cls, doc):
