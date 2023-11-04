@@ -6,6 +6,5 @@
 User configuration.
 """
 
-from datacube.cfg import ConfigException
-
-raise ConfigException("The old datacube.config  is no longer supported.  Please use the new datacube.cfg library")
+import warnings
+warnings.warn("The old datacube.config  is no longer supported.  Please use the new datacube.cfg library")
