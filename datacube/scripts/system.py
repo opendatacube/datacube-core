@@ -14,7 +14,6 @@ from datacube.index import Index, index_connect
 from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
-from datacube.config import LocalConfig
 
 _LOG = logging.getLogger('datacube-system')
 

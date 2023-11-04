@@ -13,7 +13,7 @@ import sys
 
 import click
 
-from datacube import config, __version__
+from datacube import __version__
 from datacube.api.core import Datacube
 from datacube.cfg import ODCConfig, ODCEnvironment, ConfigException
 

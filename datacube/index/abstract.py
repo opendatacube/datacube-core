@@ -19,7 +19,6 @@ from uuid import UUID
 from datetime import timedelta
 
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
-from datacube.config import LocalConfig
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
 from datacube.model import Product, Dataset, MetadataType, Range
@@ -1953,7 +1952,7 @@ class AbstractIndex(ABC):
                     application_name: Optional[str] = None,
                     validate_connection: bool = True
                    ) -> "AbstractIndex":
-        """Instantiate a new index from a LocalConfig object"""
+        """Instantiate a new index from an ODCEnvironment configuration object"""
 
     @classmethod
     @abstractmethod

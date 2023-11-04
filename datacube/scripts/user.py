@@ -13,7 +13,6 @@ import yaml.resolver
 from collections import OrderedDict
 
 from datacube.cfg import ODCEnvironment
-from datacube.config import LocalConfig
 from datacube.utils import gen_password
 from datacube.ui import click as ui
 from datacube.ui.click import cli
