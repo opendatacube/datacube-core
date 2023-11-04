@@ -10,15 +10,9 @@ from datacube.index.postgres.index import Index
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_with_standard_index(uninitialised_postgres_db):
-    index = Index(uninitialised_postgres_db)
+def test_with_standard_index(uninitialised_postgres_db, cfg_env):
+    index = Index(uninitialised_postgres_db, cfg_env)
     index.init_db()
-
-
-def create_sample_config():
-    parser = ConfigParser()
-    parser.add_section('test_env')
-    parser.set('test_env', 'index_driver', 'default')
 
 
 def test_system_init(uninitialised_postgres_db, clirunner):
