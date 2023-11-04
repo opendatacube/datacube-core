@@ -22,6 +22,7 @@ v1.9.next
 - Document best practice for pulling in changes from develop and update constraints.txt (:pull:`1478`)
 - Postgis index driver performance tuning (:pull:`1480`)
 - Cleanup and formalise spatial index API and expose in CLI (:pull:`1481`)
+- Increase minimum Python version to 3.10 (:pull:`1509`)
 
 
 v1.8.next
