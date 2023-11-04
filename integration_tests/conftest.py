@@ -441,6 +441,7 @@ def datacube_env_name_pair(request) -> tuple[str, str]:
 def odc_config() -> ODCConfig:
     return ODCConfig(paths=CONFIG_FILE_PATHS)
 
+
 @pytest.fixture
 def cfg_env(odc_config, datacube_env_name: str) -> ODCEnvironment:
     """Provides a :class:`ODCEnvironment` configured with suitable config file paths."""
@@ -448,7 +449,8 @@ def cfg_env(odc_config, datacube_env_name: str) -> ODCEnvironment:
 
 
 @pytest.fixture
-def cfg_env_pair(odc_config: ODCConfig, datacube_env_name_pair: tuple[str, str]) -> tuple[ODCEnvironment, ODCEnvironment]:
+def cfg_env_pair(odc_config: ODCConfig, datacube_env_name_pair: tuple[str, str]
+                 ) -> tuple[ODCEnvironment, ODCEnvironment]:
     """Provides a pair of :class:`ODCEnvironment` configured with suitable config file paths.
     """
     return tuple(odc_config[env] for env in datacube_env_name_pair)

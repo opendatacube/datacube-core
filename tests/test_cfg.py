@@ -444,8 +444,7 @@ def test_invalid_pg_url():
 
 
 def test_pgurl_from_config(simple_dict):
-    from datacube.cfg import ODCConfig, ConfigException
-    from datacube.cfg import psql_url_from_config
+    from datacube.cfg import ODCConfig, psql_url_from_config
     cfg = ODCConfig(raw_dict=simple_dict)
     assert psql_url_from_config(
         cfg["legacy"]

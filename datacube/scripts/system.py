@@ -10,7 +10,7 @@ from sqlalchemy.exc import OperationalError
 
 import datacube
 from datacube.cfg import ODCEnvironment, psql_url_from_config
-from datacube.index import Index, index_connect
+from datacube.index import index_connect
 from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception

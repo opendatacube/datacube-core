@@ -14,10 +14,9 @@ Postgres connection and setup
 """
 import json
 import logging
-import os
 import re
 from contextlib import contextmanager
-from typing import Callable, Optional, Union
+from typing import Callable, Union
 
 from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine

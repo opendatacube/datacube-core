@@ -14,7 +14,6 @@ Postgis connection and setup
 """
 import json
 import logging
-import os
 import re
 from contextlib import contextmanager
 from typing import Any, Callable, Iterable, Mapping, Optional, Union, Type

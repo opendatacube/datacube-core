@@ -2,10 +2,9 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import pytest
 
 from datacube import Datacube
-from datacube.cfg import ODCConfig, ODCEnvironment
+from datacube.cfg import ODCConfig
 
 
 def test_multiple_environment_config(tmpdir):

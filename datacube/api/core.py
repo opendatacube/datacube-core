@@ -47,10 +47,10 @@ class Datacube(object):
     """
 
     def __init__(self,
-                 index: Index | None =None,
+                 index: Index | None = None,
                  config: ODCConfig | PathLike | str | list[PathLike | str] | None = None,
-                 app: str | None =None,
-                 env: str | ODCEnvironment | None =None,
+                 app: str | None = None,
+                 env: str | ODCEnvironment | None = None,
                  raw_config: str | dict[str, dict[str, Any]] | None = None,
                  validate_connection: bool = True) -> None:
         """
@@ -122,7 +122,6 @@ class Datacube(object):
                     "If env is passed as an ODCEnvironment object, config and raw_config must both be None"
                 )
 
-
         if index is not None:
             # Explicit index passed in?  Use it.
             self.index = index
@@ -143,8 +142,8 @@ class Datacube(object):
             cfg_env = ODCConfig()[env]
 
         self.index = index_connect(cfg_env,
-                                  application_name=app,
-                                  validate_connection=validate_connection)
+                                   application_name=app,
+                                   validate_connection=validate_connection)
 
     def list_products(self, with_pandas=True, dataset_count=False):
         """

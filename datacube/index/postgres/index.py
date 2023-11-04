@@ -48,7 +48,7 @@ class Index(AbstractIndex):
 
     supports_transactions = True
 
-    def __init__(self, db: PostgresDb, env = ODCEnvironment) -> None:
+    def __init__(self, db: PostgresDb, env: ODCEnvironment) -> None:
         self._db = db
         self._env = env
         self._users = UserResource(db, self)

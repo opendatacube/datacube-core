@@ -1905,7 +1905,6 @@ class AbstractIndex(ABC):
     # Supports per-CRS spatial indexes
     supports_spatial_indexes = False
 
-
     @property
     @abstractmethod
     def environment(self) -> ODCEnvironment:
