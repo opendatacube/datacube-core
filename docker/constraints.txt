@@ -24,6 +24,7 @@ attrs==22.2.0
     #   jsonschema
     #   pytest
     #   rasterio
+    #   referencing
 babel==2.11.0
     # via sphinx
 bleach==6.0.0
@@ -163,8 +164,10 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonschema==4.17.3
+jsonschema==4.18.4
     # via -r constraints.in
+jsonschema-specifications==2023.7.1
+    # via jsonschema
 keyring==23.13.1
     # via twine
 kiwisolver==1.4.4
@@ -266,8 +269,6 @@ pyproj==3.4.1
     # via
     #   -r constraints.in
     #   compliance-checker
-pyrsistent==0.19.3
-    # via jsonschema
 pytest==7.2.1
     # via
     #   -r constraints.in
@@ -309,6 +310,10 @@ recommonmark==0.7.1
     # via -r constraints.in
 redis==4.5.1
     # via -r constraints.in
+referencing==0.30.0
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
 regex==2022.10.31
     # via compliance-checker
 requests==2.28.2
@@ -328,6 +333,10 @@ rfc3986==2.0.0
     # via twine
 rich==13.3.1
     # via twine
+rpds-py==0.9.2
+    # via
+    #   jsonschema
+    #   referencing
 ruamel-yaml==0.17.21
     # via -r constraints.in
 ruamel-yaml-clib==0.2.7

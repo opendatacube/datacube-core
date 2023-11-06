@@ -97,7 +97,7 @@ setup(
         'cloudpickle>=0.4',
         'dask[array]',
         'distributed',
-        'jsonschema<4.18',
+        'jsonschema>=4.18',  # New reference resolution API
         'netcdf4',
         'numpy',
         'psycopg2',
