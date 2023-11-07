@@ -1,0 +1,559 @@
+ODC Configuration
+*****************
+
+The Open Data Cube uses configuration files and/or environment variables to
+determine how to connect to databases.  Further functionality may be controlled by
+configuration in future releases.
+
+Configuration Files
+===================
+
+Format
+------
+
+Configuration files may be provided in either INI or YAML format.  YAML is preferred
+for consistency with ODC metadata files.  INI files can only support one level of nesting,
+which is sufficient for current functionality - INI format may be deprecated for
+configuration files in future releases if deeper nesting of configuration becomes
+desirable for future functionality.
+
+INI format configuration files are parsed with the Python standard library
+configparser module.  Features supplied by that library are supported in ODC for
+INI format configuration files only.  (e.g. a ``DEFAULT`` section whose
+options are applied to all other sections unless over-ridden, and interpolation.)
+Refer to the `Python standard library documentation
+<https://docs.python.org/3/library/configparser.html>`_ for more information.
+
+Configuration Environments
+--------------------------
+
+A valid configuration file consists of one or more named environment definition sections.
+
+Evironment names must start with a lowercase letter and can only include lowercase
+letters and digits.  (This restriction it to support generic environment variable
+overrides, as discussed below.)
+
+Example 1a (INI):
+
+::
+
+    ; Comments in INI files start with a semi-colon
+    ; This config file defines two environments: 'main' and 'aux'.
+    [main]
+    index_driver: default
+    db_database: datacube
+    db_hostname: server.domain.com
+    db_username: cube
+    db_password: this_is_a_big_secret
+
+    [aux]
+    index_driver: default
+    db_database: mydb
+    ; Leaving the hostname blank uses a local socket.
+    db_hostname:
+
+
+Example 1b (YAML):
+
+::
+
+    # Comments in YAML files start with a hash.
+    # This config file defines two environments: 'main' and 'aux'.
+    main:
+      index_driver: default
+      db_database: datacube
+      db_hostname: server.domain.com
+      db_username: cube
+      db_password: this_is_a_big_secret
+
+    aux:
+      index_driver: default
+      db_database: mydb
+      # Leaving the hostname blank uses a local socket.
+      db_hostname:
+
+Configuration Options
+---------------------
+
+All supported configuration options are described here.  Configuration options are
+specified per-environment.
+
+1. alias
+++++++++
+
+**Cannot be used in conjunction with any other configuration option.**
+
+Normally an environment section in a configuration file defines a new environment.  If the ``alias``
+configuration option is used, the section instead defines an alias for an existing environment.  If
+the alias option is present in a section, no other configuration options are permitted in that section.
+
+Example 2 (INI):
+
+::
+
+   [default]
+   ; The default environment is an alias for the "main" section.
+   ; The 'main' environment can be accessed as either 'main' or 'default'.
+   alias: main
+
+   [main]
+    index_driver: default
+    db_database: datacube
+    db_hostname: server.domain.com
+    db_username: cube
+    db_password: this_is_a_big_secret
+
+2. index_driver
++++++++++++++++
+
+``index_driver`` defines which index driver should be used to access the database index for this environment.
+
+The Open Data Cube currently supports 4 index drivers:
+
+ - ``postgres`` Postgres index driver (aka ``default``, ``legacy``).  This is the old-style index driver, fully compatible
+   with datacube-1.8.  This is the default value used if index_driver is not specified in the configuration.
+   This index driver will not be available in datacube-2.0.
+ - ``postgis`` Postgis index driver.  This is the new-style eo3-only index driver with support for
+   spatial indexes.
+ - ``memory`` In-memory index driver.  This index driver is currently compatible with the postgres driver, and
+   stores all data temporarily in memory.  No persistent database is used.
+ - ``null``  Null index driver.  If you are not using a database index at all, this might be an
+   appropriate choice.
+
+The ``null`` and ``memory index drivers take no further configuration.  The remaining configuration
+options only apply to the ``postgres`` and ``postgis`` index drivers:
+
+3. db_connection_timeout
+++++++++++++++++++++++++
+
+**Only read for the 'postgres' and 'postgis' index drivers.**
+
+The database connection timeout, in seconds.
+
+Connections in the connection pool that are idle for more than than the configured timeout are automatically
+closed.  Defaults to 60.
+
+4. db_url
++++++++++
+
+**Only read for the 'postgres' and 'postgis' index drivers.**
+
+Database connection details can be specified in a single option with the ``db_url`` field.  If a ``db_url``
+is not provided, connection details can be specfied with separate ``db_hostname``, ``db_port``,
+``db_database``, ``db_username``, and ``db_password`` fields, as described below.   If a ``db_url``
+is provided, it takes precedence over the separate connection detail options.
+
+Example 3a (INI):
+
+::
+
+   [default]
+   index_driver: postgres
+   ; Connect to database mydb on TCP port 5444 at server.domain, with username and password
+   db_url: postgresql://username:password@server.domain:5444/mydb
+
+
+Example 3b (YAML):
+
+::
+
+   default:
+     # Connect to database mydb over local socket with OS authentication.
+     db_url: postgresql:///mydb
+
+5. db_database
+++++++++++++++
+
+**Only read for the 'postgres' and 'postgis' index drivers.**
+
+**Only read if ``db_url`` is not set.**
+
+The name of the database to connect to.  Defaults to ``"datacube"``.
+
+6. db_hostname
+++++++++++++++
+
+**Only read for the 'postgres' and 'postgis' index drivers.**
+
+**Only read if ``db_url`` is not set.**
+
+The hostname to connect to.  May be set to an empty string, in which case a local socket is used. Defaults
+to ``"localhost"`` if not set at all.
+
+7. db_port
+++++++++++
+
+**Only read for the 'postgres' and 'postgis' index drivers.**
+
+**Only read if ``db_url`` is not set.**
+
+The TCP port to connect to.  Defaults to 5432.  Not used when connecting over a local socket.
+
+8. db_username
+++++++++++++++
+
+**Only read for the 'postgres' and 'postgis' index drivers.**
+
+**Only read if ``db_url`` is not set.**
+
+The username to use when connecting to the database. Defaults to the username of the logged-in user
+on UNIX-like systems.
+
+9. db_password
+++++++++++++++
+
+**Only read for the 'postgres' and 'postgis' index drivers.**
+
+**Only read if ``db_url`` is not set.**
+
+The password to use when connecting to the database. Not used when connecting over a local socket.
+
+10. db_iam_authentication
++++++++++++++++++++++++++
+
+**Only read for the 'postgres' and 'postgis' index drivers.**
+
+A boolean flag to indicate that IAM style authentication should be used instead of the supplied
+password.  (Recommended for cloud based database services like AWS RDS.)
+
+Defaults to False.
+
+Example 4 (INI):
+
+::
+
+   [main]
+   index_driver: postgis
+   db_url: postgresql://user@server.domain:5432/main
+   ; Use IAM authentication
+   db_iam_authentication: yes
+
+   [aux]
+   index_driver: postgis
+   db_url: postgresql:///aux
+   db_iam_authentication: no
+
+YAML is a typed format and INI is not. Not all YAML boolean keywords will be recognised when they
+occur in INI files.  Using "yes" and "no" will work correctly for both formats.
+
+For IAM authentication to work, you must use the standard boto ``$AWS_*`` environment variables to
+pass in your AWS identity and access key.
+
+11. db_iam_timeout
+++++++++++++++++++
+
+**Only read for the 'postgres' and 'postgis' index drivers.**
+
+**Only read when IAM authentication is activated.**
+
+How often (in seconds) a new IAM token should be generated. Defaults to 600 (10 minutes).
+
+Passing in Configuration
+========================
+
+There are a number of different approaches for passing configuration into an Open Data Cube
+session.  They are described here in priority order.
+
+1. Explicit configuration
+-------------------------
+
+Configuration can be passed in explicitly, without ever reading from a configuration file on disk.
+
+When explicit configuration is passed in, it takes precedence over configuration by environment variable.
+
+1a. Via Python (str or dict)
+++++++++++++++++++++++++++++
+
+A valid configuration dictionary can be passed in directly to the ``Datacube`` constructor with
+the ``raw_config`` argument, without serialising to a string:
+
+::
+
+   dc = Datacube(raw_config={
+      "default": {
+         "index_driver": "postgres",
+         "db_url": "postgresql:///mydb"
+      }
+   })
+
+The ``raw_config`` argument can also be passed config as a string, in either INI or YAML format:
+
+::
+
+   dc = Datacube(raw_config="""
+   default:
+     # Connect to database mydb over local socket with OS authentication.
+     db_url: postgresql:///mydb
+   """)
+
+1b. As a string, via the datacube CLI
++++++++++++++++++++++++++++++++++++++
+
+The contents of a configuration file can be passed into the ``datacube`` CLI via the ``-R`` or
+``--raw-config`` command line option:
+
+::
+
+   datacube --raw-config "default: {db_database: this_db}"
+
+Output from a script that generates a configuration file dynamically can be passed in using
+a BASH backquote string:
+
+::
+
+   datacube --raw-config "`config_file_generator --option blah`"
+
+1c. As a string, via an Environment Variable
+++++++++++++++++++++++++++++++++++++++++++++
+
+If raw configuration has not been passed in explicitly via methods 1a. or 1b. above, then the contents of a
+configuration file can be written in full to the ``$ODC_CONFIG`` environment
+variable:
+
+::
+
+   $ ODC_CONFIG="default: {db_database: this_db}"
+   $ datacube check    # will use the this_db database
+
+
+2. Selecting a Configuration File
+---------------------------------
+
+If explicit configuration has not been passed in, ODC attempts to find a configuration file.
+
+Only one configuration file is read.
+
+  This is different to previous versions of the Open Data Cube,
+  where multiple configuration files could be merged.
+
+  If your previous practice was to extend a shared system configuration file with a local
+  user configuration file, then you will now need to take a copy of the system configuration file,
+  add your extensions to your copy, and ensure that the Open Data Cube reads from your
+  modified file.
+
+2a. In Python
++++++++++++++
+
+In Python, the ``config`` argument can take a path to a config file:
+
+::
+
+    dc = Datacube(config="/path/to/my/file.conf")
+
+The ``config`` argument can also take a priority list of config paths.
+The first path in the list that can be read (i.e. exists and has read permissions) is read.
+If no configuration file can be found, a ``ConfigException`` is raised:
+
+::
+
+     dc = Datacube(config=[
+         "/first/path/checked",
+         "/second/path/checked",
+         "/last/path/checked",
+     ])
+
+The config argument can also take a ``datacube.cfg.ODCConfig` object.  Refer to the API documentation
+for more information.
+
+2b. Via the datacube CLI
+++++++++++++++++++++++++
+
+Configuration file paths can be passed to the ``datacube`` CLI utility via the ``-C`` or ``--config`` option.
+
+The option can be specified multiple times, with paths being searched in order, and an error being
+raised if none can be read.
+
+2c. Via an Environment Variable
++++++++++++++++++++++++++++++++
+
+If config paths have not been passed in through methods 2a. or 2b. above, then they can be read from
+the ``$ODC_CONFIG_PATH`` environment variable, in a UNIX Path-style colon separated list:
+
+::
+
+       ODC_CONFIG_PATH=/first/path/checked:/second/path/checked:/last/path/checked
+
+2d. Default Search Paths
+++++++++++++++++++++++++
+
+If config file paths have not passed in through any of the above 2a. through 2c., then the Open Data Cube
+checks the following paths in order, with the first readable file found being read:
+
+ 1. ``./datacube.conf``    (in the current working directory)
+ 2. ``~/.datacube.conf``   (in the user's home directory)
+ 3. ``/etc/default/datacube.conf``
+ 4. ``/etc/datacube.conf``
+
+If none of the above exist then a basic default configuration is used, equivalent to:
+
+```
+default:
+   db_hostname: ''
+   db_database: datacube
+   index_driver: default
+   db_connection_timeout: 60
+```
+
+  Note that this default config is only used after exhausting the default search path. If you have
+  provided your own search path via any of the above methods and none of the paths exist, then an error is raised.
+
+3. The Active Environment
+----------------------------------
+
+3a. Specifying in Python
+++++++++++++++++++++++++
+
+The active environment can be selected in Python with the ``env`` argument to the ``Datacube``
+constructor.
+
+If you wish to work with multiple environments simultaneously, you can create one ``Datacube``
+object for each environment of interest and use them side by side:
+
+::
+
+   dc_main    = Datacube(env="main")
+   dc_aux     = Datacube(env="aux")
+   dc_private = Datacube(env="private")
+
+3b. Specifying in the CLI
++++++++++++++++++++++++++
+
+The active environment can be selected in Python with the ``-E`` or ``--env`` option to the ``datacube``
+CLI tool.
+
+CLI commands that require more than one environment will have a second option for the second argument.
+Refer to the ``--help`` text for more information.
+
+3c. Via an Environment Variable
++++++++++++++++++++++++++++++++
+
+If not explicitly specified via methods 3a. and 3b. above, the active environment can be specified with
+the ``$ODC_ENVIRONMENT`` environment variable.
+
+3d. Default Environment
++++++++++++++++++++++++
+
+If not specified by any of the methods 3a. to 3d. above, the ``default`` environment is used.  If no
+``default`` environment is known, an error is raised.  It is strongly recommended that a ``default``
+environment be defined in all configuration files - either explicitly, or as an alias to an explicitly
+defined environment.
+
+  If no environment named ``default`` is known, but one named ``datacube`` **IS** known, the ``datacube``
+  environment is used and a deprecation warning issued.  ``datacube`` will be dropped as a legacy default
+  environment name in a future release.
+
+4. Generic Environment Variable Overrides
+-----------------------------------------
+
+Configuration values in config files can be over-ridden by setting the appropriate environment variable.
+
+The name of overriding environment variables are all upper-case and structured:
+
+::
+
+   $ODC_{environment name}_{option name}
+
+E.g. to override the ``db_password`` field in the ``main`` environment, set the ``$ODC_MAIN_DB_PASSWORD``
+environment variable.
+
+Environment variables overrides are **NOT** applied to environments defined in configuration that was passed
+in explicitly as a string or dictionary.
+
+4a. Dynamic Environments
+++++++++++++++++++++++++
+
+It is possible for environments to be defined dynamically purely in environment variables.
+
+E.g. given the following active configuration file:
+
+::
+
+     default:
+         alias: main
+     main:
+         index_driver: postgres
+         db_url: postgresql://myuser:mypassword@server.domain/main
+
+and the following defined environment variables:
+
+::
+
+   ODC_AUX_INDEX_DRIVER=postgis
+   ODC_AUX_DB_URL=postgres://auxuser:secret@backup.domain/aux
+
+You can request the "aux" environment and it's configuration will be dynamically read from the environment variables,
+even though it is not mentioned in the configuration file at all.
+
+Notes:
+
+  1. Environment variables are read when configuration is first read from that environment (i.e. when first connecting
+     to the database.)
+  2. As all configuration options have default values, it is no longer possible to get an error by requesting an
+     environment that does not exist.  Instead, an all-defaults environment with the requested name will be dynamically
+     created.  The only exception is when a specific environment is not requested.  In this case, the ``default``
+     environment is only used if it is either defined in the active configuration file or has previously been
+     explicitly requested from the same ``ODCConfig`` object.
+  3. Although environment variable overrides are bypassed for configured environments by passing in explicit
+     configuration, reading from environment variables to dynamically create new environments is still supported.
+
+4b. Environment Variable Overrides and Environment Aliases
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+To avoid troublesome and unpredictable corner carse, aliases can only be defined in raw configuration or in
+config files - they cannot be defined through environment variables.
+
+i.e. defining ``ODC_ENV2_ALIAS=env1`` does NOT create an ``env2`` alias to the ``env1``
+environment.
+
+A configuration file may define an environment which is an alias to an environment that is to be loaded
+dynamically and is NOT defined in the configuration file.
+
+Aliases (created in raw config or a config file) **ARE** honoured when interpreting environment variables.
+
+E.g.  Given config file:
+
+::
+
+     default:
+          alias: main
+     common:
+          alias: main
+     main:
+          index_driver: postgis
+          db_url: postgresql://uid:pwd@server.domain:5432/main
+
+The "main" environment url can be over-ridden with **ANY** of the following environment variables:
+
+::
+
+   $ODC_DEFAULT_DB_URL
+   $ODC_COMMON_DB_URL
+   $ODC_MAIN_DB_URL
+
+The environment variable using the canonical environment name (``$ODC_MAIN_DB_URL`` in this case) always
+takes precedence if it set. If more than one alias environment name is used (e.g. if both ``$ODC_DEFAULT_DB_URL``
+**AND** ``$ODC_COMMON_DB_URL`` exist) then only one will be read and the implementation makes no guarantees
+about which.  Therefore canonical environment names are strongly recommended for environment variable names where
+possible.
+
+4c. Deprecated Legacy Environment Variables
++++++++++++++++++++++++++++++++++++++++++++
+
+Some legacy environment variable names are also read for backwards compatibility reasons, however they may
+not work as expected where more than one ODC environment is in use and will generate a deprecation warning
+if they are read from.  The preferred new environment variable name will be included in the text of the
+deprecation warning.
+
+Most notably the old database connection environment variables:
+
+::
+
+   $DB_DATABASE
+   $DB_HOSTNAME
+   $DB_PORT
+   $DB_USERNAME
+   $DB_PASSWORD
+
+are strongly deprecated as they will be applied to ALL environments, which is probably not what you intended.
+
+The new preferred configuration environment variable names all begin with ``ODC_`
