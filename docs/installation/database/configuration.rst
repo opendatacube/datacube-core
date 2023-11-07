@@ -2,8 +2,10 @@ ODC Configuration
 *****************
 
 The Open Data Cube uses configuration files and/or environment variables to
-determine how to connect to databases.  Further functionality may be controlled by
-configuration in future releases.
+determine how to connect to databases.
+
+Further functionality may be controlled by configuration in future releases.  (e.g. AWS/S3 access configuration,
+rasterio configuration, etc.)
 
 Configuration Files
 ===================
@@ -557,3 +559,68 @@ Most notably the old database connection environment variables:
 are strongly deprecated as they will be applied to ALL environments, which is probably not what you intended.
 
 The new preferred configuration environment variable names all begin with ``ODC_`
+
+Migrating from datacube-1.8
+===========================
+
+The new configuration engine introduced in datacube-1.9 is not fully backwards compatible with that used
+previously.  This section notes the changes which administrators and maintainers should be aware of before
+upgrading.
+
+Merging of multiple config file
+-------------------------------
+
+Previously, multiple config files could be read simultaneously and merged with "higher priority" files being
+read later, and overriding the contents of "lower priority" files.
+
+This is no longer supported.  Only one configuration file is read.
+
+Where users previously created a local personal configuration file that supplemented a global system
+configuration file, they should now make a copy of the global system configuration file, edit it with
+their own personal extensions, and ensure that it is read in preference to the global file - or choose
+one of the other methods for passing in configuration.
+
+The special "user" section is also no longer supported as it doesn't make sense without merging of multiple
+config files.
+
+Legacy Environment Variables
+----------------------------
+
+Legacy environment variables are deprecated, but still read to assist with migration.  In all cases there is
+a new preferred environment variable, as listed in the table below.
+
+
++------------------------------+-----------------------------------+---------------------------------------------+
+| Legacy Environment Variable  | New Environment Variable(s)       |  Notes                                      |
++==============================+===================================+=============================================+
+| DATACUBE_CONFIG_PATH         | ODC_CONFIG_PATH                   | Behaviour is slightly different, mostly due |
+|                              |                                   | to only reading a single file.              |
++------------------------------+-----------------------------------+---------------------------------------------+
+| DATACUBE_DB_URL              | ODC_<env_name>_DB_URL             | These legacy environment variables apply    |
+|                              |                                   | to ALL environments - which is probably not |
++------------------------------+-----------------------------------+ what you want.                              |
+| DB_DATABASE                  | ODC_<env_name>_DB_DATABASE        |                                             |
++------------------------------+-----------------------------------+                                             |
+| DB_HOSTNAME                  | ODC_<env_name>_DB_HOSTNAME        |                                             |
++------------------------------+-----------------------------------+                                             |
+| DB_PORT                      | ODC_<env_name>_DB_PORT            |                                             |
++------------------------------+-----------------------------------+                                             |
+| DB_USERNAME                  | ODC_<env_name>_DB_USERNAME        |                                             |
++------------------------------+-----------------------------------+                                             |
+| DB_PASSWORD                  | ODC_<env_name>_DB_PASSWORD        |                                             |
++------------------------------+-----------------------------------+---------------------------------------------+
+| DATACUBE_ENVIRONMENT         | ODC_ENVIRONMENT                   | datacube-1.8 used this legacy environment   |
+|                              |                                   | variable fairly inconsistently.  There are  |
+|                              |                                   | several corner cases where it is now read   |
+|                              |                                   | where it was not previously.                |
++------------------------------+-----------------------------------+---------------------------------------------+
+
+The auto_config() function
+--------------------------
+
+There used to be an undocumentd ``auto_config()`` function (also available through ``python -m datacube``) that read
+in the configuration (from multiple files and environment variables) and wrote it out as a single consolidated
+configuration file.
+
+As the new configuration engine is more clearly documented and more predictable in its behaviour, this functionality
+is no longer seems to be required.
