@@ -233,9 +233,20 @@ def assert_simple_aliases(cfg):
 
 
 def test_aliases(simple_config):
-    from datacube.cfg import ODCConfig
+    from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(text=simple_config)
     assert_simple_aliases(cfg)
+    with pytest.raises(ConfigException) as e:
+        cfg = ODCConfig(raw_dict={
+            "default": {
+                "alias": "main",
+                "invalid_option": True
+            },
+            "main": {
+                "index_driver": "memory"
+            }
+        })
+    assert "invalid_option" in str(e.value)
 
 
 def assert_simple_options(cfg):

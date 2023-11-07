@@ -169,7 +169,7 @@ class IntOptionHandler(ODCOptionHandler):
 
 class IAMAuthenticationOptionHandler(ODCOptionHandler):
     """
-    A simple boolean, compatible with the historic behaviour of the IAM Autentication on/off option.
+    A simple boolean, compatible with the historic behaviour of the IAM Authentication on/off option.
 
     y/yes (case-insensitive): True
     Anything else: False
