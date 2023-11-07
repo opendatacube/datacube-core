@@ -1,11 +1,82 @@
 ODC Configuration
 *****************
 
-The Open Data Cube uses configuration files and/or environment variables to
-determine how to connect to databases.
+The Open Data Cube uses configuration files and/or environment variables to determine how to connect to databases.
 
 Further functionality may be controlled by configuration in future releases.  (e.g. AWS/S3 access configuration,
 rasterio configuration, etc.)
+
+Overview
+========
+
+When you first start a session with the Open Data Cube, you instantiate a ``Datacube`` object:
+
+::
+
+   from datacube import Datacube
+
+   dc = Datacube()
+
+If you have access to many Open Data Cube databases, you may need to use several at once, e.g. to compare
+the contents of dev and prod databases, or to combine data managed by different organisations.  In this
+scenario, you instantiate a separate ``Datacube`` object per environment:
+
+::
+
+   from datacube import Datacube
+
+   dc_prod = Datacube(env="prod")
+   dc_dev  = Datacube(env="dev")
+
+Environments can be read from a configuration file (e.g. an INI or YAML format file at ``~/.datacube.conf``) that
+looks something like this:
+
+::
+
+   # This is a YAML file and the # symbol marks comments
+   default:
+      # The 'default' environment is used if now environment is specified.
+      # It is often convenient to define it as an alias to another environment
+      alias: prod
+
+   # You might have to copy configuration for systemwide environments from your system
+   # configuration file.  (Probably at /etc/defaults/datacube.conf or /etc/datacube.conf)
+   prod:
+      # Prod still uses the old legacy ODC index schema.
+      index_driver: postgres
+      # db_url is the easiest way to specify connection details
+      db_url: postgresql://user:passwd@server.domain:5555/production_db
+      db_connection_timeout: 30
+
+   product:
+      alias: prod
+
+   dev:
+      # Dev is on the new PostGIS-based ODC index schema.
+      index_driver: postgres
+      db_url: postgresql://user:passwd@internal.server.domain:5555/development_db
+      db_connection_timeout: 120
+
+   development:
+      alias: dev
+
+   private:
+      index_driver: postgis
+      # Use OS ident authentication over a local named pipe.
+      db_url: postgresql:///private
+
+You can also inject new environments dynamically with environment variables, e.g.:
+
+::
+
+   import os
+   from datacube import Datacube
+   os.environ["ODC_PRIVATE_INDEX_DRIVER"] = "postgis"
+   os.environ["ODC_PRIVATE_DB_URL"] = "postgresql:///private"
+
+   dc_private = Datacube(env="private")
+
+Full details, including all recognised configuration options and defaults, is documented below.
 
 Configuration Files
 ===================
