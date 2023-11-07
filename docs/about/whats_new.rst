@@ -7,8 +7,12 @@ What's New
 
 v1.8.next
 =========
+
+v1.8.17 (8th November 2023)
+===========================
 - Fix schema creation with postgres driver when initialising system with ``--no-init-users`` (:pull:`1504`)
 - Switch to new jsonschema 'referencing' API and repin jsonschema to >=4.18 (:pull:`1477`)
+- Update whats_new.rst for release (:pull:`1510`)
 
 v1.8.16 (17th October 2023)
 ===========================
