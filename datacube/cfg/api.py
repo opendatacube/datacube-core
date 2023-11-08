@@ -10,12 +10,20 @@ import os
 import warnings
 
 from os import PathLike
-from typing import Any, Union   # Union required as typehint | operator doesn't work on string forward references
+from typing import Any, TypeAlias, Union
 
 from .cfg import find_config, parse_text
 from .exceptions import ConfigException
 from .opt import ODCOptionHandler, AliasOptionHandler, IndexDriverOptionHandler
 from .utils import ConfigDict, check_valid_env_name
+
+
+# TypeAliases for more concise type hints
+# (Unions required as typehint | operator doesn't work with string forward-references.
+GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike]
+GeneralisedCfg: TypeAlias = Union["ODCConfig", GeneralisedPath, None]
+GeneralisedEnv: TypeAlias = Union["ODCEnvironment", str, None]
+GeneralisedRawCfg: TypeAlias = str | ConfigDict | None
 
 
 class ODCConfig:
@@ -55,7 +63,7 @@ class ODCConfig:
 
     def __init__(
             self,
-            paths: str | PathLike | list[str | PathLike] | None = None,
+            paths: GeneralisedPath | None = None,
             raw_dict: ConfigDict | None = None,
             text: str | None = None):
         """
@@ -122,13 +130,13 @@ class ODCConfig:
 
     @classmethod
     def get_environment(cls,
-                        env: Union["ODCEnvironment", str, None] = None,
-                        config: Union["ODCConfig", str, PathLike, list[str | PathLike], None] = None,
-                        raw_config: str | ConfigDict | None = None) -> "ODCEnvironment":
+                        env: GeneralisedEnv = None,
+                        config: GeneralisedCfg = None,
+                        raw_config: GeneralisedRawCfg = None) -> "ODCEnvironment":
         """
         Obtain an ODCConfig object from the most general possible arguments.
 
-        It is an error to supply both config and raw_config. Otherwise everything is optional and
+        It is an error to supply both config and raw_config, otherwise everything is optional and
         honours system defaults.
 
         :param env: An ODCEnvironment object or a string.
