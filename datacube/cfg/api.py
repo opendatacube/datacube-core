@@ -15,7 +15,7 @@ from typing import Any
 from .cfg import find_config, parse_text
 from .exceptions import ConfigException
 from .opt import ODCOptionHandler, AliasOptionHandler, IndexDriverOptionHandler
-from .utils import check_valid_env_name
+from .utils import ConfigDict, check_valid_env_name
 
 
 class ODCConfig:
@@ -49,14 +49,14 @@ class ODCConfig:
     """
     allow_envvar_overrides: bool = True
     raw_text: str | None = None
-    raw_config: dict[str, dict[str, Any]] = {}
+    raw_config: ConfigDict = {}
     known_environments: dict[str, "ODCEnvironment"] = {}
     canonical_names: dict[str, list[str]] = {}
 
     def __init__(
             self,
-            paths: None | str | PathLike | list[str | PathLike] = None,
-            raw_dict: None | dict[str, dict[str, Any]] = None,
+            paths: str | PathLike | list[str | PathLike] | None = None,
+            raw_dict: ConfigDict | None = None,
             text: str | None = None):
         """
 
@@ -119,6 +119,33 @@ class ODCConfig:
                 self.canonical_names[canonical].append(alias)
             else:
                 self.canonical_names[canonical] = [canonical, alias]
+
+    @classmethod
+    def get_environment(cls,
+                        env: "ODCEnvironment" | str | None = None,
+                        config: "ODCConfig" | str | PathLike | list[str | PathLike] | None = None,
+                        raw_config: str | ConfigDict | None = None) -> "ODCEnvironment":
+        """
+        Obtain an ODCConfig object from the most general possible arguments.
+
+        It is an error to supply both config and raw_config. Otherwise everything is optional and
+        honours system defaults.
+
+        :param env: An ODCEnvironment object or a string.
+        :param config: An ODCConfig object or a config path.
+        :param raw_config: A raw config string or ConfigDict.
+        :return:
+        """
+        if config is not None and raw_config is not None:
+            raise ConfigException("Cannot specify both config and raw_config")
+        if isinstance(env, ODCEnvironment):
+            return env
+        else:
+            if isinstance(config, ODCConfig):
+                cfg = config
+            else:
+                cfg = ODCConfig(paths=config, raw_config=raw_config)
+            return cfg[env]
 
     def _add_alias(self, alias: str, canonical: str) -> None:
         """

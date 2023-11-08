@@ -7,14 +7,14 @@ import uuid
 import collections.abc
 from itertools import groupby
 from os import PathLike
-from typing import Any, Set, Union, Optional, Dict, Tuple, cast
+from typing import cast
 import datetime
 
 import numpy
 import xarray
 from dask import array as da
 
-from datacube.cfg import ODCConfig, ODCEnvironment
+from datacube.cfg import ConfigDict, ODCConfig, ODCEnvironment
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
 from odc.geo import CRS, yx_, res_, resyx_
@@ -51,7 +51,7 @@ class Datacube(object):
                  config: ODCConfig | PathLike | str | list[PathLike | str] | None = None,
                  app: str | None = None,
                  env: str | ODCEnvironment | None = None,
-                 raw_config: str | dict[str, dict[str, Any]] | None = None,
+                 raw_config: str | ConfigDict | None = None,
                  validate_connection: bool = True) -> None:
         """
         Create the interface for the query and storage access.
@@ -128,18 +128,7 @@ class Datacube(object):
             return
 
         # Obtain an ODCEnvironment object:
-        if isinstance(env, ODCEnvironment):
-            cfg_env = env
-        elif isinstance(config, ODCConfig):
-            cfg_env = config[env]
-        elif config is not None:
-            cfg_env = ODCConfig(paths=config)[env]
-        elif isinstance(raw_config, str):
-            cfg_env = ODCConfig(text=raw_config)[env]
-        elif raw_config is not None:
-            cfg_env = ODCConfig(raw_dict=raw_config)[env]
-        else:
-            cfg_env = ODCConfig()[env]
+        cfg_env = ODCConfig.get_environment(env=env, config=config, raw_config=raw_config)
 
         self.index = index_connect(cfg_env,
                                    application_name=app,
@@ -1051,15 +1040,15 @@ def get_bounds(datasets, crs):
 
 def _calculate_chunk_sizes(sources: xarray.DataArray,
                            geobox: GeoBox,
-                           dask_chunks: Dict[str, Union[str, int]],
-                           extra_dims: Optional[ExtraDimensions] = None):
-    extra_dim_names: Tuple[str, ...] = ()
-    extra_dim_shapes: Tuple[int, ...] = ()
+                           dask_chunks: dict[str, str | int],
+                           extra_dims: ExtraDimensions | None = None):
+    extra_dim_names: tuple[str, ...] = ()
+    extra_dim_shapes: tuple[int, ...] = ()
     if extra_dims is not None:
         extra_dim_names, extra_dim_shapes = extra_dims.chunk_size()
 
     valid_keys = sources.dims + extra_dim_names + geobox.dimensions
-    bad_keys = cast(Set[str], set(dask_chunks)) - cast(Set[str], set(valid_keys))
+    bad_keys = cast(set[str], set(dask_chunks)) - cast(set[str], set(valid_keys))
     if bad_keys:
         raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 
@@ -1070,7 +1059,7 @@ def _calculate_chunk_sizes(sources: xarray.DataArray,
     chunk_defaults = dict([(dim, 1) for dim in sources.dims] + [(dim, 1) for dim in extra_dim_names]
                           + [(dim, -1) for dim in geobox.dimensions])
 
-    def _resolve(k, v: Optional[Union[str, int]]) -> int:
+    def _resolve(k, v: str | int | None) -> int:
         if v is None or v == "auto":
             v = _resolve(k, chunk_defaults[k])
 
@@ -1115,9 +1104,9 @@ def _make_dask_array(chunked_srcs,
     # bottom right corner
     #  W R
     #  B BR
-    empties = {}  # type Dict[Tuple[int,int], str]
+    empties: dict[tuple[int, int], str] = {}
 
-    def _mk_empty(shape: Tuple[int, ...]) -> str:
+    def _mk_empty(shape: tuple[int, ...]) -> str:
         name = empties.get(shape, None)
         if name is not None:
             return name

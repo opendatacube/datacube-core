@@ -13,10 +13,9 @@ import warnings
 from enum import Enum
 from os import PathLike
 from os.path import expanduser
-from typing import Any
 
 from datacube.cfg.exceptions import ConfigException
-from datacube.cfg.utils import smells_like_ini
+from datacube.cfg.utils import ConfigDict, smells_like_ini
 
 _DEFAULT_CONFIG_SEARCH_PATH = [
     "datacube.conf",      # i.e. in the current working directory.
@@ -98,7 +97,7 @@ class CfgFormat(Enum):
     JSON = 2   # JSON is a subset of YAML
 
 
-def parse_text(cfg_text: str, fmt: CfgFormat = CfgFormat.AUTO) -> dict[str, dict[str, Any]]:
+def parse_text(cfg_text: str, fmt: CfgFormat = CfgFormat.AUTO) -> ConfigDict:
     """
     Parse a string of text in INI, JSON or YAML format into a raw dictionary.
 
