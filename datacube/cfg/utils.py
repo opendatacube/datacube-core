@@ -9,10 +9,8 @@ from typing import Any
 from .exceptions import ConfigException
 
 
+# A raw configuration dictionary. A dictionary of dictionaries
 ConfigDict = dict[str, dict[str, Any]]
-ConfigDict.__doc__ = """
-A raw configuration dictionary. A dictionary of dictionaries
-"""
 
 
 def check_valid_env_name(name: str) -> None:

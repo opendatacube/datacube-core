@@ -10,7 +10,7 @@ import os
 import warnings
 
 from os import PathLike
-from typing import Any
+from typing import Any, Union   # Union required as typehint | operator doesn't work on string forward references
 
 from .cfg import find_config, parse_text
 from .exceptions import ConfigException
@@ -122,8 +122,8 @@ class ODCConfig:
 
     @classmethod
     def get_environment(cls,
-                        env: "ODCEnvironment" | str | None = None,
-                        config: "ODCConfig" | str | PathLike | list[str | PathLike] | None = None,
+                        env: Union["ODCEnvironment", str, None] = None,
+                        config: Union["ODCConfig", str, PathLike, list[str | PathLike], None] = None,
                         raw_config: str | ConfigDict | None = None) -> "ODCEnvironment":
         """
         Obtain an ODCConfig object from the most general possible arguments.
