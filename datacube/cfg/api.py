@@ -20,7 +20,7 @@ from .utils import ConfigDict, check_valid_env_name
 
 # TypeAliases for more concise type hints
 # (Unions required as typehint | operator doesn't work with string forward-references.
-GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike]
+GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike] | None
 GeneralisedCfg: TypeAlias = Union["ODCConfig", GeneralisedPath, None]
 GeneralisedEnv: TypeAlias = Union["ODCEnvironment", str, None]
 GeneralisedRawCfg: TypeAlias = str | ConfigDict | None
@@ -63,7 +63,7 @@ class ODCConfig:
 
     def __init__(
             self,
-            paths: GeneralisedPath | None = None,
+            paths: GeneralisedPath = None,
             raw_dict: ConfigDict | None = None,
             text: str | None = None):
         """
