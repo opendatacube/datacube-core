@@ -14,6 +14,11 @@ from datacube.model.lineage import LineageRelations
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_create_drop_spatial_index(index: Index):
+    assert index.environment.index_driver in ("experimental", "postgis")
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_create_drop_spatial_index(index: Index):
     # Default spatial index for 4326
     assert list(index.spatial_indexes()) == [CRS("epsg:4326")]
     # WKT CRS which cannot be mapped to an EPSG number.

@@ -19,6 +19,7 @@ def test_init_null(null_config: ODCEnvironment):
     assert "null" in idxs._drivers
     with Datacube(env=null_config, validate_connection=True) as dc:
         assert dc.index.url == "null"
+        assert dc.index.environment.index_driver == "null"
 
 
 def test_null_user_resource(null_config: ODCEnvironment):
