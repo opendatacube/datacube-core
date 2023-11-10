@@ -22,6 +22,7 @@ def test_init_memory(in_memory_config: ODCEnvironment):
     assert "memory" in idxs._drivers
     with Datacube(env=in_memory_config, validate_connection=True) as dc:
         assert (dc.index.url) == "memory"
+        assert dc.index.environment.index_driver == "memory"
 
 
 def test_mem_user_resource(mem_index_fresh: ODCEnvironment):

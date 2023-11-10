@@ -257,6 +257,11 @@ def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
+def test_index_env(index: Index, pseudo_ls8_dataset: Dataset) -> None:
+    assert index.environment.index_driver in ("postgres", "default")
+
+
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     datasets = index.datasets.search_by_metadata(
         {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}}

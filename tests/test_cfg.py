@@ -504,6 +504,26 @@ def test_multiple_sourcetypes(simple_config, path_to_ini_config, simple_dict):
     assert "Can only supply one of" in str(e.value)
 
 
+def test_get_environment(simple_config):
+    from datacube.cfg import ODCConfig, ConfigException
+    cfg = ODCConfig(text=simple_config)
+    with pytest.raises(ConfigException) as e:
+        cfg2 = ODCConfig.get_environment(config=cfg, raw_condif=simple_config)
+    assert "Cannot specify both" in str(e.value)
+    env = ODCConfig.get_environment(config=cfg, env="default")
+    assert env is cfg[None]
+
+
+def test_raw_by_environment(simple_config, monkeypatch):
+    from datacube.cfg import ODCConfig
+    monkeypatch.setenv(
+        'ODC_CONFIG',
+        '{"default":{"alias": "foo"},"foo":{"index_driver":"postgis","db_url":"postgresql:///mydb"}}'
+    )
+    cfg = ODCConfig()
+    assert cfg[None]._name == 'foo'
+
+
 def test_default_environment(simple_config, monkeypatch):
     from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(text=simple_config)

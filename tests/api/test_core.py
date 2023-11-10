@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from unittest.mock import MagicMock
+
 import xarray as xr
 import numpy as np
 import datetime
@@ -112,3 +114,11 @@ def test_dask_chunks():
 
     with pytest.raises(KeyError):
         _calculate_chunk_sizes(sources, geobox, {'zz': 1})
+
+
+def test_index_validation():
+    index = MagicMock()
+    with pytest.raises(ValueError) as e:
+        dc = Datacube(index=index, config=["/a/path", "/a/nother/path"], env="prod", app="this_is_me", raw_config="{}")
+    estr = str(e.value)
+    assert "config,raw_config,app,env" in estr
