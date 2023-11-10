@@ -110,19 +110,6 @@ class Datacube(object):
                 raise ValueError(
                     f"When an explicit index is provided, these arguments should be None: {','.join(should_be_none)}"
                 )
-
-        if config is not None and raw_config is not None:
-            # Cannot supply both config (file paths) and raw_config (explicit text/dictionary)
-            raise ValueError("Cannot supply both the 'config' and 'raw_config' arguments")
-
-        if config is not None or raw_config is not None:
-            # if config or raw_config provided, env cannot be an ODCEnvironment
-            if isinstance(env, ODCEnvironment):
-                raise ValueError(
-                    "If env is passed as an ODCEnvironment object, config and raw_config must both be None"
-                )
-
-        if index is not None:
             # Explicit index passed in?  Use it.
             self.index = index
             return
