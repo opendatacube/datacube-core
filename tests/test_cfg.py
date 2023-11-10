@@ -508,7 +508,7 @@ def test_get_environment(simple_config):
     from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(text=simple_config)
     with pytest.raises(ConfigException) as e:
-        cfg2 = ODCConfig.get_environment(config=cfg, raw_condif=simple_config)
+        cfg2 = ODCConfig.get_environment(config=cfg, raw_config=simple_config)
     assert "Cannot specify both" in str(e.value)
     env = ODCConfig.get_environment(config=cfg, env="default")
     assert env is cfg[None]
