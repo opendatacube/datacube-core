@@ -99,13 +99,13 @@ class Datacube(object):
             # If an explicit index is provided, all other index-creation arguments should be None.
             should_be_none: list[str] = []
             if config is not None:
-                should_be_none.append["config"]
+                should_be_none.append("config")
             if raw_config is not None:
-                should_be_none.append["raw_config"]
+                should_be_none.append("raw_config")
             if app is not None:
-                should_be_none.append["app"]
+                should_be_none.append("app")
             if env is not None:
-                should_be_none.append["env"]
+                should_be_none.append("env")
             if should_be_none:
                 raise ValueError(
                     f"When an explicit index is provided, these arguments should be None: {','.join(should_be_none)}"
