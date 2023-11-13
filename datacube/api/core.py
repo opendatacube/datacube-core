@@ -13,7 +13,7 @@ import numpy
 import xarray
 from dask import array as da
 
-from datacube.cfg import GeneralisedRawCfg, GeneralisedCfg, GeneralisedEnv, ODCConfig, ODCEnvironment
+from datacube.cfg import GeneralisedRawCfg, GeneralisedCfg, GeneralisedEnv, ODCConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
 from odc.geo import CRS, yx_, res_, resyx_
