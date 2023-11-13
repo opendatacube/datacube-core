@@ -745,7 +745,7 @@ DatasetType = Product
 
 
 @deprecat(
-    reason='This version of GridSpec has been deprecated. Please use the GridSpec class definted in odc-geo.',
+    reason='This version of GridSpec has been deprecated. Please use the GridSpec class defined in odc-geo.',
     version='1.9.0'
 )
 class GridSpec:

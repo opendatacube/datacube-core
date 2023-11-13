@@ -12,8 +12,9 @@ from unittest import mock
 import numpy
 import xarray as xr
 
-from datacube.model import DatasetType, MetadataType, Dataset, GridSpec
+from datacube.model import Product, MetadataType, Dataset
 from odc.geo import CRS
+from odc.geo.gridspec import GridSpec
 from datacube.virtual import construct_from_yaml, catalog_from_yaml, VirtualProductException
 from datacube.virtual import DEFAULT_RESOLVER, Transformation
 from datacube.virtual.impl import Datacube
@@ -77,11 +78,11 @@ def example_product(name):
     pixelquality = dict(name='pixelquality', dtype='int16', nodata=0, units='1',
                         flags_definition=flags)
 
-    result = DatasetType(example_metadata_type(),
-                         dict(name=name, description="", metadata_type='eo', metadata={}))
+    result = Product(example_metadata_type(),
+                     dict(name=name, description="", metadata_type='eo', metadata={}))
     result.grid_spec = GridSpec(crs=CRS('EPSG:3577'),
-                                tile_size=(100000., 100000.),
-                                resolution=(-25, 25))
+                                tile_shape=(4000, 4000),
+                                resolution=25)
     if '_pq_' in name:
         result.definition = {'name': name, 'measurements': [pixelquality]}
     else:
