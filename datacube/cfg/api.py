@@ -20,10 +20,10 @@ from .utils import ConfigDict, check_valid_env_name
 
 # TypeAliases for more concise type hints
 # (Unions required as typehint | operator doesn't work with string forward-references.
-GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike] | None
-GeneralisedCfg: TypeAlias = Union["ODCConfig", GeneralisedPath, None]
-GeneralisedEnv: TypeAlias = Union["ODCEnvironment", str, None]
-GeneralisedRawCfg: TypeAlias = str | ConfigDict | None
+GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike]
+GeneralisedCfg: TypeAlias = Union["ODCConfig", GeneralisedPath]
+GeneralisedEnv: TypeAlias = Union["ODCEnvironment", str]
+GeneralisedRawCfg: TypeAlias = str | ConfigDict
 
 
 class ODCConfig:
@@ -63,7 +63,7 @@ class ODCConfig:
 
     def __init__(
             self,
-            paths: GeneralisedPath = None,
+            paths: GeneralisedPath | None = None,
             raw_dict: ConfigDict | None = None,
             text: str | None = None):
         """
@@ -130,9 +130,9 @@ class ODCConfig:
 
     @classmethod
     def get_environment(cls,
-                        env: GeneralisedEnv = None,
-                        config: GeneralisedCfg = None,
-                        raw_config: GeneralisedRawCfg = None) -> "ODCEnvironment":
+                        env: GeneralisedEnv | None = None,
+                        config: GeneralisedCfg | None = None,
+                        raw_config: GeneralisedRawCfg | None = None) -> "ODCEnvironment":
         """
         Obtain an ODCConfig object from the most general possible arguments.
 

@@ -6,7 +6,6 @@ import logging
 import uuid
 import collections.abc
 from itertools import groupby
-from os import PathLike
 from typing import cast
 import datetime
 
@@ -14,7 +13,7 @@ import numpy
 import xarray
 from dask import array as da
 
-from datacube.cfg import ConfigDict, ODCConfig, ODCEnvironment
+from datacube.cfg import GeneralisedRawCfg, GeneralisedCfg, GeneralisedEnv, ODCConfig, ODCEnvironment
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
 from odc.geo import CRS, yx_, res_, resyx_
@@ -48,10 +47,10 @@ class Datacube(object):
 
     def __init__(self,
                  index: Index | None = None,
-                 config: ODCConfig | PathLike | str | list[PathLike | str] | None = None,
+                 config: GeneralisedCfg | None = None,
                  app: str | None = None,
-                 env: str | ODCEnvironment | None = None,
-                 raw_config: str | ConfigDict | None = None,
+                 env: GeneralisedEnv | None = None,
+                 raw_config: GeneralisedRawCfg | None = None,
                  validate_connection: bool = True) -> None:
         """
         Create the interface for the query and storage access.
