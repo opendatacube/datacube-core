@@ -109,6 +109,7 @@ setup(
         'ruamel.yaml',
         'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.  SqlAlchemy2 *may* work but has not been tested yet.
         'GeoAlchemy2',
+        "alembic",
         'toolz',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
         'packaging',

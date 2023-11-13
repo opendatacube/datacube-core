@@ -35,6 +35,7 @@ shapely>=2.0
 sphinx-click
 sphinx_autodoc_typehints
 sphinx_rtd_theme
+alembic
 sqlalchemy>=2.0
 toolz
 xarray>=0.9
