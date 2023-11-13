@@ -79,7 +79,7 @@ def example_product(name):
                         flags_definition=flags)
 
     result = Product(example_metadata_type(),
-                         dict(name=name, description="", metadata_type='eo', metadata={}))
+                     dict(name=name, description="", metadata_type='eo', metadata={}))
     result.grid_spec = GridSpec(crs=CRS('EPSG:3577'),
                                 tile_shape=(100000, 100000),
                                 resolution=25)
