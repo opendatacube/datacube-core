@@ -81,7 +81,7 @@ def example_product(name):
     result = Product(example_metadata_type(),
                      dict(name=name, description="", metadata_type='eo', metadata={}))
     result.grid_spec = GridSpec(crs=CRS('EPSG:3577'),
-                                tile_shape=(100000, 100000),
+                                tile_shape=(4000, 4000),
                                 resolution=25)
     if '_pq_' in name:
         result.definition = {'name': name, 'measurements': [pixelquality]}
