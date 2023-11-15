@@ -5,7 +5,6 @@ Installing and managing the Open Data Cube
 This section contains information on setting up and managing the Open Data Cube.
 
 .. admonition:: Note
-
    :class: info
 
    For people using an existing Open Data Cube, such as Digital Earth Australia, you are not required to know most of the information contained here.
@@ -31,6 +30,7 @@ This section contains information on setting up and managing the Open Data Cube.
     :caption: Configuring the ODC Database
     :maxdepth: 4
 
+    database/configuration
     database/setup
     metadata-types
     product-definitions

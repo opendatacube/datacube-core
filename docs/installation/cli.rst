@@ -12,10 +12,6 @@ The Open Data Cube offers a CLI for common administrative tasks related to the O
    :prog: datacube-search
    :show-nested:
 
-.. click:: datacube.execution.worker:main
-   :prog: datacube-worker
-   :show-nested:
-
 
 .. note::
 
