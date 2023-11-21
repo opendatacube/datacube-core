@@ -171,6 +171,7 @@ class PostGisDb(object):
 
         :return: If it was newly created.
         """
+        # TODO: Alembic
         is_new = _core.ensure_db(self._engine, with_permissions=with_permissions)
         if not is_new:
             _core.update_schema(self._engine)
@@ -249,7 +250,9 @@ class PostGisDb(object):
             finally:
                 connection.close()
 
-    def give_me_a_connection(self):
+    def _give_me_a_connection(self):
+        # A Raw connection outside of the pool, caller is responsible for closing.
+        # (Used by transaction API)
         return self._engine.connect()
 
     @classmethod

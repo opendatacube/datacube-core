@@ -165,6 +165,9 @@ def schema_is_latest(engine: Engine) -> bool:
     # ie. Does the 'archived' column exist? If so, we know the related schema was applied.
 
     # No schema changes recently. Everything is perfect.
+
+    # TODO: Implement with Alembic
+
     return True
 
 
@@ -178,6 +181,7 @@ def update_schema(engine: Engine):
     that it requires.
     """
     # TODO: implement migrations
+    # TODO: Implement with Alembic
 
 
 def _ensure_extension(conn, extension_name="POSTGIS"):

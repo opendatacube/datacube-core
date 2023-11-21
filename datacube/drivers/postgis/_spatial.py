@@ -90,6 +90,18 @@ class SpatialIndexORMRegistry:
         return orm_registry.mapped(type(f'SpatialIdx{epsg}', (SpatialIndex,), attributes))
 
 
+def is_spindex_table_name(name: str):
+    bits = name.split("_")
+    if len(bits) == 2:
+        if bits[0] == "spatial":
+            try:
+                srid = int(bits[1])
+                return srid > 0
+            except ValueError:
+                pass
+    return False
+
+
 def spindex_for_epsg(epsg: int) -> Type[SpatialIndex]:
     """Return ORM class of a SpatialIndex for EPSG/SRID - dynamically creating if necessary"""
     sir = SpatialIndexORMRegistry()
