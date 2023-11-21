@@ -151,8 +151,10 @@ class ODCConfig:
         else:
             if isinstance(config, ODCConfig):
                 cfg = config
+            elif isinstance(raw_config, str):
+                cfg = ODCConfig(paths=config, text=raw_config)
             else:
-                cfg = ODCConfig(paths=config, raw_config=raw_config)
+                cfg = ODCConfig(paths=config, raw_dict=raw_config)
             return cfg[env]
 
     def _add_alias(self, alias: str, canonical: str) -> None:
