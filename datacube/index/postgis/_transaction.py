@@ -17,7 +17,7 @@ class PostgisTransaction(AbstractTransaction):
         self._db = db
 
     def _new_connection(self) -> Any:
-        dbconn = self._db.give_me_a_connection()
+        dbconn = self._db._give_me_a_connection()
         conn = PostgisDbAPI(self._db, dbconn)
         conn.begin()
         return conn
