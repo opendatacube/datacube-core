@@ -90,14 +90,14 @@ autodoc_default_options = {
     'inherited-members': True
 }
 
-extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
-            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
+extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue %s'),
+            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR %s')}
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
-    'xarray': ('https://xarray.pydata.org/en/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'xarray': ('https://docs.xarray.dev/en/stable/', None),
 }
 
 graphviz_output_format = 'svg'
@@ -259,6 +259,10 @@ def setup(app):
     # Fix bug where code isn't being highlighted
     app.add_css_file('pygments.css')
     app.add_css_file('custom.css')
+
+    app.add_object_type('confval', 'confval',
+                        objname='configuration value',
+                        indextemplate='pair: %s; configuration value')
 
     app.connect("html-page-context", custom_page_funcs)
 
