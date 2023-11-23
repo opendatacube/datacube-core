@@ -171,9 +171,8 @@ class PostGisDb(object):
 
         :return: If it was newly created.
         """
-        # TODO: Alembic
         is_new = _core.ensure_db(self._engine, with_permissions=with_permissions)
-        if not is_new:
+        if not is_new and not _core.schema_is_latest(self._engine):
             _core.update_schema(self._engine)
 
         return is_new
