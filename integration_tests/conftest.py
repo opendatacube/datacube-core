@@ -847,6 +847,7 @@ def clirunner(datacube_env_name):
     def _run_cli(opts, catch_exceptions=False,
                  expect_success=True, cli_method=datacube.scripts.cli_app.cli,
                  skip_env=False, skip_config_paths=False,
+                 mix_stderr=True,
                  verbose_flag='-v'):
         # If raw config passed in, skip default test config
         if not skip_config_paths:
@@ -857,7 +858,7 @@ def clirunner(datacube_env_name):
             exe_opts.append(verbose_flag)
         exe_opts.extend(opts)
 
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=mix_stderr)
         result = runner.invoke(
             cli_method,
             exe_opts,

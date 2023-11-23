@@ -212,8 +212,10 @@ def update_schema(engine: Engine):
     See the `schema_is_latest()` function above: this should apply updates
     that it requires.
     """
-    # TODO: implement migrations
-    # TODO: Implement with Alembic
+    cfg = config.Config(ALEMBIC_INI_LOCATION)
+    with engine.begin() as conn:
+        cfg.attributes["connection"] = conn
+        command.upgrade(cfg, "head")
 
 
 def _ensure_extension(conn, extension_name="POSTGIS"):
