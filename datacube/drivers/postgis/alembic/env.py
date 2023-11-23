@@ -18,8 +18,11 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+#
+# Doesn't play nice with rest of ODC's management of logging.
+#
+# if config.config_file_name is not None:
+#     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -110,6 +113,12 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # An active postgis Connection:
+    connection = config.attributes.get("connection")
+    if connection:
+        run_migration_with_connection(connection)
+        return
+
     # ODC index:
     index = config.attributes.get("index")
     if index:
@@ -122,16 +131,19 @@ def run_migrations_online() -> None:
         connectable = db._engine
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            version_table_schema="odc",
-            include_schemas=True,
-            include_name=include_name,
-        )
+        run_migration_with_connection(connection)
 
-        with context.begin_transaction():
-            context.run_migrations()
+
+def run_migration_with_connection(connection):
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        version_table_schema=SCHEMA_NAME,
+        include_schemas=True,
+        include_name=include_name,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
 
 
 if context.is_offline_mode():

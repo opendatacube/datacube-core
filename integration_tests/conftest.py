@@ -48,8 +48,10 @@ NUM_TIME_SLICES = 3
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
 
-CONFIG_FILE_PATHS = [str(INTEGRATION_TESTS_DIR / 'integration.conf'),
-                     os.path.expanduser('~/.datacube_integration.conf')]
+CONFIG_FILE_PATHS = [
+    os.path.expanduser('~/.datacube_integration.conf'),
+    str(INTEGRATION_TESTS_DIR / 'integration.conf'),
+]
 
 # Configure Hypothesis to allow slower tests, because we're testing datasets
 # and disk IO rather than scalar values in memory.  Ask @Zac-HD for details.

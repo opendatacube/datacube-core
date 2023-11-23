@@ -7,11 +7,16 @@ Core SQL schema settings.
 """
 
 import logging
+import os
 
 from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.sql.ddl import DropSchema
+from alembic import command, config
+from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from alembic.runtime.environment import EnvironmentContext
 
 from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                           SCHEMA_NAME, TYPES_INIT_SQL,
@@ -31,6 +36,18 @@ SQL_NAMING_CONVENTIONS = {
     # dix: dynamic-index, those indexes created automatically based on search field configuration.
     # tix: test-index, created by hand for testing, particularly in dev.
 }
+
+SRC_CODE_ROOT = os.path.dirname( # Source code root
+    os.path.dirname( # datacube
+        os.path.dirname( # drivers
+            os.path.dirname( # postgis
+                __file__     # This file
+            )
+        )
+    )
+)
+
+ALEMBIC_INI_LOCATION = os.path.join(SRC_CODE_ROOT, "alembic.ini")
 
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
@@ -113,6 +130,10 @@ def ensure_db(engine, with_permissions=True):
             if with_permissions:
                 c.execute(text(f'set role {quoted_user}'))
             c.commit()
+            # Stamp with latest Alembic revision
+            alembic_cfg = config.Config(ALEMBIC_INI_LOCATION)
+            alembic_cfg.attributes["connection"] = c
+            command.stamp(alembic_cfg, "head")
 
         if with_permissions:
             _LOG.info('Adding role grants.')
@@ -156,19 +177,30 @@ def schema_is_latest(engine: Engine) -> bool:
 
     See the ``update_schema()`` function below for actually applying the updates.
     """
-    # In lieu of a versioned schema, we typically check by seeing if one of the objects
-    # from the change exists.
-    #
-    # Eg.
-    #     return pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
-    #
-    # ie. Does the 'archived' column exist? If so, we know the related schema was applied.
 
     # No schema changes recently. Everything is perfect.
 
-    # TODO: Implement with Alembic
+    cfg = config.Config(ALEMBIC_INI_LOCATION)
+    scriptdir = ScriptDirectory.from_config(cfg)
+    # NB this assumes a single unbranched migration branch
+    # Get Head revision from Alembic environment
+    with EnvironmentContext(cfg, scriptdir) as env_ctx:
+        latest_rev = env_ctx.get_head_revision()
+        # Get current revision from database
+        with engine.connect() as conn:
+            context = MigrationContext.configure(
+                connection=conn,
+                environment_context=env_ctx,
+                opts={"version_table_schema": "odc"}
+            )
+            current_rev = context.get_current_revision()
 
-    return True
+    # Do they match?
+    if latest_rev == current_rev:
+        return True
+    import warnings
+    warnings.warn(f"Current Alembic schema revision is {current_rev} expected {latest_rev}")
+    return False
 
 
 def update_schema(engine: Engine):
