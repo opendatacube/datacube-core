@@ -260,7 +260,7 @@ class PostGisDb(object):
         return _api.get_dataset_fields(metadata_type_definition)
 
     def __repr__(self):
-        return "PostgresDb<engine={!r}>".format(self._engine)
+        return "PostgisDb<engine={!r}>".format(self._engine)
 
 
 def handle_dynamic_token_authentication(engine: Engine,

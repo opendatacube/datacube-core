@@ -123,7 +123,7 @@ def test_readd_and_update_metadata_product_dataset_command(index, clirunner,
                                                            eo3_product_paths,
                                                            eo3_dataset_paths,
                                                            eo3_dataset_update_path):
-    clirunner(['metadata', 'add', ext_eo3_mdt_path])
+    add = clirunner(['metadata', 'add', ext_eo3_mdt_path])
     rerun_add = clirunner(['metadata', 'add', ext_eo3_mdt_path])
     assert "WARNING Metadata Type" in rerun_add.output
     assert "is already in the database" in rerun_add.output
