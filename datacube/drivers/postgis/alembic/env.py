@@ -21,7 +21,7 @@ config = context.config
 #
 # Doesn't play nice with rest of ODC's management of logging.
 #
-# if config.config_file_name is not None:
+#  if config.config_file_name is not None:
 #     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
@@ -126,7 +126,8 @@ def run_migrations_online() -> None:
     else:
         db = PostGisDb.create(
             get_odc_env(),
-            application_name="migration"
+            application_name="migration",
+            validate=False
         )
         connectable = db._engine
 

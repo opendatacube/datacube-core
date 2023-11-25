@@ -215,6 +215,7 @@ def update_schema(engine: Engine):
     cfg = config.Config(ALEMBIC_INI_LOCATION)
     with engine.begin() as conn:
         cfg.attributes["connection"] = conn
+        print("Running upgrade")
         command.upgrade(cfg, "head")
 
 
