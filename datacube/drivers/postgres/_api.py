@@ -787,7 +787,7 @@ class PostgresDbAPI(object):
         final_query = select(
             func.array_agg(func.distinct(overlapping.c.id)).label("ids"),
             *fields,
-            text("(lower(time_intersect)::timestamp, upper(time_intersect)::timestamp) as time")
+            text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
         ).select_from(
             overlapping
         ).group_by(

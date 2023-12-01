@@ -768,7 +768,7 @@ class PostgisDbAPI(object):
         query = select(
             func.array_agg(func.distinct(time_overlap.c.id)).label("ids"),
             *fields,
-            text("(lower(time_intersect)::timestamp, upper(time_intersect)::timestamp) as time")
+            text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
         ).select_from(
             time_overlap
         ).group_by(
