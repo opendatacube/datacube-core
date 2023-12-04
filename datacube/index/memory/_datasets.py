@@ -131,10 +131,11 @@ class DatasetResource(AbstractDatasetResource):
                                   product: Product,
                                   *args: Union[str, Field]
                                   ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
-        field_names: List[str] = [arg.name if isinstance(arg, Field) else arg for arg in args]
-        #   Typing note: mypy cannot handle dynamically created namedtuples
-        GroupedVals = namedtuple('search_result', field_names)  # type: ignore[misc]
-
+        """
+        Find dataset ids of a given product that have duplicates of the given set of field names.
+        Returns each set of those field values and the datasets that have them.
+        Note that this implementation does not account for slight timestamp discrepancies.
+        """
         def to_field(f: Union[str, Field]) -> Field:
             if isinstance(f, str):
                 f = product.metadata_type.dataset_fields[f]
@@ -142,6 +143,8 @@ class DatasetResource(AbstractDatasetResource):
             return f
 
         fields = [to_field(f) for f in args]
+        # Typing note: mypy cannot handle dynamically created namedtuples
+        GroupedVals = namedtuple('search_result', list(f.name for f in fields))  # type: ignore[misc]
 
         def values(ds: Dataset) -> GroupedVals:
             vals = []
@@ -149,16 +152,17 @@ class DatasetResource(AbstractDatasetResource):
                 vals.append(field.extract(ds.metadata_doc))  # type: ignore[attr-defined]
             return GroupedVals(*vals)
 
-        dups: Dict[Tuple, List[UUID]] = {}
+        dups: Dict[Tuple, set[UUID]] = {}
         for ds in self.active_by_id.values():
             if ds.product.name != product.name:
                 continue
             vals = values(ds)
             if vals in dups:
-                dups[vals].append(ds.id)
+                dups[vals].add(ds.id)
             else:
-                dups[vals] = [ds.id]
-        return list(dups.items())
+                dups[vals] = set([ds.id])  # avoid duplicate entries
+        # only return entries with more than one dataset
+        return list({k: v for k, v in dups.items() if len(v) > 1})
 
     def can_update(self,
                    dataset: Dataset,
