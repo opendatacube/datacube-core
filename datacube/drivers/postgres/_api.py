@@ -725,10 +725,13 @@ class PostgresDbAPI(object):
         return self._connection.execute(select_query)
 
     def get_duplicates(self, match_fields: Iterable[PgField], expressions: Iterable[PgExpression]) -> Iterable[Tuple]:
+        if "time" in [f.name for f in match_fields]:
+            return self.get_duplicates_with_time(match_fields, expressions)
+
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
 
         select_query = select(
-            (func.array_agg(DATASET.c.id),) + group_expressions
+            (func.array_agg(DATASET.c.id).label('ids'),) + group_expressions
         ).select_from(
             PostgresDbAPI._from_expression(DATASET, expressions, match_fields)
         ).where(
@@ -739,6 +742,61 @@ class PostgresDbAPI(object):
             func.count(DATASET.c.id) > 1
         )
         return self._connection.execute(select_query)
+
+    def get_duplicates_with_time(
+            self, match_fields: Iterable[PgField], expressions: Iterable[PgExpression]
+    ) -> Iterable[Tuple]:
+        """
+        If considering time when searching for duplicates, we need to grant some amount of leniency
+        in case timestamps are not exactly the same.
+        From the set of datasets that are active and have the correct product (candidates),
+        find all those whose extended timestamp range overlap (overlapping),
+        then group them by the other fields.
+        """
+        fields = []
+        for f in match_fields:
+            if f.name == "time":
+                time_field = f.expression_with_leniency
+            else:
+                fields.append(f.alchemy_expression)
+
+        candidates_table = select(
+            DATASET.c.id,
+            time_field.label('time'),
+            *fields
+        ).select_from(
+            PostgresDbAPI._from_expression(DATASET, expressions, match_fields)
+        ).where(
+            and_(DATASET.c.archived == None, *(PostgresDbAPI._alchemify_expressions(expressions)))
+        )
+
+        t1 = candidates_table.alias("t1")
+        t2 = candidates_table.alias("t2")
+
+        overlapping = select(
+            t1.c.id,
+            text("t1.time * t2.time as time_intersect"),
+            *fields
+        ).select_from(
+            t1.join(
+                t2,
+                and_(t1.c.time.overlaps(t2.c.time), t1.c.id != t2.c.id)
+            )
+        )
+
+        final_query = select(
+            func.array_agg(func.distinct(overlapping.c.id)).label("ids"),
+            *fields,
+            text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
+        ).select_from(
+            overlapping
+        ).group_by(
+            *fields, text("time_intersect")
+        ).having(
+            func.count(overlapping.c.id) > 1
+        )
+
+        return self._connection.execute(final_query)
 
     def count_datasets(self, expressions):
         """

@@ -706,10 +706,13 @@ class PostgisDbAPI(object):
 
     def get_duplicates(self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]) -> Iterable[tuple]:
         # TODO
+        if "time" in [f.name for f in match_fields]:
+            return self.get_duplicates_with_time(match_fields, expressions)
+
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
         join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
 
-        cols = (func.array_agg(Dataset.id),) + group_expressions
+        cols = (func.array_agg(Dataset.id).label('ids'),) + group_expressions
         query = select(
             *cols
         ).select_from(Dataset)
@@ -722,6 +725,56 @@ class PostgisDbAPI(object):
             *group_expressions
         ).having(
             func.count(Dataset.id) > 1
+        )
+        return self._connection.execute(query)
+
+    def get_duplicates_with_time(
+            self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]
+    ) -> Iterable[tuple]:
+        fields = []
+        for f in match_fields:
+            if f.name == "time":
+                time_field = f.expression_with_leniency
+            else:
+                fields.append(f.alchemy_expression)
+
+        join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
+
+        cols = [Dataset.id, time_field.label('time'), *fields]
+        query = select(
+            *cols
+        ).select_from(Dataset)
+        for joins in join_tables:
+            query = query.join(*joins)
+
+        query = query.where(
+            and_(Dataset.archived == None, *(PostgisDbAPI._alchemify_expressions(expressions)))
+        )
+
+        t1 = query.alias("t1")
+        t2 = query.alias("t2")
+
+        time_overlap = select(
+            t1.c.id,
+            text("t1.time * t2.time as time_intersect"),
+            *fields
+        ).select_from(
+            t1.join(
+                t2,
+                and_(t1.c.time.overlaps(t2.c.time), t1.c.id != t2.c.id)
+            )
+        )
+
+        query = select(
+            func.array_agg(func.distinct(time_overlap.c.id)).label("ids"),
+            *fields,
+            text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
+        ).select_from(
+            time_overlap
+        ).group_by(
+            *fields, text("time_intersect")
+        ).having(
+            func.count(time_overlap.c.id) > 1
         )
         return self._connection.execute(query)
 

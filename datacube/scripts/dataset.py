@@ -668,3 +668,45 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
         click.echo(f'{len(datasets_for_archive)} datasets not purged (dry run)')
 
     click.echo('Completed dataset purge.')
+
+
+@dataset_cmd.command('find-duplicates', help="Search for duplicate indexed datasets")
+@click.option('--product', '-p', 'product_names',
+              help=("Only search within product(s) specified with this option. "
+                    "You can supply several by repeating this option with a new product name."),
+              multiple=True)
+@click.argument('fields', nargs=-1)
+@ui.pass_index()
+def find_duplicates(index: Index, product_names, fields):
+    """
+    Find dataset ids of two or more active datasets that have duplicate values in the specified fields.
+    If products are specified, search only within those products. Otherwise, search within any products that
+    have the fields.
+    """
+    if not fields:
+        click.echo('Error: must provide field names to match on\n')
+        sys.exit(1)
+
+    # if no products were specified, use whichever ones have the specified search fields
+    # if products were specified, check they all have the required fields
+    products_with_fields = list(index.products.get_with_fields(fields))
+    if not products_with_fields:
+        click.echo(f'Error: no products found with fields {", ".join(fields)}\n')
+        sys.exit(1)
+    if not list(product_names):
+        products = products_with_fields
+    else:
+        products = [index.products.get_by_name(name) for name in product_names]
+        products_without_fields = set(products).difference(set(products_with_fields))
+        if len(products_without_fields):
+            click.echo(f'Error: specified products {", ".join(p.name for p in products_without_fields)} '
+                       'do not contain all required fields\n')
+            sys.exit(1)
+
+    dupes = []
+    for product in products:
+        dupes.extend(list(index.datasets.search_product_duplicates(product, *fields)))
+    if len(dupes):
+        print(dupes)
+    else:
+        click.echo('No potential duplicates found.')

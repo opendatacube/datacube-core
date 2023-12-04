@@ -7,6 +7,7 @@ What's New
 
 v1.8.next
 =========
+- Add dataset cli tool ``find-duplicates`` to identify duplicate indexed datasets (:pull:`1517`)
 
 v1.8.17 (8th November 2023)
 ===========================
