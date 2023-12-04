@@ -270,15 +270,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return f
 
         group_fields: List[fields.Field] = [load_field(f) for f in args]
-        result_type = namedtuple('search_result', list(f.name for f in group_fields))  # type: ignore
-
         expressions = [product.metadata_type.dataset_fields.get('product') == product.name]
 
         with self._db_connection() as connection:
             for record in connection.get_duplicates(group_fields, expressions):
-                dataset_ids = set(record[0])
-                grouped_fields = tuple(record[1:])
-                yield result_type(*grouped_fields), dataset_ids
+                as_dict = dict(record)
+                if 'ids' in as_dict.keys():
+                    ids = as_dict.pop('ids')
+                    yield namedtuple('search_result', as_dict.keys())(**as_dict), set(ids)
 
     def can_update(self, dataset, updates_allowed=None):
         """
