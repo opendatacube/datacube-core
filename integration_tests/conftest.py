@@ -440,8 +440,14 @@ def datacube_env_name_pair(request) -> tuple[str, str]:
 
 
 @pytest.fixture
-def odc_config() -> ODCConfig:
-    return ODCConfig(paths=CONFIG_FILE_PATHS)
+def local_config(datacube_env_name):
+    """Provides a :class:`LocalConfig` configured with suitable config file paths.
+
+    .. seealso::
+
+        The :func:`integration_config_paths` fixture sets up the config files.
+    """
+    return LocalConfig.find(CONFIG_FILE_PATHS, env=datacube_env_name)
 
 
 @pytest.fixture
