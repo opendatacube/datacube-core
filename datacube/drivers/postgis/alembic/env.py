@@ -12,7 +12,11 @@ from datacube.drivers.postgis.sql import SCHEMA_NAME
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-config = context.config
+try:
+    config = context.config
+except AttributeError:
+    # Occurs when being scanned for doctests.
+    config = None
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -145,7 +149,10 @@ def run_migration_with_connection(connection):
         context.run_migrations()
 
 
-if context.is_offline_mode():
+if config is None:
+    # See comment above
+    pass
+elif context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
