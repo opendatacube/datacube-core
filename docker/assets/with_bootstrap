@@ -70,8 +70,11 @@ index_driver: postgis
 db_hostname:
 index_driver: no_such_driver
 
-[null_driver]
+[nulldriver]
 index_driver: null
+
+[localmemory]
+index_driver: memory
 
 EOL
 
