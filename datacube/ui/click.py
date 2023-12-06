@@ -160,7 +160,7 @@ logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile
 config_option = click.option('--config', '--config-file', '-C',
                              multiple=True, default=[], callback=_set_config, expose_value=False,
                              help="A path to a possible configuration path. Multiple can be provided, but only "
-                                  "the first one that can be read will be used.")
+                                  "the first that can be read will be used.")
 
 #: pylint: disable=invalid-name
 raw_config_option = click.option('--raw-config', '--config-text', '-R',
