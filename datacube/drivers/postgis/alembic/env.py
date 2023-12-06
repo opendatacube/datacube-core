@@ -2,8 +2,6 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from logging.config import fileConfig
-
 from alembic import context
 
 from datacube.cfg import ODCConfig

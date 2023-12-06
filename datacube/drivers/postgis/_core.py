@@ -37,11 +37,11 @@ SQL_NAMING_CONVENTIONS = {
     # tix: test-index, created by hand for testing, particularly in dev.
 }
 
-SRC_CODE_ROOT = os.path.dirname( # Source code root
-    os.path.dirname( # datacube
-        os.path.dirname( # drivers
-            os.path.dirname( # postgis
-                __file__     # This file
+SRC_CODE_ROOT = os.path.dirname(  # Source code root
+    os.path.dirname(              # datacube
+        os.path.dirname(          # drivers
+            os.path.dirname(      # postgis
+                __file__          # This file
             )
         )
     )
