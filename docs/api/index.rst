@@ -17,7 +17,6 @@ The following pages provide a full API reference for the ``datacube`` python lib
     core-classes/metadataType
     core-classes/range
     core-classes/query
-    grid-processing/tile
 
 
 .. toctree::
@@ -52,4 +51,3 @@ The following pages provide a full API reference for the ``datacube`` python lib
     Amazon Web Services (AWS) <utilities/aws>
     Writing GeoTIFFs <utilities/cogs>
     utilities/dask
-    grid-processing/gridWorkflow

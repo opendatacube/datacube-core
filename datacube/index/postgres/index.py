@@ -4,7 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
+from typing import Iterable
 
+from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
+from datacube.cfg.api import ODCEnvironment
 from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
 from datacube.index.postgres._transaction import PostgresTransaction
 from datacube.index.postgres._datasets import DatasetResource  # type: ignore
@@ -45,14 +48,18 @@ class Index(AbstractIndex):
 
     supports_transactions = True
 
-    def __init__(self, db: PostgresDb) -> None:
+    def __init__(self, db: PostgresDb, env: ODCEnvironment) -> None:
         self._db = db
-
+        self._env = env
         self._users = UserResource(db, self)
         self._metadata_types = MetadataTypeResource(db, self)
         self._products = ProductResource(db, self)
         self._lineage = LineageResource(db, self)
         self._datasets = DatasetResource(db, self)
+
+    @property
+    def environment(self) -> ODCEnvironment:
+        return self._env
 
     @property
     def users(self) -> UserResource:
@@ -79,10 +86,13 @@ class Index(AbstractIndex):
         return str(self._db.url)
 
     @classmethod
-    def from_config(cls, config, application_name=None, validate_connection=True):
-        db = PostgresDb.from_config(config, application_name=application_name,
+    def from_config(cls,
+                    config_env: ODCEnvironment,
+                    application_name: str | None = None,
+                    validate_connection: bool = True):
+        db = PostgresDb.from_config(config_env, application_name=application_name,
                                     validate_connection=validate_connection)
-        return cls(db)
+        return cls(db, config_env)
 
     @classmethod
     def get_dataset_fields(cls, doc):
@@ -103,7 +113,7 @@ class Index(AbstractIndex):
         Close any idle connections database connections.
 
         This is good practice if you are keeping the Index instance in scope
-        but wont be using it for a while.
+        but won't be using it for a while.
 
         (Connections are normally closed automatically when this object is deleted: ie. no references exist)
         """
@@ -162,11 +172,13 @@ class Index(AbstractIndex):
 
 
 class DefaultIndexDriver(AbstractIndexDriver):
-    aliases = ['postgres']
+    aliases = ['postgres', 'legacy']
 
     @staticmethod
-    def connect_to_index(config, application_name=None, validate_connection=True):
-        return Index.from_config(config, application_name, validate_connection)
+    def connect_to_index(config_env: ODCEnvironment,
+                         application_name: str | None = None,
+                         validate_connection: bool = True):
+        return Index.from_config(config_env, application_name, validate_connection)
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:
@@ -176,6 +188,10 @@ class DefaultIndexDriver(AbstractIndexDriver):
         MetadataType.validate(definition)  # type: ignore
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))
+
+    @staticmethod
+    def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
+        return config_options_for_psql_driver(env)
 
 
 def index_driver_init():

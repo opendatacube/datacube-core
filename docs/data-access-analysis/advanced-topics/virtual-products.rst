@@ -215,7 +215,7 @@ This combinator enables performing transformations to raster data in their nativ
 rasters to a common grid.
 
 Transform (Data modifying)
--------------------------
+--------------------------
 
 This node applies an on-the-fly data transformation on the loaded data. The recipe
 for a ``transform`` has the form:

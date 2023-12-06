@@ -7,6 +7,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
+from datacube.cfg.opt import config_options_for_psql_driver
 from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
 from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore
@@ -61,18 +63,23 @@ class Index(AbstractIndex):
     # Postgis supports per-CRS spatial indexes
     supports_spatial_indexes = True
 
-    def __init__(self, db: PostGisDb) -> None:
+    def __init__(self, db: PostGisDb, env: ODCEnvironment) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
         _LOG.warning("""WARNING: The POSTGIS index driver implementation is considered EXPERIMENTAL.
 WARNING:
 WARNING: Database schema and internal APIs may change significantly between releases. Use at your own risk.""")
         self._db = db
+        self._env = env
 
         self._users = UserResource(db, self)
         self._metadata_types = MetadataTypeResource(db, self)
         self._products = ProductResource(db, self)
         self._lineage = LineageResource(db, self)
         self._datasets = DatasetResource(db, self)
+
+    @property
+    def environment(self) -> ODCEnvironment:
+        return self._env
 
     @property
     def users(self) -> UserResource:
@@ -99,10 +106,13 @@ WARNING: Database schema and internal APIs may change significantly between rele
         return str(self._db.url)
 
     @classmethod
-    def from_config(cls, config, application_name=None, validate_connection=True):
-        db = PostGisDb.from_config(config, application_name=application_name,
+    def from_config(cls,
+                    config_env: ODCEnvironment,
+                    application_name: str | None = None,
+                    validate_connection: bool = True):
+        db = PostGisDb.from_config(config_env, application_name=application_name,
                                    validate_connection=validate_connection)
-        return cls(db)
+        return cls(db, config_env)
 
     @classmethod
     def get_dataset_fields(cls, doc):
@@ -205,8 +215,10 @@ WARNING: Database schema and internal APIs may change significantly between rele
 
 class DefaultIndexDriver(AbstractIndexDriver):
     @staticmethod
-    def connect_to_index(config, application_name=None, validate_connection=True):
-        return Index.from_config(config, application_name, validate_connection)
+    def connect_to_index(config_env: ODCEnvironment,
+                         application_name: str | None = None,
+                         validate_connection: bool = True):
+        return Index.from_config(config_env, application_name, validate_connection)
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:
@@ -217,6 +229,10 @@ class DefaultIndexDriver(AbstractIndexDriver):
         MetadataType.validate(definition)  # type: ignore
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))
+
+    @staticmethod
+    def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
+        return config_options_for_psql_driver(env)
 
 
 def index_driver_init():

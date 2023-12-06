@@ -14,10 +14,9 @@ Postgres connection and setup
 """
 import json
 import logging
-import os
 import re
 from contextlib import contextmanager
-from typing import Callable, Optional, Union
+from typing import Callable, Union
 
 from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
@@ -29,21 +28,11 @@ from datacube.utils import jsonify_document
 
 from . import _api
 from . import _core
+from ...cfg import ODCEnvironment, psql_url_from_config
 
-_LIB_ID = 'agdc-' + str(datacube.__version__)
+_LIB_ID = 'odc-' + str(datacube.__version__)
 
 _LOG = logging.getLogger(__name__)
-
-try:
-    import pwd
-
-    DEFAULT_DB_USER: Optional[str] = pwd.getpwuid(os.geteuid()).pw_name
-except (ImportError, KeyError):
-    # No default on Windows and some other systems
-    DEFAULT_DB_USER = None
-DEFAULT_DB_PORT = 5432
-DEFAULT_IAM_AUTH = False
-DEFAULT_IAM_TIMEOUT = 600
 
 
 class PostgresDb(object):
@@ -69,40 +58,25 @@ class PostgresDb(object):
         self._engine = engine
 
     @classmethod
-    def from_config(cls, config, application_name=None, validate_connection=True):
+    def from_config(cls,
+                    config_env: ODCEnvironment,
+                    application_name: str | None = None,
+                    validate_connection: bool = True):
         app_name = cls._expand_app_name(application_name)
 
-        return PostgresDb.create(
-            config['db_hostname'],
-            config['db_database'],
-            config.get('db_username', DEFAULT_DB_USER),
-            config.get('db_password', None),
-            config.get('db_port', DEFAULT_DB_PORT),
-            application_name=app_name,
-            validate=validate_connection,
-            iam_rds_auth=bool(config.get("db_iam_authentication", DEFAULT_IAM_AUTH)),
-            iam_rds_timeout=int(config.get("db_iam_timeout", DEFAULT_IAM_TIMEOUT)),
-            pool_timeout=int(config.get('db_connection_timeout', 60)),
-            # pass config?
-        )
+        return PostgresDb.create(config_env, application_name=app_name, validate=validate_connection)
 
     @classmethod
-    def create(cls, hostname, database, username=None, password=None, port=None,
-               application_name=None, validate=True,
-               iam_rds_auth=False, iam_rds_timeout=600,
-               # pass config?
-               pool_timeout=60):
-        mk_url = getattr(EngineUrl, 'create', EngineUrl)
-        engine = cls._create_engine(
-            mk_url(
-                'postgresql',
-                host=hostname, database=database, port=port,
-                username=username, password=password,
-            ),
-            application_name=application_name,
-            iam_rds_auth=iam_rds_auth,
-            iam_rds_timeout=iam_rds_timeout,
-            pool_timeout=pool_timeout)
+    def create(cls, config_env: ODCEnvironment, application_name: str | None = None, validate: bool = True):
+        url = psql_url_from_config(config_env)
+        kwargs = {
+            "application_name": application_name,
+            "iam_rds_auth": config_env.db_iam_authentication,
+            "pool_timeout": config_env.db_connection_timeout,
+        }
+        if config_env.db_iam_authentication:
+            kwargs["iam_rds_timeout"] = config_env.db_iam_timeout
+        engine = cls._create_engine(url, **kwargs)
         if validate:
             if not _core.database_exists(engine):
                 raise IndexSetupError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
@@ -145,13 +119,6 @@ class PostgresDb(object):
     def url(self) -> EngineUrl:
         return self._engine.url
 
-    @staticmethod
-    def get_db_username(config):
-        try:
-            return config['db_username']
-        except KeyError:
-            return DEFAULT_DB_USER
-
     def close(self):
         """
         Close any idle connections in the pool.
@@ -171,13 +138,13 @@ class PostgresDb(object):
     def _expand_app_name(cls, application_name):
         """
         >>> PostgresDb._expand_app_name(None) #doctest: +ELLIPSIS
-        'agdc-...'
+        'odc-...'
         >>> PostgresDb._expand_app_name('') #doctest: +ELLIPSIS
-        'agdc-...'
+        'odc-...'
         >>> PostgresDb._expand_app_name('cli') #doctest: +ELLIPSIS
-        'cli agdc-...'
+        'cli odc-...'
         >>> PostgresDb._expand_app_name('a b.c/d')
-        'a-b-c-d agdc-...'
+        'a-b-c-d odc-...'
         >>> PostgresDb._expand_app_name(5)
         Traceback (most recent call last):
         ...

@@ -6,14 +6,14 @@ import logging
 import uuid
 import collections.abc
 from itertools import groupby
-from typing import Set, Union, Optional, Dict, Tuple, cast
+from typing import cast
 import datetime
 
 import numpy
 import xarray
 from dask import array as da
 
-from datacube.config import LocalConfig
+from datacube.cfg import GeneralisedRawCfg, GeneralisedCfg, GeneralisedEnv, ODCConfig
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
 from odc.geo import CRS, yx_, res_, resyx_
@@ -25,7 +25,7 @@ from datacube.model import ExtraDimensions
 from datacube.model.utils import xr_apply
 
 from .query import Query, query_group_by, query_geopolygon
-from ..index import index_connect
+from ..index import index_connect, Index
 from ..drivers import new_datasource
 
 _LOG = logging.getLogger(__name__)
@@ -46,53 +46,79 @@ class Datacube(object):
     """
 
     def __init__(self,
-                 index=None,
-                 config=None,
-                 app=None,
-                 env=None,
-                 validate_connection=True):
+                 index: Index | None = None,
+                 config: GeneralisedCfg | None = None,
+                 app: str | None = None,
+                 env: GeneralisedEnv | None = None,
+                 raw_config: GeneralisedRawCfg | None = None,
+                 validate_connection: bool = True) -> None:
         """
         Create the interface for the query and storage access.
 
-        If no index or config is given, the default configuration is used for database connection.
+        :param Index index: The database index to use. If provided, config, app, env and raw_config should all be None.
 
-        :param Index index: The database index to use.
-        :type index: :py:class:`datacube.index.Index` or None.
+        :type index: :py:class:`datacube.index.Index` or None.  The index to use.
 
-        :param Union[LocalConfig|str] config: A config object or a path to a config file that defines the connection.
+        :param config: One of:
+            - None (Use provided ODCEnvironment or Index, or perform default config loading.)
+            - An ODCConfig object
+            - A file system path pointing to the location of the config file.
+            - A list of file system paths to search for config files. The first readable file found will be used.
+            If an index or an explicit ODCEnvironment is supplied, config and raw_config should be None.
 
-            If an index is supplied, config is ignored.
         :param str app: A short, alphanumeric name to identify this application.
 
             The application name is used to track down problems with database queries, so it is strongly
-            advised that be used.  Required if an index is not supplied, otherwise ignored.
+            advised that be used.  Should be None if an index is supplied.
 
-        :param str env: Name of the datacube environment to use.
-            ie. the section name in any config files. Defaults to 'datacube' for backwards
-            compatibility with old config files.
+        :param str env: The datacube environment to use.
+            Either an ODCEnvironment object, or a section name in the loaded config file.
+
+            Defaults to 'default'. Falls back to 'datacube' with a deprecation warning if config file does not
+            contain a 'default' section.
 
             Allows you to have multiple datacube instances in one configuration, specified on load,
             eg. 'dev', 'test' or 'landsat', 'modis' etc.
 
-        :param bool validate_connection: Should we check that the database connection is available and valid
+            If env is an ODCEnvironment object, config and index should both None.
+
+        :param raw_config: Explicit configuration to use.  Either as a string (serialised in ini or yaml format) or
+            a dictionary (deserialised).  If provided, config should be None.
+
+        :param bool validate_connection: Should we check that the database connection is available and valid.
+            Defaults to True. Ignored if index is passed.
 
         :return: Datacube object
 
         """
 
-        def normalise_config(config):
-            if config is None:
-                return LocalConfig.find(env=env)
-            if isinstance(config, str):
-                return LocalConfig.find([config], env=env)
-            return config
+        # Validate arguments
 
-        if index is None:
-            index = index_connect(normalise_config(config),
-                                  application_name=app,
-                                  validate_connection=validate_connection)
+        if index is not None:
+            # If an explicit index is provided, all other index-creation arguments should be None.
+            should_be_none: list[str] = []
+            if config is not None:
+                should_be_none.append("config")
+            if raw_config is not None:
+                should_be_none.append("raw_config")
+            if app is not None:
+                should_be_none.append("app")
+            if env is not None:
+                should_be_none.append("env")
+            if should_be_none:
+                raise ValueError(
+                    f"When an explicit index is provided, these arguments should be None: {','.join(should_be_none)}"
+                )
+            # Explicit index passed in?  Use it.
+            self.index = index
+            return
 
-        self.index = index
+        # Obtain an ODCEnvironment object:
+        cfg_env = ODCConfig.get_environment(env=env, config=config, raw_config=raw_config)
+
+        self.index = index_connect(cfg_env,
+                                   application_name=app,
+                                   validate_connection=validate_connection)
 
     def list_products(self, with_pandas=True, dataset_count=False):
         """
@@ -1000,15 +1026,15 @@ def get_bounds(datasets, crs):
 
 def _calculate_chunk_sizes(sources: xarray.DataArray,
                            geobox: GeoBox,
-                           dask_chunks: Dict[str, Union[str, int]],
-                           extra_dims: Optional[ExtraDimensions] = None):
-    extra_dim_names: Tuple[str, ...] = ()
-    extra_dim_shapes: Tuple[int, ...] = ()
+                           dask_chunks: dict[str, str | int],
+                           extra_dims: ExtraDimensions | None = None):
+    extra_dim_names: tuple[str, ...] = ()
+    extra_dim_shapes: tuple[int, ...] = ()
     if extra_dims is not None:
         extra_dim_names, extra_dim_shapes = extra_dims.chunk_size()
 
     valid_keys = sources.dims + extra_dim_names + geobox.dimensions
-    bad_keys = cast(Set[str], set(dask_chunks)) - cast(Set[str], set(valid_keys))
+    bad_keys = cast(set[str], set(dask_chunks)) - cast(set[str], set(valid_keys))
     if bad_keys:
         raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 
@@ -1019,7 +1045,7 @@ def _calculate_chunk_sizes(sources: xarray.DataArray,
     chunk_defaults = dict([(dim, 1) for dim in sources.dims] + [(dim, 1) for dim in extra_dim_names]
                           + [(dim, -1) for dim in geobox.dimensions])
 
-    def _resolve(k, v: Optional[Union[str, int]]) -> int:
+    def _resolve(k, v: str | int | None) -> int:
         if v is None or v == "auto":
             v = _resolve(k, chunk_defaults[k])
 
@@ -1064,9 +1090,9 @@ def _make_dask_array(chunked_srcs,
     # bottom right corner
     #  W R
     #  B BR
-    empties = {}  # type Dict[Tuple[int,int], str]
+    empties: dict[tuple[int, int], str] = {}
 
-    def _mk_empty(shape: Tuple[int, ...]) -> str:
+    def _mk_empty(shape: tuple[int, ...]) -> str:
         name = empties.get(shape, None)
         if name is not None:
             return name

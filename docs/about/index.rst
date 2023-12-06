@@ -3,9 +3,9 @@ About
 *****
 
 .. toctree::
-    :caption: About
+   :caption: About
 
-    whats_new
-    glossary
-    licence
-    release_process
+   whats_new
+   glossary
+   license
+   release_process

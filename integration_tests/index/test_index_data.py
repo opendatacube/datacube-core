@@ -189,7 +189,7 @@ def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner):
     clirunner(['dataset', 'purge', str(dsid)], expect_success=False)
 
 
-def test_purge_all_datasets_cli(index, local_config, ls8_eo3_dataset, clirunner):
+def test_purge_all_datasets_cli(index, cfg_env, ls8_eo3_dataset, clirunner):
     product = ls8_eo3_dataset.product.id
     dsid = ls8_eo3_dataset.id
 
@@ -213,7 +213,7 @@ def test_purge_all_datasets_cli(index, local_config, ls8_eo3_dataset, clirunner)
 
 
 def test_index_duplicate_dataset(index: Index,
-                                 local_config,
+                                 cfg_env,
                                  ls8_eo3_dataset) -> None:
     product = ls8_eo3_dataset.product
     dsid = ls8_eo3_dataset.id

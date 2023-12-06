@@ -14,13 +14,11 @@ Please refer to the `PostgreSQL <https://www.postgresql.org>`_ documentation on 
 Create Database
 ===============
 
-If you have existing Postgres authentication:
-::
+If you have existing Postgres authentication::
 
     createdb datacube
 
-or specify connection details manually:
-::
+or specify connection details manually::
 
     createdb -h <hostname> -U <username> datacube
 
@@ -48,7 +46,7 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
 
     # A blank host will use a local socket. Specify a hostname (such as localhost) to use TCP.
     db_hostname:
-    
+
     # Port is optional. The default port is 5432.
     # db_port:
 
@@ -82,7 +80,7 @@ Alternately, you can configure the ODC connection to Postgres using environment 
     DB_DATABASE
 
 To configure a database as a single connection url instead of individual environment variables::
-    
+
     export DATACUBE_DB_URL=postgresql://[username]:[password]@[hostname]:[port]/[database]
 
 Alternatively, for password-less access to a database on localhost::
@@ -107,5 +105,4 @@ The ``datacube system init`` tool can create and populate the Data Cube database
     datacube -v system init
 
 .. click:: datacube.scripts.system:database_init
-
    :prog: datacube system

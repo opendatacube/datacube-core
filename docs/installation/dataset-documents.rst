@@ -187,7 +187,7 @@ Note that this dataset metadata document:
 .. _dataset-metadata-doc-time-stacked-netcdf:
 
 Time-stacked NetCDF files
--------------------
+-------------------------
 
 It is possible to add NetCDF files with multiple time slices to the Open Data Cube index.
 The time slice index can be specified by adding a fragment `#part=<int>` to the `path` of a band starting from 0.

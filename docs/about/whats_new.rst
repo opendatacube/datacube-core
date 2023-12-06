@@ -24,6 +24,7 @@ v1.9.next
 - Cleanup and formalise spatial index API and expose in CLI (:pull:`1481`)
 - Increase minimum Python version to 3.10 (:pull:`1509`)
 - Virtual product tests using odc-geo GridSpec (:pull:`1512`)
+- New Configuration API, as per ODC-EP10 (:pull:`1505`)
 
 
 v1.8.next

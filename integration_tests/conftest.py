@@ -29,7 +29,7 @@ from datacube.index.abstract import default_metadata_type_docs
 from integration_tests.utils import _make_geotiffs, _make_ls5_scene_datasets, load_yaml_file, \
     GEOTIFF, load_test_products
 
-from datacube.config import LocalConfig
+from datacube.cfg import ODCConfig, ODCEnvironment, psql_url_from_config
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgis import PostGisDb
 from datacube.model import LineageTree, LineageDirection
@@ -398,7 +398,7 @@ def ga_s2am_ard3_interim(index, eo3_sentinel_metadata_type, ga_s2am_ard_3_produc
 @pytest.fixture
 def mem_index_fresh(in_memory_config):
     from datacube import Datacube
-    with Datacube(config=in_memory_config) as dc:
+    with Datacube(env=in_memory_config) as dc:
         yield dc
 
 
@@ -433,49 +433,51 @@ def datacube_env_name(request):
 
 
 @pytest.fixture(params=[("datacube", "experimental"), ("experimental", "datacube")])
-def datacube_env_name_pair(request):
+def datacube_env_name_pair(request) -> tuple[str, str]:
     return request.param
 
 
 @pytest.fixture
-def local_config(datacube_env_name):
-    """Provides a :class:`LocalConfig` configured with suitable config file paths.
-
-    .. seealso::
-
-        The :func:`integration_config_paths` fixture sets up the config files.
-    """
-    return LocalConfig.find(CONFIG_FILE_PATHS, env=datacube_env_name)
+def odc_config() -> ODCConfig:
+    return ODCConfig(paths=CONFIG_FILE_PATHS)
 
 
 @pytest.fixture
-def local_config_pair(datacube_env_name_pair):
-    """Provides a pair of :class:`LocalConfig` configured with suitable config file paths.
-    """
-    return tuple(
-        LocalConfig.find(CONFIG_FILE_PATHS, env=env)
-        for env in datacube_env_name_pair
-    )
+def cfg_env(odc_config, datacube_env_name: str) -> ODCEnvironment:
+    """Provides a :class:`ODCEnvironment` configured with suitable config file paths."""
+    return odc_config[datacube_env_name]
 
 
 @pytest.fixture
-def null_config():
-    """Provides a :class:`LocalConfig` configured with null index driver
+def cfg_env_pair(odc_config: ODCConfig, datacube_env_name_pair: tuple[str, str]
+                 ) -> tuple[ODCEnvironment, ODCEnvironment]:
+    """Provides a pair of :class:`ODCEnvironment` configured with suitable config file paths.
     """
-    return LocalConfig.find(CONFIG_FILE_PATHS, env="null_driver")
+    return tuple(odc_config[env] for env in datacube_env_name_pair)
 
 
 @pytest.fixture
-def in_memory_config():
-    """Provides a :class:`LocalConfig` configured with memory index driver
+def null_config(odc_config: ODCConfig) -> ODCEnvironment:
+    """Provides a :class:`ODCEnvironment` configured with null index driver
     """
-    return LocalConfig.find(CONFIG_FILE_PATHS, env="local_memory")
+    return odc_config["nulldriver"]
 
 
-def reset_db(local_cfg, tz=None) -> Union[PostgresDb, PostGisDb]:
-    if local_cfg._env in ('datacube', 'default', 'postgres'):
+@pytest.fixture
+def in_memory_config(odc_config: ODCConfig) -> ODCEnvironment:
+    """Provides a :class:`ODCEnvironment` configured with memory index driver
+    """
+    return odc_config["localmemory"]
+
+
+def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
+    from urllib.parse import urlparse
+    url = psql_url_from_config(cfg_env)
+    url_components = urlparse(url)
+    db_name = url_components.path[1:]
+    if cfg_env._name in ('datacube', 'default', 'postgres'):
         db = PostgresDb.from_config(
-            local_cfg,
+            cfg_env,
             application_name='test-run',
             validate_connection=False
         )
@@ -484,27 +486,27 @@ def reset_db(local_cfg, tz=None) -> Union[PostgresDb, PostGisDb]:
         with db._engine.connect() as connection:
             pgres_core.drop_db(connection)
             if tz:
-                connection.execute(text('alter database %s set timezone = %r' % (local_cfg['db_database'], tz)))
+                connection.execute(text(f'alter database {db_name} set timezone = {tz!r}'))
         # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
         # and attempts to recreate them. WTF TODO FIX
         remove_postgres_dynamic_indexes()
     else:
         db = PostGisDb.from_config(
-            local_cfg,
+            cfg_env,
             application_name='test-run',
             validate_connection=False
         )
         with db._engine.connect() as connection:
             pgis_core.drop_db(connection)
             if tz:
-                connection.execute(text('alter database %s set timezone = %r' % (local_cfg['db_database'], tz)))
+                connection.execute(text(f'alter database {db_name} set timezone = {tz!r}'))
         remove_postgis_dynamic_indexes()
     return db
 
 
-def cleanup_db(local_cfg, db):
+def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb):
     with db._engine.connect() as connection:
-        if local_cfg._env in ('datacube', 'default', 'postgres'):
+        if cfg_env._name in ('datacube', 'default', 'postgres'):
             # with db.begin() as c:  # Drop SCHEMA
             pgres_core.drop_db(connection)
         else:
@@ -512,51 +514,51 @@ def cleanup_db(local_cfg, db):
     db.close()
 
 
-@pytest.fixture(params=["US/Pacific", "UTC", ])
-def uninitialised_postgres_db(local_config, request):
+@pytest.fixture(params=["US/Pacific", "UTC"])
+def uninitialised_postgres_db(cfg_env: ODCEnvironment, request) -> PostgresDb | PostGisDb:
     """
     Return a connection to an empty PostgreSQL or PostGIS database
     """
     # Setup
     timezone = request.param
-    db = reset_db(local_config, timezone)
+    db = reset_db(cfg_env, timezone)
 
     yield db
 
     # Cleanup
-    cleanup_db(local_config, db)
+    cleanup_db(cfg_env, db)
 
 
 @pytest.fixture
-def uninitialised_postgres_db_pair(local_config_pair):
+def uninitialised_postgres_db_pair(cfg_env_pair):
     """
     Return a pair connections to empty PostgreSQL or PostGIS databases
     """
-    dbs = tuple(reset_db(local_config) for local_config in local_config_pair)
+    dbs = tuple(reset_db(cfg_env) for cfg_env in cfg_env_pair)
 
     yield dbs
 
-    for local_cfg, db in zip(local_config_pair, dbs):
+    for local_cfg, db in zip(cfg_env_pair, dbs):
         cleanup_db(local_cfg, db)
 
 
 @pytest.fixture
-def index(local_config,
+def index(cfg_env,
           uninitialised_postgres_db: Union[PostGisDb, PostgresDb]):
-    index = index_connect(local_config, validate_connection=False)
+    index = index_connect(cfg_env, validate_connection=False)
     index.init_db()
     yield index
     del index
 
 
 @pytest.fixture
-def index_pair_populated_empty(local_config_pair, uninitialised_postgres_db_pair,
+def index_pair_populated_empty(cfg_env_pair, uninitialised_postgres_db_pair,
                                extended_eo3_metadata_type_doc,
                                base_eo3_product_doc, extended_eo3_product_doc, africa_s2_product_doc,
                                eo3_ls8_dataset_doc, eo3_ls8_dataset2_doc,
                                eo3_ls8_dataset3_doc, eo3_ls8_dataset4_doc,
                                eo3_wo_dataset_doc, eo3_africa_dataset_doc):
-    populated_cfg, empty_cfg = local_config_pair
+    populated_cfg, empty_cfg = cfg_env_pair
     populated_idx = index_connect(populated_cfg, validate_connection=False)
     empty_idx = index_connect(empty_cfg, validate_connection=False)
     populated_idx.init_db()
@@ -584,8 +586,8 @@ def index_pair_populated_empty(local_config_pair, uninitialised_postgres_db_pair
 
 
 @pytest.fixture
-def index_empty(local_config, uninitialised_postgres_db: Union[PostGisDb, PostgresDb]):
-    index = index_connect(local_config, validate_connection=False)
+def index_empty(cfg_env, uninitialised_postgres_db: Union[PostGisDb, PostgresDb]):
+    index = index_connect(cfg_env, validate_connection=False)
     index.init_db(with_default_types=False)
     yield index
     del index
@@ -842,9 +844,13 @@ def example_ls5_nbar_metadata_doc():
 def clirunner(datacube_env_name):
     def _run_cli(opts, catch_exceptions=False,
                  expect_success=True, cli_method=datacube.scripts.cli_app.cli,
+                 skip_env=False, skip_config_paths=False,
                  verbose_flag='-v'):
-        exe_opts = list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
-        exe_opts += ['--env', datacube_env_name]
+        # If raw config passed in, skip default test config
+        if not skip_config_paths:
+            exe_opts = list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
+        if not skip_env:
+            exe_opts += ['--env', datacube_env_name]
         if verbose_flag:
             exe_opts.append(verbose_flag)
         exe_opts.extend(opts)

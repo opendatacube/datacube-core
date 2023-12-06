@@ -5,6 +5,7 @@
 import logging
 from threading import Lock
 
+from datacube.cfg import ODCEnvironment
 from datacube.index.memory._datasets import DatasetResource, LineageResource  # type: ignore
 from datacube.index.memory._fields import get_dataset_fields
 from datacube.index.memory._metadata_types import MetadataTypeResource
@@ -26,7 +27,8 @@ class Index(AbstractIndex):
     Lightweight in-memory index driver
     """
 
-    def __init__(self) -> None:
+    def __init__(self, env: ODCEnvironment) -> None:
+        self._env = env
         self._users = UserResource()
         self._metadata_types = MetadataTypeResource()
         self._products = ProductResource(self.metadata_types)
@@ -36,6 +38,10 @@ class Index(AbstractIndex):
         with counter_lock:
             counter = counter + 1
             self._index_id = f"memory={counter}"
+
+    @property
+    def environment(self) -> ODCEnvironment:
+        return self._env
 
     @property
     def users(self) -> UserResource:
@@ -69,8 +75,8 @@ class Index(AbstractIndex):
         return UnhandledTransaction(self.index_id)
 
     @classmethod
-    def from_config(cls, config, application_name=None, validate_connection=True):
-        return cls()
+    def from_config(cls, config_env: ODCEnvironment, application_name: str = None, validate_connection: bool = True):
+        return cls(config_env)
 
     @classmethod
     def get_dataset_fields(cls, doc):
@@ -92,8 +98,8 @@ class Index(AbstractIndex):
 
 class MemoryIndexDriver(AbstractIndexDriver):
     @staticmethod
-    def connect_to_index(config, application_name=None, validate_connection=True):
-        return Index.from_config(config, application_name, validate_connection)
+    def connect_to_index(config_env: ODCEnvironment, application_name=None, validate_connection=True):
+        return Index.from_config(config_env, application_name, validate_connection)
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:

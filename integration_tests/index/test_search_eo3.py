@@ -13,8 +13,8 @@ import yaml
 from dateutil import tz
 
 import datacube.scripts.search_tool
-from datacube.config import LocalConfig
-from datacube.drivers.postgres._connections import DEFAULT_DB_USER
+from datacube.cfg import ODCEnvironment
+from datacube.cfg.opt import _DEFAULT_DB_USER
 from datacube.index import Index
 from datacube.model import Dataset
 from datacube.model import Product
@@ -352,7 +352,7 @@ def test_search_or_expressions_eo3(index: Index,
 
 
 def test_search_returning_eo3(index: Index,
-                              local_config: LocalConfig,
+                              cfg_env: ODCEnvironment,
                               ls8_eo3_dataset: Dataset,
                               ls8_eo3_dataset2: Dataset,
                               wo_eo3_dataset: Dataset) -> None:
@@ -380,7 +380,9 @@ def test_search_returning_eo3(index: Index,
     assert id_ == ls8_eo3_dataset.id
     assert document == ls8_eo3_dataset.metadata_doc
 
-    my_username = local_config.get('db_username', DEFAULT_DB_USER)
+    my_username = cfg_env.db_username
+    if not my_username:
+        my_userename = _DEFAULT_DB_USER
 
     # Mixture of document and native fields
     results = list(index.datasets.search_returning(

@@ -54,7 +54,7 @@ def test_index_drivers():
 
 def test_default_injection():
     cache = IndexDriverCache('datacube.plugins.index-no-such-prefix')
-    assert cache.drivers() == ['default', 'postgres']
+    assert cache.drivers() == ['default', 'postgres', 'legacy']
 
 
 def test_netcdf_driver_import():

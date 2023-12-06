@@ -18,8 +18,8 @@ from dateutil import tz
 from odc.geo import CRS
 from sqlalchemy.dialects.postgresql.ranges import Range as SQLARange
 
-from datacube.config import LocalConfig
-from datacube.drivers.postgres._connections import DEFAULT_DB_USER
+from datacube.cfg import ODCEnvironment
+from datacube.cfg.opt import _DEFAULT_DB_USER
 from datacube.index import Index
 from datacube.model import Dataset
 from datacube.model import Product
@@ -257,6 +257,11 @@ def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
+def test_index_env(index: Index, pseudo_ls8_dataset: Dataset) -> None:
+    assert index.environment.index_driver in ("postgres", "default")
+
+
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     datasets = index.datasets.search_by_metadata(
         {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}}
@@ -486,7 +491,7 @@ def test_search_or_expressions(index: Index,
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_returning(index: Index,
-                          local_config: LocalConfig,
+                          cfg_env: ODCEnvironment,
                           pseudo_ls8_type: Product,
                           pseudo_ls8_dataset: Dataset,
                           ls5_dataset_w_children) -> None:
@@ -516,7 +521,9 @@ def test_search_returning(index: Index,
     assert id_ == pseudo_ls8_dataset.id
     assert document == pseudo_ls8_dataset.metadata_doc
 
-    my_username = local_config.get('db_username', DEFAULT_DB_USER)
+    my_username = index.url_parts.username
+    if not my_username:
+        my_username = _DEFAULT_DB_USER
 
     # Mixture of document and native fields
     results = list(index.datasets.search_returning(

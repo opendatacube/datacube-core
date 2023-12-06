@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+
 import click
 import csv
 import sys
@@ -11,7 +12,7 @@ import yaml.resolver
 
 from collections import OrderedDict
 
-from datacube.config import LocalConfig
+from datacube.cfg import ODCEnvironment
 from datacube.utils import gen_password
 from datacube.ui import click as ui
 from datacube.ui.click import cli
@@ -100,7 +101,7 @@ def grant(index, role, users):
 @click.option('--description')
 @ui.pass_index()
 @ui.pass_config
-def create_user(config: LocalConfig, index: AbstractIndex, role: str, user: str, description: str) -> None:
+def create_user(cfg_env: ODCEnvironment, index: AbstractIndex, role: str, user: str, description: str) -> None:
     """
     Create a User
     """
@@ -108,8 +109,8 @@ def create_user(config: LocalConfig, index: AbstractIndex, role: str, user: str,
     index.users.create_user(user, password, role, description=description)
 
     click.echo('{host}:{port}:*:{username}:{password}'.format(
-        host=config.get('db_hostname', None) or 'localhost',
-        port=config.get('db_port', None),
+        host=index.url_parts.hostname or 'localhost',
+        port=index.url_parts.port,
         username=user,
         password=password
     ))

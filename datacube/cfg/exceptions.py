@@ -2,6 +2,13 @@
 #
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-if __name__ == "__main__":
-    from .config import auto_config
-    auto_config()
+"""
+Config reading/loading exceptions
+"""
+
+
+class ConfigException(Exception):
+    """
+    Exception raised in the configuration API
+    """
+    pass

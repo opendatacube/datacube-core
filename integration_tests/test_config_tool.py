@@ -7,7 +7,6 @@ Module
 """
 import logging
 import random
-import re
 from pathlib import Path
 
 import pytest
@@ -112,11 +111,7 @@ def test_error_returned_on_invalid(clirunner, index):
         assert _dataset_type_count(index) == 0, "Invalid document was added to DB"
 
 
-def test_config_check(clirunner, index, local_config):
-    """
-    :type local_config: datacube.config.LocalConfig
-    """
-
+def test_config_check(clirunner, index, cfg_env):
     # This is not a very thorough check, we just check to see that
     # it prints something vaguely related and does not error-out.
     result = clirunner(
@@ -125,17 +120,12 @@ def test_config_check(clirunner, index, local_config):
         ]
     )
 
-    host_regex = re.compile(r'.*Host:\s+{}.*'.format(local_config['db_hostname']),
-                            flags=re.DOTALL)  # Match across newlines
-    user_regex = re.compile(r'.*User:\s+{}.*'.format(local_config['db_username']),
-                            flags=re.DOTALL)
-    assert host_regex.match(result.output)
-    assert user_regex.match(result.output)
+    assert cfg_env['db_hostname'] in result.output
+    assert cfg_env['db_username'] in result.output
 
 
-def test_list_users_does_not_fail(clirunner, local_config, index):
+def test_list_users_does_not_fail(clirunner, cfg_env, index):
     """
-    :type local_config: datacube.config.LocalConfig
     """
     # We don't want to make assumptions about available users during test runs.
     # (They are host-global, not specific to the database)
@@ -148,7 +138,7 @@ def test_list_users_does_not_fail(clirunner, local_config, index):
     assert result.exit_code == 0
 
 
-def test_db_init_noop(clirunner, local_config, ls8_eo3_product):
+def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product):
     # Run on an existing database.
     result = clirunner(
         [
@@ -164,8 +154,8 @@ def test_db_init_noop(clirunner, local_config, ls8_eo3_product):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):
-    if local_config._env == "datacube":
+def test_db_init_rebuild(clirunner, cfg_env, ls5_telem_type):
+    if cfg_env._name == "datacube":
         from datacube.drivers.postgres import _dynamic
         from datacube.drivers.postgres._core import SCHEMA_NAME
     else:
@@ -177,7 +167,7 @@ def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):
     # Run on an existing database.
     result = clirunner(
         [
-            '-v', '-E', local_config._env, 'system', 'init', '--rebuild'
+            '-v', '-E', cfg_env._name, 'system', 'init', '--rebuild'
         ]
     )
     assert 'Updated.' in result.output
