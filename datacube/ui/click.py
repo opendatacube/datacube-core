@@ -148,7 +148,8 @@ def _set_config_text(ctx, param, value):
 
 #: pylint: disable=invalid-name
 version_option = click.option('--version', is_flag=True, callback=_print_version,
-                              expose_value=False, is_eager=True)
+                              expose_value=False, is_eager=True,
+                              help="Display the open data cube version number and exit.")
 #: pylint: disable=invalid-name
 verbose_option = click.option('--verbose', '-v', count=True, callback=_init_logging,
                               is_eager=True, expose_value=False, help="Use multiple times for more verbosity")
@@ -157,15 +158,18 @@ logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile
                               is_eager=True, expose_value=False, help="Specify log file")
 #: pylint: disable=invalid-name
 config_option = click.option('--config', '--config-file', '-C',
-                             multiple=True, default=[], callback=_set_config,
-                             expose_value=False)
+                             multiple=True, default=[], callback=_set_config, expose_value=False,
+                             help="A path to a possible configuration path. Multiple can be provided, but only "
+                                  "the first one that can be read will be used.")
+
 #: pylint: disable=invalid-name
 raw_config_option = click.option('--raw-config', '--config-text', '-R',
-                                 default='', callback=_set_config_text,
-                                 expose_value=False)
+                                 default='', callback=_set_config_text, expose_value=False,
+                                 help="Passing in the raw contents of the configuration file to use as a string. "
+                                      "May be in JSON, YAML or INI format.  Cannot be used with the -C/--config option")
 #: pylint: disable=invalid-name
-environment_option = click.option('--env', '-E', callback=_set_environment,
-                                  expose_value=False)
+environment_option = click.option('--env', '-E', callback=_set_environment, expose_value=False,
+                                  help="The ODC environment to use.  Defaults to 'default'.")
 #: pylint: disable=invalid-name
 log_queries_option = click.option('--log-queries', is_flag=True, callback=_log_queries,
                                   expose_value=False, help="Print database queries.")
