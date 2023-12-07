@@ -3,7 +3,6 @@
 # Copyright (c) 2015-2023 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
 
 def test_spindex_table_name():
     from datacube.drivers.postgis._spatial import is_spindex_table_name
