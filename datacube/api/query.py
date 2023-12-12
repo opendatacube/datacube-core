@@ -389,7 +389,7 @@ def solar_day(dataset: Dataset, longitude: Optional[float] = None) -> np.datetim
     :param longitude: If supplied correct timestamp for this longitude,
                       rather than mid-point of the Dataset's footprint
     """
-    utc = dataset.center_time
+    utc = dataset.center_time.astimezone(datetime.timezone.utc)
 
     if longitude is None:
         _lon = _ds_mid_longitude(dataset)
