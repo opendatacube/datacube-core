@@ -171,6 +171,13 @@ def test_solar_day():
 
     assert 'Cannot compute solar_day: dataset is missing spatial info' in str(e.value)
 
+    # Test with Non-UTC timestamp in index.
+    ds = _s(center_time=parse_time('1997-05-22 22:07:44.2270250-7:00'),
+            metadata=_s(lon=Range(begin=-136.615,
+                                  end=-134.325)))
+    assert solar_day(ds) == np.datetime64('1997-05-22', 'D')
+    assert solar_day(ds, longitude=0) == np.datetime64('1997-05-23', 'D')
+
 
 def test_solar_offset():
     from datacube.utils.geometry import point
