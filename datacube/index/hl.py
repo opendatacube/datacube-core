@@ -154,9 +154,9 @@ def dataset_resolver(index: AbstractIndex,
 
     def check_intended_eo3(ds: SimpleDocNav, product: Product) -> None:
         # warn if it looks like dataset was meant to be eo3 but is not
-        if not is_doc_eo3(ds.doc) and product.metadata_type.name.contains("eo3"):
+        if not is_doc_eo3(ds.doc) and ("eo3" in product.metadata_type.name):
             _LOG.warning(f"Dataset {ds.id} has a product with an eo3 metadata type, "
-                         "but the dataset definitiondoes not include the $schema field "
+                         "but the dataset definition does not include the $schema field "
                          "and so will not be recognised as an eo3 dataset.")
 
     def resolve_no_lineage(ds: SimpleDocNav, uri: str) -> DatasetOrError:
