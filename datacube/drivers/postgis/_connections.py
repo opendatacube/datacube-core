@@ -172,7 +172,7 @@ class PostGisDb(object):
         :return: If it was newly created.
         """
         is_new = _core.ensure_db(self._engine, with_permissions=with_permissions)
-        if not is_new:
+        if not is_new and not _core.schema_is_latest(self._engine):
             _core.update_schema(self._engine)
 
         return is_new
@@ -249,7 +249,9 @@ class PostGisDb(object):
             finally:
                 connection.close()
 
-    def give_me_a_connection(self):
+    def _give_me_a_connection(self):
+        # A Raw connection outside of the pool, caller is responsible for closing.
+        # (Used by transaction API)
         return self._engine.connect()
 
     @classmethod
@@ -257,7 +259,7 @@ class PostGisDb(object):
         return _api.get_dataset_fields(metadata_type_definition)
 
     def __repr__(self):
-        return "PostgresDb<engine={!r}>".format(self._engine)
+        return "PostgisDb<engine={!r}>".format(self._engine)
 
 
 def handle_dynamic_token_authentication(engine: Engine,

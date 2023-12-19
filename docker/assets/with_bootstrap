@@ -66,12 +66,15 @@ db_hostname:
 db_database: pgisintegration
 index_driver: postgis
 
-[no_such_driver_env]
+[nosuchdriverenv]
 db_hostname:
 index_driver: no_such_driver
 
-[null_driver]
+[nulldriver]
 index_driver: null
+
+[localmemory]
+index_driver: memory
 
 EOL
 

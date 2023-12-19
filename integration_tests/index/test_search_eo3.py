@@ -761,7 +761,7 @@ def test_cli_info_eo3(index: Index,
     # Request two, they should have separate yaml documents
     opts.append(str(ls8_eo3_dataset2.id))
 
-    result = clirunner(opts)
+    result = clirunner(opts, mix_stderr=False)
     yaml_docs = list(yaml.safe_load_all(result.output))
     assert len(yaml_docs) == 2, "Two datasets should produce two sets of info"
     assert yaml_docs[0]['id'] == str(ls8_eo3_dataset.id)

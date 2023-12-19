@@ -335,3 +335,6 @@ ALL_STATIC_TABLES = [
     DatasetSearchString.__table__, DatasetSearchNumeric.__table__,
     DatasetSearchDateTime.__table__,
 ]
+
+
+MetadataObj = MetadataType.__table__.metadata
