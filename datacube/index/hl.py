@@ -203,7 +203,7 @@ def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
         if source_tree.direction == LineageDirection.DERIVED:
             raise ValueError("source_tree cannot be a derived tree.")
         source_tree = source_tree.find_subtree(uuid_)
-    check_intended_eo3(ds, product)
+    check_intended_eo3(doc, product)
     return Dataset(product,
                    doc.doc,
                    source_tree=source_tree,
