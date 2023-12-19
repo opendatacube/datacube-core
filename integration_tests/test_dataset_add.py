@@ -7,6 +7,7 @@ import math
 import pytest
 import toolz
 import yaml
+import logging
 
 from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
@@ -14,6 +15,8 @@ from datacube.model import MetadataType
 from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files, dataset_maker
 from datacube.utils import SimpleDocNav
 from datacube.scripts.dataset import _resolve_uri
+
+logger = logging.getLogger(__name__)
 
 
 def check_skip_lineage_test(clirunner, index):
@@ -204,6 +207,29 @@ def test_dataset_add_no_id(dataset_add_configs, index_empty, clirunner):
     doc2ds = Doc2Dataset(index)
     _ds, _err = doc2ds(ds_no_id, 'file:///something')
     assert _err == 'No id defined in dataset doc'
+
+
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
+def test_dataset_eo3_no_schema(dataset_add_configs, index_empty, clirunner, caplog):
+    p = dataset_add_configs
+    index = index_empty
+    ds = load_dataset_definition(p.datasets_eo3).doc
+
+    clirunner(['metadata', 'add', p.metadata])
+    clirunner(['product', 'add', p.products])
+
+    # no warnings if eo3 dataset has $schema
+    doc2ds = Doc2Dataset(index)
+    doc2ds(ds, 'file:///something')
+    warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
+    assert len(warnings) == 0
+
+    # warn if eo3 metadata type but no $schema
+    del ds["$schema"]
+    doc2ds(ds, 'file:///something')
+    warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "will not be recognised as an eo3 dataset" in warnings[0].msg
 
 
 # Current formulation of this test relies on non-EO3 test data
