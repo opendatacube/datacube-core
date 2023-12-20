@@ -25,11 +25,20 @@ v1.9.next
 - Increase minimum Python version to 3.10 (:pull:`1509`)
 - Virtual product tests using odc-geo GridSpec (:pull:`1512`)
 - New Configuration API, as per ODC-EP10 (:pull:`1505`)
+- Alembic migrations for postgis driver (:pull:`1520`)
 
 
 v1.8.next
 =========
+- Add dataset cli tool ``find-duplicates`` to identify duplicate indexed datasets (:pull:`1517`)
+- Make solar_day() timezone aware (:pull:`1521`)
+- Warn if non-eo3 dataset has eo3 metadata type (:pull:`1523`)
+
+v1.8.17 (8th November 2023)
+===========================
 - Fix schema creation with postgres driver when initialising system with ``--no-init-users`` (:pull:`1504`)
+- Switch to new jsonschema 'referencing' API and repin jsonschema to >=4.18 (:pull:`1477`)
+- Update whats_new.rst for release (:pull:`1510`)
 
 v1.8.16 (17th October 2023)
 ===========================

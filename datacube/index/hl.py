@@ -5,6 +5,8 @@
 """
 High level indexing operations/utilities
 """
+import logging
+
 import json
 import toolz
 from uuid import UUID
@@ -17,6 +19,8 @@ from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, fla
 from datacube.utils.changes import get_doc_changes
 from datacube.model import LineageDirection
 from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo  # type: ignore[attr-defined]
+
+_LOG = logging.getLogger(__name__)
 
 
 class ProductRule:
@@ -145,6 +149,14 @@ DatasetOrError = Union[
 ]
 
 
+def check_intended_eo3(ds: SimpleDocNav, product: Product) -> None:
+    # warn if it looks like dataset was meant to be eo3 but is not
+    if not is_doc_eo3(ds.doc) and ("eo3" in product.metadata_type.name):
+        _LOG.warning(f"Dataset {ds.id} has a product with an eo3 metadata type, "
+                     "but the dataset definition does not include the $schema field "
+                     "and so will not be recognised as an eo3 dataset.")
+
+
 def resolve_no_lineage(ds: SimpleDocNav,
                        uri: str,
                        matcher: ProductMatcher,
@@ -156,6 +168,7 @@ def resolve_no_lineage(ds: SimpleDocNav,
         product = matcher(doc)
     except BadMatch as e:
         return None, e
+    check_intended_eo3(ds, product)
     return Dataset(product, doc, uris=[uri], sources={}), None
 
 
@@ -190,6 +203,7 @@ def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
         if source_tree.direction == LineageDirection.DERIVED:
             raise ValueError("source_tree cannot be a derived tree.")
         source_tree = source_tree.find_subtree(uuid_)
+    check_intended_eo3(doc, product)
     return Dataset(product,
                    doc.doc,
                    source_tree=source_tree,
@@ -268,6 +282,7 @@ def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: Product
         else:
             product = matcher(doc)
 
+        check_intended_eo3(ds, product)
         return with_cache(Dataset(product, doc, uris=uris, sources=sources), ds.id, cache)
     try:
         return remap_lineage_doc(main_ds, resolve_ds, cache={}), None

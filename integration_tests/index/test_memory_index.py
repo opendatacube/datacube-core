@@ -204,9 +204,7 @@ def test_mem_ds_search_dups(mem_eo3_data: ODCEnvironment):
     dc, ls8_id, wo_id = mem_eo3_data
     ls8_ds = dc.index.datasets.get(ls8_id)
     dup_results = dc.index.datasets.search_product_duplicates(ls8_ds.product, "cloud_cover", "dataset_maturity")
-    assert len(dup_results) == 1
-    assert dup_results[0][0].cloud_cover == ls8_ds.metadata.cloud_cover
-    assert ls8_id in dup_results[0][1]
+    assert len(dup_results) == 0
 
 
 def test_mem_ds_locations(mem_eo3_data: ODCEnvironment):

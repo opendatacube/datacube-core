@@ -16,6 +16,7 @@ from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
+from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.orm import aliased
 
@@ -223,7 +224,7 @@ class SimpleDocField(PgDocField):
 
     @property
     def alchemy_expression(self):
-        return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc)
+        return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc).label(self.name)
 
     def __eq__(self, value):
         """
@@ -362,7 +363,7 @@ class RangeDocField(PgDocField):
 
     @property
     def alchemy_expression(self):
-        return self.value_to_alchemy((self.lower.alchemy_expression, self.greater.alchemy_expression))
+        return self.value_to_alchemy((self.lower.alchemy_expression, self.greater.alchemy_expression)).label(self.name)
 
     def __eq__(self, value):
         """
@@ -440,6 +441,16 @@ class DateRangeDocField(RangeDocField):
         else:
             raise ValueError("Unknown comparison type for date range: "
                              "expecting datetimes, got: (%r, %r)" % (low, high))
+
+    @property
+    def expression_with_leniency(self):
+        return func.tstzrange(
+            self.lower.alchemy_expression - cast('500 milliseconds', INTERVAL),
+            self.greater.alchemy_expression + cast('500 milliseconds', INTERVAL),
+            # Inclusive on both sides.
+            '[]',
+            type_=TSTZRANGE,
+        )
 
 
 def _number_implies_year(v: Union[int, datetime]) -> datetime:

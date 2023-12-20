@@ -7,6 +7,7 @@ Module
 """
 import datetime
 from typing import Any
+from collections import namedtuple
 
 import pytest
 import yaml
@@ -777,13 +778,14 @@ def test_find_duplicates_eo3(index,
     assert len(all_datasets) == 5
 
     # First two ls8 datasets have the same path/row, last two have a different row.
+    dupe_fields = namedtuple('search_result', ['region_code', 'dataset_maturity'])
     expected_ls8_path_row_duplicates = [
         (
-            ('090086', 'final'),
+            dupe_fields('090086', 'final'),
             {ls8_eo3_dataset.id, ls8_eo3_dataset2.id}
         ),
         (
-            ('101077', 'final'),
+            dupe_fields('101077', 'final'),
             {ls8_eo3_dataset3.id, ls8_eo3_dataset4.id}
         ),
 
@@ -809,6 +811,30 @@ def test_find_duplicates_eo3(index,
         'region_code', 'dataset_maturity'
     ))
     assert sat_res == []
+
+
+def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_dataset):
+    index.datasets.add(nrt_dataset, with_lineage=False)
+    index.datasets.add(final_dataset, with_lineage=False)
+    index.datasets.get(nrt_dataset.id).is_active
+    index.datasets.get(final_dataset.id).is_active
+
+    all_datasets = index.datasets.search_eager()
+    assert len(all_datasets) == 3
+
+    dupe_fields = namedtuple('search_result', ['region_code', 'time'])
+    expected_result = [
+        (
+            dupe_fields('090086', '("2023-04-30 23:50:33.884549","2023-04-30 23:50:34.884549")'),
+            {nrt_dataset.id, final_dataset.id}
+        )
+    ]
+    res = sorted(index.datasets.search_product_duplicates(
+        nrt_dataset.product,
+        'region_code', 'time',
+    ))
+
+    assert res == expected_result
 
 
 def test_csv_search_via_cli_eo3(clirunner: Any,

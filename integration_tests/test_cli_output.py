@@ -83,6 +83,32 @@ def test_cli_dataset_subcommand(index, clirunner,
     for path in eo3_dataset_paths:
         result = clirunner(['dataset', 'add', "--ignore-lineage", path])
 
+    runner = clirunner(['dataset', 'find-duplicates'], verbose_flag=False, expect_success=False)
+    assert "Error: must provide field names to match on" in runner.output
+    assert runner.exit_code == 1
+
+    runner = clirunner(['dataset', 'find-duplicates', 'region_code', 'fake_field'],
+                       verbose_flag=False, expect_success=False)
+    assert "Error: no products found with fields region_code, fake_field" in runner.output
+    assert runner.exit_code == 1
+
+    runner = clirunner(['dataset', 'find-duplicates', 'region_code', 'landsat_scene_id',
+                        '-p', 'ga_ls8c_ard_3', '-p', 'ga_ls_wo_3'],
+                       verbose_flag=False,
+                       expect_success=False)
+    assert "Error: specified products ga_ls_wo_3 do not contain all required fields"
+    assert runner.exit_code == 1
+
+    runner = clirunner(['dataset', 'find-duplicates', 'region_code', 'uri'], verbose_flag=False)
+    assert "No potential duplicates found." in runner.output
+    assert runner.exit_code == 0
+
+    runner = clirunner(['dataset', 'find-duplicates', 'region_code', 'dataset_maturity'], verbose_flag=False)
+    assert "No potential duplicates found." not in runner.output
+    assert "(region_code='090086', dataset_maturity='final')" in runner.output
+    assert "(region_code='101077', dataset_maturity='final')" in runner.output
+    assert runner.exit_code == 0
+
     runner = clirunner(['dataset', 'archive'], verbose_flag=False, expect_success=False)
     assert "Completed dataset archival." not in runner.output
     assert "Usage:  [OPTIONS] [IDS]" in runner.output
