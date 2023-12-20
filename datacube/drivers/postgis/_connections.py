@@ -263,7 +263,6 @@ class PostGisDb(object):
         """
         with self._engine.connect() as connection:
             try:
-                connection.execution_options(isolation_level="AUTOCOMMIT")
                 yield _api.PostgisDbAPI(self, connection)
             finally:
                 connection.close()
