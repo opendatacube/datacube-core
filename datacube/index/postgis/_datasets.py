@@ -274,7 +274,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         with self._db_connection() as connection:
             for record in connection.get_duplicates(group_fields, expressions):
-                as_dict = dict(record)
+                as_dict = record._asdict()
                 if 'ids' in as_dict.keys():
                     ids = as_dict.pop('ids')
                     yield namedtuple('search_result', as_dict.keys())(**as_dict), set(ids)

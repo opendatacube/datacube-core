@@ -747,7 +747,7 @@ class PostgisDbAPI:
         join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
 
         query = select(
-            func.array_agg(Dataset.id),
+            func.array_agg(Dataset.id).label("ids"),
             *group_expressions
         ).select_from(Dataset)
         for joins in join_tables:
