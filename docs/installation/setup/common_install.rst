@@ -5,7 +5,7 @@
 Python and packages
 ===================
 
-Python 3.8+ is required.
+Python 3.9+ is required.
 
 Conda environment setup
 -----------------------
@@ -57,7 +57,7 @@ Since the only user who can connect to a fresh install is the postgres user, her
     sudo -u postgres createuser --superuser $USER
     sudo -u postgres psql
 
-    postgres=# \password <foo>
+    postgres=# \password <foobar>
 
 Now we can create databases for integration testing. You will need 2 databases - one for the Postgres driver and one for the PostGIS driver.
 By default, these databases are called ``pgintegration`` and ``pgisintegration``, but you can name them however you want::
