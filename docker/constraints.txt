@@ -239,7 +239,7 @@ packaging==23.0
     #   setuptools-scm
     #   sphinx
     #   xarray
-pandas==1.5.3
+pandas==2.1.1
     # via xarray
 partd==1.3.0
     # via dask
@@ -449,7 +449,7 @@ wrapt==1.11.2
     # via
     #   astroid
     #   deprecat
-xarray==2023.2.0
+xarray==2023.12.0
     # via -r constraints.in
 xmltodict==0.13.0
     # via moto

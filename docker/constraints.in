@@ -38,7 +38,7 @@ sphinx_rtd_theme
 alembic
 sqlalchemy>=2.0
 toolz
-xarray>=0.9
+xarray>=2023.9.0
 odc-geo
 
 # Previous pins were to very old versions
