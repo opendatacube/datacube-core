@@ -37,7 +37,7 @@ sphinx_autodoc_typehints
 sphinx_rtd_theme
 sqlalchemy<2.0
 toolz
-xarray>=0.9
+xarray>=2023.9.0
 
 # Previous pins were to very old versions
 # pytest Py3.10 requires >6.2.5

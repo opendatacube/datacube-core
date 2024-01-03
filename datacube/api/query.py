@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2023 ODC Contributors
+# Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 """
 Storage Query and Access API module
@@ -69,7 +69,7 @@ class Query(object):
         Use by accessing :attr:`search_terms`:
 
         >>> query.search_terms['time']  # doctest: +NORMALIZE_WHITESPACE
-        Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=<UTC>), \
+        Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=datetime.timezone.utc), \
         end=datetime.datetime(2002, 1, 1, 23, 59, 59, 999999, tzinfo=tzutc()))
 
         By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
