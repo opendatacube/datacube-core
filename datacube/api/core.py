@@ -191,7 +191,7 @@ class Datacube(object):
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None,
              skip_broken_datasets=False, dask_chunks=None, like=None, fuse_func=None, align=None,
              datasets=None, dataset_predicate=None, progress_cbk=None, patch_url=None, **query):
-        """
+        r"""
         Load data as an ``xarray.Dataset`` object.
         Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
