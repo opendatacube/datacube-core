@@ -12,7 +12,7 @@ v1.8.next
 - Warn if non-eo3 dataset has eo3 metadata type (:pull:`1523`)
 - Update pandas version in docker image to be consistent with conda environment and default to stdlib
   timezone instead of pytz when converting timestamps; automatically update copyright years (:pull:`1527`)
-- Update github-dockerhub credential-passing mechanism. (:pull:`1528`)
+- Update github-Dockerhub credential-passing mechanism. (:pull:`1528`)
 
 v1.8.17 (8th November 2023)
 ===========================
