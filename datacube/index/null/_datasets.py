@@ -12,7 +12,7 @@ class DatasetResource(AbstractDatasetResource):
     def __init__(self, product_resource):
         self.types = product_resource
 
-    def get(self, id_: DSID, include_sources=False):
+    def get(self, id_: DSID, include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0):
         return None
 
     def bulk_get(self, ids):

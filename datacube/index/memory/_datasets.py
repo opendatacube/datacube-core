@@ -49,7 +49,9 @@ class DatasetResource(AbstractDatasetResource):
         # Active Index By Product
         self.by_product: MutableMapping[str, List[UUID]] = {}
 
-    def get(self, id_: DSID, include_sources: bool = False) -> Optional[Dataset]:
+    def get(self, id_: DSID, include_sources: bool = False,
+            include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
+        self._check_get_legacy(include_deriveds, max_depth)
         try:
             ds = self.clone(self.by_id[dsid_to_uuid(id_)])
             if include_sources:

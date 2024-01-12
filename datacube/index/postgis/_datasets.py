@@ -23,7 +23,7 @@ from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, e
 
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.model import Dataset, Product, Range
+from datacube.model import Dataset, Product, Range, LineageTree
 from datacube.model.fields import Field
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
@@ -51,39 +51,33 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         self._db = db
         super().__init__(index)
 
-    def get(self, id_: Union[str, UUID], include_sources=False):
+    def get(self, id_: DSID,
+            include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
         """
         Get dataset by id
 
-        :param UUID id_: id of the dataset to retrieve
-        :param bool include_sources: get the full provenance graph?
-        :rtype: Dataset
+        :param id_: id of the dataset to retrieve
+        :param include_sources: include the full provenance tree for the dataset.
+        :param include_deriveds: include the full derivative tree for the dataset.
+        :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
+        :rtype: Dataset model (None if not found)
         """
         if isinstance(id_, str):
             id_ = UUID(id_)
 
+        source_tree = derived_tree = None
+        if include_sources:
+            source_tree = self._index.lineage.get_source_tree(id_, max_depth=max_depth)
+        if include_deriveds:
+            derived_tree = self._index.lineage.get_derived_tree(id_, max_depth=max_depth)
+
         with self._db_connection() as connection:
             if not include_sources:
                 dataset = connection.get_dataset(id_)
-                return self._make(dataset, full_info=True) if dataset else None
+                if not dataset:
+                    return None
+                return self._make(dataset, full_info=True, source_tree=source_tree, derived_tree=derived_tree)
 
-            datasets = {result.id: (self._make(result, full_info=True), result)
-                        for result in connection.get_dataset_sources(id_)}
-
-        if not datasets:
-            # No dataset found
-            return None
-
-        for dataset, result in datasets.values():
-            dataset.metadata.sources = {
-                classifier: datasets[source][0].metadata_doc
-                for source, classifier in zip(result.sources, result.classes) if source
-            }
-            dataset.sources = {
-                classifier: datasets[source][0]
-                for source, classifier in zip(result.sources, result.classes) if source
-            }
-        return datasets[id_][0]
 
     def bulk_get(self, ids):
         def to_uuid(x):
@@ -526,7 +520,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             was_restored = connection.restore_location(id_, uri)
             return was_restored
 
-    def _make(self, dataset_res, full_info=False, product=None):
+    def _make(self, dataset_res, full_info=False, product=None,
+              source_tree: LineageTree | None = None,
+              derived_tree: LineageTree | None = None):
         """
         :rtype Dataset
 
@@ -545,7 +541,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,
             indexed_time=dataset_res.added if full_info else None,
-            archived_time=dataset_res.archived
+            archived_time=dataset_res.archived,
+            source_tree=source_tree,
+            derived_tree=derived_tree,
         )
 
     def _make_many(self, query_result, product=None):

@@ -47,7 +47,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         self._db = db
         super().__init__(index)
 
-    def get(self, id_: Union[str, UUID], include_sources=False):
+    def get(self, id_: DSID, include_sources: bool = False,
+            include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
         """
         Get dataset by id
 
@@ -55,6 +56,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param bool include_sources: get the full provenance graph?
         :rtype: Dataset
         """
+        # include_derived and max_depth arguments not supported.
+        self._check_get_legacy(include_deriveds, max_depth)
         if isinstance(id_, str):
             id_ = UUID(id_)
 

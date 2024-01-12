@@ -767,7 +767,7 @@ class AbstractLineageResource(ABC):
         assert self._index.supports_external_lineage
 
     @abstractmethod
-    def get_derived_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
+    def get_derived_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         """
         Extract a LineageTree from the index, with:
             - "id" at the root of the tree.
@@ -783,7 +783,7 @@ class AbstractLineageResource(ABC):
         """
 
     @abstractmethod
-    def get_source_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
+    def get_source_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         """
         Extract a LineageTree from the index, with:
             - "id" at the root of the tree.
@@ -1018,15 +1018,52 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def get(self,
             id_: DSID,
-            include_sources: bool = False
-           ) -> Optional[Dataset]:
+            include_sources: bool = False,
+            include_deriveds: bool = False,
+            max_depth: int = 0
+            ) -> Optional[Dataset]:
         """
         Get dataset by id
 
+        - Index drivers supporting the legacy lineage API:
+
         :param id_: id of the dataset to retrieve
-        :param include_sources: get the full provenance graph?
+        :param include_sources: include the full provenance tree of the dataset.
+
+
+        - Index drivers supporting the external lineage API:
+
+        :param id_: id of the dataset to retrieve
+        :param include_sources: include the full provenance tree for the dataset.
+        :param include_deriveds: include the full derivative tree for the dataset.
+        :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
         :rtype: Dataset model (None if not found)
         """
+
+    def _check_get_legacy(self,
+                          include_deriveds: bool = False,
+                          max_depth: int = 0
+                          ) -> None:
+        """
+        Index drivers implementing the legacy lineage API can call this method to check get arguments
+        """
+        if not self._index.supports_external_lineage:
+            if include_deriveds:
+                raise NotImplementedError(
+                    "This index driver only supports the legacy lineage data - include_deriveds not supported."
+                )
+            if not self._index.supports_external_lineage and (include_deriveds or max_depth > 0):
+                raise NotImplementedError(
+                    "This index driver only supports the legacy lineage data - max_depth not supported."
+                )
+
+    def _get_legacy(self, id_: DSID, include_sources: bool = False) -> Optional[Dataset]:
+        """
+        Old style dataset get method.
+
+        Drivers with legacy lineage should override this insteade of get()
+        """
+        raise NotImplementedError()
 
     @abstractmethod
     def bulk_get(self, ids: Iterable[DSID]) -> Iterable[Dataset]:
