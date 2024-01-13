@@ -142,3 +142,46 @@ def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree):
     index.lineage.add(home_update, allow_updates=True)
     dbtree = index.lineage.get_source_tree(ids["ard1"])
     assert dbtree.home == "not_too_ard"
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_get_extensions(index, dataset_with_external_lineage):
+    dataset, src_lineage_tree, derived_lineage_tree, ids = dataset_with_external_lineage
+
+    ds = index.datasets.get(ids["root"])
+    assert ds.source_tree is None
+    assert ds.derived_tree is None
+
+    ds = index.datasets.get(ids["root"], include_sources=True)
+    assert ds.source_tree is not None
+    assert ds.derived_tree is None
+    assert ds.source_tree.children["ard"][0].children
+
+    ds = index.datasets.get(ids["root"], include_sources=True, max_depth=1)
+    assert ds.source_tree is not None
+    assert ds.derived_tree is None
+    assert not ds.source_tree.children["ard"][0].children
+
+    ds = index.datasets.get(ids["root"], include_deriveds=True)
+    assert ds.source_tree is None
+    assert ds.derived_tree is not None
+    assert ds.derived_tree.children["dra"][0].children
+
+    ds = index.datasets.get(ids["root"], include_deriveds=True, max_depth=1)
+    assert ds.source_tree is None
+    assert ds.derived_tree is not None
+    assert not ds.derived_tree.children["dra"][0].children
+
+
+    ds = index.datasets.get(ids["root"], include_sources=True, include_deriveds=True)
+    assert ds.source_tree is not None
+    assert ds.derived_tree is not None
+    assert ds.source_tree.children["ard"][0].children
+    assert ds.derived_tree.children["dra"][0].children
+
+    ds = index.datasets.get(ids["root"], include_sources=True, include_deriveds=True, max_depth=1)
+    assert ds.source_tree is not None
+    assert ds.derived_tree is not None
+    assert not ds.source_tree.children["ard"][0].children
+    assert not ds.derived_tree.children["dra"][0].children
+

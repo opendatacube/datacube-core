@@ -72,11 +72,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             derived_tree = self._index.lineage.get_derived_tree(id_, max_depth=max_depth)
 
         with self._db_connection() as connection:
-            if not include_sources:
-                dataset = connection.get_dataset(id_)
-                if not dataset:
-                    return None
-                return self._make(dataset, full_info=True, source_tree=source_tree, derived_tree=derived_tree)
+            dataset = connection.get_dataset(id_)
+            if not dataset:
+                return None
+            return self._make(dataset, full_info=True, source_tree=source_tree, derived_tree=derived_tree)
 
 
     def bulk_get(self, ids):
