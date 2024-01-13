@@ -172,7 +172,6 @@ def test_get_extensions(index, dataset_with_external_lineage):
     assert ds.derived_tree is not None
     assert not ds.derived_tree.children["dra"][0].children
 
-
     ds = index.datasets.get(ids["root"], include_sources=True, include_deriveds=True)
     assert ds.source_tree is not None
     assert ds.derived_tree is not None
