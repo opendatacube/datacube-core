@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2023 ODC Contributors
+# Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from uuid import uuid4 as random_uuid
 
@@ -183,4 +183,3 @@ def test_get_extensions(index, dataset_with_external_lineage):
     assert ds.derived_tree is not None
     assert not ds.source_tree.children["ard"][0].children
     assert not ds.derived_tree.children["dra"][0].children
-

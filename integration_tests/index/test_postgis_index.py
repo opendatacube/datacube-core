@@ -200,5 +200,3 @@ def test_spatial_search(index,
     assert len(dssids) == 2
     assert ls8_eo3_dataset3.id in dssids
     assert ls8_eo3_dataset3.id in dssids
-
-
