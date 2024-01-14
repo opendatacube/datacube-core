@@ -373,6 +373,7 @@ pyproj
 pyspellcheck
 pytest
 PythonAPI
+pytz
 QGIS
 RasterDatasetDataSource
 RasterIO
@@ -430,6 +431,7 @@ STAC
 stac
 stacker
 stacspec
+stdlib
 str
 subcommands
 sudo
