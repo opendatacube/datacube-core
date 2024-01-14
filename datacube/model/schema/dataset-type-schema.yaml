@@ -67,6 +67,8 @@ definitions:
                     type: number
             dtype:
                 "$ref": "#/definitions/dtype"
+            units:
+                type: string
         required:
         - name
         - values
