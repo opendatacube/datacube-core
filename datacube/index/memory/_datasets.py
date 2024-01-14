@@ -20,7 +20,6 @@ from datacube.index.abstract import (AbstractDatasetResource, DSID, dsid_to_uuid
                                      QueryField, DatasetSpatialMixin, NoLineageResource, AbstractIndex)
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
-from datacube.index.memory._products import ProductResource
 from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
 from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes

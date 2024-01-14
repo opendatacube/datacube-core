@@ -1124,9 +1124,12 @@ def compatible_derived_tree(src_tree_ids):
 
 
 @pytest.fixture
-def dataset_with_external_lineage(index, src_lineage_tree, compatible_derived_tree, ls8_eo3_product, eo3_ls8_dataset_doc):
+def dataset_with_external_lineage(index,
+                                  src_lineage_tree, compatible_derived_tree,
+                                  ls8_eo3_product, eo3_ls8_dataset_doc):
     src_tree, ids = src_lineage_tree
     derived_tree, ids = compatible_derived_tree
     eo3_ls8_dataset_doc[0]["id"] = ids["root"]
-    dataset = doc_to_ds(index, ls8_eo3_product.name, *eo3_ls8_dataset_doc, src_tree=src_tree, derived_tree=derived_tree)
+    dataset = doc_to_ds(index, ls8_eo3_product.name, *eo3_ls8_dataset_doc,
+                        src_tree=src_tree, derived_tree=derived_tree)
     return dataset, src_tree, derived_tree, ids

@@ -77,7 +77,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 return None
             return self._make(dataset, full_info=True, source_tree=source_tree, derived_tree=derived_tree)
 
-
     def bulk_get(self, ids):
         def to_uuid(x):
             return x if isinstance(x, UUID) else UUID(x)
