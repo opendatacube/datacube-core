@@ -17,10 +17,9 @@ from uuid import UUID
 from datacube.index import fields
 
 from datacube.index.abstract import (AbstractDatasetResource, DSID, dsid_to_uuid, BatchStatus,
-                                     QueryField, DatasetSpatialMixin, NoLineageResource)
+                                     QueryField, DatasetSpatialMixin, NoLineageResource, AbstractIndex)
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
-from datacube.index.memory._products import ProductResource
 from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
 from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes
@@ -32,9 +31,8 @@ _LOG = logging.getLogger(__name__)
 
 
 class DatasetResource(AbstractDatasetResource):
-    def __init__(self, product_resource: ProductResource) -> None:
-        self.product_resource = product_resource
-        self.metadata_type_resource = product_resource.metadata_type_resource
+    def __init__(self, index: AbstractIndex) -> None:
+        super().__init__(index)
         # Main dataset index
         self.by_id: MutableMapping[UUID, Dataset] = {}
         # Indexes for active and archived datasets
@@ -49,7 +47,9 @@ class DatasetResource(AbstractDatasetResource):
         # Active Index By Product
         self.by_product: MutableMapping[str, List[UUID]] = {}
 
-    def get(self, id_: DSID, include_sources: bool = False) -> Optional[Dataset]:
+    def get(self, id_: DSID, include_sources: bool = False,
+            include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
+        self._check_get_legacy(include_deriveds, max_depth)
         try:
             ds = self.clone(self.by_id[dsid_to_uuid(id_)])
             if include_sources:
@@ -298,9 +298,9 @@ class DatasetResource(AbstractDatasetResource):
 
     def get_field_names(self, product_name=None) -> Iterable[str]:
         if product_name is None:
-            prods = self.product_resource.get_all()
+            prods = self._index.products.get_all()
         else:
-            prod = self.product_resource.get_by_name(product_name)
+            prod = self._index.products.get_by_name(product_name)
             if prod:
                 prods = [prod]
             else:
@@ -495,7 +495,7 @@ class DatasetResource(AbstractDatasetResource):
         )
 
     def _get_prod_queries(self, **query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
-        return ((q, product) for product, q in self.product_resource.search_robust(**query))
+        return ((q, product) for product, q in self._index.products.search_robust(**query))
 
     def search(self,
                limit: Optional[int] = None,
@@ -662,7 +662,7 @@ class DatasetResource(AbstractDatasetResource):
     def get_product_time_bounds(self, product: str) -> Tuple[datetime.datetime, datetime.datetime]:
         min_time: Optional[datetime.datetime] = None
         max_time: Optional[datetime.datetime] = None
-        prod = self.product_resource.get_by_name(product)
+        prod = self._index.products.get_by_name(product)
         if prod is None:
             raise ValueError(f"Product {product} not in index")
         time_fld = prod.metadata_type.dataset_fields["time"]
@@ -726,7 +726,7 @@ class DatasetResource(AbstractDatasetResource):
         else:
             uris = []
         return Dataset(
-            product=self.product_resource.clone(orig.product),
+            product=self._index.products.clone(orig.product),
             metadata_doc=jsonify_document(orig.metadata_doc_without_lineage()),
             uris=uris,
             indexed_by="user" if for_save and orig.indexed_by is None else orig.indexed_by,

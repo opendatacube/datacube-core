@@ -33,7 +33,7 @@ class Index(AbstractIndex):
         self._metadata_types = MetadataTypeResource()
         self._products = ProductResource(self.metadata_types)
         self._lineage = LineageResource(self)
-        self._datasets = DatasetResource(self.products)
+        self._datasets = DatasetResource(self)
         global counter
         with counter_lock:
             counter = counter + 1

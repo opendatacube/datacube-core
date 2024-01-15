@@ -246,15 +246,20 @@ def ga_s2am_ard_3_final_doc():
     )
 
 
-def doc_to_ds(index, product_name, ds_doc, ds_path):
+def doc_to_ds(index, product_name, ds_doc, ds_path, src_tree=None, derived_tree=None):
     from datacube.index.hl import Doc2Dataset
     resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
     ds, err = resolver(ds_doc, ds_path)
     assert err is None and ds is not None
     if index.supports_external_lineage:
         index.datasets.add(ds, with_lineage=False)
-        eo3_tree = LineageTree.from_eo3_doc(ds_doc)
-        index.lineage.add(eo3_tree)
+        if src_tree:
+            index.lineage.add(src_tree)
+        if derived_tree:
+            index.lineage.add(derived_tree)
+        if not (src_tree or derived_tree):
+            eo3_tree = LineageTree.from_eo3_doc(ds_doc)
+            index.lineage.add(eo3_tree)
     else:
         index.datasets.add(ds, with_lineage=index.supports_lineage)
     return index.datasets.get(ds.id)
@@ -1017,7 +1022,9 @@ def compatible_derived_tree(src_tree_ids):
         "ard4": uuid4(),
         "leaf_1": uuid4(),
         "leaf_2": uuid4(),
-        "leaf_3": uuid4()
+        "leaf_3": uuid4(),
+        "child_of_root": uuid4(),
+        "grandchild_of_root": uuid4(),
     })
     tree = LineageTree(
         dataset_id=ids["atmos_grandparent"],
@@ -1046,7 +1053,24 @@ def compatible_derived_tree(src_tree_ids):
                                                     LineageTree(
                                                         dataset_id=ids["root"],
                                                         direction=LineageDirection.DERIVED,
-                                                        home="extensions", children={}
+                                                        home="extensions", children={
+                                                            "dra": [
+                                                                LineageTree(
+                                                                    dataset_id=ids["child_of_root"],
+                                                                    direction=LineageDirection.DERIVED,
+                                                                    home="extensions", children={
+                                                                        "rad": [
+                                                                            LineageTree(
+                                                                                dataset_id=ids["grandchild_of_root"],
+                                                                                direction=LineageDirection.DERIVED,
+                                                                                home="extensions", children={}
+                                                                            )
+
+                                                                        ]
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
                                                     ),
                                                     LineageTree(
                                                         dataset_id=ids["leaf_1"],
@@ -1097,3 +1121,15 @@ def compatible_derived_tree(src_tree_ids):
         }
     )
     return tree, ids
+
+
+@pytest.fixture
+def dataset_with_external_lineage(index,
+                                  src_lineage_tree, compatible_derived_tree,
+                                  ls8_eo3_product, eo3_ls8_dataset_doc):
+    src_tree, ids = src_lineage_tree
+    derived_tree, ids = compatible_derived_tree
+    eo3_ls8_dataset_doc[0]["id"] = ids["root"]
+    dataset = doc_to_ds(index, ls8_eo3_product.name, *eo3_ls8_dataset_doc,
+                        src_tree=src_tree, derived_tree=derived_tree)
+    return dataset, src_tree, derived_tree, ids

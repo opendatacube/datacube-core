@@ -719,7 +719,7 @@ class PostgisDbAPI:
 
         We are not dealing with dataset_source table here and we are not joining
         dataset table with dataset_location table. We are aggregating stuff
-        in dataset_location per dataset basis if required. It returns the construted
+        in dataset_location per dataset basis if required. It returns the constructed
         query.
         """
         # TODO
