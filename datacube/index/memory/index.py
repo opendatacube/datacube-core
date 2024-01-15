@@ -6,6 +6,7 @@ import logging
 from threading import Lock
 from typing import Type
 
+from deprecat import deprecat
 from datacube.cfg import ODCEnvironment
 from datacube.index.memory._datasets import DatasetResource, LineageResource  # type: ignore
 from datacube.index.memory._fields import get_dataset_fields
@@ -14,6 +15,7 @@ from datacube.index.memory._products import ProductResource
 from datacube.index.memory._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction
 from datacube.model import MetadataType
+from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
@@ -103,6 +105,11 @@ class MemoryIndexDriver(AbstractIndexDriver):
         return Index
 
     @staticmethod
+    @deprecat(
+        reason="The 'metadata_type_from_doc' static method has been deprecated. "
+               "Please use the 'index.metadata_type_from_doc()' instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:

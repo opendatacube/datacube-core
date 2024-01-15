@@ -18,6 +18,7 @@ from urllib.parse import urlparse, ParseResult
 from uuid import UUID
 from datetime import timedelta
 
+from deprecat import deprecat
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
@@ -27,6 +28,7 @@ from datacube.model.lineage import LineageRelations
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException, report_to_user
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.generic import thread_local_cache
+from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS, Geometry
 from odc.geo.geom import box
 from datacube.utils.documents import UnknownMetadataType
@@ -2220,6 +2222,11 @@ class AbstractIndexDriver(ABC):
 
     @staticmethod
     @abstractmethod
+    @deprecat(
+        reason="The 'metadata_type_from_doc' static method has been deprecated. "
+                 "Please use the 'index.metadata_type_from_doc()' instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict
                               ) -> MetadataType:
         ...

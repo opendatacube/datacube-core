@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable, Sequence, Type
 
+from deprecat import deprecat
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.cfg.opt import config_options_for_psql_driver
 from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
@@ -18,6 +19,7 @@ from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, default_metadata_type_docs
 from datacube.model import MetadataType
+from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
@@ -219,6 +221,11 @@ class PostgisIndexDriver(AbstractIndexDriver):
         return Index
 
     @staticmethod
+    @deprecat(
+        reason="The 'metadata_type_from_doc' static method has been deprecated. "
+               "Please use the 'index.metadata_type_from_doc()' instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:

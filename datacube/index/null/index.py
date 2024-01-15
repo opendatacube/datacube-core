@@ -5,6 +5,7 @@
 import logging
 from typing import Type
 
+from deprecat import deprecat
 from datacube.cfg import ODCEnvironment
 from datacube.index.null._datasets import DatasetResource  # type: ignore
 from datacube.index.null._metadata_types import MetadataTypeResource
@@ -13,6 +14,7 @@ from datacube.index.null._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction, NoLineageResource
 from datacube.model import MetadataType
 from datacube.model.fields import get_dataset_fields
+from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
@@ -96,6 +98,11 @@ class NullIndexDriver(AbstractIndexDriver):
         return Index
 
     @staticmethod
+    @deprecat(
+        reason="The 'metadata_type_from_doc' static method has been deprecated. "
+               "Please use the 'index.metadata_type_from_doc()' instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:
