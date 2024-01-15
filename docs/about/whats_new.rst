@@ -27,7 +27,7 @@ v1.9.next
 - New Configuration API, as per ODC-EP10 (:pull:`1505`)
 - Alembic migrations for postgis driver (:pull:`1520`)
 - EP08 lineage extensions/changes to datasets.get(). (:pull:`1530`)
-- EP13 API changes to Index and IndexDriver. (:pull:`1533`)
+- EP13 API changes to Index and IndexDriver. (:pull:`1534`)
 
 
 v1.8.next
