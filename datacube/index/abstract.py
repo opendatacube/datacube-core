@@ -1919,7 +1919,7 @@ class AbstractIndex(ABC):
 
     # Interface contracts - implementations should set to True where appropriate.
 
-    ### Metadata type support flags
+    # Metadata type support flags
     #   supports legacy ODCv1 EO style metadata types.
     supports_legacy = False
     #   supports eo3 compatible metadata types.
@@ -1930,7 +1930,7 @@ class AbstractIndex(ABC):
     supports_vector = False
 
 
-    ### Database/storage feature support flags
+    # Database/storage feature support flags
     #   supports add() update() remove() etc methods.
     supports_write = False
     #   supports persistent storage. Writes from previous instantiations will persist into future ones.
@@ -1941,11 +1941,11 @@ class AbstractIndex(ABC):
     #    Supports per-CRS spatial indexes (Requires supports_write)
     supports_spatial_indexes = False
 
-    ### User managment support flags
+    # User managment support flags
     #   support the index.users API
     supports_users = False
 
-    ### Lineage support flags
+    # Lineage support flags
     #   supports lineage (either legacy or new API)
     supports_lineage = False
     #   supports external lineage API (as described in EP-08).  Requires supports_lineage
