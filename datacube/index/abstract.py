@@ -1057,14 +1057,6 @@ class AbstractDatasetResource(ABC):
                     "This index driver only supports the legacy lineage data - max_depth not supported."
                 )
 
-    def _get_legacy(self, id_: DSID, include_sources: bool = False) -> Optional[Dataset]:
-        """
-        Old style dataset get method.
-
-        Drivers with legacy lineage should override this insteade of get()
-        """
-        raise NotImplementedError()
-
     @abstractmethod
     def bulk_get(self, ids: Iterable[DSID]) -> Iterable[Dataset]:
         """
