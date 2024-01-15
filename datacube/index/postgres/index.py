@@ -188,6 +188,7 @@ class Index(AbstractIndex):
 
 class DefaultIndexDriver(AbstractIndexDriver):
     aliases = ['postgres', 'legacy']
+
     @classmethod
     def index_class(cls) -> Type[AbstractIndex]:
         return Index

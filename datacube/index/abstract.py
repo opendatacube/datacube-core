@@ -1929,7 +1929,6 @@ class AbstractIndex(ABC):
     #   supports geospatial vector (i.e. non-raster) metadata types (reserved for future use)
     supports_vector = False
 
-
     # Database/storage feature support flags
     #   supports add() update() remove() etc methods.
     supports_write = False
@@ -2242,7 +2241,7 @@ class AbstractIndexDriver(ABC):
     @abstractmethod
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
-                 "Please use the 'index.metadata_type.from_doc()' instead.",
+               "Please use the 'index.metadata_type.from_doc()' instead.",
         version='1.9.0',
         category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict
