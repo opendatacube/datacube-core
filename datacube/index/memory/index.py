@@ -120,7 +120,7 @@ class MemoryIndexDriver(AbstractIndexDriver):
     @staticmethod
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
-               "Please use the 'index.metadata_type_from_doc()' instead.",
+               "Please use the 'index.metadata_type.from_doc()' instead.",
         version='1.9.0',
         category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict) -> MetadataType:
