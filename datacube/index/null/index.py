@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from typing import Type
 
 from datacube.cfg import ODCEnvironment
 from datacube.index.null._datasets import DatasetResource  # type: ignore
@@ -90,9 +91,9 @@ class Index(AbstractIndex):
 
 
 class NullIndexDriver(AbstractIndexDriver):
-    @staticmethod
-    def connect_to_index(config_env, application_name=None, validate_connection=True):
-        return Index.from_config(config_env, application_name, validate_connection)
+    @classmethod
+    def index_class(cls) -> Type[AbstractIndex]:
+        return Index
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:

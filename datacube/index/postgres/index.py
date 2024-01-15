@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
-from typing import Iterable
+from typing import Iterable, Type
 
 from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
 from datacube.cfg.api import ODCEnvironment
@@ -173,12 +173,9 @@ class Index(AbstractIndex):
 
 class DefaultIndexDriver(AbstractIndexDriver):
     aliases = ['postgres', 'legacy']
-
-    @staticmethod
-    def connect_to_index(config_env: ODCEnvironment,
-                         application_name: str | None = None,
-                         validate_connection: bool = True):
-        return Index.from_config(config_env, application_name, validate_connection)
+    @classmethod
+    def index_class(cls) -> Type[AbstractIndex]:
+        return Index
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:

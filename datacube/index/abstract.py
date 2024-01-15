@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
                     List, Mapping, MutableMapping,
                     NamedTuple, Optional,
-                    Tuple, Union, Sequence)
+                    Tuple, Union, Sequence, Type)
 from urllib.parse import urlparse, ParseResult
 from uuid import UUID
 from datetime import timedelta
@@ -2205,13 +2205,18 @@ class AbstractIndexDriver(ABC):
     Abstract base class for an IndexDriver.  All IndexDrivers should inherit from this base class
     and implement all abstract methods.
     """
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def connect_to_index(config_env: ODCEnvironment,
+    def index_class(cls) -> Type[AbstractIndex]:
+        ...
+
+    @classmethod
+    def connect_to_index(cls,
+                         config_env: ODCEnvironment,
                          application_name: Optional[str] = None,
                          validate_connection: bool = True
                         ) -> "AbstractIndex":
-        ...
+        return cls.index_class().from_config(config_env, application_name, validate_connection)
 
     @staticmethod
     @abstractmethod

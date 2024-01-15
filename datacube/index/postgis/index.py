@@ -5,7 +5,7 @@
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Type
 
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.cfg.opt import config_options_for_psql_driver
@@ -213,12 +213,10 @@ WARNING: Database schema and internal APIs may change significantly between rele
                 yield conn
 
 
-class DefaultIndexDriver(AbstractIndexDriver):
-    @staticmethod
-    def connect_to_index(config_env: ODCEnvironment,
-                         application_name: str | None = None,
-                         validate_connection: bool = True):
-        return Index.from_config(config_env, application_name, validate_connection)
+class PostgisIndexDriver(AbstractIndexDriver):
+    @classmethod
+    def index_class(cls) -> Type[AbstractIndex]:
+        return Index
 
     @staticmethod
     def metadata_type_from_doc(definition: dict) -> MetadataType:
@@ -236,4 +234,4 @@ class DefaultIndexDriver(AbstractIndexDriver):
 
 
 def index_driver_init():
-    return DefaultIndexDriver()
+    return PostgisIndexDriver()
