@@ -24,8 +24,13 @@ class Index(AbstractIndex):
     """
     (Sub-)Minimal (non-)implementation of the Index API.
     """
-    # Supports everything but persistance
-    supports_persistance = False
+    ### Metadata type support flags
+    supports_legacy = True
+    supports_eo3 = True
+    supports_nongeo = True
+
+    ### User managment support flags
+    supports_users = True
 
     def __init__(self, env: ODCEnvironment) -> None:
         self._env = env

@@ -29,6 +29,19 @@ class Index(AbstractIndex):
     """
     Lightweight in-memory index driver
     """
+    ### Metadata type support flags
+    supports_legacy = True
+    supports_eo3 = True
+    supports_nongeo = True
+
+    ### Database/storage feature support flags
+    supports_write = True
+
+    ### User managment support flags
+    supports_users = True
+
+    ### Lineage support flags
+    supports_lineage = True
 
     def __init__(self, env: ODCEnvironment) -> None:
         self._env = env

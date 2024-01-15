@@ -1917,24 +1917,42 @@ class AbstractIndex(ABC):
     override other methods and contract flags as required.
     """
 
-    # Interface contracts
-    #   supports add() update() remove() etc methods.
-    supports_persistance = True
+    # Interface contracts - implementations should set to True where appropriate.
+
+    ### Metadata type support flags
     #   supports legacy ODCv1 EO style metadata types.
-    supports_legacy = True
+    supports_legacy = False
+    #   supports eo3 compatible metadata types.
+    supports_eo3 = False
     #   supports non-geospatial (e.g. telemetry) metadata types
-    supports_nongeo = True
-    #   supports lineage
-    supports_lineage = True
-    #   supports external lineage API (as described in EP-08)
+    supports_nongeo = False
+    #   supports geospatial vector (i.e. non-raster) metadata types (reserved for future use)
+    supports_vector = False
+
+
+    ### Database/storage feature support flags
+    #   supports add() update() remove() etc methods.
+    supports_write = False
+    #   supports persistent storage. Writes from previous instantiations will persist into future ones.
+    #   (Requires supports_write)
+    supports_persistance = False
+    #    Supports ACID transactions (Requires supports_write)
+    supports_transactions = False
+    #    Supports per-CRS spatial indexes (Requires supports_write)
+    supports_spatial_indexes = False
+
+    ### User managment support flags
+    #   support the index.users API
+    supports_users = False
+
+    ### Lineage support flags
+    #   supports lineage (either legacy or new API)
+    supports_lineage = False
+    #   supports external lineage API (as described in EP-08).  Requires supports_lineage
     #   IF support_lineage is True and supports_external_lineage is False THEN legacy lineage API.
     supports_external_lineage = False
-    #   supports an external lineage home field.  Only valid if also supports_external_lineage
+    #   supports an external lineage home field.  Requires supports_external_lineage
     supports_external_home = False
-    # Supports ACID transactions
-    supports_transactions = False
-    # Supports per-CRS spatial indexes
-    supports_spatial_indexes = False
 
     @property
     @abstractmethod

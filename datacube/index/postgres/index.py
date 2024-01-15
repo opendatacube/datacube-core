@@ -47,8 +47,21 @@ class Index(AbstractIndex):
     :type products: datacube.index._products.ProductResource
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
+    ### Metadata type support flags
+    supports_legacy = True
+    supports_eo3 = True
+    supports_nongeo = True
 
+    ### Database/storage feature support flags
+    supports_write = True
+    supports_persistance = True
     supports_transactions = True
+
+    ### User managment support flags
+    supports_users = True
+
+    ### Lineage support flags
+    supports_lineage = True
 
     def __init__(self, db: PostgresDb, env: ODCEnvironment) -> None:
         self._db = db

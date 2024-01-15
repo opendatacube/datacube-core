@@ -51,19 +51,22 @@ class Index(AbstractIndex):
     :type products: datacube.index._products.ProductResource
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
+    ### Metadata type support flags
+    supports_eo3 = True
 
-    # Postgis driver does not need to support pre-EO3 metadata formats
-    supports_legacy = False
-    # Hopefully can reinstate non-geo support, but dropping for now will make progress easier.
-    supports_nongeo = False
-    # Postgis driver supports the new lineage data model and API, as per EP-08.
+    ### Database/storage feature support flags
+    supports_write = True
+    supports_persistance = True
+    supports_transactions = True
+    supports_spatial_indexes = True
+
+    ### User managment support flags
+    supports_users = True
+
+    ### Lineage support flags
     supports_lineage = True
     supports_external_lineage = True
     supports_external_home = True
-    # Postgis driver supports ACID database transactions
-    supports_transactions = True
-    # Postgis supports per-CRS spatial indexes
-    supports_spatial_indexes = True
 
     def __init__(self, db: PostGisDb, env: ODCEnvironment) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
