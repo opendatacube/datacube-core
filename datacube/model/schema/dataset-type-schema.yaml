@@ -140,6 +140,12 @@ definitions:
                         type: string
             extra_dim:
                 type: string
+            dims:
+                type: array
+                description: Captures information about extra dimensions, e.g. `[y, x, wavelength]`
+                items:
+                    type: string
+
         required:
           - name
           - dtype
