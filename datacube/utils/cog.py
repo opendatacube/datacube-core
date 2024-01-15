@@ -13,6 +13,8 @@ from dask.delayed import Delayed
 from pathlib import Path
 from typing import Union, Optional, List, Any, Dict
 
+from datacube.migration import ODC2DeprecationWarning
+
 from .io import check_write_path
 from .geometry import GeoBox
 from .geometry.tools import align_up
@@ -209,7 +211,7 @@ _delayed_write_cog_to_file = dask.delayed(  # pylint: disable=invalid-name
 )
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def write_cog(
     geo_im: xr.DataArray,
     fname: Union[str, Path],
@@ -307,7 +309,7 @@ def write_cog(
     )
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def to_cog(
     geo_im: xr.DataArray,
     blocksize: Optional[int] = None,
