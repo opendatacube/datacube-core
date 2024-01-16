@@ -295,6 +295,22 @@ class AbstractMetadataTypeResource(ABC):
         """
         return self.update(self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates)
 
+    def get_with_fields(self, field_names: Iterable[str]) -> Iterable[MetadataType]:
+        """
+        Return all metadata types that have all of the named search fields.
+
+        :param field_names: Iterable of search field names
+        :return: Iterable of matching metadata types.
+        """
+        for mdt in self.get_all():
+            all_fields_found: bool = True
+            for field in field_names:
+                if field not in mdt.dataset_fields:
+                    all_fields_found = False
+                    break
+            if all_fields_found:
+                yield self.clone(mdt)
+
     def get(self, id_: int) -> Optional[MetadataType]:
         """
         Fetch metadata type by id.
