@@ -10,6 +10,7 @@ import xarray as xr
 import odc.geo.math as geomath
 from odc.geo.xr import spatial_dims as xr_spatial_dims
 
+from datacube.migration import ODC2DeprecationWarning
 from deprecat import deprecat
 
 
@@ -42,33 +43,33 @@ def unsqueeze_dataset(ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0) ->
     return ds
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def spatial_dims(xx: Union[xr.DataArray, xr.Dataset],
                  relaxed: bool = False) -> Optional[Tuple[str, str]]:
     return xr_spatial_dims(xx, relaxed)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def maybe_zero(x: float, tol: float) -> float:
     return geomath.maybe_zero(x, tol)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def maybe_int(x: float, tol: float) -> Union[int, float]:
     return geomath.maybe_int(x, tol)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def snap_scale(s, tol=1e-6):
     return geomath.snap_scale(s, tol)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def clamp(x, lo, up):
     return geomath.clamp(x, lo, up)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def is_almost_int(x: float, tol: float):
     return geomath.is_almost_int(x, tol)
 
@@ -136,12 +137,12 @@ def num2numpy(x, dtype, ignore_range=None):
     return None
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def data_resolution_and_offset(data, fallback_resolution=None):
     return geomath.data_resolution_and_offset(data, fallback_resolution)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0')
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def affine_from_axis(xx, yy, fallback_resolution=None):
     return geomath.affine_from_axis(xx, yy, fallback_resolution)
 

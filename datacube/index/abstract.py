@@ -13,11 +13,12 @@ from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
                     List, Mapping, MutableMapping,
                     NamedTuple, Optional,
-                    Tuple, Union, Sequence)
+                    Tuple, Union, Sequence, Type)
 from urllib.parse import urlparse, ParseResult
 from uuid import UUID
 from datetime import timedelta
 
+from deprecat import deprecat
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
@@ -27,6 +28,7 @@ from datacube.model.lineage import LineageRelations
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException, report_to_user
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.generic import thread_local_cache
+from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS, Geometry
 from odc.geo.geom import box
 from datacube.utils.documents import UnknownMetadataType
@@ -1915,24 +1917,41 @@ class AbstractIndex(ABC):
     override other methods and contract flags as required.
     """
 
-    # Interface contracts
-    #   supports add() update() remove() etc methods.
-    supports_persistance = True
+    # Interface contracts - implementations should set to True where appropriate.
+
+    # Metadata type support flags
     #   supports legacy ODCv1 EO style metadata types.
-    supports_legacy = True
+    supports_legacy = False
+    #   supports eo3 compatible metadata types.
+    supports_eo3 = False
     #   supports non-geospatial (e.g. telemetry) metadata types
-    supports_nongeo = True
-    #   supports lineage
-    supports_lineage = True
-    #   supports external lineage API (as described in EP-08)
+    supports_nongeo = False
+    #   supports geospatial vector (i.e. non-raster) metadata types (reserved for future use)
+    supports_vector = False
+
+    # Database/storage feature support flags
+    #   supports add() update() remove() etc methods.
+    supports_write = False
+    #   supports persistent storage. Writes from previous instantiations will persist into future ones.
+    #   (Requires supports_write)
+    supports_persistance = False
+    #    Supports ACID transactions (Requires supports_write)
+    supports_transactions = False
+    #    Supports per-CRS spatial indexes (Requires supports_write)
+    supports_spatial_indexes = False
+
+    # User managment support flags
+    #   support the index.users API
+    supports_users = False
+
+    # Lineage support flags
+    #   supports lineage (either legacy or new API)
+    supports_lineage = False
+    #   supports external lineage API (as described in EP-08).  Requires supports_lineage
     #   IF support_lineage is True and supports_external_lineage is False THEN legacy lineage API.
     supports_external_lineage = False
-    #   supports an external lineage home field.  Only valid if also supports_external_lineage
+    #   supports an external lineage home field.  Requires supports_external_lineage
     supports_external_home = False
-    # Supports ACID transactions
-    supports_transactions = False
-    # Supports per-CRS spatial indexes
-    supports_spatial_indexes = False
 
     @property
     @abstractmethod
@@ -2205,16 +2224,26 @@ class AbstractIndexDriver(ABC):
     Abstract base class for an IndexDriver.  All IndexDrivers should inherit from this base class
     and implement all abstract methods.
     """
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def connect_to_index(config_env: ODCEnvironment,
+    def index_class(cls) -> Type[AbstractIndex]:
+        ...
+
+    @classmethod
+    def connect_to_index(cls,
+                         config_env: ODCEnvironment,
                          application_name: Optional[str] = None,
                          validate_connection: bool = True
                         ) -> "AbstractIndex":
-        ...
+        return cls.index_class().from_config(config_env, application_name, validate_connection)
 
     @staticmethod
     @abstractmethod
+    @deprecat(
+        reason="The 'metadata_type_from_doc' static method has been deprecated. "
+               "Please use the 'index.metadata_type.from_doc()' instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict
                               ) -> MetadataType:
         ...

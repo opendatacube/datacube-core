@@ -5,8 +5,9 @@
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Type
 
+from deprecat import deprecat
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.cfg.opt import config_options_for_psql_driver
 from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
@@ -18,6 +19,7 @@ from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, default_metadata_type_docs
 from datacube.model import MetadataType
+from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
@@ -49,19 +51,22 @@ class Index(AbstractIndex):
     :type products: datacube.index._products.ProductResource
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
+    #   Metadata type support flags
+    supports_eo3 = True
 
-    # Postgis driver does not need to support pre-EO3 metadata formats
-    supports_legacy = False
-    # Hopefully can reinstate non-geo support, but dropping for now will make progress easier.
-    supports_nongeo = False
-    # Postgis driver supports the new lineage data model and API, as per EP-08.
+    #   Database/storage feature support flags
+    supports_write = True
+    supports_persistance = True
+    supports_transactions = True
+    supports_spatial_indexes = True
+
+    #   User managment support flags
+    supports_users = True
+
+    #   Lineage support flags
     supports_lineage = True
     supports_external_lineage = True
     supports_external_home = True
-    # Postgis driver supports ACID database transactions
-    supports_transactions = True
-    # Postgis supports per-CRS spatial indexes
-    supports_spatial_indexes = True
 
     def __init__(self, db: PostGisDb, env: ODCEnvironment) -> None:
         # POSTGIS driver is not stable with respect to database schema or internal APIs.
@@ -213,14 +218,17 @@ WARNING: Database schema and internal APIs may change significantly between rele
                 yield conn
 
 
-class DefaultIndexDriver(AbstractIndexDriver):
-    @staticmethod
-    def connect_to_index(config_env: ODCEnvironment,
-                         application_name: str | None = None,
-                         validate_connection: bool = True):
-        return Index.from_config(config_env, application_name, validate_connection)
+class PostgisIndexDriver(AbstractIndexDriver):
+    @classmethod
+    def index_class(cls) -> Type[AbstractIndex]:
+        return Index
 
     @staticmethod
+    @deprecat(
+        reason="The 'metadata_type_from_doc' static method has been deprecated. "
+               "Please use the 'index.metadata_type.from_doc()' instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:
@@ -236,4 +244,4 @@ class DefaultIndexDriver(AbstractIndexDriver):
 
 
 def index_driver_init():
-    return DefaultIndexDriver()
+    return PostgisIndexDriver()

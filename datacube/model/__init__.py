@@ -37,6 +37,7 @@ __all__ = [
 from odc.geo import CRS, BoundingBox, Geometry, wh_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
+from datacube.migration import ODC2DeprecationWarning
 from deprecat import deprecat
 
 _LOG = logging.getLogger(__name__)
@@ -100,7 +101,8 @@ class Dataset:
     @property
     @deprecat(
         reason="The 'type' attribute has been deprecated. Please use the 'product' attribute instead.",
-        version='1.9.0')
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def type(self) -> "Product":
         # For compatibility
         return self.product
@@ -242,7 +244,9 @@ class Dataset:
     @property
     @deprecat(
         reason="The 'is_active' attribute has been deprecated. Please use 'is_archived' instead.",
-        version="1.9.0")
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def is_active(self) -> bool:
         """
         Is this dataset active?
@@ -746,7 +750,8 @@ DatasetType = Product
 
 @deprecat(
     reason='This version of GridSpec has been deprecated. Please use the GridSpec class defined in odc-geo.',
-    version='1.9.0'
+    version='1.9.0',
+    category=ODC2DeprecationWarning
 )
 class GridSpec:
     """

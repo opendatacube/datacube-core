@@ -8,7 +8,7 @@ What's New
 v1.9.next
 =========
 
-- Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`)
+- Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`, :pull:`1532`)
 - External Lineage API (:pull:`1401`)
 - Add lineage support to index clone operation (:pull:`1429`)
 - Migrate to SQLAlchemy 2.0 (:pull:`1432`)
@@ -27,6 +27,7 @@ v1.9.next
 - New Configuration API, as per ODC-EP10 (:pull:`1505`)
 - Alembic migrations for postgis driver (:pull:`1520`)
 - EP08 lineage extensions/changes to datasets.get(). (:pull:`1530`)
+- EP13 API changes to Index and IndexDriver. (:pull:`1534`)
 
 
 v1.8.next

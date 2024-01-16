@@ -3,7 +3,9 @@
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from typing import Type
 
+from deprecat import deprecat
 from datacube.cfg import ODCEnvironment
 from datacube.index.null._datasets import DatasetResource  # type: ignore
 from datacube.index.null._metadata_types import MetadataTypeResource
@@ -12,6 +14,7 @@ from datacube.index.null._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction, NoLineageResource
 from datacube.model import MetadataType
 from datacube.model.fields import get_dataset_fields
+from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS
 
 _LOG = logging.getLogger(__name__)
@@ -21,8 +24,13 @@ class Index(AbstractIndex):
     """
     (Sub-)Minimal (non-)implementation of the Index API.
     """
-    # Supports everything but persistance
-    supports_persistance = False
+    #   Metadata type support flags
+    supports_legacy = True
+    supports_eo3 = True
+    supports_nongeo = True
+
+    #   User managment support flags
+    supports_users = True
 
     def __init__(self, env: ODCEnvironment) -> None:
         self._env = env
@@ -90,11 +98,16 @@ class Index(AbstractIndex):
 
 
 class NullIndexDriver(AbstractIndexDriver):
-    @staticmethod
-    def connect_to_index(config_env, application_name=None, validate_connection=True):
-        return Index.from_config(config_env, application_name, validate_connection)
+    @classmethod
+    def index_class(cls) -> Type[AbstractIndex]:
+        return Index
 
     @staticmethod
+    @deprecat(
+        reason="The 'metadata_type_from_doc' static method has been deprecated. "
+               "Please use the 'index.metadata_type.from_doc()' instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:

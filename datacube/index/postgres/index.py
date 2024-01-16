@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
-from typing import Iterable
+from typing import Iterable, Type
 
+from deprecat import deprecat
 from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
 from datacube.cfg.api import ODCEnvironment
 from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
@@ -18,6 +19,7 @@ from datacube.index.postgres._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, \
     default_metadata_type_docs
 from datacube.model import MetadataType
+from datacube.migration import ODC2DeprecationWarning
 
 _LOG = logging.getLogger(__name__)
 
@@ -45,8 +47,21 @@ class Index(AbstractIndex):
     :type products: datacube.index._products.ProductResource
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
+    #   Metadata type support flags
+    supports_legacy = True
+    supports_eo3 = True
+    supports_nongeo = True
 
+    #   Database/storage feature support flags
+    supports_write = True
+    supports_persistance = True
     supports_transactions = True
+
+    #   User managment support flags
+    supports_users = True
+
+    #   Lineage support flags
+    supports_lineage = True
 
     def __init__(self, db: PostgresDb, env: ODCEnvironment) -> None:
         self._db = db
@@ -174,13 +189,16 @@ class Index(AbstractIndex):
 class DefaultIndexDriver(AbstractIndexDriver):
     aliases = ['postgres', 'legacy']
 
-    @staticmethod
-    def connect_to_index(config_env: ODCEnvironment,
-                         application_name: str | None = None,
-                         validate_connection: bool = True):
-        return Index.from_config(config_env, application_name, validate_connection)
+    @classmethod
+    def index_class(cls) -> Type[AbstractIndex]:
+        return Index
 
     @staticmethod
+    @deprecat(
+        reason="The 'metadata_type_from_doc' static method has been deprecated. "
+               "Please use the 'index.metadata_type.from_doc()' instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:
