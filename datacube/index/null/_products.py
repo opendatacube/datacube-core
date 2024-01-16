@@ -31,9 +31,6 @@ class ProductResource(AbstractProductResource):
     def get_by_name_unsafe(self, name):
         raise KeyError(name)
 
-    def get_with_fields(self, field_names):
-        return []
-
     def search_robust(self, **query):
         return []
 

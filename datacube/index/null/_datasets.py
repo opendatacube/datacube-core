@@ -53,9 +53,6 @@ class DatasetResource(AbstractDatasetResource):
     def get_all_dataset_ids(self, archived: bool):
         return []
 
-    def get_field_names(self, product_name=None):
-        return []
-
     def get_locations(self, id_):
         return []
 

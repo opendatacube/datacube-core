@@ -409,23 +409,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection(transaction=True) as transaction:
             return [dsid[0] for dsid in transaction.all_dataset_ids(archived)]
 
-    def get_field_names(self, product_name=None):
-        """
-        Get the list of possible search fields for a Product
-
-        :param str product_name:
-        :rtype: set[str]
-        """
-        if product_name is None:
-            products = self.products.get_all()
-        else:
-            products = [self.products.get_by_name(product_name)]
-
-        out = set()
-        for prod_ in products:
-            out.update(prod_.metadata_type.dataset_fields)
-        return out
-
     def get_locations(self, id_):
         """
         Get the list of storage locations for the given dataset id

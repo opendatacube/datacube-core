@@ -119,14 +119,6 @@ class ProductResource(AbstractProductResource):
     def get_by_name_unsafe(self, name: str) -> Product:
         return self.clone(self.by_name[name])
 
-    def get_with_fields(self, field_names: Iterable[str]) -> Iterable[Product]:
-        for prod in self.get_all():
-            for name in field_names:
-                if name not in prod.metadata_type.dataset_fields:
-                    break
-            else:
-                yield prod
-
     def search_robust(self, **query: QueryField) -> Iterator[Tuple[Product, Mapping[str, QueryField]]]:
         def listify(v):
             if isinstance(v, tuple):
