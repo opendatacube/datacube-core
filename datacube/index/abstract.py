@@ -311,7 +311,7 @@ class AbstractMetadataTypeResource(ABC):
                     all_fields_found = False
                     break
             if all_fields_found:
-                yield self.clone(mdt)
+                yield mdt
 
     def get(self, id_: int) -> Optional[MetadataType]:
         """
@@ -702,7 +702,7 @@ class AbstractProductResource(ABC):
         :param field_names: names of fields that returned products must have
         :returns: Matching product models
         """
-        return self.get_with_types(self._index.metadata_types.get_with_fields(field_names))
+        return self.get_with_types(self.metadata_type_resource.get_with_fields(field_names))
 
     def get_with_types(self, types: Iterable[MetadataType]) -> Iterable[Product]:
         """

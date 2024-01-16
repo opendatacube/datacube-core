@@ -9,8 +9,8 @@ from typing import Iterable, Optional
 
 
 class DatasetResource(AbstractDatasetResource):
-    def __init__(self, product_resource):
-        self.types = product_resource
+    def __init__(self, index):
+        super().__init__(index)
 
     def get(self, id_: DSID, include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0):
         return None

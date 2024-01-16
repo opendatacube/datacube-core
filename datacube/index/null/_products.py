@@ -13,8 +13,8 @@ _LOG = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource):
-    def __init__(self, metadata_type_resource):
-        self.metadata_type_resource = metadata_type_resource
+    def __init__(self, mdtr):
+        self.metadata_type_resource = mdtr
 
     def add(self, product, allow_table_lock=False):
         raise NotImplementedError()

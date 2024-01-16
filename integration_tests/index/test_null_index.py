@@ -11,6 +11,10 @@ from datacube.cfg import ODCEnvironment
 
 test_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
 
+def empty(iterable):
+    for x in iterable:
+        return False
+    return True
 
 def test_init_null(null_config: ODCEnvironment):
     from datacube.drivers.indexes import index_cache
@@ -24,7 +28,7 @@ def test_init_null(null_config: ODCEnvironment):
 
 def test_null_user_resource(null_config: ODCEnvironment):
     with Datacube(env=null_config, validate_connection=True) as dc:
-        assert dc.index.users.list_users() == []
+        assert empty(dc.index.users.list_users())
         with pytest.raises(NotImplementedError) as e:
             dc.index.users.create_user("user1", "password2", "role1")
         with pytest.raises(NotImplementedError) as e:
@@ -58,7 +62,7 @@ def test_null_product_resource(null_config: ODCEnvironment):
     with Datacube(env=null_config, validate_connection=True) as dc:
         assert dc.index.products.get_all() == []
         assert dc.index.products.search_robust(foo="bar", baz=12) == []
-        assert dc.index.products.get_with_fields(["foo", "bar"]) == []
+        assert empty(dc.index.products.get_with_fields(["foo", "bar"]))
         with pytest.raises(KeyError) as e:
             dc.index.products.get_unsafe(1)
         with pytest.raises(KeyError) as e:
@@ -91,8 +95,8 @@ def test_null_dataset_resource(null_config: ODCEnvironment):
         with pytest.raises(NotImplementedError) as e:
             dc.index.datasets.purge([test_uuid, "foo"])
 
-        assert dc.index.datasets.get_all_dataset_ids(True) == []
-        assert dc.index.datasets.get_field_names() == []
+        assert empty(dc.index.datasets.get_all_dataset_ids(True))
+        assert empty(dc.index.datasets.get_field_names())
         assert dc.index.datasets.get_locations(test_uuid) == []
         assert dc.index.datasets.get_archived_locations(test_uuid) == []
         assert dc.index.datasets.get_archived_location_times(test_uuid) == []
