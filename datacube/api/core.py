@@ -113,6 +113,14 @@ class Datacube(object):
         :return: A table or list of every product in the datacube.
         :rtype: pandas.DataFrame or list(dict)
         """
+        def _get_non_default(product, col):
+            load_hints = product.load_hints()
+            if load_hints:
+                if col == 'crs':
+                    return load_hints.get('output_crs', None)
+                return load_hints.get(col, None)
+            return getattr(product.grid_spec, col, None)
+
         # Read properties from each datacube product
         cols = [
             'name',
@@ -125,10 +133,10 @@ class Datacube(object):
             getattr(pr, col, None)
             # if 'default_crs' and 'default_resolution' are not None
             # return 'default_crs' and 'default_resolution'
-            if getattr(pr, col, None) and 'default' not in col
-            # else try 'grid_spec.crs' and 'grid_spec.resolution'
+            if getattr(pr, col, None) or 'default' not in col
+            # else get crs and resolution from load_hints or grid_spec
             # as per output_geobox() handling logic
-            else getattr(pr.grid_spec, col.replace('default_', ''), None)
+            else _get_non_default(pr, col.replace('default_', ''))
             for col in cols]
             for pr in self.index.products.get_all()]
 
