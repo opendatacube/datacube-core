@@ -11,10 +11,12 @@ from datacube.cfg import ODCEnvironment
 
 test_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
 
+
 def empty(iterable):
     for x in iterable:
         return False
     return True
+
 
 def test_init_null(null_config: ODCEnvironment):
     from datacube.drivers.indexes import index_cache

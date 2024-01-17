@@ -19,11 +19,9 @@ from uuid import UUID
 from datetime import timedelta
 from deprecat import deprecat
 
-from deprecat import deprecat
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
-from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Product, Dataset, MetadataType, Range
 from datacube.model import LineageTree, LineageDirection, LineageRelation
 from datacube.model.lineage import LineageRelations
