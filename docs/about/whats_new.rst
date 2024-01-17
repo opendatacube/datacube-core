@@ -13,6 +13,7 @@ v1.8.next
 - Update pandas version in docker image to be consistent with conda environment and default to stdlib
   timezone instead of pytz when converting timestamps; automatically update copyright years (:pull:`1527`)
 - Update github-Dockerhub credential-passing mechanism. (:pull:`1528`)
+- Tweak ``list_products`` logic for getting crs and resolution values (:pull:`1535`)
 
 v1.8.17 (8th November 2023)
 ===========================
