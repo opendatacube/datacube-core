@@ -4,7 +4,7 @@
 ## Copyright (c) 2015-2020 ODC Contributors
 ## SPDX-License-Identifier: Apache-2.0
 ##
-FROM osgeo/gdal:ubuntu-small-latest
+FROM ghcr.io/osgeo/gdal:ubuntu-small-latest
 ARG V_PG=14
 ARG V_PGIS=14-postgis-3
 
