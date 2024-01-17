@@ -22,7 +22,7 @@ def mock_index():
 
 
 def test_query_kwargs(mock_index):
-    mock_index.datasets.get_field_names = lambda: {u'product', u'lat', u'sat_path', 'type_id', u'time', u'lon',
+    mock_index.products.get_field_names = lambda: {u'product', u'lat', u'sat_path', 'type_id', u'time', u'lon',
                                                    u'orbit', u'instrument', u'sat_row', u'platform', 'metadata_type',
                                                    u'gsi', 'type', 'id'}
 
