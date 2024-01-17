@@ -642,18 +642,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return next(self._do_time_count(period, query, ensure_single=True))[1]
 
-    def _get_products(self, q):
-        products = set()
-        if 'product' in q.keys():
-            products.add(self.products.get_by_name(q['product']))
-        else:
-            # Otherwise search any metadata type that has all the given search fields.
-            products = self.products.get_with_fields(tuple(q.keys()))
-            if not products:
-                raise ValueError('No type of dataset has fields: {}'.format(q.keys()))
-
-        return products
-
     def _get_product_queries(self, query):
         for product, q in self.products.search_robust(**query):
             q['product_id'] = product.id

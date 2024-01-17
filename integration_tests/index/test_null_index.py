@@ -63,6 +63,7 @@ def test_null_product_resource(null_config: ODCEnvironment):
         assert dc.index.products.get_all() == []
         assert dc.index.products.search_robust(foo="bar", baz=12) == []
         assert empty(dc.index.products.get_with_fields(["foo", "bar"]))
+        assert empty(dc.index.products.get_field_names())
         with pytest.raises(KeyError) as e:
             dc.index.products.get_unsafe(1)
         with pytest.raises(KeyError) as e:
@@ -96,7 +97,7 @@ def test_null_dataset_resource(null_config: ODCEnvironment):
             dc.index.datasets.purge([test_uuid, "foo"])
 
         assert empty(dc.index.datasets.get_all_dataset_ids(True))
-        assert empty(dc.index.datasets.get_field_names())
+        assert empty(dc.index.datasets.get_field_names())  # DEPRECATED WRAPPER METHOD
         assert dc.index.datasets.get_locations(test_uuid) == []
         assert dc.index.datasets.get_archived_locations(test_uuid) == []
         assert dc.index.datasets.get_archived_location_times(test_uuid) == []

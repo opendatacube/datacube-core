@@ -440,12 +440,26 @@ def test_filter_types_by_fields(index, wo_eo3_product):
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
     """
-    assert index.products
+    res = list(index.metadata_types.get_with_fields(['platform', 'instrument', 'region_code']))
+    assert res == [wo_eo3_product.metadata_type]
+
+    res = list(index.metadata_types.get_with_fields(['platform', 'instrument', 'region_code', 'favorite_icecream']))
+    assert len(res) == 0
+
     res = list(index.products.get_with_fields(['platform', 'instrument', 'region_code']))
     assert res == [wo_eo3_product]
 
     res = list(index.products.get_with_fields(['platform', 'instrument', 'region_code', 'favorite_icecream']))
     assert len(res) == 0
+
+
+def test_filter_products_by_types(index, wo_eo3_product):
+    """
+    :type ls5_telem_type: datacube.model.DatasetType
+    :type index: datacube.index.Index
+    """
+    res = list(index.products.get_with_types([wo_eo3_product.metadata_type]))
+    assert res == [wo_eo3_product]
 
 
 def test_filter_types_by_search(index, wo_eo3_product):

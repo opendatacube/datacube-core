@@ -689,12 +689,6 @@ class AbstractProductResource(ABC):
         :raises KeyError: if not found
         """
 
-    @deprecat(
-        reason="This method is deprecated and will be removed in v2.0. Please migrate to "
-               "`dc.index.metadata_types.get_with_fields()` and `dc.index.products.get_with_type()`",
-        version="1.9.0",
-        category=ODC2DeprecationWarning
-    )
     def get_with_fields(self, field_names: Iterable[str]) -> Iterable[Product]:
         """
         Return products that have all of the given fields.
