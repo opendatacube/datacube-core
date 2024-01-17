@@ -94,7 +94,7 @@ def datasets(ctx, index, expressions):
     Search available Datasets
     """
     ctx.obj['write_results'](
-        sorted(index.datasets.get_field_names()),
+        sorted(index.products.get_field_names()),
         index.datasets.search_summaries(**expressions)
     )
 

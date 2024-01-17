@@ -250,7 +250,7 @@ def test_search_by_product_eo3(index: Index,
     [dataset] = products[base_eo3_product_doc["name"]]
     assert dataset.id == wo_eo3_dataset.id
     assert dataset.is_eo3
-    assert dataset.type == dataset.product
+    assert dataset.type == dataset.product  # DEPRECATED MEMBER
 
 
 def test_search_limit_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset):
@@ -816,8 +816,8 @@ def test_find_duplicates_eo3(index,
 def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_dataset):
     index.datasets.add(nrt_dataset, with_lineage=False)
     index.datasets.add(final_dataset, with_lineage=False)
-    index.datasets.get(nrt_dataset.id).is_active
-    index.datasets.get(final_dataset.id).is_active
+    assert not index.datasets.get(nrt_dataset.id).is_archived
+    assert not index.datasets.get(final_dataset.id).is_archived
 
     all_datasets = index.datasets.search_eager()
     assert len(all_datasets) == 3
