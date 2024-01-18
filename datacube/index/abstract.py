@@ -303,12 +303,7 @@ class AbstractMetadataTypeResource(ABC):
         :return: Iterable of matching metadata types.
         """
         for mdt in self.get_all():
-            all_fields_found: bool = True
-            for field in field_names:
-                if field not in mdt.dataset_fields:
-                    all_fields_found = False
-                    break
-            if all_fields_found:
+            if all(field in mdt.dataset_fields for field in field_names):
                 yield mdt
 
     def get(self, id_: int) -> Optional[MetadataType]:
