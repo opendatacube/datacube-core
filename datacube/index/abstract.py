@@ -17,8 +17,8 @@ from typing import (Any, Iterable, Iterator,
 from urllib.parse import urlparse, ParseResult
 from uuid import UUID
 from datetime import timedelta
-
 from deprecat import deprecat
+
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
@@ -294,6 +294,17 @@ class AbstractMetadataTypeResource(ABC):
         :return: Persisted updated MetadataType model
         """
         return self.update(self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates)
+
+    def get_with_fields(self, field_names: Iterable[str]) -> Iterable[MetadataType]:
+        """
+        Return all metadata types that have all of the named search fields.
+
+        :param field_names: Iterable of search field names
+        :return: Iterable of matching metadata types.
+        """
+        for mdt in self.get_all():
+            if all(field in mdt.dataset_fields for field in field_names):
+                yield mdt
 
     def get(self, id_: int) -> Optional[MetadataType]:
         """
@@ -671,7 +682,6 @@ class AbstractProductResource(ABC):
         :raises KeyError: if not found
         """
 
-    @abstractmethod
     def get_with_fields(self, field_names: Iterable[str]) -> Iterable[Product]:
         """
         Return products that have all of the given fields.
@@ -679,6 +689,40 @@ class AbstractProductResource(ABC):
         :param field_names: names of fields that returned products must have
         :returns: Matching product models
         """
+        return self.get_with_types(self.metadata_type_resource.get_with_fields(field_names))
+
+    def get_with_types(self, types: Iterable[MetadataType]) -> Iterable[Product]:
+        """
+        Return all products for given metadata types
+
+        :param types: An interable of MetadataType models
+        :return: An iterable of Product models
+        """
+        mdts = set(mdt.name for mdt in types)
+        for prod in self.get_all():
+            if prod.metadata_type.name in mdts:
+                yield prod
+
+    def get_field_names(self, product: Optional[str | Product] = None) -> Iterable[str]:
+        """
+        Get the list of possible search fields for a Product (or all products)
+
+        :param product: Name of product, a Product object, or None for all products
+        :return: All possible search field names
+        """
+        if product is None:
+            prods = self.get_all()
+        else:
+            if isinstance(product, str):
+                product = self.get_by_name(product)
+            if product is None:
+                prods = []
+            else:
+                prods = [product]
+        out = set()
+        for prod in prods:
+            out.update(prod.metadata_type.dataset_fields)
+        return out
 
     def search(self, **query: QueryField) -> Iterator[Product]:
         """
@@ -1287,7 +1331,11 @@ class AbstractDatasetResource(ABC):
         :return: Iterable of dataset ids
         """
 
-    @abstractmethod
+    @deprecat(
+        reason="This method has been moved to the Product resource (i.e. dc.index.products.get_field_names)",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_field_names(self, product_name: Optional[str] = None) -> Iterable[str]:
         """
         Get the list of possible search fields for a Product (or all products)
@@ -1295,6 +1343,7 @@ class AbstractDatasetResource(ABC):
         :param product_name: Name of product, or None for all products
         :return: All possible search field names
         """
+        return self._index.products.get_field_names(product_name)
 
     @abstractmethod
     def get_locations(self, id_: DSID) -> Iterable[str]:

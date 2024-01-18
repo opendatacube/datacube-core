@@ -244,20 +244,6 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             raise KeyError('"%s" is not a valid Product name' % name)
         return self._make(result)
 
-    def get_with_fields(self, field_names):
-        """
-        Return dataset types that have all the given fields.
-
-        :param tuple[str] field_names:
-        :rtype: __generator[Product]
-        """
-        for type_ in self.get_all():
-            for name in field_names:
-                if name not in type_.metadata_type.dataset_fields:
-                    break
-            else:
-                yield type_
-
     def search_robust(self, **query):
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.

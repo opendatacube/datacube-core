@@ -86,6 +86,15 @@ def test_mem_metadatatype_resource(mem_index_fresh: ODCEnvironment):
     mem_index_fresh.index.metadata_types.update(eo3_fresh)
     eo3_fresher = mem_index_fresh.index.metadata_types.get_by_name("eo3")
     assert eo3_fresher.description == eo3_fresh.description
+    # Check get_with_fields
+    platform_mdts = list(mem_index_fresh.index.metadata_types.get_with_fields(["platform"]))
+    assert len(platform_mdts) == 3
+    assert eo3 in platform_mdts
+    ptype_mdts = list(mem_index_fresh.index.metadata_types.get_with_fields(["platform", "product_type"]))
+    assert len(ptype_mdts) == 2
+    assert eo3 not in ptype_mdts
+    pfam_mdts = list(mem_index_fresh.index.metadata_types.get_with_fields(["platform", "product_family"]))
+    pfam_mdts == [eo3]
 
 
 def test_mem_product_resource(mem_index_fresh: ODCEnvironment,
@@ -93,9 +102,11 @@ def test_mem_product_resource(mem_index_fresh: ODCEnvironment,
                               extended_eo3_product_doc,
                               base_eo3_product_doc
                               ):
+    eo3 = mem_index_fresh.index.metadata_types.get_by_name("eo3")
     # Test Empty index works as expected:
     assert list(mem_index_fresh.index.products.get_with_fields(("measurements", "extent"))) == []
     assert list(mem_index_fresh.index.products.search_robust()) == []
+    assert list(mem_index_fresh.index.products.get_with_types([eo3])) == []
     assert mem_index_fresh.index.products.get_by_name("product1") is None
     # Add an e03 product doc
     wo_prod = mem_index_fresh.index.products.add_document(base_eo3_product_doc)
@@ -106,13 +117,13 @@ def test_mem_product_resource(mem_index_fresh: ODCEnvironment,
     with pytest.raises(InvalidDocException) as e:
         ls8_prod = mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
     # Add extended eo3 metadatatype
-    mem_index_fresh.index.metadata_types.add(
-        mem_index_fresh.index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
-    )
+    eo3ext = mem_index_fresh.index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
+    mem_index_fresh.index.metadata_types.add(eo3ext)
     # Add an extended eo3 product doc
     ls8_prod = mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
     assert ls8_prod.name == 'ga_ls8c_ard_3'
     assert mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3").name == 'ga_ls8c_ard_3'
+    assert list(mem_index_fresh.index.products.get_with_types([eo3ext])) == [ls8_prod]
     # Verify we cannot mess with the cache
     ls8_prod.definition["description"] = "foo"
     ls8_prod.definition["measurements"][0]["name"] = "blueish"
@@ -197,7 +208,7 @@ def test_mem_ds_lineage(mem_eo3_data: ODCEnvironment):
     derived = list(dc.index.datasets.get_derived(ls8_id))
     assert len(derived) == 1
     assert derived[0].id == wo_id
-    assert "cloud_cover" in dc.index.datasets.get_field_names(ls8_ds.product.name)
+    assert "cloud_cover" in dc.index.products.get_field_names(ls8_ds.product)
 
 
 def test_mem_ds_search_dups(mem_eo3_data: ODCEnvironment):

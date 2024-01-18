@@ -8,9 +8,6 @@ from datacube.model import MetadataType
 
 
 class MetadataTypeResource(AbstractMetadataTypeResource):
-    def __init__(self):
-        pass
-
     def from_doc(self, definition):
         raise NotImplementedError
 

@@ -28,6 +28,7 @@ v1.9.next
 - Alembic migrations for postgis driver (:pull:`1520`)
 - EP08 lineage extensions/changes to datasets.get(). (:pull:`1530`)
 - EP13 API changes to Index and IndexDriver. (:pull:`1534`)
+- EP13 API changes to metadata and product resources. (:pull:`1536`)
 
 
 v1.8.next
@@ -37,6 +38,8 @@ v1.8.next
 - Warn if non-eo3 dataset has eo3 metadata type (:pull:`1523`)
 - Update pandas version in docker image to be consistent with conda environment and default to stdlib
   timezone instead of pytz when converting timestamps; automatically update copyright years (:pull:`1527`)
+- Update github-Dockerhub credential-passing mechanism. (:pull:`1528`)
+- Tweak ``list_products`` logic for getting crs and resolution values (:pull:`1535`)
 
 v1.8.17 (8th November 2023)
 ===========================

@@ -222,7 +222,7 @@ def group_datasets(*args, **kwargs):
 @pytest.fixture
 def dc():
     result = mock.MagicMock()
-    result.index.datasets.get_field_names.return_value = {'id', 'product', 'time'}
+    result.index.products.get_field_names.return_value = {'id', 'product', 'time'}
 
     ids = ['87a68652-b76a-450f-b44f-e5192243218e',
            'af9deddf-daf3-4e93-8f36-21437b52817c',

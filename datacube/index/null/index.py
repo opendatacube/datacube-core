@@ -36,9 +36,9 @@ class Index(AbstractIndex):
         self._env = env
         self._users = UserResource()
         self._metadata_types = MetadataTypeResource()
-        self._products = ProductResource(self.metadata_types)
+        self._products = ProductResource(self._metadata_types)
         self._lineage = NoLineageResource(self)
-        self._datasets = DatasetResource(self.products)
+        self._datasets = DatasetResource(self)
 
     @property
     def environment(self) -> ODCEnvironment:

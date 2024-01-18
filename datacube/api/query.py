@@ -118,7 +118,7 @@ class Query(object):
 
             remaining_keys -= known_dim_keys
 
-            unknown_keys = remaining_keys - set(index.datasets.get_field_names())
+            unknown_keys = remaining_keys - set(index.products.get_field_names())
             # TODO: What about keys source filters, and what if the keys don't match up with this product...
             if unknown_keys:
                 raise LookupError('Unknown arguments: ', unknown_keys)

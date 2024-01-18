@@ -411,6 +411,15 @@ class MetadataType:
         cls.validate(doc)
         validate_eo3_compatible_type(doc)
 
+    def __eq__(self, other: Any) -> bool:
+        if self is other:
+            return True
+
+        if self.__class__ != other.__class__:
+            return False
+
+        return self.name == other.name
+
     def __str__(self) -> str:
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 

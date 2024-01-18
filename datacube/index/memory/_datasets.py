@@ -296,20 +296,6 @@ class DatasetResource(AbstractDatasetResource):
         else:
             return (id_ for id_ in self.active_by_id.keys())
 
-    def get_field_names(self, product_name=None) -> Iterable[str]:
-        if product_name is None:
-            prods = self._index.products.get_all()
-        else:
-            prod = self._index.products.get_by_name(product_name)
-            if prod:
-                prods = [prod]
-            else:
-                prods = []
-        out: Set[str] = set()
-        for prod in prods:
-            out.update(prod.metadata_type.dataset_fields)
-        return out
-
     def get_locations(self, id_: DSID) -> Iterable[str]:
         uuid = dsid_to_uuid(id_)
         return (s for s in self.locations[uuid])
