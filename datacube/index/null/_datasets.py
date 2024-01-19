@@ -12,8 +12,8 @@ class DatasetResource(AbstractDatasetResource):
     def __init__(self, index):
         super().__init__(index)
 
-    def get(self, id_: DSID, include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0):
-        return None
+    def get_unsafe(self, id_: DSID, include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0):
+        raise KeyError(id_)
 
     def bulk_get(self, ids):
         return []

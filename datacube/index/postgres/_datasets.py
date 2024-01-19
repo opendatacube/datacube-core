@@ -47,10 +47,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         self._db = db
         super().__init__(index)
 
-    def get(self, id_: DSID, include_sources: bool = False,
-            include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
+    def get_unsafe(self, id_: DSID, include_sources: bool = False,
+            include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         """
-        Get dataset by id
+        Get dataset by id (raise KeyError if not in index)
 
         :param UUID id_: id of the dataset to retrieve
         :param bool include_sources: get the full provenance graph?
@@ -71,7 +71,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         if not datasets:
             # No dataset found
-            return None
+            raise KeyError(id_)
 
         for dataset, result in datasets.values():
             dataset.metadata.sources = {

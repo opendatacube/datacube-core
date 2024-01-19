@@ -47,19 +47,16 @@ class DatasetResource(AbstractDatasetResource):
         # Active Index By Product
         self.by_product: MutableMapping[str, List[UUID]] = {}
 
-    def get(self, id_: DSID, include_sources: bool = False,
-            include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
+    def get_unsafe(self, id_: DSID, include_sources: bool = False,
+            include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         self._check_get_legacy(include_deriveds, max_depth)
-        try:
-            ds = self.clone(self.by_id[dsid_to_uuid(id_)])
-            if include_sources:
-                ds.sources = {
-                    classifier: cast(Dataset, self.get(dsid, include_sources=True))
-                    for classifier, dsid in self.derived_from.get(ds.id, {}).items()
-                }
-            return ds
-        except KeyError:
-            return None
+        ds = self.clone(self.by_id[dsid_to_uuid(id_)])  #  N.B. raises KeyError if id not in index.
+        if include_sources:
+            ds.sources = {
+                classifier: cast(Dataset, self.get(dsid, include_sources=True))
+                for classifier, dsid in self.derived_from.get(ds.id, {}).items()
+            }
+        return ds
 
     def bulk_get(self, ids: Iterable[DSID]) -> Iterable[Dataset]:
         return (ds for ds in (self.get(dsid) for dsid in ids) if ds is not None)

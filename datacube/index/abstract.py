@@ -1062,14 +1062,14 @@ class AbstractDatasetResource(ABC):
         self.types = self.products  # types is compatibility alias for products
 
     @abstractmethod
-    def get(self,
-            id_: DSID,
-            include_sources: bool = False,
-            include_deriveds: bool = False,
-            max_depth: int = 0
-            ) -> Optional[Dataset]:
+    def get_unsafe(self,
+                    id_: DSID,
+                    include_sources: bool = False,
+                    include_deriveds: bool = False,
+                    max_depth: int = 0
+                    ) -> Dataset:
         """
-        Get dataset by id
+        Get dataset by id (Raises KeyError if id_ does not exist)
 
         - Index drivers supporting the legacy lineage API:
 
@@ -1085,6 +1085,34 @@ class AbstractDatasetResource(ABC):
         :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
         :rtype: Dataset model (None if not found)
         """
+
+    def get(self,
+            id_: DSID,
+            include_sources: bool = False,
+            include_deriveds: bool = False,
+            max_depth: int = 0
+            ) -> Optional[Dataset]:
+        """
+        Get dataset by id (Return None if id_ does not exist.
+
+        - Index drivers supporting the legacy lineage API:
+
+        :param id_: id of the dataset to retrieve
+        :param include_sources: include the full provenance tree of the dataset.
+
+
+        - Index drivers supporting the external lineage API:
+
+        :param id_: id of the dataset to retrieve
+        :param include_sources: include the full provenance tree for the dataset.
+        :param include_deriveds: include the full derivative tree for the dataset.
+        :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
+        :rtype: Dataset model (None if not found)
+        """
+        try:
+            return self.get_unsafe(id_, include_sources, include_deriveds, max_depth)
+        except KeyError:
+            return None
 
     def _check_get_legacy(self,
                           include_deriveds: bool = False,

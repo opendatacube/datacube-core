@@ -51,10 +51,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         self._db = db
         super().__init__(index)
 
-    def get(self, id_: DSID,
-            include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
+    def get_unsafe(self, id_: DSID,
+            include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         """
-        Get dataset by id
+        Get dataset by id (raise KeyError if not found)
 
         :param id_: id of the dataset to retrieve
         :param include_sources: include the full provenance tree for the dataset.
@@ -74,7 +74,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             dataset = connection.get_dataset(id_)
             if not dataset:
-                return None
+                raise KeyError(id_)
             return self._make(dataset, full_info=True, source_tree=source_tree, derived_tree=derived_tree)
 
     def bulk_get(self, ids):
