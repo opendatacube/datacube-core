@@ -1140,6 +1140,10 @@ class AbstractDatasetResource(ABC):
         :return: Iterable of Dataset models
         """
 
+    @deprecat(
+        reason="The 'get_derived' static method is deprecated in favour of the new lineage API.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     @abstractmethod
     def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         """

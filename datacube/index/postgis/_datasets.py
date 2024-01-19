@@ -87,6 +87,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             rows = connection.get_datasets(ids)
             return [self._make(r, full_info=True) for r in rows]
 
+    @deprecat(
+        reason="The 'get_derived' static method is deprecated in favour of the new lineage API.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def get_derived(self, id_):
         """
         Get all derived datasets
