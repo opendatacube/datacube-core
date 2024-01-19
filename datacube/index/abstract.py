@@ -1696,15 +1696,37 @@ class AbstractDatasetResource(ABC):
         return list(self.search(**query))  # type: ignore[arg-type]   # mypy isn't being very smart here :(
 
     @abstractmethod
+    def temporal_extent(self,
+                        product: str | Product | None,
+                        ids: Iterable[DSID] | None
+                        ) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Returns the minimum and maximum acquisition time of a product or an iterable of dataset ids.
+
+        Only one ids or products can be passed - the other should be None.  Raises ValueError if
+        both or neither of ids and products is passed.  Raises KeyError if no datasets in the index
+        match the input argument.
+
+        :param product: Product or name of product
+        :param ids: Iterable of dataset ids.
+        :return: minimum and maximum acquisition times
+        """
+
+    @deprecat(
+        reason="This method has been renamed 'temporal_extent'",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_product_time_bounds(self,
-                                product: str
-                               ) -> Tuple[datetime.datetime, datetime.datetime]:
+                                product: str | Product
+                               ) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
 
-        :param product: Name of product
+        :param product: Product of name of product
         :return: minimum and maximum acquisition times
         """
+        return self.temporal_extent(product=product)
 
     @abstractmethod
     def search_returning_datasets_light(self,

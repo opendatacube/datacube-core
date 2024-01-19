@@ -642,15 +642,25 @@ class DatasetResource(AbstractDatasetResource):
         for ds in self.search(**query):  # type: ignore[arg-type]
             yield make_summary(ds)
 
-    def get_product_time_bounds(self, product: str) -> Tuple[datetime.datetime, datetime.datetime]:
+    def temporal_extent(
+            self,
+            product: str | Product | None = None,
+            ids: Iterable[DSID] | None = None
+    ) -> tuple[datetime.datetime, datetime.datetime]:
+        if product is None and ids is None:
+            raise ValueError("Must supply product or ids")
+        elif product is not None and ids is not None:
+            raise ValueError("Cannot supply both product and ids")
+        elif product is not None:
+            if isinstance(product, str):
+                product = self._index.products.get_by_name_unsafe(product)
+            ids = self.by_product.get(product, [])
+
         min_time: Optional[datetime.datetime] = None
         max_time: Optional[datetime.datetime] = None
-        prod = self._index.products.get_by_name(product)
-        if prod is None:
-            raise ValueError(f"Product {product} not in index")
-        time_fld = prod.metadata_type.dataset_fields["time"]
-        for dsid in self.by_product.get(product, []):
-            ds = cast(Dataset, self.get(dsid))
+        for dsid in ids:
+            ds = self.get_unsafe(dsid)
+            time_fld = ds.product.metadata_type.dataset_fields["time"]
             dsmin, dsmax = time_fld.extract(ds.metadata_doc)  # type: ignore[attr-defined]
             if dsmax is None and dsmin is None:
                 continue

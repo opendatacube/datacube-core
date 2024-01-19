@@ -5,6 +5,7 @@
 """
 API for dataset indexing, access and search.
 """
+import datetime
 import json
 import logging
 import warnings
@@ -737,10 +738,24 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for columns in results:
                 yield columns._asdict()
 
-    def get_product_time_bounds(self, product: str):
+    def temporal_extent(
+            self,
+            product: str | Product | None = None,
+            ids: Iterable[DSID] | None = None
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
         """
+        if product is None and ids is None:
+            raise ValueError("Must supply product or ids")
+        elif product is not None and ids is not None:
+            raise ValueError("Cannot supply both product and ids")
+        elif product is not None:
+            if isinstance(product, str):
+                product = self._index.products.get_by_name_unsafe(product)
+        else:
+            raise NotImplementedError("Sorry ids not supported yet.")
+
         # This implementation violates architecture - should not be SQLAlchemy code at this level.
         # Get the offsets from dataset doc
         product = self.types.get_by_name(product)

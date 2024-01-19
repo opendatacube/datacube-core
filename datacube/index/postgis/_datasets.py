@@ -5,6 +5,7 @@
 """
 API for dataset indexing, access and search.
 """
+import datetime
 import json
 import logging
 import warnings
@@ -14,13 +15,14 @@ from typing import Iterable, List, Mapping, Union, Optional, Any
 from uuid import UUID
 
 from sqlalchemy import select, func
+from deprecat import deprecat
 
 from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
 from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fields
 from datacube.utils.uris import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
-
+from datacube.migration import ODC2DeprecationWarning
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product, Range, LineageTree
@@ -746,11 +748,24 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 _LOG.warning("search results: %s (%s)", output["id"], output["product"])
                 yield output
 
-    def get_product_time_bounds(self, product: str):
+    def temporal_extent(
+            self,
+            product: str | Product | None = None,
+            ids: Iterable[DSID] | None = None
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
         """
-
+        if product is None and ids is None:
+            raise ValueError("Must supply product or ids")
+        elif product is not None and ids is not None:
+            raise ValueError("Cannot supply both product and ids")
+        elif product is not None:
+            if isinstance(product, str):
+                product = self._index.products.get_by_name_unsafe(product)
+        else:
+            raise NotImplementedError("Sorry ids not supported yet.")
+        # This implementation violates architecture - should not be SQLAlchemy code at this level.
         # Get the offsets from dataset doc
         product = self.products.get_by_name(product)
         dataset_section = product.metadata_type.definition['dataset']
