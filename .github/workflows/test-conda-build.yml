@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Cache conda
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           # Increase this value to reset cache if setup.py has not changed
           CACHE_NUMBER: 0
