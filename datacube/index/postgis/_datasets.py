@@ -14,10 +14,9 @@ from time import monotonic
 from typing import Iterable, List, Mapping, Union, Optional, Any
 from uuid import UUID
 
-from sqlalchemy import select, func
 from deprecat import deprecat
 
-from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
+from datacube.drivers.postgis._fields import SimpleDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
 from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fields
 from datacube.utils.uris import split_uri
@@ -763,37 +762,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         elif product is not None:
             if isinstance(product, str):
                 product = self._index.products.get_by_name_unsafe(product)
+            with self._db_connnection() as connection:
+                result = connection.temporal_extent_by_prod(product.id)
         else:
-            raise NotImplementedError("Sorry ids not supported yet.")
-        # This implementation violates architecture - should not be SQLAlchemy code at this level.
-        # Get the offsets from dataset doc
-        product = self.products.get_by_name(product)
-        dataset_section = product.metadata_type.definition['dataset']
-        min_offset = dataset_section['search_fields']['time']['min_offset']
-        max_offset = dataset_section['search_fields']['time']['max_offset']
-
-        time_min = DateDocField('aquisition_time_min',
-                                'Min of time when dataset was acquired',
-                                SQLDataset.metadata_doc,
-                                False,  # is it indexed
-                                offset=min_offset,
-                                selection='least')
-
-        time_max = DateDocField('aquisition_time_max',
-                                'Max of time when dataset was acquired',
-                                SQLDataset.metadata_doc,
-                                False,  # is it indexed
-                                offset=max_offset,
-                                selection='greatest')
-
-        with self._db_connection() as connection:
-            result = connection.execute(
-                select(
-                    [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
-                ).where(
-                    SQLDataset.product_ref == product.id
-                )
-            ).first()
+            with self._db_connnection() as connection:
+                result = connection.temporal_extent_by_ids(ids)
 
         return result
 

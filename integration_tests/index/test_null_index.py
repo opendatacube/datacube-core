@@ -113,7 +113,7 @@ def test_null_dataset_resource(null_config: ODCEnvironment):
             dc.index.datasets.archive_location(test_uuid, "http://a.uri/test")
         with pytest.raises(NotImplementedError) as e:
             dc.index.datasets.restore_location(test_uuid, "http://a.uri/test")
-        with pytest.raises(NotImplementedError) as e:
+        with pytest.raises(KeyError) as e:
             dc.index.datasets.get_product_time_bounds("product1")
 
         assert dc.index.datasets.search_product_duplicates(MagicMock()) == []

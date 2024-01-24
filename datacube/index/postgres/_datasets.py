@@ -754,11 +754,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             if isinstance(product, str):
                 product = self._index.products.get_by_name_unsafe(product)
         else:
-            raise NotImplementedError("Sorry ids not supported yet.")
+            raise NotImplementedError("Sorry ids not supported in postgres driver.")
 
         # This implementation violates architecture - should not be SQLAlchemy code at this level.
         # Get the offsets from dataset doc
-        product = self.types.get_by_name(product)
         dataset_section = product.metadata_type.definition['dataset']
         min_offset = dataset_section['search_fields']['time']['min_offset']
         max_offset = dataset_section['search_fields']['time']['max_offset']

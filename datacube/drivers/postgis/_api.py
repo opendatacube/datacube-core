@@ -13,12 +13,14 @@
 Persistence API implementation for postgis.
 """
 
+import datetime
 import json
 import logging
 import uuid  # noqa: F401
 from sqlalchemy import cast
 from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.sql.expression import Select
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
@@ -1465,3 +1467,37 @@ class PostgisDbAPI:
             qry = qry.where(DatasetLineage.source_dataset_ref.in_(ids))
         results = self._connection.execute(qry)
         return results.rowcount
+
+    def temporal_extent_by_prod(self, product_id: int) -> tuple[datetime.datetime, datetime.datetime]:
+        query = self.temporal_extent_full().where(Dataset.product_ref == product_id)
+        res = self._connection.execute(query)
+        return res.first()
+
+    def temporal_extent_by_ids(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
+        query = self.temporal_extent_full().where(Dataset.id.in_(ids))
+        res = self._connection.execute(query)
+        return res.first()
+
+    def temporal_extent_full(self) -> Select:
+        # Hardcode eo3 standard time locations - do not use this approach in a legacy index driver.
+        time_min = DateDocField('aquisition_time_min',
+                                'Min of time when dataset was acquired',
+                                Dataset.metadata_doc,
+                                False,  # is it indexed
+                                offset=[
+                                    ['properties', 'dtr:start_datetime'],
+                                    ['properties', 'datetime']
+                                ],
+                                selection='least')
+        time_max = DateDocField('aquisition_time_max',
+                                'Max of time when dataset was acquired',
+                                Dataset.metadata_doc,
+                                False,  # is it indexed
+                                offset=[
+                                    ['properties', 'dtr:end_datetime'],
+                                    ['properties', 'datetime']
+                                ],
+                                selection='greatest')
+        return select(
+            [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
+        )
