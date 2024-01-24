@@ -29,6 +29,7 @@ v1.9.next
 - EP08 lineage extensions/changes to datasets.get(). (:pull:`1530`)
 - EP13 API changes to Index and IndexDriver. (:pull:`1534`)
 - EP13 API changes to metadata and product resources. (:pull:`1536`)
+- Phase 1 of EP13 API changes to dataset resource - get_unsafe, get_derived, temporal_extent. (:pull:`1538`)
 
 
 v1.8.next
