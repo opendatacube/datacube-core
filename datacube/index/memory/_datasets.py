@@ -48,9 +48,9 @@ class DatasetResource(AbstractDatasetResource):
         self.by_product: MutableMapping[str, List[UUID]] = {}
 
     def get_unsafe(self, id_: DSID, include_sources: bool = False,
-            include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
+                   include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         self._check_get_legacy(include_deriveds, max_depth)
-        ds = self.clone(self.by_id[dsid_to_uuid(id_)])  #  N.B. raises KeyError if id not in index.
+        ds = self.clone(self.by_id[dsid_to_uuid(id_)])  # N.B. raises KeyError if id not in index.
         if include_sources:
             ds.sources = {
                 classifier: cast(Dataset, self.get(dsid, include_sources=True))

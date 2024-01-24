@@ -1063,11 +1063,11 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def get_unsafe(self,
-                    id_: DSID,
-                    include_sources: bool = False,
-                    include_deriveds: bool = False,
-                    max_depth: int = 0
-                    ) -> Dataset:
+                   id_: DSID,
+                   include_sources: bool = False,
+                   include_deriveds: bool = False,
+                   max_depth: int = 0
+                   ) -> Dataset:
         """
         Get dataset by id (Raises KeyError if id_ does not exist)
 

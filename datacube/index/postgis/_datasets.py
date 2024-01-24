@@ -53,7 +53,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         super().__init__(index)
 
     def get_unsafe(self, id_: DSID,
-            include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
+                   include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         """
         Get dataset by id (raise KeyError if not found)
 
