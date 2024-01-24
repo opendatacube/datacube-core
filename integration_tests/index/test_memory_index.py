@@ -400,7 +400,8 @@ def test_temporal_extent(mem_eo3_data: ODCEnvironment):
         assert (tmin is None and tmax is None) or tmin < tmax
         tmin2, tmax2 = dc.index.datasets.temporal_extent(product=ds.product)
         assert tmin2 == tmin and tmax2 == tmax
-        tmin2, tmax2 = dc.index.datasets.temporal_extent(ids=[ds.id])
+        ids = [doc["id"] for prod, doc, uris in dc.index.datasets.get_all_docs_for_product(product=ds.product)]
+        tmin2, tmax2 = dc.index.datasets.temporal_extent(ids=ids)
         assert tmin2 == tmin and tmax2 == tmax
 
 

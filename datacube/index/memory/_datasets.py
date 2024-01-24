@@ -654,7 +654,7 @@ class DatasetResource(AbstractDatasetResource):
         elif product is not None:
             if isinstance(product, str):
                 product = self._index.products.get_by_name_unsafe(product)
-            ids = self.by_product.get(product, [])
+            ids = self.by_product.get(product.name, [])
 
         min_time: Optional[datetime.datetime] = None
         max_time: Optional[datetime.datetime] = None
