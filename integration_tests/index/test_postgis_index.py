@@ -205,8 +205,8 @@ def test_spatial_search(index,
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
 def test_temporal_extents(index,
-        ls8_eo3_dataset, ls8_eo3_dataset2,
-        ls8_eo3_dataset3, ls8_eo3_dataset4):
+                          ls8_eo3_dataset, ls8_eo3_dataset2,
+                          ls8_eo3_dataset3, ls8_eo3_dataset4):
     start, end = index.datasets.temporal_extent(product=ls8_eo3_dataset.product)
     assert start == datetime.datetime(
         2013, 4, 4, 0, 58, 34, 682275,
