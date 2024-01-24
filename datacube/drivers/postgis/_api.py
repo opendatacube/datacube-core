@@ -1499,5 +1499,5 @@ class PostgisDbAPI:
                                 ],
                                 selection='greatest')
         return select(
-            [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
+            func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)
         )

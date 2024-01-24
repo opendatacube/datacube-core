@@ -762,10 +762,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         elif product is not None:
             if isinstance(product, str):
                 product = self._index.products.get_by_name_unsafe(product)
-            with self._db_connnection() as connection:
+            with self._db_connection() as connection:
                 result = connection.temporal_extent_by_prod(product.id)
         else:
-            with self._db_connnection() as connection:
+            with self._db_connection() as connection:
                 result = connection.temporal_extent_by_ids(ids)
 
         return result
