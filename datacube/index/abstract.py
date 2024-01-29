@@ -1764,7 +1764,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def spatial_extent(self,
                        ids: Iterable[DSID] | None = None,
-                       product: str|Product|None = None,
+                       product: str | Product | None = None,
                        crs: CRS = CRS("EPSG:4326")
                        ) -> Optional[Geometry]:
         """

@@ -912,7 +912,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def spatial_extent(self,
                        ids: Iterable[DSID] | None = None,
-                       product: str|Product|None = None,
+                       product: str | Product | None = None,
                        crs: CRS = CRS("EPSG:4326")
                        ) -> Optional[Geometry]:
         if product is None and ids is None:
