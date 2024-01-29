@@ -17,6 +17,7 @@ import yaml
 
 from datacube.utils.documents import transform_object_tree
 from datacube.model._base import Range
+from odc.geo.crs import CRS
 
 
 class SafeDatacubeDumper(yaml.SafeDumper):  # pylint: disable=too-many-ancestors
@@ -71,9 +72,7 @@ def jsonify_document(doc):
             return v.isoformat()
         if isinstance(v, numpy.dtype):
             return v.name
-        if isinstance(v, UUID):
-            return str(v)
-        if isinstance(v, Decimal):
+        if isinstance(v, (UUID, Decimal, CRS)):
             return str(v)
         return v
 
