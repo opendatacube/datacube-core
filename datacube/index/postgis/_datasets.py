@@ -5,6 +5,7 @@
 """
 API for dataset indexing, access and search.
 """
+import datetime
 import json
 import logging
 import warnings
@@ -13,14 +14,14 @@ from time import monotonic
 from typing import Iterable, List, Mapping, Union, Optional, Any
 from uuid import UUID
 
-from sqlalchemy import select, func
+from deprecat import deprecat
 
-from datacube.drivers.postgis._fields import SimpleDocField, DateDocField
+from datacube.drivers.postgis._fields import SimpleDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
 from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fields
 from datacube.utils.uris import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
-
+from datacube.migration import ODC2DeprecationWarning
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product, Range, LineageTree
@@ -51,10 +52,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         self._db = db
         super().__init__(index)
 
-    def get(self, id_: DSID,
-            include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
+    def get_unsafe(self, id_: DSID,
+                   include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         """
-        Get dataset by id
+        Get dataset by id (raise KeyError if not found)
 
         :param id_: id of the dataset to retrieve
         :param include_sources: include the full provenance tree for the dataset.
@@ -74,7 +75,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             dataset = connection.get_dataset(id_)
             if not dataset:
-                return None
+                raise KeyError(id_)
             return self._make(dataset, full_info=True, source_tree=source_tree, derived_tree=derived_tree)
 
     def bulk_get(self, ids):
@@ -87,6 +88,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             rows = connection.get_datasets(ids)
             return [self._make(r, full_info=True) for r in rows]
 
+    @deprecat(
+        reason="The 'get_derived' static method is deprecated in favour of the new lineage API.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def get_derived(self, id_):
         """
         Get all derived datasets
@@ -742,39 +747,26 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 _LOG.warning("search results: %s (%s)", output["id"], output["product"])
                 yield output
 
-    def get_product_time_bounds(self, product: str):
+    def temporal_extent(
+            self,
+            product: str | Product | None = None,
+            ids: Iterable[DSID] | None = None
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
         """
-
-        # Get the offsets from dataset doc
-        product = self.products.get_by_name(product)
-        dataset_section = product.metadata_type.definition['dataset']
-        min_offset = dataset_section['search_fields']['time']['min_offset']
-        max_offset = dataset_section['search_fields']['time']['max_offset']
-
-        time_min = DateDocField('aquisition_time_min',
-                                'Min of time when dataset was acquired',
-                                SQLDataset.metadata_doc,
-                                False,  # is it indexed
-                                offset=min_offset,
-                                selection='least')
-
-        time_max = DateDocField('aquisition_time_max',
-                                'Max of time when dataset was acquired',
-                                SQLDataset.metadata_doc,
-                                False,  # is it indexed
-                                offset=max_offset,
-                                selection='greatest')
-
-        with self._db_connection() as connection:
-            result = connection.execute(
-                select(
-                    [func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)]
-                ).where(
-                    SQLDataset.product_ref == product.id
-                )
-            ).first()
+        if product is None and ids is None:
+            raise ValueError("Must supply product or ids")
+        elif product is not None and ids is not None:
+            raise ValueError("Cannot supply both product and ids")
+        elif product is not None:
+            if isinstance(product, str):
+                product = self._index.products.get_by_name_unsafe(product)
+            with self._db_connection() as connection:
+                result = connection.temporal_extent_by_prod(product.id)
+        else:
+            with self._db_connection() as connection:
+                result = connection.temporal_extent_by_ids(ids)
 
         return result
 

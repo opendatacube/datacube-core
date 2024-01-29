@@ -5,6 +5,7 @@
 """
 API for dataset indexing, access and search.
 """
+import datetime
 import json
 import logging
 import warnings
@@ -47,10 +48,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         self._db = db
         super().__init__(index)
 
-    def get(self, id_: DSID, include_sources: bool = False,
-            include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
+    def get_unsafe(self, id_: DSID, include_sources: bool = False,
+                   include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         """
-        Get dataset by id
+        Get dataset by id (raise KeyError if not in index)
 
         :param UUID id_: id of the dataset to retrieve
         :param bool include_sources: get the full provenance graph?
@@ -71,7 +72,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         if not datasets:
             # No dataset found
-            return None
+            raise KeyError(id_)
 
         for dataset, result in datasets.values():
             dataset.metadata.sources = {
@@ -737,13 +738,26 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for columns in results:
                 yield columns._asdict()
 
-    def get_product_time_bounds(self, product: str):
+    def temporal_extent(
+            self,
+            product: str | Product | None = None,
+            ids: Iterable[DSID] | None = None
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
         """
+        if product is None and ids is None:
+            raise ValueError("Must supply product or ids")
+        elif product is not None and ids is not None:
+            raise ValueError("Cannot supply both product and ids")
+        elif product is not None:
+            if isinstance(product, str):
+                product = self._index.products.get_by_name_unsafe(product)
+        else:
+            raise NotImplementedError("Sorry ids not supported in postgres driver.")
+
         # This implementation violates architecture - should not be SQLAlchemy code at this level.
         # Get the offsets from dataset doc
-        product = self.types.get_by_name(product)
         dataset_section = product.metadata_type.definition['dataset']
         min_offset = dataset_section['search_fields']['time']['min_offset']
         max_offset = dataset_section['search_fields']['time']['max_offset']

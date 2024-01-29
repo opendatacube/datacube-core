@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import datetime
 import pytest
 
 from datacube.model import Range
@@ -200,3 +201,23 @@ def test_spatial_search(index,
     assert len(dssids) == 2
     assert ls8_eo3_dataset3.id in dssids
     assert ls8_eo3_dataset3.id in dssids
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_temporal_extents(index,
+                          ls8_eo3_dataset, ls8_eo3_dataset2,
+                          ls8_eo3_dataset3, ls8_eo3_dataset4):
+    start, end = index.datasets.temporal_extent(product=ls8_eo3_dataset.product)
+    assert start == datetime.datetime(
+        2013, 4, 4, 0, 58, 34, 682275,
+        tzinfo=datetime.timezone.utc)
+    assert end == datetime.datetime(
+        2016, 5, 28, 23, 50, 59, 149573,
+        tzinfo=datetime.timezone.utc)
+    start2, end2 = index.datasets.temporal_extent(product=ls8_eo3_dataset.product.name)
+    assert start == start2 and end == end2
+    start2, end2 = index.datasets.temporal_extent(ids=[
+        ls8_eo3_dataset.id, ls8_eo3_dataset2.id,
+        ls8_eo3_dataset3.id, ls8_eo3_dataset4.id,
+    ])
+    assert start == start2 and end == end2

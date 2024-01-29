@@ -3,6 +3,8 @@
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+import datetime
+
 from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, Product
 from typing import Iterable, Optional
@@ -12,8 +14,8 @@ class DatasetResource(AbstractDatasetResource):
     def __init__(self, index):
         super().__init__(index)
 
-    def get(self, id_: DSID, include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0):
-        return None
+    def get_unsafe(self, id_: DSID, include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0):
+        raise KeyError(id_)
 
     def bulk_get(self, ids):
         return []
@@ -104,8 +106,19 @@ class DatasetResource(AbstractDatasetResource):
     def search_summaries(self, **query):
         return []
 
-    def get_product_time_bounds(self, product: str):
-        raise NotImplementedError()
+    def temporal_extent(
+            self,
+            product: str | Product = None,
+            ids: Iterable[DSID] | None = None
+    ) -> tuple[datetime.datetime, datetime.datetime]:
+        if product is None and ids is None:
+            raise ValueError("Must specify product or ids")
+        elif ids is not None and product is not None:
+            raise ValueError("Cannot specify both product and ids")
+        elif ids is not None:
+            raise KeyError(str(ids))
+        else:
+            raise KeyError(str(product))
 
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):

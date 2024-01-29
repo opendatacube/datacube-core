@@ -47,19 +47,16 @@ class DatasetResource(AbstractDatasetResource):
         # Active Index By Product
         self.by_product: MutableMapping[str, List[UUID]] = {}
 
-    def get(self, id_: DSID, include_sources: bool = False,
-            include_deriveds: bool = False, max_depth: int = 0) -> Optional[Dataset]:
+    def get_unsafe(self, id_: DSID, include_sources: bool = False,
+                   include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         self._check_get_legacy(include_deriveds, max_depth)
-        try:
-            ds = self.clone(self.by_id[dsid_to_uuid(id_)])
-            if include_sources:
-                ds.sources = {
-                    classifier: cast(Dataset, self.get(dsid, include_sources=True))
-                    for classifier, dsid in self.derived_from.get(ds.id, {}).items()
-                }
-            return ds
-        except KeyError:
-            return None
+        ds = self.clone(self.by_id[dsid_to_uuid(id_)])  # N.B. raises KeyError if id not in index.
+        if include_sources:
+            ds.sources = {
+                classifier: cast(Dataset, self.get(dsid, include_sources=True))
+                for classifier, dsid in self.derived_from.get(ds.id, {}).items()
+            }
+        return ds
 
     def bulk_get(self, ids: Iterable[DSID]) -> Iterable[Dataset]:
         return (ds for ds in (self.get(dsid) for dsid in ids) if ds is not None)
@@ -645,15 +642,25 @@ class DatasetResource(AbstractDatasetResource):
         for ds in self.search(**query):  # type: ignore[arg-type]
             yield make_summary(ds)
 
-    def get_product_time_bounds(self, product: str) -> Tuple[datetime.datetime, datetime.datetime]:
+    def temporal_extent(
+            self,
+            product: str | Product | None = None,
+            ids: Iterable[DSID] | None = None
+    ) -> tuple[datetime.datetime, datetime.datetime]:
+        if product is None and ids is None:
+            raise ValueError("Must supply product or ids")
+        elif product is not None and ids is not None:
+            raise ValueError("Cannot supply both product and ids")
+        elif product is not None:
+            if isinstance(product, str):
+                product = self._index.products.get_by_name_unsafe(product)
+            ids = self.by_product.get(product.name, [])
+
         min_time: Optional[datetime.datetime] = None
         max_time: Optional[datetime.datetime] = None
-        prod = self._index.products.get_by_name(product)
-        if prod is None:
-            raise ValueError(f"Product {product} not in index")
-        time_fld = prod.metadata_type.dataset_fields["time"]
-        for dsid in self.by_product.get(product, []):
-            ds = cast(Dataset, self.get(dsid))
+        for dsid in ids:
+            ds = self.get_unsafe(dsid)
+            time_fld = ds.product.metadata_type.dataset_fields["time"]
             dsmin, dsmax = time_fld.extract(ds.metadata_doc)  # type: ignore[attr-defined]
             if dsmax is None and dsmin is None:
                 continue

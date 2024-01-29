@@ -1062,14 +1062,14 @@ class AbstractDatasetResource(ABC):
         self.types = self.products  # types is compatibility alias for products
 
     @abstractmethod
-    def get(self,
-            id_: DSID,
-            include_sources: bool = False,
-            include_deriveds: bool = False,
-            max_depth: int = 0
-            ) -> Optional[Dataset]:
+    def get_unsafe(self,
+                   id_: DSID,
+                   include_sources: bool = False,
+                   include_deriveds: bool = False,
+                   max_depth: int = 0
+                   ) -> Dataset:
         """
-        Get dataset by id
+        Get dataset by id (Raises KeyError if id_ does not exist)
 
         - Index drivers supporting the legacy lineage API:
 
@@ -1085,6 +1085,34 @@ class AbstractDatasetResource(ABC):
         :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
         :rtype: Dataset model (None if not found)
         """
+
+    def get(self,
+            id_: DSID,
+            include_sources: bool = False,
+            include_deriveds: bool = False,
+            max_depth: int = 0
+            ) -> Optional[Dataset]:
+        """
+        Get dataset by id (Return None if id_ does not exist.
+
+        - Index drivers supporting the legacy lineage API:
+
+        :param id_: id of the dataset to retrieve
+        :param include_sources: include the full provenance tree of the dataset.
+
+
+        - Index drivers supporting the external lineage API:
+
+        :param id_: id of the dataset to retrieve
+        :param include_sources: include the full provenance tree for the dataset.
+        :param include_deriveds: include the full derivative tree for the dataset.
+        :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
+        :rtype: Dataset model (None if not found)
+        """
+        try:
+            return self.get_unsafe(id_, include_sources, include_deriveds, max_depth)
+        except KeyError:
+            return None
 
     def _check_get_legacy(self,
                           include_deriveds: bool = False,
@@ -1112,6 +1140,10 @@ class AbstractDatasetResource(ABC):
         :return: Iterable of Dataset models
         """
 
+    @deprecat(
+        reason="The 'get_derived' static method is deprecated in favour of the new lineage API.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     @abstractmethod
     def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         """
@@ -1664,15 +1696,37 @@ class AbstractDatasetResource(ABC):
         return list(self.search(**query))  # type: ignore[arg-type]   # mypy isn't being very smart here :(
 
     @abstractmethod
+    def temporal_extent(self,
+                        product: str | Product | None,
+                        ids: Iterable[DSID] | None
+                        ) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Returns the minimum and maximum acquisition time of a product or an iterable of dataset ids.
+
+        Only one ids or products can be passed - the other should be None.  Raises ValueError if
+        both or neither of ids and products is passed.  Raises KeyError if no datasets in the index
+        match the input argument.
+
+        :param product: Product or name of product
+        :param ids: Iterable of dataset ids.
+        :return: minimum and maximum acquisition times
+        """
+
+    @deprecat(
+        reason="This method has been renamed 'temporal_extent'",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_product_time_bounds(self,
-                                product: str
-                               ) -> Tuple[datetime.datetime, datetime.datetime]:
+                                product: str | Product
+                               ) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
 
-        :param product: Name of product
+        :param product: Product of name of product
         :return: minimum and maximum acquisition times
         """
+        return self.temporal_extent(product=product)
 
     @abstractmethod
     def search_returning_datasets_light(self,
