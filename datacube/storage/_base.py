@@ -45,8 +45,14 @@ def _get_band_and_layer(b: Dict[str, Any]) -> Tuple[Optional[int], Optional[str]
         return (band, layer)
 
 
-def _extract_driver_data(ds: Dataset) -> Optional[Any]:
-    return ds.metadata_doc.get('driver_data', None)
+def _extract_driver_data(ds: Dataset, mm: Dict[str, Any]) -> Optional[Any]:
+    ds_data = ds.metadata_doc.get("driver_data", None)
+    mm_data = mm.get("driver_data", None)
+    if isinstance(ds_data, dict) and isinstance(mm_data, str):
+        return ds_data.get(mm_data, {})
+    if mm_data is not None:
+        return mm_data
+    return ds_data
 
 
 def measurement_paths(ds: Dataset) -> Dict[str, str]:
@@ -118,7 +124,7 @@ class BandInfo:
         self.crs = ds.crs
         self.transform = ds.transform
         self.format = ds.format or ''
-        self.driver_data = _extract_driver_data(ds)
+        self.driver_data = _extract_driver_data(ds, mm)
 
     @property
     def uri_scheme(self) -> str:
