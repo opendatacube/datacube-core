@@ -38,7 +38,7 @@ jobs:
           echo "push_pypi=yes" >> $GITHUB_OUTPUT
         fi
 
-    - uses: dorny/paths-filter@v2
+    - uses: dorny/paths-filter@v3
       id: changes
       if: |
         github.event_name == 'push'
