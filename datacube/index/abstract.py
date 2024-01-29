@@ -11,9 +11,8 @@ from time import monotonic
 
 from abc import ABC, abstractmethod
 from typing import (Any, Iterable, Iterator,
-                    List, Mapping, MutableMapping,
-                    NamedTuple, Optional,
-                    Tuple, Union, Sequence, Type)
+                    Mapping, MutableMapping,
+                    NamedTuple, Sequence, Type)
 from urllib.parse import urlparse, ParseResult
 from uuid import UUID
 from datetime import timedelta
@@ -35,6 +34,10 @@ from datacube.utils.documents import UnknownMetadataType
 
 _LOG = logging.getLogger(__name__)
 
+JsonAtom = None | bool | str | float | int
+JsonLike = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
+JsonDict = dict[str, JsonLike]
+
 
 class BatchStatus(NamedTuple):
     """
@@ -51,7 +54,7 @@ class BatchStatus(NamedTuple):
     completed: int
     skipped: int
     seconds_elapsed: float
-    safe: Optional[Iterable[str]] = None
+    safe: Iterable[str] | None = None
 
 
 class AbstractUserResource(ABC):
@@ -78,7 +81,7 @@ class AbstractUserResource(ABC):
                     username: str,
                     password: str,
                     role: str,
-                    description: Optional[str] = None) -> None:
+                    description: str | None = None) -> None:
         """
         Create a new user
         :param username: username of the new user
@@ -97,7 +100,7 @@ class AbstractUserResource(ABC):
         """
 
     @abstractmethod
-    def list_users(self) -> Iterable[Tuple[str, str, Optional[str]]]:
+    def list_users(self) -> Iterable[tuple[str, str, str | None]]:
         """
         List all database users
         :return: Iterable of (role, username, description) tuples
@@ -107,7 +110,7 @@ class AbstractUserResource(ABC):
 _DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
 
-def default_metadata_type_docs(path=_DEFAULT_METADATA_TYPES_PATH) -> List[MetadataType]:
+def default_metadata_type_docs(path=_DEFAULT_METADATA_TYPES_PATH) -> list[MetadataType]:
     """A list of the bare dictionary format of default :class:`datacube.model.MetadataType`"""
     return [doc for (path, doc) in read_documents(path)]
 
@@ -124,7 +127,7 @@ class AbstractMetadataTypeResource(ABC):
     """
 
     @abstractmethod
-    def from_doc(self, definition: Mapping[str, Any]) -> MetadataType:
+    def from_doc(self, definition: JsonDict) -> MetadataType:
         """
         Construct a MetadataType object from a dictionary definition
 
@@ -181,7 +184,7 @@ class AbstractMetadataTypeResource(ABC):
         return BatchStatus(b_added, b_skipped, monotonic() - b_started, b_loaded)
 
     def bulk_add(self,
-                 metadata_docs: Iterable[Mapping[str, Any]],
+                 metadata_docs: Iterable[JsonDict],
                  batch_size: int = 1000) -> BatchStatus:
         """
         Add a group of Metadata Type documents in bulk.
@@ -248,7 +251,7 @@ class AbstractMetadataTypeResource(ABC):
     def can_update(self,
                    metadata_type: MetadataType,
                    allow_unsafe_updates: bool = False
-                  ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
+                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if metadata type can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -281,7 +284,7 @@ class AbstractMetadataTypeResource(ABC):
         """
 
     def update_document(self,
-                        definition: Mapping[str, Any],
+                        definition: JsonDict,
                         allow_unsafe_updates: bool = False,
                        ) -> MetadataType:
         """
@@ -306,7 +309,7 @@ class AbstractMetadataTypeResource(ABC):
             if all(field in mdt.dataset_fields for field in field_names):
                 yield mdt
 
-    def get(self, id_: int) -> Optional[MetadataType]:
+    def get(self, id_: int) -> MetadataType | None:
         """
         Fetch metadata type by id.
 
@@ -317,7 +320,7 @@ class AbstractMetadataTypeResource(ABC):
         except KeyError:
             return None
 
-    def get_by_name(self, name: str) -> Optional[MetadataType]:
+    def get_by_name(self, name: str) -> MetadataType | None:
         """
         Fetch metadata type by name.
 
@@ -391,7 +394,7 @@ class AbstractMetadataTypeResource(ABC):
             yield mdt.definition
 
 
-QueryField = Union[str, float, int, Range, datetime.datetime]
+QueryField = str | float | int | Range | datetime.datetime
 QueryDict = Mapping[str, QueryField]
 
 
@@ -408,8 +411,8 @@ class AbstractProductResource(ABC):
     def __init__(self, index: "AbstractIndex"):
         self._index = index
 
-    def from_doc(self, definition: Mapping[str, Any],
-                 metadata_type_cache: Optional[MutableMapping[str, MetadataType]] = None) -> Product:
+    def from_doc(self, definition: JsonDict,
+                 metadata_type_cache: MutableMapping[str, MetadataType] | None = None) -> Product:
         """
         Construct unpersisted Product model from product metadata dictionary
 
@@ -494,8 +497,8 @@ class AbstractProductResource(ABC):
         return BatchStatus(b_added, b_skipped, monotonic()-b_started)
 
     def bulk_add(self,
-                 product_docs: Iterable[Mapping[str, Any]],
-                 metadata_types: Optional[Mapping[str, MetadataType]] = None,
+                 product_docs: Iterable[JsonDict],
+                 metadata_types: Mapping[str, MetadataType] | None = None,
                  batch_size: int = 1000) -> BatchStatus:
         """
         Add a group of product documents in bulk.
@@ -566,7 +569,7 @@ class AbstractProductResource(ABC):
                    product: Product,
                    allow_unsafe_updates: bool = False,
                    allow_table_lock: bool = False
-                  ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
+                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if product can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -606,7 +609,7 @@ class AbstractProductResource(ABC):
         """
 
     def update_document(self,
-                        definition: Mapping[str, Any],
+                        definition: JsonDict,
                         allow_unsafe_updates: bool = False,
                         allow_table_lock: bool = False
                        ) -> Product:
@@ -629,7 +632,7 @@ class AbstractProductResource(ABC):
                            allow_table_lock=allow_table_lock
                           )
 
-    def add_document(self, definition: Mapping[str, Any]) -> Product:
+    def add_document(self, definition: JsonDict) -> Product:
         """
         Add a Product using its definition
 
@@ -639,7 +642,7 @@ class AbstractProductResource(ABC):
         type_ = self.from_doc(definition)
         return self.add(type_)
 
-    def get(self, id_: int) -> Optional[Product]:
+    def get(self, id_: int) -> Product | None:
         """
         Fetch product by id.
 
@@ -651,7 +654,7 @@ class AbstractProductResource(ABC):
         except KeyError:
             return None
 
-    def get_by_name(self, name: str) -> Optional[Product]:
+    def get_by_name(self, name: str) -> Product | None:
         """
         Fetch product by name.
 
@@ -704,7 +707,7 @@ class AbstractProductResource(ABC):
             if prod.metadata_type.name in mdts:
                 yield prod
 
-    def get_field_names(self, product: Optional[str | Product] = None) -> Iterable[str]:
+    def get_field_names(self, product: str | Product | None = None) -> Iterable[str]:
         """
         Get the list of possible search fields for a Product (or all products)
 
@@ -739,7 +742,7 @@ class AbstractProductResource(ABC):
     @abstractmethod
     def search_robust(self,
                       **query: QueryField
-                     ) -> Iterable[Tuple[Product, Mapping[str, QueryField]]]:
+                     ) -> Iterable[tuple[Product, QueryDict]]:
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
 
@@ -749,7 +752,7 @@ class AbstractProductResource(ABC):
 
     @abstractmethod
     def search_by_metadata(self,
-                           metadata: Mapping[str, QueryField]
+                           metadata: JsonDict
                            ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
@@ -781,7 +784,7 @@ class AbstractProductResource(ABC):
             yield prod.definition
 
     @abstractmethod
-    def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+    def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
         """
         Return the combined spatial extent of the nominated product
 
@@ -809,7 +812,7 @@ class AbstractProductResource(ABC):
 
 
 # Non-strict Dataset ID representation
-DSID = Union[str, UUID]
+DSID = str | UUID
 
 
 def dsid_to_uuid(dsid: DSID) -> UUID:
@@ -923,7 +926,7 @@ class AbstractLineageResource(ABC):
         """
 
     @abstractmethod
-    def clear_home(self, *args: DSID, home: Optional[str] = None) -> int:
+    def clear_home(self, *args: DSID, home: str | None = None) -> int:
         """
         Clear the home for one or more dataset ids, or all dataset ids that currently have
         a particular home value.
@@ -1048,7 +1051,7 @@ class NoLineageResource(AbstractLineageResource):
     def set_home(self, home: str, *args: DSID, allow_updates: bool = False) -> int:
         raise NotImplementedError()
 
-    def clear_home(self, *args: DSID, home: Optional[str] = None) -> int:
+    def clear_home(self, *args: DSID, home: str | None = None) -> int:
         raise NotImplementedError()
 
     def get_homes(self, *args: DSID) -> Mapping[UUID, str]:
@@ -1119,7 +1122,7 @@ class AbstractDatasetResource(ABC):
             include_sources: bool = False,
             include_deriveds: bool = False,
             max_depth: int = 0
-            ) -> Optional[Dataset]:
+            ) -> Dataset | None:
         """
         Get dataset by id (Return None if id_ does not exist.
 
@@ -1205,7 +1208,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def add(self, dataset: Dataset,
             with_lineage: bool = True,
-            archive_less_mature: Optional[int] = None,
+            archive_less_mature: int | None = None,
            ) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
@@ -1227,8 +1230,8 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_product_duplicates(self,
                                   product: Product,
-                                  *args: Union[str, Field]
-                                 ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
+                                  *args: str | Field
+                                 ) -> Iterable[tuple[tuple, Iterable[UUID]]]:
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -1245,8 +1248,8 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def can_update(self,
                    dataset: Dataset,
-                   updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None
-                  ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
+                   updates_allowed: Mapping[Offset, AllowPolicy] | None = None
+                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -1258,8 +1261,8 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def update(self,
                dataset: Dataset,
-               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None,
-               archive_less_mature: Optional[int] = None,
+               updates_allowed: Mapping[Offset, AllowPolicy] | None = None,
+               archive_less_mature: int | None = None,
               ) -> Dataset:
         """
         Update dataset metadata and location
@@ -1274,15 +1277,15 @@ class AbstractDatasetResource(ABC):
         """
         Mark datasets as archived
 
-        :param Iterable[Union[str,UUID]] ids: list of dataset ids to archive
+        :param ids: list of dataset ids to archive
         """
 
-    def archive_less_mature(self, ds: Dataset, delta: Union[int, bool] = 500) -> None:
+    def archive_less_mature(self, ds: Dataset, delta: int | bool = 500) -> None:
         """
         Archive less mature versions of a dataset
 
         :param Dataset ds: dataset to search
-        :param Union[int,bool] delta: millisecond delta for time range.
+        :param delta: millisecond delta for time range.
         If True, default to 500ms. If False, do not find or archive less mature datasets.
         Bool value accepted only for improving backwards compatibility, int preferred.
         """
@@ -1293,12 +1296,12 @@ class AbstractDatasetResource(ABC):
         for lm_ds in less_mature_ids:
             _LOG.info(f"Archived less mature dataset: {lm_ds}")
 
-    def find_less_mature(self, ds: Dataset, delta: Union[int, bool] = 500) -> Iterable[Dataset]:
+    def find_less_mature(self, ds: Dataset, delta: int | bool = 500) -> Iterable[Dataset]:
         """
         Find less mature versions of a dataset
 
         :param Dataset ds: Dataset to search
-        :param Union[int,bool] delta: millisecond delta for time range.
+        :param delta: millisecond delta for time range.
         If True, default to 500ms. If None or False, do not find or archive less mature datasets.
         Bool value accepted only for improving backwards compatibility, int preferred.
         :return: Iterable of less mature datasets
@@ -1368,7 +1371,7 @@ class AbstractDatasetResource(ABC):
         """
         Mark datasets as not archived
 
-        :param Iterable[Union[str,UUID]] ids: list of dataset ids to restore
+        :param ids: list of dataset ids to restore
         """
 
     @abstractmethod
@@ -1396,7 +1399,7 @@ class AbstractDatasetResource(ABC):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def get_field_names(self, product_name: Optional[str] = None) -> Iterable[str]:
+    def get_field_names(self, product_name: str | None = None) -> Iterable[str]:
         """
         Get the list of possible search fields for a Product (or all products)
 
@@ -1426,7 +1429,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def get_archived_location_times(self,
                                     id_: DSID
-                                   ) -> Iterable[Tuple[str, datetime.datetime]]:
+                                   ) -> Iterable[tuple[str, datetime.datetime]]:
         """
         Get each archived location along with the time it was archived.
 
@@ -1447,7 +1450,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def get_datasets_for_location(self,
                                   uri: str,
-                                  mode: Optional[str] = None
+                                  mode: str | None = None
                                  ) -> Iterable[Dataset]:
         """
         Find datasets that exist at the given URI
@@ -1498,7 +1501,7 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def search_by_metadata(self,
-                           metadata: Mapping[str, QueryField]
+                           metadata: JsonDict
                           ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
@@ -1511,8 +1514,8 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def search(self,
-               limit: Optional[int] = None,
-               source_filter: Optional[Mapping[str, QueryField]] = None,
+               limit: int | None = None,
+               source_filter: QueryDict | None = None,
                **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
@@ -1526,7 +1529,7 @@ class AbstractDatasetResource(ABC):
         for ds in self.search(product=[product.name]):
             yield (product, ds.metadata_doc, ds.uris)
 
-    def get_all_docs(self, products: Optional[Iterable[Product]] = None,
+    def get_all_docs(self, products: Iterable[Product] | None = None,
                      batch_size: int = 1000) -> Iterable[DatasetTuple]:
         """
         Return all datasets in bulk, filtering by product names only. Do not instantiate models.
@@ -1630,7 +1633,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_by_product(self,
                           **query: QueryField
-                         ) -> Iterable[Tuple[Iterable[Dataset], Product]]:
+                         ) -> Iterable[tuple[Iterable[Dataset], Product]]:
         """
         Perform a search, returning datasets grouped by product type.
 
@@ -1641,9 +1644,9 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_returning(self,
                          field_names: Iterable[str],
-                         limit: Optional[int] = None,
+                         limit: int | None = None,
                          **query: QueryField
-                        ) -> Iterable[Tuple]:
+                        ) -> Iterable[tuple]:
         """
         Perform a search, returning only the specified fields.
 
@@ -1667,7 +1670,7 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def count_by_product(self, **query: QueryField) -> Iterable[Tuple[Product, int]]:
+    def count_by_product(self, **query: QueryField) -> Iterable[tuple[Product, int]]:
         """
         Perform a search, returning a count of for each matching product type.
 
@@ -1679,7 +1682,7 @@ class AbstractDatasetResource(ABC):
     def count_by_product_through_time(self,
                                       period: str,
                                       **query: QueryField
-                                     ) -> Iterable[Tuple[Product, Iterable[Tuple[Range, int]]]]:
+                                     ) -> Iterable[tuple[Product, Iterable[tuple[Range, int]]]]:
         """
         Perform a search, returning counts for each product grouped in time slices
         of the given period.
@@ -1693,7 +1696,7 @@ class AbstractDatasetResource(ABC):
     def count_product_through_time(self,
                                    period: str,
                                    **query: QueryField
-                                  ) -> Iterable[Tuple[Range, int]]:
+                                  ) -> Iterable[tuple[Range, int]]:
         """
         Perform a search, returning counts for a single product grouped in time slices
         of the given period.
@@ -1714,7 +1717,7 @@ class AbstractDatasetResource(ABC):
         :return: Mappings of search fields for matching datasets
         """
 
-    def search_eager(self, **query: QueryField) -> List[Dataset]:
+    def search_eager(self, **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
 
@@ -1752,11 +1755,11 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def search_returning_datasets_light(self,
-                                        field_names: Tuple[str, ...],
-                                        custom_offsets: Optional[Mapping[str, Offset]] = None,
-                                        limit: Optional[int] = None,
+                                        field_names: tuple[str, ...],
+                                        custom_offsets: Mapping[str, Offset] | None = None,
+                                        limit: int | None = None,
                                         **query: QueryField
-                                       ) -> Iterable[Tuple]:
+                                       ) -> Iterable[tuple]:
         """
         This is a dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.
@@ -1798,7 +1801,7 @@ class AbstractDatasetResource(ABC):
         :return: The combined spatial extents of the datasets.
         """
 
-    def _extract_geom_from_query(self, q: Mapping[str, QueryField]) -> Optional[Geometry]:
+    def _extract_geom_from_query(self, q: QueryDict) -> Geometry | None:
         """
         Utility method for index drivers supporting spatial indexes.
 
@@ -1807,7 +1810,7 @@ class AbstractDatasetResource(ABC):
         :param q: A query dictionary
         :return: A polygon or multipolygon type Geometry.  None if no spatial query clauses.
         """
-        geom: Optional[Geometry] = None
+        geom: Geometry | None = None
         if "geometry" in q:
             # New geometry-style spatial query
             geom_term = q.pop("geometry")
@@ -2122,7 +2125,7 @@ class AbstractIndex(ABC):
     @abstractmethod
     def from_config(cls,
                     cfg_env: ODCEnvironment,
-                    application_name: Optional[str] = None,
+                    application_name: str | None = None,
                     validate_connection: bool = True
                    ) -> "AbstractIndex":
         """Instantiate a new index from an ODCEnvironment configuration object"""
@@ -2332,7 +2335,7 @@ class AbstractIndex(ABC):
         :return: a Transaction context manager for this index.
         """
 
-    def thread_transaction(self) -> Optional["AbstractTransaction"]:
+    def thread_transaction(self) -> AbstractTransaction | None:
         """
         :return: The existing Transaction object cached in thread-local storage for this index, if there is one.
         """
@@ -2358,7 +2361,7 @@ class AbstractIndexDriver(ABC):
     @classmethod
     def connect_to_index(cls,
                          config_env: ODCEnvironment,
-                         application_name: Optional[str] = None,
+                         application_name: str | None = None,
                          validate_connection: bool = True
                         ) -> "AbstractIndex":
         return cls.index_class().from_config(config_env, application_name, validate_connection)
