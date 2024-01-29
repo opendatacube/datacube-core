@@ -84,6 +84,7 @@ class BandInfo:
                  'crs',
                  'transform',
                  'format',
+                 'dims',
                  'driver_data')
 
     def __init__(self,
@@ -123,6 +124,7 @@ class BandInfo:
         self.crs = ds.crs
         self.transform = ds.transform
         self.format = ds.format or ''
+        self.dims = mp.get('dims', None)
         self.driver_data = _extract_driver_data(ds, mm)
 
     @property
