@@ -521,7 +521,7 @@ class PostgresDbAPI(object):
 
         if select_fields:
             select_columns = tuple(
-                f.alchemy_expression.label(f.name)
+                f.alchemy_expression.label(f.name) if f is not None else None
                 for f in select_fields
             )
         else:
@@ -934,7 +934,7 @@ class PostgresDbAPI(object):
         if expressions:
             join_tables.update(expression.field.required_alchemy_table for expression in expressions)
         if fields:
-            join_tables.update(field.required_alchemy_table for field in fields)
+            join_tables.update(field.required_alchemy_table for field in fields if field)
         join_tables.discard(source_table)
 
         table_order_hack = [DATASET_SOURCE, DATASET_LOCATION, DATASET, PRODUCT, METADATA_TYPE]

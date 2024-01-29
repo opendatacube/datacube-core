@@ -6,6 +6,7 @@ import datetime
 import logging
 import re
 import warnings
+from deprecat import deprecat
 from collections import namedtuple
 from time import monotonic
 from typing import (Any, Callable, Dict, Iterable,
@@ -13,7 +14,6 @@ from typing import (Any, Callable, Dict, Iterable,
                     Optional, Set, Tuple, Union,
                     cast)
 from uuid import UUID
-from deprecat import deprecat
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.index import fields
@@ -541,16 +541,19 @@ class DatasetResource(AbstractDatasetResource):
         return self._search_grouped(**query)  # type: ignore[arg-type]
 
     def search_returning(self,
-                         field_names: Iterable[str],
+                         field_names: Iterable[str] | None = None,
                          limit: Optional[int] = None,
                          **query: QueryField) -> Iterable[Tuple]:
-        field_names = list(field_names)
+        if field_names is None:
+            field_names = self._index.products.get_field_names()
+        else:
+            field_names = list(field_names)
         #    Typing note: mypy can't handle dynamically created namedtuples
         result_type = namedtuple('search_result', field_names)  # type: ignore[misc]
         for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
             ds_fields = get_dataset_fields(ds.metadata_type.definition)
             result_vals = {
-                fn: ds_fields[fn].extract(ds.metadata_doc)  # type: ignore[attr-defined]
+                fn: ds_fields[fn].extract(ds.metadata_doc) if fn in ds_fields else None
                 for fn in field_names
             }
             yield result_type(**result_vals)
@@ -683,6 +686,12 @@ class DatasetResource(AbstractDatasetResource):
     ) -> Iterable[Tuple[Range, int]]:
         return list(self._product_period_count(period, single_product_only=True, **query))[0][1]
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def search_summaries(self, **query: QueryField) -> Iterable[Mapping[str, Any]]:
         def make_summary(ds: Dataset) -> Mapping[str, Any]:
             fields = ds.metadata_type.dataset_fields

@@ -134,8 +134,8 @@ def test_null_dataset_resource(null_config: ODCEnvironment):
         assert dc.index.datasets.count_by_product(foo="bar", baz=12) == []
         assert dc.index.datasets.count_by_product_through_time("1 month", foo="bar", baz=12) == []
         assert dc.index.datasets.count_product_through_time("1 month", foo="bar", baz=12) == []
-        assert dc.index.datasets.search_summaries(foo="bar", baz=12) == []
-        assert dc.index.datasets.search_eager(foo="bar", baz=12) == []
+        assert dc.index.datasets.search_summaries(foo="bar", baz=12) == []  # Coverage test of deprecated method
+        assert dc.index.datasets.search_eager(foo="bar", baz=12) == []  # Coverage test of deprecated base class method
         assert dc.index.datasets.search_returning_datasets_light(("foo", "baz"), foo="bar", baz=12) == []
 
 

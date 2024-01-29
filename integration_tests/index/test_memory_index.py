@@ -499,15 +499,22 @@ def test_mem_ds_search_returning(mem_eo3_data: tuple):
     for res in lds:
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
+    lds = list(dc.index.datasets.search_returning(
+        platform='landsat-8'
+    ))
+    assert len(lds) == 2
+    for res in lds:
+        assert res.platform == "landsat-8"
+        assert res.id in (str(ls8_id), str(wo_id))
 
 
 def test_mem_ds_search_summary(mem_eo3_data: tuple):
     dc, ls8_id, wo_id = mem_eo3_data
-    lds = list(dc.index.datasets.search_summaries(platform='landsat-8'))
+    lds = list(dc.index.datasets.search_returning(platform='landsat-8'))
     assert len(lds) == 2
     for res in lds:
-        assert res["platform"] == "landsat-8"
-        assert res["id"] in (str(ls8_id), str(wo_id))
+        assert res.platform == "landsat-8"
+        assert res.id in (str(ls8_id), str(wo_id))
 
 
 def test_mem_ds_search_returning_datasets_light(mem_eo3_data: tuple):

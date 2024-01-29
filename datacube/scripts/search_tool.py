@@ -95,7 +95,7 @@ def datasets(ctx, index, expressions):
     """
     ctx.obj['write_results'](
         sorted(index.products.get_field_names()),
-        index.datasets.search_summaries(**expressions)
+        (tup._asdict() for tup in index.datasets.search_returning(**expressions))
     )
 
 

@@ -196,7 +196,7 @@ def alter_product_for_testing(product, metadata_type=None):
 
 
 def ensure_datasets_are_indexed(index, valid_uuids):
-    datasets = index.datasets.search_eager(product='ls5_nbar_scene')
+    datasets = list(index.datasets.search(product='ls5_nbar_scene'))
     assert len(datasets) == len(valid_uuids)
     for dataset in datasets:
         assert dataset.id in valid_uuids

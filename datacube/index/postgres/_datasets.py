@@ -28,6 +28,7 @@ from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes
 from datacube.index import fields
 from datacube.drivers.postgres._api import split_uri
+from datacube.migration import ODC2DeprecationWarning
 
 _LOG = logging.getLogger(__name__)
 
@@ -613,7 +614,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for product, datasets in self._do_search_by_product(query):
             yield product, self._make_many(datasets, product)
 
-    def search_returning(self, field_names, limit=None, **query):
+    def search_returning(self, field_names=None, limit=None, **query):
         """
         Perform a search, returning only the specified fields.
 
@@ -621,20 +622,26 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
 
-        :param tuple[str] field_names:
+        :param tuple[str] field_names: defaults to all known search fields
         :param Union[str,float,Range,list] query:
         :param int limit: Limit number of datasets
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
+        if field_names is None:
+            field_names = self._index.products.get_field_names()
         result_type = namedtuple('search_result', field_names)
 
         for _, results in self._do_search_by_product(query,
                                                      return_fields=True,
                                                      select_field_names=field_names,
                                                      limit=limit):
-
             for columns in results:
-                yield result_type(*columns)
+                coldict = columns._asdict()
+                kwargs = {
+                    field: coldict.get(field)
+                    for field in field_names
+                }
+                yield result_type(**kwargs)
 
     def count(self, **query):
         """
@@ -739,8 +746,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     select_fields = tuple(field for name, field in dataset_fields.items()
                                           if not field.affects_row_selection)
                 else:
-                    select_fields = tuple(dataset_fields[field_name]
-                                          for field_name in select_field_names)
+                    select_fields = tuple(
+                        dataset_fields[field_name]
+                        for field_name in select_field_names
+                        if field_name in dataset_fields # and not dataset_fields[field_name].affects_row_selection
+                    )
             with self._db_connection() as connection:
                 yield (product,
                        connection.search_datasets(
@@ -791,6 +801,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     query_exprs
                 ))
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def search_summaries(self, **query):
         """
         Perform a search, returning just the search fields of each dataset.
@@ -954,6 +970,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             custom_exprs.append(fields.as_expression(custom_field, custom_query[key]))
 
         return custom_exprs
+
+    def spatial_extent(self, ids=None, product=None, crs=None):
+        return None
 
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
         product_search_key = [product.name]

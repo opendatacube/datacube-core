@@ -1728,7 +1728,7 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def search_returning(self,
-                         field_names: Iterable[str],
+                         field_names: Iterable[str] | None = None,
                          limit: int | None = None,
                          **query: QueryField
                         ) -> Iterable[tuple]:
@@ -1739,7 +1739,7 @@ class AbstractDatasetResource(ABC):
 
         It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
 
-        :param field_names: Names of desired fields
+        :param field_names: Names of desired fields (default = all known search fields)
         :param limit: Limit number of dataset (None/default = unlimited)
         :param query: search query parameters
         :return: Namedtuple of requested fields, for each matching dataset.
@@ -1793,6 +1793,12 @@ class AbstractDatasetResource(ABC):
         :returns: The product, a list of time ranges and the count of matching datasets.
         """
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def search_summaries(self, **query: QueryField) -> Iterable[Mapping[str, Any]]:
         """
@@ -1802,6 +1808,12 @@ class AbstractDatasetResource(ABC):
         :return: Mappings of search fields for matching datasets
         """
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Please use list(dc.index.datasets.search(...)) instead",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def search_eager(self, **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.

@@ -38,25 +38,25 @@ def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product):
 
 
 def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset):
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         platform='landsat-8'
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         platform='landsat-8',
         instrument='OLI_TIRS'
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
     # Wrong product family
     with pytest.raises(ValueError):
-        datasets = index.datasets.search_eager(
+        next(index.datasets.search(
             platform='landsat-8',
             product_family='splunge',
-        )
+        ))
 
 
 def test_search_dataset_range_eo3(index: Index,
@@ -66,30 +66,30 @@ def test_search_dataset_range_eo3(index: Index,
                                   ls8_eo3_dataset4: Dataset,
                                   ):
     # Less Than
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=ls8_eo3_dataset.product.name,
         cloud_cover=Range(None, 50.0)
-    )
+    ))
     assert len(datasets) == 2
     ids = [ds.id for ds in datasets]
     assert ls8_eo3_dataset3.id in ids
     assert ls8_eo3_dataset4.id in ids
 
     # Greater than
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=ls8_eo3_dataset.product.name,
         cloud_cover=Range(50.0, None)
-    )
+    ))
     assert len(datasets) == 2
     ids = [ds.id for ds in datasets]
     assert ls8_eo3_dataset.id in ids
     assert ls8_eo3_dataset2.id in ids
 
     # Full Range comparison
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=ls8_eo3_dataset.product.name,
         cloud_cover=Range(20.0, 55.0)
-    )
+    ))
     assert len(datasets) == 2
     ids = [ds.id for ds in datasets]
     assert ls8_eo3_dataset2.id in ids
@@ -113,112 +113,112 @@ def test_search_dataset_by_metadata_eo3(index: Index, ls8_eo3_dataset: Dataset) 
 
 def test_search_day_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
     # Matches day
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         time=datetime.date(2016, 5, 12)
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
     # Different day: no match
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         time=datetime.date(2016, 5, 13)
-    )
+    ))
     assert len(datasets) == 0
 
 
 def test_search_dataset_ranges_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
     # In the lat bounds.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-37.5, -36.5),
         time=Range(
             datetime.datetime(2016, 5, 12, 23, 0, 0),
             datetime.datetime(2016, 5, 12, 23, 59, 59)
         )
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
     # Out of the lat bounds.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(28, 32),
         time=Range(
             datetime.datetime(2016, 5, 12, 23, 0, 0),
             datetime.datetime(2016, 5, 12, 23, 59, 59)
         )
-    )
+    ))
     assert len(datasets) == 0
 
     # Out of the time bounds
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-37.5, -36.5),
         time=Range(
             datetime.datetime(2014, 7, 26, 21, 48, 0),
             datetime.datetime(2014, 7, 26, 21, 50, 0)
         )
-    )
+    ))
     assert len(datasets) == 0
 
     # A dataset that overlaps but is not fully contained by the search bounds.
     # Should we distinguish between 'contains' and 'overlaps'?
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-40, -37.1)
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
     # Single point search
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=-37.0,
         time=Range(
             datetime.datetime(2016, 5, 12, 23, 0, 0),
             datetime.datetime(2016, 5, 12, 23, 59, 59)
         )
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=30.0,
         time=Range(
             datetime.datetime(2016, 5, 12, 23, 0, 0),
             datetime.datetime(2016, 5, 12, 23, 59, 59)
         )
-    )
+    ))
     assert len(datasets) == 0
 
     # Single timestamp search
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-37.5, -36.5),
         time=datetime.datetime(2016, 5, 12, 23, 50, 40),
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-37.5, -36.5),
         time=datetime.datetime(2016, 5, 12, 23, 0, 0)
-    )
+    ))
     assert len(datasets) == 0
 
 
 def test_zero_width_range_search(index: Index, ls8_eo3_dataset4: Dataset) -> None:
     # Test time search against zero-width time metadata
-    datasets = index.datasets.search_eager(time=Range(
+    datasets = list(index.datasets.search(time=Range(
         begin=datetime.datetime(2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc),
         end=datetime.datetime(2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc)
-    ))
+    )))
     assert len(datasets) == 1
 
-    datasets = index.datasets.search_eager(time=Range(
+    datasets = list(index.datasets.search(time=Range(
         begin=datetime.datetime(2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc),
         end=datetime.datetime(2013, 7, 21, 0, 57, 27, 432563, tzinfo=datetime.timezone.utc)
-    ))
+    )))
     assert len(datasets) == 1
 
-    datasets = index.datasets.search_eager(time=Range(
+    datasets = list(index.datasets.search(time=Range(
         begin=datetime.datetime(2013, 7, 21, 0, 57, 25, 432563, tzinfo=datetime.timezone.utc),
         end=datetime.datetime(2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc)
-    ))
+    )))
     assert len(datasets) == 1
 
 
@@ -303,35 +303,35 @@ def test_search_or_expressions_eo3(index: Index,
     # - two landsat8 ard
     # - one wo
 
-    all_datasets = index.datasets.search_eager()
+    all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 3
     all_ids = set(dataset.id for dataset in all_datasets)
 
     # OR all instruments: should return all datasets
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         instrument=['WOOLI_TIRS', 'OLI_TIRS', 'OLI_TIRS2']
-    )
+    ))
     assert len(datasets) == 3
     ids = set(dataset.id for dataset in datasets)
     assert ids == all_ids
 
     # OR expression with only one clause.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         instrument=['OLI_TIRS']
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
     # OR both products: return all
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=[ls8_eo3_dataset.product.name, wo_eo3_dataset.product.name]
-    )
+    ))
     assert len(datasets) == 3
     ids = set(dataset.id for dataset in datasets)
     assert ids == all_ids
 
     # eo OR eo3: return all
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         metadata_type=[
             # LS5 + children
             ls8_eo3_dataset.metadata_type.name,
@@ -339,15 +339,15 @@ def test_search_or_expressions_eo3(index: Index,
             # LS8 dataset
             wo_eo3_dataset.metadata_type.name
         ]
-    )
+    ))
     assert len(datasets) == 3
     ids = set(dataset.id for dataset in datasets)
     assert ids == all_ids
 
     # Redundant ORs should have no effect.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=[wo_eo3_dataset.product.name, wo_eo3_dataset.product.name, wo_eo3_dataset.product.name]
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == wo_eo3_dataset.id
 
@@ -403,6 +403,15 @@ def test_search_returning_eo3(index: Index,
     expected_time = creation_time.astimezone(tz.tzutc()).replace(tzinfo=None)
     assert expected_time.isoformat() == ls8_eo3_dataset.metadata.creation_dt
     assert label == ls8_eo3_dataset.metadata.label
+
+    # All Fields
+    results = list(index.datasets.search_returning(
+        platform='landsat-8',
+    ))
+    assert len(results) == 3
+
+    assert ls8_eo3_dataset.id in (result.id for result in results)
+
 
 
 def test_search_returning_rows_eo3(index,
@@ -467,101 +476,101 @@ def test_searches_only_type_eo3(index: Index,
     assert ls8_eo3_dataset.metadata_type.name != wo_eo3_dataset.metadata_type.name
 
     # One result in the product
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=wo_eo3_dataset.product.name,
         platform='landsat-8'
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == wo_eo3_dataset.id
 
     # One result in the metadata type
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         metadata_type="eo3",
         platform='landsat-8'
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == wo_eo3_dataset.id
 
     # No results when searching for a different dataset type.
     with pytest.raises(ValueError):
-        datasets = index.datasets.search_eager(
+        next(index.datasets.search(
             product="spam_and_eggs",
             platform='landsat-8'
-        )
+        ))
 
     # Two result when no types specified.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         platform='landsat-8'
-    )
+    ))
     assert len(datasets) == 2
     assert set(ds.id for ds in datasets) == {ls8_eo3_dataset.id, wo_eo3_dataset.id}
 
     # No results for different metadata type.
     with pytest.raises(ValueError):
-        datasets = index.datasets.search_eager(
+        next(index.datasets.search(
             metadata_type='spam_type',
             platform='landsat-8',
-        )
+        ))
 
 
 def test_search_special_fields_eo3(index: Index,
                                    ls8_eo3_dataset: Dataset,
                                    wo_eo3_dataset: Dataset) -> None:
     # 'product' is a special case
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=ls8_eo3_dataset.product.name
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
     # Unknown field: no results
     with pytest.raises(ValueError):
-        datasets = index.datasets.search_eager(
+        next(index.datasets.search(
             platform='landsat-8',
             flavour='vanilla',
-        )
+        ))
 
 
 def test_search_by_uri_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dataset_doc):
-    datasets = index.datasets.search_eager(product=ls8_eo3_dataset.product.name,
-                                           uri=eo3_ls8_dataset_doc[1])
+    datasets = list(index.datasets.search(product=ls8_eo3_dataset.product.name,
+                                           uri=eo3_ls8_dataset_doc[1]))
     assert len(datasets) == 1
 
-    datasets = index.datasets.search_eager(product=ls8_eo3_dataset.product.name,
-                                           uri='file:///x/yz')
+    datasets = list(index.datasets.search(product=ls8_eo3_dataset.product.name,
+                                           uri='file:///x/yz'))
     assert len(datasets) == 0
 
 
 def test_search_conflicting_types(index, ls8_eo3_dataset):
     # Should return no results.
     with pytest.raises(ValueError):
-        index.datasets.search_eager(
+        next(index.datasets.search(
             product=ls8_eo3_dataset.product.name,
             # The ls8 type is not of type storage_unit.
             metadata_type='storage_unit'
-        )
+        ))
 
 
 def test_fetch_all_of_md_type(index: Index, ls8_eo3_dataset: Dataset) -> None:
     # Get every dataset of the md type.
     assert ls8_eo3_dataset.metadata_type is not None  # to shut up mypy
-    results = index.datasets.search_eager(
+    results = list(index.datasets.search(
         metadata_type=ls8_eo3_dataset.metadata_type.name
-    )
+    ))
     assert len(results) == 1
     assert results[0].id == ls8_eo3_dataset.id
     # Get every dataset of the type.
-    results = index.datasets.search_eager(
+    results = list(index.datasets.search(
         product=ls8_eo3_dataset.product.name
-    )
+    ))
     assert len(results) == 1
     assert results[0].id == ls8_eo3_dataset.id
 
     # No results for another.
     with pytest.raises(ValueError):
-        results = index.datasets.search_eager(
+        next(index.datasets.search(
             metadata_type='spam_and_eggs'
-        )
+        ))
 
 
 def test_count_searches(index: Index,
@@ -772,7 +781,7 @@ def test_find_duplicates_eo3(index,
                              ls8_eo3_dataset3, ls8_eo3_dataset4,
                              wo_eo3_dataset):
     # Our four ls8 datasets and one wo.
-    all_datasets = index.datasets.search_eager()
+    all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 5
 
     # First two ls8 datasets have the same path/row, last two have a different row.
@@ -817,7 +826,7 @@ def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_da
     assert not index.datasets.get(nrt_dataset.id).is_archived
     assert not index.datasets.get(final_dataset.id).is_archived
 
-    all_datasets = index.datasets.search_eager()
+    all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 3
 
     dupe_fields = namedtuple('search_result', ['region_code', 'time'])

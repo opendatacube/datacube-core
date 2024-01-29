@@ -639,7 +639,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for product, datasets in self._do_search_by_product(query):
             yield product, self._make_many(datasets, product)
 
-    def search_returning(self, field_names, limit=None, **query):
+    def search_returning(self, field_names=None, limit=None, **query):
         """
         Perform a search, returning only the specified fields.
 
@@ -652,6 +652,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param int limit: Limit number of datasets
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
+        if field_names is None:
+            field_names = self._index.products.get_field_names()
         result_type = namedtuple('search_result', field_names)
 
         for _, results in self._do_search_by_product(query,
@@ -659,7 +661,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                      select_field_names=field_names,
                                                      limit=limit):
             for columns in results:
-                yield result_type(*columns)
+                coldict = columns._asdict()
+                kwargs = {
+                    field: coldict.get(field)
+                    for field in field_names
+                }
+                yield result_type(**kwargs)
 
     def count(self, **query):
         """
@@ -747,7 +754,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                           if not field.affects_row_selection)
                 else:
                     select_fields = tuple(dataset_fields[field_name]
-                                          for field_name in select_field_names)
+                                          for field_name in select_field_names
+                                          if field_name in dataset_fields)
             with self._db_connection() as connection:
                 yield (product,
                        connection.search_datasets(
@@ -798,6 +806,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     query_exprs
                 ))
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def search_summaries(self, **query):
         """
         Perform a search, returning just the search fields of each dataset.

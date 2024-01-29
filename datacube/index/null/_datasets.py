@@ -136,7 +136,7 @@ class DatasetResource(AbstractDatasetResource):
     def search_by_product(self, **query):
         return []
 
-    def search_returning(self, field_names, limit=None, **query):
+    def search_returning(self, field_names=None, limit=None, **query):
         return []
 
     def count(self, **query):
@@ -151,6 +151,12 @@ class DatasetResource(AbstractDatasetResource):
     def count_product_through_time(self, period, **query):
         return []
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def search_summaries(self, **query):
         return []
 

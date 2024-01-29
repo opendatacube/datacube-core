@@ -187,7 +187,7 @@ def test_spatial_search(index,
     index.create_spatial_index(epsg3577)
     index.update_spatial_index(crses=[epsg3577])
     # Test old style lat/lon search
-    dss = index.datasets.search_eager(
+    dss = index.datasets.search(
         product=ls8_eo3_dataset.product.name,
         lat=Range(begin=-37.5, end=37.0),
         lon=Range(begin=148.5, end=149.0)
