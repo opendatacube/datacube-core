@@ -910,7 +910,19 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return custom_exprs
 
-    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+    def spatial_extent(self,
+                       ids: Iterable[DSID] | None = None,
+                       product: str|Product|None = None,
+                       crs: CRS = CRS("EPSG:4326")
+                       ) -> Optional[Geometry]:
+        if product is None and ids is None:
+            raise ValueError("Must supply product or ids")
+        elif product is not None and ids is not None:
+            raise ValueError("Cannot supply both product and ids")
+        elif product is not None:
+            if isinstance(product, str):
+                product = self._index.products.get_by_name_unsafe(product)
+            ids = (ds.id for ds in self.search(product=product.name))
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
 

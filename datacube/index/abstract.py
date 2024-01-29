@@ -1762,15 +1762,24 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+    def spatial_extent(self,
+                       ids: Iterable[DSID] | None = None,
+                       product: str|Product|None = None,
+                       crs: CRS = CRS("EPSG:4326")
+                       ) -> Optional[Geometry]:
         """
-        Return the combined spatial extent of the nominated datasets.
+        Return the combined spatial extent of the nominated datasets (or all datasets for the nominated product)
+
+        User may specfify product or ids, but not both.
 
         Uses spatial index.
+
         Returns None if no index for the CRS, or if no identified datasets are indexed in the relevant spatial index.
         Result will not include extents of datasets that cannot be validly projected into the CRS.
 
-        :param ids: An iterable of dataset IDs
+
+        :param ids: An iterable of dataset IDs (or None)
+        :param product: A Product or product name. (or None)
         :param crs: A CRS (defaults to EPSG:4326)
         :return: The combined spatial extents of the datasets.
         """

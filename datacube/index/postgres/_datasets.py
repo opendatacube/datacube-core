@@ -928,7 +928,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return custom_exprs
 
-    def spatial_extent(self, ids, crs=None):
+    def spatial_extent(self, ids=None, product=None, crs=None):
         return None
 
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:

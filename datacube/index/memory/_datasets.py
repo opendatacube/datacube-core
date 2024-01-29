@@ -727,7 +727,7 @@ class DatasetResource(AbstractDatasetResource):
             archived_time=None if for_save else orig.archived_time
         )
 
-    def spatial_extent(self, ids, crs=None):
+    def spatial_extent(self, ids=None, product=None, crs=None):
         return None
 
     # Lineage methods need to be implemented on the dataset resource as that is where the relevant indexes
