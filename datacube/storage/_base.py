@@ -83,7 +83,6 @@ class BandInfo:
                  'units',
                  'crs',
                  'transform',
-                 'center_time',
                  'format',
                  'driver_data')
 
