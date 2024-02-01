@@ -380,7 +380,7 @@ def test_mem_ds_expand_periods(mem_index_fresh: ODCEnvironment):
     ]
 
 
-def test_temporal_extent(mem_eo3_data: ODCEnvironment):
+def test_spatiotemporal_extent(mem_eo3_data: ODCEnvironment):
     dc, ls8_id, wo_id = mem_eo3_data
     ls8 = dc.index.datasets.get(ls8_id)
     wo = dc.index.datasets.get(wo_id)
@@ -399,6 +399,10 @@ def test_temporal_extent(mem_eo3_data: ODCEnvironment):
         ids = [doc["id"] for prod, doc, uris in dc.index.datasets.get_all_docs_for_product(product=ds.product)]
         tmin2, tmax2 = dc.index.datasets.temporal_extent(ids=ids)
         assert tmin2 == tmin and tmax2 == tmax
+
+    # Spatial extent
+    assert dc.index.products.spatial_extent(ls8.product) is None
+    assert dc.index.datasets.spatial_extent([ls8_id, wo_id]) is None
 
 
 def test_mem_ds_archive_purge(mem_eo3_data: ODCEnvironment):
