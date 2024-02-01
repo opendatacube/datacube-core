@@ -384,10 +384,6 @@ def test_temporal_extent(mem_eo3_data: ODCEnvironment):
     dc, ls8_id, wo_id = mem_eo3_data
     ls8 = dc.index.datasets.get(ls8_id)
     wo = dc.index.datasets.get(wo_id)
-    with pytest.raises(ValueError) as e:
-        dc.index.datasets.temporal_extent()
-    with pytest.raises(ValueError) as e:
-        dc.index.datasets.temporal_extent(product="product1", ids=[ls8.id])
     with pytest.raises(KeyError) as e:
         dc.index.datasets.temporal_extent(ids=[uuid4()])
 
@@ -398,7 +394,7 @@ def test_temporal_extent(mem_eo3_data: ODCEnvironment):
     for ds in (ls8, wo):
         tmin, tmax = dc.index.datasets.get_product_time_bounds(ds.product.name)
         assert (tmin is None and tmax is None) or tmin < tmax
-        tmin2, tmax2 = dc.index.datasets.temporal_extent(product=ds.product)
+        tmin2, tmax2 = dc.index.products.temporal_extent(product=ds.product)
         assert tmin2 == tmin and tmax2 == tmax
         ids = [doc["id"] for prod, doc, uris in dc.index.datasets.get_all_docs_for_product(product=ds.product)]
         tmin2, tmax2 = dc.index.datasets.temporal_extent(ids=ids)

@@ -135,22 +135,12 @@ def test_spatial_extent(index,
     index.create_spatial_index(epsg3577)
     index.update_spatial_index(crses=[epsg3577])
 
-    with pytest.raises(ValueError):
-        index.datasets.spatial_extent()
-    with pytest.raises(ValueError):
-        index.datasets.spatial_extent(
-            ids=[
-                ls8_eo3_dataset.id, ls8_eo3_dataset2.id,
-                ls8_eo3_dataset3.id, ls8_eo3_dataset4.id
-            ],
-            product=ls8_eo3_dataset.product
-        )
     with pytest.raises(KeyError):
-        index.datasets.spatial_extent(product="spaghetti_product")
+        index.products.spatial_extent("spaghetti_product")
 
-    ext1 = index.datasets.spatial_extent(ids=[ls8_eo3_dataset.id], crs=epsg4326)
-    ext2 = index.datasets.spatial_extent(ids=[ls8_eo3_dataset2.id], crs=epsg4326)
-    ext12 = index.datasets.spatial_extent(ids=[ls8_eo3_dataset.id, ls8_eo3_dataset2.id], crs=epsg4326)
+    ext1 = index.datasets.spatial_extent([ls8_eo3_dataset.id], crs=epsg4326)
+    ext2 = index.datasets.spatial_extent([ls8_eo3_dataset2.id], crs=epsg4326)
+    ext12 = index.datasets.spatial_extent([ls8_eo3_dataset.id, ls8_eo3_dataset2.id], crs=epsg4326)
     assert ext1 is not None and ext2 is not None and ext12 is not None
     assert ext1 == ext2
     assert ext12.difference(ext1).area < 0.001
@@ -158,31 +148,31 @@ def test_spatial_extent(index,
     assert ls8_eo3_dataset.extent.to_crs(epsg4326).intersects(ext12)
     assert ls8_eo3_dataset2.extent.to_crs(epsg4326).intersects(ext2)
     assert ls8_eo3_dataset2.extent.to_crs(epsg4326).intersects(ext12)
-    extau12 = index.datasets.spatial_extent(ids=[ls8_eo3_dataset.id, ls8_eo3_dataset2.id], crs=epsg3577)
+    extau12 = index.datasets.spatial_extent([ls8_eo3_dataset.id, ls8_eo3_dataset2.id], crs=epsg3577)
     extau12africa = index.datasets.spatial_extent(
-        ids=[ls8_eo3_dataset.id, ls8_eo3_dataset2.id, africa_eo3_dataset.id],
+        [ls8_eo3_dataset.id, ls8_eo3_dataset2.id, africa_eo3_dataset.id],
         crs=epsg3577
     )
     assert extau12 == extau12africa
     ext3 = index.datasets.spatial_extent(ids=[ls8_eo3_dataset3.id], crs=epsg4326)
     ext1234 = index.datasets.spatial_extent(
-        ids=[
+        [
             ls8_eo3_dataset.id, ls8_eo3_dataset2.id,
             ls8_eo3_dataset3.id, ls8_eo3_dataset4.id
         ],
         crs=epsg4326)
     assert ext1.difference(ext1234).area < 0.001
     assert ext3.difference(ext1234).area < 0.001
-    ext1_3577 = index.datasets.spatial_extent(ids=[ls8_eo3_dataset.id], crs=epsg3577)
+    ext1_3577 = index.datasets.spatial_extent([ls8_eo3_dataset.id], crs=epsg3577)
     assert ext1_3577.intersects(ls8_eo3_dataset.extent._to_crs(epsg3577))
 
-    ext_ls8 = index.datasets.spatial_extent(
-        product=ls8_eo3_dataset.product,
+    ext_ls8 = index.products.spatial_extent(
+        ls8_eo3_dataset.product,
         crs=epsg4326
     )
     assert ext_ls8 == ext1234
-    ext_ls8 = index.datasets.spatial_extent(
-        product=ls8_eo3_dataset.product.name,
+    ext_ls8 = index.products.spatial_extent(
+        ls8_eo3_dataset.product.name,
         crs=epsg4326
     )
     assert ext_ls8 == ext1234
@@ -233,16 +223,16 @@ def test_spatial_search(index,
 def test_temporal_extents(index,
                           ls8_eo3_dataset, ls8_eo3_dataset2,
                           ls8_eo3_dataset3, ls8_eo3_dataset4):
-    start, end = index.datasets.temporal_extent(product=ls8_eo3_dataset.product)
+    start, end = index.products.temporal_extent(ls8_eo3_dataset.product)
     assert start == datetime.datetime(
         2013, 4, 4, 0, 58, 34, 682275,
         tzinfo=datetime.timezone.utc)
     assert end == datetime.datetime(
         2016, 5, 28, 23, 50, 59, 149573,
         tzinfo=datetime.timezone.utc)
-    start2, end2 = index.datasets.temporal_extent(product=ls8_eo3_dataset.product.name)
+    start2, end2 = index.products.temporal_extent(ls8_eo3_dataset.product.name)
     assert start == start2 and end == end2
-    start2, end2 = index.datasets.temporal_extent(ids=[
+    start2, end2 = index.datasets.temporal_extent([
         ls8_eo3_dataset.id, ls8_eo3_dataset2.id,
         ls8_eo3_dataset3.id, ls8_eo3_dataset4.id,
     ])

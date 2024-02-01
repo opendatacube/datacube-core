@@ -2,11 +2,13 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import datetime
 import logging
 
 from time import monotonic
 from cachetools.func import lru_cache
 
+from odc.geo.geom import CRS, Geometry
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
@@ -338,3 +340,21 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             metadata_type=cast(MetadataType, self.metadata_type_resource.get(query_row.metadata_type_ref)),
             id_=query_row.id,
         )
+
+    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Returns the minimum and maximum acquisition time of the product.
+        """
+        if isinstance(product, str):
+            product = self.get_by_name_unsafe(product)
+        with self._db_connection() as connection:
+            result = connection.temporal_extent_by_prod(product.id)
+
+        return result
+
+    def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
+        if isinstance(product, str):
+            product = self._index.products.get_by_name_unsafe(product)
+        ids = [ds.id for ds in self._index.datasets.search(product=product.name)]
+        with self._db_connection() as connection:
+            return connection.spatial_extent(ids, crs)

@@ -13,6 +13,7 @@
 Persistence API implementation for postgres.
 """
 
+import datetime
 import logging
 import uuid  # noqa: F401
 from typing import Iterable, Tuple
@@ -1150,6 +1151,30 @@ class PostgresDbAPI(object):
                 METADATA_TYPE.select(METADATA_TYPE.c.definition).order_by(METADATA_TYPE.c.name.asc())
             ).fetchall()
         ]
+
+    def temporal_extent_by_product(self, product_id: int,
+                                   min_time_offset, max_time_offset) -> tuple[datetime.datetime, datetime.datetime]:
+        time_min = DateDocField('aquisition_time_min',
+                                'Min of time when dataset was acquired',
+                                DATASET.c.metadata,
+                                False,  # is it indexed
+                                offset=min_time_offset,
+                                selection='least')
+
+        time_max = DateDocField('aquisition_time_max',
+                                'Max of time when dataset was acquired',
+                                DATASET.c.metadata,
+                                False,  # is it indexed
+                                offset=max_time_offset,
+                                selection='greatest')
+
+        return self._connection.execute(
+            select(
+                func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)
+            ).where(
+                DATASET.c.dataset_type_ref == product_id
+            )
+        ).first()
 
     def get_locations(self, dataset_id):
         return [

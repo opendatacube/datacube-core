@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import datetime
 import logging
 
 from cachetools.func import lru_cache
@@ -329,3 +330,22 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             metadata_type=cast(MetadataType, self.metadata_type_resource.get(query_row.metadata_type_ref)),
             id_=query_row.id,
         )
+
+    def spatial_extent(self, product, crs=None):
+        return None
+
+    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Returns the minimum and maximum acquisition time of the product.
+        """
+        if isinstance(product, str):
+            product = self._index.products.get_by_name_unsafe(product)
+
+        # This implementation violates architecture - should not be SQLAlchemy code at this level.
+        # Get the offsets from dataset doc
+        dataset_section = product.metadata_type.definition['dataset']
+        min_offset = dataset_section['search_fields']['time']['min_offset']
+        max_offset = dataset_section['search_fields']['time']['max_offset']
+
+        with self._db_connection() as connection:
+            return connection.temporal_extent_by_product(product.id, min_offset, max_offset)

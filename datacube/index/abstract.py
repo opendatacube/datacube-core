@@ -779,6 +779,34 @@ class AbstractProductResource(ABC):
         for prod in self.get_all():
             yield prod.definition
 
+    @abstractmethod
+    def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+        """
+        Return the combined spatial extent of the nominated datasets (or all datasets for the nominated product)
+
+        User may specfify product or ids, but not both.
+
+        Uses spatial index.
+
+        Returns None if no index for the CRS, or if no dataset for the present in the relevant spatial index.
+        Result will not include extents of datasets that cannot be validly projected into the CRS.
+
+        :param product: A Product or product name. (or None)
+        :param crs: A CRS (defaults to EPSG:4326)
+        :return: The combined spatial extents of the product.
+        """
+
+    @abstractmethod
+    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Returns the minimum and maximum acquisition time of a product or an iterable of dataset ids.
+
+        Raises KeyError if product has no datasets in the index
+
+        :param product: Product or name of product
+        :return: minimum and maximum acquisition times
+        """
+
 
 # Non-strict Dataset ID representation
 DSID = Union[str, UUID]
@@ -1696,24 +1724,18 @@ class AbstractDatasetResource(ABC):
         return list(self.search(**query))  # type: ignore[arg-type]   # mypy isn't being very smart here :(
 
     @abstractmethod
-    def temporal_extent(self,
-                        product: str | Product | None,
-                        ids: Iterable[DSID] | None
-                        ) -> tuple[datetime.datetime, datetime.datetime]:
+    def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of a product or an iterable of dataset ids.
 
-        Only one ids or products can be passed - the other should be None.  Raises ValueError if
-        both or neither of ids and products is passed.  Raises KeyError if no datasets in the index
-        match the input argument.
+        Raises KeyError if none of the datasets are in the index
 
-        :param product: Product or name of product
         :param ids: Iterable of dataset ids.
         :return: minimum and maximum acquisition times
         """
 
     @deprecat(
-        reason="This method has been renamed 'temporal_extent'",
+        reason="This method has been moved to the Product Resource and renamed 'temporal_extent()'",
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
@@ -1726,7 +1748,7 @@ class AbstractDatasetResource(ABC):
         :param product: Product of name of product
         :return: minimum and maximum acquisition times
         """
-        return self.temporal_extent(product=product)
+        return self._index.products.temporal_extent(product=product)
 
     @abstractmethod
     def search_returning_datasets_light(self,
@@ -1762,24 +1784,16 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def spatial_extent(self,
-                       ids: Iterable[DSID] | None = None,
-                       product: str | Product | None = None,
-                       crs: CRS = CRS("EPSG:4326")
-                       ) -> Optional[Geometry]:
+    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
         """
-        Return the combined spatial extent of the nominated datasets (or all datasets for the nominated product)
-
-        User may specfify product or ids, but not both.
+        Return the combined spatial extent of the nominated datasets
 
         Uses spatial index.
 
         Returns None if no index for the CRS, or if no identified datasets are indexed in the relevant spatial index.
         Result will not include extents of datasets that cannot be validly projected into the CRS.
 
-
         :param ids: An iterable of dataset IDs (or None)
-        :param product: A Product or product name. (or None)
         :param crs: A CRS (defaults to EPSG:4326)
         :return: The combined spatial extents of the datasets.
         """

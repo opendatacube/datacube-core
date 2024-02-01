@@ -747,29 +747,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 _LOG.warning("search results: %s (%s)", output["id"], output["product"])
                 yield output
 
-    def temporal_extent(
-            self,
-            product: str | Product | None = None,
-            ids: Iterable[DSID] | None = None
-    ) -> tuple[datetime.datetime, datetime.datetime]:
-        """
-        Returns the minimum and maximum acquisition time of the product.
-        """
-        if product is None and ids is None:
-            raise ValueError("Must supply product or ids")
-        elif product is not None and ids is not None:
-            raise ValueError("Cannot supply both product and ids")
-        elif product is not None:
-            if isinstance(product, str):
-                product = self._index.products.get_by_name_unsafe(product)
-            with self._db_connection() as connection:
-                result = connection.temporal_extent_by_prod(product.id)
-        else:
-            with self._db_connection() as connection:
-                result = connection.temporal_extent_by_ids(ids)
-
-        return result
-
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
         """
@@ -910,19 +887,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return custom_exprs
 
-    def spatial_extent(self,
-                       ids: Iterable[DSID] | None = None,
-                       product: str | Product | None = None,
-                       crs: CRS = CRS("EPSG:4326")
-                       ) -> Optional[Geometry]:
-        if product is None and ids is None:
-            raise ValueError("Must supply product or ids")
-        elif product is not None and ids is not None:
-            raise ValueError("Cannot supply both product and ids")
-        elif product is not None:
-            if isinstance(product, str):
-                product = self._index.products.get_by_name_unsafe(product)
-            ids = (ds.id for ds in self.search(product=product.name))
+    def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Returns the minimum and maximum acquisition time of the product.
+        """
+        with self._db_connection() as connection:
+            return connection.temporal_extent_by_ids(ids)
+
+    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
 
