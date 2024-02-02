@@ -741,11 +741,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def temporal_extent(
             self,
-            product: str | Product | None = None,
             ids: Iterable[DSID] | None = None
     ) -> tuple[datetime.datetime, datetime.datetime]:
         """
-        Returns the minimum and maximum acquisition time of the product.
+        Returns the minimum and maximum acquisition time of the specified datasets.
         """
         raise NotImplementedError("Sorry Temporal Extent by dataset ids is not supported in postgres driver.")
 
