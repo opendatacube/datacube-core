@@ -36,7 +36,7 @@ class ProductResource(AbstractProductResource):
                 f'Metadata Type {product.name}'
             )
         else:
-            mdt = self.metadata_type_resource.get_by_name(product.metadata_type.name)
+            mdt = self._index.metadata_types.get_by_name(product.metadata_type.name)
             if mdt is None:
                 _LOG.warning(f'Adding metadata_type "{product.metadata_type.name}" as it doesn\'t exist')
                 product.metadata_type = self._index.metadata_types.add(product.metadata_type,
