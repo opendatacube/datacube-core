@@ -75,7 +75,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             if metadata_type is None:
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
                 metadata_type = self._index.metadata_types.add(product.metadata_type,
-                                                                allow_table_lock=allow_table_lock)
+                                                               allow_table_lock=allow_table_lock)
             with self._db_connection() as connection:
                 if connection.in_transaction and not allow_table_lock:
                     raise ValueError("allow_table_lock must be True if called inside a transaction.")

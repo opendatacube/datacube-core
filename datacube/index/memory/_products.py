@@ -9,7 +9,6 @@ from typing import Iterable, Iterator, Mapping, Tuple, cast
 
 from datacube.index.fields import as_expression
 from datacube.index.abstract import AbstractProductResource, QueryField
-from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.model import Product
 from datacube.utils import changes, jsonify_document, _readable_offset
 from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes, classify_changes
