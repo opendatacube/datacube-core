@@ -23,19 +23,16 @@ _LOG = logging.getLogger(__name__)
 
 class ProductResource(AbstractProductResource, IndexResourceAddIn):
     """
-    :type _db: datacube.drivers.postgis._connections.PostgresDb
-    :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
+    Postgis driver product resource implementation
     """
 
     def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
-        :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
+        :type index: datacube.index.postgis.index.Index
         """
+        super().__init__(index)
         self._db = db
-        self._index = index
-        self.metadata_type_resource = self._index.metadata_types
-
         self.get_unsafe = lru_cache()(self.get_unsafe)
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
 
@@ -43,7 +40,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         We define getstate/setstate to avoid pickling the caches
         """
-        return self._db, self.metadata_type_resource
+        return self._db, self._index.metadata_types
 
     def __setstate__(self, state):
         """
@@ -74,10 +71,10 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 'Metadata Type {}'.format(product.name)
             )
         else:
-            metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
+            metadata_type = self._index.metadata_types.get_by_name(product.metadata_type.name)
             if metadata_type is None:
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
-                metadata_type = self.metadata_type_resource.add(product.metadata_type,
+                metadata_type = self._index.metadata_types.add(product.metadata_type,
                                                                 allow_table_lock=allow_table_lock)
             with self._db_connection() as connection:
                 connection.insert_product(
@@ -201,7 +198,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             #                 name, field.sql_expression, new_field.sql_expression
             #             )
             #         )
-        metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
+        metadata_type = self._index.metadata_types.get_by_name(product.metadata_type.name)
         # TODO: should we add metadata type here?
         assert metadata_type, "TODO: should we add metadata type here?"
         with self._db_connection() as conn:
@@ -337,7 +334,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     def _make(self, query_row) -> Product:
         return Product(
             definition=query_row.definition,
-            metadata_type=cast(MetadataType, self.metadata_type_resource.get(query_row.metadata_type_ref)),
+            metadata_type=cast(MetadataType, self._index.metadata_types.get(query_row.metadata_type_ref)),
             id_=query_row.id,
         )
 

@@ -405,7 +405,8 @@ class AbstractProductResource(ABC):
     (If a particular abstract method is not applicable for a particular implementation
     raise a NotImplementedError)
     """
-    metadata_type_resource: AbstractMetadataTypeResource
+    def __init__(self, index: "AbstractIndex"):
+        self._index = index
 
     def from_doc(self, definition: Mapping[str, Any],
                  metadata_type_cache: Optional[MutableMapping[str, MetadataType]] = None) -> Product:
@@ -430,14 +431,14 @@ class AbstractProductResource(ABC):
             if metadata_type_cache is not None and metadata_type in metadata_type_cache:
                 metadata_type = metadata_type_cache[metadata_type]
             else:
-                metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
+                metadata_type = self._index.metadata_types.get_by_name(metadata_type)
                 if (metadata_type is not None
                         and metadata_type_cache is not None
                         and metadata_type.name not in metadata_type_cache):
                     metadata_type_cache[metadata_type.name] = metadata_type
         else:
             # Otherwise they embedded a document, add it if needed:
-            metadata_type = self.metadata_type_resource.from_doc(metadata_type)
+            metadata_type = self._index.metadata_types.from_doc(metadata_type)
             definition = dict(definition)
             definition['metadata_type'] = metadata_type.name
 
@@ -689,7 +690,7 @@ class AbstractProductResource(ABC):
         :param field_names: names of fields that returned products must have
         :returns: Matching product models
         """
-        return self.get_with_types(self.metadata_type_resource.get_with_fields(field_names))
+        return self.get_with_types(self._index.metadata_types.get_with_fields(field_names))
 
     def get_with_types(self, types: Iterable[MetadataType]) -> Iterable[Product]:
         """
