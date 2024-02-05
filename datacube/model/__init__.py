@@ -14,7 +14,7 @@ from pathlib import Path
 from uuid import UUID
 
 from affine import Affine
-from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union
+from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union, Sequence
 
 from urllib.parse import urlparse
 from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
@@ -62,10 +62,19 @@ class Dataset:
     :param uris: All active uris for the dataset
     """
 
+    @deprecat(
+        deprecated_args={
+            'uris': {
+                "version": "1.9",
+                "reason": "Multiple locations per dataset are deprecated - prefer passing single uri to uri argument"
+            }
+        }
+    )
     def __init__(self,
                  product: "Product",
                  metadata_doc: Dict[str, Any],
                  uris: Optional[List[str]] = None,
+                 uri: Optional[str] = None,
                  sources: Optional[Mapping[str, 'Dataset']] = None,
                  indexed_by: Optional[str] = None,
                  indexed_time: Optional[datetime] = None,
@@ -81,7 +90,15 @@ class Dataset:
         self.metadata_doc = metadata_doc
 
         #: Active URIs in order from newest to oldest
-        self.uris = uris
+        if uri:
+            self._uris = [uri]
+            self.uri = uri
+        elif uris:
+            self._uris = uris
+            self.uri = uris[0]
+        else:
+            self._uris = []
+            self.uri = None
 
         #: The datasets that this dataset is derived from (if requested on load).
         self.sources = sources
@@ -95,8 +112,16 @@ class Dataset:
         #: The User who indexed this dataset
         self.indexed_by = indexed_by
         self.indexed_time = indexed_time
-        # When the dataset was archived. Null it not archived.
+        # When the dataset was archived. Null if not archived.
         self.archived_time = archived_time
+
+    @property
+    @deprecat(
+        reason="Multiple locations are now deprecated. Please use the 'uri' attribute instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
+    def uris(self) -> Sequence[str]:
+        return self._uris
 
     @property
     @deprecat(
@@ -118,7 +143,9 @@ class Dataset:
     @property
     def local_uri(self) -> Optional[str]:
         """
-        The latest local file uri, if any.
+        Return the uri if it is local, or None.
+
+        Legacy behaviour: The latest local file uri, if any.
         """
         if self.uris is None:
             return None

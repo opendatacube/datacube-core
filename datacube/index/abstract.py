@@ -1073,7 +1073,31 @@ class DatasetTuple(NamedTuple):
     """
     product: Product
     metadata: Mapping[str, Any]
-    uris: Sequence[str]
+    uri_: str | Sequence[str]
+
+    @property
+    def is_legacy(self):
+        if isinstance(self.uri_, str):
+            return False
+        return True
+
+    @property
+    def uri(self) -> str:
+        if self.is_legacy:
+            return self.uris[0]
+        else:
+            return self.uri_
+
+    @property
+    @deprecat(
+        reason="Multiple uris are deprecated. Please use the uri field and ensure that datasets only have one location",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
+    def uris(self) -> Sequence[str]:
+        if self.is_legacy:
+            return self.uri_
+        else:
+            return [self.uri_]
 
 
 class AbstractDatasetResource(ABC):
@@ -1530,7 +1554,7 @@ class AbstractDatasetResource(ABC):
 
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
         for ds in self.search(product=[product.name]):
-            yield (product, ds.metadata_doc, ds.uris)
+            yield DatasetTuple(product, ds.metadata_doc, ds.uris)
 
     def get_all_docs(self, products: Iterable[Product] | None = None,
                      batch_size: int = 1000) -> Iterable[DatasetTuple]:
