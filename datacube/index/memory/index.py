@@ -47,7 +47,7 @@ class Index(AbstractIndex):
         self._env = env
         self._users = UserResource()
         self._metadata_types = MetadataTypeResource()
-        self._products = ProductResource(self.metadata_types)
+        self._products = ProductResource(self)
         self._lineage = LineageResource(self)
         self._datasets = DatasetResource(self)
         global counter
@@ -128,8 +128,7 @@ class MemoryIndexDriver(AbstractIndexDriver):
         :param definition:
         """
         MetadataType.validate(definition)  # type: ignore
-        return MetadataType(definition,
-                            dataset_search_fields=Index.get_dataset_fields(definition))
+        return MetadataType(definition, dataset_search_fields=Index.get_dataset_fields(definition))
 
 
 def index_driver_init():

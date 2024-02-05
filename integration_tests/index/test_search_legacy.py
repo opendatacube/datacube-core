@@ -1085,3 +1085,5 @@ def test_spatial_index_api_defaults(index: Index):
     with pytest.raises(NotImplementedError) as e:
         index.drop_spatial_index(CRS("epsg:3577"))
     assert "does not support the Spatial Index API" in str(e.value)
+    assert index.products.spatial_extent("a_product") is None
+    assert index.datasets.spatial_extent([uuid.uuid4(), uuid.uuid4()]) is None

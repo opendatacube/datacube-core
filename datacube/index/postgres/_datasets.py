@@ -14,9 +14,7 @@ from time import monotonic
 from typing import Iterable, List, Union, Mapping, Any, Optional
 from uuid import UUID
 
-from sqlalchemy import select, func
-
-from datacube.drivers.postgres._fields import SimpleDocField, DateDocField
+from datacube.drivers.postgres._fields import SimpleDocField
 from datacube.drivers.postgres._schema import DATASET
 from datacube.index.abstract import (AbstractDatasetResource, DatasetSpatialMixin, DSID,
                                      DatasetTuple, BatchStatus)
@@ -738,54 +736,17 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for columns in results:
                 yield columns._asdict()
 
+    def spatial_extent(self, ids, crs=None):
+        return None
+
     def temporal_extent(
             self,
-            product: str | Product | None = None,
             ids: Iterable[DSID] | None = None
     ) -> tuple[datetime.datetime, datetime.datetime]:
         """
-        Returns the minimum and maximum acquisition time of the product.
+        Returns the minimum and maximum acquisition time of the specified datasets.
         """
-        if product is None and ids is None:
-            raise ValueError("Must supply product or ids")
-        elif product is not None and ids is not None:
-            raise ValueError("Cannot supply both product and ids")
-        elif product is not None:
-            if isinstance(product, str):
-                product = self._index.products.get_by_name_unsafe(product)
-        else:
-            raise NotImplementedError("Sorry ids not supported in postgres driver.")
-
-        # This implementation violates architecture - should not be SQLAlchemy code at this level.
-        # Get the offsets from dataset doc
-        dataset_section = product.metadata_type.definition['dataset']
-        min_offset = dataset_section['search_fields']['time']['min_offset']
-        max_offset = dataset_section['search_fields']['time']['max_offset']
-
-        time_min = DateDocField('aquisition_time_min',
-                                'Min of time when dataset was acquired',
-                                DATASET.c.metadata,
-                                False,  # is it indexed
-                                offset=min_offset,
-                                selection='least')
-
-        time_max = DateDocField('aquisition_time_max',
-                                'Max of time when dataset was acquired',
-                                DATASET.c.metadata,
-                                False,  # is it indexed
-                                offset=max_offset,
-                                selection='greatest')
-
-        with self._db_connection() as connection:
-            result = connection.execute(
-                select(
-                    func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)
-                ).where(
-                    DATASET.c.dataset_type_ref == product.id
-                )
-            ).first()
-
-        return result
+        raise NotImplementedError("Sorry Temporal Extent by dataset ids is not supported in postgres driver.")
 
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
@@ -927,9 +888,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             custom_exprs.append(fields.as_expression(custom_field, custom_query[key]))
 
         return custom_exprs
-
-    def spatial_extent(self, ids, crs=None):
-        return None
 
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
         product_search_key = [product.name]

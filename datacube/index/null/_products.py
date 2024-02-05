@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+import datetime
 
 from datacube.index.abstract import AbstractProductResource
 from datacube.model import Product
@@ -13,9 +14,6 @@ _LOG = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource):
-    def __init__(self, mdtr):
-        self.metadata_type_resource = mdtr
-
     def add(self, product, allow_table_lock=False):
         raise NotImplementedError()
 
@@ -39,3 +37,9 @@ class ProductResource(AbstractProductResource):
 
     def get_all(self) -> Iterable[Product]:
         return []
+
+    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+        raise KeyError(str(product))
+
+    def spatial_extent(self, product, crs=None):
+        raise KeyError(str(product))

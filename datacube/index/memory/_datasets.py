@@ -642,20 +642,10 @@ class DatasetResource(AbstractDatasetResource):
         for ds in self.search(**query):  # type: ignore[arg-type]
             yield make_summary(ds)
 
-    def temporal_extent(
-            self,
-            product: str | Product | None = None,
-            ids: Iterable[DSID] | None = None
-    ) -> tuple[datetime.datetime, datetime.datetime]:
-        if product is None and ids is None:
-            raise ValueError("Must supply product or ids")
-        elif product is not None and ids is not None:
-            raise ValueError("Cannot supply both product and ids")
-        elif product is not None:
-            if isinstance(product, str):
-                product = self._index.products.get_by_name_unsafe(product)
-            ids = self.by_product.get(product.name, [])
+    def spatial_extent(self, ids, crs=None):
+        return None
 
+    def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         min_time: Optional[datetime.datetime] = None
         max_time: Optional[datetime.datetime] = None
         for dsid in ids:
@@ -726,9 +716,6 @@ class DatasetResource(AbstractDatasetResource):
             indexed_time=datetime.datetime.now() if for_save and orig.indexed_time is None else orig.indexed_time,
             archived_time=None if for_save else orig.archived_time
         )
-
-    def spatial_extent(self, ids, crs=None):
-        return None
 
     # Lineage methods need to be implemented on the dataset resource as that is where the relevant indexes
     # currently live.

@@ -405,7 +405,8 @@ class AbstractProductResource(ABC):
     (If a particular abstract method is not applicable for a particular implementation
     raise a NotImplementedError)
     """
-    metadata_type_resource: AbstractMetadataTypeResource
+    def __init__(self, index: "AbstractIndex"):
+        self._index = index
 
     def from_doc(self, definition: Mapping[str, Any],
                  metadata_type_cache: Optional[MutableMapping[str, MetadataType]] = None) -> Product:
@@ -430,14 +431,14 @@ class AbstractProductResource(ABC):
             if metadata_type_cache is not None and metadata_type in metadata_type_cache:
                 metadata_type = metadata_type_cache[metadata_type]
             else:
-                metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
+                metadata_type = self._index.metadata_types.get_by_name(metadata_type)
                 if (metadata_type is not None
                         and metadata_type_cache is not None
                         and metadata_type.name not in metadata_type_cache):
                     metadata_type_cache[metadata_type.name] = metadata_type
         else:
             # Otherwise they embedded a document, add it if needed:
-            metadata_type = self.metadata_type_resource.from_doc(metadata_type)
+            metadata_type = self._index.metadata_types.from_doc(metadata_type)
             definition = dict(definition)
             definition['metadata_type'] = metadata_type.name
 
@@ -689,7 +690,7 @@ class AbstractProductResource(ABC):
         :param field_names: names of fields that returned products must have
         :returns: Matching product models
         """
-        return self.get_with_types(self.metadata_type_resource.get_with_fields(field_names))
+        return self.get_with_types(self._index.metadata_types.get_with_fields(field_names))
 
     def get_with_types(self, types: Iterable[MetadataType]) -> Iterable[Product]:
         """
@@ -778,6 +779,33 @@ class AbstractProductResource(ABC):
         """
         for prod in self.get_all():
             yield prod.definition
+
+    @abstractmethod
+    def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+        """
+        Return the combined spatial extent of the nominated product
+
+        Uses spatial index.
+
+        Returns None if no index for the CRS, or if no datasets for the product in the relevant spatial index,
+        or if the driver does not support the spatial index api.
+
+        Result will not include extents of datasets that cannot be validly projected into the CRS.
+
+        :param product: A Product or product name. (or None)
+        :param crs: A CRS (defaults to EPSG:4326)
+        :return: The combined spatial extents of the product.
+        """
+
+    @abstractmethod
+    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Returns the minimum and maximum acquisition time of a product.
+        Raises KeyError if product has no datasets in the index
+
+        :param product: Product or name of product
+        :return: minimum and maximum acquisition times
+        """
 
 
 # Non-strict Dataset ID representation
@@ -1696,24 +1724,18 @@ class AbstractDatasetResource(ABC):
         return list(self.search(**query))  # type: ignore[arg-type]   # mypy isn't being very smart here :(
 
     @abstractmethod
-    def temporal_extent(self,
-                        product: str | Product | None,
-                        ids: Iterable[DSID] | None
-                        ) -> tuple[datetime.datetime, datetime.datetime]:
+    def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         """
-        Returns the minimum and maximum acquisition time of a product or an iterable of dataset ids.
+        Returns the minimum and maximum acquisition time of an iterable of dataset ids.
 
-        Only one ids or products can be passed - the other should be None.  Raises ValueError if
-        both or neither of ids and products is passed.  Raises KeyError if no datasets in the index
-        match the input argument.
+        Raises KeyError if none of the datasets are in the index
 
-        :param product: Product or name of product
         :param ids: Iterable of dataset ids.
         :return: minimum and maximum acquisition times
         """
 
     @deprecat(
-        reason="This method has been renamed 'temporal_extent'",
+        reason="This method has been moved to the Product Resource and renamed 'temporal_extent()'",
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
@@ -1726,7 +1748,7 @@ class AbstractDatasetResource(ABC):
         :param product: Product of name of product
         :return: minimum and maximum acquisition times
         """
-        return self.temporal_extent(product=product)
+        return self._index.products.temporal_extent(product=product)
 
     @abstractmethod
     def search_returning_datasets_light(self,
@@ -1762,11 +1784,12 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Optional[Geometry]:
+    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
         """
-        Return the combined spatial extent of the nominated datasets.
+        Return the combined spatial extent of the nominated datasets
 
         Uses spatial index.
+
         Returns None if no index for the CRS, or if no identified datasets are indexed in the relevant spatial index.
         Result will not include extents of datasets that cannot be validly projected into the CRS.
 

@@ -139,27 +139,20 @@ def test_index_get_product_time_bounds(index, clirunner, example_ls5_dataset_pat
 def test_temporal_extent(
     index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3, ls8_eo3_dataset4
 ):
-    with pytest.raises(ValueError):
-        start, end = index.datasets.temporal_extent()
-    with pytest.raises(ValueError):
-        start, end = index.datasets.temporal_extent(
-            product=ls8_eo3_dataset.product,
-            ids=[ls8_eo3_dataset.id, ls8_eo3_dataset2.id, ls8_eo3_dataset3.id, ls8_eo3_dataset4.id]
-        )
     with pytest.raises(KeyError):
-        start, end = index.datasets.temporal_extent(product="orthentick_produckt")
+        start, end = index.products.temporal_extent("orthentick_produckt")
 
-    start, end = index.datasets.temporal_extent(product=ls8_eo3_dataset.product)
+    start, end = index.products.temporal_extent(ls8_eo3_dataset.product)
     assert start == datetime.datetime(
         2013, 4, 4, 0, 58, 34, 682275,
         tzinfo=datetime.timezone.utc)
     assert end == datetime.datetime(
         2016, 5, 28, 23, 50, 59, 149573,
         tzinfo=datetime.timezone.utc)
-    start2, end2 = index.datasets.temporal_extent(product=ls8_eo3_dataset.product.name)
+    start2, end2 = index.products.temporal_extent(ls8_eo3_dataset.product.name)
     assert start == start2 and end == end2
     try:
-        start2, end2 = index.datasets.temporal_extent(ids=[
+        start2, end2 = index.datasets.temporal_extent([
             ls8_eo3_dataset.id, ls8_eo3_dataset2.id,
             ls8_eo3_dataset3.id, ls8_eo3_dataset4.id,
         ])

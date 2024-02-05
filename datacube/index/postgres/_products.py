@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import datetime
 import logging
 
 from cachetools.func import lru_cache
@@ -20,18 +21,16 @@ _LOG = logging.getLogger(__name__)
 
 class ProductResource(AbstractProductResource, IndexResourceAddIn):
     """
-    :type _db: datacube.drivers.postgres._connections.PostgresDb
-    :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
+    Legacy driver product resource implementation
     """
 
     def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
-        :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
+        :type index: datacube.index.postgres.index.Index
         """
+        super().__init__(index)
         self._db = db
-        self._index = index
-        self.metadata_type_resource = self._index.metadata_types
 
         self.get_unsafe = lru_cache()(self.get_unsafe)
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
@@ -40,7 +39,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         We define getstate/setstate to avoid pickling the caches
         """
-        return self._db, self.metadata_type_resource
+        return self._db, self._index.metadata_types
 
     def __setstate__(self, state):
         """
@@ -72,11 +71,11 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 'Metadata Type {}'.format(product.name)
             )
         else:
-            metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
+            metadata_type = self._index.metadata_types.get_by_name(product.metadata_type.name)
             if metadata_type is None:
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
-                metadata_type = self.metadata_type_resource.add(product.metadata_type,
-                                                                allow_table_lock=allow_table_lock)
+                metadata_type = self._index.metadata_types.add(product.metadata_type,
+                                                               allow_table_lock=allow_table_lock)
             with self._db_connection() as connection:
                 if connection.in_transaction and not allow_table_lock:
                     raise ValueError("allow_table_lock must be True if called inside a transaction.")
@@ -188,7 +187,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             #                 name, field.sql_expression, new_field.sql_expression
             #             )
             #         )
-        metadata_type = cast(MetadataType, self.metadata_type_resource.get_by_name(product.metadata_type.name))
+        metadata_type = cast(MetadataType, self._index.metadata_types.get_by_name(product.metadata_type.name))
         #     Given we cannot change metadata type because of the check above, and this is an
         #     update method, the metadata type is guaranteed to already exist.
         with self._db_connection(transaction=allow_table_lock) as conn:
@@ -326,6 +325,25 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     def _make(self, query_row) -> Product:
         return Product(
             definition=query_row.definition,
-            metadata_type=cast(MetadataType, self.metadata_type_resource.get(query_row.metadata_type_ref)),
+            metadata_type=cast(MetadataType, self._index.metadata_types.get(query_row.metadata_type_ref)),
             id_=query_row.id,
         )
+
+    def spatial_extent(self, product, crs=None):
+        return None
+
+    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Returns the minimum and maximum acquisition time of the product.
+        """
+        if isinstance(product, str):
+            product = self._index.products.get_by_name_unsafe(product)
+
+        # This implementation violates architecture - should not be SQLAlchemy code at this level.
+        # Get the offsets from dataset doc
+        dataset_section = product.metadata_type.definition['dataset']
+        min_offset = dataset_section['search_fields']['time']['min_offset']
+        max_offset = dataset_section['search_fields']['time']['max_offset']
+
+        with self._db_connection() as connection:
+            return connection.temporal_extent_by_product(product.id, min_offset, max_offset)

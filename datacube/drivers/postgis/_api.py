@@ -396,15 +396,14 @@ class PostgisDbAPI:
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
         if SpatialIndex is None:
             return None
-        result = self._connection.execute(
-            select(
-                func.ST_AsGeoJSON(func.ST_Union(SpatialIndex.extent))
-            ).select_from(
-                SpatialIndex
-            ).where(
-                SpatialIndex.dataset_ref.in_(ids)
-            )
+        query = select(
+            func.ST_AsGeoJSON(func.ST_Union(SpatialIndex.extent))
+        ).select_from(
+            SpatialIndex
+        ).where(
+            SpatialIndex.dataset_ref.in_(ids)
         )
+        result = self._connection.execute(query)
         for r in result:
             extent_json = r[0]
             if extent_json is None:

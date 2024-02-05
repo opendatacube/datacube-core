@@ -67,6 +67,10 @@ def test_null_product_resource(null_config: ODCEnvironment):
         assert empty(dc.index.products.get_with_fields(["foo", "bar"]))
         assert empty(dc.index.products.get_field_names())
         with pytest.raises(KeyError) as e:
+            dc.index.products.spatial_extent("a_prod")
+        with pytest.raises(KeyError) as e:
+            dc.index.products.temporal_extent("a_prod")
+        with pytest.raises(KeyError) as e:
             dc.index.products.get_unsafe(1)
         with pytest.raises(KeyError) as e:
             dc.index.products.get_by_name_unsafe("product1")
@@ -113,12 +117,9 @@ def test_null_dataset_resource(null_config: ODCEnvironment):
             dc.index.datasets.archive_location(test_uuid, "http://a.uri/test")
         with pytest.raises(NotImplementedError) as e:
             dc.index.datasets.restore_location(test_uuid, "http://a.uri/test")
-        with pytest.raises(ValueError) as e:
-            dc.index.datasets.temporal_extent()
-        with pytest.raises(ValueError) as e:
-            dc.index.datasets.temporal_extent(product="product1", ids=[test_uuid])
         with pytest.raises(KeyError) as e:
             dc.index.datasets.temporal_extent(ids=[test_uuid])
+        assert dc.index.datasets.spatial_extent(ids=[test_uuid]) is None
         with pytest.raises(KeyError) as e:
             dc.index.datasets.get_product_time_bounds("product1")
 

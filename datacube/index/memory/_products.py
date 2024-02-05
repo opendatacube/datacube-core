@@ -2,13 +2,13 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import datetime
 import logging
 
 from typing import Iterable, Iterator, Mapping, Tuple, cast
 
 from datacube.index.fields import as_expression
 from datacube.index.abstract import AbstractProductResource, QueryField
-from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.model import Product
 from datacube.utils import changes, jsonify_document, _readable_offset
 from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes, classify_changes
@@ -19,8 +19,8 @@ _LOG = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource):
-    def __init__(self, metadata_type_resource):
-        self.metadata_type_resource: MetadataTypeResource = metadata_type_resource
+    def __init__(self, index):
+        self._index = index
         self.by_id = {}
         self.by_name = {}
         self.next_id = 1
@@ -36,11 +36,11 @@ class ProductResource(AbstractProductResource):
                 f'Metadata Type {product.name}'
             )
         else:
-            mdt = self.metadata_type_resource.get_by_name(product.metadata_type.name)
+            mdt = self._index.metadata_types.get_by_name(product.metadata_type.name)
             if mdt is None:
                 _LOG.warning(f'Adding metadata_type "{product.metadata_type.name}" as it doesn\'t exist')
-                product.metadata_type = self.metadata_type_resource.add(product.metadata_type,
-                                                                        allow_table_lock=allow_table_lock)
+                product.metadata_type = self._index.metadata_types.add(product.metadata_type,
+                                                                       allow_table_lock=allow_table_lock)
             clone = self.clone(product)
             clone.id = self.next_id
             self.next_id += 1
@@ -168,7 +168,16 @@ class ProductResource(AbstractProductResource):
 
     def clone(self, orig: Product) -> Product:
         return Product(
-            self.metadata_type_resource.clone(orig.metadata_type),
+            self._index.metadata_types.clone(orig.metadata_type),
             jsonify_document(orig.definition),
             id_=orig.id
         )
+
+    def spatial_extent(self, product, crs=None):
+        return None
+
+    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+        if isinstance(product, str):
+            product = self._index.products.get_by_name_unsafe(product)
+        ids = self._index.datasets.by_product.get(product.name, [])
+        return self._index.datasets.temporal_extent(ids)

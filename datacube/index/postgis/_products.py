@@ -2,11 +2,13 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import datetime
 import logging
 
 from time import monotonic
 from cachetools.func import lru_cache
 
+from odc.geo.geom import CRS, Geometry
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
@@ -21,19 +23,16 @@ _LOG = logging.getLogger(__name__)
 
 class ProductResource(AbstractProductResource, IndexResourceAddIn):
     """
-    :type _db: datacube.drivers.postgis._connections.PostgresDb
-    :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
+    Postgis driver product resource implementation
     """
 
     def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
-        :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
+        :type index: datacube.index.postgis.index.Index
         """
+        super().__init__(index)
         self._db = db
-        self._index = index
-        self.metadata_type_resource = self._index.metadata_types
-
         self.get_unsafe = lru_cache()(self.get_unsafe)
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
 
@@ -41,7 +40,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         We define getstate/setstate to avoid pickling the caches
         """
-        return self._db, self.metadata_type_resource
+        return self._db, self._index.metadata_types
 
     def __setstate__(self, state):
         """
@@ -72,11 +71,11 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 'Metadata Type {}'.format(product.name)
             )
         else:
-            metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
+            metadata_type = self._index.metadata_types.get_by_name(product.metadata_type.name)
             if metadata_type is None:
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
-                metadata_type = self.metadata_type_resource.add(product.metadata_type,
-                                                                allow_table_lock=allow_table_lock)
+                metadata_type = self._index.metadata_types.add(product.metadata_type,
+                                                               allow_table_lock=allow_table_lock)
             with self._db_connection() as connection:
                 connection.insert_product(
                     name=product.name,
@@ -199,7 +198,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             #                 name, field.sql_expression, new_field.sql_expression
             #             )
             #         )
-        metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
+        metadata_type = self._index.metadata_types.get_by_name(product.metadata_type.name)
         # TODO: should we add metadata type here?
         assert metadata_type, "TODO: should we add metadata type here?"
         with self._db_connection() as conn:
@@ -335,6 +334,24 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     def _make(self, query_row) -> Product:
         return Product(
             definition=query_row.definition,
-            metadata_type=cast(MetadataType, self.metadata_type_resource.get(query_row.metadata_type_ref)),
+            metadata_type=cast(MetadataType, self._index.metadata_types.get(query_row.metadata_type_ref)),
             id_=query_row.id,
         )
+
+    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Returns the minimum and maximum acquisition time of the product.
+        """
+        if isinstance(product, str):
+            product = self.get_by_name_unsafe(product)
+        with self._db_connection() as connection:
+            result = connection.temporal_extent_by_prod(product.id)
+
+        return result
+
+    def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
+        if isinstance(product, str):
+            product = self._index.products.get_by_name_unsafe(product)
+        ids = [ds.id for ds in self._index.datasets.search(product=product.name)]
+        with self._db_connection() as connection:
+            return connection.spatial_extent(ids, crs)

@@ -106,19 +106,8 @@ class DatasetResource(AbstractDatasetResource):
     def search_summaries(self, **query):
         return []
 
-    def temporal_extent(
-            self,
-            product: str | Product = None,
-            ids: Iterable[DSID] | None = None
-    ) -> tuple[datetime.datetime, datetime.datetime]:
-        if product is None and ids is None:
-            raise ValueError("Must specify product or ids")
-        elif ids is not None and product is not None:
-            raise ValueError("Cannot specify both product and ids")
-        elif ids is not None:
-            raise KeyError(str(ids))
-        else:
-            raise KeyError(str(product))
+    def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
+        raise KeyError(str(ids))
 
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
