@@ -1432,6 +1432,11 @@ class AbstractDatasetResource(ABC):
         """
         return self._index.products.get_field_names(product_name)
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def get_locations(self, id_: DSID) -> Iterable[str]:
         """
@@ -1441,6 +1446,12 @@ class AbstractDatasetResource(ABC):
         :return: Storage locations for the dataset
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def get_archived_locations(self, id_: DSID) -> Iterable[str]:
         """
@@ -1450,6 +1461,12 @@ class AbstractDatasetResource(ABC):
         :return: Archived storage locations for the dataset
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def get_archived_location_times(self,
                                     id_: DSID
@@ -1461,6 +1478,12 @@ class AbstractDatasetResource(ABC):
         :return: Archived storage locations, with archive date.
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def add_location(self, id_: DSID, uri: str) -> bool:
         """
@@ -1484,6 +1507,12 @@ class AbstractDatasetResource(ABC):
         :return: Matching dataset models
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def remove_location(self,
                         id_: DSID,
@@ -1497,6 +1526,12 @@ class AbstractDatasetResource(ABC):
         :return: True if location was removed, false if it didn't exist for the database
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def archive_location(self,
                          id_: DSID,
@@ -1510,6 +1545,12 @@ class AbstractDatasetResource(ABC):
         :return: True if location was able to be archived
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def restore_location(self,
                          id_: DSID,

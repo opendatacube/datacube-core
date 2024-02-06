@@ -92,7 +92,7 @@ def test_dataset_measurement_paths():
     for k, v in paths.items():
         assert v == 'file:///tmp/' + k + '.tiff'
 
-    ds.uris = None
+    ds._uris = None
     assert ds.local_uri is None
     with pytest.raises(ValueError):
         measurement_paths(ds)

@@ -61,11 +61,7 @@ def test_band_info():
     with pytest.raises(ValueError):
         BandInfo(ds, 'c')
 
-    ds.uris = []
-    with pytest.raises(ValueError):
-        BandInfo(ds, 'a')
-
-    ds.uris = None
+    ds._uris = []
     with pytest.raises(ValueError):
         BandInfo(ds, 'a')
 

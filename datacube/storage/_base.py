@@ -94,7 +94,7 @@ class BandInfo:
         if mm is None:
             raise ValueError('No such band: {}'.format(band))
 
-        if ds.uris is None:
+        if not ds.uris:
             raise ValueError('No uris defined on a dataset')
 
         base_uri = pick_uri(ds.uris, uri_scheme)
