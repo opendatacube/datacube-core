@@ -56,6 +56,8 @@ carrotandcompany
 cbk
 cd
 CEOS
+Cheatsheet
+cheatsheets
 CircleCI
 CLI
 cli
@@ -336,6 +338,7 @@ pandoc
 param
 params
 pc
+pdf
 petewa
 pgadmin
 pgintegration
@@ -364,6 +367,7 @@ provence
 psql
 pts
 pwd
+px
 py
 pydata
 pyenv
