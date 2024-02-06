@@ -14,6 +14,7 @@ v1.8.next
   timezone instead of pytz when converting timestamps; automatically update copyright years (:pull:`1527`)
 - Update github-Dockerhub credential-passing mechanism. (:pull:`1528`)
 - Tweak ``list_products`` logic for getting crs and resolution values (:pull:`1535`)
+- Add new ODC Cheatsheet reference doc to Data Access & Analysis documentation page (:pull:`1543`)
 
 v1.8.17 (8th November 2023)
 ===========================
