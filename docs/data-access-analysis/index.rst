@@ -19,7 +19,7 @@ Open Data Cube Cheatsheet
 To make it easier to get started with Open Data Cube, the following reference poster demonstrates how to perform common analysis tasks including loading data, data preparation, plotting and exporting, and geospatial manipulation:
 
 .. image:: ../cheatsheets/ODC_Cheatsheet.jpg
-   :target: ../cheatsheets/ODC_Cheatsheet.pdf
+   :target: https://raw.githubusercontent.com/opendatacube/datacube-core/cheatsheet/docs/cheatsheets/ODC_Cheatsheet.pdf
    :alt: ODC Cheatsheet
    :width: 400px 
 
