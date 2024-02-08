@@ -349,6 +349,12 @@ class DatasetResource(AbstractDatasetResource):
         self.locations[uuid].append(uri)
         return True
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_datasets_for_location(self, uri: str, mode: Optional[str] = None) -> Iterable[Dataset]:
         if mode is None:
             mode = 'exact' if uri.count('#') > 0 else 'prefix'
