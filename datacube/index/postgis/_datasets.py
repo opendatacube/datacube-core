@@ -434,6 +434,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection(transaction=True) as transaction:
             return [dsid[0] for dsid in transaction.all_dataset_ids(archived)]
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_locations(self, id_):
         """
         Get the list of storage locations for the given dataset id
@@ -444,6 +449,26 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return connection.get_locations(id_)
 
+    def get_location(self, id_):
+        """
+        Get the list of storage locations for the given dataset id
+
+        :param typing.Union[UUID, str] id_: dataset id
+        :rtype: list[str]
+        """
+        with self._db_connection() as connection:
+            locations = connection.get_locations(id_)
+            if locations:
+                return locations[0]
+            else:
+                return None
+
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_archived_locations(self, id_):
         """
         Find locations which have been archived for a dataset
@@ -454,6 +479,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return [uri for uri, archived_dt in connection.get_archived_locations(id_)]
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_archived_location_times(self, id_):
         """
         Get each archived location along with the time it was archived.
@@ -464,6 +495,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return list(connection.get_archived_locations(id_))
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def add_location(self, id_, uri):
         """
         Add a location to the dataset if it doesn't already exist.
@@ -490,6 +527,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return (self._make(row) for row in connection.get_datasets_for_location(uri, mode=mode))
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def remove_location(self, id_, uri):
         """
         Remove a location from the dataset if it exists.
@@ -502,6 +545,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             was_removed = connection.remove_location(id_, uri)
             return was_removed
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def archive_location(self, id_, uri):
         """
         Archive a location of the dataset if it exists.
@@ -514,6 +564,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             was_archived = connection.archive_location(id_, uri)
             return was_archived
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be restorable in future releases. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def restore_location(self, id_, uri):
         """
         Un-archive a location of the dataset if it exists.

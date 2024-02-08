@@ -490,7 +490,7 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     # Add location manually instead
     index.datasets.add_location(dataset.id, second_file.as_uri())
     stored = index.datasets.get(dataset.id)
-    assert len(stored.uris) == 2
+    assert len(stored._uris) == 2
 
     # Newest to oldest.
     assert stored._uris == [second_file.as_uri(), first_file.as_uri()]
@@ -531,13 +531,17 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     # Check order of uris is preserved when indexing with more than one
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a589'
-    index.datasets.add(Dataset(product, second_ds_doc, uris=['file:///a', 'file:///b'], sources={}))
+    index.datasets.add(
+        Dataset(  # Test deprecated behaviour
+            product, second_ds_doc, uris=['file:///a', 'file:///b'], sources={}
+        )
+    )
 
     # test order using get_locations function
     assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///a', 'file:///b']
 
     # test order using datasets.get(), it has custom query as it turns out
-    assert index.datasets.get(second_ds_doc['id']).uris == ['file:///a', 'file:///b']
+    assert index.datasets.get(second_ds_doc['id'])._uris == ['file:///a', 'file:///b']
 
     # test update, this should prepend file:///c, file:///d to the existing list
     index.datasets.update(Dataset(product, second_ds_doc, uris=['file:///a', 'file:///c', 'file:///d'], sources={}))

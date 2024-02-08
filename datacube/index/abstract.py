@@ -1446,6 +1446,15 @@ class AbstractDatasetResource(ABC):
         :return: Storage locations for the dataset
         """
 
+    @abstractmethod
+    def get_location(self, id_: DSID) -> str | None:
+        """
+        Get (active) storage location for the given dataset id
+
+        :param id_: dataset id
+        :return: Storage location for the dataset - None if no location for the id_, or if id_ not in db.
+        """
+
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
                "Archived locations may not be accessible in future releases.",
@@ -1528,6 +1537,7 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases. "
                "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
         category=ODC2DeprecationWarning
@@ -1547,6 +1557,7 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be restorable in future releases. "
                "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
         category=ODC2DeprecationWarning
