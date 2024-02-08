@@ -221,7 +221,7 @@ def test_index_duplicate_dataset(index: Index,
 
     # Insert again.
     ds = Dataset(product, ls8_eo3_dataset.metadata_doc,
-                 uris=ls8_eo3_dataset.uris)
+                 uri=ls8_eo3_dataset.uri)
     index.datasets.add(ds, with_lineage=False)
 
     assert index.datasets.has(dsid)
@@ -427,7 +427,7 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     second_file = Path('/tmp/second/something.yaml').absolute()
 
     product = index.products.add_document(_pseudo_telemetry_dataset_type)
-    dataset = Dataset(product, _telemetry_dataset, uris=[first_file.as_uri()], sources={})
+    dataset = Dataset(product, _telemetry_dataset, uri=first_file.as_uri(), sources={})
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
 

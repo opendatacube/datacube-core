@@ -254,7 +254,7 @@ def test_rio_slurp(tmpdir):
     assert mm.geobox == mm0.geobox
     assert aa.shape == mm.geobox.shape
     xx = rio_slurp_xarray(mm0.path)
-    assert mm.geobox == xx.geobox
+    assert mm.geobox == xx.odc.geobox
     np.testing.assert_array_equal(xx.values, aa0)
 
     aa, mm = rio_slurp(mm0.path, aa0.shape)
@@ -262,7 +262,7 @@ def test_rio_slurp(tmpdir):
     assert aa.shape == mm.geobox.shape
     assert mm.geobox is mm.src_geobox
     xx = rio_slurp_xarray(mm0.path, aa0.shape)
-    assert mm.geobox == xx.geobox
+    assert mm.geobox == xx.odc.geobox
     np.testing.assert_array_equal(xx.values, aa0)
 
     aa, mm = rio_slurp(mm0.path, (3, 7))
@@ -279,14 +279,14 @@ def test_rio_slurp(tmpdir):
     aa, mm = rio_slurp(mm0.path, mm0.geobox, resampling='nearest')
     np.testing.assert_array_equal(aa, aa0)
     xx = rio_slurp_xarray(mm0.path, mm0.geobox)
-    assert mm.geobox == xx.geobox
+    assert mm.geobox == xx.odc.geobox
     np.testing.assert_array_equal(xx.values, aa0)
 
     aa, mm = rio_slurp(mm0.path, geobox=mm0.geobox, dtype='float32')
     assert aa.dtype == 'float32'
     np.testing.assert_array_equal(aa, aa0.astype('float32'))
     xx = rio_slurp_xarray(mm0.path, geobox=mm0.geobox)
-    assert mm.geobox == xx.geobox
+    assert mm.geobox == xx.odc.geobox
     assert mm.nodata == xx.nodata
     np.testing.assert_array_equal(xx.values, aa0)
 
@@ -360,7 +360,7 @@ def test_native_load(tmpdir):
     assert set(get_raster_info(ds)) == set(ds.measurements)
 
     xx = native_load(ds)
-    assert xx.geobox == geobox
+    assert xx.odc.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
@@ -381,18 +381,18 @@ def test_native_load(tmpdir):
     # aa and bb are the same
     assert native_geobox(ds, ['aa', 'bb']) == geobox
     xx = native_load(ds, ['aa', 'bb'])
-    assert xx.geobox == geobox
+    assert xx.odc.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
     # cc will be reprojected
     assert native_geobox(ds, basis='aa') == geobox
     xx = native_load(ds, basis='aa')
-    assert xx.geobox == geobox
+    assert xx.odc.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
     # cc is compatible with self
     xx = native_load(ds, ['cc'])
-    assert xx.geobox == geobox_cc
+    assert xx.odc.geobox == geobox_cc
     np.testing.assert_array_equal(cc, xx.isel(time=0).cc.values)

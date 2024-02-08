@@ -94,7 +94,7 @@ dataset:
 
     for name in index_drivers():
         driver = index_driver_by_name(name)
-        metadata = driver.metadata_type_from_doc(metadata_doc)
+        metadata = driver.metadata_type_from_doc(metadata_doc)  # Coverage test of deprecated method
         assert isinstance(metadata, MetadataType)
         assert metadata.id is None
         assert metadata.name == 'minimal'

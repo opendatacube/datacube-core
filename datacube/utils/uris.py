@@ -7,10 +7,13 @@ import os
 import pathlib
 import re
 from typing import Optional, List, Union
+from deprecat import deprecat
 import urllib.parse
 from urllib.parse import urlparse, parse_qsl, urljoin
 from urllib.request import url2pathname
 from pathlib import Path
+
+from datacube.migration import ODC2DeprecationWarning
 
 URL_RE = re.compile(r'\A\s*[\w\d\+]+://')
 
@@ -201,6 +204,10 @@ def uri_resolve(base: str, path: Optional[str] = None) -> str:
         return urljoin(base, path)
 
 
+@deprecat(
+    reason="Multiple uris are deprecated. Please ensure that datasets only have one location",
+    version='1.9.0',
+    category=ODC2DeprecationWarning)
 def pick_uri(uris: List[str], scheme: Optional[str] = None) -> str:
     """ If scheme is supplied:
           Return first uri matching the scheme or raises Exception

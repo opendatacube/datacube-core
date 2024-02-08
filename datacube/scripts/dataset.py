@@ -108,10 +108,10 @@ def load_datasets_for_update(doc_stream, index):
 
         ds = SimpleDocNav(prep_eo3(ds.doc, auto_skip=True))
 
-        # TODO: what about sources=?
+        # TODO: what about lineage?
         return Dataset(existing.product,
                        ds.doc_without_lineage_sources,
-                       uris=[uri]), existing, None
+                       uri=uri), existing, None
 
     for uri, doc in doc_stream:
         dataset, existing, error_msg = mk_dataset(doc, uri)
@@ -350,7 +350,7 @@ def build_dataset_info(index: Index, dataset: Dataset,
     if dataset.indexed_time is not None:
         info['indexed'] = dataset.indexed_time
 
-    info['locations'] = dataset.uris
+    info['location'] = dataset.uri
     info['fields'] = dataset.metadata.search_fields
 
     if depth < max_depth:
@@ -373,12 +373,7 @@ def _write_csv(infos):
     writer = csv.DictWriter(sys.stdout, ['id', 'status', 'product', 'location'], extrasaction='ignore')
     writer.writeheader()
 
-    def add_first_location(row):
-        locations_ = row['locations']
-        row['location'] = locations_[0] if locations_ else None
-        return row
-
-    writer.writerows(add_first_location(row) for row in infos)
+    writer.writerows(row for row in infos)
 
 
 def _write_yaml(infos):

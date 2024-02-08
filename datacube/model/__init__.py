@@ -16,6 +16,8 @@ from uuid import UUID
 from affine import Affine
 from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union, Sequence
 
+from odc.geo.gridspec import GridSpec as OdcGeoGridSpec
+
 from urllib.parse import urlparse
 from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
@@ -39,6 +41,8 @@ from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
 from datacube.migration import ODC2DeprecationWarning
 from deprecat import deprecat
+
+from ..utils.uris import pick_uri
 
 _LOG = logging.getLogger(__name__)
 
@@ -123,6 +127,22 @@ class Dataset:
     def uris(self) -> Sequence[str]:
         return self._uris
 
+    def legacy_uri(self, schema: str | None):
+        """
+        This is a 1.9-2.0 transitional method and will be removed in 2.0.
+
+        If the dataset has only one location, it returns that uri, but if the dataset has multiple locations,
+        it calls various deprecated methods to achieve the legacy behaviour.  It is intended for
+        internal core use only.
+
+        :param schema:
+        :return:
+        """
+        n_locs = len(self._uris)
+        if n_locs <= 1:
+            return self.uri
+        return pick_uri(self._uris, schema)
+
     @property
     @deprecat(
         reason="The 'type' attribute has been deprecated. Please use the 'product' attribute instead.",
@@ -147,10 +167,10 @@ class Dataset:
 
         Legacy behaviour: The latest local file uri, if any.
         """
-        if self.uris is None:
+        if not self._uris:
             return None
 
-        local_uris = [uri for uri in self.uris if uri.startswith('file:')]
+        local_uris = [uri for uri in self._uris if uri.startswith('file:')]
         if local_uris:
             return local_uris[0]
 
@@ -180,10 +200,10 @@ class Dataset:
 
     @property
     def uri_scheme(self) -> str:
-        if self.uris is None or len(self.uris) == 0:
+        if not self._uris:
             return ''
 
-        url = urlparse(self.uris[0])
+        url = urlparse(self.uri)
         if url.scheme == '':
             return 'file'
         return url.scheme
@@ -340,7 +360,7 @@ class Dataset:
         return hash(self.id)
 
     def __str__(self):
-        str_loc = 'not available' if not self.uris else self.uris[0]
+        str_loc = 'not available' if not self.uri else self.uri
         return "Dataset <id={id} product={type} location={loc}>".format(id=self.id,
                                                                         type=self.product.name,
                                                                         loc=str_loc)
@@ -565,6 +585,11 @@ class Product:
         return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
+    @deprecat(
+        reason="The Grid Workflow is deprecated. This property may return an (optional) odc-geo GridSpec in future.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def grid_spec(self) -> Optional['GridSpec']:
         """
         Grid specification for this product

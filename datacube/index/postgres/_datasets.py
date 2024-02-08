@@ -169,7 +169,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 transaction.insert_dataset_source(*ee)
 
             # Finally update location for top-level dataset only
-            if main_ds.uris is not None:
+            if main_ds.uri is not None:
                 self._ensure_new_locations(main_ds, transaction=transaction)
 
         _LOG.info('Indexing %s', dataset.id)
@@ -332,20 +332,40 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return dataset
 
     def _ensure_new_locations(self, dataset, existing=None, transaction=None):
-        skip_set = set([None] + existing.uris if existing is not None else [])
-        new_uris = [uri for uri in dataset.uris if uri not in skip_set]
+        skip_set = set()
+        if existing:
+            if len(existing._uris) > 1:
+                skip_set.update(existing.uris)
+            else:
+                skip_set.add(existing.uri)
+
+        if len(dataset._uris) > 1:
+            new_uris = [uri for uri in dataset.uris if uri and uri not in skip_set]
+        elif dataset.uri and dataset.uri not in skip_set:
+            new_uris = [dataset.uri]
+        else:
+            new_uris = []
 
         def insert_one(uri, transaction):
             return transaction.insert_dataset_location(dataset.id, uri)
+        def delete_one(uri, transaction):
+            return transaction.remove_location(dataset.id, uri)
 
-        # process in reverse order, since every add is essentially append to
-        # front of a stack
-        for uri in new_uris[::-1]:
-            if transaction is None:
-                with self._db_connection(transaction=True) as tr:
-                    insert_one(uri, tr)
+        def handle(old_uris, new_uris, transaction):
+            if len(old_uris) <= 1 and len(new_uris) == 1:
+                # Only one location, so treat as an update.
+                if len(old_uris):
+                    delete_one(old_uris.pop(), transaction)
+                insert_one(new_uris.pop(), transaction)
             else:
-                insert_one(uri, transaction)
+                for uri in new_uris[::-1]:
+                    insert_one(uri, transaction)
+
+        if transaction:
+            handle(skip_set, new_uris, transaction)
+        else:
+            with self._db_connection(transaction=True) as tr:
+                handle(skip_set, new_uris, tr)
 
     def archive(self, ids):
         """
@@ -489,19 +509,22 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param bool full_info: Include all available fields
         """
         if dataset_res.uris:
-            uris = [uri for uri in dataset_res.uris if uri]
+            if len(dataset_res.uris) > 1:
+                # Deprecated legacy code path
+                kwargs = {"uris": [uri for uri in dataset_res.uris if uri]}
+            else:
+                kwargs = {"uri": dataset_res.uris[0]}
         else:
-            uris = []
+            kwargs = {}
 
-        product = product or self.types.get(dataset_res.dataset_type_ref)
+        kwargs["product"] = product or self.types.get(dataset_res.dataset_type_ref)
 
         return Dataset(
-            product=product,
             metadata_doc=dataset_res.metadata,
-            uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,
             indexed_time=dataset_res.added if full_info else None,
-            archived_time=dataset_res.archived
+            archived_time=dataset_res.archived,
+            **kwargs
         )
 
     def _make_many(self, query_result, product=None):

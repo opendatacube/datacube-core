@@ -169,7 +169,7 @@ def resolve_no_lineage(ds: SimpleDocNav,
     except BadMatch as e:
         return None, e
     check_intended_eo3(ds, product)
-    return Dataset(product, doc, uris=[uri], sources={}), None
+    return Dataset(product, doc, uri=uri, sources={}), None
 
 
 def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
@@ -207,7 +207,7 @@ def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
     return Dataset(product,
                    doc.doc,
                    source_tree=source_tree,
-                   uris=[uri]), None
+                   uri=uri), None
 
 
 def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
@@ -272,7 +272,7 @@ def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: Product
         if cached is not None:
             return cached
 
-        uris = [uri] if ds.id == main_uuid else []
+        this_uri = uri if ds.id == main_uuid else None
 
         doc = ds.doc
 
@@ -283,7 +283,7 @@ def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: Product
             product = matcher(doc)
 
         check_intended_eo3(ds, product)
-        return with_cache(Dataset(product, doc, uris=uris, sources=sources), ds.id, cache)
+        return with_cache(Dataset(product, doc, uri=this_uri, sources=sources), ds.id, cache)
     try:
         return remap_lineage_doc(main_ds, resolve_ds, cache={}), None
     except BadMatch as e:
