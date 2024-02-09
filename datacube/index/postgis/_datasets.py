@@ -356,19 +356,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return dataset
 
     def _ensure_new_locations(self, dataset, existing=None, transaction=None):
-        skip_set = set()
+        old_uris = set()
         if existing:
-            if len(existing._uris) > 1:
-                skip_set.update(existing._uris)
-            else:
-                skip_set.add(existing.uri)
-
-        if len(dataset._uris) > 1:
-            new_uris = [uri for uri in dataset._uris if uri not in skip_set]
-        elif dataset.uri and dataset.uri not in skip_set:
-            new_uris = [dataset.uri]
-        else:
-            new_uris = []
+            old_uris.update(existing._uris)
+        new_uris = dataset._uris
 
         def insert_one(uri, transaction):
             return transaction.insert_dataset_location(dataset.id, uri)
@@ -387,10 +378,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     insert_one(uri, transaction)
 
         if transaction:
-            handle(skip_set, new_uris, transaction)
+            handle(old_uris, new_uris, transaction)
         else:
             with self._db_connection(transaction=True) as tr:
-                handle(skip_set, new_uris, tr)
+                handle(old_uris, new_uris, tr)
 
     def archive(self, ids):
         """

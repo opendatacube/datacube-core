@@ -223,6 +223,7 @@ def test_mem_ds_locations(mem_eo3_data: tuple):
     dc, ls8_id, wo_id = mem_eo3_data
     before_test = datetime.datetime.now()
     dc.index.datasets.add_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
+    assert "file:///test_loc_1" == dc.index.datasets.get_location(ls8_id)
     assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
     assert list(dc.index.datasets.get_archived_locations(ls8_id)) == []  # Test of deprecated method
     dc.index.datasets.archive_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method

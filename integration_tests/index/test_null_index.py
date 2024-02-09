@@ -103,11 +103,13 @@ def test_null_dataset_resource(null_config: ODCEnvironment):
             dc.index.datasets.purge([test_uuid, "foo"])
 
         assert empty(dc.index.datasets.get_all_dataset_ids(True))
+        assert dc.index.datasets.get_location(test_uuid) is None
+        assert dc.index.datasets.get_datasets_for_location("http://a.uri/test") == []
+
         assert empty(dc.index.datasets.get_field_names())  # DEPRECATED WRAPPER METHOD
         assert dc.index.datasets.get_locations(test_uuid) == []  # Test deprecated method
         assert dc.index.datasets.get_archived_locations(test_uuid) == []  # Test deprecated method
         assert dc.index.datasets.get_archived_location_times(test_uuid) == []  # Test deprecated method
-        assert dc.index.datasets.get_datasets_for_location("http://a.uri/test") == []
 
         with pytest.raises(NotImplementedError) as e:
             dc.index.datasets.add_location(test_uuid, "http://a.uri/test")  # Test deprecated method
