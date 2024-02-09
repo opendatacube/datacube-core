@@ -16,6 +16,7 @@ def test_legacy_location_behaviour(index, ls8_eo3_dataset):
         uris=locations + ["file:/tmp/foo"])
     index.datasets.update(update)
     locations = index.datasets.get_locations(ls8_eo3_dataset.id)  # Test of deprecated method
+    assert index.datasets.get_location(ls8_eo3_dataset.id) == locations[0]
     assert locations == ["file:/tmp/foo", ls8_eo3_dataset.uri]
     index.datasets.add_location(ls8_eo3_dataset.id, "s3:/bucket/hole/straw.axe")
     locations = index.datasets.get_locations(ls8_eo3_dataset.id)  # Test of deprecated method
@@ -23,9 +24,16 @@ def test_legacy_location_behaviour(index, ls8_eo3_dataset):
     index.datasets.archive_location(ls8_eo3_dataset.id, "file:/tmp/foo")
     locations = index.datasets.get_locations(ls8_eo3_dataset.id)  # Test of deprecated method
     assert locations == ["s3:/bucket/hole/straw.axe", ls8_eo3_dataset.uri,]
+    assert "file:/tmp/foo" in index.datasets.get_archived_locations(ls8_eo3_dataset.id)
+    assert "file:/tmp/foo" == index.datasets.get_archived_location_times(ls8_eo3_dataset.id)[0][0]
     index.datasets.restore_location(ls8_eo3_dataset.id, "file:/tmp/foo")
     locations = index.datasets.get_locations(ls8_eo3_dataset.id)  # Test of deprecated method
     assert locations == ["s3:/bucket/hole/straw.axe", "file:/tmp/foo", ls8_eo3_dataset.uri,]
     index.datasets.remove_location(ls8_eo3_dataset.id, "file:/tmp/foo")
     locations = index.datasets.get_locations(ls8_eo3_dataset.id)  # Test of deprecated method
     assert locations == ["s3:/bucket/hole/straw.axe", ls8_eo3_dataset.uri,]
+    index.datasets.remove_location(ls8_eo3_dataset.id, "s3:/bucket/hole/straw.axe")
+    index.datasets.remove_location(ls8_eo3_dataset.id, ls8_eo3_dataset.uri)
+    ls8_eo3_dataset = index.datasets.get(ls8_eo3_dataset.id)
+    assert ls8_eo3_dataset.uri is None
+    assert index.datasets.get_location(ls8_eo3_dataset.id) is None

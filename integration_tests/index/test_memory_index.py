@@ -253,6 +253,9 @@ def test_mem_ds_locations(mem_eo3_data: tuple):
     )
     assert not dc.index.datasets.archive_location(ls8_id, "file:////not_a_valid_loc")  # Test of deprecated method
     assert not dc.index.datasets.remove_location(ls8_id, "file:////not_a_valid_loc")  # Test of deprecated method
+    assert dc.index.datasets.remove_location(ls8_id, ls8ds.uri)
+    ls8ds = dc.index.datasets.get(ls8_id)
+    assert ls8ds.uri is None
 
 
 def test_mem_ds_updates(mem_eo3_data: tuple):
