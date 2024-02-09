@@ -340,7 +340,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 skip_set.update(existing._uris)
             else:
                 skip_set.add(existing.uri)
-
         if len(dataset._uris) > 1:
             new_uris = [uri for uri in dataset._uris if uri not in skip_set]
         elif dataset.uri and dataset.uri not in skip_set:
@@ -350,6 +349,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         def insert_one(uri, transaction):
             return transaction.insert_dataset_location(dataset.id, uri)
+
         def delete_one(uri, transaction):
             return transaction.remove_location(dataset.id, uri)
 

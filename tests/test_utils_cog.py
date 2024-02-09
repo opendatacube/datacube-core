@@ -85,7 +85,7 @@ def test_cog_file(tmpdir, opts):
     np.testing.assert_array_equal(yy[1], xx.values)
 
     with pytest.raises(ValueError, match="Need 2d or 3d ndarray on input"):
-        _write_cog(xx.values.ravel(), xx.odc.geobox, pp / "wontwrite.tif") # Test of deprecated function
+        _write_cog(xx.values.ravel(), xx.odc.geobox, pp / "wontwrite.tif")  # Test of deprecated function
 
     # sizes that are not multiples of 16
     # also check that supplying `nodata=` doesn't break things

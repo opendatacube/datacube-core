@@ -372,6 +372,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         def insert_one(uri, transaction):
             return transaction.insert_dataset_location(dataset.id, uri)
+
         def delete_one(uri, transaction):
             return transaction.remove_location(dataset.id, uri)
 
@@ -389,7 +390,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             handle(skip_set, new_uris, transaction)
         else:
             with self._db_connection(transaction=True) as tr:
-                    handle(skip_set, new_uris, tr)
+                handle(skip_set, new_uris, tr)
 
     def archive(self, ids):
         """

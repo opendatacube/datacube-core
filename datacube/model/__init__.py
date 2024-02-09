@@ -16,8 +16,6 @@ from uuid import UUID
 from affine import Affine
 from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union, Sequence
 
-from odc.geo.gridspec import GridSpec as OdcGeoGridSpec
-
 from urllib.parse import urlparse
 from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader

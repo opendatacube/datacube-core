@@ -32,6 +32,7 @@ v1.9.next
 - Phase 1 of EP13 API changes to dataset resource - get_unsafe, get_derived, temporal_extent. (:pull:`1538`)
 - Add product argument to spatial_extent method, as per EP13. (:pull:`1539`)
 - Index driver API type hint cleanup. (:pull:`1541`)
+- Deprecate multiple locations. (:pull:`1546`)
 
 
 v1.8.next

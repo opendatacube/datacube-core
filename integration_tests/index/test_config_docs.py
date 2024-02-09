@@ -230,7 +230,10 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     # adding more metadata and changing location
     doc = copy.deepcopy(updated.metadata_doc)
     doc['test2'] = {'some': 'other thing'}
-    update = Dataset(ls5_telem_type, doc, uris=['file:///test/doc3.yaml', 'file:///test/doc3a.yaml'])  # Test deprecated functionality
+    update = Dataset(  # Test deprecated functionality
+        ls5_telem_type, doc,
+        uris=['file:///test/doc3.yaml', 'file:///test/doc3a.yaml']
+    )
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}

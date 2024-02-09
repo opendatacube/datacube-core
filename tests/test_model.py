@@ -17,8 +17,10 @@ from datacube.api.core import output_geobox
 
 
 def test_gridspec():
-    gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1),
-        resolution=(-0.1, 0.1), origin=(10, 10))  # Coverage test of deprecated class
+    gs = GridSpec(  # Coverage test of deprecated class
+        crs=CRS('EPSG:4326'), tile_size=(1, 1),
+        resolution=(-0.1, 0.1), origin=(10, 10)
+    )
     poly = polygon([(10, 12.2), (10.8, 13), (13, 10.8), (12.2, 10), (10, 12.2)], crs=CRS('EPSG:4326'))
     cells = {index: geobox for index, geobox in list(gs.tiles_from_geopolygon(poly))}
     assert set(cells.keys()) == {(0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
