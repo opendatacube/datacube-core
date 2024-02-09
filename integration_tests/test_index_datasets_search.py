@@ -87,7 +87,7 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
 
     # Add a new uri to a dataset
     new_loc = PurePosixPath(tmpdir.strpath) / 'temp_location' / 'agdc-metadata.yaml'
-    index.datasets.add_location(valid_uuids[0], new_loc.as_uri())
+    index.datasets.add_location(valid_uuids[0], new_loc.as_uri())  # Test of deprecated functionality
 
     results_with_uri = list(index.datasets.search_returning_datasets_light(field_names=('id', 'uris'),
                                                                            product='ls5_nbar_scene',

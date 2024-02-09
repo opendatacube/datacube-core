@@ -440,55 +440,55 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     # Ingesting again should have no effect.
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert len(locations) == 1
     # Remove the location
-    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())
+    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())  # Test of deprecated method
     assert was_removed
-    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())
+    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())  # Test of deprecated method
     assert not was_removed
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert len(locations) == 0
     # Re-add the location
-    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())
+    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())  # Test of deprecated method
     assert was_added
-    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())
+    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())  # Test of deprecated method
     assert not was_added
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert len(locations) == 1
 
     # A rough date is ok: 1:01 beforehand just in case someone runs this during daylight savings time conversion :)
     # (any UTC conversion errors will be off by much more than this for PST/AEST)
     before_archival_dt = utc_now() - datetime.timedelta(hours=1, minutes=1)
 
-    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())
+    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())  # Test of deprecated method
     assert was_archived
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert locations == []
-    locations = index.datasets.get_archived_locations(dataset.id)
+    locations = index.datasets.get_archived_locations(dataset.id)  # Test of deprecated method
     assert locations == [first_file.as_uri()]
 
     # It should return the time archived.
-    location_times = index.datasets.get_archived_location_times(dataset.id)
+    location_times = index.datasets.get_archived_location_times(dataset.id)  # Test of deprecated method
     assert len(location_times) == 1
     location, archived_time = location_times[0]
     assert location == first_file.as_uri()
     assert utc_now() > archived_time > before_archival_dt
 
-    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())
+    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())  # Test of deprecated method
     assert was_restored
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert len(locations) == 1
 
     # Indexing with a new path should NOT add the second one.
     dataset._uris = [second_file.as_uri()]
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert len(locations) == 1
 
     # Add location manually instead
-    index.datasets.add_location(dataset.id, second_file.as_uri())
+    index.datasets.add_location(dataset.id, second_file.as_uri())  # Test of deprecated method
     stored = index.datasets.get(dataset.id)
     assert len(stored._uris) == 2
 
@@ -498,30 +498,30 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     assert stored.local_path == Path(second_file)
 
     # Can archive and restore the first file, and location order is preserved
-    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())
+    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())  # Test of deprecated method
     assert was_archived
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert locations == [second_file.as_uri()]
-    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())
+    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())  # Test of deprecated method
     assert was_restored
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert locations == [second_file.as_uri(), first_file.as_uri()]
 
     # Can archive and restore the second file, and location order is preserved
-    was_archived = index.datasets.archive_location(dataset.id, second_file.as_uri())
+    was_archived = index.datasets.archive_location(dataset.id, second_file.as_uri())  # Test of deprecated method
     assert was_archived
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert locations == [first_file.as_uri()]
-    was_restored = index.datasets.restore_location(dataset.id, second_file.as_uri())
+    was_restored = index.datasets.restore_location(dataset.id, second_file.as_uri())  # Test of deprecated method
     assert was_restored
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert locations == [second_file.as_uri(), first_file.as_uri()]
 
     # Indexing again without location should have no effect.
     dataset._uris = []
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
-    locations = index.datasets.get_locations(dataset.id)
+    locations = index.datasets.get_locations(dataset.id)  # Test of deprecated method
     assert len(locations) == 2
     # Newest to oldest.
     assert locations == [second_file.as_uri(), first_file.as_uri()]
@@ -538,21 +538,27 @@ def test_index_dataset_with_location(index: Index, default_metadata_type: Metada
     )
 
     # test order using get_locations function
-    assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///a', 'file:///b']
+    assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///a', 'file:///b']  # Test of deprecated method
 
     # test order using datasets.get(), it has custom query as it turns out
     assert index.datasets.get(second_ds_doc['id'])._uris == ['file:///a', 'file:///b']
 
     # test update, this should prepend file:///c, file:///d to the existing list
-    index.datasets.update(Dataset(product, second_ds_doc, uris=['file:///a', 'file:///c', 'file:///d'], sources={}))
-    assert index.datasets.get_locations(second_ds_doc['id']) == ['file:///c', 'file:///d', 'file:///a', 'file:///b']
-    assert index.datasets.get(second_ds_doc['id']).uris == ['file:///c', 'file:///d', 'file:///a', 'file:///b']
+    index.datasets.update(Dataset(  # Test of deprecated functionality
+        product, second_ds_doc, uris=['file:///a', 'file:///c', 'file:///d'], sources={}
+    ))
+    assert index.datasets.get_locations(second_ds_doc['id']) == [  # Test of deprecated method
+        'file:///c', 'file:///d', 'file:///a', 'file:///b'
+    ]
+    assert index.datasets.get(second_ds_doc['id']).uris == [  # Test of deprecated functionality
+        'file:///c', 'file:///d', 'file:///a', 'file:///b'
+    ]
 
     # Ability to get datasets for a location
     # Add a second dataset with a different location (to catch lack of joins, filtering etc)
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a5c0'
-    index.datasets.add(Dataset(product, second_ds_doc, uris=[second_file.as_uri()], sources={}))
+    index.datasets.add(Dataset(product, second_ds_doc, uri=second_file.as_uri(), sources={}))
     for mode in ('exact', 'prefix', None):
         dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri(), mode=mode)]
         assert dataset_ids == [dataset.id]

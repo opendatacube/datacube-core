@@ -222,33 +222,35 @@ def test_mem_ds_search_dups(mem_eo3_data: tuple):
 def test_mem_ds_locations(mem_eo3_data: tuple):
     dc, ls8_id, wo_id = mem_eo3_data
     before_test = datetime.datetime.now()
-    dc.index.datasets.add_location(ls8_id, "file:///test_loc_1")
-    assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_id)
-    assert list(dc.index.datasets.get_archived_locations(ls8_id)) == []
-    dc.index.datasets.archive_location(ls8_id, "file:///test_loc_1")
-    assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)
-    assert "file:///test_loc_1" in dc.index.datasets.get_archived_locations(ls8_id)
+    dc.index.datasets.add_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
+    assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
+    assert list(dc.index.datasets.get_archived_locations(ls8_id)) == []  # Test of deprecated method
+    dc.index.datasets.archive_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
+    assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
+    assert "file:///test_loc_1" in dc.index.datasets.get_archived_locations(ls8_id)  # Test of deprecated method
     found = False
-    for loc, dt in dc.index.datasets.get_archived_location_times(ls8_id):
+    for loc, dt in dc.index.datasets.get_archived_location_times(ls8_id):  # Test of deprecated method
         if loc == "file:///test_loc_1":
             found = True
             assert dt >= before_test
             break
     assert found
-    assert dc.index.datasets.restore_location(ls8_id, "file:///test_loc_1")
-    assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_id)
-    assert list(dc.index.datasets.get_archived_locations(ls8_id)) == []
+    assert dc.index.datasets.restore_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
+    assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
+    assert list(dc.index.datasets.get_archived_locations(ls8_id)) == []  # Test of deprecated method
     assert list(dc.index.datasets.get_datasets_for_location("file:///test_loc_1", "exact"))[0].id == ls8_id
-    assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_1")
-    assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)
-    assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_id)
-    assert dc.index.datasets.add_location(ls8_id, "file:///test_loc_2")
-    assert dc.index.datasets.archive_location(ls8_id, "file:///test_loc_2")
-    assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_2")
-    assert "file:///test_loc_2" not in list(dc.index.datasets.get_locations(ls8_id))
-    assert "file:///test_loc_2" not in list(dc.index.datasets.get_archived_locations(ls8_id))
-    assert not dc.index.datasets.archive_location(ls8_id, "file:////not_a_valid_loc")
-    assert not dc.index.datasets.remove_location(ls8_id, "file:////not_a_valid_loc")
+    assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
+    assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
+    assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_id)  # Test of deprecated method
+    assert dc.index.datasets.add_location(ls8_id, "file:///test_loc_2")  # Test of deprecated method
+    assert dc.index.datasets.archive_location(ls8_id, "file:///test_loc_2")  # Test of deprecated method
+    assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_2")  # Test of deprecated method
+    assert "file:///test_loc_2" not in list(dc.index.datasets.get_locations(ls8_id))  # Test of deprecated method
+    assert "file:///test_loc_2" not in list(
+        dc.index.datasets.get_archived_locations(ls8_id)  # Test of deprecated method
+    )
+    assert not dc.index.datasets.archive_location(ls8_id, "file:////not_a_valid_loc")  # Test of deprecated method
+    assert not dc.index.datasets.remove_location(ls8_id, "file:////not_a_valid_loc")  # Test of deprecated method
 
 
 def test_mem_ds_updates(mem_eo3_data: tuple):
@@ -256,16 +258,16 @@ def test_mem_ds_updates(mem_eo3_data: tuple):
     # Test updates
     raw = dc.index.datasets.get(ls8_id)
     # Update location only
-    raw.uris.append("file:///update_test_1")
+    raw._uris.append("file:///update_test_1")
     updated = dc.index.datasets.update(raw)
     raw = dc.index.datasets.get(ls8_id)
-    assert raw.uris == updated.uris
+    assert raw._uris == updated.uris
     # Test bad change
-    raw.uris.append("file:///update_test_2")
+    raw._uris.append("file:///update_test_2")
     raw.metadata_doc["properties"]["silly_sausages"] = ["weisswurst", "frankfurter"]
     with pytest.raises(ValueError):
         updated = dc.index.datasets.update(raw)
-    assert "file:///update_test_2" in raw.uris
+    assert "file:///update_test_2" in raw._uris
     # Make bad change ok
     from datacube.utils import changes
     updated = dc.index.datasets.update(raw, updates_allowed={
@@ -274,8 +276,8 @@ def test_mem_ds_updates(mem_eo3_data: tuple):
     assert "silly_sausages" in updated.metadata_doc["properties"]
     raw = dc.index.datasets.get(ls8_id)
     assert "silly_sausages" in raw.metadata_doc["properties"]
-    assert "file:///update_test_1" in raw.uris
-    assert "file:///update_test_2" in raw.uris
+    assert "file:///update_test_1" in raw._uris
+    assert "file:///update_test_2" in raw._uris
 
 
 def test_mem_ds_expand_periods(mem_index_fresh: Datacube):
@@ -388,11 +390,11 @@ def test_spatiotemporal_extent(mem_eo3_data: tuple):
         dc.index.datasets.temporal_extent(ids=[uuid4()])
 
     with pytest.raises(KeyError) as e:
-        dc.index.datasets.get_product_time_bounds("orthentik_producked")
+        dc.index.datasets.get_product_time_bounds("orthentik_producked")  # Test of deprecated method
 
     # Test get_product_time_bounds
     for ds in (ls8, wo):
-        tmin, tmax = dc.index.datasets.get_product_time_bounds(ds.product.name)
+        tmin, tmax = dc.index.datasets.get_product_time_bounds(ds.product.name)  # Test of deprecated method
         assert (tmin is None and tmax is None) or tmin < tmax
         tmin2, tmax2 = dc.index.products.temporal_extent(product=ds.product)
         assert tmin2 == tmin and tmax2 == tmax

@@ -420,8 +420,8 @@ def test_search_returning_rows_eo3(index,
     assert len(results) == 1
     assert results == [(dataset.id, uri)]
 
-    index.datasets.archive_location(dataset.id, uri)
-    index.datasets.remove_location(dataset.id, uri)
+    index.datasets.archive_location(dataset.id, uri)  # Test of deprecated method
+    index.datasets.remove_location(dataset.id, uri)  # Test of deprecated method
 
     # If returning a field like uri, there will be one result per location.
     # No locations
@@ -433,9 +433,9 @@ def test_search_returning_rows_eo3(index,
     assert len(results) == 0
 
     # Add a second location and we should get two results
-    index.datasets.add_location(dataset.id, uri)
+    index.datasets.add_location(dataset.id, uri)  # Test of deprecated method
     uri2 = 'file:///tmp/test2'
-    index.datasets.add_location(dataset.id, uri2)
+    index.datasets.add_location(dataset.id, uri2)  # Test of deprecated method
     results = set(index.datasets.search_returning(
         ('id', 'uri'),
         platform='landsat-8',
@@ -712,7 +712,7 @@ def test_cli_info_eo3(index: Index,
     """
     Search datasets using the cli.
     """
-    index.datasets.add_location(ls8_eo3_dataset.id, 'file:///tmp/location1')
+    index.datasets.add_location(ls8_eo3_dataset.id, 'file:///tmp/location1')  # Test deprecated method
 
     opts = [
         'dataset', 'info', str(ls8_eo3_dataset.id)

@@ -104,24 +104,24 @@ def test_null_dataset_resource(null_config: ODCEnvironment):
 
         assert empty(dc.index.datasets.get_all_dataset_ids(True))
         assert empty(dc.index.datasets.get_field_names())  # DEPRECATED WRAPPER METHOD
-        assert dc.index.datasets.get_locations(test_uuid) == []
-        assert dc.index.datasets.get_archived_locations(test_uuid) == []
-        assert dc.index.datasets.get_archived_location_times(test_uuid) == []
+        assert dc.index.datasets.get_locations(test_uuid) == []  # Test deprecated method
+        assert dc.index.datasets.get_archived_locations(test_uuid) == []  # Test deprecated method
+        assert dc.index.datasets.get_archived_location_times(test_uuid) == []  # Test deprecated method
         assert dc.index.datasets.get_datasets_for_location("http://a.uri/test") == []
 
         with pytest.raises(NotImplementedError) as e:
-            dc.index.datasets.add_location(test_uuid, "http://a.uri/test")
+            dc.index.datasets.add_location(test_uuid, "http://a.uri/test")  # Test deprecated method
         with pytest.raises(NotImplementedError) as e:
-            dc.index.datasets.remove_location(test_uuid, "http://a.uri/test")
+            dc.index.datasets.remove_location(test_uuid, "http://a.uri/test")  # Test deprecated method
         with pytest.raises(NotImplementedError) as e:
-            dc.index.datasets.archive_location(test_uuid, "http://a.uri/test")
+            dc.index.datasets.archive_location(test_uuid, "http://a.uri/test")  # Test deprecated method
         with pytest.raises(NotImplementedError) as e:
-            dc.index.datasets.restore_location(test_uuid, "http://a.uri/test")
+            dc.index.datasets.restore_location(test_uuid, "http://a.uri/test")  # Test deprecated method
         with pytest.raises(KeyError) as e:
             dc.index.datasets.temporal_extent(ids=[test_uuid])
         assert dc.index.datasets.spatial_extent(ids=[test_uuid]) is None
         with pytest.raises(KeyError) as e:
-            dc.index.datasets.get_product_time_bounds("product1")
+            dc.index.datasets.get_product_time_bounds("product1")  # Test deprecated method
 
         assert dc.index.datasets.search_product_duplicates(MagicMock()) == []
         assert dc.index.datasets.search_by_metadata({}) == []

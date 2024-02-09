@@ -92,8 +92,8 @@ class DatasetResource(AbstractDatasetResource):
             persistable = self.clone(dataset, for_save=True)
             self.by_id[persistable.id] = persistable
             self.active_by_id[persistable.id] = persistable
-            if dataset.uris is not None:
-                self.locations[persistable.id] = dataset.uris.copy()
+            if dataset._uris:
+                self.locations[persistable.id] = dataset._uris.copy()
             else:
                 self.locations[persistable.id] = []
             self.archived_locations[persistable.id] = []
@@ -349,12 +349,6 @@ class DatasetResource(AbstractDatasetResource):
         self.locations[uuid].append(uri)
         return True
 
-    @deprecat(
-        reason="Multiple locations per dataset are now deprecated. "
-               "Dataset location can be set or updated with the update() method.",
-        version="1.9.0",
-        category=ODC2DeprecationWarning
-    )
     def get_datasets_for_location(self, uri: str, mode: Optional[str] = None) -> Iterable[Dataset]:
         if mode is None:
             mode = 'exact' if uri.count('#') > 0 else 'prefix'
@@ -765,13 +759,19 @@ class DatasetResource(AbstractDatasetResource):
             uris = orig.uris.copy()
         else:
             uris = []
+        if len(uris) == 1:
+            kwargs = {"uri": uris[0]}
+        elif len(uris) > 1:
+            kwargs = {"uris": uris}
+        else:
+            kwargs = {}
         return Dataset(
             product=self._index.products.clone(orig.product),
             metadata_doc=jsonify_document(orig.metadata_doc_without_lineage()),
-            uris=uris,
             indexed_by="user" if for_save and orig.indexed_by is None else orig.indexed_by,
             indexed_time=datetime.datetime.now() if for_save and orig.indexed_time is None else orig.indexed_time,
-            archived_time=None if for_save else orig.archived_time
+            archived_time=None if for_save else orig.archived_time,
+            **kwargs
         )
 
     # Lineage methods need to be implemented on the dataset resource as that is where the relevant indexes

@@ -359,12 +359,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         skip_set = set()
         if existing:
             if len(existing._uris) > 1:
-                skip_set.update(existing.uris)
+                skip_set.update(existing._uris)
             else:
                 skip_set.add(existing.uri)
 
         if len(dataset._uris) > 1:
-            new_uris = [uri for uri in dataset.uris if uri and uri not in skip_set]
+            new_uris = [uri for uri in dataset._uris if uri not in skip_set]
         elif dataset.uri and dataset.uri not in skip_set:
             new_uris = [dataset.uri]
         else:
@@ -591,22 +591,24 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param bool full_info: Include all available fields
         """
+        kwargs = {}
         if dataset_res.uris:
             uris = [uri for uri in dataset_res.uris if uri]
-        else:
-            uris = []
+            if len(uris) == 1:
+                kwargs["uri"] = uris[0]
+            else:
+                kwargs["uris"] = uris
 
-        product = product or self.products.get(dataset_res.product_ref)
+        kwargs["product"] = product or self.products.get(dataset_res.product_ref)
 
         return Dataset(
-            product=product,
             metadata_doc=dataset_res.metadata,
-            uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,
             indexed_time=dataset_res.added if full_info else None,
             archived_time=dataset_res.archived,
             source_tree=source_tree,
             derived_tree=derived_tree,
+            **kwargs
         )
 
     def _make_many(self, query_result, product=None):

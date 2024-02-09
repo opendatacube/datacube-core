@@ -562,7 +562,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
 
     # Add a location to the dataset and we should get one result
     test_uri = 'file:///tmp/test1'
-    index.datasets.add_location(dataset.id, test_uri)
+    index.datasets.add_location(dataset.id, test_uri)  # Test of deprecated method
     results = list(index.datasets.search_returning(
         ('id', 'uri'),
         platform='LANDSAT_8',
@@ -573,7 +573,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
 
     # Add a second location and we should get two results
     test_uri2 = 'file:///tmp/test2'
-    index.datasets.add_location(dataset.id, test_uri2)
+    index.datasets.add_location(dataset.id, test_uri2)  # Test of deprecated method
     results = set(index.datasets.search_returning(
         ('id', 'uri'),
         platform='LANDSAT_8',
@@ -587,7 +587,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
 
     # A second dataset now has a location too:
     test_uri3 = 'mdss://c10/tmp/something'
-    index.datasets.add_location(pseudo_ls8_dataset2.id, test_uri3)
+    index.datasets.add_location(pseudo_ls8_dataset2.id, test_uri3)  # Test of deprecated method
     # Datasets and locations should still correctly match up...
     results = set(index.datasets.search_returning(
         ('id', 'uri'),
@@ -804,8 +804,8 @@ def test_cli_info(index: Index,
     """
     Search datasets using the cli.
     """
-    index.datasets.add_location(pseudo_ls8_dataset.id, 'file:///tmp/location1')
-    index.datasets.add_location(pseudo_ls8_dataset.id, 'file:///tmp/location2')
+    index.datasets.add_location(pseudo_ls8_dataset.id, 'file:///tmp/location1')  # Test of deprecated method
+    index.datasets.add_location(pseudo_ls8_dataset.id, 'file:///tmp/location2')  # Test of deprecated method
 
     opts = [
         'dataset', 'info', str(pseudo_ls8_dataset.id)

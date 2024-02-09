@@ -337,12 +337,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         skip_set = set()
         if existing:
             if len(existing._uris) > 1:
-                skip_set.update(existing.uris)
+                skip_set.update(existing._uris)
             else:
                 skip_set.add(existing.uri)
 
         if len(dataset._uris) > 1:
-            new_uris = [uri for uri in dataset.uris if uri and uri not in skip_set]
+            new_uris = [uri for uri in dataset._uris if uri not in skip_set]
         elif dataset.uri and dataset.uri not in skip_set:
             new_uris = [dataset.uri]
         else:

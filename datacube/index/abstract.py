@@ -1606,7 +1606,7 @@ class AbstractDatasetResource(ABC):
 
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
         for ds in self.search(product=[product.name]):
-            yield DatasetTuple(product, ds.metadata_doc, ds.uris)
+            yield DatasetTuple(product, ds.metadata_doc, ds._uris)
 
     def get_all_docs(self, products: Iterable[Product] | None = None,
                      batch_size: int = 1000) -> Iterable[DatasetTuple]:
@@ -1642,10 +1642,14 @@ class AbstractDatasetResource(ABC):
         b_added = 0
         b_started = monotonic()
         for ds_tup in batch_ds:
+            if ds_tup.is_legacy:
+                kwargs = {"uri": ds_tup.uri}
+            else:
+                kwargs = {"uri": ds_tup.uris}
             try:
                 ds = Dataset(product=ds_tup.product,
                              metadata_doc=ds_tup.metadata,
-                             uris=ds_tup.uris)
+                             **kwargs)
                 self.add(ds, with_lineage=False)
                 b_added += 1
             except DocumentMismatchError as e:
