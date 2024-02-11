@@ -88,6 +88,7 @@ def test_dataset_measurement_paths():
                            format=format)
 
     assert ds.local_uri == ds.uri
+    assert ds.legacy_uri() == ds.uri
     assert ds.uri_scheme == 'file'
     assert ds.format == format
     paths = measurement_paths(ds)

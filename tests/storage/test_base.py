@@ -76,6 +76,14 @@ def test_band_info():
     band = BandInfo(ds, 'a')
     assert band.uri_scheme is ''  # noqa: F632
 
+    # Test legacy multi-location behaviour
+    ds._uris = ["file:///tmp/dataset.yml", "https://splat.foo/alternate/dataset.yml"]
+    ds.uri = "file:///tmp/dataset.yml"
+    binfo = BandInfo(ds, 'b')
+    assert binfo.uri == 'file:///tmp/b.tiff'
+    binfo = BandInfo(ds, 'b', uri_scheme="https")
+    assert binfo.uri == "https://splat.foo/alternate/b.tiff"
+
 
 def test_band_info_with_url_mangling():
     def url_mangler(raw):
