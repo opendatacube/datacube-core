@@ -1643,9 +1643,9 @@ class AbstractDatasetResource(ABC):
         b_started = monotonic()
         for ds_tup in batch_ds:
             if ds_tup.is_legacy:
-                kwargs = {"uri": ds_tup.uri}
+                kwargs = {"uris": ds_tup.uris}
             else:
-                kwargs = {"uri": ds_tup.uris}
+                kwargs = {"uri": ds_tup.uri}
             try:
                 ds = Dataset(product=ds_tup.product,
                              metadata_doc=ds_tup.metadata,
