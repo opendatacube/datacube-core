@@ -245,6 +245,11 @@ def test_mem_ds_locations(mem_eo3_data: tuple):
     assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
     assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_id)  # Test of deprecated method
     assert dc.index.datasets.add_location(ls8_id, "file:///test_loc_2")  # Test of deprecated method
+
+    assert "file:///test_loc_2" in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
+    ds = dc.index.datasets.get(ls8_id)
+    assert ds.uri in ds.uris  # Test of deprecated property
+
     assert dc.index.datasets.archive_location(ls8_id, "file:///test_loc_2")  # Test of deprecated method
     assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_2")  # Test of deprecated method
     assert "file:///test_loc_2" not in list(dc.index.datasets.get_locations(ls8_id))  # Test of deprecated method
@@ -256,6 +261,7 @@ def test_mem_ds_locations(mem_eo3_data: tuple):
     assert dc.index.datasets.remove_location(ls8_id, ls8ds.uri)
     ls8ds = dc.index.datasets.get(ls8_id)
     assert ls8ds.uri is None
+    assert dc.index.datasets.get_location(ls8_id) is None
 
 
 def test_mem_ds_updates(mem_eo3_data: tuple):

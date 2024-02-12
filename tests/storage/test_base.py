@@ -72,13 +72,14 @@ def test_band_info():
     assert ds_none_fmt.format is None
     assert BandInfo(ds_none_fmt, 'a').format == ''
 
-    ds = mk_sample_dataset(bands, uri='/not/a/uri')
+    ds = mk_sample_dataset(bands, uri=['/not/a/uri'])
     band = BandInfo(ds, 'a')
     assert band.uri_scheme is ''  # noqa: F632
 
     # Test legacy multi-location behaviour
-    ds._uris = ["file:///tmp/dataset.yml", "https://splat.foo/alternate/dataset.yml"]
-    ds.uri = "file:///tmp/dataset.yml"
+    ds = mk_sample_dataset(bands,
+                           uri=["file:///tmp/dataset.yml", "https://splat.foo/alternate/dataset.yml"],
+                           format='GeoTIFF')
     binfo = BandInfo(ds, 'b')
     assert binfo.uri == 'file:///tmp/b.tiff'
     binfo = BandInfo(ds, 'b', uri_scheme="https")

@@ -125,7 +125,7 @@ class Dataset:
     def uris(self) -> Sequence[str]:
         return self._uris
 
-    def legacy_uri(self, schema: str | None):
+    def legacy_uri(self, schema: str | None = None):
         """
         This is a 1.9-2.0 transitional method and will be removed in 2.0.
 
