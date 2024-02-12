@@ -633,6 +633,21 @@ def test_default_clone_bulk_ops(mem_index_fresh: Datacube, index, extended_eo3_m
     assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset4.id)
 
 
+def test_default_clone_bulk_ops_multiloc(
+        mem_index_fresh: Datacube, index, extended_eo3_metadata_type,
+        ls8_eo3_product, wo_eo3_product, africa_s2_eo3_product,
+        ls8_eo3_dataset, ls8_eo3_dataset2,
+        ls8_eo3_dataset3, ls8_eo3_dataset4,
+        wo_eo3_dataset, africa_eo3_dataset):
+    index.datasets.add_location(ls8_eo3_dataset.id, "file:///a/o/fish")
+    mem_index_fresh.index.clone(index)
+    assert mem_index_fresh.index.datasets.has(africa_eo3_dataset.id)
+    assert mem_index_fresh.index.datasets.has(wo_eo3_dataset.id)
+    assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset.id)
+    assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset4.id)
+    assert len(mem_index_fresh.index.datasets.get(ls8_eo3_dataset.id)._uris) == 2
+
+
 def test_default_clone_bulk_ops_reverse(mem_eo3_data: tuple, index):
     mem_idx, ls8id, woid = mem_eo3_data
     index.clone(mem_idx.index)

@@ -5,7 +5,7 @@
 import pytest
 from datacube.storage import BandInfo
 from datacube.testutils import mk_sample_dataset
-from datacube.storage._base import _get_band_and_layer
+from datacube.storage._base import _get_band_and_layer, measurement_paths
 
 
 def test_band_layer():
@@ -84,6 +84,7 @@ def test_band_info():
     assert binfo.uri == 'file:///tmp/b.tiff'
     binfo = BandInfo(ds, 'b', uri_scheme="https")
     assert binfo.uri == "https://splat.foo/alternate/b.tiff"
+    assert measurement_paths(ds)["b"] == "file:///tmp/b.tiff"
 
 
 def test_band_info_with_url_mangling():
