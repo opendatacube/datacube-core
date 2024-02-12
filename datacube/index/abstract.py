@@ -1606,7 +1606,9 @@ class AbstractDatasetResource(ABC):
 
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
         for ds in self.search(product=[product.name]):
-            yield DatasetTuple(product, ds.metadata_doc, ds._uris)
+            yield DatasetTuple(product,
+                               ds.metadata_doc,
+                               ds._uris)  # 2.0: ds.uri
 
     def get_all_docs(self, products: Iterable[Product] | None = None,
                      batch_size: int = 1000) -> Iterable[DatasetTuple]:
@@ -1642,7 +1644,7 @@ class AbstractDatasetResource(ABC):
         b_added = 0
         b_started = monotonic()
         for ds_tup in batch_ds:
-            if ds_tup.is_legacy:
+            if ds_tup.is_legacy:  # 2.0: {'uri': ds_tup.uri}
                 kwargs = {"uris": ds_tup.uris}
             else:
                 kwargs = {"uri": ds_tup.uri}

@@ -91,14 +91,20 @@ class Dataset:
         #: or inside a NetCDF file, and as JSON-B inside the database index.
         self.metadata_doc = metadata_doc
 
+        # Multiple locations are now deprecated as per EP13.
+        # 1.9: Store legacy location lists in a hidden _uris attribute.
+        # 2.0: Remove _uris, only use uri
         #: Active URIs in order from newest to oldest
         if uri:
+            # Single URI - preferred
             self._uris = [uri]
             self.uri = uri
         elif uris:
+            # Multiple URIs - deprecated/legacy
             self._uris = uris
             self.uri = uris[0]
         else:
+            # No URI.  May be useful to support non-raster datasets.
             self._uris = []
             self.uri = None
 
@@ -123,6 +129,11 @@ class Dataset:
         version='1.9.0',
         category=ODC2DeprecationWarning)
     def uris(self) -> Sequence[str]:
+        """
+        List of active locations, newest to oldest.
+
+        Multiple locations are deprecated, please use 'uri'.
+        """
         return self._uris
 
     def legacy_uri(self, schema: str | None = None):
