@@ -25,6 +25,7 @@ ApplyMask
 ARD
 ard
 arg
+aSk
 au
 australia
 autobuild
@@ -52,10 +53,14 @@ boto
 BoundingBox
 brazil
 Bugfixes
+bY
 carrotandcompany
 cbk
 cd
 CEOS
+cheatsheet
+Cheatsheet
+cheatsheets
 CircleCI
 CLI
 cli
@@ -229,6 +234,7 @@ jupyter
 JupyterLab
 Juypter
 juypter
+JSK
 KeyboardInterrupt
 Kirill
 Kubernetes
@@ -334,6 +340,7 @@ pandoc
 param
 params
 pc
+pdf
 petewa
 pgadmin
 pgintegration
@@ -361,6 +368,7 @@ provence
 psql
 pts
 pwd
+px
 py
 pydata
 pyenv
@@ -454,6 +462,7 @@ ToFloat
 txt
 typechecking
 ubuntu
+uGuGdZQQDYhqN
 UI
 ui
 uk
@@ -477,6 +486,7 @@ utils
 UUID
 uuid
 UUIDs
+usp
 ValueError
 VDI
 vdi
@@ -496,6 +506,7 @@ WGS
 WKT
 WMS
 WPS
+wSgIIApLG
 www
 XArray
 xarray
