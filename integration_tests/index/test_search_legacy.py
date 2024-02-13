@@ -102,6 +102,7 @@ def pseudo_ls8_dataset(index, pseudo_ls8_type):
             id_,
             pseudo_ls8_type.id
         )
+        was_inserted = was_inserted and connection.insert_dataset_location(id_, "file://tmp/a/b/c")
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
@@ -155,6 +156,7 @@ def pseudo_ls8_dataset2(index, pseudo_ls8_type):
             id_,
             pseudo_ls8_type.id
         )
+        was_inserted = was_inserted and connection.insert_dataset_location(id_, "file://tmp/d/e/f")
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
@@ -549,6 +551,8 @@ def test_search_returning_rows(index, pseudo_ls8_type,
                                pseudo_ls8_dataset, pseudo_ls8_dataset2,
                                indexed_ls5_scene_products):
     dataset = pseudo_ls8_dataset
+    index.datasets.remove_location(pseudo_ls8_dataset.id, pseudo_ls8_dataset.uri)  # Test of deprecated method
+    index.datasets.remove_location(pseudo_ls8_dataset2.id, pseudo_ls8_dataset2.uri)  # Test of deprecated method
 
     # If returning a field like uri, there will be one result per location.
 
@@ -967,6 +971,8 @@ def test_csv_search_via_cli(clirunner: Any,
                             pseudo_ls8_dataset2: Dataset) -> None:
     """
     Search datasets via the cli with csv output
+
+    NB behaviour of CLI search when datasets have zero or multiple locations has changed in 1.9.
     """
 
     # Test dataset is:

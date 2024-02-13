@@ -743,8 +743,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             if return_fields:
                 # if no fields specified, select all
                 if select_field_names is None:
-                    select_fields = tuple(field for name, field in dataset_fields.items()
-                                          if not field.affects_row_selection)
+                    select_fields = None
                 else:
                     select_fields = tuple(
                         dataset_fields[field_name]
