@@ -1577,7 +1577,8 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def search_by_metadata(self,
-                           metadata: JsonDict
+                           metadata: JsonDict,
+                           archived: bool | None = False
                           ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
@@ -1585,13 +1586,27 @@ class AbstractDatasetResource(ABC):
         Caution – slow! This will usually not use indexes.
 
         :param metadata: metadata dictionary representing arbitrary search query
+        :param archived: False (default): Return active datasets only.
+                         None: Include archived and active datasets.
+                         True: Return archived datasets only.
         :return: Matching dataset models
         """
 
+    @deprecat(
+        deprecated_args={
+            "source_filter": {
+                "reason": "Filtering by source metadata is deprecated and will be removed in future.",
+                "version": "1.9.0",
+                "category": ODC2DeprecationWarning
+
+            }
+        }
+    )
     @abstractmethod
     def search(self,
                limit: int | None = None,
                source_filter: QueryDict | None = None,
+               archived: bool | None = False,
                **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
@@ -1600,6 +1615,9 @@ class AbstractDatasetResource(ABC):
         is guaranteed.  Ordering of results is now unspecified and may vary between index drivers.
 
         :param limit: Limit number of datasets per product (None/default = unlimited)
+        :param archived: False (default): Return active datasets only.
+                         None: Include archived and active datasets.
+                         True: Return archived datasets only.
         :param query: search query parameters
         :return: Matching datasets
         """
@@ -1717,11 +1735,15 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def search_by_product(self,
+                          archived: bool | None = False,
                           **query: QueryField
                          ) -> Iterable[tuple[Iterable[Dataset], Product]]:
         """
         Perform a search, returning datasets grouped by product type.
 
+        :param archived: False (default): Return active datasets only.
+                         None: Include archived and active datasets.
+                         True: Return archived datasets only.
         :param query: search query parameters
         :return: Matching datasets, grouped by Product
         """
@@ -1730,6 +1752,7 @@ class AbstractDatasetResource(ABC):
     def search_returning(self,
                          field_names: Iterable[str] | None = None,
                          limit: int | None = None,
+                         archived: bool | None = False,
                          **query: QueryField
                         ) -> Iterable[tuple]:
         """
@@ -1741,21 +1764,27 @@ class AbstractDatasetResource(ABC):
 
         :param field_names: Names of desired fields (default = all known search fields)
         :param limit: Limit number of dataset (None/default = unlimited)
+        :param archived: False (default): Return active datasets only.
+                         None: Include archived and active datasets.
+                         True: Return archived datasets only.
         :param query: search query parameters
         :return: Namedtuple of requested fields, for each matching dataset.
         """
 
     @abstractmethod
-    def count(self, **query: QueryField) -> int:
+    def count(self, archived: bool | None = False, **query: QueryField) -> int:
         """
         Perform a search, returning count of results.
 
+        :param archived: False (default): Count active datasets only.
+                         None: Count archived and active datasets.
+                         True: Count archived datasets only.
         :param query: search query parameters
         :return: Count of matching datasets in index
         """
 
     @abstractmethod
-    def count_by_product(self, **query: QueryField) -> Iterable[tuple[Product, int]]:
+    def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[tuple[Product, int]]:
         """
         Perform a search, returning a count of for each matching product type.
 
@@ -1766,6 +1795,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def count_by_product_through_time(self,
                                       period: str,
+                                      archived: bool | None = False,
                                       **query: QueryField
                                      ) -> Iterable[tuple[Product, Iterable[tuple[Range, int]]]]:
         """
@@ -1773,6 +1803,9 @@ class AbstractDatasetResource(ABC):
         of the given period.
 
         :param period: Time range for each slice: '1 month', '1 day' etc.
+        :param archived: False (default): Count active datasets only.
+                         None: Count archived and active datasets.
+                         True: Count archived datasets only.
         :param query: search query parameters
         :returns: For each matching product type, a list of time ranges and their count.
         """
@@ -1780,6 +1813,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def count_product_through_time(self,
                                    period: str,
+                                   archived: bool | None = False,
                                    **query: QueryField
                                   ) -> Iterable[tuple[Range, int]]:
         """
@@ -1789,6 +1823,9 @@ class AbstractDatasetResource(ABC):
         Will raise an error if the search terms match more than one product.
 
         :param period: Time range for each slice: '1 month', '1 day' etc.
+        :param archived: False (default): Count active datasets only.
+                         None: Count archived and active datasets.
+                         True: Count archived datasets only.
         :param query: search query parameters
         :returns: The product, a list of time ranges and the count of matching datasets.
         """
@@ -1855,6 +1892,7 @@ class AbstractDatasetResource(ABC):
                                         field_names: tuple[str, ...],
                                         custom_offsets: Mapping[str, Offset] | None = None,
                                         limit: int | None = None,
+                                        archived: bool | None = False,
                                         **query: QueryField
                                        ) -> Iterable[tuple]:
         """
@@ -1877,6 +1915,9 @@ class AbstractDatasetResource(ABC):
                             such as extent, crs
         :param custom_offsets: A dictionary of offsets in the metadata doc for custom fields
         :param limit: Number of datasets returned per product.
+        :param archived: False (default): Return active datasets only.
+                         None: Return archived and active datasets.
+                         True: Return archived datasets only.
         :param query: query parameters that will be processed against metadata_types,
                       product definitions and/or dataset table.
         :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
