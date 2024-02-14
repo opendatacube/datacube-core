@@ -471,6 +471,19 @@ def test_mem_ds_search_and_count(mem_eo3_data: tuple):
     with pytest.raises(ValueError):
         lds = list(dc.index.datasets.search(product_family='addams'))
 
+    lds = list(dc.index.datasets.search(archived=None, platform='landsat-8'))
+    assert len(lds) == 2
+    lds = list(dc.index.datasets.search(archived=True, platform='landsat-8'))
+    assert len(lds) == 0
+
+    dc.index.datasets.archive([ls8_id, wo_id])
+    lds = list(dc.index.datasets.search(platform='landsat-8'))
+    assert len(lds) == 0
+    lds = list(dc.index.datasets.search(archived=None, platform='landsat-8'))
+    assert len(lds) == 2
+    lds = list(dc.index.datasets.search(archived=True, platform='landsat-8'))
+    assert len(lds) == 2
+
 
 def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple):
     dc, ls8_id, wo_id = mem_eo3_data
@@ -527,6 +540,16 @@ def test_mem_ds_search_returning_datasets_light(mem_eo3_data: tuple):
         assert res.__class__.__name__ == 'DatasetLight'
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
+    lds = list(dc.index.datasets.search_returning_datasets_light(
+        archived=None,
+        field_names=['platform', 'id'],
+        platform='landsat-8'))
+    assert len(lds) == 2
+    lds = list(dc.index.datasets.search_returning_datasets_light(
+        archived=True,
+        field_names=['platform', 'id'],
+        platform='landsat-8'))
+    assert len(lds) == 0
 
 
 def test_mem_ds_search_by_metadata(mem_eo3_data: tuple):
@@ -539,6 +562,10 @@ def test_mem_ds_search_by_metadata(mem_eo3_data: tuple):
     assert len(lds) == 0
     lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}))
     assert len(lds) == 2
+    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=None))
+    assert len(lds) == 2
+    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=True))
+    assert len(lds) == 0
 
 
 def test_mem_ds_count_product_through_time(mem_eo3_data: tuple):

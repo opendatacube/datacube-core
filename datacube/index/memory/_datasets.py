@@ -6,6 +6,8 @@ import datetime
 import logging
 import re
 import warnings
+from itertools import chain
+
 from deprecat import deprecat
 from collections import namedtuple
 from time import monotonic
@@ -46,7 +48,8 @@ class DatasetResource(AbstractDatasetResource):
         self.locations: MutableMapping[UUID, List[str]] = {}
         self.archived_locations: MutableMapping[UUID, List[Tuple[str, datetime.datetime]]] = {}
         # Active Index By Product
-        self.by_product: MutableMapping[str, List[UUID]] = {}
+        self.by_product: MutableMapping[str, set[UUID]] = {}
+        self.archived_by_product: MutableMapping[str, set[UUID]] = {}
 
     def get_unsafe(self, id_: DSID, include_sources: bool = False,
                    include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
@@ -98,9 +101,9 @@ class DatasetResource(AbstractDatasetResource):
                 self.locations[persistable.id] = []
             self.archived_locations[persistable.id] = []
             if dataset.product.name in self.by_product:
-                self.by_product[dataset.product.name].append(dataset.id)
+                self.by_product[dataset.product.name].add(dataset.id)
             else:
-                self.by_product[dataset.product.name] = [dataset.id]
+                self.by_product[dataset.product.name] = set([dataset.id])
         if archive_less_mature is not None:
             _LOG.warning("archive-less-mature functionality is not implemented for memory driver")
         return cast(Dataset, self.get(dataset.id))
@@ -260,7 +263,11 @@ class DatasetResource(AbstractDatasetResource):
             id_ = dsid_to_uuid(id_)
             if id_ in self.active_by_id:
                 ds = self.active_by_id.pop(id_)
-                self.by_product[ds.product.name] = [i for i in self.by_product[ds.product.name] if i != ds.id]
+                self.by_product[ds.product.name].remove(ds.id)
+                if ds.product.name not in self.archived_by_product:
+                    self.archived_by_product[ds.product.name] = set([ds.id])
+                else:
+                    self.archived_by_product[ds.product.name].add(ds.id)
                 ds.archived_time = datetime.datetime.now()
                 self.archived_by_id[id_] = ds
 
@@ -271,13 +278,14 @@ class DatasetResource(AbstractDatasetResource):
                 ds = self.archived_by_id.pop(id_)
                 ds.archived_time = None
                 self.active_by_id[id_] = ds
-                self.by_product[ds.product.name].append(ds.id)
+                self.archived_by_product[ds.product.name].remove(ds.id)
+                self.by_product[ds.product.name].add(ds.id)
 
     def purge(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
             if id_ in self.archived_by_id:
-                del self.archived_by_id[id_]
+                ds = self.archived_by_id.pop(id_)
                 del self.by_id[id_]
                 if id_ in self.derived_from:
                     for classifier, src_id in self.derived_from[id_].items():
@@ -287,6 +295,7 @@ class DatasetResource(AbstractDatasetResource):
                     for classifier, child_id in self.derivations[id_].items():
                         del self.derived_from[child_id][classifier]
                     del self.derivations[id_]
+                self.archived_by_product[ds.product.name].remove(id_)
 
     def get_all_dataset_ids(self, archived: bool) -> Iterable[UUID]:
         if archived:
@@ -427,10 +436,13 @@ class DatasetResource(AbstractDatasetResource):
         self.locations[uuid].append(uri)
         return True
 
-    def search_by_metadata(self, metadata: Mapping[str, QueryField]):
+    def search_by_metadata(self, metadata: Mapping[str, QueryField], archived: bool | None = False):
         for ds in self.active_by_id.values():
             if metadata_subset(metadata, ds.metadata_doc):
-                yield ds
+                if archived is None:
+                    yield ds
+                elif archived and ds.is_archived or not (archived or ds.is_archived):
+                    yield ds
 
     RET_FORMAT_DATASETS = 0
     RET_FORMAT_PRODUCT_GROUPED = 1
@@ -440,6 +452,7 @@ class DatasetResource(AbstractDatasetResource):
             return_format: int,
             limit: Optional[int] = None,
             source_filter: Optional[Mapping[str, QueryField]] = None,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Union[Dataset, Tuple[Iterable[Dataset], Product]]]:
         if source_filter:
@@ -468,7 +481,18 @@ class DatasetResource(AbstractDatasetResource):
                 break
             query_exprs = tuple(fields.to_expressions(product.metadata_type.dataset_fields.get, **q))
             product_results = []
-            for dsid in self.by_product.get(product.name, []):
+
+            if archived is None:
+                dsids = chain(
+                    self.archived_by_product.get(product.name, set()),
+                    self.by_product.get(product.name, set())
+                )
+            elif archived:
+                dsids = self.archived_by_product.get(product.name, set())
+            else:
+                dsids = self.by_product.get(product.name, set())
+
+            for dsid in dsids:
                 if limit is not None and matches >= limit:
                     break
                 ds = cast(Dataset, self.get(dsid, include_sources=True))
@@ -506,12 +530,14 @@ class DatasetResource(AbstractDatasetResource):
             self,
             limit: Optional[int] = None,
             source_filter: Optional[Mapping[str, QueryField]] = None,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Dataset]:
         return cast(Iterable[Dataset], self._search(
                     return_format=self.RET_FORMAT_DATASETS,
                     limit=limit,
                     source_filter=source_filter,
+                    archived=archived,
                     **query)
         )
 
@@ -519,12 +545,14 @@ class DatasetResource(AbstractDatasetResource):
             self,
             limit: Optional[int] = None,
             source_filter: Optional[Mapping[str, QueryField]] = None,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Tuple[Iterable[Dataset], Product]]:
         return cast(Iterable[Tuple[Iterable[Dataset], Product]], self._search(
                     return_format=self.RET_FORMAT_PRODUCT_GROUPED,
                     limit=limit,
                     source_filter=source_filter,
+                    archived=archived,
                     **query)
         )
 
@@ -534,15 +562,20 @@ class DatasetResource(AbstractDatasetResource):
     def search(self,
                limit: Optional[int] = None,
                source_filter: Optional[Mapping[str, QueryField]] = None,
+               archived: bool | None = False,
                **query: QueryField) -> Iterable[Dataset]:
-        return cast(Iterable[Dataset], self._search_flat(limit=limit, source_filter=source_filter, **query))
+        return cast(
+            Iterable[Dataset],
+            self._search_flat(limit=limit, source_filter=source_filter, archived=archived, **query)
+        )
 
-    def search_by_product(self, **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
-        return self._search_grouped(**query)  # type: ignore[arg-type]
+    def search_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
+        return self._search_grouped(archived=archived, **query)  # type: ignore[arg-type]
 
     def search_returning(self,
                          field_names: Iterable[str] | None = None,
                          limit: Optional[int] = None,
+                         archived: bool | None = False,
                          **query: QueryField) -> Iterable[Tuple]:
         if field_names is None:
             field_names = self._index.products.get_field_names()
@@ -550,7 +583,7 @@ class DatasetResource(AbstractDatasetResource):
             field_names = list(field_names)
         #    Typing note: mypy can't handle dynamically created namedtuples
         result_type = namedtuple('search_result', field_names)  # type: ignore[misc]
-        for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
+        for ds in self.search(limit=limit, archived=archived, **query):  # type: ignore[arg-type]
             ds_fields = get_dataset_fields(ds.metadata_type.definition)
             result_vals = {
                 fn: ds_fields[fn].extract(ds.metadata_doc) if fn in ds_fields else None
@@ -558,15 +591,16 @@ class DatasetResource(AbstractDatasetResource):
             }
             yield result_type(**result_vals)
 
-    def count(self, **query: QueryField) -> int:
-        return len(list(self.search(**query)))  # type: ignore[arg-type]
+    def count(self, archived: bool | None = False, **query: QueryField) -> int:
+        return len(list(self.search(archived=archived, **query)))  # type: ignore[arg-type]
 
-    def count_by_product(self, **query: QueryField) -> Iterable[Tuple[Product, int]]:
-        for datasets, prod in self.search_by_product(**query):
+    def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[Tuple[Product, int]]:
+        for datasets, prod in self.search_by_product(archived=archived, **query):
             yield (prod, len(list(datasets)))
 
     def count_by_product_through_time(self,
                                       period: str,
+                                      archived: bool | None = False,
                                       **query: QueryField
     ) -> Iterable[
         Tuple[
@@ -576,7 +610,7 @@ class DatasetResource(AbstractDatasetResource):
             ]
         ]
     ]:
-        return self._product_period_count(period, **query)  # type: ignore[arg-type]
+        return self._product_period_count(period, archived=archived, **query)  # type: ignore[arg-type]
 
     def _expand_period(
             self,
@@ -640,6 +674,7 @@ class DatasetResource(AbstractDatasetResource):
             self,
             period: str,
             single_product_only: bool = False,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[
         Tuple[
@@ -657,7 +692,7 @@ class DatasetResource(AbstractDatasetResource):
             raise ValueError('Must specify "time" range in period-counting query')
         periods = self._expand_period(period, start, end)
         last_product: Optional[YieldType] = None
-        for dss, product in self._search_grouped(**query):  # type: ignore[arg-type]
+        for dss, product in self._search_grouped(archived=archived, **query):  # type: ignore[arg-type]
             if last_product and single_product_only:
                 raise ValueError(f"Multiple products match single query search: {repr(query)}")
             if last_product:
@@ -682,9 +717,10 @@ class DatasetResource(AbstractDatasetResource):
     def count_product_through_time(
             self,
             period: str,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Tuple[Range, int]]:
-        return list(self._product_period_count(period, single_product_only=True, **query))[0][1]
+        return list(self._product_period_count(period, archived=archived, single_product_only=True, **query))[0][1]
 
     @deprecat(
         reason="This method is deprecated and will be removed in 2.0.  "
@@ -730,6 +766,7 @@ class DatasetResource(AbstractDatasetResource):
             field_names: Tuple[str, ...],
             custom_offsets: Optional[Mapping[str, Offset]] = None,
             limit: Optional[int] = None,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Tuple]:
         if custom_offsets:
@@ -756,7 +793,7 @@ class DatasetResource(AbstractDatasetResource):
                 for fname, field in fields.items()
             }
             return DatasetLight(**fld_vals)
-        for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
+        for ds in self.search(limit=limit, archived=archived, **query):  # type: ignore[arg-type]
             yield make_ds_light(ds)
 
     def clone(self, orig: Dataset, for_save=False, lookup_locations=True) -> Dataset:
