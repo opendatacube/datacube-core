@@ -361,27 +361,21 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             old_uris.update(existing._uris)
         new_uris = dataset._uris
 
-        def insert_one(uri, transaction):
-            return transaction.insert_dataset_location(dataset.id, uri)
-
-        def delete_one(uri, transaction):
-            return transaction.remove_location(dataset.id, uri)
-
-        def handle(old_uris, new_uris, transaction):
+        def ensure_locations_in_transaction(old_uris, new_uris, transaction):
             if len(old_uris) <= 1 and len(new_uris) == 1:
                 # Only one location, so treat as an update.
                 if len(old_uris):
-                    delete_one(old_uris.pop(), transaction)
-                insert_one(new_uris.pop(), transaction)
+                    transaction.remove_location(dataset.id, old_uris[0])
+                transaction.insert_dataset_location(dataset.id, new_uris[0])
             else:
                 for uri in new_uris[::-1]:
-                    insert_one(uri, transaction)
+                    transaction.insert_dataset_location(dataset.id, uri)
 
         if transaction:
-            handle(old_uris, new_uris, transaction)
+            ensure_locations_in_transaction(old_uris, new_uris, transaction)
         else:
             with self._db_connection(transaction=True) as tr:
-                handle(old_uris, new_uris, tr)
+                ensure_locations_in_transaction(old_uris, new_uris, tr)
 
     def archive(self, ids):
         """
