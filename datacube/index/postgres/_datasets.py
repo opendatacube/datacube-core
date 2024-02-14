@@ -342,7 +342,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             if len(old_uris) <= 1 and len(new_uris) == 1 and new_uris[0] not in old_uris:
                 # Only one location, so treat as an update.
                 if len(old_uris):
-                    transaction.remove_location(dataset.id, old_uris[0])
+                    transaction.remove_location(dataset.id, old_uris.pop())
                 transaction.insert_dataset_location(dataset.id, new_uris[0])
             else:
                 for uri in new_uris[::-1]:
