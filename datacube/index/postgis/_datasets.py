@@ -585,9 +585,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             else:
                 kwargs["uris"] = uris
 
-        kwargs["product"] = product or self.products.get(dataset_res.product_ref)
-
         return Dataset(
+            product=product or self.products.get(dataset_res.product_ref),
             metadata_doc=dataset_res.metadata,
             indexed_by=dataset_res.added_by if full_info else None,
             indexed_time=dataset_res.added if full_info else None,
