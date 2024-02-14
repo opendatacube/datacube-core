@@ -5,7 +5,7 @@
 import pytest
 from datacube.storage import BandInfo
 from datacube.testutils import mk_sample_dataset
-from datacube.storage._base import _get_band_and_layer
+from datacube.storage._base import _get_band_and_layer, measurement_paths
 
 
 def test_band_layer():
@@ -61,11 +61,8 @@ def test_band_info():
     with pytest.raises(ValueError):
         BandInfo(ds, 'c')
 
-    ds.uris = []
-    with pytest.raises(ValueError):
-        BandInfo(ds, 'a')
-
-    ds.uris = None
+    ds._uris = []
+    ds.uri = None
     with pytest.raises(ValueError):
         BandInfo(ds, 'a')
 
@@ -75,9 +72,19 @@ def test_band_info():
     assert ds_none_fmt.format is None
     assert BandInfo(ds_none_fmt, 'a').format == ''
 
-    ds = mk_sample_dataset(bands, uri='/not/a/uri')
+    ds = mk_sample_dataset(bands, uri=['/not/a/uri'])
     band = BandInfo(ds, 'a')
     assert band.uri_scheme is ''  # noqa: F632
+
+    # Test legacy multi-location behaviour
+    ds = mk_sample_dataset(bands,
+                           uri=["file:///tmp/dataset.yml", "https://splat.foo/alternate/dataset.yml"],
+                           format='GeoTIFF')
+    binfo = BandInfo(ds, 'b')
+    assert binfo.uri == 'file:///tmp/b.tiff'
+    binfo = BandInfo(ds, 'b', uri_scheme="https")
+    assert binfo.uri == "https://splat.foo/alternate/b.tiff"
+    assert measurement_paths(ds)["b"] == "file:///tmp/b.tiff"
 
 
 def test_band_info_with_url_mangling():

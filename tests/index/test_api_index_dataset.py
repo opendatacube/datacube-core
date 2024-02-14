@@ -146,7 +146,7 @@ _EXAMPLE_DATASET_TYPE = DatasetType(
 
 def _build_dataset(doc):
     sources = {name: _build_dataset(src) for name, src in doc['lineage']['source_datasets'].items()}
-    return Dataset(_EXAMPLE_DATASET_TYPE, doc, uris=['file://test.zzz'], sources=sources)
+    return Dataset(_EXAMPLE_DATASET_TYPE, doc, uri='file://test.zzz', sources=sources)
 
 
 _EXAMPLE_NBAR_DATASET = _build_dataset(_EXAMPLE_NBAR)

@@ -17,7 +17,10 @@ from datacube.api.core import output_geobox
 
 
 def test_gridspec():
-    gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(10, 10))
+    gs = GridSpec(  # Coverage test of deprecated class
+        crs=CRS('EPSG:4326'), tile_size=(1, 1),
+        resolution=(-0.1, 0.1), origin=(10, 10)
+    )
     poly = polygon([(10, 12.2), (10.8, 13), (13, 10.8), (12.2, 10), (10, 12.2)], crs=CRS('EPSG:4326'))
     cells = {index: geobox for index, geobox in list(gs.tiles_from_geopolygon(poly))}
     assert set(cells.keys()) == {(0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
@@ -47,7 +50,7 @@ def test_gridspec_upperleft():
     # Upper left - validated against WELD product tile calculator
     # http://globalmonitoring.sdstate.edu/projects/weld/tilecalc.php
     gs = GridSpec(crs=CRS('EPSG:5070'), tile_size=(-150000, 150000), resolution=(-30, 30),
-                  origin=(3314800.0, -2565600.0))
+                  origin=(3314800.0, -2565600.0))  # Coverage test  of deprecated class
     cells = {index: geobox for index, geobox in list(gs.tiles(bbox))}
     assert set(cells.keys()) == {(30, 6)}
     assert cells[(30, 6)].extent.boundingbox == tile_bbox
@@ -67,7 +70,7 @@ def test_dataset_basics():
     assert str(ds) == repr(ds)
 
     ds = mk_sample_dataset([dict(name='a')], uri=None, geobox=None)
-    assert ds.uris == []
+    assert not ds.uri
     assert ds.uri_scheme == ''
     assert ds.crs is None
     assert ds.bounds is None
@@ -84,7 +87,8 @@ def test_dataset_measurement_paths():
                            uri='file:///tmp/datataset.yml',
                            format=format)
 
-    assert ds.local_uri == ds.uris[0]
+    assert ds.local_uri == ds.uri
+    assert ds.legacy_uri() == ds.uri
     assert ds.uri_scheme == 'file'
     assert ds.format == format
     paths = measurement_paths(ds)
@@ -92,7 +96,8 @@ def test_dataset_measurement_paths():
     for k, v in paths.items():
         assert v == 'file:///tmp/' + k + '.tiff'
 
-    ds.uris = None
+    ds._uris = []
+    ds.uri = None
     assert ds.local_uri is None
     with pytest.raises(ValueError):
         measurement_paths(ds)

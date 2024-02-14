@@ -308,7 +308,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
     assert _ds.crs == 'EPSG:3857'
     assert _ds.extent is not None
     assert _ds.extent.crs == _ds.crs
-    assert _ds.uris == [ds_eo3.location]
+    assert _ds.uri == ds_eo3.location
     assert 'location' not in _ds.metadata_doc
 
 

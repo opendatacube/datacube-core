@@ -56,10 +56,13 @@ def measurement_paths(ds: Dataset) -> Dict[str, str]:
 
     :return: Band Name => URL
     """
-    if ds.uris is None:
+    if not ds.uri:
         raise ValueError('No locations on this dataset')
+    elif len(ds._uris) == 1:
+        base = ds.uri
+    else:
+        base = pick_uri(ds.uris)
 
-    base = pick_uri(ds.uris)
     return dict((k, uri_resolve(base, m.get('path')))
                 for k, m in ds.measurements.items())
 
@@ -94,10 +97,12 @@ class BandInfo:
         if mm is None:
             raise ValueError('No such band: {}'.format(band))
 
-        if ds.uris is None:
+        if not ds.uri:
             raise ValueError('No uris defined on a dataset')
-
-        base_uri = pick_uri(ds.uris, uri_scheme)
+        elif len(ds._uris) == 1:
+            base_uri = ds.uri
+        else:
+            base_uri = ds.legacy_uri(uri_scheme)
         uri = uri_resolve(base_uri, mm.get('path'))
         if patch_url is not None:
             uri = patch_url(uri)

@@ -13,9 +13,10 @@ from typing import (Any, Callable, Dict, Iterable,
                     Optional, Set, Tuple, Union,
                     cast)
 from uuid import UUID
+from deprecat import deprecat
 
+from datacube.migration import ODC2DeprecationWarning
 from datacube.index import fields
-
 from datacube.index.abstract import (AbstractDatasetResource, DSID, dsid_to_uuid, BatchStatus,
                                      QueryField, DatasetSpatialMixin, NoLineageResource, AbstractIndex)
 from datacube.index.fields import Field
@@ -91,8 +92,8 @@ class DatasetResource(AbstractDatasetResource):
             persistable = self.clone(dataset, for_save=True)
             self.by_id[persistable.id] = persistable
             self.active_by_id[persistable.id] = persistable
-            if dataset.uris is not None:
-                self.locations[persistable.id] = dataset.uris.copy()
+            if dataset._uris:
+                self.locations[persistable.id] = dataset._uris.copy()
             else:
                 self.locations[persistable.id] = []
             self.archived_locations[persistable.id] = []
@@ -293,18 +294,48 @@ class DatasetResource(AbstractDatasetResource):
         else:
             return (id_ for id_ in self.active_by_id.keys())
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_locations(self, id_: DSID) -> Iterable[str]:
         uuid = dsid_to_uuid(id_)
         return (s for s in self.locations[uuid])
 
+    def get_location(self, id_: DSID) -> str:
+        uuid = dsid_to_uuid(id_)
+        locations = [s for s in self.locations.get(uuid, [])]
+        if not locations:
+            return None
+        return locations[0]
+
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_archived_locations(self, id_: DSID) -> Iterable[str]:
         uuid = dsid_to_uuid(id_)
         return (s for s, dt in self.archived_locations[uuid])
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_archived_location_times(self, id_: DSID) -> Iterable[Tuple[str, datetime.datetime]]:
         uuid = dsid_to_uuid(id_)
         return ((s, dt) for s, dt in self.archived_locations[uuid])
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def add_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
         if uuid not in self.by_id:
@@ -335,6 +366,12 @@ class DatasetResource(AbstractDatasetResource):
                     break
         return self.bulk_get(ids)
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def remove_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
         removed = False
@@ -352,6 +389,13 @@ class DatasetResource(AbstractDatasetResource):
                 removed = True
         return removed
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def archive_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
         if uuid not in self.locations:
@@ -364,6 +408,13 @@ class DatasetResource(AbstractDatasetResource):
         self.archived_locations[uuid].append((uri, datetime.datetime.now()))
         return True
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be restorable in future releases. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def restore_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
         if uuid not in self.archived_locations:
@@ -708,13 +759,19 @@ class DatasetResource(AbstractDatasetResource):
             uris = orig.uris.copy()
         else:
             uris = []
+        if len(uris) == 1:
+            kwargs = {"uri": uris[0]}
+        elif len(uris) > 1:
+            kwargs = {"uris": uris}
+        else:
+            kwargs = {}
         return Dataset(
             product=self._index.products.clone(orig.product),
             metadata_doc=jsonify_document(orig.metadata_doc_without_lineage()),
-            uris=uris,
             indexed_by="user" if for_save and orig.indexed_by is None else orig.indexed_by,
             indexed_time=datetime.datetime.now() if for_save and orig.indexed_time is None else orig.indexed_time,
-            archived_time=None if for_save else orig.archived_time
+            archived_time=None if for_save else orig.archived_time,
+            **kwargs
         )
 
     # Lineage methods need to be implemented on the dataset resource as that is where the relevant indexes

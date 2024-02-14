@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import datetime
+from deprecat import deprecat
 
+from datacube.migration import ODC2DeprecationWarning
 from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, Product
 from typing import Iterable, Optional
@@ -55,27 +57,73 @@ class DatasetResource(AbstractDatasetResource):
     def get_all_dataset_ids(self, archived: bool):
         return []
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_locations(self, id_):
         return []
 
+    def get_location(self, id_):
+        return None
+
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_archived_locations(self, id_):
         return []
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def get_archived_location_times(self, id_):
         return []
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def add_location(self, id_, uri):
         raise NotImplementedError()
 
     def get_datasets_for_location(self, uri, mode=None):
         return []
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def remove_location(self, id_, uri):
         raise NotImplementedError()
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def archive_location(self, id_, uri):
         raise NotImplementedError()
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be restorable in future releases. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def restore_location(self, id_, uri):
         raise NotImplementedError()
 

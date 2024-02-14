@@ -1073,7 +1073,31 @@ class DatasetTuple(NamedTuple):
     """
     product: Product
     metadata: Mapping[str, Any]
-    uris: Sequence[str]
+    uri_: str | Sequence[str]
+
+    @property
+    def is_legacy(self):
+        if isinstance(self.uri_, str):
+            return False
+        return True
+
+    @property
+    def uri(self) -> str:
+        if self.is_legacy:
+            return self.uris[0]
+        else:
+            return self.uri_
+
+    @property
+    @deprecat(
+        reason="Multiple uris are deprecated. Please use the uri field and ensure that datasets only have one location",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
+    def uris(self) -> Sequence[str]:
+        if self.is_legacy:
+            return self.uri_
+        else:
+            return [self.uri_]
 
 
 class AbstractDatasetResource(ABC):
@@ -1408,6 +1432,11 @@ class AbstractDatasetResource(ABC):
         """
         return self._index.products.get_field_names(product_name)
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def get_locations(self, id_: DSID) -> Iterable[str]:
         """
@@ -1418,6 +1447,21 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
+    def get_location(self, id_: DSID) -> str | None:
+        """
+        Get (active) storage location for the given dataset id
+
+        :param id_: dataset id
+        :return: Storage location for the dataset - None if no location for the id_, or if id_ not in db.
+        """
+
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
+    @abstractmethod
     def get_archived_locations(self, id_: DSID) -> Iterable[str]:
         """
         Get archived locations for a dataset
@@ -1426,6 +1470,12 @@ class AbstractDatasetResource(ABC):
         :return: Archived storage locations for the dataset
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def get_archived_location_times(self,
                                     id_: DSID
@@ -1437,6 +1487,12 @@ class AbstractDatasetResource(ABC):
         :return: Archived storage locations, with archive date.
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def add_location(self, id_: DSID, uri: str) -> bool:
         """
@@ -1460,6 +1516,12 @@ class AbstractDatasetResource(ABC):
         :return: Matching dataset models
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def remove_location(self,
                         id_: DSID,
@@ -1473,6 +1535,13 @@ class AbstractDatasetResource(ABC):
         :return: True if location was removed, false if it didn't exist for the database
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be accessible in future releases. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def archive_location(self,
                          id_: DSID,
@@ -1486,6 +1555,13 @@ class AbstractDatasetResource(ABC):
         :return: True if location was able to be archived
         """
 
+    @deprecat(
+        reason="Multiple locations per dataset are now deprecated. "
+               "Archived locations may not be restorable in future releases. "
+               "Dataset location can be set or updated with the update() method.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     @abstractmethod
     def restore_location(self,
                          id_: DSID,
@@ -1530,7 +1606,9 @@ class AbstractDatasetResource(ABC):
 
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
         for ds in self.search(product=[product.name]):
-            yield (product, ds.metadata_doc, ds.uris)
+            yield DatasetTuple(product,
+                               ds.metadata_doc,
+                               ds._uris)  # 2.0: ds.uri
 
     def get_all_docs(self, products: Iterable[Product] | None = None,
                      batch_size: int = 1000) -> Iterable[DatasetTuple]:
@@ -1566,10 +1644,14 @@ class AbstractDatasetResource(ABC):
         b_added = 0
         b_started = monotonic()
         for ds_tup in batch_ds:
+            if ds_tup.is_legacy:  # 2.0: {'uri': ds_tup.uri}
+                kwargs = {"uris": ds_tup.uris}
+            else:
+                kwargs = {"uri": ds_tup.uri}
             try:
                 ds = Dataset(product=ds_tup.product,
                              metadata_doc=ds_tup.metadata,
-                             uris=ds_tup.uris)
+                             **kwargs)
                 self.add(ds, with_lineage=False)
                 b_added += 1
             except DocumentMismatchError as e:

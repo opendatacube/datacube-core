@@ -16,8 +16,8 @@ from typing import Union, Optional, List, Any, Dict
 from datacube.migration import ODC2DeprecationWarning
 
 from .io import check_write_path
-from .geometry import GeoBox
-from .geometry.tools import align_up
+from odc.geo.geobox import GeoBox
+from odc.geo.math import align_up
 
 from deprecat import deprecat
 
@@ -30,6 +30,7 @@ def _adjust_blocksize(block, dim):
     return align_up(block, 16)
 
 
+@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def _write_cog(
     pix: np.ndarray,
     geobox: GeoBox,
@@ -276,7 +277,7 @@ def write_cog(
        This means that this function will use about 1.5 to 2 times memory taken by ``geo_im``.
     """
     pix = geo_im.data
-    geobox = getattr(geo_im, "geobox", None)
+    geobox = getattr(geo_im, "geobox", None)  # Nested deprecation
     nodata = extra_rio_opts.pop("nodata", None)
     if nodata is None:
         nodata = geo_im.attrs.get("nodata", None)
@@ -350,7 +351,7 @@ def to_cog(
     Also see :py:meth:`~datacube.utils.cog.write_cog`
 
     """
-    bb = write_cog(
+    bb = write_cog(  # Call to deprecated function from deprecated function
         geo_im,
         ":mem:",
         blocksize=blocksize,

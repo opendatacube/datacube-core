@@ -56,7 +56,7 @@ def test_cog_file(tmpdir, opts):
     xx, ds = gen_test_data(pp)
 
     # write to file
-    ff = write_cog(
+    ff = write_cog(  # Coverage test of deprecated function.
         xx,
         pp / "cog.tif",
         **opts
@@ -67,30 +67,30 @@ def test_cog_file(tmpdir, opts):
 
     yy = rio_slurp_xarray(pp / "cog.tif")
     np.testing.assert_array_equal(yy.values, xx.values)
-    assert yy.geobox == xx.geobox
+    assert yy.odc.geobox == xx.odc.geobox
     assert yy.nodata == xx.nodata
 
-    _write_cog(
+    _write_cog(  # Test of deprecated function
         np.stack([xx.values, xx.values]),
-        xx.geobox,
+        xx.odc.geobox,
         pp / "cog-2-bands.tif",
         overview_levels=[],
         **opts
     )
 
     yy, mm = rio_slurp(pp / "cog-2-bands.tif")
-    assert mm.geobox == xx.geobox
+    assert mm.geobox == xx.odc.geobox
     assert yy.shape == (2, *xx.shape)
     np.testing.assert_array_equal(yy[0], xx.values)
     np.testing.assert_array_equal(yy[1], xx.values)
 
     with pytest.raises(ValueError, match="Need 2d or 3d ndarray on input"):
-        _write_cog(xx.values.ravel(), xx.geobox, pp / "wontwrite.tif")
+        _write_cog(xx.values.ravel(), xx.odc.geobox, pp / "wontwrite.tif")  # Test of deprecated function
 
     # sizes that are not multiples of 16
     # also check that supplying `nodata=` doesn't break things
     xx_odd = xx[:23, :63]
-    ff = write_cog(
+    ff = write_cog(  # Coverage test of deprecated function
         xx_odd,
         pp / "cog_odd.tif",
         nodata=xx_odd.attrs["nodata"],
@@ -102,11 +102,11 @@ def test_cog_file(tmpdir, opts):
 
     yy = rio_slurp_xarray(pp / "cog_odd.tif")
     np.testing.assert_array_equal(yy.values, xx_odd.values)
-    assert yy.geobox == xx_odd.geobox
+    assert yy.odc.geobox == xx_odd.odc.geobox
     assert yy.nodata == xx_odd.nodata
 
     with pytest.warns(UserWarning):
-        write_cog(xx, pp / "cog_badblocksize.tif", blocksize=50)
+        write_cog(xx, pp / "cog_badblocksize.tif", blocksize=50)  # Test of deprecated method
 
 
 def test_cog_file_dask(tmpdir):
@@ -115,7 +115,7 @@ def test_cog_file_dask(tmpdir):
     assert dask.is_dask_collection(xx)
 
     path = pp / "cog.tif"
-    ff = write_cog(xx, path, overview_levels=[2, 4])
+    ff = write_cog(xx, path, overview_levels=[2, 4])  # Test of deprecated method
     assert isinstance(ff, Delayed)
     assert path.exists() is False
     assert ff.compute() == path
@@ -123,7 +123,7 @@ def test_cog_file_dask(tmpdir):
 
     yy = rio_slurp_xarray(pp / "cog.tif")
     np.testing.assert_array_equal(yy.values, xx.values)
-    assert yy.geobox == xx.geobox
+    assert yy.odc.geobox == xx.odc.geobox
     assert yy.nodata == xx.nodata
 
 
@@ -133,7 +133,7 @@ def test_cog_mem(tmpdir, shape):
     xx, ds = gen_test_data(pp, shape=shape)
 
     # write to memory 1
-    bb = write_cog(xx, ":mem:")
+    bb = write_cog(xx, ":mem:")  # Test of deprecated function
     assert isinstance(bb, bytes)
     path = pp / "cog1.tiff"
     with open(str(path), "wb") as f:
@@ -141,11 +141,11 @@ def test_cog_mem(tmpdir, shape):
 
     yy = rio_slurp_xarray(path)
     np.testing.assert_array_equal(yy.values, xx.values)
-    assert yy.geobox == xx.geobox
+    assert yy.odc.geobox == xx.odc.geobox
     assert yy.nodata == xx.nodata
 
     # write to memory 2
-    bb = to_cog(xx)
+    bb = to_cog(xx)  # Test of deprecated function
     assert isinstance(bb, bytes)
     path = pp / "cog2.tiff"
     with open(str(path), "wb") as f:
@@ -153,11 +153,11 @@ def test_cog_mem(tmpdir, shape):
 
     yy = rio_slurp_xarray(path)
     np.testing.assert_array_equal(yy.values, xx.values)
-    assert yy.geobox == xx.geobox
+    assert yy.odc.geobox == xx.odc.geobox
     assert yy.nodata == xx.nodata
 
     # write to memory 3 -- no overviews
-    bb = to_cog(xx, overview_levels=[])
+    bb = to_cog(xx, overview_levels=[])  # Test of deprecated function
     assert isinstance(bb, bytes)
     path = pp / "cog3.tiff"
     with open(str(path), "wb") as f:
@@ -165,7 +165,7 @@ def test_cog_mem(tmpdir, shape):
 
     yy = rio_slurp_xarray(path)
     np.testing.assert_array_equal(yy.values, xx.values)
-    assert yy.geobox == xx.geobox
+    assert yy.odc.geobox == xx.odc.geobox
     assert yy.nodata == xx.nodata
 
 
@@ -174,7 +174,7 @@ def test_cog_mem_dask(tmpdir):
     xx, ds = gen_test_data(pp, dask=True)
 
     # write to memory 1
-    bb = write_cog(xx, ":mem:")
+    bb = write_cog(xx, ":mem:")  # Test of deprecated method
     assert isinstance(bb, Delayed)
     bb = bb.compute()
     assert isinstance(bb, bytes)
@@ -185,11 +185,11 @@ def test_cog_mem_dask(tmpdir):
 
     yy = rio_slurp_xarray(path)
     np.testing.assert_array_equal(yy.values, xx.values)
-    assert yy.geobox == xx.geobox
+    assert yy.odc.geobox == xx.odc.geobox
     assert yy.nodata == xx.nodata
 
     # write to memory 2
-    bb = to_cog(xx)
+    bb = to_cog(xx)  # Test of deprecated function
     assert isinstance(bb, Delayed)
     bb = bb.compute()
     assert isinstance(bb, bytes)
@@ -199,7 +199,7 @@ def test_cog_mem_dask(tmpdir):
 
     yy = rio_slurp_xarray(path)
     np.testing.assert_array_equal(yy.values, xx.values)
-    assert yy.geobox == xx.geobox
+    assert yy.odc.geobox == xx.odc.geobox
     assert yy.nodata == xx.nodata
 
 
@@ -209,20 +209,20 @@ def test_cog_rgba(tmpdir, use_windowed_writes):
     xx, ds = gen_test_data(pp)
     pix = np.dstack([xx.values] * 4)
     rgba = xr.DataArray(pix, attrs=xx.attrs, dims=("y", "x", "band"), coords=xx.coords)
-    assert rgba.geobox == xx.geobox
-    assert rgba.shape[:2] == rgba.geobox.shape
+    assert rgba.odc.geobox == xx.odc.geobox
+    assert rgba.shape[:2] == rgba.odc.geobox.shape
 
-    ff = write_cog(rgba, pp / "cog.tif", use_windowed_writes=use_windowed_writes)
+    ff = write_cog(rgba, pp / "cog.tif", use_windowed_writes=use_windowed_writes)  # Test of deprecated function
     yy = rio_slurp_xarray(ff)
 
-    assert yy.geobox == rgba.geobox
+    assert yy.odc.geobox == rgba.odc.geobox
     assert yy.shape == rgba.shape
     np.testing.assert_array_equal(yy.values, rgba.values)
 
     with pytest.raises(ValueError):
-        _write_cog(
+        _write_cog(  # Test of deprecated function
             rgba.values[1:, :, :],
-            rgba.geobox,
+            rgba.odc.geobox,
             ":mem:",
             use_windowed_writes=use_windowed_writes,
         )

@@ -595,7 +595,7 @@ def test_multiband_support_in_datasetsource(example_gdal_path):
     }
 
     # Without new band attribute, default to band number 1
-    d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=['file:///tmp'])
+    d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uri='file:///tmp')
 
     ds = RasterDatasetDataSource(BandInfo(d, 'green'))
 
@@ -611,7 +611,7 @@ def test_multiband_support_in_datasetsource(example_gdal_path):
     # With new 'image.bands.[band].band' attribute
     band_num = 3
     defn['image']['bands']['green']['band'] = band_num
-    d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=['file:///tmp'])
+    d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uri='file:///tmp')
 
     ds = RasterDatasetDataSource(BandInfo(d, 'green'))
 
@@ -636,7 +636,7 @@ def test_netcdf_multi_part():
     }
 
     def ds(uri):
-        d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=[uri])
+        d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uri=uri)
         return RasterDatasetDataSource(BandInfo(d, 'green'))
 
     for i in range(3):

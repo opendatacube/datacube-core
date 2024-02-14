@@ -14,7 +14,7 @@ from pathlib import Path
 from uuid import UUID
 
 from affine import Affine
-from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union
+from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union, Sequence
 
 from urllib.parse import urlparse
 from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
@@ -40,6 +40,8 @@ from odc.geo.geom import intersects, polygon
 from datacube.migration import ODC2DeprecationWarning
 from deprecat import deprecat
 
+from ..utils.uris import pick_uri
+
 _LOG = logging.getLogger(__name__)
 
 DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
@@ -62,10 +64,19 @@ class Dataset:
     :param uris: All active uris for the dataset
     """
 
+    @deprecat(
+        deprecated_args={
+            'uris': {
+                "version": "1.9",
+                "reason": "Multiple locations per dataset are deprecated - prefer passing single uri to uri argument"
+            }
+        }
+    )
     def __init__(self,
                  product: "Product",
                  metadata_doc: Dict[str, Any],
                  uris: Optional[List[str]] = None,
+                 uri: Optional[str] = None,
                  sources: Optional[Mapping[str, 'Dataset']] = None,
                  indexed_by: Optional[str] = None,
                  indexed_time: Optional[datetime] = None,
@@ -80,8 +91,22 @@ class Dataset:
         #: or inside a NetCDF file, and as JSON-B inside the database index.
         self.metadata_doc = metadata_doc
 
+        # Multiple locations are now deprecated as per EP13.
+        # 1.9: Store legacy location lists in a hidden _uris attribute.
+        # 2.0: Remove _uris, only use uri
         #: Active URIs in order from newest to oldest
-        self.uris = uris
+        if uri:
+            # Single URI - preferred
+            self._uris = [uri]
+            self.uri = uri
+        elif uris:
+            # Multiple URIs - deprecated/legacy
+            self._uris = uris
+            self.uri = uris[0]
+        else:
+            # No URI.  May be useful to support non-raster datasets.
+            self._uris = []
+            self.uri = None
 
         #: The datasets that this dataset is derived from (if requested on load).
         self.sources = sources
@@ -95,8 +120,37 @@ class Dataset:
         #: The User who indexed this dataset
         self.indexed_by = indexed_by
         self.indexed_time = indexed_time
-        # When the dataset was archived. Null it not archived.
+        # When the dataset was archived. Null if not archived.
         self.archived_time = archived_time
+
+    @property
+    @deprecat(
+        reason="Multiple locations are now deprecated. Please use the 'uri' attribute instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
+    def uris(self) -> Sequence[str]:
+        """
+        List of active locations, newest to oldest.
+
+        Multiple locations are deprecated, please use 'uri'.
+        """
+        return self._uris
+
+    def legacy_uri(self, schema: str | None = None):
+        """
+        This is a 1.9-2.0 transitional method and will be removed in 2.0.
+
+        If the dataset has only one location, it returns that uri, but if the dataset has multiple locations,
+        it calls various deprecated methods to achieve the legacy behaviour.  It is intended for
+        internal core use only.
+
+        :param schema:
+        :return:
+        """
+        n_locs = len(self._uris)
+        if n_locs <= 1:
+            return self.uri
+        return pick_uri(self._uris, schema)
 
     @property
     @deprecat(
@@ -118,12 +172,14 @@ class Dataset:
     @property
     def local_uri(self) -> Optional[str]:
         """
-        The latest local file uri, if any.
+        Return the uri if it is local, or None.
+
+        Legacy behaviour: The latest local file uri, if any.
         """
-        if self.uris is None:
+        if not self._uris:
             return None
 
-        local_uris = [uri for uri in self.uris if uri.startswith('file:')]
+        local_uris = [uri for uri in self._uris if uri.startswith('file:')]
         if local_uris:
             return local_uris[0]
 
@@ -153,10 +209,10 @@ class Dataset:
 
     @property
     def uri_scheme(self) -> str:
-        if self.uris is None or len(self.uris) == 0:
+        if not self._uris:
             return ''
 
-        url = urlparse(self.uris[0])
+        url = urlparse(self.uri)
         if url.scheme == '':
             return 'file'
         return url.scheme
@@ -313,7 +369,7 @@ class Dataset:
         return hash(self.id)
 
     def __str__(self):
-        str_loc = 'not available' if not self.uris else self.uris[0]
+        str_loc = 'not available' if not self.uri else self.uri
         return "Dataset <id={id} product={type} location={loc}>".format(id=self.id,
                                                                         type=self.product.name,
                                                                         loc=str_loc)
@@ -538,6 +594,11 @@ class Product:
         return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
+    @deprecat(
+        reason="The Grid Workflow is deprecated. This property may return an (optional) odc-geo GridSpec in future.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def grid_spec(self) -> Optional['GridSpec']:
         """
         Grid specification for this product

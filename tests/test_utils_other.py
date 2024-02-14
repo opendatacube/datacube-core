@@ -127,22 +127,22 @@ def test_uri_resolve(base):
 def test_pick_uri():
     f, s, h = ('file://a', 's3://b', 'http://c')
 
-    assert pick_uri([f, s, h]) is f
-    assert pick_uri([s, h, f]) is f
-    assert pick_uri([s, h]) is s
-    assert pick_uri([h, s]) is h
-    assert pick_uri([f, s, h], 'http:') is h
-    assert pick_uri([f, s, h], 's3:') is s
-    assert pick_uri([f, s, h], 'file:') is f
+    assert pick_uri([f, s, h]) is f  # Test of deprecated function
+    assert pick_uri([s, h, f]) is f  # Test of deprecated function
+    assert pick_uri([s, h]) is s  # Test of deprecated function
+    assert pick_uri([h, s]) is h  # Test of deprecated function
+    assert pick_uri([f, s, h], 'http:') is h  # Test of deprecated function
+    assert pick_uri([f, s, h], 's3:') is s  # Test of deprecated function
+    assert pick_uri([f, s, h], 'file:') is f  # Test of deprecated function
 
     with pytest.raises(ValueError):
-        pick_uri([])
+        pick_uri([])  # Test of deprecated function
 
     with pytest.raises(ValueError):
-        pick_uri([f, s, h], 'ftp:')
+        pick_uri([f, s, h], 'ftp:')  # Test of deprecated function
 
     with pytest.raises(ValueError):
-        pick_uri([s, h], 'file:')
+        pick_uri([s, h], 'file:')  # Test of deprecated function
 
 
 @given(integers(min_value=10, max_value=30))

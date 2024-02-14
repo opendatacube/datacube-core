@@ -87,7 +87,7 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
 
     # Add a new uri to a dataset
     new_loc = PurePosixPath(tmpdir.strpath) / 'temp_location' / 'agdc-metadata.yaml'
-    index.datasets.add_location(valid_uuids[0], new_loc.as_uri())
+    index.datasets.add_location(valid_uuids[0], new_loc.as_uri())  # Test of deprecated functionality
 
     results_with_uri = list(index.datasets.search_returning_datasets_light(field_names=('id', 'uris'),
                                                                            product='ls5_nbar_scene',
@@ -128,7 +128,7 @@ def test_index_get_product_time_bounds(index, clirunner, example_ls5_dataset_pat
                                                                         product='ls5_nbar_scene'))
 
     # get time bounds
-    time_bounds = index.datasets.get_product_time_bounds(product='ls5_nbar_scene')
+    time_bounds = index.datasets.get_product_time_bounds(product='ls5_nbar_scene')  # Test of deprecated method
     left = sorted(dataset_times, key=lambda dataset: dataset.time.lower)[0].time.lower
     right = sorted(dataset_times, key=lambda dataset: dataset.time.upper)[-1].time.upper
 
