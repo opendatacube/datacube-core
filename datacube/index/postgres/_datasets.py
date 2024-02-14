@@ -37,7 +37,6 @@ _LOG = logging.getLogger(__name__)
 class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     """
     :type _db: datacube.drivers.postgres._connections.PostgresDb
-    :type types: datacube.index._products.ProductResource
     """
 
     def __init__(self, db, index):
@@ -322,7 +321,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         _LOG.info("Updating dataset %s", dataset.id)
 
-        product = self.types.get_by_name(dataset.product.name)
+        product = self.products.get_by_name(dataset.product.name)
         with self._db_connection(transaction=True) as transaction:
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
                 raise ValueError("Failed to update dataset %s..." % dataset.id)
@@ -562,9 +561,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         else:
             kwargs = {}
 
-        kwargs["product"] = product or self.types.get(dataset_res.dataset_type_ref)
-
         return Dataset(
+            product=product or self.products.get(dataset_res.dataset_type_ref),
             metadata_doc=dataset_res.metadata,
             indexed_by=dataset_res.added_by if full_info else None,
             indexed_time=dataset_res.added if full_info else None,
@@ -691,17 +689,17 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def _get_dataset_types(self, q):
         types = set()
         if 'product' in q.keys():
-            types.add(self.types.get_by_name(q['product']))
+            types.add(self.products.get_by_name(q['product']))
         else:
             # Otherwise search any metadata type that has all the given search fields.
-            types = self.types.get_with_fields(tuple(q.keys()))
+            types = self.products.get_with_fields(tuple(q.keys()))
             if not types:
                 raise ValueError('No type of dataset has fields: {}'.format(q.keys()))
 
         return types
 
     def _get_product_queries(self, query):
-        for product, q in self.types.search_robust(**query):
+        for product, q in self.products.search_robust(**query):
             q['dataset_type_id'] = product.id
             yield q, product
 
