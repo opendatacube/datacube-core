@@ -725,7 +725,7 @@ class PostgisDbAPI:
         return res.rowcount, requested - res.rowcount
 
     @staticmethod
-    def search_unique_datasets_query(expressions, select_fields, limit):
+    def search_unique_datasets_query(expressions, select_fields, limit, archived: bool | None = False):
         """
         'unique' here refer to that the query results do not contain datasets
         having the same 'id' more than once.
@@ -738,7 +738,7 @@ class PostgisDbAPI:
         # TODO
         raise NotImplementedError()
 
-    def search_unique_datasets(self, expressions, select_fields=None, limit=None):
+    def search_unique_datasets(self, expressions, select_fields=None, limit=None, archived: bool | None = False):
         """
         Processes a search query without duplicating datasets.
 
@@ -747,7 +747,7 @@ class PostgisDbAPI:
         dataset_location or dataset_source tables. Joining with other tables would not
         result in multiple records per dataset due to the direction of cardinality.
         """
-        select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
+        select_query = self.search_unique_datasets_query(expressions, select_fields, limit, archived=archived)
 
         return self._connection.execute(select_query)
 

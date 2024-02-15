@@ -834,7 +834,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         raise NotImplementedError("Sorry Temporal Extent by dataset ids is not supported in postgres driver.")
 
     # pylint: disable=redefined-outer-name
-    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
+    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None,
+                                        archived: bool | None = False,
+                                        **query):
         """
         This is a dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.
@@ -880,7 +882,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 results = connection.search_unique_datasets(
                     query_exprs,
                     select_fields=select_fields,
-                    limit=limit
+                    limit=limit,
+                    archived=archived
                 )
 
             for result in results:

@@ -719,7 +719,7 @@ class PostgresDbAPI(object):
         return res.rowcount, requested - res.rowcount
 
     @staticmethod
-    def search_unique_datasets_query(expressions, select_fields, limit):
+    def search_unique_datasets_query(expressions, select_fields, limit, archived: bool | None  = False):
         """
         'unique' here refer to that the query results do not contain datasets
         having the same 'id' more than once.
@@ -769,7 +769,12 @@ class PostgresDbAPI(object):
         select_fields_ = [field for field in select_fields if field.name not in {'uri', 'uris'}]
 
         from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields_)
-        where_expr = and_(DATASET.c.archived == None, *raw_expressions)
+        if archived:
+            where_expr = and_(DATASET.c.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            where_expr = and_(DATASET.c.archived.is_(None), *raw_expressions)
+        if archived:
+            where_expr = and_(*raw_expressions)
 
         return (
             select(
@@ -783,7 +788,7 @@ class PostgresDbAPI(object):
             )
         )
 
-    def search_unique_datasets(self, expressions, select_fields=None, limit=None):
+    def search_unique_datasets(self, expressions, select_fields=None, limit=None, archived: bool | None = False):
         """
         Processes a search query without duplicating datasets.
 
@@ -793,7 +798,7 @@ class PostgresDbAPI(object):
         result in multiple records per dataset due to the direction of cardinality.
         """
 
-        select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
+        select_query = self.search_unique_datasets_query(expressions, select_fields, limit, archivedd=archived)
 
         return self._connection.execute(select_query)
 
