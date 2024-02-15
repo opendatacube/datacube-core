@@ -8,7 +8,7 @@ What's New
 v1.9.next
 =========
 
-- Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`, :pull:`1532`)
+- Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`, :pull:`1532`, :pull:`1548`)
 - External Lineage API (:pull:`1401`)
 - Add lineage support to index clone operation (:pull:`1429`)
 - Migrate to SQLAlchemy 2.0 (:pull:`1432`)
@@ -44,6 +44,7 @@ v1.8.next
   timezone instead of pytz when converting timestamps; automatically update copyright years (:pull:`1527`)
 - Update github-Dockerhub credential-passing mechanism. (:pull:`1528`)
 - Tweak ``list_products`` logic for getting crs and resolution values (:pull:`1535`)
+- Add new ODC Cheatsheet reference doc to Data Access & Analysis documentation page (:pull:`1543`)
 
 v1.8.17 (8th November 2023)
 ===========================

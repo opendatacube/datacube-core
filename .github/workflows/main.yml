@@ -40,7 +40,7 @@ jobs:
           echo "push_pypi=yes" >> $GITHUB_OUTPUT
         fi
 
-    - uses: dorny/paths-filter@v2
+    - uses: dorny/paths-filter@v3
       id: changes
       if: |
         github.event_name == 'push'
@@ -175,7 +175,7 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PyPiToken }}
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
         fail_ci_if_error: false
