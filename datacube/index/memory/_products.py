@@ -179,5 +179,5 @@ class ProductResource(AbstractProductResource):
     def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)
-        ids = self._index.datasets.by_product.get(product.name, [])
+        ids = self._index.datasets._by_product.get(product.name, [])
         return self._index.datasets.temporal_extent(ids)
