@@ -33,7 +33,7 @@ v1.9.next
 - Add product argument to spatial_extent method, as per EP13. (:pull:`1539`)
 - Index driver API type hint cleanup. (:pull:`1541`)
 - Deprecate multiple locations. (:pull:`1546`)
-- Deprecate search_eager and search_summaries and add `archived` arg to all dataset search/count methods. (:pull:`1549`)
+- Deprecate search_eager and search_summaries and add `archived` arg to all dataset search/count methods. (:pull:`1550`)
 
 
 v1.8.next

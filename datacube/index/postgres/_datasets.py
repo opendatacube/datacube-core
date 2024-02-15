@@ -15,7 +15,6 @@ from typing import Iterable, List, Union, Mapping, Any, Optional
 from uuid import UUID
 from deprecat import deprecat
 
-from datacube.migration import ODC2DeprecationWarning
 from datacube.drivers.postgres._fields import SimpleDocField
 from datacube.drivers.postgres._schema import DATASET
 from datacube.index.abstract import (AbstractDatasetResource, DatasetSpatialMixin, DSID,
@@ -751,7 +750,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     select_fields = tuple(
                         dataset_fields[field_name]
                         for field_name in select_field_names
-                        if field_name in dataset_fields # and not dataset_fields[field_name].affects_row_selection
+                        if field_name in dataset_fields  # and not dataset_fields[field_name].affects_row_selection
                     )
             with self._db_connection() as connection:
                 yield (product,
@@ -976,9 +975,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             custom_exprs.append(fields.as_expression(custom_field, custom_query[key]))
 
         return custom_exprs
-
-    def spatial_extent(self, ids=None, product=None, crs=None):
-        return None
 
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
         product_search_key = [product.name]

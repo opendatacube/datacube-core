@@ -719,7 +719,7 @@ class PostgresDbAPI(object):
         return res.rowcount, requested - res.rowcount
 
     @staticmethod
-    def search_unique_datasets_query(expressions, select_fields, limit, archived: bool | None  = False):
+    def search_unique_datasets_query(expressions, select_fields, limit, archived: bool | None = False):
         """
         'unique' here refer to that the query results do not contain datasets
         having the same 'id' more than once.

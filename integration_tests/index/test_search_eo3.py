@@ -471,7 +471,6 @@ def test_search_returning_eo3(index: Index,
     assert ls8_eo3_dataset.id in (result.id for result in results)
 
 
-
 def test_search_returning_rows_eo3(index,
                                    eo3_ls8_dataset_doc,
                                    eo3_ls8_dataset2_doc,
@@ -591,11 +590,10 @@ def test_search_special_fields_eo3(index: Index,
 
 def test_search_by_uri_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dataset_doc):
     datasets = list(index.datasets.search(product=ls8_eo3_dataset.product.name,
-                                           uri=eo3_ls8_dataset_doc[1]))
+                                          uri=eo3_ls8_dataset_doc[1]))
     assert len(datasets) == 1
-
     datasets = list(index.datasets.search(product=ls8_eo3_dataset.product.name,
-                                           uri='file:///x/yz'))
+                                          uri='file:///x/yz'))
     assert len(datasets) == 0
 
 

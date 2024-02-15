@@ -569,7 +569,9 @@ class DatasetResource(AbstractDatasetResource):
             self._search_flat(limit=limit, source_filter=source_filter, archived=archived, **query)
         )
 
-    def search_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
+    def search_by_product(self,
+                          archived: bool | None = False,
+                          **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
         return self._search_grouped(archived=archived, **query)  # type: ignore[arg-type]
 
     def search_returning(self,
