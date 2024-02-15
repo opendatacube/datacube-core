@@ -278,6 +278,33 @@ def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -
     datasets = list(datasets)
     assert len(datasets) == 0
 
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}},
+        archived=None
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 1
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}},
+        archived=True
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 0
+
+    index.datasets.archive([pseudo_ls8_dataset.id])
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}},
+        archived=True
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 1
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}},
+        archived=False
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 0
+
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_day(index: Index, pseudo_ls8_dataset: Dataset) -> None:

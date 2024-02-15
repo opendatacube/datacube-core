@@ -577,7 +577,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return (self._make(dataset, product=product) for dataset in query_result)
 
-    def search_by_metadata(self, metadata):
+    def search_by_metadata(self, metadata, archived: bool | None = False):
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -587,7 +587,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: list[Dataset]
         """
         with self._db_connection() as connection:
-            for dataset in self._make_many(connection.search_datasets_by_metadata(metadata)):
+            for dataset in self._make_many(connection.search_datasets_by_metadata(metadata, archived)):
                 yield dataset
 
     def search(self, limit=None, source_filter=None, **query):

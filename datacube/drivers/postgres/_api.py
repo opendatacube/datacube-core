@@ -474,17 +474,22 @@ class PostgresDbAPI(object):
 
         return self._connection.execute(query).fetchall()
 
-    def search_datasets_by_metadata(self, metadata):
+    def search_datasets_by_metadata(self, metadata, archived: bool | None):
         """
         Find any datasets that have the given metadata.
 
         :type metadata: dict
         :rtype: dict
         """
+
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
-        return self._connection.execute(
-            select(*_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
-        ).fetchall()
+        where_clause = DATASET.c.metadata.contains(metadata)
+        if archived:
+            where_clause = and_(where_clause, DATASET.c.archived.is_not(None))
+        elif archived is not None:
+            where_clause = and_(where_clause, DATASET.c.archived.is_(None))
+        query = select(*_DATASET_SELECT_FIELDS).where(where_clause)
+        return self._connection.execute(query).fetchall()
 
     def search_products_by_metadata(self, metadata):
         """

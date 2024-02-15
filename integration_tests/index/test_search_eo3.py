@@ -109,6 +109,36 @@ def test_search_dataset_by_metadata_eo3(index: Index, ls8_eo3_dataset: Dataset) 
     )
     datasets = list(datasets)
     assert len(datasets) == 0
+    datasets = index.datasets.search_by_metadata(
+        {"properties": {"eo:platform": "landsat-8", "eo:instrument": "OLI_TIRS"}},
+        archived=None
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+    datasets = index.datasets.search_by_metadata(
+        {"properties": {"eo:platform": "landsat-8", "eo:instrument": "OLI_TIRS"}},
+        archived=True
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 0
+
+    index.datasets.archive([ls8_eo3_dataset.id])
+
+    datasets = index.datasets.search_by_metadata(
+        {"properties": {"eo:platform": "landsat-8", "eo:instrument": "OLI_TIRS"}},
+        archived=None
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+    datasets = index.datasets.search_by_metadata(
+        {"properties": {"eo:platform": "landsat-8", "eo:instrument": "OLI_TIRS"}},
+        archived=True
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
 
 
 def test_search_day_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:

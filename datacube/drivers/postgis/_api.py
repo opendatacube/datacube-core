@@ -544,7 +544,7 @@ class PostgisDbAPI:
     def get_dataset_sources(self, dataset_id):
         raise NotImplementedError
 
-    def search_datasets_by_metadata(self, metadata):
+    def search_datasets_by_metadata(self, metadata, archived):
         """
         Find any datasets that have the given metadata.
 
@@ -552,9 +552,13 @@ class PostgisDbAPI:
         :rtype: dict
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
-        return self._connection.execute(
-            select(*_dataset_select_fields()).where(Dataset.metadata_doc.contains(metadata))
-        ).fetchall()
+        where = Dataset.metadata_doc.contains(metadata)
+        if archived:
+            where = and_(where, Dataset.archived.is_not(None))
+        elif archived is not None:
+            where = and_(where, Dataset.archived.is_(None))
+        query = select(*_dataset_select_fields()).where(where)
+        return self._connection.execute(query).fetchall()
 
     def search_products_by_metadata(self, metadata):
         """

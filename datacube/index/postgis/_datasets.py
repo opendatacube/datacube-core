@@ -22,7 +22,8 @@ from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fie
 from datacube.utils.uris import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from datacube.migration import ODC2DeprecationWarning
-from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
+from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple, \
+    JsonDict
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product, Range, LineageTree
 from datacube.model.fields import Field
@@ -602,7 +603,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return (self._make(dataset, product=product) for dataset in query_result)
 
-    def search_by_metadata(self, metadata):
+    def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False):
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -612,7 +613,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: list[Dataset]
         """
         with self._db_connection() as connection:
-            for dataset in self._make_many(connection.search_datasets_by_metadata(metadata)):
+            for dataset in self._make_many(connection.search_datasets_by_metadata(metadata, archived)):
                 yield dataset
 
     def search(self, limit=None, **query):
