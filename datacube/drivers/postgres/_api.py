@@ -872,13 +872,19 @@ class PostgresDbAPI(object):
 
         return self._connection.execute(final_query)
 
-    def count_datasets(self, expressions):
+    def count_datasets(self, expressions, archived: bool | None = False):
         """
         :type expressions: tuple[datacube.drivers.postgres._fields.PgExpression]
         :rtype: int
         """
 
         raw_expressions = self._alchemify_expressions(expressions)
+        if archived:
+            where_exprs = and_(DATASET.c.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            where_exprs = and_(DATASET.c.archived.is_(None), *raw_expressions)
+        else:
+            where_exprs = and_(*raw_expressions)
 
         select_query = (
             select(
@@ -886,7 +892,7 @@ class PostgresDbAPI(object):
             ).select_from(
                 self._from_expression(DATASET, expressions)
             ).where(
-                and_(DATASET.c.archived == None, *raw_expressions)
+                where_exprs
             )
         )
 

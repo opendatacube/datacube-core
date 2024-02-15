@@ -825,21 +825,25 @@ class PostgisDbAPI:
         )
         return self._connection.execute(query)
 
-    def count_datasets(self, expressions):
+    def count_datasets(self, expressions, archived: bool | None = False):
         """
         :type expressions: tuple[datacube.drivers.postgis._fields.PgExpression]
         :rtype: int
         """
 
         raw_expressions = self._alchemify_expressions(expressions)
+        if archived:
+            where_expressions = and_(Dataset.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            where_expressions = and_(Dataset.archived.is_(None), *raw_expressions)
+        else:
+            where_expressions = and_(*raw_expressions)
 
         select_query = (
             select(
                 func.count(Dataset.id)
             ).where(
-                Dataset.archived == None
-            ).where(
-                *raw_expressions
+                where_expressions
             )
         )
         return self._connection.scalar(select_query)

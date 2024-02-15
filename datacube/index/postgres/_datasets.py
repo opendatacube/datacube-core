@@ -645,7 +645,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 }
                 yield result_type(**kwargs)
 
-    def count(self, **query):
+    def count(self, archived: bool | None = False, **query):
         """
         Perform a search, returning count of results.
 
@@ -654,12 +654,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         # This may be optimised into one query in the future.
         result = 0
-        for product_type, count in self._do_count_by_product(query):
+        for product_type, count in self._do_count_by_product(query, archived=archived):
             result += count
 
         return result
 
-    def count_by_product(self, **query):
+    def count_by_product(self, archived: bool | None = False, **query):
         """
         Perform a search, returning a count of for each matching product type.
 
@@ -667,7 +667,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :returns: Sequence of (product, count)
         :rtype: __generator[(Product,  int)]]
         """
-        return self._do_count_by_product(query)
+        return self._do_count_by_product(query, archived=archived)
 
     def count_by_product_through_time(self, period, **query):
         """
@@ -764,14 +764,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                            archived=archived
                        ))
 
-    def _do_count_by_product(self, query):
+    def _do_count_by_product(self, query, archived: bool | None = False):
         product_queries = self._get_product_queries(query)
 
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:
-                count = connection.count_datasets(query_exprs)
+                count = connection.count_datasets(query_exprs, archived=archived)
             if count > 0:
                 yield product, count
 

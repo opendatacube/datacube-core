@@ -710,6 +710,25 @@ def test_count_by_product_searches_eo3(index: Index,
     ))
     assert products == ()
 
+    index.datasets.archive([ls8_eo3_dataset.id])
+    products = tuple(index.datasets.count_by_product(
+        product=ls8_eo3_dataset.product.name,
+        platform='landsat-8'
+    ))
+    assert products == ((ls8_eo3_dataset.product, 1),)
+    products = tuple(index.datasets.count_by_product(
+        archived=True,
+        product=ls8_eo3_dataset.product.name,
+        platform='landsat-8'
+    ))
+    assert products == ((ls8_eo3_dataset.product, 1),)
+    products = tuple(index.datasets.count_by_product(
+        archived=None,
+        product=ls8_eo3_dataset.product.name,
+        platform='landsat-8'
+    ))
+    assert products == ((ls8_eo3_dataset.product, 2),)
+
 
 def test_count_time_groups(index: Index,
                            ls8_eo3_dataset: Dataset) -> None:
