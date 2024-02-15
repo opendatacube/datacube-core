@@ -589,6 +589,16 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for dataset in self._make_many(connection.search_datasets_by_metadata(metadata, archived)):
                 yield dataset
 
+    @deprecat(
+        deprecated_args={
+            "source_filter": {
+                "reason": "Filtering by source metadata is deprecated and will be removed in future.",
+                "version": "1.9.0",
+                "category": ODC2DeprecationWarning
+
+            }
+        }
+    )
     def search(self, limit=None, source_filter=None, archived: bool | None = False, **query):
         """
         Perform a search, returning results as Dataset objects.

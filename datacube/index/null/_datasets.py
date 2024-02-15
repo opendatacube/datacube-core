@@ -130,6 +130,16 @@ class DatasetResource(AbstractDatasetResource):
     def search_by_metadata(self, metadata, archived=False):
         return []
 
+    @deprecat(
+        deprecated_args={
+            "source_filter": {
+                "reason": "Filtering by source metadata is deprecated and will be removed in future.",
+                "version": "1.9.0",
+                "category": ODC2DeprecationWarning
+
+            }
+        }
+    )
     def search(self, limit=None, archived=False, **query):
         return []
 
