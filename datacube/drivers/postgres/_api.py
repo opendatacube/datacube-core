@@ -798,7 +798,7 @@ class PostgresDbAPI(object):
         result in multiple records per dataset due to the direction of cardinality.
         """
 
-        select_query = self.search_unique_datasets_query(expressions, select_fields, limit, archivedd=archived)
+        select_query = self.search_unique_datasets_query(expressions, select_fields, limit, archived=archived)
 
         return self._connection.execute(select_query)
 
