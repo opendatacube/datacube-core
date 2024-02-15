@@ -325,6 +325,34 @@ def test_search_limit_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_datas
     assert len(datasets) == 3
 
 
+def test_search_archived_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset):
+    prod = ls8_eo3_dataset.product.name
+    datasets = list(index.datasets.search(archived=False, product=prod))
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search(archived=None, product=prod))
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search(archived=True, product=prod))
+    assert len(datasets) == 0
+
+    index.datasets.archive([ls8_eo3_dataset.id])
+
+    datasets = list(index.datasets.search(archived=False, product=prod))
+    assert len(datasets) == 1
+    datasets = list(index.datasets.search(archived=None, product=prod))
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search(archived=True, product=prod))
+    assert len(datasets) == 1
+
+    index.datasets.archive([ls8_eo3_dataset2.id])
+
+    datasets = list(index.datasets.search(archived=False, product=prod))
+    assert len(datasets) == 0
+    datasets = list(index.datasets.search(archived=None, product=prod))
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search(archived=True, product=prod))
+    assert len(datasets) == 2
+
+
 def test_search_or_expressions_eo3(index: Index,
                                    ls8_eo3_dataset: Dataset,
                                    ls8_eo3_dataset2: Dataset,

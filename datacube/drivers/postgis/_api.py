@@ -583,8 +583,8 @@ class PostgisDbAPI:
 
     def search_datasets_query(self,
                               expressions, source_exprs=None,
-                              select_fields=None, with_source_ids=False,
-                              limit=None, geom=None):
+                              select_fields=None, with_source_ids=False, limit=None, geom=None,
+                              archived: bool | None = False):
         """
         :type expressions: Tuple[Expression]
         :type source_exprs: Tuple[Expression]
@@ -627,7 +627,15 @@ class PostgisDbAPI:
 
         raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
         join_tables = PostgisDbAPI._join_tables(expressions, select_fields)
-        where_expr = and_(Dataset.archived == None, *raw_expressions)
+        if archived:
+            # True: Return archived datasets ONLY
+            where_expr = and_(Dataset.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            # False: Return active datasets ONLY
+            where_expr = and_(Dataset.archived.is_(None), *raw_expressions)
+        else:
+            # None: Return BOTH active and archived datasets
+            where_expr = and_(*raw_expressions)
         query = select(*select_columns).select_from(Dataset)
         for joins in join_tables:
             query = query.join(*joins)
@@ -639,8 +647,8 @@ class PostgisDbAPI:
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
-                        with_source_ids=False, limit=None,
-                        geom=None):
+                        with_source_ids=False, limit=None, geom=None,
+                        archived: bool | None = False):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgis._fields.PgField]
@@ -648,7 +656,7 @@ class PostgisDbAPI:
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids,
-                                                  limit, geom=geom)
+                                                  limit, geom=geom, archived=archived)
         str_qry = str(select_query)
         _LOG.debug("search_datasets SQL: %s", str_qry)
         return self._connection.execute(select_query)

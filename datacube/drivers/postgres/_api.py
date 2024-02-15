@@ -514,7 +514,8 @@ class PostgresDbAPI(object):
 
     @staticmethod
     def search_datasets_query(expressions, source_exprs=None,
-                              select_fields=None, with_source_ids=False, limit=None):
+                              select_fields=None, with_source_ids=False, limit=None,
+                              archived: bool | None = False):
         """
         :type expressions: Tuple[Expression]
         :type source_exprs: Tuple[Expression]
@@ -548,7 +549,15 @@ class PostgresDbAPI(object):
 
         raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
         from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields)
-        where_expr = and_(DATASET.c.archived == None, *raw_expressions)
+        if archived:
+            # True: Archived datasets only:
+            where_expr = and_(DATASET.c.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            # False/default:  Active datasets only:
+            where_expr = and_(DATASET.c.archived.is_(None), *raw_expressions)
+        else:
+            # None: both active and archived datasets
+            where_expr = and_(*raw_expressions)
 
         if not source_exprs:
             return (
@@ -595,6 +604,12 @@ class PostgresDbAPI(object):
                 )
             )
         )
+        if archived:
+            where_expr = and_(DATASET.c.archived.is_not(None), *PostgresDbAPI._alchemify_expressions(source_exprs))
+        elif archived is not None:
+            where_expr = and_(DATASET.c.archived.is_(None), *PostgresDbAPI._alchemify_expressions(source_exprs))
+        else:
+            where_expr = and_(*PostgresDbAPI._alchemify_expressions(source_exprs))
 
         return (
             select(
@@ -606,7 +621,7 @@ class PostgresDbAPI(object):
             ).select_from(
                 recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
             ).where(
-                and_(DATASET.c.archived == None, *PostgresDbAPI._alchemify_expressions(source_exprs))
+                where_expr
             ).limit(
                 limit
             )
@@ -614,14 +629,16 @@ class PostgresDbAPI(object):
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
-                        with_source_ids=False, limit=None):
+                        with_source_ids=False, limit=None,
+                        archived: bool | None = False):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgres._fields.PgField]
         :type expressions: tuple[datacube.drivers.postgres._fields.PgExpression]
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
-                                                  select_fields, with_source_ids, limit)
+                                                  select_fields, with_source_ids, limit,
+                                                  archived=archived)
         return self._connection.execute(select_query)
 
     def bulk_simple_dataset_search(self, products=None, batch_size=0):
