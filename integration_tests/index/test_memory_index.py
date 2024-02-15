@@ -566,6 +566,13 @@ def test_mem_ds_search_by_metadata(mem_eo3_data: tuple):
     assert len(lds) == 2
     lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=True))
     assert len(lds) == 0
+    dc.index.datasets.archive([ls8_id, wo_id])
+    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}))
+    assert len(lds) == 0
+    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=None))
+    assert len(lds) == 2
+    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=True))
+    assert len(lds) == 2
 
 
 def test_mem_ds_count_product_through_time(mem_eo3_data: tuple):

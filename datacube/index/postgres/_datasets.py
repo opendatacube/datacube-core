@@ -760,7 +760,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     select_fields = tuple(
                         dataset_fields[field_name]
                         for field_name in select_field_names
-                        if field_name in dataset_fields  # and not dataset_fields[field_name].affects_row_selection
+                        if field_name in dataset_fields
                     )
             with self._db_connection() as connection:
                 yield (product,

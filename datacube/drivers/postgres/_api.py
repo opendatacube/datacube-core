@@ -526,6 +526,8 @@ class PostgresDbAPI(object):
         """
 
         if select_fields:
+            # Expand select fields, inserting placeholder columns selections for fields that aren't defined for
+            # this product query.
             select_columns = tuple(
                 f.alchemy_expression.label(f.name) if f is not None else None
                 for f in select_fields
@@ -967,6 +969,7 @@ class PostgresDbAPI(object):
         if expressions:
             join_tables.update(expression.field.required_alchemy_table for expression in expressions)
         if fields:
+            # Ignore placeholder columns
             join_tables.update(field.required_alchemy_table for field in fields if field)
         join_tables.discard(source_table)
 

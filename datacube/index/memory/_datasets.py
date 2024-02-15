@@ -437,12 +437,18 @@ class DatasetResource(AbstractDatasetResource):
         return True
 
     def search_by_metadata(self, metadata: Mapping[str, QueryField], archived: bool | None = False):
-        for ds in self._active_by_id.values():
+        if archived:
+            # True: Return archived datasets only
+            dss = self._archived_by_id.values()
+        elif archived is not None:
+            # False: Return active datasets only
+            dss = self._active_by_id.values()
+        else:
+            # True: Return archived datasets only
+            dss = chain(self._active_by_id.values(), self._archived_by_id.values())
+        for ds in dss:
             if metadata_subset(metadata, ds.metadata_doc):
-                if archived is None:
-                    yield ds
-                elif archived and ds.is_archived or not (archived or ds.is_archived):
-                    yield ds
+                yield ds
 
     RET_FORMAT_DATASETS = 0
     RET_FORMAT_PRODUCT_GROUPED = 1

@@ -766,6 +766,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     select_fields = tuple(field for name, field in dataset_fields.items()
                                           if not field.affects_row_selection)
                 else:
+                    # Allow place holder columns for requested fields that are not
+                    # valid for this product query.
                     select_fields = tuple(dataset_fields[field_name]
                                           for field_name in select_field_names
                                           if field_name in dataset_fields)
