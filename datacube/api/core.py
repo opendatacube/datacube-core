@@ -880,12 +880,13 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
         if isinstance(like, GeoBox):
             return like
 
-        # For `odc-geo` GeoBox compatibility: if `.geobox` does not exist
-        # as an attribute, use `.compat` to produce a Datacube-style GeoBox
-        try:
-            return like.geobox
-        except AttributeError:
+        # For `odc-geo` GeoBox compatibility: use "compat" attribute if
+        # it exists to convert to a Datacube-style GeoBox
+        if hasattr(like, "compat"):
             return like.compat
+
+        return like.geobox
+
 
     if load_hints:
         if output_crs is None:
