@@ -544,7 +544,7 @@ class PostgisDbAPI:
     def get_dataset_sources(self, dataset_id):
         raise NotImplementedError
 
-    def search_datasets_by_metadata(self, metadata):
+    def search_datasets_by_metadata(self, metadata, archived):
         """
         Find any datasets that have the given metadata.
 
@@ -552,9 +552,13 @@ class PostgisDbAPI:
         :rtype: dict
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
-        return self._connection.execute(
-            select(*_dataset_select_fields()).where(Dataset.metadata_doc.contains(metadata))
-        ).fetchall()
+        where = Dataset.metadata_doc.contains(metadata)
+        if archived:
+            where = and_(where, Dataset.archived.is_not(None))
+        elif archived is not None:
+            where = and_(where, Dataset.archived.is_(None))
+        query = select(*_dataset_select_fields()).where(where)
+        return self._connection.execute(query).fetchall()
 
     def search_products_by_metadata(self, metadata):
         """
@@ -579,8 +583,8 @@ class PostgisDbAPI:
 
     def search_datasets_query(self,
                               expressions, source_exprs=None,
-                              select_fields=None, with_source_ids=False,
-                              limit=None, geom=None):
+                              select_fields=None, with_source_ids=False, limit=None, geom=None,
+                              archived: bool | None = False):
         """
         :type expressions: Tuple[Expression]
         :type source_exprs: Tuple[Expression]
@@ -623,7 +627,15 @@ class PostgisDbAPI:
 
         raw_expressions = PostgisDbAPI._alchemify_expressions(expressions)
         join_tables = PostgisDbAPI._join_tables(expressions, select_fields)
-        where_expr = and_(Dataset.archived == None, *raw_expressions)
+        if archived:
+            # True: Return archived datasets ONLY
+            where_expr = and_(Dataset.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            # False: Return active datasets ONLY
+            where_expr = and_(Dataset.archived.is_(None), *raw_expressions)
+        else:
+            # None: Return BOTH active and archived datasets
+            where_expr = and_(*raw_expressions)
         query = select(*select_columns).select_from(Dataset)
         for joins in join_tables:
             query = query.join(*joins)
@@ -635,8 +647,8 @@ class PostgisDbAPI:
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
-                        with_source_ids=False, limit=None,
-                        geom=None):
+                        with_source_ids=False, limit=None, geom=None,
+                        archived: bool | None = False):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgis._fields.PgField]
@@ -644,7 +656,7 @@ class PostgisDbAPI:
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids,
-                                                  limit, geom=geom)
+                                                  limit, geom=geom, archived=archived)
         str_qry = str(select_query)
         _LOG.debug("search_datasets SQL: %s", str_qry)
         return self._connection.execute(select_query)
@@ -713,7 +725,7 @@ class PostgisDbAPI:
         return res.rowcount, requested - res.rowcount
 
     @staticmethod
-    def search_unique_datasets_query(expressions, select_fields, limit):
+    def search_unique_datasets_query(expressions, select_fields, limit, archived: bool | None = False):
         """
         'unique' here refer to that the query results do not contain datasets
         having the same 'id' more than once.
@@ -726,7 +738,7 @@ class PostgisDbAPI:
         # TODO
         raise NotImplementedError()
 
-    def search_unique_datasets(self, expressions, select_fields=None, limit=None):
+    def search_unique_datasets(self, expressions, select_fields=None, limit=None, archived: bool | None = False):
         """
         Processes a search query without duplicating datasets.
 
@@ -735,7 +747,7 @@ class PostgisDbAPI:
         dataset_location or dataset_source tables. Joining with other tables would not
         result in multiple records per dataset due to the direction of cardinality.
         """
-        select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
+        select_query = self.search_unique_datasets_query(expressions, select_fields, limit, archived=archived)
 
         return self._connection.execute(select_query)
 
@@ -813,21 +825,25 @@ class PostgisDbAPI:
         )
         return self._connection.execute(query)
 
-    def count_datasets(self, expressions):
+    def count_datasets(self, expressions, archived: bool | None = False):
         """
         :type expressions: tuple[datacube.drivers.postgis._fields.PgExpression]
         :rtype: int
         """
 
         raw_expressions = self._alchemify_expressions(expressions)
+        if archived:
+            where_expressions = and_(Dataset.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            where_expressions = and_(Dataset.archived.is_(None), *raw_expressions)
+        else:
+            where_expressions = and_(*raw_expressions)
 
         select_query = (
             select(
                 func.count(Dataset.id)
             ).where(
-                Dataset.archived == None
-            ).where(
-                *raw_expressions
+                where_expressions
             )
         )
         return self._connection.scalar(select_query)

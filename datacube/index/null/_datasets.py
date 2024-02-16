@@ -127,30 +127,46 @@ class DatasetResource(AbstractDatasetResource):
     def restore_location(self, id_, uri):
         raise NotImplementedError()
 
-    def search_by_metadata(self, metadata):
+    def search_by_metadata(self, metadata, archived=False):
         return []
 
-    def search(self, limit=None, **query):
+    @deprecat(
+        deprecated_args={
+            "source_filter": {
+                "reason": "Filtering by source metadata is deprecated and will be removed in future.",
+                "version": "1.9.0",
+                "category": ODC2DeprecationWarning
+
+            }
+        }
+    )
+    def search(self, limit=None, archived=False, **query):
         return []
 
-    def search_by_product(self, **query):
+    def search_by_product(self, archived=False, **query):
         return []
 
-    def search_returning(self, field_names, limit=None, **query):
+    def search_returning(self, field_names=None, limit=None, archived=False, **query):
         return []
 
-    def count(self, **query):
+    def count(self, archived=False, **query):
         return 0
 
-    def count_by_product(self, **query):
+    def count_by_product(self, archived=False, **query):
         return []
 
-    def count_by_product_through_time(self, period, **query):
+    def count_by_product_through_time(self, period, archived=False, **query):
         return []
 
-    def count_product_through_time(self, period, **query):
+    def count_product_through_time(self, period, archived=False, **query):
         return []
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def search_summaries(self, **query):
         return []
 
@@ -158,8 +174,10 @@ class DatasetResource(AbstractDatasetResource):
         raise KeyError(str(ids))
 
     # pylint: disable=redefined-outer-name
-    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
+    def search_returning_datasets_light(self,
+                                        field_names: tuple,
+                                        custom_offsets=None, limit=None, archived=False, **query):
         return []
 
-    def spatial_extent(self, ids, crs=None):
+    def spatial_extent(self, ids=None, product=None, crs=None):
         return None

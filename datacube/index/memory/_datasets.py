@@ -6,6 +6,9 @@ import datetime
 import logging
 import re
 import warnings
+from itertools import chain
+
+from deprecat import deprecat
 from collections import namedtuple
 from time import monotonic
 from typing import (Any, Callable, Dict, Iterable,
@@ -13,7 +16,6 @@ from typing import (Any, Callable, Dict, Iterable,
                     Optional, Set, Tuple, Union,
                     cast)
 from uuid import UUID
-from deprecat import deprecat
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.index import fields
@@ -35,27 +37,28 @@ class DatasetResource(AbstractDatasetResource):
     def __init__(self, index: AbstractIndex) -> None:
         super().__init__(index)
         # Main dataset index
-        self.by_id: MutableMapping[UUID, Dataset] = {}
+        self._by_id: MutableMapping[UUID, Dataset] = {}
         # Indexes for active and archived datasets
-        self.active_by_id: MutableMapping[UUID, Dataset] = {}
-        self.archived_by_id: MutableMapping[UUID, Dataset] = {}
+        self._active_by_id: MutableMapping[UUID, Dataset] = {}
+        self._archived_by_id: MutableMapping[UUID, Dataset] = {}
         # Lineage indexes:
-        self.derived_from: MutableMapping[UUID, MutableMapping[str, UUID]] = {}
-        self.derivations: MutableMapping[UUID, MutableMapping[str, UUID]] = {}
+        self._derived_from: MutableMapping[UUID, MutableMapping[str, UUID]] = {}
+        self._derivations: MutableMapping[UUID, MutableMapping[str, UUID]] = {}
         # Location registers
-        self.locations: MutableMapping[UUID, List[str]] = {}
-        self.archived_locations: MutableMapping[UUID, List[Tuple[str, datetime.datetime]]] = {}
+        self._locations: MutableMapping[UUID, List[str]] = {}
+        self._archived_locations: MutableMapping[UUID, List[Tuple[str, datetime.datetime]]] = {}
         # Active Index By Product
-        self.by_product: MutableMapping[str, List[UUID]] = {}
+        self._by_product: MutableMapping[str, set[UUID]] = {}
+        self._archived_by_product: MutableMapping[str, set[UUID]] = {}
 
     def get_unsafe(self, id_: DSID, include_sources: bool = False,
                    include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         self._check_get_legacy(include_deriveds, max_depth)
-        ds = self.clone(self.by_id[dsid_to_uuid(id_)])  # N.B. raises KeyError if id not in index.
+        ds = self.clone(self._by_id[dsid_to_uuid(id_)])  # N.B. raises KeyError if id not in index.
         if include_sources:
             ds.sources = {
                 classifier: cast(Dataset, self.get(dsid, include_sources=True))
-                for classifier, dsid in self.derived_from.get(ds.id, {}).items()
+                for classifier, dsid in self._derived_from.get(ds.id, {}).items()
             }
         return ds
 
@@ -63,10 +66,10 @@ class DatasetResource(AbstractDatasetResource):
         return (ds for ds in (self.get(dsid) for dsid in ids) if ds is not None)
 
     def get_derived(self, id_: DSID) -> Iterable[Dataset]:
-        return (cast(Dataset, self.get(dsid)) for dsid in self.derivations.get(dsid_to_uuid(id_), {}).values())
+        return (cast(Dataset, self.get(dsid)) for dsid in self._derivations.get(dsid_to_uuid(id_), {}).values())
 
     def has(self, id_: DSID) -> bool:
-        return dsid_to_uuid(id_) in self.by_id
+        return dsid_to_uuid(id_) in self._by_id
 
     def bulk_has(self, ids_: Iterable[DSID]) -> Iterable[bool]:
         return (self.has(id_) for id_ in ids_)
@@ -90,42 +93,42 @@ class DatasetResource(AbstractDatasetResource):
                 _LOG.warning("Dataset %s is already in the database", dataset.id)
                 return dataset
             persistable = self.clone(dataset, for_save=True)
-            self.by_id[persistable.id] = persistable
-            self.active_by_id[persistable.id] = persistable
+            self._by_id[persistable.id] = persistable
+            self._active_by_id[persistable.id] = persistable
             if dataset._uris:
-                self.locations[persistable.id] = dataset._uris.copy()
+                self._locations[persistable.id] = dataset._uris.copy()
             else:
-                self.locations[persistable.id] = []
-            self.archived_locations[persistable.id] = []
-            if dataset.product.name in self.by_product:
-                self.by_product[dataset.product.name].append(dataset.id)
+                self._locations[persistable.id] = []
+            self._archived_locations[persistable.id] = []
+            if dataset.product.name in self._by_product:
+                self._by_product[dataset.product.name].add(dataset.id)
             else:
-                self.by_product[dataset.product.name] = [dataset.id]
+                self._by_product[dataset.product.name] = set([dataset.id])
         if archive_less_mature is not None:
             _LOG.warning("archive-less-mature functionality is not implemented for memory driver")
         return cast(Dataset, self.get(dataset.id))
 
     def persist_source_relationship(self, ds: Dataset, src: Dataset, classifier: str) -> None:
         # Add source lineage link
-        if ds.id not in self.derived_from:
-            self.derived_from[ds.id] = {}
-        if self.derived_from[ds.id].get(classifier, src.id) != src.id:
+        if ds.id not in self._derived_from:
+            self._derived_from[ds.id] = {}
+        if self._derived_from[ds.id].get(classifier, src.id) != src.id:
             _LOG.warning("Dataset %s: Old %s dataset source %s getting overwritten by %s",
                          ds.id,
                          classifier,
-                         self.derived_from[ds.id][classifier],
+                         self._derived_from[ds.id][classifier],
                          src.id)
-        self.derived_from[ds.id][classifier] = src.id
+        self._derived_from[ds.id][classifier] = src.id
         # Add source back-link
-        if src.id not in self.derivations:
-            self.derivations[src.id] = {}
-        if self.derivations[src.id].get(classifier, ds.id) != ds.id:
+        if src.id not in self._derivations:
+            self._derivations[src.id] = {}
+        if self._derivations[src.id].get(classifier, ds.id) != ds.id:
             _LOG.warning("Dataset %s: Old %s dataset derivation %s getting overwritten by %s",
                          src.id,
                          classifier,
-                         self.derivations[src.id][classifier],
+                         self._derivations[src.id][classifier],
                          ds.id)
-        self.derivations[src.id][classifier] = ds.id
+        self._derivations[src.id][classifier] = ds.id
 
     def search_product_duplicates(self,
                                   product: Product,
@@ -153,7 +156,7 @@ class DatasetResource(AbstractDatasetResource):
             return GroupedVals(*vals)
 
         dups: Dict[Tuple, set[UUID]] = {}
-        for ds in self.active_by_id.values():
+        for ds in self._active_by_id.values():
             if ds.product.name != product.name:
                 continue
             vals = values(ds)
@@ -232,8 +235,8 @@ class DatasetResource(AbstractDatasetResource):
         _LOG.info("Updating dataset %s", dataset.id)
         self._update_locations(dataset, existing)
         persistable = self.clone(dataset, for_save=True)
-        self.by_id[dataset.id] = persistable
-        self.active_by_id[dataset.id] = persistable
+        self._by_id[dataset.id] = persistable
+        self._active_by_id[dataset.id] = persistable
         if archive_less_mature is not None:
             _LOG.warning("archive-less-mature functionality is not implemented for memory driver")
         return cast(Dataset, self.get(dataset.id))
@@ -258,41 +261,47 @@ class DatasetResource(AbstractDatasetResource):
     def archive(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
-            if id_ in self.active_by_id:
-                ds = self.active_by_id.pop(id_)
-                self.by_product[ds.product.name] = [i for i in self.by_product[ds.product.name] if i != ds.id]
+            if id_ in self._active_by_id:
+                ds = self._active_by_id.pop(id_)
+                self._by_product[ds.product.name].remove(ds.id)
+                if ds.product.name not in self._archived_by_product:
+                    self._archived_by_product[ds.product.name] = set([ds.id])
+                else:
+                    self._archived_by_product[ds.product.name].add(ds.id)
                 ds.archived_time = datetime.datetime.now()
-                self.archived_by_id[id_] = ds
+                self._archived_by_id[id_] = ds
 
     def restore(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
-            if id_ in self.archived_by_id:
-                ds = self.archived_by_id.pop(id_)
+            if id_ in self._archived_by_id:
+                ds = self._archived_by_id.pop(id_)
                 ds.archived_time = None
-                self.active_by_id[id_] = ds
-                self.by_product[ds.product.name].append(ds.id)
+                self._active_by_id[id_] = ds
+                self._archived_by_product[ds.product.name].remove(ds.id)
+                self._by_product[ds.product.name].add(ds.id)
 
     def purge(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
-            if id_ in self.archived_by_id:
-                del self.archived_by_id[id_]
-                del self.by_id[id_]
-                if id_ in self.derived_from:
-                    for classifier, src_id in self.derived_from[id_].items():
-                        del self.derivations[src_id][classifier]
-                    del self.derived_from[id_]
-                if id_ in self.derivations:
-                    for classifier, child_id in self.derivations[id_].items():
-                        del self.derived_from[child_id][classifier]
-                    del self.derivations[id_]
+            if id_ in self._archived_by_id:
+                ds = self._archived_by_id.pop(id_)
+                del self._by_id[id_]
+                if id_ in self._derived_from:
+                    for classifier, src_id in self._derived_from[id_].items():
+                        del self._derivations[src_id][classifier]
+                    del self._derived_from[id_]
+                if id_ in self._derivations:
+                    for classifier, child_id in self._derivations[id_].items():
+                        del self._derived_from[child_id][classifier]
+                    del self._derivations[id_]
+                self._archived_by_product[ds.product.name].remove(id_)
 
     def get_all_dataset_ids(self, archived: bool) -> Iterable[UUID]:
         if archived:
-            return (id_ for id_ in self.archived_by_id.keys())
+            return (id_ for id_ in self._archived_by_id.keys())
         else:
-            return (id_ for id_ in self.active_by_id.keys())
+            return (id_ for id_ in self._active_by_id.keys())
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
@@ -301,11 +310,11 @@ class DatasetResource(AbstractDatasetResource):
     )
     def get_locations(self, id_: DSID) -> Iterable[str]:
         uuid = dsid_to_uuid(id_)
-        return (s for s in self.locations[uuid])
+        return (s for s in self._locations[uuid])
 
     def get_location(self, id_: DSID) -> str:
         uuid = dsid_to_uuid(id_)
-        locations = [s for s in self.locations.get(uuid, [])]
+        locations = [s for s in self._locations.get(uuid, [])]
         if not locations:
             return None
         return locations[0]
@@ -318,7 +327,7 @@ class DatasetResource(AbstractDatasetResource):
     )
     def get_archived_locations(self, id_: DSID) -> Iterable[str]:
         uuid = dsid_to_uuid(id_)
-        return (s for s, dt in self.archived_locations[uuid])
+        return (s for s, dt in self._archived_locations[uuid])
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
@@ -328,7 +337,7 @@ class DatasetResource(AbstractDatasetResource):
     )
     def get_archived_location_times(self, id_: DSID) -> Iterable[Tuple[str, datetime.datetime]]:
         uuid = dsid_to_uuid(id_)
-        return ((s, dt) for s, dt in self.archived_locations[uuid])
+        return ((s, dt) for s, dt in self._archived_locations[uuid])
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
@@ -338,15 +347,15 @@ class DatasetResource(AbstractDatasetResource):
     )
     def add_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
-        if uuid not in self.by_id:
+        if uuid not in self._by_id:
             warnings.warn(f"dataset {id_} is not an active dataset")
             return False
         if not uri:
             warnings.warn(f"Cannot add empty uri. (dataset {id_})")
             return False
-        if uri in self.locations[uuid]:
+        if uri in self._locations[uuid]:
             return False
-        self.locations[uuid].append(uri)
+        self._locations[uuid].append(uri)
         return True
 
     def get_datasets_for_location(self, uri: str, mode: Optional[str] = None) -> Iterable[Dataset]:
@@ -359,7 +368,7 @@ class DatasetResource(AbstractDatasetResource):
             test: Callable[[str], bool] = lambda l: l == uri  # noqa: E741
         else:
             test = lambda l: l.startswith(uri)  # noqa: E741,E731
-        for id_, locs in self.locations.items():
+        for id_, locs in self._locations.items():
             for loc in locs:
                 if test(loc):
                     ids.add(id_)
@@ -375,17 +384,17 @@ class DatasetResource(AbstractDatasetResource):
     def remove_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
         removed = False
-        if uuid in self.locations:
-            old_locations = self.locations[uuid]
+        if uuid in self._locations:
+            old_locations = self._locations[uuid]
             new_locations = [loc for loc in old_locations if loc != uri]
             if len(new_locations) != len(old_locations):
-                self.locations[uuid] = new_locations
+                self._locations[uuid] = new_locations
                 removed = True
-        if not removed and uuid in self.archived_locations:
-            archived_locations = self.archived_locations[uuid]
+        if not removed and uuid in self._archived_locations:
+            archived_locations = self._archived_locations[uuid]
             new_archived_locations = [(loc, dt) for loc, dt in archived_locations if loc != uri]
             if len(new_archived_locations) != len(archived_locations):
-                self.archived_locations[uuid] = new_archived_locations
+                self._archived_locations[uuid] = new_archived_locations
                 removed = True
         return removed
 
@@ -398,14 +407,14 @@ class DatasetResource(AbstractDatasetResource):
     )
     def archive_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
-        if uuid not in self.locations:
+        if uuid not in self._locations:
             return False
-        old_locations = self.locations[uuid]
+        old_locations = self._locations[uuid]
         new_locations = [loc for loc in old_locations if loc != uri]
         if len(new_locations) == len(old_locations):
             return False
-        self.locations[uuid] = new_locations
-        self.archived_locations[uuid].append((uri, datetime.datetime.now()))
+        self._locations[uuid] = new_locations
+        self._archived_locations[uuid].append((uri, datetime.datetime.now()))
         return True
 
     @deprecat(
@@ -417,18 +426,27 @@ class DatasetResource(AbstractDatasetResource):
     )
     def restore_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
-        if uuid not in self.archived_locations:
+        if uuid not in self._archived_locations:
             return False
-        old_locations = self.archived_locations[uuid]
+        old_locations = self._archived_locations[uuid]
         new_locations = [(loc, dt) for loc, dt in old_locations if loc != uri]
         if len(new_locations) == len(old_locations):
             return False
-        self.archived_locations[uuid] = new_locations
-        self.locations[uuid].append(uri)
+        self._archived_locations[uuid] = new_locations
+        self._locations[uuid].append(uri)
         return True
 
-    def search_by_metadata(self, metadata: Mapping[str, QueryField]):
-        for ds in self.active_by_id.values():
+    def search_by_metadata(self, metadata: Mapping[str, QueryField], archived: bool | None = False):
+        if archived:
+            # True: Return archived datasets only
+            dss = self._archived_by_id.values()
+        elif archived is not None:
+            # False: Return active datasets only
+            dss = self._active_by_id.values()
+        else:
+            # True: Return archived datasets only
+            dss = chain(self._active_by_id.values(), self._archived_by_id.values())
+        for ds in dss:
             if metadata_subset(metadata, ds.metadata_doc):
                 yield ds
 
@@ -440,6 +458,7 @@ class DatasetResource(AbstractDatasetResource):
             return_format: int,
             limit: Optional[int] = None,
             source_filter: Optional[Mapping[str, QueryField]] = None,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Union[Dataset, Tuple[Iterable[Dataset], Product]]]:
         if source_filter:
@@ -468,7 +487,18 @@ class DatasetResource(AbstractDatasetResource):
                 break
             query_exprs = tuple(fields.to_expressions(product.metadata_type.dataset_fields.get, **q))
             product_results = []
-            for dsid in self.by_product.get(product.name, []):
+
+            if archived is None:
+                dsids = chain(
+                    self._archived_by_product.get(product.name, set()),
+                    self._by_product.get(product.name, set())
+                )
+            elif archived:
+                dsids = self._archived_by_product.get(product.name, set())
+            else:
+                dsids = self._by_product.get(product.name, set())
+
+            for dsid in dsids:
                 if limit is not None and matches >= limit:
                     break
                 ds = cast(Dataset, self.get(dsid, include_sources=True))
@@ -506,12 +536,14 @@ class DatasetResource(AbstractDatasetResource):
             self,
             limit: Optional[int] = None,
             source_filter: Optional[Mapping[str, QueryField]] = None,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Dataset]:
         return cast(Iterable[Dataset], self._search(
                     return_format=self.RET_FORMAT_DATASETS,
                     limit=limit,
                     source_filter=source_filter,
+                    archived=archived,
                     **query)
         )
 
@@ -519,51 +551,74 @@ class DatasetResource(AbstractDatasetResource):
             self,
             limit: Optional[int] = None,
             source_filter: Optional[Mapping[str, QueryField]] = None,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Tuple[Iterable[Dataset], Product]]:
         return cast(Iterable[Tuple[Iterable[Dataset], Product]], self._search(
                     return_format=self.RET_FORMAT_PRODUCT_GROUPED,
                     limit=limit,
                     source_filter=source_filter,
+                    archived=archived,
                     **query)
         )
 
     def _get_prod_queries(self, **query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
         return ((q, product) for product, q in self._index.products.search_robust(**query))
 
+    @deprecat(
+        deprecated_args={
+            "source_filter": {
+                "reason": "Filtering by source metadata is deprecated and will be removed in future.",
+                "version": "1.9.0",
+                "category": ODC2DeprecationWarning
+
+            }
+        }
+    )
     def search(self,
                limit: Optional[int] = None,
                source_filter: Optional[Mapping[str, QueryField]] = None,
+               archived: bool | None = False,
                **query: QueryField) -> Iterable[Dataset]:
-        return cast(Iterable[Dataset], self._search_flat(limit=limit, source_filter=source_filter, **query))
+        return cast(
+            Iterable[Dataset],
+            self._search_flat(limit=limit, source_filter=source_filter, archived=archived, **query)
+        )
 
-    def search_by_product(self, **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
-        return self._search_grouped(**query)  # type: ignore[arg-type]
+    def search_by_product(self,
+                          archived: bool | None = False,
+                          **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
+        return self._search_grouped(archived=archived, **query)  # type: ignore[arg-type]
 
     def search_returning(self,
-                         field_names: Iterable[str],
+                         field_names: Iterable[str] | None = None,
                          limit: Optional[int] = None,
+                         archived: bool | None = False,
                          **query: QueryField) -> Iterable[Tuple]:
-        field_names = list(field_names)
+        if field_names is None:
+            field_names = self._index.products.get_field_names()
+        else:
+            field_names = list(field_names)
         #    Typing note: mypy can't handle dynamically created namedtuples
         result_type = namedtuple('search_result', field_names)  # type: ignore[misc]
-        for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
+        for ds in self.search(limit=limit, archived=archived, **query):  # type: ignore[arg-type]
             ds_fields = get_dataset_fields(ds.metadata_type.definition)
             result_vals = {
-                fn: ds_fields[fn].extract(ds.metadata_doc)  # type: ignore[attr-defined]
+                fn: ds_fields[fn].extract(ds.metadata_doc) if fn in ds_fields else None
                 for fn in field_names
             }
             yield result_type(**result_vals)
 
-    def count(self, **query: QueryField) -> int:
-        return len(list(self.search(**query)))  # type: ignore[arg-type]
+    def count(self, archived: bool | None = False, **query: QueryField) -> int:
+        return len(list(self.search(archived=archived, **query)))  # type: ignore[arg-type]
 
-    def count_by_product(self, **query: QueryField) -> Iterable[Tuple[Product, int]]:
-        for datasets, prod in self.search_by_product(**query):
+    def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[Tuple[Product, int]]:
+        for datasets, prod in self.search_by_product(archived=archived, **query):
             yield (prod, len(list(datasets)))
 
     def count_by_product_through_time(self,
                                       period: str,
+                                      archived: bool | None = False,
                                       **query: QueryField
     ) -> Iterable[
         Tuple[
@@ -573,7 +628,7 @@ class DatasetResource(AbstractDatasetResource):
             ]
         ]
     ]:
-        return self._product_period_count(period, **query)  # type: ignore[arg-type]
+        return self._product_period_count(period, archived=archived, **query)  # type: ignore[arg-type]
 
     def _expand_period(
             self,
@@ -637,6 +692,7 @@ class DatasetResource(AbstractDatasetResource):
             self,
             period: str,
             single_product_only: bool = False,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[
         Tuple[
@@ -654,7 +710,7 @@ class DatasetResource(AbstractDatasetResource):
             raise ValueError('Must specify "time" range in period-counting query')
         periods = self._expand_period(period, start, end)
         last_product: Optional[YieldType] = None
-        for dss, product in self._search_grouped(**query):  # type: ignore[arg-type]
+        for dss, product in self._search_grouped(archived=archived, **query):  # type: ignore[arg-type]
             if last_product and single_product_only:
                 raise ValueError(f"Multiple products match single query search: {repr(query)}")
             if last_product:
@@ -679,10 +735,17 @@ class DatasetResource(AbstractDatasetResource):
     def count_product_through_time(
             self,
             period: str,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Tuple[Range, int]]:
-        return list(self._product_period_count(period, single_product_only=True, **query))[0][1]
+        return list(self._product_period_count(period, archived=archived, single_product_only=True, **query))[0][1]
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     def search_summaries(self, **query: QueryField) -> Iterable[Mapping[str, Any]]:
         def make_summary(ds: Dataset) -> Mapping[str, Any]:
             fields = ds.metadata_type.dataset_fields
@@ -721,6 +784,7 @@ class DatasetResource(AbstractDatasetResource):
             field_names: Tuple[str, ...],
             custom_offsets: Optional[Mapping[str, Offset]] = None,
             limit: Optional[int] = None,
+            archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Tuple]:
         if custom_offsets:
@@ -747,14 +811,14 @@ class DatasetResource(AbstractDatasetResource):
                 for fname, field in fields.items()
             }
             return DatasetLight(**fld_vals)
-        for ds in self.search(limit=limit, **query):  # type: ignore[arg-type]
+        for ds in self.search(limit=limit, archived=archived, **query):  # type: ignore[arg-type]
             yield make_ds_light(ds)
 
     def clone(self, orig: Dataset, for_save=False, lookup_locations=True) -> Dataset:
         if for_save:
             uris = []
         elif lookup_locations:
-            uris = self.locations[orig.id].copy()
+            uris = self._locations[orig.id].copy()
         elif orig.uris:
             uris = orig.uris.copy()
         else:
@@ -777,7 +841,7 @@ class DatasetResource(AbstractDatasetResource):
     # Lineage methods need to be implemented on the dataset resource as that is where the relevant indexes
     # currently live.
     def _get_all_lineage(self) -> Iterable[LineageRelation]:
-        for derived_id, sources in self.derived_from.items():
+        for derived_id, sources in self._derived_from.items():
             for classifier, source_id in sources.items():
                 yield LineageRelation(
                     derived_id=derived_id,
@@ -790,22 +854,22 @@ class DatasetResource(AbstractDatasetResource):
         b_skipped = 0
         b_started = monotonic()
         for rel in batch_rels:
-            if rel.derived_id in self.derived_from:
-                if (rel.classifier in self.derived_from[rel.derived_id]
-                        and self.derived_from[rel.derived_id][rel.classifier] != rel.source_id):
+            if rel.derived_id in self._derived_from:
+                if (rel.classifier in self._derived_from[rel.derived_id]
+                        and self._derived_from[rel.derived_id][rel.classifier] != rel.source_id):
                     b_skipped += 1
                     continue
                 else:
-                    self.derived_from[rel.derived_id][rel.classifier] = rel.source_id
+                    self._derived_from[rel.derived_id][rel.classifier] = rel.source_id
                     b_added += 1
             else:
-                self.derived_from[rel.derived_id] = {rel.classifier: rel.source_id}
+                self._derived_from[rel.derived_id] = {rel.classifier: rel.source_id}
                 b_added += 1
 
-            if rel.source_id in self.derivations:
-                self.derivations[rel.source_id][rel.classifier] = rel.derived_id
+            if rel.source_id in self._derivations:
+                self._derivations[rel.source_id][rel.classifier] = rel.derived_id
             else:
-                self.derivations[rel.source_id] = {rel.classifier: rel.derived_id}
+                self._derivations[rel.source_id] = {rel.classifier: rel.derived_id}
 
         return BatchStatus(b_added, b_skipped, monotonic()-b_started)
 

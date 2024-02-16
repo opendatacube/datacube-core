@@ -102,6 +102,7 @@ def pseudo_ls8_dataset(index, pseudo_ls8_type):
             id_,
             pseudo_ls8_type.id
         )
+        was_inserted = was_inserted and connection.insert_dataset_location(id_, "file://tmp/a/b/c")
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
@@ -155,6 +156,7 @@ def pseudo_ls8_dataset2(index, pseudo_ls8_type):
             id_,
             pseudo_ls8_type.id
         )
+        was_inserted = was_inserted and connection.insert_dataset_location(id_, "file://tmp/d/e/f")
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
@@ -235,25 +237,25 @@ def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         platform='LANDSAT_8'
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Wrong sensor name
     with pytest.raises(ValueError):
-        datasets = index.datasets.search_eager(
+        next(index.datasets.search(
             platform='LANDSAT-8',
             instrument='TM',
-        )
+        ))
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
@@ -276,97 +278,124 @@ def test_search_dataset_by_metadata(index: Index, pseudo_ls8_dataset: Dataset) -
     datasets = list(datasets)
     assert len(datasets) == 0
 
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}},
+        archived=None
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 1
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}},
+        archived=True
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 0
+
+    index.datasets.archive([pseudo_ls8_dataset.id])
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}},
+        archived=True
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 1
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}},
+        archived=False
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 0
+
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_day(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # Matches day
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         time=datetime.date(2014, 7, 26)
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Different day: no match
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         time=datetime.date(2014, 7, 27)
-    )
+    ))
     assert len(datasets) == 0
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_dataset_ranges(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     # In the lat bounds.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-30.5, -29.5),
         time=Range(
             datetime.datetime(2014, 7, 26, 23, 0, 0),
             datetime.datetime(2014, 7, 26, 23, 59, 0)
         )
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Out of the lat bounds.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(28, 32),
         time=Range(
             datetime.datetime(2014, 7, 26, 23, 48, 0),
             datetime.datetime(2014, 7, 26, 23, 50, 0)
         )
-    )
+    ))
     assert len(datasets) == 0
 
     # Out of the time bounds
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-30.5, -29.5),
         time=Range(
             datetime.datetime(2014, 7, 26, 21, 48, 0),
             datetime.datetime(2014, 7, 26, 21, 50, 0)
         )
-    )
+    ))
     assert len(datasets) == 0
 
     # A dataset that overlaps but is not fully contained by the search bounds.
     # TODO: Do we want overlap as the default behaviour?
     # Should we distinguish between 'contains' and 'overlaps'?
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-40, -30)
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Single point search
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=-30.0,
         time=Range(
             datetime.datetime(2014, 7, 26, 23, 0, 0),
             datetime.datetime(2014, 7, 26, 23, 59, 0)
         )
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=30.0,
         time=Range(
             datetime.datetime(2014, 7, 26, 23, 0, 0),
             datetime.datetime(2014, 7, 26, 23, 59, 0)
         )
-    )
+    ))
     assert len(datasets) == 0
 
     # Single timestamp search
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-30.5, -29.5),
         time=datetime.datetime(2014, 7, 26, 23, 50, 0)
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         lat=Range(-30.5, -29.5),
         time=datetime.datetime(2014, 7, 26, 23, 30, 0)
-    )
+    ))
     assert len(datasets) == 0
 
 
@@ -439,35 +468,35 @@ def test_search_or_expressions(index: Index,
     # - type=ls5_level1_scene
     # - type=ls5_satellite_telemetry_data
 
-    all_datasets = index.datasets.search_eager()
+    all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 4
     all_ids = set(dataset.id for dataset in all_datasets)
 
     # OR all platforms: should return all datasets
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         platform=['LANDSAT_5', 'LANDSAT_7', 'LANDSAT_8']
-    )
+    ))
     assert len(datasets) == 4
     ids = set(dataset.id for dataset in datasets)
     assert ids == all_ids
 
     # OR expression with only one clause.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         platform=['LANDSAT_8']
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # OR two products: return two
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=[pseudo_ls8_type.name, ls5_dataset_nbar_type.name]
-    )
+    ))
     assert len(datasets) == 2
     ids = set(dataset.id for dataset in datasets)
     assert ids == {pseudo_ls8_dataset.id, ls5_dataset_w_children.id}
 
     # eo OR telemetry: return all
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         metadata_type=[
             # LS5 + children
             default_metadata_type.name,
@@ -476,15 +505,15 @@ def test_search_or_expressions(index: Index,
             # LS8 dataset
             pseudo_ls8_type.metadata_type.name
         ]
-    )
+    ))
     assert len(datasets) == 4
     ids = set(dataset.id for dataset in datasets)
     assert ids == all_ids
 
     # Redundant ORs should have no effect.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=[pseudo_ls8_type.name, pseudo_ls8_type.name, pseudo_ls8_type.name]
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
@@ -549,6 +578,8 @@ def test_search_returning_rows(index, pseudo_ls8_type,
                                pseudo_ls8_dataset, pseudo_ls8_dataset2,
                                indexed_ls5_scene_products):
     dataset = pseudo_ls8_dataset
+    index.datasets.remove_location(pseudo_ls8_dataset.id, pseudo_ls8_dataset.uri)  # Test of deprecated method
+    index.datasets.remove_location(pseudo_ls8_dataset2.id, pseudo_ls8_dataset2.uri)  # Test of deprecated method
 
     # If returning a field like uri, there will be one result per location.
 
@@ -569,7 +600,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
         instrument='OLI_TIRS',
     ))
     assert len(results) == 1
-    assert results == [(dataset.id, test_uri)]
+    assert (dataset.id, test_uri) in results
 
     # Add a second location and we should get two results
     test_uri2 = 'file:///tmp/test2'
@@ -609,49 +640,49 @@ def test_searches_only_type(index: Index,
                             ls5_telem_type) -> None:
     # The dataset should have been matched to the telemetry type.
     assert pseudo_ls8_dataset.product.id == pseudo_ls8_type.id
-    assert index.datasets.search_eager()
+    assert next(index.datasets.search())
 
     # One result in the telemetry type
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=pseudo_ls8_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # One result in the metadata type
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         metadata_type=pseudo_ls8_type.metadata_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results when searching for a different dataset type.
     with pytest.raises(ValueError):
-        datasets = index.datasets.search_eager(
+        next(index.datasets.search(
             product=ls5_telem_type.name,
             platform='LANDSAT_8',
             instrument='OLI_TIRS'
-        )
+        ))
 
     # One result when no types specified.
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results for different metadata type.
     with pytest.raises(ValueError):
-        datasets = index.datasets.search_eager(
+        next(index.datasets.search(
             metadata_type='telemetry',
             platform='LANDSAT_8',
             instrument='OLI_TIRS'
-        )
+        ))
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
@@ -660,28 +691,28 @@ def test_search_special_fields(index: Index,
                                pseudo_ls8_dataset: Dataset,
                                ls5_dataset_w_children) -> None:
     # 'product' is a special case
-    datasets = index.datasets.search_eager(
+    datasets = list(index.datasets.search(
         product=pseudo_ls8_type.name
-    )
+    ))
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Unknown field: no results
     with pytest.raises(ValueError):
-        datasets = index.datasets.search_eager(
+        next(index.datasets.search(
             platform='LANDSAT_8',
             flavour='chocolate',
-        )
+        ))
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_by_uri(index, ls5_dataset_w_children):
-    datasets = index.datasets.search_eager(product=ls5_dataset_w_children.product.name,
-                                           uri=ls5_dataset_w_children.local_uri)
+    datasets = list(index.datasets.search(product=ls5_dataset_w_children.product.name,
+                                          uri=ls5_dataset_w_children.local_uri))
     assert len(datasets) == 1
 
-    datasets = index.datasets.search_eager(product=ls5_dataset_w_children.product.name,
-                                           uri='file:///x/yz')
+    datasets = list(index.datasets.search(product=ls5_dataset_w_children.product.name,
+                                          uri='file:///x/yz'))
     assert len(datasets) == 0
 
 
@@ -716,7 +747,7 @@ def test_count_by_product_searches(index: Index,
                                    ls5_telem_type: Product) -> None:
     # The dataset should have been matched to the telemetry type.
     assert pseudo_ls8_dataset.product.id == pseudo_ls8_type.id
-    assert index.datasets.search_eager()
+    assert next(index.datasets.search())
 
     # One result in the telemetry type
     products = tuple(index.datasets.count_by_product(
@@ -772,28 +803,28 @@ def test_source_filter(clirunner, index, example_ls5_dataset_path):
         ]
     )
 
-    all_nbar = index.datasets.search_eager(product='ls5_nbar_scene')
+    all_nbar = list(index.datasets.search(product='ls5_nbar_scene'))
     assert len(all_nbar) == 1
-    all_level1 = index.datasets.search_eager(product='ls5_level1_scene')
+    all_level1 = list(index.datasets.search(product='ls5_level1_scene'))
     assert len(all_level1) == 1
     assert all_level1[0].metadata.gsi == 'ASA'
 
-    dss = index.datasets.search_eager(
+    dss = list(index.datasets.search(
         product='ls5_nbar_scene',
         source_filter={'product': 'ls5_level1_scene', 'gsi': 'ASA'}
-    )
+    ))
     assert dss == all_nbar
-    dss = index.datasets.search_eager(
+    dss = list(index.datasets.search(
         product='ls5_nbar_scene',
         source_filter={'product': 'ls5_level1_scene', 'gsi': 'GREG'}
-    )
+    ))
     assert dss == []
 
     with pytest.raises(RuntimeError):
-        dss = index.datasets.search_eager(
+        next(index.datasets.search(
             product='ls5_nbar_scene',
             source_filter={'gsi': 'ASA'}
-        )
+        ))
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
@@ -882,7 +913,7 @@ def test_find_duplicates(index, pseudo_ls8_type,
                          pseudo_ls8_dataset, pseudo_ls8_dataset2, pseudo_ls8_dataset3, pseudo_ls8_dataset4,
                          ls5_dataset_w_children):
     # Our four ls8 datasets and three ls5.
-    all_datasets = index.datasets.search_eager()
+    all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 7
 
     # First two ls8 datasets have the same path/row, last two have a different row.
@@ -967,6 +998,8 @@ def test_csv_search_via_cli(clirunner: Any,
                             pseudo_ls8_dataset2: Dataset) -> None:
     """
     Search datasets via the cli with csv output
+
+    NB behaviour of CLI search when datasets have zero or multiple locations has changed in 1.9.
     """
 
     # Test dataset is:

@@ -71,12 +71,12 @@ _pseudo_telemetry_dataset_type = {
 
 
 def test_archive_datasets(index, ls8_eo3_dataset):
-    datasets = index.datasets.search_eager()
+    datasets = list(index.datasets.search())
     assert len(datasets) == 1
     assert not datasets[0].is_archived
 
     index.datasets.archive([ls8_eo3_dataset.id])
-    datasets = index.datasets.search_eager()
+    datasets = list(index.datasets.search())
     assert len(datasets) == 0
 
     # The model should show it as archived now.
@@ -84,7 +84,7 @@ def test_archive_datasets(index, ls8_eo3_dataset):
     assert indexed_dataset.is_archived
 
     index.datasets.restore([ls8_eo3_dataset.id])
-    datasets = index.datasets.search_eager()
+    datasets = list(index.datasets.search())
     assert len(datasets) == 1
 
     # And now active
@@ -147,13 +147,13 @@ def test_archive_less_mature_bool(index, final_dataset, nrt_dataset):
 
 def test_purge_datasets(index, ls8_eo3_dataset):
     assert index.datasets.has(ls8_eo3_dataset.id)
-    datasets = index.datasets.search_eager()
+    datasets = list(index.datasets.search())
     assert len(datasets) == 1
     assert not datasets[0].is_archived
 
     # Archive dataset
     index.datasets.archive([ls8_eo3_dataset.id])
-    datasets = index.datasets.search_eager()
+    datasets = list(index.datasets.search())
     assert len(datasets) == 0
 
     # The model should show it as archived now.

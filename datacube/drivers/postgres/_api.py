@@ -474,17 +474,22 @@ class PostgresDbAPI(object):
 
         return self._connection.execute(query).fetchall()
 
-    def search_datasets_by_metadata(self, metadata):
+    def search_datasets_by_metadata(self, metadata, archived: bool | None):
         """
         Find any datasets that have the given metadata.
 
         :type metadata: dict
         :rtype: dict
         """
+
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
-        return self._connection.execute(
-            select(*_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
-        ).fetchall()
+        where_clause = DATASET.c.metadata.contains(metadata)
+        if archived:
+            where_clause = and_(where_clause, DATASET.c.archived.is_not(None))
+        elif archived is not None:
+            where_clause = and_(where_clause, DATASET.c.archived.is_(None))
+        query = select(*_DATASET_SELECT_FIELDS).where(where_clause)
+        return self._connection.execute(query).fetchall()
 
     def search_products_by_metadata(self, metadata):
         """
@@ -509,7 +514,8 @@ class PostgresDbAPI(object):
 
     @staticmethod
     def search_datasets_query(expressions, source_exprs=None,
-                              select_fields=None, with_source_ids=False, limit=None):
+                              select_fields=None, with_source_ids=False, limit=None,
+                              archived: bool | None = False):
         """
         :type expressions: Tuple[Expression]
         :type source_exprs: Tuple[Expression]
@@ -520,8 +526,10 @@ class PostgresDbAPI(object):
         """
 
         if select_fields:
+            # Expand select fields, inserting placeholder columns selections for fields that aren't defined for
+            # this product query.
             select_columns = tuple(
-                f.alchemy_expression.label(f.name)
+                f.alchemy_expression.label(f.name) if f is not None else None
                 for f in select_fields
             )
         else:
@@ -543,7 +551,15 @@ class PostgresDbAPI(object):
 
         raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
         from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields)
-        where_expr = and_(DATASET.c.archived == None, *raw_expressions)
+        if archived:
+            # True: Archived datasets only:
+            where_expr = and_(DATASET.c.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            # False/default:  Active datasets only:
+            where_expr = and_(DATASET.c.archived.is_(None), *raw_expressions)
+        else:
+            # None: both active and archived datasets
+            where_expr = and_(*raw_expressions)
 
         if not source_exprs:
             return (
@@ -590,6 +606,12 @@ class PostgresDbAPI(object):
                 )
             )
         )
+        if archived:
+            where_expr = and_(DATASET.c.archived.is_not(None), *PostgresDbAPI._alchemify_expressions(source_exprs))
+        elif archived is not None:
+            where_expr = and_(DATASET.c.archived.is_(None), *PostgresDbAPI._alchemify_expressions(source_exprs))
+        else:
+            where_expr = and_(*PostgresDbAPI._alchemify_expressions(source_exprs))
 
         return (
             select(
@@ -601,7 +623,7 @@ class PostgresDbAPI(object):
             ).select_from(
                 recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
             ).where(
-                and_(DATASET.c.archived == None, *PostgresDbAPI._alchemify_expressions(source_exprs))
+                where_expr
             ).limit(
                 limit
             )
@@ -609,14 +631,16 @@ class PostgresDbAPI(object):
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
-                        with_source_ids=False, limit=None):
+                        with_source_ids=False, limit=None,
+                        archived: bool | None = False):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgres._fields.PgField]
         :type expressions: tuple[datacube.drivers.postgres._fields.PgExpression]
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
-                                                  select_fields, with_source_ids, limit)
+                                                  select_fields, with_source_ids, limit,
+                                                  archived=archived)
         return self._connection.execute(select_query)
 
     def bulk_simple_dataset_search(self, products=None, batch_size=0):
@@ -697,7 +721,7 @@ class PostgresDbAPI(object):
         return res.rowcount, requested - res.rowcount
 
     @staticmethod
-    def search_unique_datasets_query(expressions, select_fields, limit):
+    def search_unique_datasets_query(expressions, select_fields, limit, archived: bool | None = False):
         """
         'unique' here refer to that the query results do not contain datasets
         having the same 'id' more than once.
@@ -747,7 +771,12 @@ class PostgresDbAPI(object):
         select_fields_ = [field for field in select_fields if field.name not in {'uri', 'uris'}]
 
         from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields_)
-        where_expr = and_(DATASET.c.archived == None, *raw_expressions)
+        if archived:
+            where_expr = and_(DATASET.c.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            where_expr = and_(DATASET.c.archived.is_(None), *raw_expressions)
+        if archived:
+            where_expr = and_(*raw_expressions)
 
         return (
             select(
@@ -761,7 +790,7 @@ class PostgresDbAPI(object):
             )
         )
 
-    def search_unique_datasets(self, expressions, select_fields=None, limit=None):
+    def search_unique_datasets(self, expressions, select_fields=None, limit=None, archived: bool | None = False):
         """
         Processes a search query without duplicating datasets.
 
@@ -771,7 +800,7 @@ class PostgresDbAPI(object):
         result in multiple records per dataset due to the direction of cardinality.
         """
 
-        select_query = self.search_unique_datasets_query(expressions, select_fields, limit)
+        select_query = self.search_unique_datasets_query(expressions, select_fields, limit, archived=archived)
 
         return self._connection.execute(select_query)
 
@@ -850,13 +879,19 @@ class PostgresDbAPI(object):
 
         return self._connection.execute(final_query)
 
-    def count_datasets(self, expressions):
+    def count_datasets(self, expressions, archived: bool | None = False):
         """
         :type expressions: tuple[datacube.drivers.postgres._fields.PgExpression]
         :rtype: int
         """
 
         raw_expressions = self._alchemify_expressions(expressions)
+        if archived:
+            where_exprs = and_(DATASET.c.archived.is_not(None), *raw_expressions)
+        elif archived is not None:
+            where_exprs = and_(DATASET.c.archived.is_(None), *raw_expressions)
+        else:
+            where_exprs = and_(*raw_expressions)
 
         select_query = (
             select(
@@ -864,7 +899,7 @@ class PostgresDbAPI(object):
             ).select_from(
                 self._from_expression(DATASET, expressions)
             ).where(
-                and_(DATASET.c.archived == None, *raw_expressions)
+                where_exprs
             )
         )
 
@@ -934,7 +969,8 @@ class PostgresDbAPI(object):
         if expressions:
             join_tables.update(expression.field.required_alchemy_table for expression in expressions)
         if fields:
-            join_tables.update(field.required_alchemy_table for field in fields)
+            # Ignore placeholder columns
+            join_tables.update(field.required_alchemy_table for field in fields if field)
         join_tables.discard(source_table)
 
         table_order_hack = [DATASET_SOURCE, DATASET_LOCATION, DATASET, PRODUCT, METADATA_TYPE]

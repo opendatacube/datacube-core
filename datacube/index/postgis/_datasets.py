@@ -22,7 +22,8 @@ from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fie
 from datacube.utils.uris import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from datacube.migration import ODC2DeprecationWarning
-from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
+from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple, \
+    JsonDict
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product, Range, LineageTree
 from datacube.model.fields import Field
@@ -602,7 +603,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return (self._make(dataset, product=product) for dataset in query_result)
 
-    def search_by_metadata(self, metadata):
+    def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False):
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -612,10 +613,20 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: list[Dataset]
         """
         with self._db_connection() as connection:
-            for dataset in self._make_many(connection.search_datasets_by_metadata(metadata)):
+            for dataset in self._make_many(connection.search_datasets_by_metadata(metadata, archived)):
                 yield dataset
 
-    def search(self, limit=None, **query):
+    @deprecat(
+        deprecated_args={
+            "source_filter": {
+                "reason": "Filtering by source metadata is deprecated and will be removed in future.",
+                "version": "1.9.0",
+                "category": ODC2DeprecationWarning
+
+            }
+        }
+    )
+    def search(self, limit=None, archived: bool | None = False, **query):
         """
         Perform a search, returning results as Dataset objects.
 
@@ -626,20 +637,21 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         source_filter = query.pop('source_filter', None)
         for product, datasets in self._do_search_by_product(query,
                                                             source_filter=source_filter,
-                                                            limit=limit):
+                                                            limit=limit,
+                                                            archived=archived):
             yield from self._make_many(datasets, product)
 
-    def search_by_product(self, **query):
+    def search_by_product(self, archived: bool | None = False, **query):
         """
         Perform a search, returning datasets grouped by product type.
 
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: __generator[(Product,  __generator[Dataset])]]
         """
-        for product, datasets in self._do_search_by_product(query):
+        for product, datasets in self._do_search_by_product(query, archived=archived):
             yield product, self._make_many(datasets, product)
 
-    def search_returning(self, field_names, limit=None, **query):
+    def search_returning(self, field_names=None, limit=None, archived: bool | None = False, **query):
         """
         Perform a search, returning only the specified fields.
 
@@ -652,16 +664,24 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param int limit: Limit number of datasets
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
+        if field_names is None:
+            field_names = self._index.products.get_field_names()
         result_type = namedtuple('search_result', field_names)
 
         for _, results in self._do_search_by_product(query,
                                                      return_fields=True,
                                                      select_field_names=field_names,
-                                                     limit=limit):
+                                                     limit=limit,
+                                                     archived=archived):
             for columns in results:
-                yield result_type(*columns)
+                coldict = columns._asdict()
+                kwargs = {
+                    field: coldict.get(field)
+                    for field in field_names
+                }
+                yield result_type(**kwargs)
 
-    def count(self, **query):
+    def count(self, archived: bool | None = False, **query):
         """
         Perform a search, returning count of results.
 
@@ -670,12 +690,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         # This may be optimised into one query in the future.
         result = 0
-        for product_type, count in self._do_count_by_product(query):
+        for product_type, count in self._do_count_by_product(query, archived=archived):
             result += count
 
         return result
 
-    def count_by_product(self, **query):
+    def count_by_product(self, archived: bool | None = False, **query):
         """
         Perform a search, returning a count of for each matching product type.
 
@@ -683,7 +703,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :returns: Sequence of (product, count)
         :rtype: __generator[(Product,  int)]]
         """
-        return self._do_count_by_product(query)
+        return self._do_count_by_product(query, archived=archived)
 
     def count_by_product_through_time(self, period, **query):
         """
@@ -718,8 +738,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     # pylint: disable=too-many-locals
     def _do_search_by_product(self, query, return_fields=False, select_field_names=None,
-                              with_source_ids=False, source_filter=None,
-                              limit=None):
+                              with_source_ids=False, source_filter=None, limit=None,
+                              archived: bool | None = False):
         assert not with_source_ids
         assert source_filter is None
         product_queries = list(self._get_product_queries(query))
@@ -746,8 +766,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     select_fields = tuple(field for name, field in dataset_fields.items()
                                           if not field.affects_row_selection)
                 else:
+                    # Allow place holder columns for requested fields that are not
+                    # valid for this product query.
                     select_fields = tuple(dataset_fields[field_name]
-                                          for field_name in select_field_names)
+                                          for field_name in select_field_names
+                                          if field_name in dataset_fields)
             with self._db_connection() as connection:
                 yield (product,
                        connection.search_datasets(
@@ -755,17 +778,18 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                            select_fields=select_fields,
                            limit=limit,
                            with_source_ids=with_source_ids,
-                           geom=geom
+                           geom=geom,
+                           archived=archived
                        ))
 
-    def _do_count_by_product(self, query):
+    def _do_count_by_product(self, query, archived: bool | None = False):
         product_queries = self._get_product_queries(query)
 
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:
-                count = connection.count_datasets(query_exprs)
+                count = connection.count_datasets(query_exprs, archived=archived)
             if count > 0:
                 yield product, count
 
@@ -798,21 +822,29 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     query_exprs
                 ))
 
-    def search_summaries(self, **query):
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
+    def search_summaries(self, archived: bool | None = False, **query):
         """
         Perform a search, returning just the search fields of each dataset.
 
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: __generator[dict]
         """
-        for _, results in self._do_search_by_product(query, return_fields=True):
+        for _, results in self._do_search_by_product(query, return_fields=True, archived=archived):
             for columns in results:
                 output = columns._asdict()
                 _LOG.warning("search results: %s (%s)", output["id"], output["product"])
                 yield output
 
     # pylint: disable=redefined-outer-name
-    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None, **query):
+    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None,
+                                        limit=None, archived: bool | None = False,
+                                        **query):
         """
         This is a dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.
@@ -858,7 +890,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 results = connection.search_unique_datasets(
                     query_exprs,
                     select_fields=select_fields,
-                    limit=limit
+                    limit=limit,
+                    archived=archived
                 )
 
             for result in results:
