@@ -887,7 +887,6 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
         return like.geobox
 
-
     if load_hints:
         if output_crs is None:
             output_crs = load_hints.get('output_crs', None)
