@@ -170,6 +170,7 @@ geo
 geobase
 GeoBox
 geobox
+GeoBoxes
 GeoboxTiles
 GEOGCS
 GeoJSON
