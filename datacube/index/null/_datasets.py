@@ -127,7 +127,7 @@ class DatasetResource(AbstractDatasetResource):
     def restore_location(self, id_, uri):
         raise NotImplementedError()
 
-    def search_by_metadata(self, metadata, archived=False):
+    def search_by_metadata(self, metadata, archived=False, fetch_all=False):
         return []
 
     @deprecat(
@@ -140,13 +140,13 @@ class DatasetResource(AbstractDatasetResource):
             }
         }
     )
-    def search(self, limit=None, archived=False, **query):
+    def search(self, limit=None, archived=False, fetch_all=False, **query):
         return []
 
-    def search_by_product(self, archived=False, **query):
+    def search_by_product(self, archived=False, fetch_all=False, **query):
         return []
 
-    def search_returning(self, field_names=None, limit=None, archived=False, **query):
+    def search_returning(self, field_names=None, limit=None, archived=False, fetch_all=False, **query):
         return []
 
     def count(self, archived=False, **query):
@@ -176,7 +176,7 @@ class DatasetResource(AbstractDatasetResource):
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self,
                                         field_names: tuple,
-                                        custom_offsets=None, limit=None, archived=False, **query):
+                                        custom_offsets=None, limit=None, archived=False, fetch_all=False, **query):
         return []
 
     def spatial_extent(self, ids=None, product=None, crs=None):

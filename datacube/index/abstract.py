@@ -1578,7 +1578,8 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_by_metadata(self,
                            metadata: JsonDict,
-                           archived: bool | None = False
+                           archived: bool | None = False,
+                           fetch_all: bool = False
                           ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
@@ -1607,6 +1608,7 @@ class AbstractDatasetResource(ABC):
                limit: int | None = None,
                source_filter: QueryDict | None = None,
                archived: bool | None = False,
+               fetch_all: bool = False,
                **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
@@ -1736,6 +1738,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_by_product(self,
                           archived: bool | None = False,
+                          fetch_all: bool = False,
                           **query: QueryField
                          ) -> Iterable[tuple[Iterable[Dataset], Product]]:
         """
@@ -1753,6 +1756,7 @@ class AbstractDatasetResource(ABC):
                          field_names: Iterable[str] | None = None,
                          limit: int | None = None,
                          archived: bool | None = False,
+                         fetch_all: bool = False,
                          **query: QueryField
                         ) -> Iterable[tuple]:
         """
@@ -1847,7 +1851,7 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="This method is deprecated and will be removed in 2.0.  "
-               "Please use list(dc.index.datasets.search(...)) instead",
+               "Please use 'dc.index.datasets.search(fetch_all=True, ...)' instead",
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
@@ -1858,7 +1862,7 @@ class AbstractDatasetResource(ABC):
         :param query: search query parameters
         :return: Fully instantiated list of matching dataset models
         """
-        return list(self.search(**query))  # type: ignore[arg-type]   # mypy isn't being very smart here :(
+        return self.search(fetch_all=True, **query)  # type: ignore[arg-type]   # mypy isn't being very smart here :(
 
     @abstractmethod
     def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
@@ -1893,6 +1897,7 @@ class AbstractDatasetResource(ABC):
                                         custom_offsets: Mapping[str, Offset] | None = None,
                                         limit: int | None = None,
                                         archived: bool | None = False,
+                                        fetch_all: bool = False,
                                         **query: QueryField
                                        ) -> Iterable[tuple]:
         """

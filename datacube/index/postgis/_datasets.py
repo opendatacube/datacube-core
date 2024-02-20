@@ -597,13 +597,16 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             **kwargs
         )
 
-    def _make_many(self, query_result, product=None):
+    def _make_many(self, query_result, product=None, fetch_all: bool = True):
         """
         :rtype list[Dataset]
         """
-        return (self._make(dataset, product=product) for dataset in query_result)
+        if fetch_all:
+            return [self._make(dataset, product=product) for dataset in query_result]
+        else:
+            return (self._make(dataset, product=product) for dataset in query_result)
 
-    def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False):
+    def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False, fetch_all: bool = False):
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -612,9 +615,16 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dict metadata:
         :rtype: list[Dataset]
         """
+        if fetch_all:
+            results = []
         with self._db_connection() as connection:
             for dataset in self._make_many(connection.search_datasets_by_metadata(metadata, archived)):
-                yield dataset
+                if fetch_all:
+                    results.append(dataset)
+                else:
+                    yield dataset
+        if fetch_all:
+            return results
 
     @deprecat(
         deprecated_args={
@@ -626,7 +636,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             }
         }
     )
-    def search(self, limit=None, archived: bool | None = False, **query):
+    def search(self, limit=None, archived: bool | None = False, fetch_all: bool = False, **query):
         """
         Perform a search, returning results as Dataset objects.
 
@@ -635,23 +645,39 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: __generator[Dataset]
         """
         source_filter = query.pop('source_filter', None)
+        if fetch_all:
+            results = []
         for product, datasets in self._do_search_by_product(query,
                                                             source_filter=source_filter,
                                                             limit=limit,
                                                             archived=archived):
-            yield from self._make_many(datasets, product)
+            if fetch_all:
+                results.append(self._make_many(datasets, product))
+            else:
+                yield from self._make_many(datasets, product)
+        if fetch_all:
+            return results
 
-    def search_by_product(self, archived: bool | None = False, **query):
+    def search_by_product(self, archived: bool | None = False, fetch_all: bool = True, **query):
         """
         Perform a search, returning datasets grouped by product type.
 
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: __generator[(Product,  __generator[Dataset])]]
         """
+        if fetch_all:
+            results = []
         for product, datasets in self._do_search_by_product(query, archived=archived):
-            yield product, self._make_many(datasets, product)
+            if fetch_all:
+                results.append((product, self._make_many(datasets, product, fetch_all=True)))
+            else:
+                yield product, self._make_many(datasets, product)
+        if fetch_all:
+            return results
 
-    def search_returning(self, field_names=None, limit=None, archived: bool | None = False, **query):
+    def search_returning(self, field_names=None,
+                         limit=None, archived: bool | None = False, fetch_all: bool = None,
+                         **query):
         """
         Perform a search, returning only the specified fields.
 
@@ -668,6 +694,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             field_names = self._index.products.get_field_names()
         result_type = namedtuple('search_result', field_names)
 
+        if fetch_all:
+            results = []
         for _, results in self._do_search_by_product(query,
                                                      return_fields=True,
                                                      select_field_names=field_names,
@@ -679,7 +707,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     field: coldict.get(field)
                     for field in field_names
                 }
-                yield result_type(**kwargs)
+                if fetch_all:
+                    results.append(result_type(**kwargs))
+                else:
+                    yield result_type(**kwargs)
+        if fetch_all:
+            return results
 
     def count(self, archived: bool | None = False, **query):
         """
@@ -844,35 +877,17 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None,
                                         limit=None, archived: bool | None = False,
+                                        fetch_all: bool = False,
                                         **query):
         """
-        This is a dataset search function that returns the results as objects of a dynamically
-        generated Dataset class that is a subclass of tuple.
-
-        Only the requested fields will be returned together with related derived attributes as property functions
-        similer to the datacube.model.Dataset class. For example, if 'extent'is requested all of
-        'crs', 'extent', 'transform', and 'bounds' are available as property functions.
-
-        The field_names can be custom fields in addition to those specified in metadata_type, fixed fields, or
-        native fields. The field_names can also be derived fields like 'extent', 'crs', 'transform',
-        and 'bounds'. The custom fields require custom offsets of the metadata doc be provided.
-
-        The datasets can be selected based on values of custom fields as long as relevant custom
-        offsets are provided. However custom field values are not transformed so must match what is
-        stored in the database.
-
-        :param field_names: A tuple of field names that would be returned including derived fields
-                            such as extent, crs
-        :param custom_offsets: A dictionary of offsets in the metadata doc for custom fields
-        :param limit: Number of datasets returned per product.
-        :param query: key, value mappings of query that will be processed against metadata_types,
-                      product definitions and/or dataset table.
-        :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
-        property functions).
+        THIS implementation is a stub, the method it calls on the connection object is NOT implemented in this
+        driver.
         """
 
         assert field_names
 
+        if fetch_all:
+            full_results = []
         for product, query_exprs in self.make_query_expr(query, custom_offsets):
 
             select_fields = self.make_select_fields(product, field_names, custom_offsets)
@@ -903,7 +918,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     else:
                         field_values[field.name] = result[i_]
 
-                yield DatasetLight(**field_values)  # type: ignore
+                if fetch_all:
+                    full_results.append(DatasetLight(**field_values))
+                else:
+                    yield DatasetLight(**field_values)  # type: ignore
+        if fetch_all:
+            return full_results
 
     def make_select_fields(self, product, field_names, custom_offsets):
         """
