@@ -38,9 +38,10 @@ def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product):
 
 
 def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset):
-    datasets = list(index.datasets.search(
-        platform='landsat-8'
-    ))
+    datasets = index.datasets.search(
+        platform='landsat-8',
+        fetch_all=True
+    )
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
@@ -86,10 +87,11 @@ def test_search_dataset_range_eo3(index: Index,
     assert ls8_eo3_dataset2.id in ids
 
     # Full Range comparison
-    datasets = list(index.datasets.search(
+    datasets = index.datasets.search(
         product=ls8_eo3_dataset.product.name,
-        cloud_cover=Range(20.0, 55.0)
-    ))
+        cloud_cover=Range(20.0, 55.0),
+        fetch_all=True
+    )
     assert len(datasets) == 2
     ids = [ds.id for ds in datasets]
     assert ls8_eo3_dataset2.id in ids
@@ -98,9 +100,9 @@ def test_search_dataset_range_eo3(index: Index,
 
 def test_search_dataset_by_metadata_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
     datasets = index.datasets.search_by_metadata(
-        {"properties": {"eo:platform": "landsat-8", "eo:instrument": "OLI_TIRS"}}
+        {"properties": {"eo:platform": "landsat-8", "eo:instrument": "OLI_TIRS"}},
+        fetch_all=True
     )
-    datasets = list(datasets)
     assert len(datasets) == 1
     assert datasets[0].id == ls8_eo3_dataset.id
 
@@ -272,12 +274,13 @@ def test_search_by_product_eo3(index: Index,
     assert dataset_count == 2
 
     # Query one product
-    products = _load_product_query(index.datasets.search_by_product(
+    products = index.datasets.search_by_product(
         platform='landsat-8',
-        product_family='wo'
-    ))
+        product_family='wo',
+        fetch_all=True
+    )
     assert len(products) == 1
-    [dataset] = products[base_eo3_product_doc["name"]]
+    [dataset] = products[0][1]
     assert dataset.id == wo_eo3_dataset.id
     assert dataset.is_eo3
     assert dataset.type == dataset.product  # DEPRECATED MEMBER
@@ -296,7 +299,7 @@ def test_search_limit_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_datas
     datasets = list(index.datasets.search(limit=5, product=prod))
     assert len(datasets) == 2
 
-    datasets = list(index.datasets.search_returning(('id',), product=prod))
+    datasets = index.datasets.search_returning(('id',), product=prod, fetch_all=True)
     assert len(datasets) == 2
     datasets = list(index.datasets.search_returning(('id',), limit=1, product=prod))
     assert len(datasets) == 1
@@ -463,9 +466,10 @@ def test_search_returning_eo3(index: Index,
     assert label == ls8_eo3_dataset.metadata.label
 
     # All Fields
-    results = list(index.datasets.search_returning(
+    results = index.datasets.search_returning(
         platform='landsat-8',
-    ))
+        fetch_all=True
+    )
     assert len(results) == 3
 
     assert ls8_eo3_dataset.id in (result.id for result in results)

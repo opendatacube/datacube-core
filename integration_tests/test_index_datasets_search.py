@@ -33,8 +33,8 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
     valid_uuids = index_products()
 
     # Test derived properties such as 'extent'
-    results = list(index.datasets.search_returning_datasets_light(field_names=('id', 'extent', 'time'),
-                                                                  product='ls5_nbar_scene'))
+    results = index.datasets.search_returning_datasets_light(field_names=('id', 'extent', 'time'),
+                                                                  product='ls5_nbar_scene', fetch_all=True)
     for dataset in results:
         assert dataset.id in valid_uuids
         # Assume projection is defined as
@@ -60,11 +60,12 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
                                                                   zone='-55'))
     assert len(results) > 0
 
-    results = list(index.datasets.search_returning_datasets_light(field_names=('id', 'zone'),
+    results = index.datasets.search_returning_datasets_light(field_names=('id', 'zone'),
                                                                   custom_offsets={'zone': ['grid_spatial',
                                                                                            'projection', 'zone']},
                                                                   product='ls5_nbar_scene',
-                                                                  zone='-65'))
+                                                                  zone='-65',
+                                                                  fetch_all=True)
     assert len(results) == 0
 
     # Test uris
@@ -89,15 +90,17 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
     new_loc = PurePosixPath(tmpdir.strpath) / 'temp_location' / 'agdc-metadata.yaml'
     index.datasets.add_location(valid_uuids[0], new_loc.as_uri())  # Test of deprecated functionality
 
-    results_with_uri = list(index.datasets.search_returning_datasets_light(field_names=('id', 'uris'),
-                                                                           product='ls5_nbar_scene',
-                                                                           id=valid_uuids[0]))
+    results_with_uri = index.datasets.search_returning_datasets_light(field_names=('id', 'uris'),
+                                                                      product='ls5_nbar_scene',
+                                                                      id=valid_uuids[0],
+                                                                      fetch_all=True)
     assert len(results_with_uri) == 1
     assert len(results_with_uri[0].uris) == 2
 
-    results_with_uri = list(index.datasets.search_returning_datasets_light(field_names=('id', 'uri'),
-                                                                           product='ls5_nbar_scene',
-                                                                           id=valid_uuids[0]))
+    results_with_uri = index.datasets.search_returning_datasets_light(field_names=('id', 'uri'),
+                                                                      product='ls5_nbar_scene',
+                                                                      id=valid_uuids[0],
+                                                                      fetch_all=True)
     assert len(results_with_uri) == 1
     assert len(results_with_uri[0].uri) == 2
 

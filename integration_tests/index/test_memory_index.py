@@ -452,7 +452,7 @@ def test_mem_ds_search_and_count(mem_eo3_data: tuple):
     lds = list(dc.index.datasets.search(platform='landsat-8'))
     assert len(lds) == 2
     assert dc.index.datasets.count(platform='landsat-8') == 2
-    lds = list(dc.index.datasets.search(platform='landsat-8', limit=1))
+    lds = dc.index.datasets.search(platform='landsat-8', limit=1, fetch_all=True)
     assert len(lds) == 1
     lds = list(dc.index.datasets.search(source_filter={"product_family": 'ard'}))
     assert len(lds) == 1
@@ -471,7 +471,7 @@ def test_mem_ds_search_and_count(mem_eo3_data: tuple):
     with pytest.raises(ValueError):
         lds = list(dc.index.datasets.search(product_family='addams'))
 
-    lds = list(dc.index.datasets.search(archived=None, platform='landsat-8'))
+    lds = dc.index.datasets.search(archived=None, platform='landsat-8', fetch_all=True)
     assert len(lds) == 2
     lds = list(dc.index.datasets.search(archived=True, platform='landsat-8'))
     assert len(lds) == 0
@@ -488,7 +488,7 @@ def test_mem_ds_search_and_count(mem_eo3_data: tuple):
 def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple):
     dc, ls8_id, wo_id = mem_eo3_data
     # No source_filter; no results
-    assert not list(dc.index.datasets.search_by_product(platform="deplatformed"))
+    assert not dc.index.datasets.search_by_product(platform="deplatformed", fetch_all=True)
     lds = list(dc.index.datasets.search_by_product(platform='landsat-8'))
     assert len(lds) == 2
     for dss, product in lds:
@@ -502,12 +502,13 @@ def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple):
 
 def test_mem_ds_search_returning(mem_eo3_data: tuple):
     dc, ls8_id, wo_id = mem_eo3_data
-    lds = list(dc.index.datasets.search_returning(
+    lds = dc.index.datasets.search_returning(
         field_names=[
             "platform", "id", "product_family"
         ],
-        platform='landsat-8'
-    ))
+        platform='landsat-8',
+        fetch_all=True
+    )
     assert len(lds) == 2
     for res in lds:
         assert res.platform == "landsat-8"
@@ -540,10 +541,10 @@ def test_mem_ds_search_returning_datasets_light(mem_eo3_data: tuple):
         assert res.__class__.__name__ == 'DatasetLight'
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
-    lds = list(dc.index.datasets.search_returning_datasets_light(
+    lds = dc.index.datasets.search_returning_datasets_light(
         archived=None,
         field_names=['platform', 'id'],
-        platform='landsat-8'))
+        platform='landsat-8', fetch_all=True)
     assert len(lds) == 2
     lds = list(dc.index.datasets.search_returning_datasets_light(
         archived=True,
@@ -560,7 +561,7 @@ def test_mem_ds_search_by_metadata(mem_eo3_data: tuple):
     assert len(lds) == 1
     lds = list(dc.index.datasets.search_by_metadata({"properties": {"platform": "landsat-8"}}))
     assert len(lds) == 0
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}))
+    lds = dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, fetch_all=True)
     assert len(lds) == 2
     lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=None))
     assert len(lds) == 2
