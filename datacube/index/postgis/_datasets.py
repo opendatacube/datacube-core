@@ -688,8 +688,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return _results
 
     def _search_returning(self, field_names=None,
-                         limit=None, archived: bool | None = False,
-                         **query):
+                          limit=None, archived: bool | None = False,
+                          **query):
         """
         Perform a search, returning only the specified fields.
 
@@ -891,8 +891,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                          **query)
 
     def _search_returning_datasets_light(self, field_names: tuple, custom_offsets=None,
-                                        limit=None, archived: bool | None = False,
-                                        **query):
+                                         limit=None, archived: bool | None = False,
+                                         **query):
         """
         THIS implementation is a stub, the method it calls on the connection object is NOT implemented in this
         driver.

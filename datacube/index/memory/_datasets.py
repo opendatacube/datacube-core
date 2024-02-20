@@ -437,8 +437,8 @@ class DatasetResource(AbstractDatasetResource):
         return True
 
     def search_by_metadata(self,
-                            metadata: Mapping[str, QueryField],
-                            archived: bool | None = False, fetch_all: bool = False):
+                           metadata: Mapping[str, QueryField],
+                           archived: bool | None = False, fetch_all: bool = False):
         _results = self._search_by_metadata(metadata, archived=archived)
         if fetch_all:
             return list(_results)
@@ -446,8 +446,8 @@ class DatasetResource(AbstractDatasetResource):
             return _results
 
     def _search_by_metadata(self,
-                           metadata: Mapping[str, QueryField],
-                           archived: bool | None = False):
+                            metadata: Mapping[str, QueryField],
+                            archived: bool | None = False):
         if archived:
             # True: Return archived datasets only
             dss = self._archived_by_id.values()
@@ -621,19 +621,19 @@ class DatasetResource(AbstractDatasetResource):
                          fetch_all: bool = False,
                          **query: QueryField) -> Iterable[Tuple]:
         _results = self._search_returning(field_names,
-                                         limit=limit,
-                                         archived=archived,
-                                         **query)
+                                          limit=limit,
+                                          archived=archived,
+                                          **query)
         if fetch_all:
             return list(_results)
         else:
             return _results
 
     def _search_returning(self,
-                         field_names: Iterable[str] | None = None,
-                         limit: Optional[int] = None,
-                         archived: bool | None = False,
-                         **query: QueryField) -> Iterable[Tuple]:
+                          field_names: Iterable[str] | None = None,
+                          limit: Optional[int] = None,
+                          archived: bool | None = False,
+                          **query: QueryField) -> Iterable[Tuple]:
         if field_names is None:
             field_names = self._index.products.get_field_names()
         else:

@@ -661,10 +661,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return _results
 
     def _search_returning(self,
-                         field_names=None,
-                         limit=None,
-                         archived: bool | None = False,
-                         **query):
+                          field_names=None,
+                          limit=None,
+                          archived: bool | None = False,
+                          **query):
         """
         Perform a search, returning only the specified fields.
 
@@ -897,8 +897,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return _results
 
     def _search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None,
-                                        archived: bool | None = False,
-                                        **query):
+                                         archived: bool | None = False,
+                                         **query):
         """
         This is a dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.

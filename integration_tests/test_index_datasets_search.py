@@ -34,7 +34,7 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
 
     # Test derived properties such as 'extent'
     results = index.datasets.search_returning_datasets_light(field_names=('id', 'extent', 'time'),
-                                                                  product='ls5_nbar_scene', fetch_all=True)
+                                                             product='ls5_nbar_scene', fetch_all=True)
     for dataset in results:
         assert dataset.id in valid_uuids
         # Assume projection is defined as
@@ -61,11 +61,11 @@ def test_index_datasets_search_light(index, tmpdir, clirunner,
     assert len(results) > 0
 
     results = index.datasets.search_returning_datasets_light(field_names=('id', 'zone'),
-                                                                  custom_offsets={'zone': ['grid_spatial',
-                                                                                           'projection', 'zone']},
-                                                                  product='ls5_nbar_scene',
-                                                                  zone='-65',
-                                                                  fetch_all=True)
+                                                             custom_offsets={'zone': ['grid_spatial',
+                                                                                      'projection', 'zone']},
+                                                             product='ls5_nbar_scene',
+                                                             zone='-65',
+                                                             fetch_all=True)
     assert len(results) == 0
 
     # Test uris
