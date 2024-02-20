@@ -623,8 +623,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for product, datasets in self._do_search_by_product(query,
                                                             source_filter=source_filter,
                                                             limit=limit,
-                                                            archived=archived,
-                                                            fetch_all=fetch_all):
+                                                            archived=archived):
             if fetch_all:
                 results.extend(self._make_many(datasets, product))
             else:

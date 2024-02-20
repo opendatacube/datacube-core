@@ -658,7 +658,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if fetch_all:
             return results
 
-    def search_by_product(self, archived: bool | None = False, fetch_all: bool = True, **query):
+    def search_by_product(self, archived: bool | None = False, fetch_all: bool = False, **query):
         """
         Perform a search, returning datasets grouped by product type.
 

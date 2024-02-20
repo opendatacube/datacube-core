@@ -453,9 +453,9 @@ class DatasetResource(AbstractDatasetResource):
         for ds in dss:
             if metadata_subset(metadata, ds.metadata_doc):
                 if fetch_all:
-                    yield ds
-                else:
                     results.append(ds)
+                else:
+                    yield ds
         if fetch_all:
             return results
 
