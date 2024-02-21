@@ -127,26 +127,16 @@ class DatasetResource(AbstractDatasetResource):
     def restore_location(self, id_, uri):
         raise NotImplementedError()
 
-    def search_by_metadata(self, metadata, archived=False, fetch_all=False):
-        return []
+    def _search_by_metadata(self, metadata, archived=False):
+        yield from []
 
-    @deprecat(
-        deprecated_args={
-            "source_filter": {
-                "reason": "Filtering by source metadata is deprecated and will be removed in future.",
-                "version": "1.9.0",
-                "category": ODC2DeprecationWarning
+    def _search(self, limit=None, archived=False, **query):
+        yield from []
 
-            }
-        }
-    )
-    def search(self, limit=None, archived=False, fetch_all=False, **query):
-        return []
+    def _search_by_product(self, archived=False, fetch_all_per_product=False, **query):
+        yield from []
 
-    def search_by_product(self, archived=False, fetch_all=False, **query):
-        return []
-
-    def search_returning(self, field_names=None, limit=None, archived=False, fetch_all=False, **query):
+    def _search_returning(self, field_names=None, limit=None, archived=False, **query):
         return []
 
     def count(self, archived=False, **query):
@@ -174,10 +164,10 @@ class DatasetResource(AbstractDatasetResource):
         raise KeyError(str(ids))
 
     # pylint: disable=redefined-outer-name
-    def search_returning_datasets_light(self,
+    def _search_returning_datasets_light(self,
                                         field_names: tuple,
-                                        custom_offsets=None, limit=None, archived=False, fetch_all=False, **query):
-        return []
+                                        custom_offsets=None, limit=None, archived=False, **query):
+        yield from []
 
     def spatial_extent(self, ids=None, product=None, crs=None):
         return None

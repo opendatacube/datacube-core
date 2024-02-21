@@ -606,13 +606,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         else:
             return (self._make(dataset, product=product) for dataset in query_result)
 
-    def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False, fetch_all: bool = False):
-        _results = self._search_by_metadata(metadata, archived=archived)
-        if fetch_all:
-            return list(_results)
-        else:
-            return _results
-
     def _search_by_metadata(self, metadata: JsonDict, archived: bool | None = False):
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
@@ -625,24 +618,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             for dataset in self._make_many(connection.search_datasets_by_metadata(metadata, archived)):
                 yield dataset
-
-    @deprecat(
-        deprecated_args={
-            "source_filter": {
-                "reason": "Filtering by source metadata is deprecated and will be removed in future.",
-                "version": "1.9.0",
-                "category": ODC2DeprecationWarning
-
-            }
-        }
-    )
-    def search(self, limit=None, archived: bool | None = False, fetch_all: bool = False, **query):
-        _results = self._search(limit=limit, archived=archived, **query)
-
-        if fetch_all:
-            return list(_results)
-        else:
-            return _results
 
     def _search(self, limit=None, archived: bool | None = False, **query):
         """
@@ -659,15 +634,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                             archived=archived):
             yield from self._make_many(datasets, product)
 
-    def search_by_product(self, archived: bool | None = False, fetch_all: bool = False, **query):
-        _results = self._search_by_product(archived=archived, fetch_all=fetch_all, **query)
-
-        if fetch_all:
-            return list(_results)
-        else:
-            return _results
-
-    def _search_by_product(self, archived: bool | None = False, fetch_all: bool = False, **query):
+    def _search_by_product(self, archived: bool | None = False, fetch_all_per_product: bool = False, **query):
         """
         Perform a search, returning datasets grouped by product type.
 
@@ -675,17 +642,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: __generator[(Product,  __generator[Dataset])]]
         """
         for product, datasets in self._do_search_by_product(query, archived=archived):
-            yield product, self._make_many(datasets, product, fetch_all=fetch_all)
-
-    def search_returning(self, field_names=None,
-                         limit=None, archived: bool | None = False,
-                         fetch_all: bool = None,
-                         **query):
-        _results = self._search_returning(field_names=field_names, limit=limit, archived=archived, **query)
-        if fetch_all:
-            return list(_results)
-        else:
-            return _results
+            yield product, self._make_many(datasets, product, fetch_all=fetch_all_per_product)
 
     def _search_returning(self, field_names=None,
                           limit=None, archived: bool | None = False,
@@ -878,17 +835,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 output = columns._asdict()
                 _LOG.warning("search results: %s (%s)", output["id"], output["product"])
                 yield output
-
-    # pylint: disable=redefined-outer-name
-    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None,
-                                        limit=None, archived: bool | None = False,
-                                        fetch_all: bool = False,
-                                        **query):
-        _results = self._search_returning_datasets_light(field_names,
-                                                         custom_offsets=custom_offsets,
-                                                         limit=limit,
-                                                         archived=archived,
-                                                         **query)
 
     def _search_returning_datasets_light(self, field_names: tuple, custom_offsets=None,
                                          limit=None, archived: bool | None = False,

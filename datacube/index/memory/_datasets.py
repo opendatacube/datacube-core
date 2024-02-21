@@ -436,15 +436,6 @@ class DatasetResource(AbstractDatasetResource):
         self._locations[uuid].append(uri)
         return True
 
-    def search_by_metadata(self,
-                           metadata: Mapping[str, QueryField],
-                           archived: bool | None = False, fetch_all: bool = False):
-        _results = self._search_by_metadata(metadata, archived=archived)
-        if fetch_all:
-            return list(_results)
-        else:
-            return _results
-
     def _search_by_metadata(self,
                             metadata: Mapping[str, QueryField],
                             archived: bool | None = False):
@@ -464,7 +455,7 @@ class DatasetResource(AbstractDatasetResource):
     RET_FORMAT_DATASETS = 0
     RET_FORMAT_PRODUCT_GROUPED = 1
 
-    def _search(
+    def _search_impl(
             self,
             return_format: int,
             limit: Optional[int] = None,
@@ -543,25 +534,6 @@ class DatasetResource(AbstractDatasetResource):
             if return_format == self.RET_FORMAT_PRODUCT_GROUPED and product_results:
                 yield (product_results, product)
 
-    def _search_flat(
-            self,
-            limit: Optional[int] = None,
-            source_filter: Optional[Mapping[str, QueryField]] = None,
-            archived: bool | None = False,
-            fetch_all: bool = False,
-            **query: QueryField
-    ) -> Iterable[Dataset]:
-        _result = self._search(
-            return_format=self.RET_FORMAT_DATASETS,
-            limit=limit,
-            source_filter=source_filter,
-            archived=archived,
-            **query)
-        if fetch_all:
-            return cast(Iterable[Dataset], list(_result))
-        else:
-            return cast(Iterable[Dataset], _result)
-
     def _search_grouped(
             self,
             limit: Optional[int] = None,
@@ -570,7 +542,7 @@ class DatasetResource(AbstractDatasetResource):
             fetch_all: bool = False,
             **query: QueryField
     ) -> Iterable[Tuple[Iterable[Dataset], Product]]:
-        _result = self._search(
+        _result = self._search_impl(
             return_format=self.RET_FORMAT_PRODUCT_GROUPED,
             limit=limit,
             source_filter=source_filter,
@@ -597,37 +569,26 @@ class DatasetResource(AbstractDatasetResource):
             }
         }
     )
-    def search(self,
+    def _search(self,
                limit: Optional[int] = None,
                source_filter: Optional[Mapping[str, QueryField]] = None,
                archived: bool | None = False,
-               fetch_all: bool = False,
                **query: QueryField) -> Iterable[Dataset]:
         return cast(
             Iterable[Dataset],
-            self._search_flat(limit=limit, source_filter=source_filter, archived=archived, fetch_all=fetch_all, **query)
+            self._search_impl(
+                return_format=self.RET_FORMAT_DATASETS,
+                limit=limit, source_filter=source_filter, archived=archived,
+                **query)
         )
 
-    def search_by_product(self,
+    def _search_by_product(self,
                           archived: bool | None = False,
-                          fetch_all: bool = False,
-                          **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
-        return self._search_grouped(archived=archived, fetch_all=fetch_all, **query)  # type: ignore[arg-type]
-
-    def search_returning(self,
-                         field_names: Iterable[str] | None = None,
-                         limit: Optional[int] = None,
-                         archived: bool | None = False,
-                         fetch_all: bool = False,
-                         **query: QueryField) -> Iterable[Tuple]:
-        _results = self._search_returning(field_names,
-                                          limit=limit,
-                                          archived=archived,
-                                          **query)
-        if fetch_all:
-            return list(_results)
-        else:
-            return _results
+                          fetch_all_per_product: bool = False,
+                          **query: QueryField) -> Iterable[Tuple[Product, Iterable[Dataset]]]:
+        # Note that in the memory driver implementation, the iterable of datasets is always a list.
+        return self._search_impl(return_format=self.RET_FORMAT_PRODUCT_GROUPED,
+                                 archived=archived, **query)  # type: ignore[arg-type]
 
     def _search_returning(self,
                           field_names: Iterable[str] | None = None,

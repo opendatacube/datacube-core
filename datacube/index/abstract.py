@@ -1575,7 +1575,6 @@ class AbstractDatasetResource(ABC):
         :return: True location was able to be restored
         """
 
-    @abstractmethod
     def search_by_metadata(self,
                            metadata: JsonDict,
                            archived: bool | None = False,
@@ -1585,6 +1584,29 @@ class AbstractDatasetResource(ABC):
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
         Caution – slow! This will usually not use indexes.
+
+        :param metadata: metadata dictionary representing arbitrary search query
+        :param archived: False (default): Return active datasets only.
+                         None: Include archived and active datasets.
+                         True: Return archived datasets only.
+        :param fetch_all: If False (default), act like a generator and return results straight from the index as they
+                          are retrieved.  If True, collect all results before returning all at once in a single
+                          fully-instantiated list.
+        :return: Matching dataset models
+        """
+        _results = self._search_by_metadata(metadata, archived=archived)
+        if fetch_all:
+            return list(_results)
+        else:
+            return _results
+
+    @abstractmethod
+    def _search_by_metadata(self,
+                           metadata: JsonDict,
+                           archived: bool | None = False,
+                           ) -> Iterable[Dataset]:
+        """
+        abstract method for generator-style implementation of search_by_metadata()
 
         :param metadata: metadata dictionary representing arbitrary search query
         :param archived: False (default): Return active datasets only.
@@ -1603,7 +1625,6 @@ class AbstractDatasetResource(ABC):
             }
         }
     )
-    @abstractmethod
     def search(self,
                limit: int | None = None,
                source_filter: QueryDict | None = None,
@@ -1615,6 +1636,35 @@ class AbstractDatasetResource(ABC):
 
         Prior to dataccube-1.9.0, search always returned datasets sorted by product.  From 1.9, no ordering
         is guaranteed.  Ordering of results is now unspecified and may vary between index drivers.
+
+        :param limit: Limit number of datasets per product (None/default = unlimited)
+        :param archived: False (default): Return active datasets only.
+                         None: Include archived and active datasets.
+                         True: Return archived datasets only.
+        :param query: search query parameters
+        :param fetch_all: If False (default), act like a generator and return results straight from the index as they
+                          are retrieved.  If True, collect all results before returning all at once in a single
+                          fully-instantiated list.
+        :return: Matching datasets
+        """
+        _results = self._search(limit=limit,
+                                source_filter=source_filter,
+                                archived=archived,
+                                **query)
+        if fetch_all:
+            return list(_results)
+        else:
+            return _results
+
+
+    @abstractmethod
+    def _search(self,
+               limit: int | None = None,
+               source_filter: QueryDict | None = None,
+               archived: bool | None = False,
+               **query: QueryField) -> Iterable[Dataset]:
+        """
+        abstract method for generator-style implementation of search()
 
         :param limit: Limit number of datasets per product (None/default = unlimited)
         :param archived: False (default): Return active datasets only.
@@ -1735,36 +1785,86 @@ class AbstractDatasetResource(ABC):
 
         return BatchStatus(added, skipped, monotonic() - job_started)
 
-    @abstractmethod
     def search_by_product(self,
                           archived: bool | None = False,
                           fetch_all: bool = False,
                           **query: QueryField
-                         ) -> Iterable[tuple[Iterable[Dataset], Product]]:
+                          ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         """
         Perform a search, returning datasets grouped by product type.
 
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
+        :param fetch_all: If False (default), act like a generator and return results straight from the index as they
+                          are retrieved.  If True, collect all results before returning all at once in a single
+                          fully-instantiated list.
+        :param query: search query parameters
+        :return: Matching datasets, grouped by Product
+        """
+        _results = self._search_by_product(archived=archived, fetch_all_per_product=fetch_all, **query)
+        if fetch_all:
+            return list(_results)
+        else:
+            return _results
+
+    @abstractmethod
+    def _search_by_product(self,
+                          archived: bool | None = False,
+                          fetch_all_per_product: bool = False,
+                          **query: QueryField
+                         ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
+        """
+        abstract method for generator-style implementation of search_by_product()
+
+        :param archived: False (default): Return active datasets only.
+                         None: Include archived and active datasets.
+                         True: Return archived datasets only.
+        :param fetch_all_per_product: If True, instantiate the iterable of datasets as a fully instantiated list.
         :param query: search query parameters
         :return: Matching datasets, grouped by Product
         """
 
-    @abstractmethod
     def search_returning(self,
                          field_names: Iterable[str] | None = None,
                          limit: int | None = None,
                          archived: bool | None = False,
                          fetch_all: bool = False,
                          **query: QueryField
-                        ) -> Iterable[tuple]:
+                         ) -> Iterable[tuple]:
         """
         Perform a search, returning only the specified fields.
 
         This method can be faster than normal search() if you don't need all fields of each dataset.
 
         It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
+
+        :param field_names: Names of desired fields (default = all known search fields)
+        :param limit: Limit number of dataset (None/default = unlimited)
+        :param archived: False (default): Return active datasets only.
+                         None: Include archived and active datasets.
+                         True: Return archived datasets only.
+        :param fetch_all: If False (default), act like a generator and return results straight from the index as they
+                          are retrieved.  If True, collect all results before returning all at once in a single
+                          fully-instantiated list.
+        :param query: search query parameters
+        :return: Namedtuple of requested fields, for each matching dataset.
+        """
+        _results = self._search_returning(field_names=field_names, limit=limit, archived=archived, **query)
+        if fetch_all:
+            return list(_results)
+        else:
+            return _results
+
+    @abstractmethod
+    def _search_returning(self,
+                         field_names: Iterable[str] | None = None,
+                         limit: int | None = None,
+                         archived: bool | None = False,
+                         **query: QueryField
+                        ) -> Iterable[tuple]:
+        """
+        abstract method for generator-style implementation of search_returning()
 
         :param field_names: Names of desired fields (default = all known search fields)
         :param limit: Limit number of dataset (None/default = unlimited)
@@ -1891,7 +1991,6 @@ class AbstractDatasetResource(ABC):
         """
         return self._index.products.temporal_extent(product=product)
 
-    @abstractmethod
     def search_returning_datasets_light(self,
                                         field_names: tuple[str, ...],
                                         custom_offsets: Mapping[str, Offset] | None = None,
@@ -1899,7 +1998,7 @@ class AbstractDatasetResource(ABC):
                                         archived: bool | None = False,
                                         fetch_all: bool = False,
                                         **query: QueryField
-                                       ) -> Iterable[tuple]:
+                                        ) -> Iterable[tuple]:
         """
         This is a dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.
@@ -1923,9 +2022,43 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Return active datasets only.
                          None: Return archived and active datasets.
                          True: Return archived datasets only.
+        :param fetch_all: If False (default), act like a generator and return results straight from the index as they
+                          are retrieved.  If True, collect all results before returning all at once in a single
+                          fully-instantiated list.
         :param query: query parameters that will be processed against metadata_types,
                       product definitions and/or dataset table.
-        :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
+        :return: Iterable of dynamically generated DatasetLight objects (a subclass of namedtuple and possibly with
+        property functions).
+        """
+        _results = self._search_returning_datasets_light(field_names=field_names, custom_offsets=custom_offsets,
+                                                         limit=limit, archived=archived,
+                                                         **query)
+        if fetch_all:
+            return list(_results)
+        else:
+            return _results
+
+    @abstractmethod
+    def _search_returning_datasets_light(self,
+                                        field_names: tuple[str, ...],
+                                        custom_offsets: Mapping[str, Offset] | None = None,
+                                        limit: int | None = None,
+                                        archived: bool | None = False,
+                                        **query: QueryField
+                                       ) -> Iterable[tuple]:
+        """
+        abstract method for generator-style implementation of search_returning_datasets_light()
+
+        :param field_names: A tuple of field names that would be returned including derived fields
+                            such as extent, crs
+        :param custom_offsets: A dictionary of offsets in the metadata doc for custom fields
+        :param limit: Number of datasets returned per product.
+        :param archived: False (default): Return active datasets only.
+                         None: Return archived and active datasets.
+                         True: Return archived datasets only.
+        :param query: query parameters that will be processed against metadata_types,
+                      product definitions and/or dataset table.
+        :return: Iterable of dynamically generated DatasetLight objects (a subclass of namedtuple and possibly with
         property functions).
         """
 
