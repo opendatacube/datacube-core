@@ -537,16 +537,6 @@ class DatasetResource(AbstractDatasetResource):
     def _get_prod_queries(self, **query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
         return ((q, product) for product, q in self._index.products.search_robust(**query))
 
-    @deprecat(
-        deprecated_args={
-            "source_filter": {
-                "reason": "Filtering by source metadata is deprecated and will be removed in future.",
-                "version": "1.9.0",
-                "category": ODC2DeprecationWarning
-
-            }
-        }
-    )
     def _search(self,
                 limit: Optional[int] = None,
                 source_filter: Optional[Mapping[str, QueryField]] = None,
