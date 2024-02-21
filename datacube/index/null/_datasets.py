@@ -165,8 +165,9 @@ class DatasetResource(AbstractDatasetResource):
 
     # pylint: disable=redefined-outer-name
     def _search_returning_datasets_light(self,
-                                        field_names: tuple,
-                                        custom_offsets=None, limit=None, archived=False, **query):
+                                         field_names: tuple, custom_offsets=None,
+                                         limit=None, archived=False,
+                                         **query):
         yield from []
 
     def spatial_extent(self, ids=None, product=None, crs=None):

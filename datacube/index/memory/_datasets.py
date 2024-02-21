@@ -534,28 +534,6 @@ class DatasetResource(AbstractDatasetResource):
             if return_format == self.RET_FORMAT_PRODUCT_GROUPED and product_results:
                 yield (product_results, product)
 
-    def _search_grouped(
-            self,
-            limit: Optional[int] = None,
-            source_filter: Optional[Mapping[str, QueryField]] = None,
-            archived: bool | None = False,
-            fetch_all: bool = False,
-            **query: QueryField
-    ) -> Iterable[Tuple[Iterable[Dataset], Product]]:
-        _result = self._search_impl(
-            return_format=self.RET_FORMAT_PRODUCT_GROUPED,
-            limit=limit,
-            source_filter=source_filter,
-            archived=archived,
-            **query)
-        if fetch_all:
-            return cast(Iterable[Tuple[Iterable[Dataset], Product]], [
-                (prod, list(dss))
-                for prod, dss in _result
-            ])
-        else:
-            return cast(Iterable[Tuple[Iterable[Dataset], Product]], _result)
-
     def _get_prod_queries(self, **query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
         return ((q, product) for product, q in self._index.products.search_robust(**query))
 
@@ -570,10 +548,10 @@ class DatasetResource(AbstractDatasetResource):
         }
     )
     def _search(self,
-               limit: Optional[int] = None,
-               source_filter: Optional[Mapping[str, QueryField]] = None,
-               archived: bool | None = False,
-               **query: QueryField) -> Iterable[Dataset]:
+                limit: Optional[int] = None,
+                source_filter: Optional[Mapping[str, QueryField]] = None,
+                archived: bool | None = False,
+                **query: QueryField) -> Iterable[Dataset]:
         return cast(
             Iterable[Dataset],
             self._search_impl(
@@ -583,9 +561,9 @@ class DatasetResource(AbstractDatasetResource):
         )
 
     def _search_by_product(self,
-                          archived: bool | None = False,
-                          fetch_all_per_product: bool = False,
-                          **query: QueryField) -> Iterable[Tuple[Product, Iterable[Dataset]]]:
+                           archived: bool | None = False,
+                           fetch_all_per_product: bool = False,
+                           **query: QueryField) -> Iterable[Tuple[Product, Iterable[Dataset]]]:
         # Note that in the memory driver implementation, the iterable of datasets is always a list.
         return self._search_impl(return_format=self.RET_FORMAT_PRODUCT_GROUPED,
                                  archived=archived, **query)  # type: ignore[arg-type]
@@ -710,7 +688,8 @@ class DatasetResource(AbstractDatasetResource):
             raise ValueError('Must specify "time" range in period-counting query')
         periods = self._expand_period(period, start, end)
         last_product: Optional[YieldType] = None
-        for dss, product in self._search_grouped(archived=archived, **query):  # type: ignore[arg-type]
+        for dss, product in self._search_impl(return_format=self.RET_FORMAT_PRODUCT_GROUPED, archived=archived,
+                                              **query):  # type: ignore[arg-type]
             if last_product and single_product_only:
                 raise ValueError(f"Multiple products match single query search: {repr(query)}")
             if last_product:

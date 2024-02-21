@@ -1602,9 +1602,8 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def _search_by_metadata(self,
-                           metadata: JsonDict,
-                           archived: bool | None = False,
-                           ) -> Iterable[Dataset]:
+                            metadata: JsonDict,
+                            archived: bool | None = False) -> Iterable[Dataset]:
         """
         abstract method for generator-style implementation of search_by_metadata()
 
@@ -1656,13 +1655,12 @@ class AbstractDatasetResource(ABC):
         else:
             return _results
 
-
     @abstractmethod
     def _search(self,
-               limit: int | None = None,
-               source_filter: QueryDict | None = None,
-               archived: bool | None = False,
-               **query: QueryField) -> Iterable[Dataset]:
+                limit: int | None = None,
+                source_filter: QueryDict | None = None,
+                archived: bool | None = False,
+                **query: QueryField) -> Iterable[Dataset]:
         """
         abstract method for generator-style implementation of search()
 
@@ -1810,10 +1808,9 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def _search_by_product(self,
-                          archived: bool | None = False,
-                          fetch_all_per_product: bool = False,
-                          **query: QueryField
-                         ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
+                           archived: bool | None = False,
+                           fetch_all_per_product: bool = False,
+                           **query: QueryField) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         """
         abstract method for generator-style implementation of search_by_product()
 
@@ -1858,11 +1855,10 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def _search_returning(self,
-                         field_names: Iterable[str] | None = None,
-                         limit: int | None = None,
-                         archived: bool | None = False,
-                         **query: QueryField
-                        ) -> Iterable[tuple]:
+                          field_names: Iterable[str] | None = None,
+                          limit: int | None = None,
+                          archived: bool | None = False,
+                          **query: QueryField) -> Iterable[tuple]:
         """
         abstract method for generator-style implementation of search_returning()
 
@@ -2040,12 +2036,11 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def _search_returning_datasets_light(self,
-                                        field_names: tuple[str, ...],
-                                        custom_offsets: Mapping[str, Offset] | None = None,
-                                        limit: int | None = None,
-                                        archived: bool | None = False,
-                                        **query: QueryField
-                                       ) -> Iterable[tuple]:
+                                         field_names: tuple[str, ...],
+                                         custom_offsets: Mapping[str, Offset] | None = None,
+                                         limit: int | None = None,
+                                         archived: bool | None = False,
+                                         **query: QueryField) -> Iterable[tuple]:
         """
         abstract method for generator-style implementation of search_returning_datasets_light()
 
