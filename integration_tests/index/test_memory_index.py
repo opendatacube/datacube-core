@@ -519,6 +519,32 @@ def test_mem_ds_search_returning(mem_eo3_data: tuple):
     for res in lds:
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
+    lds = list(dc.index.datasets.search_returning(
+        field_names=["id", "platform"],
+        custom_offsets={
+            "cloud_cover": ["properties", "eo:cloud_cover"],
+            "instrument": ["properties", "eo:instrument"],
+        },
+        platform='landsat-8'
+    ))
+    assert len(lds) == 2
+    for res in lds:
+        assert res.platform == "landsat-8"
+        assert res.id in (str(ls8_id), str(wo_id))
+        assert res.cloud_cover < 59.0 and res.cloud_cover > 58.9
+        assert res.instrument.endswith("OLI_TIRS")
+    lds = list(dc.index.datasets.search_returning(
+        custom_offsets={
+            "cloud_cover": ["properties", "eo:cloud_cover"],
+            "instrument": ["properties", "eo:instrument"],
+        },
+        platform='landsat-8'
+    ))
+    for res in lds:
+        assert res.cloud_cover < 59.0 and res.cloud_cover > 58.9
+        assert res.instrument.endswith("OLI_TIRS")
+        with pytest.raises(AttributeError):
+            assert res.id in (str(ls8_id), str(wo_id))
 
 
 def test_mem_ds_search_summary(mem_eo3_data: tuple):
