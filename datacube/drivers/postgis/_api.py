@@ -145,6 +145,15 @@ def get_native_fields():
     return fields
 
 
+def mk_simple_offset_field(field_name, description, offset):
+    return SimpleDocField(
+        name=field_name, description=description,
+        alchemy_column=Dataset.metadata_doc,
+        indexed=False,
+        offset=offset
+    )
+
+
 def get_dataset_fields(metadata_type_definition):
     dataset_section = metadata_type_definition['dataset']
 
@@ -158,19 +167,13 @@ def get_dataset_fields(metadata_type_definition):
             False,
             offset=dataset_section.get('creation_dt') or ['creation_dt']
         ),
-        format=SimpleDocField(
-            'format',
-            'File format (GeoTiff, NetCDF)',
-            Dataset.metadata_doc,
-            False,
-            offset=dataset_section.get('format') or ['format', 'name']
+        format=mk_simple_offset_field(
+            'format', 'File formay (GeoTiff, NetCDF)',
+            dataset_section.get('format') or ['format', 'name']
         ),
-        label=SimpleDocField(
-            'label',
-            'Label',
-            Dataset.metadata_doc,
-            False,
-            offset=dataset_section.get('label') or ['label']
+        label=mk_simple_offset_field(
+            'label', 'Label',
+            dataset_section.get('label') or ['label']
         ),
     ))
 

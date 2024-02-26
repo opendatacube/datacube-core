@@ -756,7 +756,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     # pylint: disable=too-many-locals
     def _do_search_by_product(self, query, return_fields=False,
-                              additional_fields: Mapping[str, Field] | None =None,
+                              additional_fields: Mapping[str, Field] | None = None,
                               select_field_names=None,
                               with_source_ids=False, source_filter=None,
                               limit=None,
