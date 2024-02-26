@@ -2,36 +2,42 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import collections.abc
+import datetime
 import logging
 import uuid
-import collections.abc
 from itertools import groupby
-from typing import Any, Iterable, cast, Callable, Hashable, Mapping, Sequence
-import datetime
+from typing import Any, Callable, Hashable, Iterable, Mapping, Sequence, cast
 
 import deprecat
 import numpy
 import xarray
 from dask import array as da
-
-from datacube.cfg import GeneralisedRawCfg, GeneralisedCfg, GeneralisedEnv, ODCConfig
-from datacube.storage import reproject_and_fuse, BandInfo
-from datacube.utils import ignore_exceptions_if
-from odc.geo import CRS, yx_, res_, resyx_, Resolution, XY
+from odc.geo import CRS, XY, Resolution, res_, resyx_, yx_
+from odc.geo.geobox import GeoBox, GeoboxTiles
+from odc.geo.geom import Geometry, bbox_union, box, intersects
 from odc.geo.warp import Resampling
 from odc.geo.xr import xr_coords
-from datacube.utils.dates import normalise_dt
-from odc.geo.geom import intersects, box, bbox_union, Geometry
-from odc.geo.geobox import GeoBox, GeoboxTiles
-from datacube.model import ExtraDimensions, ExtraDimensionSlices, Dataset, Measurement, GridSpec
-from datacube.model.utils import xr_apply
 
-from .query import Query, query_group_by, query_geopolygon, GroupBy
-from ..index import index_connect, Index
+from datacube.cfg import GeneralisedCfg, GeneralisedEnv, GeneralisedRawCfg, ODCConfig
+from datacube.model import (
+    Dataset,
+    ExtraDimensions,
+    ExtraDimensionSlices,
+    GridSpec,
+    Measurement,
+)
+from datacube.model.utils import xr_apply
+from datacube.storage import BandInfo, reproject_and_fuse
+from datacube.utils import ignore_exceptions_if
+from datacube.utils.dates import normalise_dt
+
 from ..drivers import new_datasource
+from ..index import Index, index_connect
 from ..index.abstract import QueryField
 from ..migration import ODC2DeprecationWarning
-from ..storage._load import ProgressFunction, FuserFunction
+from ..storage._load import FuserFunction, ProgressFunction
+from .query import GroupBy, Query, query_geopolygon, query_group_by
 
 _LOG = logging.getLogger(__name__)
 
@@ -256,6 +262,7 @@ class Datacube:
              progress_cbk: ProgressFunction | None = None,
              patch_url: Callable[[str], str] | None = None,
              limit: int | None = None,
+             driver: Any | None = None,
              **query: QueryField):
         r"""
         Load data as an ``xarray.Dataset`` object.
@@ -543,7 +550,8 @@ class Datacube:
                                 skip_broken_datasets=skip_broken_datasets,
                                 progress_cbk=progress_cbk,
                                 extra_dims=extra_dims,
-                                patch_url=patch_url)
+                                patch_url=patch_url,
+                                driver=driver)
 
         return result
 
@@ -937,6 +945,13 @@ class Datacube:
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
         measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
+        if driver := extra.pop('driver', None):
+            from ..storage._loader import driver_based_load
+
+            return driver_based_load(driver, sources, geobox, measurements, dask_chunks,
+                                       skip_broken_datasets=skip_broken_datasets,
+                                       extra_dims=extra_dims,
+                                       patch_url=patch_url)
 
         if dask_chunks is not None:
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
