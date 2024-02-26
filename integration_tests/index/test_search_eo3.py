@@ -497,8 +497,8 @@ def test_search_returning_rows_eo3(index,
     ))
     assert len(results) == 1
     assert results[0].id == dataset.id
-    assert 1.31 < float(results[0].cloud_shadow) < 1.32
-    assert 34.58 < float(results[0].sun_azimuth) < 34.59
+    assert 1.31 < results[0].cloud_shadow < 1.32
+    assert 34.58 < results[0].sun_azimuth < 34.59
 
 
     index.datasets.archive_location(dataset.id, uri)  # Test of deprecated method
