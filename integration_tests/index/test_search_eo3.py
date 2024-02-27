@@ -500,6 +500,18 @@ def test_search_returning_rows_eo3(index,
     assert 1.31 < results[0].cloud_shadow < 1.32
     assert 34.58 < results[0].sun_azimuth < 34.59
 
+    results = list(index.datasets.search_returning(
+        [],
+        custom_offsets={
+            "cloud_shadow": ["properties", "fmask:cloud_shadow"],
+            "sun_azimuth": ["properties", "eo:sun_azimuth"]
+        },
+        platform='landsat-8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 1
+    assert 1.31 < results[0].cloud_shadow < 1.32
+
     index.datasets.archive_location(dataset.id, uri)  # Test of deprecated method
     index.datasets.remove_location(dataset.id, uri)  # Test of deprecated method
 

@@ -443,6 +443,9 @@ def test_mem_ds_archive_purge(mem_eo3_data: tuple):
     assert ls8_id not in active_ids
     assert wo_id in active_ids
     assert archived_ids == []
+    # And archive wo_ds again
+    dc.index.datasets.archive((wo_id,))
+    assert list(dc.index.datasets.get_all_dataset_ids(False)) == []
 
 
 def test_mem_ds_search_and_count(mem_eo3_data: tuple):
