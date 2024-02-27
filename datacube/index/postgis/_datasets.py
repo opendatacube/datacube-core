@@ -670,6 +670,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param int limit: Limit number of datasets
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
+        if order_by:
+            raise ValueError("order_by argument is not yet supported by the postgis index driver.")
         if field_names is None and custom_offsets is None:
             field_names = self._index.products.get_field_names()
         elif field_names:
@@ -699,12 +701,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                      archived=archived):
             for columns in results:
                 coldict = columns._asdict()
-                kwargs = {}
-                for field_name in field_names:
-                    if field_name in custom_fields:
-                        kwargs[field_name] = json.loads(coldict.get(field_name))
-                    else:
-                        kwargs[field_name] = coldict.get(field_name)
+                # Custom fields are not type-aware and returned as stringified json.
+                extract_field = lambda f: json.loads(coldict.get(f)) if f in custom_fields else coldict.get(f)
+                kwargs = {f: extract_field(f) for f in field_names}
                 yield result_type(**kwargs)
 
     def count(self, archived: bool | None = False, **query):

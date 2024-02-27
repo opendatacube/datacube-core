@@ -679,12 +679,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                        archived=archived):
             for columns in p_results:
                 coldict = columns._asdict()
-                kwargs = {}
-                for field_name in field_names:
-                    if field_name in custom_fields:
-                        kwargs[field_name] = json.loads(coldict.get(field_name))
-                    else:
-                        kwargs[field_name] = coldict.get(field_name)
+                # Custom fields are not type-aware and returned as stringified json.
+                extract_field = lambda f: json.loads(coldict.get(f)) if f in custom_fields else coldict.get(f)
+                kwargs = {f: extract_field(f) for f in field_names}
                 yield result_type(**kwargs)
 
     def count(self, archived: bool | None = False, **query):
