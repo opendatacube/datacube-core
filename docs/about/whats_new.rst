@@ -34,6 +34,7 @@ v1.9.next
 - Index driver API type hint cleanup. (:pull:`1541`)
 - Deprecate multiple locations. (:pull:`1546`)
 - Deprecate search_eager and search_summaries and add `archived` arg to all dataset search/count methods. (:pull:`1550`)
+- Migrate away from deprecated Python pkg_resources module (:pull:`1558`)
 
 
 v1.8.next
