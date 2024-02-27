@@ -701,8 +701,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                      archived=archived):
             for columns in results:
                 coldict = columns._asdict()
-                # Custom fields are not type-aware and returned as stringified json.
+
                 def extract_field(f):
+                    # Custom fields are not type-aware and returned as stringified json.
                     return json.loads(coldict.get(f)) if f in custom_fields else coldict.get(f)
                 kwargs = {f: extract_field(f) for f in field_names}
                 yield result_type(**kwargs)
