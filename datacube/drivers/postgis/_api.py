@@ -168,7 +168,7 @@ def get_dataset_fields(metadata_type_definition):
             offset=dataset_section.get('creation_dt') or ['creation_dt']
         ),
         format=mk_simple_offset_field(
-            'format', 'File formay (GeoTiff, NetCDF)',
+            'format', 'File format (GeoTiff, NetCDF)',
             dataset_section.get('format') or ['format', 'name']
         ),
         label=mk_simple_offset_field(

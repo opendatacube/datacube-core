@@ -652,12 +652,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             yield product, self._make_many(datasets, product)
 
     def search_returning(self,
-                          field_names=None,
-                          custom_offsets: Mapping[str, Offset] | None = None,
-                          limit=None,
-                          archived: bool | None = False,
-                          order_by: str | Field | None = None,
-                          **query):
+                         field_names=None,
+                         custom_offsets: Mapping[str, Offset] | None = None,
+                         limit=None,
+                         archived: bool | None = False,
+                         order_by: str | Field | None = None,
+                         **query):
         """
         Perform a search, returning only the specified fields.
 
