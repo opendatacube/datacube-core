@@ -598,15 +598,16 @@ class DatasetResource(AbstractDatasetResource):
                          archived: bool | None = False,
                          order_by: str | Field | None = None,
                          **query: QueryField) -> Iterable[Tuple]:
+        # Note that this implementation relies on dictionaries being ordered by insertion - this has been the case
+        # since Py3.6, and officially guaranteed behaviour since Py3.7.
         if order_by:
             raise ValueError("order_by argument is not currently supported by the memory index driver.")
         if field_names is None and custom_offsets is None:
-            field_names = self._index.products.get_field_names()
+            field_name_d = {f: None for f in self._index.products.get_field_names()}
         elif field_names:
-            field_names = list(field_names)
+            field_name_d = {f: None for f in field_names}
         else:
-            field_names = []
-        field_name_set = set(field_names)
+            field_name_d = {}
 
         if custom_offsets:
             custom_fields = {
@@ -614,20 +615,19 @@ class DatasetResource(AbstractDatasetResource):
                 for name, offset in custom_offsets.items()
             }
             for name in custom_fields:
-                if name not in field_name_set:
-                    field_name_set.add(name)
-                    field_names.append(name)
+                if name not in field_name_d:
+                    field_name_d[name] = None
         else:
             custom_fields = {}
 
         #    Typing note: mypy can't handle dynamically created namedtuples
-        result_type = namedtuple('search_result', field_names)  # type: ignore[misc]
+        result_type = namedtuple('search_result', field_name_d.keys())  # type: ignore[misc]
         for ds in self.search(limit=limit, archived=archived, **query):  # type: ignore[arg-type]
             ds_fields = get_dataset_fields(ds.metadata_type.definition)
             ds_fields.update(custom_fields)
             result_vals = {
                 fn: ds_fields[fn].extract(ds.metadata_doc) if fn in ds_fields else None
-                for fn in field_names
+                for fn in field_name_d.keys()
             }
             yield result_type(**result_vals)
 
