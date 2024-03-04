@@ -1679,7 +1679,7 @@ class AbstractDatasetResource(ABC):
                 b_skipped += 1
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
-    def _init_bulk_add_cache(self) -> Mapping[str, Any]:
+    def _init_bulk_add_cache(self) -> dict[str, Any]:
         """
         Initialise a cache dictionary that may be used to share data between calls to _add_batch()
 
