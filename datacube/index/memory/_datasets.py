@@ -24,6 +24,7 @@ from datacube.index.abstract import (AbstractDatasetResource, DSID, dsid_to_uuid
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
+from datacube.model.fields import SimpleField
 from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes
 from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
@@ -103,7 +104,7 @@ class DatasetResource(AbstractDatasetResource):
             if dataset.product.name in self._by_product:
                 self._by_product[dataset.product.name].add(dataset.id)
             else:
-                self._by_product[dataset.product.name] = set([dataset.id])
+                self._by_product[dataset.product.name] = {dataset.id}
         if archive_less_mature is not None:
             _LOG.warning("archive-less-mature functionality is not implemented for memory driver")
         return cast(Dataset, self.get(dataset.id))
@@ -592,20 +593,40 @@ class DatasetResource(AbstractDatasetResource):
 
     def search_returning(self,
                          field_names: Iterable[str] | None = None,
+                         custom_offsets: Mapping[str, Offset] | None = None,
                          limit: Optional[int] = None,
                          archived: bool | None = False,
+                         order_by: str | Field | None = None,
                          **query: QueryField) -> Iterable[Tuple]:
-        if field_names is None:
-            field_names = self._index.products.get_field_names()
+        # Note that this implementation relies on dictionaries being ordered by insertion - this has been the case
+        # since Py3.6, and officially guaranteed behaviour since Py3.7.
+        if order_by:
+            raise ValueError("order_by argument is not currently supported by the memory index driver.")
+        if field_names is None and custom_offsets is None:
+            field_name_d = {f: None for f in self._index.products.get_field_names()}
+        elif field_names:
+            field_name_d = {f: None for f in field_names}
         else:
-            field_names = list(field_names)
+            field_name_d = {}
+
+        if custom_offsets:
+            custom_fields = {
+                name: SimpleField(offset, lambda x: x, "any", name=name, description="")
+                for name, offset in custom_offsets.items()
+            }
+            for name in custom_fields:
+                field_name_d[name] = None
+        else:
+            custom_fields = {}
+
         #    Typing note: mypy can't handle dynamically created namedtuples
-        result_type = namedtuple('search_result', field_names)  # type: ignore[misc]
+        result_type = namedtuple('search_result', field_name_d.keys())  # type: ignore[misc]
         for ds in self.search(limit=limit, archived=archived, **query):  # type: ignore[arg-type]
             ds_fields = get_dataset_fields(ds.metadata_type.definition)
+            ds_fields.update(custom_fields)
             result_vals = {
                 fn: ds_fields[fn].extract(ds.metadata_doc) if fn in ds_fields else None
-                for fn in field_names
+                for fn in field_name_d.keys()
             }
             yield result_type(**result_vals)
 

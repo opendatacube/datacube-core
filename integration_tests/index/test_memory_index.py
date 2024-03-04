@@ -443,6 +443,9 @@ def test_mem_ds_archive_purge(mem_eo3_data: tuple):
     assert ls8_id not in active_ids
     assert wo_id in active_ids
     assert archived_ids == []
+    # And archive wo_ds again
+    dc.index.datasets.archive((wo_id,))
+    assert list(dc.index.datasets.get_all_dataset_ids(False)) == []
 
 
 def test_mem_ds_search_and_count(mem_eo3_data: tuple):
@@ -519,6 +522,32 @@ def test_mem_ds_search_returning(mem_eo3_data: tuple):
     for res in lds:
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
+    lds = list(dc.index.datasets.search_returning(
+        field_names=["id", "platform"],
+        custom_offsets={
+            "cloud_cover": ["properties", "eo:cloud_cover"],
+            "instrument": ["properties", "eo:instrument"],
+        },
+        platform='landsat-8'
+    ))
+    assert len(lds) == 2
+    for res in lds:
+        assert res.platform == "landsat-8"
+        assert res.id in (str(ls8_id), str(wo_id))
+        assert res.cloud_cover < 59.0 and res.cloud_cover > 58.9
+        assert res.instrument.endswith("OLI_TIRS")
+    lds = list(dc.index.datasets.search_returning(
+        custom_offsets={
+            "cloud_cover": ["properties", "eo:cloud_cover"],
+            "instrument": ["properties", "eo:instrument"],
+        },
+        platform='landsat-8'
+    ))
+    for res in lds:
+        assert res.cloud_cover < 59.0 and res.cloud_cover > 58.9
+        assert res.instrument.endswith("OLI_TIRS")
+        with pytest.raises(AttributeError):
+            assert res.id in (str(ls8_id), str(wo_id))
 
 
 def test_mem_ds_search_summary(mem_eo3_data: tuple):

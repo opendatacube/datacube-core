@@ -14,6 +14,9 @@ from ._base import Range
 
 # Allowed values for field 'type' (specified in a metadata type docuemnt)
 _AVAILABLE_TYPE_NAMES = (
+    # Unrestricted type - handy for dynamically creating fields from offsets, e.g. for search_returning()
+    'any',
+
     'numeric-range',
     'double-range',
     'integer-range',

@@ -146,7 +146,10 @@ class DatasetResource(AbstractDatasetResource):
     def search_by_product(self, archived=False, **query):
         return []
 
-    def search_returning(self, field_names=None, limit=None, archived=False, **query):
+    def search_returning(self,
+                         field_names=None, custom_offsets=None,
+                         limit=None, archived=False, order_by=None,
+                         **query):
         return []
 
     def count(self, archived=False, **query):

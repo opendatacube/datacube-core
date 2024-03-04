@@ -18,7 +18,7 @@ from deprecat import deprecat
 
 from datacube.drivers.postgis._fields import SimpleDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
-from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fields
+from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fields, mk_simple_offset_field
 from datacube.utils.uris import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from datacube.migration import ODC2DeprecationWarning
@@ -28,7 +28,7 @@ from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product, Range, LineageTree
 from datacube.model.fields import Field
 from datacube.utils import jsonify_document, _readable_offset, changes
-from datacube.utils.changes import get_doc_changes
+from datacube.utils.changes import get_doc_changes, Offset
 from odc.geo import CRS, Geometry
 from datacube.index import fields
 
@@ -651,7 +651,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for product, datasets in self._do_search_by_product(query, archived=archived):
             yield product, self._make_many(datasets, product)
 
-    def search_returning(self, field_names=None, limit=None, archived: bool | None = False, **query):
+    def search_returning(self,
+                         field_names=None,
+                         custom_offsets: Mapping[str, Offset] | None = None,
+                         limit=None,
+                         archived: bool | None = False,
+                         order_by: str | Field | None = None,
+                         **query):
         """
         Perform a search, returning only the specified fields.
 
@@ -664,21 +670,42 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param int limit: Limit number of datasets
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
-        if field_names is None:
+        if order_by:
+            raise ValueError("order_by argument is not yet supported by the postgis index driver.")
+        if field_names is None and custom_offsets is None:
             field_names = self._index.products.get_field_names()
+        elif field_names:
+            field_names = list(field_names)
+        else:
+            field_names = []
+        field_name_set = set(field_names)
+        if custom_offsets:
+            custom_fields = {
+                name: mk_simple_offset_field(name, name, offset)
+                for name, offset in custom_offsets.items()
+            }
+            for name in custom_fields:
+                if name not in field_name_set:
+                    field_name_set.add(name)
+                    field_names.append(name)
+        else:
+            custom_fields = {}
+
         result_type = namedtuple('search_result', field_names)
 
         for _, results in self._do_search_by_product(query,
                                                      return_fields=True,
                                                      select_field_names=field_names,
+                                                     additional_fields=custom_fields,
                                                      limit=limit,
                                                      archived=archived):
             for columns in results:
                 coldict = columns._asdict()
-                kwargs = {
-                    field: coldict.get(field)
-                    for field in field_names
-                }
+
+                def extract_field(f):
+                    # Custom fields are not type-aware and returned as stringified json.
+                    return json.loads(coldict.get(f)) if f in custom_fields else coldict.get(f)
+                kwargs = {f: extract_field(f) for f in field_names}
                 yield result_type(**kwargs)
 
     def count(self, archived: bool | None = False, **query):
@@ -737,7 +764,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             yield q, product
 
     # pylint: disable=too-many-locals
-    def _do_search_by_product(self, query, return_fields=False, select_field_names=None,
+    def _do_search_by_product(self, query, return_fields=False,
+                              additional_fields: Mapping[str, Field] | None = None,
+                              select_field_names=None,
                               with_source_ids=False, source_filter=None, limit=None,
                               archived: bool | None = False):
         assert not with_source_ids
@@ -758,6 +787,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             assert "lon" not in q
 
             dataset_fields = product.metadata_type.dataset_fields
+            if additional_fields:
+                dataset_fields.update(additional_fields)
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             select_fields = None
             if return_fields:

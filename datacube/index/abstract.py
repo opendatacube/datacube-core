@@ -1751,8 +1751,10 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_returning(self,
                          field_names: Iterable[str] | None = None,
+                         custom_offsets: Mapping[str, Offset] | None = None,
                          limit: int | None = None,
                          archived: bool | None = False,
+                         order_by: str | Field | None = None,
                          **query: QueryField
                         ) -> Iterable[tuple]:
         """
@@ -1762,11 +1764,18 @@ class AbstractDatasetResource(ABC):
 
         It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
 
-        :param field_names: Names of desired fields (default = all known search fields)
+        :param field_names: Names of desired fields (default = all known search fields, unless custom_offsets is set,
+                            see below)
+        :param custom_offsets: A dictionary of offsets in the metadata doc for custom fields custom offsets
+                               are returned in addition to fields named in field_names.  Default is
+                               None, field_names only.  If field_names is None, and custom_offsets are provided,
+                               only the custom offsets are included, over-riding the normal field_names default.
         :param limit: Limit number of dataset (None/default = unlimited)
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
+        :param order_by: a field name or field by which to sort output.  None is unsorted and may allow faster return
+                         of first result depending on the index driver's implementation.
         :param query: search query parameters
         :return: Namedtuple of requested fields, for each matching dataset.
         """
