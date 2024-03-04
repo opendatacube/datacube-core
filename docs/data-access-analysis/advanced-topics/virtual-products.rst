@@ -21,7 +21,7 @@ pixel-by-pixel.
 The source code for virtual products is in the :mod:`datacube.virtual` module.
 An example notebook using virtual products can be found in the `DEA`_ notebooks collection.
 
-.. _DEA: https://docs.dea.ga.gov.au/notebooks/Frequently_used_code/Virtual_products.html
+.. _DEA: https://knowledge.dea.ga.gov.au/notebooks/Frequently_used_code/Virtual_products.html
 
 
 Using virtual products
