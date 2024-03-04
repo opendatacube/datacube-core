@@ -2,8 +2,6 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-#
-# type: ignore
 # TODO: typehints need attention
 """ Tools for working with EO3 metadata
 """

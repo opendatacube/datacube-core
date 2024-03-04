@@ -129,7 +129,7 @@ def _make_crs_key(crs_spec: Union[str, int, _CRS]) -> str:
 
 @cachetools.cached({}, key=_make_crs_key)  # type: ignore[misc]
 def _make_crs(crs: Union[str, int, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
-    epsg = False
+    epsg: int | None = None
     crs = _CRS.from_user_input(crs)
     crs_str = crs.srs
     if crs_str.upper().startswith("EPSG:"):
