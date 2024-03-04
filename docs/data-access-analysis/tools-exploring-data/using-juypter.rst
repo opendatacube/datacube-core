@@ -23,9 +23,9 @@ Digital Earth Australia Notebooks
 * `Real world examples`_: More complex workflows demonstrating how Open Data Cube can be used to address real-world challenges
 
 .. _`Digital Earth Australia Notebooks`: https://github.com/GeoscienceAustralia/dea-notebooks/
-.. _`Beginners guide`: https://docs.dea.ga.gov.au/notebooks/Beginners_guide/README.html
-.. _`Frequently used code`: https://docs.dea.ga.gov.au/notebooks/Frequently_used_code/README.html
-.. _`Real world examples`: https://docs.dea.ga.gov.au/notebooks/Real_world_examples/README.html
+.. _`Beginners guide`: https://knowledge.dea.ga.gov.au/notebooks/Beginners_guide/README.html
+.. _`Frequently used code`: https://knowledge.dea.ga.gov.au/notebooks/Frequently_used_code/README.html
+.. _`Real world examples`: https://knowledge.dea.ga.gov.au/notebooks/Real_world_examples/README.html
 .. _Jupyter Notebooks: https://jupyter.org/
 
 
