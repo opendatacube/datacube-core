@@ -6,6 +6,7 @@
 
 This allows extraction of fields of interest from dataset metadata document.
 """
+import abc
 from typing import Mapping, Dict, Any
 import toolz  # type: ignore[import]
 import decimal
@@ -90,6 +91,9 @@ class Field:
         """
         raise NotImplementedError('between expression')
 
+    @abc.abstractmethod
+    def extract(self, doc):
+        ...
 
 class SimpleField(Field):
     def __init__(self,

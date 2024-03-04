@@ -5,10 +5,11 @@
 import datetime
 import logging
 
-from typing import Iterable, Iterator, Mapping, Tuple, cast
+from typing import Iterable, cast
+from uuid import UUID
 
 from datacube.index.fields import as_expression
-from datacube.index.abstract import AbstractProductResource, QueryField
+from datacube.index.abstract import AbstractProductResource, QueryField, QueryDict, JsonDict, AbstractIndex
 from datacube.model import Product
 from datacube.utils import changes, jsonify_document, _readable_offset
 from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes, classify_changes
@@ -19,10 +20,11 @@ _LOG = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource):
-    def __init__(self, index):
-        self._index = index
-        self.by_id = {}
-        self.by_name = {}
+    def __init__(self, index: AbstractIndex):
+        from datacube.index.memory.index import Index
+        self._index: Index = cast(Index, index)
+        self.by_id: dict[int, Product] = {}
+        self.by_name: dict[str, Product] = {}
         self.next_id = 1
 
     def add(self, product: Product, allow_table_lock: bool = False) -> Product:
@@ -51,14 +53,14 @@ class ProductResource(AbstractProductResource):
     def can_update(self, product: Product,
                    allow_unsafe_updates: bool = False,
                    allow_table_lock: bool = False
-                  ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
+                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         Product.validate(product.definition)  # type: ignore[attr-defined]
 
         existing = self.get_by_name(product.name)
         if not existing:
             raise ValueError(f"Unknown product {product.name}, cannot update - add first")
 
-        updates_allowed: Mapping[Offset, AllowPolicy] = {
+        updates_allowed: dict[Offset, AllowPolicy] = {
             ('description',): changes.allow_any,
             ('license',): changes.allow_any,
             ('metadata_type',): changes.allow_any,
@@ -108,7 +110,7 @@ class ProductResource(AbstractProductResource):
         _LOG.info(f"Updating product {product.name}")
 
         persisted = self.clone(product)
-        persisted.id = existing.id
+        persisted.id = cast(int, existing.id)
         self.by_id[persisted.id] = persisted
         self.by_name[persisted.name] = persisted
         return cast(Product, self.get_by_name(product.name))
@@ -119,7 +121,7 @@ class ProductResource(AbstractProductResource):
     def get_by_name_unsafe(self, name: str) -> Product:
         return self.clone(self.by_name[name])
 
-    def search_robust(self, **query: QueryField) -> Iterator[Tuple[Product, Mapping[str, QueryField]]]:
+    def search_robust(self, **query: QueryField) -> Iterable[tuple[Product, QueryDict]]:
         def listify(v):
             if isinstance(v, tuple):
                 return list()
@@ -157,7 +159,7 @@ class ProductResource(AbstractProductResource):
             else:
                 yield prod, unmatched
 
-    def search_by_metadata(self, metadata: Mapping[str, QueryField]):
+    def search_by_metadata(self, metadata: JsonDict) -> Iterable[Product]:
         norm_meta = {"properties": metadata}
         for prod in self.get_all():
             if metadata_subset(norm_meta, prod.metadata_doc):
@@ -179,5 +181,5 @@ class ProductResource(AbstractProductResource):
     def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)
-        ids = self._index.datasets._by_product.get(product.name, [])
+        ids: Iterable[UUID] = self._index.datasets._by_product.get(product.name, [])
         return self._index.datasets.temporal_extent(ids)

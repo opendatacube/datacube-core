@@ -10,8 +10,7 @@ from threading import Lock
 from time import monotonic
 
 from abc import ABC, abstractmethod
-from typing import (Any, Iterable, Iterator,
-                    Mapping, MutableMapping,
+from typing import (Any, Iterable, Iterator, Mapping,
                     NamedTuple, Sequence, Type, cast)
 from urllib.parse import urlparse, ParseResult
 from uuid import UUID
@@ -753,7 +752,7 @@ class AbstractProductResource(ABC):
     @abstractmethod
     def search_by_metadata(self,
                            metadata: JsonDict
-                           ) -> Iterable[Dataset]:
+                           ) -> Iterable[Product]:
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
 
@@ -1647,7 +1646,7 @@ class AbstractDatasetResource(ABC):
             for dstup in self.get_all_docs_for_product(product, batch_size=batch_size):
                 yield dstup
 
-    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
+    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: dict[str, Any]) -> BatchStatus:
         """
         Add a single "batch" of datasets, provided as DatasetTuples.
 

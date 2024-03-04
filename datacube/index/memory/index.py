@@ -8,7 +8,7 @@ from typing import Type
 
 from deprecat import deprecat
 from datacube.cfg import ODCEnvironment
-from datacube.index.memory._datasets import DatasetResource, LineageResource  # type: ignore
+from datacube.index.memory._datasets import DatasetResource, LineageResource
 from datacube.index.memory._fields import get_dataset_fields
 from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.index.memory._products import ProductResource
@@ -91,7 +91,7 @@ class Index(AbstractIndex):
         return UnhandledTransaction(self.index_id)
 
     @classmethod
-    def from_config(cls, config_env: ODCEnvironment, application_name: str = None, validate_connection: bool = True):
+    def from_config(cls, config_env: ODCEnvironment, application_name: str | None = None, validate_connection: bool = True):
         return cls(config_env)
 
     @classmethod
