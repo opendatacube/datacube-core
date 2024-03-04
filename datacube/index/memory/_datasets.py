@@ -615,8 +615,7 @@ class DatasetResource(AbstractDatasetResource):
                 for name, offset in custom_offsets.items()
             }
             for name in custom_fields:
-                if name not in field_name_d:
-                    field_name_d[name] = None
+                field_name_d[name] = None
         else:
             custom_fields = {}
 
