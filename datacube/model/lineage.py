@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
-from typing import Mapping, Optional, Sequence, MutableMapping, Set, Tuple, Iterable, Any, cast
+from typing import Mapping, Optional, Sequence, Tuple, Iterable, Any, cast
 
 
 class LineageDirection(Enum):
@@ -181,10 +181,10 @@ class LineageTree:
 
     @classmethod
     def from_data(cls, dsid: UUID,
-                  sources: Optional[Mapping[str, Sequence[UUID]]] = None,
+                  sources: Mapping[str, Sequence[UUID]] | None = None,
                   direction: LineageDirection = LineageDirection.SOURCES,
-                  home=None,
-                  home_derived=None) -> "LineageTree":
+                  home: str | None = None,
+                  home_derived: str | None = None) -> "LineageTree":
         """
         Generate a shallow (depth=1) LineageTree from the sort of data found in an EO3 dataset
 
@@ -267,10 +267,10 @@ class LineageRelations:
     Enforces all lineage chains are acyclic.
     """
     def __init__(self,
-                 tree: Optional[LineageTree] = None,
+                 tree: LineageTree | None = None,
                  max_depth: int = 0,
-                 relations: Optional[Iterable[LineageRelation]] = None,
-                 homes: Optional[Mapping[UUID, str]] = None,
+                 relations: Iterable[LineageRelation] | None = None,
+                 homes: Mapping[UUID, str] | None = None,
                  clone: Optional["LineageRelations"] = None) -> None:
         """
         All arguments are optional.  Default gives an empty LineageRelations, and:
@@ -385,7 +385,7 @@ class LineageRelations:
             self._merge_new_relation(ids, classifier)
 
     def merge_tree(self, tree: LineageTree,
-                   nodes: Optional[dict[UUID, LineageTree]] = None,
+                   nodes: dict[UUID, LineageTree] | None = None,
                    max_depth: int = 0) -> None:
         """
         Merge in a LineageTree, ensuring it is consistent with the collection so far.
@@ -502,8 +502,8 @@ class LineageRelations:
     def extract_tree(self,
                      root: UUID,
                      direction: LineageDirection = LineageDirection.SOURCES,
-                     parents: Optional[Set[UUID]] = None,
-                     so_far: Optional[Set[UUID]] = None,
+                     parents: set[UUID] | None = None,
+                     so_far: set[UUID] | None = None,
                      ) -> LineageTree:
         """
         Extract a LineageTree from this LineageRelations collection.

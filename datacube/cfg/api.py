@@ -10,7 +10,7 @@ import os
 import warnings
 
 from os import PathLike
-from typing import Any, TypeAlias, Union
+from typing import Any, TypeAlias, Union, cast
 
 from .cfg import find_config, parse_text
 from .exceptions import ConfigException
@@ -111,9 +111,10 @@ class ODCConfig:
                 text = find_config(paths)
 
         self.raw_text = text
-        self.raw_config = raw_dict
-        if not self.raw_config:
-            self.raw_config = parse_text(self.raw_text)
+        if raw_dict is not None:
+            self.raw_config = raw_dict
+        else:
+            self.raw_config = parse_text(cast(str, self.raw_text))
 
         self._aliases: dict[str, str] = {}
         self.known_environments: dict[str, ODCEnvironment] = {

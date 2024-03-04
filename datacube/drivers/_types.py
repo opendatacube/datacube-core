@@ -104,5 +104,6 @@ class ReaderDriverEntry(object, metaclass=ABCMeta):
     def supports(self, protocol: str, fmt: str) -> bool:
         ...  # pragma: no cover
 
+    @abstractmethod
     def new_instance(self, cfg: dict) -> ReaderDriver:
         ...  # pragma: no cover

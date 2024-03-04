@@ -5,7 +5,7 @@
 
 import os
 import warnings
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, cast
 from urllib.parse import urlparse
 from urllib.parse import quote_plus
 
@@ -24,7 +24,7 @@ _DEFAULT_DATABASE = 'datacube'
 try:
     import pwd
 
-    _DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name  # type: Optional[str]
+    _DEFAULT_DB_USER: str | None = pwd.getpwuid(os.geteuid()).pw_name
 except (ImportError, KeyError):
     # No default on Windows and some other systems
     _DEFAULT_DB_USER = None
@@ -140,6 +140,7 @@ class IndexDriverOptionHandler(ODCOptionHandler):
         # Get driver-specific config options
         from datacube.drivers.indexes import index_driver_by_name
         driver = index_driver_by_name(value)
+        assert driver is not None
         for option in driver.get_config_option_handlers(self.env):
             self.env._option_handlers.append(option)
 
