@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Iterator
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._api import PostgresDbAPI
@@ -35,7 +35,7 @@ class PostgresTransaction(AbstractTransaction):
 
 class IndexResourceAddIn:
     @contextmanager
-    def _db_connection(self, transaction: bool = False) -> PostgresDbAPI:
+    def _db_connection(self, transaction: bool = False) -> Iterator[PostgresDbAPI]:
         """
         Context manager representing a database connection.
 
@@ -57,5 +57,5 @@ class IndexResourceAddIn:
         :param transaction: Use a transaction if one is not already active for the thread.
         :return: A PostgresDbAPI object, with the specified transaction semantics.
         """
-        with self._index._active_connection(transaction=transaction) as conn:
+        with self._index._active_connection(transaction=transaction) as conn:  # type: ignore[attr-defined]
             yield conn

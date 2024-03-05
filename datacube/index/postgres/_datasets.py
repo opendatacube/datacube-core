@@ -21,7 +21,7 @@ from datacube.index.abstract import (AbstractDatasetResource, DatasetSpatialMixi
                                      DatasetTuple, BatchStatus)
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product
-from datacube.model.fields import Field
+from datacube.model.fields import Field, Expression
 from datacube.model.utils import flatten_datasets
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes, Offset
@@ -202,12 +202,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
         b_started = monotonic()
-        batch = {
+        batch: dict[str, list[dict[str, Any]]] = {
             "datasets": [],
             "uris": [],
         }
         for prod, metadata_doc, uris in batch_ds:
-            dsid = UUID(metadata_doc["id"])
+            dsid = UUID(str(metadata_doc["id"]))
             batch["datasets"].append(
                 {
                     "id": dsid,
@@ -248,7 +248,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return f
 
         group_fields: List[fields.Field] = [load_field(f) for f in args]
-        expressions = [product.metadata_type.dataset_fields.get('product') == product.name]
+        expressions: list[Expression] = [product.metadata_type.dataset_fields['product'] == product.name]
 
         with self._db_connection() as connection:
             for record in connection.get_duplicates(group_fields, expressions):
@@ -628,7 +628,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             yield product, self._make_many(datasets, product)
 
     def search_returning(self,
-                         field_names=None,
+                         field_names: Iterable[str] | None = None,
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit=None,
                          archived: bool | None = False,
@@ -648,13 +648,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         if order_by:
             raise ValueError("order_by argument is not currently supported by the postgres index driver.")
+        field_name_d: dict[str, None] = {}
         if field_names is None and custom_offsets is None:
-            field_names = self._index.products.get_field_names()
+            for f in self._index.products.get_field_names():
+                field_name_d[f] = None
         elif field_names:
-            field_names = list(field_names)
-        else:
-            field_names = []
-        field_name_set = set(field_names)
+            for f in field_names:
+                field_name_d[f] = None
         if custom_offsets:
             custom_fields = {
                 name: SimpleDocField(
@@ -664,16 +664,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 for name, offset in custom_offsets.items()
             }
             for name in custom_fields:
-                if name not in field_name_set:
-                    field_name_set.add(name)
-                    field_names.append(name)
+                field_name_d[name] = None
         else:
             custom_fields = {}
 
-        result_type = namedtuple('search_result', field_names)
+        result_type = namedtuple('search_result', list(field_name_d.keys()))  # type: ignore[misc]
         for _, p_results in self._do_search_by_product(query,
                                                        return_fields=True,
-                                                       select_field_names=field_names,
+                                                       select_field_names=list(field_name_d.keys()),
                                                        additional_fields=custom_fields,
                                                        limit=limit,
                                                        archived=archived):
@@ -683,7 +681,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 def extract_field(f):
                     # Custom fields are not type-aware and returned as stringified json.
                     return json.loads(coldict.get(f)) if f in custom_fields else coldict.get(f)
-                kwargs = {f: extract_field(f) for f in field_names}
+                kwargs = {f: extract_field(f) for f in field_name_d}
                 yield result_type(**kwargs)
 
     def count(self, archived: bool | None = False, **query):
