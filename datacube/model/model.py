@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 from uuid import UUID
 import re
 
@@ -20,7 +20,7 @@ ODC_DATASET_SCHEMA_URL = "https://schemas.opendatacube.org/dataset"
 
 # Either a local filesystem path or a string URI.
 # (the URI can use any scheme supported by rasterio, such as tar:// or https:// or ...)
-Location = Union[Path, str]
+Location = Path | str
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -33,15 +33,15 @@ class ProductDoc:
     href is intended as a more global unique "identifier" uri for the product.
     """
 
-    name: str = None
-    href: str = None
+    name: str | None = None
+    href: str | None = None
 
 
 @attr.s(auto_attribs=True, slots=True, hash=True)
 class GridDoc:
     """The grid describing a measurement/band's pixels"""
 
-    shape: Tuple[int, int]
+    shape: tuple[int, int]
     transform: affine.Affine
 
 
@@ -52,12 +52,12 @@ class MeasurementDoc:
     """
 
     path: str
-    band: Optional[int] = 1
-    layer: Optional[str] = None
+    band: int | None = 1
+    layer: str | None = None
     grid: str = "default"
 
-    name: str = attr.ib(metadata=dict(doc_exclude=True), default=None)
-    alias: str = attr.ib(metadata=dict(doc_exclude=True), default=None)
+    name: str | None = attr.ib(metadata=dict(doc_exclude=True), default=None)
+    alias: str | None = attr.ib(metadata=dict(doc_exclude=True), default=None)
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -70,8 +70,8 @@ class AccessoryDoc:
     """
 
     path: str
-    type: str = None
-    name: str = attr.ib(metadata=dict(doc_exclude=True), default=None)
+    type: str | None = None
+    name: str | None = attr.ib(metadata=dict(doc_exclude=True), default=None)
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -91,11 +91,11 @@ class DatasetDoc(Eo3Interface):
     """
 
     #: Dataset UUID
-    id: UUID = None
+    id: UUID | None = None
     #: Human-readable identifier for the dataset
-    label: str = None
+    label: str | None = None
     #: The product name (local) and/or url (global)
-    product: ProductDoc = None
+    product: ProductDoc | None = None
     #: Location(s) where this dataset is stored.
     #:
     #: (ODC supports multiple locations when the same dataset is stored in multiple places)
@@ -104,28 +104,28 @@ class DatasetDoc(Eo3Interface):
     #:
     #: All other paths in the document (measurements, accessories) are relative to the
     #: chosen location.
-    locations: List[str] = None
+    locations: list[str] | None = None
 
     #: CRS string. Eg. ``epsg:3577``
-    crs: str = None
+    crs: str | None = None
     #: Shapely geometry of the valid data coverage
     #:
     #: (it must contain all non-empty pixels of the image)
-    geometry: BaseGeometry = None
+    geometry: BaseGeometry | None = None
     #: Grid specifications for measurements
-    grids: Dict[str, GridDoc] = None
+    grids: dict[str, GridDoc] | None = None
     #: Raw properties
     properties: Eo3Dict = attr.ib(factory=Eo3Dict)
     #: Loadable measurements of the dataset
-    measurements: Dict[str, MeasurementDoc] = None
+    measurements: dict[str, MeasurementDoc] | None = None
     #: References to accessory files
     #:
     #: Such as thumbnails, checksums, other kinds of metadata files.
     #:
     #: (any files included in the dataset that are not measurements)
-    accessories: Dict[str, AccessoryDoc] = attr.ib(factory=CommentedMap)
+    accessories: dict[str, AccessoryDoc] = attr.ib(factory=CommentedMap)
     #: Links to source dataset uuids
-    lineage: Dict[str, List[UUID]] = attr.ib(factory=CommentedMap)
+    lineage: dict[str, list[UUID]] = attr.ib(factory=CommentedMap)
 
 
 # Conversion functions copied from datacube-alchemist for ease of transition
