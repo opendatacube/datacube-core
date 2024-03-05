@@ -351,7 +351,7 @@ def build_dataset_info(index: Index, dataset: Dataset,
         info['indexed'] = dataset.indexed_time
 
     info['location'] = dataset.uri
-    info['fields'] = dataset.metadata.search_fields
+    info['fields'] = dataset.metadata.fields
 
     if depth < max_depth:
         if show_sources and dataset.sources is not None:

@@ -53,7 +53,7 @@ def build_custom_fields(custom_offsets: Mapping[str, Offset]) -> dict[str, Field
     return {
         name: SimpleField(
             offset,
-            lambda x: x, 'Any',
+            lambda x: x, 'any',
             name=name,
             description=f"Custom field: {name}"
         )

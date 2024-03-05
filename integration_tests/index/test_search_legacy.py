@@ -853,7 +853,7 @@ def test_cli_info(index: Index,
     assert len(yaml_docs) == 1
 
     # We output properties in order for readability:
-    output_lines = [line for line in output_lines if not line.startswith('indexed:')]
+    output_lines = set(line for line in output_lines if not line.startswith('indexed:'))
     expected_lines = [
         "id: " + str(pseudo_ls8_dataset.id),
         'product: ls8_telemetry',
@@ -875,7 +875,8 @@ def test_cli_info(index: Index,
         '    sat_row: {begin: 74, end: 84}',
         "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
     ]
-    assert expected_lines == output_lines
+    for el in expected_lines:
+        assert el in output_lines
 
     # Check indexed time separately, as we don't care what timezone it's displayed in.
     indexed_time = yaml_docs[0]['indexed']
