@@ -14,7 +14,6 @@ import warnings
 from typing import Optional, Union
 import pandas
 
-from dateutil import tz
 from pandas import to_datetime as pandas_to_datetime
 import numpy as np
 
@@ -126,11 +125,7 @@ class Query(object):
             if 'time' not in self.search:
                 time_coord = like.coords.get('time')
                 if time_coord is not None:
-                    self.search['time'] = _time_to_search_dims(
-                        (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
-                            pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
-                            + datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
-                    )
+                    self.search['time'] = _time_to_search_dims((time_coord.values[0], time_coord.values[-1]))
 
     @property
     def search_terms(self):
@@ -304,23 +299,6 @@ def _values_to_search(**kwargs):
     return search
 
 
-def _to_datetime(t):
-    if isinstance(t, (float, int)):
-        t = datetime.datetime.fromtimestamp(t, tz=tz.tzutc())
-
-    if isinstance(t, tuple):
-        t = datetime.datetime(*t, tzinfo=tz.tzutc())
-    elif isinstance(t, str):
-        try:
-            t = datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except ValueError:
-            pass
-    elif isinstance(t, datetime.datetime):
-        return tz_aware(t)
-
-    return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
-
-
 def _time_to_search_dims(time_range):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
@@ -343,15 +321,14 @@ def _time_to_search_dims(time_range):
             tr_end = tr_end.isoformat()
 
         if tr_start is None:
-            tr_start = datetime.datetime.fromtimestamp(0)
-        start = _to_datetime(tr_start)
+            start = datetime.datetime.fromtimestamp(0)
+        else:
+            start = pandas_to_datetime(str(tr_start)).to_pydatetime()
         if tr_end is None:
             tr_end = datetime.datetime.now().strftime("%Y-%m-%d")
-        end = _to_datetime(pandas.Period(tr_end)
-                           .end_time
-                           .to_pydatetime())
+        end = pandas.Period(tr_end).end_time.to_pydatetime()
 
-        tr = Range(start, end)
+        tr = Range(tz_aware(start), tz_aware(end))
         if start == end:
             return tr[0]
 
