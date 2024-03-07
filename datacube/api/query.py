@@ -133,7 +133,11 @@ class Query(object):
             if 'time' not in self.search:
                 time_coord = like.coords.get('time')
                 if time_coord is not None:
-                    self.search['time'] = _time_to_search_dims((time_coord.values[0], time_coord.values[-1]))
+                    self.search['time'] = _time_to_search_dims(
+                        # convert from np.datetime64 to datetime.datetime
+                        (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
+                         pandas_to_datetime(time_coord.values[-1]).to_pydatetime())
+                    )
 
     @property
     def search_terms(self):
@@ -310,7 +314,6 @@ def _values_to_search(**kwargs):
 def _time_to_search_dims(time_range):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-
         tr_start, tr_end = time_range, time_range
 
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
