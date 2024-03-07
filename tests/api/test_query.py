@@ -144,7 +144,9 @@ testdata = [
     ((datetime.date(2008, 1, 1), None),
      format_test('2008-01-01T00:00:00', datetime.datetime.now().strftime("%Y-%m-%dT23:59:59.999999"))),
     ((None, '2008'),
-     format_test(datetime.datetime.fromtimestamp(0).strftime("%Y-%m-%dT%H:%M:%S"), '2008-12-31T23:59:59.999999'))
+     format_test(datetime.datetime.fromtimestamp(0).strftime("%Y-%m-%dT%H:%M:%S"), '2008-12-31T23:59:59.999999')),
+    ((2008),
+     format_test('2008-01-01T00:00:00', '2008-12-31T23:59:59.999999')),
 ]
 
 
