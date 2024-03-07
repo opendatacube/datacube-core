@@ -481,11 +481,6 @@ class DocReader:
                                             if name != 'search_fields'}
 
     def __getattr__(self, name):
-        sf = self.search_fields
-        sflds = self._search_fields
-        syflds = self._system_offsets
-        sysf = self.system_fields
-        dOc =  self._doc
         if name in self.fields.keys():
             return self.fields[name]
         else:
@@ -514,9 +509,15 @@ class DocReader:
 
     @property
     def search_fields(self):
-        return {name: field.extract(self.__dict__['_doc'])
-                for name, field in self._search_fields.items()
-                if name not in self.system_fields}
+        sflds = self._search_fields
+        syflds = self._system_offsets
+        sysf = self.system_fields
+        dOc = self._doc
+        return {
+            name: field.extract(self.__dict__['_doc'])
+            for name, field in self._search_fields.items()
+            if name not in self.system_fields and field.can_extract
+        }
 
     @property
     def system_fields(self):

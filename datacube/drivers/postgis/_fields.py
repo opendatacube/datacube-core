@@ -124,22 +124,11 @@ class NativeField(PgField):
         expression = self._expression if self._expression is not None else self.alchemy_column
         return expression.label(self.name)
 
-    def extract(self, document):
-        """
-        Not read from document, so can't extract from a document
-        """
-        raise NotImplementedError("extract()")
 
 class PgDocField(PgField):
     """
     A field extracted from inside a (jsonb) document.
     """
-    def extract(self, document):
-        """
-        Extract a value from the given document in pure python (no postgres).
-        """
-        raise NotImplementedError("extract()")
-
     def value_to_alchemy(self, value):
         """
         Wrap the given value with any necessary type casts/conversions for this field.
@@ -242,6 +231,8 @@ class SimpleDocField(PgDocField):
         :rtype: Expression
         """
         raise NotImplementedError('Simple field between expression')
+
+    can_extract = True
 
     def extract(self, document):
         return self._extract_offset_value(document, self.offset, self.aggregation.calc)
@@ -377,6 +368,8 @@ class RangeDocField(PgDocField):
         # Lower and higher are interchangeable here: they're the same type.
         casted_val = self.lower.value_to_alchemy(value)
         return RangeContainsExpression(self, casted_val)
+
+    can_extract = True
 
     def extract(self, document):
         min_val = self.lower.extract(document)

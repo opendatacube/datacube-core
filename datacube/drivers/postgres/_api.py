@@ -85,7 +85,7 @@ _DATASET_BULK_SELECT_FIELDS = (
 )
 
 
-def get_native_fields():
+def get_native_fields() -> dict[str, NativeField]:
     # Native fields (hard-coded into the schema)
     fields = {
         'id': NativeField(
@@ -1151,7 +1151,7 @@ class PostgresDbAPI(object):
     @staticmethod
     def _get_active_field_names(fields, metadata_doc):
         for field in fields.values():
-            if hasattr(field, 'extract'):
+            if field.can_extract:
                 try:
                     value = field.extract(metadata_doc)
                     if value is not None:

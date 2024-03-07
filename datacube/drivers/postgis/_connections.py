@@ -194,16 +194,16 @@ class PostGisDb:
         :param crs:
         :return:
         """
-        spidx = self.spindexes.get(crs_to_epsg(crs))
-        if spidx is None:
-            try:
+        try:
+            spidx = self.spindexes.get(crs_to_epsg(crs))
+            if spidx is None:
                 spidx = spindex_for_crs(crs)
                 assert spidx is not None  # for type checker
-            except ValueError:
-                _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)
-                return None
-            ensure_spindex(self._engine, spidx)
-            self._refresh_spindexes()
+                ensure_spindex(self._engine, spidx)
+                self._refresh_spindexes()
+        except ValueError:
+            _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)
+            return None
         return spidx
 
     def drop_spatial_index(self, crs: CRS) -> bool:

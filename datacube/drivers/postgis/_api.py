@@ -1132,7 +1132,7 @@ class PostgisDbAPI:
 
     def _get_active_field_names(fields, metadata_doc):
         for field in fields.values():
-            if hasattr(field, 'extract'):
+            if field.can_extract:
                 try:
                     value = field.extract(metadata_doc)
                     if value is not None:

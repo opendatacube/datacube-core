@@ -286,7 +286,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 if not field:
                     # This type doesn't have that field, so it cannot match.
                     break
-                if not hasattr(field, 'extract'):
+                if not field.can_extract:
                     # non-document/native field
                     continue
                 if field.extract(type_.metadata_doc) is None:
