@@ -29,7 +29,7 @@ from odc.geo import CRS
 
 from . import _api
 from . import _core
-from ._spatial import ensure_spindex, spindexes, spindex_for_crs, drop_spindex
+from ._spatial import ensure_spindex, spindexes, spindex_for_crs, drop_spindex, crs_to_epsg
 from ._schema import SpatialIndex
 from ...cfg import ODCEnvironment, psql_url_from_config
 
@@ -38,7 +38,7 @@ _LIB_ID = 'odc-' + str(datacube.__version__)
 _LOG = logging.getLogger(__name__)
 
 
-class PostGisDb(object):
+class PostGisDb:
     """
     A thin database access api.
 
@@ -55,7 +55,7 @@ class PostGisDb(object):
 
     driver_name = 'postgis'  # Mostly to support parametised tests
 
-    def __init__(self, engine):
+    def __init__(self, engine: Engine):
         # We don't recommend using this constructor directly as it may change.
         # Use static methods PostGisDb.create() or PostGisDb.from_config()
         self._engine = engine
@@ -65,13 +65,13 @@ class PostGisDb(object):
     def from_config(cls,
                     config_env: ODCEnvironment,
                     application_name: str | None = None,
-                    validate_connection: bool = True):
+                    validate_connection: bool = True) -> "PostGisDb":
         app_name = cls._expand_app_name(application_name)
 
         return PostGisDb.create(config_env, application_name=app_name, validate=validate_connection)
 
     @classmethod
-    def create(cls, config_env: ODCEnvironment, application_name: str | None = None, validate: bool = True):
+    def create(cls, config_env: ODCEnvironment, application_name: str | None = None, validate: bool = True) -> "PostGisDb":
         url = psql_url_from_config(config_env)
         kwargs = {
             "application_name": application_name,
@@ -96,7 +96,7 @@ class PostGisDb(object):
         return PostGisDb(engine)
 
     @staticmethod
-    def _create_engine(url, application_name=None, iam_rds_auth=False, iam_rds_timeout=600, pool_timeout=60):
+    def _create_engine(url, application_name=None, iam_rds_auth=False, iam_rds_timeout=600, pool_timeout=60) -> Engine:
         engine = create_engine(
             url,
             echo=False,
@@ -123,7 +123,7 @@ class PostGisDb(object):
     def url(self) -> EngineUrl:
         return self._engine.url
 
-    def close(self):
+    def close(self) -> None:
         """
         Close any idle connections in the pool.
 
@@ -165,7 +165,7 @@ class PostGisDb(object):
             _LOG.warning('Application name is too long: Truncating to %s chars', (64 - len(_LIB_ID) - 1))
         return full_name[-64:]
 
-    def init(self, with_permissions=True):
+    def init(self, with_permissions: bool = True) -> bool:
         """
         Init a new database (if not already set up).
 
@@ -177,13 +177,14 @@ class PostGisDb(object):
 
         return is_new
 
-    def _refresh_spindexes(self):
+    def _refresh_spindexes(self) -> None:
         self._spindexes = spindexes(self._engine)
 
     @property
     def spindexes(self) -> Mapping[int, Type[SpatialIndex]]:
         if self._spindexes is None:
             self._refresh_spindexes()
+            assert self._spindexes is not None  # for type checker
         return self._spindexes
 
     def create_spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
@@ -193,10 +194,12 @@ class PostGisDb(object):
         :param crs:
         :return:
         """
-        spidx = self.spindexes.get(crs.epsg)
+        spidx = self.spindexes.get(crs_to_epsg(crs))
         if spidx is None:
-            spidx = spindex_for_crs(crs)
-            if spidx is None:
+            try:
+                spidx = spindex_for_crs(crs)
+                assert spidx is not None  # for type checker
+            except ValueError:
                 _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)
                 return None
             ensure_spindex(self._engine, spidx)
@@ -210,7 +213,7 @@ class PostGisDb(object):
         :param crs:
         :return:
         """
-        spidx = self.spindexes.get(crs.epsg)
+        spidx = self.spindexes.get(crs_to_epsg(crs))
         if spidx is None:
             return False
         result = drop_spindex(self._engine, spidx)
@@ -218,7 +221,7 @@ class PostGisDb(object):
         return result
 
     def spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
-        return self.spindexes.get(crs.epsg)
+        return self.spindexes.get(crs_to_epsg(crs))
 
     def spatially_indexed_crses(self, refresh=False) -> Iterable[CRS]:
         if refresh:

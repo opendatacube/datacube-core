@@ -124,6 +124,11 @@ class NativeField(PgField):
         expression = self._expression if self._expression is not None else self.alchemy_column
         return expression.label(self.name)
 
+    def extract(self, document):
+        """
+        Not read from document, so can't extract from a document
+        """
+        raise NotImplementedError("extract()")
 
 class PgDocField(PgField):
     """

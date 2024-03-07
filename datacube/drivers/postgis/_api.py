@@ -20,11 +20,12 @@ import uuid  # noqa: F401
 from sqlalchemy import cast
 from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.sql.expression import Select
+from sqlalchemy.sql.expression import Select, ColumnElement
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
-from typing import Iterable, Sequence, Optional, Set
+from typing import Iterable, Sequence, Optional, Set, Any
+from typing import cast as type_cast
 
 from datacube.index.fields import OrExpression
 from datacube.model import Range
@@ -33,20 +34,20 @@ from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
 from datacube.model.lineage import LineageRelation, LineageDirection
 from . import _core
-from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
+from ._fields import parse_fields, Expression, PgField, PgExpression, DateRangeDocField  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, \
     Dataset, DatasetLineage, DatasetLocation, SelectedDatasetLocation, \
     search_field_index_map, search_field_indexes, DatasetHome
 from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from .sql import escape_pg_identifier
-
+from ...utils.changes import Offset
 
 _LOG = logging.getLogger(__name__)
 
 
 # Make a function because it's broken
-def _dataset_select_fields():
+def _dataset_select_fields() -> tuple:
     return (
         Dataset,
         # All active URIs, from newest to oldest
@@ -66,7 +67,7 @@ def _dataset_select_fields():
     )
 
 
-def _dataset_bulk_select_fields():
+def _dataset_bulk_select_fields() -> tuple:
     return (
         Dataset.product_ref,
         Dataset.metadata_doc,
@@ -87,7 +88,7 @@ def _dataset_bulk_select_fields():
     )
 
 
-def get_native_fields():
+def get_native_fields() -> dict[str, NativeField]:
     # Native fields (hard-coded into the schema)
     fields = {
         'id': NativeField(
@@ -145,7 +146,7 @@ def get_native_fields():
     return fields
 
 
-def mk_simple_offset_field(field_name, description, offset):
+def mk_simple_offset_field(field_name: str, description: str, offset: Offset) -> SimpleDocField:
     return SimpleDocField(
         name=field_name, description=description,
         alchemy_column=Dataset.metadata_doc,
@@ -784,7 +785,7 @@ class PostgisDbAPI:
         fields = []
         for f in match_fields:
             if f.name == "time":
-                time_field = f.expression_with_leniency
+                time_field = type_cast(DateRangeDocField, f).expression_with_leniency
             else:
                 fields.append(f.alchemy_expression)
 
@@ -820,7 +821,7 @@ class PostgisDbAPI:
             *fields,
             text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
         ).select_from(
-            time_overlap
+            time_overlap  # type: ignore[arg-type]
         ).group_by(
             *fields, text("time_intersect")
         ).having(
@@ -1279,13 +1280,12 @@ class PostgisDbAPI:
             sql = text('comment on role {username} is :description'.format(username=username))
             self._connection.execute(sql, {"description": description})
 
-    def drop_users(self, users: Iterable[str]) -> str:
+    def drop_users(self, users: Iterable[str]) -> None:
         for username in users:
             sql = text('drop role {username}'.format(username=escape_pg_identifier(self._connection, username)))
             self._connection.execute(sql)
 
-    def grant_role(self, role, users):
-        # type: (str, Iterable[str]) -> None
+    def grant_role(self, role: str, users: Iterable[str]) -> None:
         """
         Grant a role to a user.
         """
@@ -1297,7 +1297,7 @@ class PostgisDbAPI:
 
         _core.grant_role(self._connection, pg_role, users)
 
-    def insert_home(self, home, ids, allow_updates):
+    def insert_home(self, home: str, ids: Iterable[uuid.UUID], allow_updates: bool) -> int:
         """
         Set home for multiple IDs (but one home value)
 
@@ -1379,7 +1379,7 @@ class PostgisDbAPI:
         :return: Count of database rows affected
         """
         if allow_updates:
-            by_classifier = {}
+            by_classifier: dict[str, Any] = {}
             for rel in relations:
                 db_repr = {
                     "derived_dataset_ref": rel.derived_id,
