@@ -24,6 +24,8 @@ from sqlalchemy.sql.expression import Select, ColumnElement
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.engine import Row
+
 from typing import Iterable, Sequence, Optional, Set, Any
 from typing import cast as type_cast
 
@@ -755,7 +757,7 @@ class PostgisDbAPI:
 
         return self._connection.execute(select_query)
 
-    def get_duplicates(self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]) -> Iterable[tuple]:
+    def get_duplicates(self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]) -> Iterable[Row]:
         # TODO
         if "time" in [f.name for f in match_fields]:
             return self.get_duplicates_with_time(match_fields, expressions)
@@ -781,7 +783,7 @@ class PostgisDbAPI:
 
     def get_duplicates_with_time(
             self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]
-    ) -> Iterable[tuple]:
+    ) -> Iterable[Row]:
         fields = []
         for f in match_fields:
             if f.name == "time":

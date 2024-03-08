@@ -8,13 +8,13 @@ from uuid import UUID
 
 from datacube.index.abstract import AbstractIndex, AbstractLineageResource, DSID, dsid_to_uuid, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.drivers.postgis._api import PostgisDbAPI
+from datacube.drivers.postgis._connections import PostGisDb
 from datacube.model import LineageTree, LineageDirection, LineageRelation
 from datacube.model.lineage import LineageRelations
 
 
 class LineageResource(AbstractLineageResource, IndexResourceAddIn):
-    def __init__(self, db: PostgisDbAPI, index: AbstractIndex) -> None:
+    def __init__(self, db: PostGisDb, index: AbstractIndex) -> None:
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
         :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource

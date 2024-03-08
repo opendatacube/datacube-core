@@ -5,14 +5,14 @@
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, Sequence, Type
+from typing import Iterable, Iterator, Sequence, Type
 
 from deprecat import deprecat
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.cfg.opt import config_options_for_psql_driver
 from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
 from datacube.index.postgis._transaction import PostgisTransaction
-from datacube.index.postgis._datasets import DatasetResource, DSID  # type: ignore
+from datacube.index.postgis._datasets import DatasetResource, DSID
 from datacube.index.postgis._metadata_types import MetadataTypeResource
 from datacube.index.postgis._lineage import LineageResource
 from datacube.index.postgis._products import ProductResource
@@ -176,7 +176,7 @@ WARNING: Database schema and internal APIs may change significantly between rele
         return self._db.drop_spatial_index(crs)
 
     @contextmanager
-    def _active_connection(self, transaction: bool = False) -> PostgisDbAPI:
+    def _active_connection(self, transaction: bool = False) -> Iterator[PostgisDbAPI]:
         """
         Context manager representing a database connection.
 
