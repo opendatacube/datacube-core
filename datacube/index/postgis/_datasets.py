@@ -699,7 +699,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         for _, results in self._do_search_by_product(query,
                                                      return_fields=True,
-                                                     select_field_names=field_names,
+                                                     select_field_names=list(field_name_d.keys()),
                                                      additional_fields=custom_fields,
                                                      limit=limit,
                                                      archived=archived):
