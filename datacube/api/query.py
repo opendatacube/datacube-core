@@ -57,7 +57,7 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
               'source_filter')
 
 
-class Query(object):
+class Query():
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
         """Parses search terms in preparation for querying the Data Cube Index.
 
@@ -315,21 +315,30 @@ def _time_to_search_dims(time_range):
 
             tr_start, tr_end = tmp[0], tmp[-1]
 
-        # Attempt conversion to isoformat
-        # allows pandas.Period to handle
-        # date and datetime objects
-        if hasattr(tr_start, 'isoformat'):
-            tr_start = tr_start.isoformat()
-        if hasattr(tr_end, 'isoformat'):
-            tr_end = tr_end.isoformat()
+        if isinstance(tr_start, (int, float)) or isinstance(tr_end, (int, float)):
+            raise TypeError("Time dimension must be provided as a datetime or a string")
 
         if tr_start is None:
             start = datetime.datetime.fromtimestamp(0)
+        elif not isinstance(tr_start, datetime.datetime):
+            # ensure consistency between different datetime types
+            if hasattr(tr_start, 'isoformat'):
+                tr_start = tr_start.isoformat()
+            start = pandas_to_datetime(tr_start).to_pydatetime()
         else:
-            start = pandas_to_datetime(str(tr_start)).to_pydatetime()
+            start = tr_start
+
         if tr_end is None:
             tr_end = datetime.datetime.now().strftime("%Y-%m-%d")
-        end = pandas.Period(tr_end).end_time.to_pydatetime()
+        if not isinstance(tr_end, datetime.datetime):
+            # Attempt conversion to isoformat
+            # allows pandas.Period to handle date objects
+            if hasattr(tr_end, 'isoformat'):
+                tr_end = tr_end.isoformat()
+            end = pandas.Period(tr_end).end_time.to_pydatetime()
+        else:
+            # if it's already a datetime, no need to extrapolate the period end
+            end = tr_end
 
         tr = Range(tz_aware(start), tz_aware(end))
         if start == end:
