@@ -5,7 +5,7 @@
 """ Dataset -> Raster
 """
 import numpy as np
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 
 from ..utils.math import valid_mask
 
@@ -78,7 +78,7 @@ def read_time_slice(rdr,
     rr = compute_reproject_roi(src_geobox, dst_geobox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
-        return rr.roi_dst
+        return cast(tuple[slice, slice], rr.roi_dst)
 
     scale = pick_read_scale(rr.scale, rdr)
 
@@ -103,9 +103,10 @@ def read_time_slice(rdr,
 
     if rr.paste_ok:
         A = rr.transform.linear
+        assert A is not None  # For type checker
         sx, sy = A.a, A.e
 
-        dst = dst[rr.roi_dst]
+        dst = dst[rr.roi_dst]  # type: ignore[index]
         pix = rdr.read(*norm_read_args(rr.roi_src, dst.shape, extra_dim_index))
 
         if sx < 0:
@@ -122,10 +123,10 @@ def read_time_slice(rdr,
         if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
-            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_geobox.shape)
-            rr.roi_src = roi_pad(rr.roi_src, 1, src_geobox.shape)
+            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_geobox.shape)  # type: ignore[call-overload]
+            rr.roi_src = roi_pad(rr.roi_src, 1, src_geobox.shape)  # type: ignore[call-overload]
 
-        dst = dst[rr.roi_dst]
+        dst = dst[rr.roi_dst]  # type: ignore[index]
         dst_geobox = dst_geobox[rr.roi_dst]
         src_geobox = src_geobox[rr.roi_src]
         if scale > 1:
@@ -159,14 +160,13 @@ def read_time_slice(rdr,
                           src_nodata=rdr.nodata, dst_nodata=dst_nodata,
                           **gdal_scale_params)
 
-    return rr.roi_dst
+    return cast(tuple[slice, slice], rr.roi_dst)
 
 
 def read_time_slice_v2(rdr,
                        dst_geobox: GeoBox,
                        resampling: Resampling,
-                       dst_nodata: Nodata) -> Tuple[Optional[np.ndarray],
-                                                    Tuple[slice, slice]]:
+                       dst_nodata: Nodata) -> tuple[np.ndarray | None, tuple[slice, slice]]:
     """ From opened reader object read into `dst`
 
     :returns: pixels read and ROI of dst_geobox that was affected
@@ -178,7 +178,7 @@ def read_time_slice_v2(rdr,
     rr = compute_reproject_roi(src_geobox, dst_geobox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
-        return None, rr.roi_dst
+        return None, cast(tuple[slice, slice], rr.roi_dst)
 
     scale = pick_read_scale(rr.scale, rdr)
 
@@ -194,6 +194,7 @@ def read_time_slice_v2(rdr,
     if rr.paste_ok:
         read_shape = roi_shape(rr.roi_dst)
         A = rr.transform.linear
+        assert A is not None
         sx, sy = A.a, A.e
 
         pix = rdr.read(*norm_read_args(rr.roi_src, read_shape)).result()
@@ -213,8 +214,8 @@ def read_time_slice_v2(rdr,
         if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
-            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_geobox.shape)
-            rr.roi_src = roi_pad(rr.roi_src, 1, src_geobox.shape)
+            rr.roi_dst = roi_pad(rr.roi_dst, 1, dst_geobox.shape)  # type: ignore[call-overload]
+            rr.roi_src = roi_pad(rr.roi_src, 1, src_geobox.shape)  # type: ignore[call-overload]
 
         dst_geobox = dst_geobox[rr.roi_dst]
         src_geobox = src_geobox[rr.roi_src]
@@ -232,4 +233,4 @@ def read_time_slice_v2(rdr,
             rio_reproject(pix, dst, src_geobox, dst_geobox, resampling,
                           src_nodata=rdr.nodata, dst_nodata=dst_nodata)
 
-    return dst, rr.roi_dst
+    return dst, cast(tuple[slice, slice], rr.roi_dst)
