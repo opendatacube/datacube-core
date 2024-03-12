@@ -24,7 +24,7 @@ class FileFormat(Enum):
     JPEG2000 = 4
 
 
-def nest_properties(d: Mapping[str, Any], separator=":") -> Dict[str, Any]:
+def nest_properties(d: Mapping[str, Any], separator=":") -> dict[str, Any]:
     """
     Split keys with embedded colons into sub dictionaries.
 
@@ -33,7 +33,7 @@ def nest_properties(d: Mapping[str, Any], separator=":") -> Dict[str, Any]:
     >>> nest_properties({'landsat:path':1, 'landsat:row':2, 'clouds':3})
     {'landsat': {'path': 1, 'row': 2}, 'clouds': 3}
     """
-    out = defaultdict(dict)
+    out: dict[str, Any] = defaultdict(dict)
     for key, val in d.items():
         section, *remainder = key.split(separator, 1)
         if remainder:
@@ -63,19 +63,21 @@ def datetime_type(value):
 
 
 def of_enum_type(
-    vals: Union[EnumMeta, Tuple[str, ...]] = None, lower=False, strict=True
+        vals: EnumMeta | tuple[str, ...] | None = None,
+        lower: bool = False,
+        strict: bool = True
 ) -> Callable[[str], str]:
     if isinstance(vals, EnumMeta):
         vals = tuple(vals.__members__.keys())
 
-    def normalise(v: str):
+    def normalise(v: str | Enum) -> str:
         if isinstance(v, Enum):
             v = v.name
 
         if lower:
             v = v.lower()
 
-        if v not in vals:
+        if vals is not None and v not in vals:
             msg = f"Unexpected value {v!r}. Expected one of: {', '.join(vals)},"
             if strict:
                 raise ValueError(msg)
@@ -348,7 +350,7 @@ class Eo3Dict(collections.abc.MutableMapping):
     # For backwards compatibility, in case users are extending at runtime.
     KNOWN_STAC_PROPERTIES = KNOWN_PROPERTIES
 
-    def __init__(self, properties: Mapping = None, normalise_input=True) -> None:
+    def __init__(self, properties: dict[str, Any] | None = None, normalise_input: bool = True) -> None:
         if properties is None:
             properties = {}
         self._props = properties
@@ -521,7 +523,7 @@ class Eo3Interface:
         self.properties["eo:platform"] = value
 
     @property
-    def instrument(self) -> str:
+    def instrument(self) -> str | None:
         """
         Name of instrument or sensor used (e.g., MODIS, ASTER, OLI, Canon F-1).
 
@@ -534,7 +536,7 @@ class Eo3Interface:
         self.properties["eo:instrument"] = value
 
     @property
-    def constellation(self) -> str:
+    def constellation(self) -> str | None:
         """
         Constellation. Eg ``sentinel-2``.
         """
@@ -545,7 +547,7 @@ class Eo3Interface:
         self.properties["eo:constellation"] = value
 
     @property
-    def product_name(self) -> Optional[str]:
+    def product_name(self) -> str | None:
         """
         The ODC product name
         """
@@ -556,7 +558,7 @@ class Eo3Interface:
         self.properties["odc:product"] = value
 
     @property
-    def producer(self) -> str:
+    def producer(self) -> str | None:
         """
         Organisation that produced the data.
 
@@ -571,7 +573,7 @@ class Eo3Interface:
         self.properties["odc:producer"] = domain
 
     @property
-    def datetime_range(self) -> Tuple[datetime, datetime]:
+    def datetime_range(self) -> tuple[datetime, datetime] | None:
         """
         An optional date range for the dataset.
 
@@ -580,10 +582,18 @@ class Eo3Interface:
         This field is a shorthand for reading/setting the datetime-range
         stac 0.6 extension properties: ``dtr:start_datetime`` and ``dtr:end_datetime``
         """
-        return (
-            self.properties.get("dtr:start_datetime"),
-            self.properties.get("dtr:end_datetime"),
-        )
+        sdt = self.properties.get("dtr:start_datetime")
+        edt = self.properties.get("dtr:end_datetime")
+        if sdt and edt:
+            return (sdt, edt)
+        elif sdt:
+            return (sdt, sdt)
+        elif edt:
+            return (edt, edt)
+        else:
+            return None
+
+
 
     @datetime_range.setter
     def datetime_range(self, val: Tuple[datetime, datetime]):
@@ -593,7 +603,7 @@ class Eo3Interface:
         self.properties["dtr:end_datetime"] = end
 
     @property
-    def processed(self) -> datetime:
+    def processed(self) -> datetime | None:
         """When the dataset was created (Defaults to UTC if not specified)
 
         Shorthand for the ``odc:processing_datetime`` field
@@ -611,7 +621,7 @@ class Eo3Interface:
         self.properties["odc:processing_datetime"] = datetime.utcnow()
 
     @property
-    def dataset_version(self) -> str:
+    def dataset_version(self) -> str | None:
         """
         The version of the dataset.
 
@@ -623,8 +633,12 @@ class Eo3Interface:
         """
         return self.properties.get("odc:dataset_version")
 
+    @dataset_version.setter
+    def dataset_version(self, value):
+        self.properties["odc:dataset_version"] = value
+
     @property
-    def collection_number(self) -> int:
+    def collection_number(self) -> int | None:
         """
         The version of the collection.
 
@@ -638,16 +652,12 @@ class Eo3Interface:
         """
         return self.properties.get("odc:collection_number")
 
-    @dataset_version.setter
-    def dataset_version(self, value):
-        self.properties["odc:dataset_version"] = value
-
     @collection_number.setter
     def collection_number(self, value):
         self.properties["odc:collection_number"] = value
 
     @property
-    def naming_conventions(self) -> str:
+    def naming_conventions(self) -> str | None:
         return self.properties.get("odc:naming_conventions")
 
     @naming_conventions.setter
@@ -655,7 +665,7 @@ class Eo3Interface:
         self.properties["odc:naming_conventions"] = value
 
     @property
-    def product_family(self) -> str:
+    def product_family(self) -> str | None:
         """
         The identifier for this "family" of products, such as ``ard``, ``level1`` or ``fc``.
         It's used for grouping similar products together.
@@ -680,7 +690,7 @@ class Eo3Interface:
         del self.properties["odc:product_family"]
 
     @property
-    def region_code(self) -> Optional[str]:
+    def region_code(self) -> str | None:
         """
         The "region" of acquisition. This is a platform-agnostic representation of things like
         the Landsat Path+Row. Datasets with the same Region Code will *roughly* (but usually
@@ -701,7 +711,7 @@ class Eo3Interface:
         self.properties["odc:region_code"] = value
 
     @property
-    def maturity(self) -> str:
+    def maturity(self) -> str | None:
         """
         The dataset maturity. The same data may be processed multiple times -- becoming more
         mature -- as new ancillary data becomes available.
@@ -715,7 +725,7 @@ class Eo3Interface:
         self.properties["dea:dataset_maturity"] = value
 
     @property
-    def product_maturity(self) -> str:
+    def product_maturity(self) -> str | None:
         """
         Classification: is this a 'provisional' or 'stable' release of the product?
         """
@@ -731,7 +741,7 @@ class Eo3Interface:
     from datetime import datetime as datetime_
 
     @property
-    def datetime(self) -> datetime_:
+    def datetime(self) -> datetime_ | None:
         """
         The searchable date and time of the assets. (Default to UTC if not specified)
         """
