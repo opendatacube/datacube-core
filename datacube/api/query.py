@@ -329,7 +329,7 @@ def _time_to_search_dims(time_range):
         if tr_start is None:
             start = datetime.datetime.fromtimestamp(0)
         elif not isinstance(tr_start, datetime.datetime):
-            # ensure consistency between different datetime types
+            # convert to datetime.datetime
             if hasattr(tr_start, 'isoformat'):
                 tr_start = tr_start.isoformat()
             start = pandas_to_datetime(tr_start).to_pydatetime()
@@ -338,15 +338,12 @@ def _time_to_search_dims(time_range):
 
         if tr_end is None:
             tr_end = datetime.datetime.now().strftime("%Y-%m-%d")
-        if not isinstance(tr_end, datetime.datetime):
-            # Attempt conversion to isoformat
-            # allows pandas.Period to handle date objects
-            if hasattr(tr_end, 'isoformat'):
-                tr_end = tr_end.isoformat()
-            end = pandas.Period(tr_end).end_time.to_pydatetime()
-        else:
-            # if it's already a datetime, no need to extrapolate the period end
-            end = tr_end
+        # Attempt conversion to isoformat
+        # allows pandas.Period to handle datetime objects
+        if hasattr(tr_end, 'isoformat'):
+            tr_end = tr_end.isoformat()
+        # get end of period to ensure range is inclusive
+        end = pandas.Period(tr_end).end_time.to_pydatetime()
 
         tr = Range(tz_aware(start), tz_aware(end))
         if start == end:
