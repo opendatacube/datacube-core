@@ -52,7 +52,7 @@ extras_require = {
 
 extras_require['dev'] = sorted(set(sum([extras_require[k] for k in [
     'test',
-    'type',
+    'types',
     'doc',
     'performance',
     's3',
