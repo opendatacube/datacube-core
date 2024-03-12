@@ -59,7 +59,7 @@ jobs:
       - name: run mypy
         run: |
           sudo apt-get remove python3-openssl
-          pip install --upgrade -e '.[test]'
+          pip install --upgrade -e '.[types]'
           mypy datacube
 
 

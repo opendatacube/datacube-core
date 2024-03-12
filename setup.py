@@ -6,13 +6,28 @@ tests_require = [
     'hypothesis',
     'pycodestyle',
     'pylint',
-    'mypy',
     'pytest',
     'pytest-cov',
     'pytest-timeout',
     'pytest-httpserver',
     'moto',
 ]
+
+types_require = [
+    "mypy",
+    "types-affine",
+    "types-cachetools",
+    "types-jsonschema",
+    "types-psutil",
+    "types-python-dateutil",
+    "types-PyYAML",
+    "types-redis",
+    "types-setuptools",
+    "boto3-stubs",
+    "botocore-stubs",
+    "pandas-stubs"
+]
+
 doc_require = [
     'Sphinx',
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
@@ -30,12 +45,14 @@ extras_require = {
     'doc': doc_require,
     's3': ['boto3', 'botocore'],
     'test': tests_require,
+    "types": types_require,
     'cf': ['compliance-checker>=4.0.0'],
     'netcdf': ['netcdf4'],
 }
 
 extras_require['dev'] = sorted(set(sum([extras_require[k] for k in [
     'test',
+    'type',
     'doc',
     'performance',
     's3',
