@@ -16,7 +16,8 @@ v1.8.next
 - Tweak ``list_products`` logic for getting crs and resolution values (:pull:`1535`)
 - Add new ODC Cheatsheet reference doc to Data Access & Analysis documentation page (:pull:`1543`)
 - Fix broken codecov github action. (:pull:`1554`)
-- Fix handling of date value as int in Query construction (:pull:`1561`)
+- Throw error if ``time`` dimension is provided as an int or float to Query construction
+  instead of assuming it to be seconds since epoch (:pull:`1561`)
 
 v1.8.17 (8th November 2023)
 ===========================
