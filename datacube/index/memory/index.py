@@ -91,7 +91,10 @@ class Index(AbstractIndex):
         return UnhandledTransaction(self.index_id)
 
     @classmethod
-    def from_config(cls, config_env: ODCEnvironment, application_name: str | None = None, validate_connection: bool = True):
+    def from_config(cls,
+                    config_env: ODCEnvironment,
+                    application_name: str | None = None,
+                    validate_connection: bool = True):
         return cls(config_env)
 
     @classmethod

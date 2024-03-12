@@ -593,8 +593,6 @@ class Eo3Interface:
         else:
             return None
 
-
-
     @datetime_range.setter
     def datetime_range(self, val: Tuple[datetime, datetime]):
         # TODO: string type conversion, better validation/errors

@@ -11,7 +11,7 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, List, Mapping, Union, Optional, Any, NamedTuple, cast
+from typing import Iterable, Mapping, Union, Optional, Any, NamedTuple, cast
 from uuid import UUID
 
 from deprecat import deprecat
@@ -483,7 +483,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Get each archived location along with the time it was archived.
 
         :param typing.Union[UUID, str] id_: dataset id
-        :rtype: List[Tuple[str, datetime.datetime]]
+        :rtype: list[Tuple[str, datetime.datetime]]
         """
         with self._db_connection() as connection:
             return list(connection.get_archived_locations(id_))

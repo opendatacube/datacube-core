@@ -5,7 +5,7 @@
 
 import os
 import warnings
-from typing import Any, TYPE_CHECKING, cast
+from typing import Any, TYPE_CHECKING
 from urllib.parse import urlparse
 from urllib.parse import quote_plus
 

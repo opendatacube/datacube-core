@@ -71,7 +71,10 @@ class PostGisDb:
         return PostGisDb.create(config_env, application_name=app_name, validate=validate_connection)
 
     @classmethod
-    def create(cls, config_env: ODCEnvironment, application_name: str | None = None, validate: bool = True) -> "PostGisDb":
+    def create(cls,
+               config_env: ODCEnvironment,
+               application_name: str | None = None,
+               validate: bool = True) -> "PostGisDb":
         url = psql_url_from_config(config_env)
         kwargs = {
             "application_name": application_name,

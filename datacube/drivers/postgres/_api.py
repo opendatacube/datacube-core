@@ -16,7 +16,7 @@ Persistence API implementation for postgres.
 import datetime
 import logging
 import uuid  # noqa: F401
-from typing import Iterable, Tuple, Any
+from typing import Iterable, Any
 from typing import cast as type_cast
 from sqlalchemy import cast, String, Label, Table, FromClause
 from sqlalchemy import delete, column, values
@@ -519,8 +519,8 @@ class PostgresDbAPI(object):
                               select_fields=None, with_source_ids=False, limit=None,
                               archived: bool | None = False):
         """
-        :type expressions: Tuple[Expression]
-        :type source_exprs: Tuple[Expression]
+        :type expressions: tuple[Expression]
+        :type source_exprs: tuple[Expression]
         :type select_fields: Iterable[PgField]
         :type with_source_ids: bool
         :type limit: int
@@ -693,7 +693,7 @@ class PostgresDbAPI(object):
         Insert bulk lineage records (e.g. for index cloning)
 
         :param values: An array of values dicts for bulk inser
-        :return: Tuple[count of rows loaded, count of rows skipped]
+        :return: tuple[count of rows loaded, count of rows skipped]
         """
         requested = len(vals)
         # Wrap values in SQLAlchemy Values object

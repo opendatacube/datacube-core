@@ -6,14 +6,13 @@
 
 This allows extraction of fields of interest from dataset metadata document.
 """
-import abc
 from typing import Mapping, Dict, Any
 import toolz  # type: ignore[import]
 import decimal
 from datacube.utils import parse_time
 from ._base import Range
 
-# Allowed values for field 'type' (specified in a metadata type docuemnt)
+# Allowed values for field 'type' (specified in a metadata type document)
 _AVAILABLE_TYPE_NAMES = (
     # Unrestricted type - handy for dynamically creating fields from offsets, e.g. for search_returning()
     'any',

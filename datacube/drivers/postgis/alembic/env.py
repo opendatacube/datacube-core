@@ -3,7 +3,6 @@
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from alembic import context
-from alembic.config import Config
 
 from datacube.cfg import ODCConfig
 from datacube.drivers.postgis._connections import PostGisDb

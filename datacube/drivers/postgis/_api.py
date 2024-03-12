@@ -20,7 +20,7 @@ import uuid  # noqa: F401
 from sqlalchemy import cast
 from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.sql.expression import Select, ColumnElement
+from sqlalchemy.sql.expression import Select
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError

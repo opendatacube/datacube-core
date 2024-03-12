@@ -7,7 +7,7 @@ Tables for indexing the datasets which were ingested into the AGDC.
 """
 
 import logging
-from typing import Type, no_type_check
+from typing import Type
 
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.orm import aliased, registry, relationship, column_property
@@ -228,6 +228,7 @@ class SpatialIndexRecord:
 # In theory could put dataset_ref and search_key in shared parent class, but having a foreign key
 # in such a class requires weird and esoteric SQLAlchemy features.  Just leave as separate
 # classes with duped columns for now.
+
 
 @orm_registry.mapped
 class DatasetSearchString:

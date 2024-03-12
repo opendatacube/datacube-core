@@ -8,7 +8,7 @@ Tracking spatial indexes
 
 import logging
 from threading import Lock
-from typing import Mapping, Optional, Type, Union, cast
+from typing import Mapping, Type
 
 from sqlalchemy import ForeignKey, select, delete
 from sqlalchemy.dialects import postgresql as postgres
