@@ -1100,7 +1100,7 @@ def _make_dask_array(chunked_srcs,
     #  B BR
     empties: dict[tuple[int, int], str] = {}
 
-    def _mk_empty(shape: tuple[int, ...]) -> str:
+    def _mk_empty(shape: tuple[int, int]) -> str:
         name = empties.get(shape, None)
         if name is not None:
             return name
