@@ -57,7 +57,7 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
               'source_filter')
 
 
-class Query():
+class Query:
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
         """Parses search terms in preparation for querying the Data Cube Index.
 
