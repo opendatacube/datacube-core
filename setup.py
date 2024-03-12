@@ -6,6 +6,7 @@ tests_require = [
     'hypothesis',
     'pycodestyle',
     'pylint',
+    'mypy',
     'pytest',
     'pytest-cov',
     'pytest-timeout',
