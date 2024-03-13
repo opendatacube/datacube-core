@@ -21,7 +21,7 @@ from datetime import timedelta
 from datacube.config import LocalConfig
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
-from datacube.model import Dataset, MetadataType, Range
+from datacube.model import Dataset, MetadataType, Range, NotType
 from datacube.model import Product
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
@@ -374,7 +374,7 @@ class AbstractMetadataTypeResource(ABC):
             yield mdt.definition
 
 
-QueryField = Union[str, float, int, Range, datetime.datetime]
+QueryField = Union[str, float, int, Range, datetime.datetime, NotType]
 QueryDict = Mapping[str, QueryField]
 
 
@@ -688,7 +688,7 @@ class AbstractProductResource(ABC):
     @abstractmethod
     def search_robust(self,
                       **query: QueryField
-                     ) -> Iterable[Tuple[Product, Mapping[str, QueryField]]]:
+                     ) -> Iterable[Tuple[Product, QueryDict]]:
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
 
@@ -698,7 +698,7 @@ class AbstractProductResource(ABC):
 
     @abstractmethod
     def search_by_metadata(self,
-                           metadata: Mapping[str, QueryField]
+                           metadata: QueryDict
                            ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
@@ -1115,7 +1115,7 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def search_by_metadata(self,
-                           metadata: Mapping[str, QueryField]
+                           metadata: QueryDict
                           ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
@@ -1129,7 +1129,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search(self,
                limit: Optional[int] = None,
-               source_filter: Optional[Mapping[str, QueryField]] = None,
+               source_filter: Optional[QueryDict] = None,
                **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
