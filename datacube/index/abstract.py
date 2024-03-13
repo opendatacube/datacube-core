@@ -20,7 +20,7 @@ from deprecat import deprecat
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
-from datacube.model import Product, Dataset, MetadataType, Range
+from datacube.model import Product, Dataset, MetadataType, Range, NotType
 from datacube.model import LineageTree, LineageDirection, LineageRelation
 from datacube.model.lineage import LineageRelations
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException, report_to_user
@@ -393,7 +393,7 @@ class AbstractMetadataTypeResource(ABC):
             yield cast(JsonDict, mdt.definition)
 
 
-QueryField = str | float | int | Range | datetime.datetime
+QueryField = str | float | int | Range | datetime.datetime | NotType
 QueryDict = dict[str, QueryField]
 
 
