@@ -876,7 +876,7 @@ class PostgresDbAPI(object):
             *fields,
             text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
         ).select_from(
-            type_cast(FromClause, overlapping)  # Is the need for this type cast a sign something is wrong here?
+            type_cast(FromClause, overlapping)
         ).group_by(
             *fields, text("time_intersect")
         ).having(

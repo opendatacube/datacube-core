@@ -509,10 +509,6 @@ class DocReader:
 
     @property
     def search_fields(self):
-        sflds = self._search_fields
-        syflds = self._system_offsets
-        sysf = self.system_fields
-        dOc = self._doc
         return {
             name: field.extract(self.__dict__['_doc'])
             for name, field in self._search_fields.items()
