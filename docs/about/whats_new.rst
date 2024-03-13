@@ -50,6 +50,8 @@ v1.8.next
 - Update github-Dockerhub credential-passing mechanism. (:pull:`1528`)
 - Tweak ``list_products`` logic for getting crs and resolution values (:pull:`1535`)
 - Add new ODC Cheatsheet reference doc to Data Access & Analysis documentation page (:pull:`1543`)
+- Fix broken codecov github action. (:pull:`1554`)
+- Add generic NOT operator and for ODC queries and ``NotType`` wrapper (:pull:`1563`)
 
 v1.8.17 (8th November 2023)
 ===========================
