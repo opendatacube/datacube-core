@@ -124,7 +124,7 @@ def get_native_fields() -> dict[str, NativeField]:
             'Metadata type name of dataset',
             MetadataType.name,
             join_clause=(MetadataType.id == Dataset.metadata_type_ref),
-    ),
+        ),
         'metadata_type_id': NativeField(
             'metadata_type_id',
             'ID of a metadata type',

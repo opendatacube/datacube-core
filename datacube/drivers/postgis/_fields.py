@@ -10,7 +10,7 @@ import math
 from collections import namedtuple
 from datetime import datetime, date
 from decimal import Decimal
-from typing import Any, Callable, Tuple, Union, cast as type_cast
+from typing import Any, Callable, Tuple, Union
 
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast, func, and_
