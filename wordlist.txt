@@ -314,6 +314,7 @@ nodata
 NodeJS
 nosignatures
 NotImplementedError
+NotType
 np
 NPM
 npm
