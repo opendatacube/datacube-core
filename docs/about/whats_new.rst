@@ -37,6 +37,7 @@ v1.9.next
 - Migrate away from deprecated Python pkg_resources module (:pull:`1558`)
 - Add `custom_offsets` and `order_by` arguments to search_retunrning() - order_by still unimplemented. (:pull:`1557`)
 - Fix and enhance typehints, automated static type checking with mypy.  (:pull:`1562`)
+- Improve SQLAlchemy join hints, addressing an recurring but intermittent bug.  (:pull:`1564`)
 
 
 v1.8.next
