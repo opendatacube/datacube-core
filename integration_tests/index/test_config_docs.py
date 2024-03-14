@@ -15,7 +15,7 @@ from datacube.drivers.postgis._fields import NumericRangeDocField as PgsNumericR
 from datacube.index import Index
 from datacube.index.abstract import default_metadata_type_docs
 from datacube.model import MetadataType, DatasetType
-from datacube.model import Range, Dataset
+from datacube.model import Range, Not, Dataset
 from datacube.utils import changes
 from datacube.utils.documents import documents_equal
 from datacube.testutils import sanitise_doc
@@ -447,7 +447,7 @@ def test_filter_types_by_fields(index, wo_eo3_product):
     assert len(res) == 0
 
 
-def test_filter_types_by_search(index, wo_eo3_product):
+def test_filter_types_by_search(index, wo_eo3_product, ls8_eo3_product):
     """
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
@@ -456,7 +456,7 @@ def test_filter_types_by_search(index, wo_eo3_product):
 
     # No arguments, return all.
     res = list(index.products.search())
-    assert res == [wo_eo3_product]
+    assert res == [ls8_eo3_product, wo_eo3_product]
 
     # Matching fields
     res = list(index.products.search(
@@ -490,6 +490,12 @@ def test_filter_types_by_search(index, wo_eo3_product):
         product_family=['wo', 'spam'],
     ))
     assert res == [wo_eo3_product]
+
+    # Not expression test
+    res = list(index.products.search(
+        product_family=Not("wo"),
+    ))
+    assert res == [ls8_eo3_product]
 
     # Mismatching fields
     res = list(index.products.search(
