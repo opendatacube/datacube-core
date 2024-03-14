@@ -20,4 +20,4 @@ def ranges_overlap(ra: Range, rb: Range) -> bool:
     return rb.end > ra.begin
 
 
-NotType = namedtuple('NotType', 'value')
+Not = namedtuple('Not', 'value')
