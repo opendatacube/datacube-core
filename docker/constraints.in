@@ -37,7 +37,7 @@ sphinx-click
 sphinx_autodoc_typehints
 sphinx_rtd_theme
 alembic
-sqlalchemy>=2.0
+sqlalchemy>=2.0.18
 toolz
 xarray>=2023.9.0
 odc-geo

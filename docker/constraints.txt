@@ -401,7 +401,7 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
-sqlalchemy==2.0.8
+sqlalchemy==2.0.24
     # via
     #   -r constraints.in
     #   alembic
