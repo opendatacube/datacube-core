@@ -10,14 +10,14 @@ import math
 from collections import namedtuple
 from datetime import datetime, date
 from decimal import Decimal
-from typing import Any, Callable, Tuple, Union
+from typing import Any, Callable, Tuple, Union, cast as type_cast
 
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.sql import ColumnElement
+from sqlalchemy.sql import ColumnElement, FromClause, ColumnExpressionArgument
 from sqlalchemy.orm import aliased
 
 from datacube import utils
@@ -29,6 +29,8 @@ from datacube.drivers.postgis._schema import Dataset, search_field_index_map
 from datacube.utils import cached_property
 from datacube.utils.dates import tz_aware
 
+DatasetJoinArgs = tuple[FromClause] | tuple[FromClause, ColumnExpressionArgument]
+
 
 class PgField(Field):
     """
@@ -36,27 +38,31 @@ class PgField(Field):
     a JSONB column.
     """
 
-    def __init__(self, name, description, alchemy_column, indexed):
-        super(PgField, self).__init__(name, description)
+    def __init__(self,
+                 name: str, description: str,
+                 alchemy_column: ColumnElement,
+                 indexed: bool):
+        super().__init__(name, description)
 
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
         self.alchemy_column = alchemy_column
         self.indexed = indexed
 
     @property
-    def select_alchemy_table(self):
+    def select_alchemy_table(self) -> FromClause:
         return self.alchemy_column.table
 
     @cached_property
-    def search_index_table(self):
+    def search_index_table(self) -> FromClause:
         if self.indexed:
             search_table = search_field_index_map[self.type_name]
-            return aliased(search_table, name=f"{search_table.__tablename__}-{self.name}")
+            return aliased(  # type: ignore[return-value]
+                search_table, name=f"{search_table.__tablename__}-{self.name}")  # type: ignore[attr-defined]
         else:
             return self.select_alchemy_table
 
     @cached_property
-    def dataset_join_args(self):
+    def dataset_join_args(self) -> DatasetJoinArgs:
         if self.indexed:
             return (
                 self.search_index_table,
@@ -69,7 +75,7 @@ class PgField(Field):
             return (self.search_index_table,)
 
     @property
-    def alchemy_expression(self):
+    def alchemy_expression(self) -> ColumnExpressionArgument:
         """
         Get an SQLAlchemy expression for accessing this field.
         :return:
@@ -77,7 +83,7 @@ class PgField(Field):
         raise NotImplementedError('alchemy expression')
 
     @property
-    def search_alchemy_expression(self):
+    def search_alchemy_expression(self) -> ColumnExpressionArgument:
         if self.indexed:
             return self.search_index_table.search_val
         else:
@@ -112,17 +118,27 @@ class NativeField(PgField):
     Fields hard-coded into the schema. (not user configurable)
     """
 
-    def __init__(self, name, description, alchemy_column, alchemy_expression=None,
+    def __init__(self, name: str, description: str,
+                 alchemy_column: ColumnElement,
+                 alchemy_expression: ColumnExpressionArgument | None = None,
+                 join_clause: ColumnExpressionArgument | None = None,
                  # Should this be selected by default when selecting all fields?
-                 affects_row_selection=False):
+                 affects_row_selection: bool = False):
         super(NativeField, self).__init__(name, description, alchemy_column, False)
         self._expression = alchemy_expression
         self.affects_row_selection = affects_row_selection
+        self.join_clause = join_clause
 
     @property
-    def alchemy_expression(self):
+    def alchemy_expression(self) -> ColumnExpressionArgument:
         expression = self._expression if self._expression is not None else self.alchemy_column
-        return expression.label(self.name)
+        return expression.label(self.name)  # type: ignore[union-attr]
+
+    @cached_property
+    def dataset_join_args(self) -> DatasetJoinArgs:
+        if self.join_clause is None:
+            return super().dataset_join_args
+        return (self.select_alchemy_table, self.join_clause)
 
 
 class PgDocField(PgField):
