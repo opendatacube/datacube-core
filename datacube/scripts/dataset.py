@@ -351,7 +351,7 @@ def build_dataset_info(index: Index, dataset: Dataset,
         info['indexed'] = dataset.indexed_time
 
     info['location'] = dataset.uri
-    info['fields'] = dataset.metadata.search_fields
+    info['fields'] = dataset.metadata.fields
 
     if depth < max_depth:
         if show_sources and dataset.sources is not None:
@@ -671,7 +671,7 @@ def find_duplicates(index: Index, product_names, fields):
     if not list(product_names):
         products = products_with_fields
     else:
-        products = [index.products.get_by_name(name) for name in product_names]
+        products = [p for p in (index.products.get_by_name(name) for name in product_names) if p is not None]
         products_without_fields = set(products).difference(set(products_with_fields))
         if len(products_without_fields):
             click.echo(f'Error: specified products {", ".join(p.name for p in products_without_fields)} '

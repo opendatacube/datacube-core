@@ -10,9 +10,8 @@ from threading import Lock
 from time import monotonic
 
 from abc import ABC, abstractmethod
-from typing import (Any, Iterable, Iterator,
-                    Mapping, MutableMapping,
-                    NamedTuple, Sequence, Type)
+from typing import (Any, Iterable, Iterator, Mapping,
+                    NamedTuple, Sequence, Type, cast)
 from urllib.parse import urlparse, ParseResult
 from uuid import UUID
 from datetime import timedelta
@@ -379,7 +378,7 @@ class AbstractMetadataTypeResource(ABC):
         :returns: All available MetadataType models
         """
 
-    def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
+    def get_all_docs(self) -> Iterable[JsonDict]:
         """
         Retrieve all Metadata Types as documents only (e.g. for an index clone)
 
@@ -391,11 +390,11 @@ class AbstractMetadataTypeResource(ABC):
         """
         # Default implementation calls get_all()
         for mdt in self.get_all():
-            yield mdt.definition
+            yield cast(JsonDict, mdt.definition)
 
 
 QueryField = str | float | int | Range | datetime.datetime
-QueryDict = Mapping[str, QueryField]
+QueryDict = dict[str, QueryField]
 
 
 class AbstractProductResource(ABC):
@@ -412,7 +411,7 @@ class AbstractProductResource(ABC):
         self._index = index
 
     def from_doc(self, definition: JsonDict,
-                 metadata_type_cache: MutableMapping[str, MetadataType] | None = None) -> Product:
+                 metadata_type_cache: dict[str, MetadataType] | None = None) -> Product:
         """
         Construct unpersisted Product model from product metadata dictionary
 
@@ -426,26 +425,26 @@ class AbstractProductResource(ABC):
         # Validate extra dimension metadata
         Product.validate_extra_dims(definition)
 
-        metadata_type = definition['metadata_type']
+        metadata_type_in: str | JsonLike = definition['metadata_type']
 
         # They either specified the name of a metadata type, or specified a metadata type.
         # Is it a name?
-        if isinstance(metadata_type, str):
-            if metadata_type_cache is not None and metadata_type in metadata_type_cache:
-                metadata_type = metadata_type_cache[metadata_type]
+        if isinstance(metadata_type_in, str):
+            if metadata_type_cache is not None and metadata_type_in in metadata_type_cache:
+                metadata_type: MetadataType | None = metadata_type_cache[metadata_type_in]
             else:
-                metadata_type = self._index.metadata_types.get_by_name(metadata_type)
+                metadata_type = self._index.metadata_types.get_by_name(metadata_type_in)
                 if (metadata_type is not None
                         and metadata_type_cache is not None
                         and metadata_type.name not in metadata_type_cache):
                     metadata_type_cache[metadata_type.name] = metadata_type
         else:
             # Otherwise they embedded a document, add it if needed:
-            metadata_type = self._index.metadata_types.from_doc(metadata_type)
+            metadata_type = self._index.metadata_types.from_doc(cast(JsonDict, metadata_type_in))
             definition = dict(definition)
             definition['metadata_type'] = metadata_type.name
 
-        if not metadata_type:
+        if metadata_type is None:
             raise UnknownMetadataType('Unknown metadata type: %r' % definition['metadata_type'])
 
         return Product(metadata_type, definition)
@@ -498,7 +497,7 @@ class AbstractProductResource(ABC):
 
     def bulk_add(self,
                  product_docs: Iterable[JsonDict],
-                 metadata_types: Mapping[str, MetadataType] | None = None,
+                 metadata_types: dict[str, MetadataType] | None = None,
                  batch_size: int = 1000) -> BatchStatus:
         """
         Add a group of product documents in bulk.
@@ -723,7 +722,7 @@ class AbstractProductResource(ABC):
                 prods = []
             else:
                 prods = [product]
-        out = set()
+        out: set[str] = set()
         for prod in prods:
             out.update(prod.metadata_type.dataset_fields)
         return out
@@ -753,7 +752,7 @@ class AbstractProductResource(ABC):
     @abstractmethod
     def search_by_metadata(self,
                            metadata: JsonDict
-                           ) -> Iterable[Dataset]:
+                           ) -> Iterable[Product]:
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
 
@@ -771,7 +770,7 @@ class AbstractProductResource(ABC):
         :returns: Product models for all known products
         """
 
-    def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
+    def get_all_docs(self) -> Iterable[JsonDict]:
         """
         Retrieve all Product metadata documents
         Default implementation calls get_all()
@@ -781,7 +780,7 @@ class AbstractProductResource(ABC):
         :returns: Iterable of metadata documents for all known products
         """
         for prod in self.get_all():
-            yield prod.definition
+            yield cast(JsonDict, prod.definition)
 
     @abstractmethod
     def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
@@ -1072,8 +1071,8 @@ class DatasetTuple(NamedTuple):
     - uris: A list of locations (uris)
     """
     product: Product
-    metadata: Mapping[str, Any]
-    uri_: str | Sequence[str]
+    metadata: JsonDict
+    uri_: str | list[str]
 
     @property
     def is_legacy(self):
@@ -1086,7 +1085,7 @@ class DatasetTuple(NamedTuple):
         if self.is_legacy:
             return self.uris[0]
         else:
-            return self.uri_
+            return cast(str, self.uri_)
 
     @property
     @deprecat(
@@ -1095,9 +1094,9 @@ class DatasetTuple(NamedTuple):
         category=ODC2DeprecationWarning)
     def uris(self) -> Sequence[str]:
         if self.is_legacy:
-            return self.uri_
+            return cast(list[str], self.uri_)
         else:
-            return [self.uri_]
+            return [cast(str, self.uri_)]
 
 
 class AbstractDatasetResource(ABC):
@@ -1647,7 +1646,7 @@ class AbstractDatasetResource(ABC):
             for dstup in self.get_all_docs_for_product(product, batch_size=batch_size):
                 yield dstup
 
-    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
+    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: dict[str, Any]) -> BatchStatus:
         """
         Add a single "batch" of datasets, provided as DatasetTuples.
 
@@ -1680,7 +1679,7 @@ class AbstractDatasetResource(ABC):
                 b_skipped += 1
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
-    def _init_bulk_add_cache(self) -> Mapping[str, Any]:
+    def _init_bulk_add_cache(self) -> dict[str, Any]:
         """
         Initialise a cache dictionary that may be used to share data between calls to _add_batch()
 
@@ -1960,7 +1959,7 @@ class AbstractDatasetResource(ABC):
         geom: Geometry | None = None
         if "geometry" in q:
             # New geometry-style spatial query
-            geom_term = q.pop("geometry")
+            geom_term = cast(JsonDict | Geometry, q.pop("geometry"))
             try:
                 geom = Geometry(geom_term)
             except ValueError:
@@ -1972,7 +1971,7 @@ class AbstractDatasetResource(ABC):
                         geom = geom.union(Geometry(term))
             if "lat" in q or "lon" in q:
                 raise ValueError("Cannot specify lat/lon AND geometry in the same query")
-            assert geom.crs
+            assert geom and geom.crs
         else:
             # Old lat/lon--style spatial query (or no spatial query)
             # TODO: latitude/longitude/x/y aliases for lat/lon
@@ -2418,7 +2417,7 @@ class AbstractIndex(ABC):
                 for crs in origin_index.spatial_indexes(refresh=True):
                     report_to_user(f"Creating spatial index for CRS {crs}")
                     self.create_spatial_index(crs)
-                    self.update_spatial_index(crs)
+                self.update_spatial_index(list(origin_index.spatial_indexes(refresh=False)))
             # Clone Metadata Types
             report_to_user("Cloning Metadata Types:")
             results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
@@ -2428,7 +2427,10 @@ class AbstractIndex(ABC):
                   f'{res.seconds_elapsed:.2f}seconds ' \
                   f'({res.completed * 60 / res.seconds_elapsed:.2f} metadata_types/min)'
             report_to_user(msg, logger=_LOG)
-            metadata_cache = {name: self.metadata_types.get_by_name(name) for name in res.safe}
+            if res.safe:
+                metadata_cache = {name: self.metadata_types.get_by_name_unsafe(name) for name in res.safe}
+            else:
+                metadata_cache = {}
             # Clone Products
             report_to_user("Cloning Products:")
             results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
@@ -2440,7 +2442,10 @@ class AbstractIndex(ABC):
             report_to_user(msg, logger=_LOG)
             # Clone Datasets (group by product for now for convenience)
             report_to_user("Cloning Datasets:")
-            products = [p for p in self.products.get_all() if p.name in res.safe]
+            if res.safe:
+                products = [p for p in self.products.get_all() if p.name in res.safe]
+            else:
+                products = []
             results["datasets"] = self.datasets.bulk_add(
                 origin_index.datasets.get_all_docs(products=products, batch_size=batch_size),
                 batch_size=batch_size

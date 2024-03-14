@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
-from typing import Iterable, Type
+from typing import Iterable, Iterator, Type
 
 from deprecat import deprecat
 from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
@@ -145,7 +145,7 @@ class Index(AbstractIndex):
         return "Index<db={!r}>".format(self._db)
 
     @contextmanager
-    def _active_connection(self, transaction: bool = False) -> PostgresDbAPI:
+    def _active_connection(self, transaction: bool = False) -> Iterator[PostgresDbAPI]:
         """
         Context manager representing a database connection.
 

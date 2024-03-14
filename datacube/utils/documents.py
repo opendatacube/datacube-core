@@ -460,7 +460,7 @@ def _set_doc_offset(offset, document, value):
     sub_doc[offset[-1]] = value
 
 
-class DocReader(object):
+class DocReader:
     def __init__(self, type_definition, search_fields, doc):
         """
         :type system_offsets: dict[str,list[str]]
@@ -475,6 +475,7 @@ class DocReader(object):
 
         # The field offsets that the datacube itself understands: id, format, sources etc.
         # (See the metadata-type-schema.yaml or the comments in default-metadata-types.yaml)
+        # Search field offsets take priority over Native Fields.
         self.__dict__['_system_offsets'] = {name: offset
                                             for name, offset in type_definition.items()
                                             if name != 'search_fields'}
@@ -508,8 +509,11 @@ class DocReader(object):
 
     @property
     def search_fields(self):
-        return {name: field.extract(self.__dict__['_doc'])
-                for name, field in self._search_fields.items()}
+        return {
+            name: field.extract(self.__dict__['_doc'])
+            for name, field in self._search_fields.items()
+            if name not in self.system_fields and field.can_extract
+        }
 
     @property
     def system_fields(self):

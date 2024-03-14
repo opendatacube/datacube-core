@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, cast
 from datacube.index.abstract import AbstractUserResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.drivers.postgres import PostgresDb
@@ -11,13 +11,14 @@ from datacube.drivers.postgres import PostgresDb
 class UserResource(AbstractUserResource, IndexResourceAddIn):
     def __init__(self,
                  db: PostgresDb,
-                 index: "datacube.index.postgres.index.Index"  # noqa: F821
+                 index
                 ) -> None:
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
         """
+        from datacube.index.postgres.index import Index
         self._db = db
-        self._index = index
+        self._index: Index = cast(Index, index)
 
     def grant_role(self, role: str, *usernames: str) -> None:
         """
@@ -27,7 +28,7 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
             connection.grant_role(role, usernames)
 
     def create_user(self, username: str, password: str,
-                    role: str, description: Optional[str] = None) -> None:
+                    role: str, description: str | None = None) -> None:
         """
         Create a new user.
         """
@@ -41,7 +42,7 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             connection.drop_users(usernames)
 
-    def list_users(self) -> Iterable[Tuple[str, str, Optional[str]]]:
+    def list_users(self) -> Iterable[tuple[str, str, str | None]]:
         """
         :return: list of (role, user, description)
         :rtype: list[(str, str, str)]

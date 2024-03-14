@@ -6,10 +6,10 @@ import datetime
 import logging
 
 from cachetools.func import lru_cache
-from typing import Iterable, cast, Any, Mapping
+from typing import Iterable, cast
 
 from datacube.index import fields
-from datacube.index.abstract import AbstractProductResource
+from datacube.index.abstract import AbstractProductResource, JsonDict
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.model import MetadataType, Product
 from datacube.utils import jsonify_document, changes, _readable_offset
@@ -274,7 +274,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 if not field:
                     # This type doesn't have that field, so it cannot match.
                     break
-                if not hasattr(field, 'extract'):
+                if not field.can_extract:
                     # non-document/native field
                     continue
                 if field.extract(type_.metadata_doc) is None:
@@ -311,7 +311,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return (self._make(record) for record in connection.get_all_products())
 
-    def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
+    def get_all_docs(self) -> Iterable[JsonDict]:
         """
         Retrieve all Products
         """
@@ -345,5 +345,6 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         min_offset = dataset_section['search_fields']['time']['min_offset']
         max_offset = dataset_section['search_fields']['time']['max_offset']
 
+        assert product.id is not None
         with self._db_connection() as connection:
             return connection.temporal_extent_by_product(product.id, min_offset, max_offset)

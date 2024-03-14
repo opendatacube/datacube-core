@@ -9,15 +9,13 @@ from datacube.drivers.postgis import PostGisDb
 
 
 class UserResource(AbstractUserResource, IndexResourceAddIn):
-    def __init__(self,
-                 db: PostGisDb,
-                 index: "datacube.index.postgis.index.Index"  # noqa: F821
-                ) -> None:
+    def __init__(self, db: PostGisDb, index) -> None:
         """
         :type db: datacube.drivers.postgis.PostGisDb
         """
+        from datacube.index.postgres.index import Index
         self._db = db
-        self._index = index
+        self._index: Index = index
 
     def grant_role(self, role: str, *usernames: str) -> None:
         """

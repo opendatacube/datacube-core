@@ -220,20 +220,15 @@ class SpatialIndexRecord:
 
     @classmethod
     def from_spindex(cls, spindex: Type[SpatialIndex]) -> "SpatialIndexRecord":
-        return cls(srid=spindex.__tablename__[8:],
-                   table_name=spindex.__tablename__)
-
-    # Value fields by type.
-    # str: String (varchar)
-    # num, dbl, int: Numeric
-    # datetime: DateTime
-    # num_range, dbl_range, int_range, float_range: NUMRANGE
-    # datetimerangs: TSTZRANGE
-
+        return cls(  # type: ignore [call-arg]
+            srid=spindex.__tablename__[8:],  # type: ignore [attr-defined]
+            table_name=spindex.__tablename__  # type: ignore [attr-defined]
+        )
 
 # In theory could put dataset_ref and search_key in shared parent class, but having a foreign key
 # in such a class requires weird and esoteric SQLAlchemy features.  Just leave as separate
 # classes with duped columns for now.
+
 
 @orm_registry.mapped
 class DatasetSearchString:
@@ -328,13 +323,13 @@ search_field_index_map = {
 }
 
 ALL_STATIC_TABLES = [
-    MetadataType.__table__, Product.__table__,
-    Dataset.__table__, DatasetLocation.__table__,
-    DatasetLineage.__table__, DatasetHome.__table__,
-    SpatialIndexRecord.__table__,
-    DatasetSearchString.__table__, DatasetSearchNumeric.__table__,
-    DatasetSearchDateTime.__table__,
+    MetadataType.__table__, Product.__table__,  # type: ignore[attr-defined]
+    Dataset.__table__, DatasetLocation.__table__,  # type: ignore[attr-defined]
+    DatasetLineage.__table__, DatasetHome.__table__,  # type: ignore[attr-defined]
+    SpatialIndexRecord.__table__,  # type: ignore[attr-defined]
+    DatasetSearchString.__table__, DatasetSearchNumeric.__table__,  # type: ignore[attr-defined]
+    DatasetSearchDateTime.__table__,  # type: ignore[attr-defined]
 ]
 
 
-MetadataObj = MetadataType.__table__.metadata
+MetadataObj = MetadataType.__table__.metadata  # type: ignore[attr-defined]

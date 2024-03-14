@@ -160,8 +160,9 @@ def check_intended_eo3(ds: SimpleDocNav, product: Product) -> None:
 def resolve_no_lineage(ds: SimpleDocNav,
                        uri: str,
                        matcher: ProductMatcher,
-                       source_tree: Optional[LineageTree] = None) -> DatasetOrError:
-    if source_tree:
+                       source_tree: Optional[LineageTree] = None,
+                       home_index: str | None = None) -> DatasetOrError:
+    if source_tree or home_index:
         raise ValueError("source_tree passed to non-lineage resolver")
     doc = ds.doc_without_lineage_sources
     try:
@@ -172,7 +173,8 @@ def resolve_no_lineage(ds: SimpleDocNav,
     return Dataset(product, doc, uri=uri, sources={}), None
 
 
-def resolve_with_lineage(doc: SimpleDocNav, uri: str, matcher: ProductMatcher,
+def resolve_with_lineage(doc: SimpleDocNav,
+                         uri: str, matcher: ProductMatcher,
                          source_tree: Optional[LineageTree] = None,
                          home_index: Optional[str] = None) -> DatasetOrError:
     """
@@ -215,8 +217,9 @@ def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: Product
                            fail_on_missing_lineage: bool,
                            verify_lineage: bool,
                            source_tree: Optional[LineageTree] = None,
+                           home_index: str | None = None
                            ) -> DatasetOrError:
-    if source_tree:
+    if source_tree or home_index:
         raise ValueError("source_tree passed to non-external lineage resolver")
 
     try:
@@ -295,14 +298,13 @@ def dataset_resolver(index: AbstractIndex,
                      fail_on_missing_lineage: bool = False,
                      verify_lineage: bool = True,
                      skip_lineage: bool = False,
-                     home_index: Optional[str] = None) -> Callable[
-    [SimpleDocNav, str, Optional[LineageTree]],
-    DatasetOrError
-]:
+                     home_index: Optional[str] = None) -> Callable[[SimpleDocNav, str, LineageTree | None],
+                                                                   DatasetOrError
+                                                                   ]:
     if skip_lineage or not index.supports_lineage:
         # Resolver that ignores lineage.
-        resolver = resolve_no_lineage
-        extra_kwargs = {
+        resolver: Callable[..., DatasetOrError] = resolve_no_lineage
+        extra_kwargs: dict[str, Any] = {
             "matcher": match_product,
         }
     elif index.supports_external_lineage:
@@ -438,7 +440,7 @@ class Doc2Dataset:
                 )
             )
 
-        dataset, err = self._ds_resolve(doc, uri, source_tree=source_tree)
+        dataset, err = self._ds_resolve(doc, uri, source_tree)
         if dataset is None:
             return None, cast(Union[str, Exception], err)
 

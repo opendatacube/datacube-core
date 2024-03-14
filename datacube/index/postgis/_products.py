@@ -10,13 +10,13 @@ from cachetools.func import lru_cache
 
 from odc.geo.geom import CRS, Geometry
 from datacube.index import fields
-from datacube.index.abstract import AbstractProductResource, BatchStatus
+from datacube.index.abstract import AbstractProductResource, BatchStatus, JsonDict
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
-from typing import Iterable, cast, Mapping, Any
+from typing import Iterable, cast
 
 _LOG = logging.getLogger(__name__)
 
@@ -286,7 +286,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 if not field:
                     # This type doesn't have that field, so it cannot match.
                     break
-                if not hasattr(field, 'extract'):
+                if not field.can_extract:
                     # non-document/native field
                     continue
                 if field.extract(type_.metadata_doc) is None:
@@ -323,7 +323,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return self._make_many(connection.get_all_products())
 
-    def get_all_docs(self) -> Iterable[Mapping[str, Any]]:
+    def get_all_docs(self) -> Iterable[JsonDict]:
         with self._db_connection() as connection:
             for row in connection.get_all_product_docs():
                 yield row[0]
@@ -344,6 +344,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         if isinstance(product, str):
             product = self.get_by_name_unsafe(product)
+            assert isinstance(product, Product)
+        assert product.id is not None  # for type checker
         with self._db_connection() as connection:
             result = connection.temporal_extent_by_prod(product.id)
 

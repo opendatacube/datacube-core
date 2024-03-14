@@ -16,21 +16,23 @@ Persistence API implementation for postgres.
 import datetime
 import logging
 import uuid  # noqa: F401
-from typing import Iterable, Tuple
-from sqlalchemy import cast, String
+from typing import Iterable, Any
+from typing import cast as type_cast
+from sqlalchemy import cast, String, Label, Table, FromClause
 from sqlalchemy import delete, column, values
 from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB, insert, UUID
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.engine import Row
 
 from datacube.index.exceptions import MissingRecordError
-from datacube.index.fields import OrExpression
+from datacube.index.fields import Field, Expression, OrExpression
 from datacube.model import Range
 from datacube.utils.uris import split_uri
 from . import _core
 from . import _dynamic as dynamic
-from ._fields import parse_fields, Expression, PgField, PgExpression  # noqa: F401
+from ._fields import parse_fields, PgField, PgExpression, DateRangeDocField  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField
 from ._schema import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, PRODUCT
 from .sql import escape_pg_identifier
@@ -83,7 +85,7 @@ _DATASET_BULK_SELECT_FIELDS = (
 )
 
 
-def get_native_fields():
+def get_native_fields() -> dict[str, NativeField]:
     # Native fields (hard-coded into the schema)
     fields = {
         'id': NativeField(
@@ -517,8 +519,8 @@ class PostgresDbAPI(object):
                               select_fields=None, with_source_ids=False, limit=None,
                               archived: bool | None = False):
         """
-        :type expressions: Tuple[Expression]
-        :type source_exprs: Tuple[Expression]
+        :type expressions: tuple[Expression]
+        :type source_exprs: tuple[Expression]
         :type select_fields: Iterable[PgField]
         :type with_source_ids: bool
         :type limit: int
@@ -691,7 +693,7 @@ class PostgresDbAPI(object):
         Insert bulk lineage records (e.g. for index cloning)
 
         :param values: An array of values dicts for bulk inser
-        :return: Tuple[count of rows loaded, count of rows skipped]
+        :return: tuple[count of rows loaded, count of rows skipped]
         """
         requested = len(vals)
         # Wrap values in SQLAlchemy Values object
@@ -742,7 +744,7 @@ class PostgresDbAPI(object):
                        if expression.field.required_alchemy_table != DATASET_LOCATION]
 
         if select_fields:
-            select_columns = []
+            select_columns: list[Label[Any] | Table] = []
             for field in select_fields:
                 if field.name in {'uri', 'uris'}:
                     # All active URIs, from newest to oldest
@@ -763,7 +765,7 @@ class PostgresDbAPI(object):
                 else:
                     select_columns.append(field.alchemy_expression.label(field.name))
         else:
-            select_columns = _DATASET_SELECT_FIELDS
+            select_columns = list(_DATASET_SELECT_FIELDS)
 
         raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
 
@@ -804,11 +806,11 @@ class PostgresDbAPI(object):
 
         return self._connection.execute(select_query)
 
-    def get_duplicates(self, match_fields: Iterable[PgField], expressions: Iterable[PgExpression]) -> Iterable[Tuple]:
+    def get_duplicates(self, match_fields: Iterable[Field], expressions: Iterable[Expression]) -> Iterable[Row]:
         if "time" in [f.name for f in match_fields]:
             return self.get_duplicates_with_time(match_fields, expressions)
 
-        group_expressions = tuple(f.alchemy_expression for f in match_fields)
+        group_expressions = tuple(type_cast(PgField, f).alchemy_expression for f in match_fields)
 
         select_query = select(
             func.array_agg(DATASET.c.id).label('ids'),
@@ -825,8 +827,8 @@ class PostgresDbAPI(object):
         return self._connection.execute(select_query)
 
     def get_duplicates_with_time(
-            self, match_fields: Iterable[PgField], expressions: Iterable[PgExpression]
-    ) -> Iterable[Tuple]:
+            self, match_fields: Iterable[Field], expressions: Iterable[Expression]
+    ) -> Iterable[Row]:
         """
         If considering time when searching for duplicates, we need to grant some amount of leniency
         in case timestamps are not exactly the same.
@@ -835,11 +837,15 @@ class PostgresDbAPI(object):
         then group them by the other fields.
         """
         fields = []
+        time_field: Label[Any] | None = None
         for f in match_fields:
             if f.name == "time":
-                time_field = f.expression_with_leniency
+                time_field = type_cast(DateRangeDocField, f).expression_with_leniency
             else:
-                fields.append(f.alchemy_expression)
+                fields.append(type_cast(PgField, f).alchemy_expression)
+
+        if time_field is None:
+            raise Exception("No timme field in duplicates query")
 
         candidates_table = select(
             DATASET.c.id,
@@ -870,7 +876,7 @@ class PostgresDbAPI(object):
             *fields,
             text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
         ).select_from(
-            overlapping
+            type_cast(FromClause, overlapping)
         ).group_by(
             *fields, text("time_intersect")
         ).having(
@@ -895,7 +901,7 @@ class PostgresDbAPI(object):
 
         select_query = (
             select(
-                func.count('*')
+                func.count()
             ).select_from(
                 self._from_expression(DATASET, expressions)
             ).where(
@@ -1145,7 +1151,7 @@ class PostgresDbAPI(object):
     @staticmethod
     def _get_active_field_names(fields, metadata_doc):
         for field in fields.values():
-            if hasattr(field, 'extract'):
+            if field.can_extract:
                 try:
                     value = field.extract(metadata_doc)
                     if value is not None:

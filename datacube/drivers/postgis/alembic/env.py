@@ -15,8 +15,8 @@ from datacube.drivers.postgis.sql import SCHEMA_NAME
 try:
     config = context.config
 except AttributeError:
-    # Occurs when being scanned for doctests.
-    config = None
+    # Occurs when being scanned for doctests, so safe to ignore type warnings
+    config = None  # type: ignore[assignment]
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

@@ -12,7 +12,7 @@ import decimal
 from datacube.utils import parse_time
 from ._base import Range
 
-# Allowed values for field 'type' (specified in a metadata type docuemnt)
+# Allowed values for field 'type' (specified in a metadata type document)
 _AVAILABLE_TYPE_NAMES = (
     # Unrestricted type - handy for dynamically creating fields from offsets, e.g. for search_returning()
     'any',
@@ -90,6 +90,12 @@ class Field:
         """
         raise NotImplementedError('between expression')
 
+    # Should be True if value can be extracted from a dataset metadata document with the extract method
+    can_extract: bool = False
+
+    def extract(self, doc):
+        raise NotImplementedError(f'extract for {self.name}')
+
 
 class SimpleField(Field):
     def __init__(self,
@@ -105,6 +111,8 @@ class SimpleField(Field):
 
     def __eq__(self, value) -> Expression:  # type: ignore[override]
         return SimpleEqualsExpression(self, value)
+
+    can_extract = True
 
     def extract(self, doc):
         v = toolz.get_in(self._offset, doc, default=None)
@@ -126,6 +134,8 @@ class RangeField(Field):
         self._min_offset = min_offset
         self._max_offset = max_offset
         super().__init__(name, description)
+
+    can_extract = True
 
     def extract(self, doc):
         def extract_raw(paths):

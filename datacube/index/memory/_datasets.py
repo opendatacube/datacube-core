@@ -11,20 +11,16 @@ from itertools import chain
 from deprecat import deprecat
 from collections import namedtuple
 from time import monotonic
-from typing import (Any, Callable, Dict, Iterable,
-                    List, Mapping, MutableMapping,
-                    Optional, Set, Tuple, Union,
-                    cast)
+from typing import (Any, Callable, Iterable, Mapping, cast)
 from uuid import UUID
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.index import fields
 from datacube.index.abstract import (AbstractDatasetResource, DSID, dsid_to_uuid, BatchStatus,
-                                     QueryField, DatasetSpatialMixin, NoLineageResource, AbstractIndex)
+                                     QueryField, DatasetSpatialMixin, NoLineageResource, AbstractIndex, JsonDict)
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
-from datacube.model.fields import SimpleField
 from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes
 from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
@@ -38,19 +34,19 @@ class DatasetResource(AbstractDatasetResource):
     def __init__(self, index: AbstractIndex) -> None:
         super().__init__(index)
         # Main dataset index
-        self._by_id: MutableMapping[UUID, Dataset] = {}
+        self._by_id: dict[UUID, Dataset] = {}
         # Indexes for active and archived datasets
-        self._active_by_id: MutableMapping[UUID, Dataset] = {}
-        self._archived_by_id: MutableMapping[UUID, Dataset] = {}
+        self._active_by_id: dict[UUID, Dataset] = {}
+        self._archived_by_id: dict[UUID, Dataset] = {}
         # Lineage indexes:
-        self._derived_from: MutableMapping[UUID, MutableMapping[str, UUID]] = {}
-        self._derivations: MutableMapping[UUID, MutableMapping[str, UUID]] = {}
+        self._derived_from: dict[UUID, dict[str, UUID]] = {}
+        self._derivations: dict[UUID, dict[str, UUID]] = {}
         # Location registers
-        self._locations: MutableMapping[UUID, List[str]] = {}
-        self._archived_locations: MutableMapping[UUID, List[Tuple[str, datetime.datetime]]] = {}
+        self._locations: dict[UUID, list[str]] = {}
+        self._archived_locations: dict[UUID, list[tuple[str, datetime.datetime]]] = {}
         # Active Index By Product
-        self._by_product: MutableMapping[str, set[UUID]] = {}
-        self._archived_by_product: MutableMapping[str, set[UUID]] = {}
+        self._by_product: dict[str, set[UUID]] = {}
+        self._archived_by_product: dict[str, set[UUID]] = {}
 
     def get_unsafe(self, id_: DSID, include_sources: bool = False,
                    include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
@@ -77,7 +73,7 @@ class DatasetResource(AbstractDatasetResource):
 
     def add(self, dataset: Dataset,
             with_lineage: bool = True,
-            archive_less_mature: Optional[int] = None) -> Dataset:
+            archive_less_mature: int | None = None) -> Dataset:
         if with_lineage is None:
             with_lineage = True
         _LOG.info('indexing %s', dataset.id)
@@ -133,14 +129,14 @@ class DatasetResource(AbstractDatasetResource):
 
     def search_product_duplicates(self,
                                   product: Product,
-                                  *args: Union[str, Field]
-                                  ) -> Iterable[Tuple[Tuple, Iterable[UUID]]]:
+                                  *args: str | Field
+                                  ) -> Iterable[tuple[tuple, Iterable[UUID]]]:
         """
         Find dataset ids of a given product that have duplicates of the given set of field names.
         Returns each set of those field values and the datasets that have them.
         Note that this implementation does not account for slight timestamp discrepancies.
         """
-        def to_field(f: Union[str, Field]) -> Field:
+        def to_field(f: str | Field) -> Field:
             if isinstance(f, str):
                 f = product.metadata_type.dataset_fields[f]
             assert isinstance(f, Field), "Not a field: %r" % (f,)
@@ -156,7 +152,7 @@ class DatasetResource(AbstractDatasetResource):
                 vals.append(field.extract(ds.metadata_doc))  # type: ignore[attr-defined]
             return GroupedVals(*vals)
 
-        dups: Dict[Tuple, set[UUID]] = {}
+        dups: dict[tuple, set[UUID]] = {}
         for ds in self._active_by_id.values():
             if ds.product.name != product.name:
                 continue
@@ -170,8 +166,8 @@ class DatasetResource(AbstractDatasetResource):
 
     def can_update(self,
                    dataset: Dataset,
-                   updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None
-                  ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
+                   updates_allowed: Mapping[Offset, AllowPolicy] | None = None
+                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         # Current exactly the same as postgres implementation.  Could be pushed up to base class?
         existing = self.get(dataset.id, include_sources=dataset.sources is not None)
         if not existing:
@@ -184,7 +180,7 @@ class DatasetResource(AbstractDatasetResource):
                 f'From {existing.product.name} to {dataset.product.name} in {dataset.id}'
             )
         # TODO: Determine (un)safe changes from metadata type
-        allowed: Dict[Offset, AllowPolicy] = {
+        allowed: dict[Offset, AllowPolicy] = {
             tuple(): changes.allow_extension
         }
         allowed.update(updates_allowed or {})
@@ -197,8 +193,8 @@ class DatasetResource(AbstractDatasetResource):
 
     def update(self,
                dataset: Dataset,
-               updates_allowed: Optional[Mapping[Offset, AllowPolicy]] = None,
-               archive_less_mature: Optional[int] = None
+               updates_allowed: Mapping[Offset, AllowPolicy] | None = None,
+               archive_less_mature: int | None = None
               ) -> Dataset:
         existing = self.get(dataset.id)
         if not existing:
@@ -244,10 +240,10 @@ class DatasetResource(AbstractDatasetResource):
 
     def _update_locations(self,
                           dataset: Dataset,
-                          existing: Optional[Dataset] = None
+                          existing: Dataset | None = None
                          ) -> bool:
-        skip_set: Set[Optional[str]] = set([None])
-        new_uris: List[str] = []
+        skip_set: set[str | None] = set([None])
+        new_uris: list[str] = []
         if existing and existing.uris:
             for uri in existing.uris:
                 skip_set.add(uri)
@@ -313,7 +309,7 @@ class DatasetResource(AbstractDatasetResource):
         uuid = dsid_to_uuid(id_)
         return (s for s in self._locations[uuid])
 
-    def get_location(self, id_: DSID) -> str:
+    def get_location(self, id_: DSID) -> str | None:
         uuid = dsid_to_uuid(id_)
         locations = [s for s in self._locations.get(uuid, [])]
         if not locations:
@@ -336,7 +332,7 @@ class DatasetResource(AbstractDatasetResource):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def get_archived_location_times(self, id_: DSID) -> Iterable[Tuple[str, datetime.datetime]]:
+    def get_archived_location_times(self, id_: DSID) -> Iterable[tuple[str, datetime.datetime]]:
         uuid = dsid_to_uuid(id_)
         return ((s, dt) for s, dt in self._archived_locations[uuid])
 
@@ -359,12 +355,12 @@ class DatasetResource(AbstractDatasetResource):
         self._locations[uuid].append(uri)
         return True
 
-    def get_datasets_for_location(self, uri: str, mode: Optional[str] = None) -> Iterable[Dataset]:
+    def get_datasets_for_location(self, uri: str, mode: str | None = None) -> Iterable[Dataset]:
         if mode is None:
             mode = 'exact' if uri.count('#') > 0 else 'prefix'
         if mode not in ("exact", "prefix"):
             raise ValueError(f"Unsupported query mode: {mode}")
-        ids: Set[DSID] = set()
+        ids: set[DSID] = set()
         if mode == "exact":
             test: Callable[[str], bool] = lambda l: l == uri  # noqa: E741
         else:
@@ -437,10 +433,10 @@ class DatasetResource(AbstractDatasetResource):
         self._locations[uuid].append(uri)
         return True
 
-    def search_by_metadata(self, metadata: Mapping[str, QueryField], archived: bool | None = False):
+    def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False) -> Iterable[Dataset]:
         if archived:
             # True: Return archived datasets only
-            dss = self._archived_by_id.values()
+            dss: Iterable[Dataset] = self._archived_by_id.values()
         elif archived is not None:
             # False: Return active datasets only
             dss = self._active_by_id.values()
@@ -457,11 +453,11 @@ class DatasetResource(AbstractDatasetResource):
     def _search(
             self,
             return_format: int,
-            limit: Optional[int] = None,
-            source_filter: Optional[Mapping[str, QueryField]] = None,
+            limit: int | None = None,
+            source_filter: Mapping[str, QueryField] | None = None,
             archived: bool | None = False,
             **query: QueryField
-    ) -> Iterable[Union[Dataset, Tuple[Iterable[Dataset], Product]]]:
+    ) -> Iterable[Dataset | tuple[Iterable[Dataset], Product]]:
         if source_filter:
             product_queries = list(self._get_prod_queries(**source_filter))
             if not product_queries:
@@ -490,7 +486,7 @@ class DatasetResource(AbstractDatasetResource):
             product_results = []
 
             if archived is None:
-                dsids = chain(
+                dsids: Iterable[UUID] = chain(
                     self._archived_by_product.get(product.name, set()),
                     self._by_product.get(product.name, set())
                 )
@@ -535,8 +531,8 @@ class DatasetResource(AbstractDatasetResource):
 
     def _search_flat(
             self,
-            limit: Optional[int] = None,
-            source_filter: Optional[Mapping[str, QueryField]] = None,
+            limit: int | None = None,
+            source_filter: Mapping[str, QueryField] | None = None,
             archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Dataset]:
@@ -550,12 +546,12 @@ class DatasetResource(AbstractDatasetResource):
 
     def _search_grouped(
             self,
-            limit: Optional[int] = None,
-            source_filter: Optional[Mapping[str, QueryField]] = None,
+            limit: int | None = None,
+            source_filter: Mapping[str, QueryField] | None = None,
             archived: bool | None = False,
             **query: QueryField
-    ) -> Iterable[Tuple[Iterable[Dataset], Product]]:
-        return cast(Iterable[Tuple[Iterable[Dataset], Product]], self._search(
+    ) -> Iterable[tuple[Iterable[Dataset], Product]]:
+        return cast(Iterable[tuple[Iterable[Dataset], Product]], self._search(
                     return_format=self.RET_FORMAT_PRODUCT_GROUPED,
                     limit=limit,
                     source_filter=source_filter,
@@ -563,7 +559,7 @@ class DatasetResource(AbstractDatasetResource):
                     **query)
         )
 
-    def _get_prod_queries(self, **query: QueryField) -> Iterable[Tuple[Mapping[str, QueryField], Product]]:
+    def _get_prod_queries(self, **query: QueryField) -> Iterable[tuple[Mapping[str, QueryField], Product]]:
         return ((q, product) for product, q in self._index.products.search_robust(**query))
 
     @deprecat(
@@ -577,8 +573,8 @@ class DatasetResource(AbstractDatasetResource):
         }
     )
     def search(self,
-               limit: Optional[int] = None,
-               source_filter: Optional[Mapping[str, QueryField]] = None,
+               limit: int | None = None,
+               source_filter: Mapping[str, QueryField] | None = None,
                archived: bool | None = False,
                **query: QueryField) -> Iterable[Dataset]:
         return cast(
@@ -588,16 +584,16 @@ class DatasetResource(AbstractDatasetResource):
 
     def search_by_product(self,
                           archived: bool | None = False,
-                          **query: QueryField) -> Iterable[Tuple[Iterable[Dataset], Product]]:
+                          **query: QueryField) -> Iterable[tuple[Iterable[Dataset], Product]]:
         return self._search_grouped(archived=archived, **query)  # type: ignore[arg-type]
 
     def search_returning(self,
                          field_names: Iterable[str] | None = None,
                          custom_offsets: Mapping[str, Offset] | None = None,
-                         limit: Optional[int] = None,
+                         limit: int | None = None,
                          archived: bool | None = False,
                          order_by: str | Field | None = None,
-                         **query: QueryField) -> Iterable[Tuple]:
+                         **query: QueryField) -> Iterable[tuple]:
         # Note that this implementation relies on dictionaries being ordered by insertion - this has been the case
         # since Py3.6, and officially guaranteed behaviour since Py3.7.
         if order_by:
@@ -610,10 +606,7 @@ class DatasetResource(AbstractDatasetResource):
             field_name_d = {}
 
         if custom_offsets:
-            custom_fields = {
-                name: SimpleField(offset, lambda x: x, "any", name=name, description="")
-                for name, offset in custom_offsets.items()
-            }
+            custom_fields = build_custom_fields(custom_offsets)
             for name in custom_fields:
                 field_name_d[name] = None
         else:
@@ -633,7 +626,7 @@ class DatasetResource(AbstractDatasetResource):
     def count(self, archived: bool | None = False, **query: QueryField) -> int:
         return len(list(self.search(archived=archived, **query)))  # type: ignore[arg-type]
 
-    def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[Tuple[Product, int]]:
+    def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[tuple[Product, int]]:
         for datasets, prod in self.search_by_product(archived=archived, **query):
             yield (prod, len(list(datasets)))
 
@@ -642,10 +635,10 @@ class DatasetResource(AbstractDatasetResource):
                                       archived: bool | None = False,
                                       **query: QueryField
     ) -> Iterable[
-        Tuple[
+        tuple[
             Product,
             Iterable[
-                Tuple[Range, int]
+                tuple[Range, int]
             ]
         ]
     ]:
@@ -716,21 +709,21 @@ class DatasetResource(AbstractDatasetResource):
             archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[
-        Tuple[
+        tuple[
             Product,
             Iterable[
-                Tuple[Range, int]
+                tuple[Range, int]
             ],
         ]
     ]:
-        YieldType = Tuple[Product, Iterable[Tuple[Range, int]]]  # noqa: N806
+        YieldType = tuple[Product, Iterable[tuple[Range, int]]]  # noqa: N806
         query = dict(query)
         try:
             start, end = cast(Range, query.pop('time'))
         except KeyError:
             raise ValueError('Must specify "time" range in period-counting query')
         periods = self._expand_period(period, start, end)
-        last_product: Optional[YieldType] = None
+        last_product: YieldType | None = None
         for dss, product in self._search_grouped(archived=archived, **query):  # type: ignore[arg-type]
             if last_product and single_product_only:
                 raise ValueError(f"Multiple products match single query search: {repr(query)}")
@@ -758,7 +751,7 @@ class DatasetResource(AbstractDatasetResource):
             period: str,
             archived: bool | None = False,
             **query: QueryField
-    ) -> Iterable[Tuple[Range, int]]:
+    ) -> Iterable[tuple[Range, int]]:
         return list(self._product_period_count(period, archived=archived, single_product_only=True, **query))[0][1]
 
     @deprecat(
@@ -781,8 +774,8 @@ class DatasetResource(AbstractDatasetResource):
         return None
 
     def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
-        min_time: Optional[datetime.datetime] = None
-        max_time: Optional[datetime.datetime] = None
+        min_time: datetime.datetime | None = None
+        max_time: datetime.datetime | None = None
         for dsid in ids:
             ds = self.get_unsafe(dsid)
             time_fld = ds.product.metadata_type.dataset_fields["time"]
@@ -802,18 +795,18 @@ class DatasetResource(AbstractDatasetResource):
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(
             self,
-            field_names: Tuple[str, ...],
-            custom_offsets: Optional[Mapping[str, Offset]] = None,
-            limit: Optional[int] = None,
+            field_names: tuple[str, ...],
+            custom_offsets: Mapping[str, Offset] | None = None,
+            limit: int | None = None,
             archived: bool | None = False,
             **query: QueryField
-    ) -> Iterable[Tuple]:
+    ) -> Iterable[tuple]:
         if custom_offsets:
             custom_fields = build_custom_fields(custom_offsets)
         else:
             custom_fields = {}
 
-        def make_ds_light(ds: Dataset) -> Tuple:
+        def make_ds_light(ds: Dataset) -> tuple:
             fields = {
                 fname: ds.metadata_type.dataset_fields[fname]
                 for fname in field_names
@@ -845,7 +838,7 @@ class DatasetResource(AbstractDatasetResource):
         else:
             uris = []
         if len(uris) == 1:
-            kwargs = {"uri": uris[0]}
+            kwargs: dict[str, Any] = {"uri": uris[0]}
         elif len(uris) > 1:
             kwargs = {"uris": uris}
         else:

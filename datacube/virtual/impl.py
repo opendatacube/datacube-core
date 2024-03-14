@@ -11,7 +11,7 @@ products implementing the same interface.
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast, Hashable
 from typing import Mapping as TypeMapping
 
 import uuid
@@ -310,8 +310,11 @@ class VirtualProduct(Mapping):
         return self.fetch(grouped, **query)
 
 
-class Product(VirtualProduct):
+class Product(VirtualProduct):  # type: ignore[no-redef]
     """ An existing datacube product. """
+    # TODO: We have ODC model Products throughout this source file as typehints.  Are the Product typehints in this
+    #       module after this definition this class or the normal Product model class?
+    #       Either this class should be renamed or Product imported as e.g. OdcProduct
 
     @property
     def _product(self):
@@ -412,6 +415,7 @@ class Product(VirtualProduct):
                                                                              align=dataset_geobox.alignment,
                                                                              resolution=dataset_geobox.resolution))
 
+                assert reproject_roi.transform.linear is not None  # for type checker.
                 self._assert(is_affine_st(reproject_roi.transform.linear), "native load is not axis-aligned")
                 self._assert(numpy.isclose(reproject_roi.scale, 1.0), "native load should not require scaling")
 
@@ -822,7 +826,7 @@ class Reproject(VirtualProduct):
         result = xarray.Dataset()
         result.coords['time'] = grouped.box.coords['time']
 
-        coords = OrderedDict(**xr_coords(geobox, spatial_ref))
+        coords: Mapping[Hashable, xarray.DataArray] = OrderedDict(**xr_coords(geobox, spatial_ref))
         result.coords.update(coords)
 
         for measurement in measurements:

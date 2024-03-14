@@ -8,13 +8,13 @@ from uuid import UUID
 
 from datacube.index.abstract import AbstractIndex, AbstractLineageResource, DSID, dsid_to_uuid, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.drivers.postgis._api import PostgisDbAPI
+from datacube.drivers.postgis._connections import PostGisDb
 from datacube.model import LineageTree, LineageDirection, LineageRelation
 from datacube.model.lineage import LineageRelations
 
 
 class LineageResource(AbstractLineageResource, IndexResourceAddIn):
-    def __init__(self, db: PostgisDbAPI, index: AbstractIndex) -> None:
+    def __init__(self, db: PostGisDb, index: AbstractIndex) -> None:
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
         :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
@@ -29,6 +29,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
         return self.get_lineage_tree(id_, LineageDirection.SOURCES, max_depth)
 
     def get_lineage_tree(self, id_: DSID, direction: LineageDirection, max_depth: int):
+        id_ = dsid_to_uuid(id_)
         with self._db_connection() as connection:
             # Extract lineage relations into a collection
             relations = connection.load_lineage_relations([id_],
@@ -67,7 +68,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                 return
             # Merge homes data
             if new_homes:
-                homes_new = {}
+                homes_new: dict[str, list[UUID]] = {}
                 for id_, home in new_homes.items():
                     if home in homes_new:
                         homes_new[home].append(id_)
@@ -76,7 +77,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                 for home, ids in homes_new.items():
                     connection.insert_home(home, ids, allow_updates=False)
             if update_homes:
-                homes_update = {}
+                homes_update: dict[str, list[UUID]] = {}
                 for id_, home in update_homes.items():
                     if home in homes_update:
                         homes_update[home].append(id_)
@@ -97,6 +98,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             connection.write_relations(rels_update, allow_updates=True)
 
     def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
+        id_ = dsid_to_uuid(id_)
         with self._db_connection() as connection:
             # Convert tree to desired deoth to lineage relations collection
             relations = connection.load_lineage_relations([id_],

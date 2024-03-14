@@ -19,7 +19,6 @@ from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable
 from urllib.parse import urlparse
 from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
-from datacube.index.eo3 import is_doc_eo3
 from .fields import Field, get_dataset_fields
 from ._base import Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
@@ -98,7 +97,7 @@ class Dataset:
         if uri:
             # Single URI - preferred
             self._uris = [uri]
-            self.uri = uri
+            self.uri: str | None = uri
         elif uris:
             # Multiple URIs - deprecated/legacy
             self._uris = uris
@@ -163,6 +162,7 @@ class Dataset:
 
     @property
     def is_eo3(self) -> bool:
+        from datacube.index.eo3 import is_doc_eo3
         return is_doc_eo3(self.metadata_doc)
 
     @property
@@ -215,7 +215,7 @@ class Dataset:
         url = urlparse(self.uri)
         if url.scheme == '':
             return 'file'
-        return url.scheme
+        return str(url.scheme)
 
     @property
     def measurements(self) -> Dict[str, Any]:

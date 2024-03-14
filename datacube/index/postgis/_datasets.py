@@ -11,19 +11,19 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, List, Mapping, Union, Optional, Any
+from typing import Iterable, Mapping, Union, Optional, Any, NamedTuple, cast
 from uuid import UUID
 
 from deprecat import deprecat
 
-from datacube.drivers.postgis._fields import SimpleDocField
+from datacube.drivers.postgis._fields import SimpleDocField, PgField, PgExpression
 from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
 from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fields, mk_simple_offset_field
 from datacube.utils.uris import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from datacube.migration import ODC2DeprecationWarning
 from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple, \
-    JsonDict
+    JsonDict, QueryField
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product, Range, LineageTree
 from datacube.model.fields import Field
@@ -183,21 +183,27 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         # Add a "batch" of datasets.
         b_started = monotonic()
         crses = self._db.spatially_indexed_crses()
-        batch = {
-            "datasets": [],
-            "uris": [],
-            "search_indexes": {
+
+        class BatchRep(NamedTuple):
+            datasets: list[dict[str, Any]]
+            uris: list[dict[str, Any]]
+            search_indexes: dict[str, list[dict[str, Any]]]
+            spatial_indexes: dict[CRS, list[dict[str, Any]]]
+
+        batch = BatchRep(
+            datasets=[], uris=[],
+            search_indexes={
                 "string": [],
                 "numeric": [],
                 "datetime": []
             },
-            "spatial_indexes": {crs: [] for crs in crses}
-        }
+            spatial_indexes={crs: [] for crs in crses}
+        )
         dsids = []
         for prod, metadata_doc, uris in batch_ds:
-            dsid = UUID(metadata_doc["id"])
+            dsid = UUID(str(metadata_doc["id"]))
             dsids.append(dsid)
-            batch["datasets"].append(
+            batch.datasets.append(
                 {
                     "id": dsid,
                     "product_ref": prod.id,
@@ -207,7 +213,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             )
             for uri in uris:
                 scheme, body = split_uri(uri)
-                batch["uris"].append(
+                batch.uris.append(
                     {
                         "dataset_ref": dsid,
                         "uri_scheme": scheme,
@@ -215,40 +221,40 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     }
                 )
             extent = extract_geometry_from_eo3_projection(
-                metadata_doc["grid_spatial"]["projection"]
+                metadata_doc["grid_spatial"]["projection"]  # type: ignore[misc,call-overload,index]
             )
             if extent:
                 geo_extent = extent.to_crs(CRS("EPSG:4326"))
                 for crs in crses:
                     values = generate_dataset_spatial_values(dsid, crs, extent, geo_extent=geo_extent)
                     if values is not None:
-                        batch["spatial_indexes"][crs].append(values)
+                        batch.spatial_indexes[crs].append(values)
             if prod.metadata_type.name in cache:
                 search_fields = cache[prod.metadata_type.name]
             else:
                 search_fields = non_native_fields(prod.metadata_type.definition)
-                cache[prod.metadata_type.name] = search_fields
+                cache[prod.metadata_type.name] = search_fields  # type: ignore[index]
             search_field_vals = extract_dataset_fields(metadata_doc, search_fields)
             for fname, finfo in search_field_vals.items():
                 ftype, fval = finfo
                 if isinstance(fval, Range):
                     fval = list(fval)
                 search_key = search_field_map[ftype]
-                batch["search_indexes"][search_key].append({
+                batch.search_indexes[search_key].append({
                     "dataset_ref": dsid,
                     "search_key": fname,
                     "search_val": fval
                 })
         with self._db_connection(transaction=True) as connection:
-            if batch["datasets"]:
-                b_added, b_skipped = connection.insert_dataset_bulk(batch["datasets"])
-            if batch["uris"]:
-                connection.insert_dataset_location_bulk(batch["uris"])
+            if batch.datasets:
+                b_added, b_skipped = connection.insert_dataset_bulk(batch.datasets)
+            if batch.uris:
+                connection.insert_dataset_location_bulk(batch.uris)
             for crs in crses:
-                crs_values = batch["spatial_indexes"][crs]
+                crs_values = batch.spatial_indexes[crs]
                 if crs_values:
                     connection.insert_dataset_spatial_bulk(crs, crs_values)
-            for search_type, values in batch["search_indexes"].items():
+            for search_type, values in batch.search_indexes.items():
                 connection.insert_dataset_search_bulk(search_type, values)
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
@@ -267,8 +273,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
 
-        group_fields: List[fields.Field] = [load_field(f) for f in args]
-        expressions = [product.metadata_type.dataset_fields.get('product') == product.name]
+        group_fields = [cast(PgField, load_field(f)) for f in args]
+        expressions = [cast(PgExpression, product.metadata_type.dataset_fields.get('product') == product.name)]
 
         with self._db_connection() as connection:
             for record in connection.get_duplicates(group_fields, expressions):
@@ -477,7 +483,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Get each archived location along with the time it was archived.
 
         :param typing.Union[UUID, str] id_: dataset id
-        :rtype: List[Tuple[str, datetime.datetime]]
+        :rtype: list[Tuple[str, datetime.datetime]]
         """
         with self._db_connection() as connection:
             return list(connection.get_archived_locations(id_))
@@ -652,12 +658,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             yield product, self._make_many(datasets, product)
 
     def search_returning(self,
-                         field_names=None,
+                         field_names: Iterable[str] | None = None,
                          custom_offsets: Mapping[str, Offset] | None = None,
-                         limit=None,
+                         limit: int | None = None,
                          archived: bool | None = False,
                          order_by: str | Field | None = None,
-                         **query):
+                         **query: QueryField):
         """
         Perform a search, returning only the specified fields.
 
@@ -672,30 +678,28 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         if order_by:
             raise ValueError("order_by argument is not yet supported by the postgis index driver.")
+        field_name_d: dict[str, None] = {}
         if field_names is None and custom_offsets is None:
-            field_names = self._index.products.get_field_names()
+            for f in self._index.products.get_field_names():
+                field_name_d[f] = None
         elif field_names:
-            field_names = list(field_names)
-        else:
-            field_names = []
-        field_name_set = set(field_names)
+            for f in field_names:
+                field_name_d[f] = None
         if custom_offsets:
             custom_fields = {
                 name: mk_simple_offset_field(name, name, offset)
                 for name, offset in custom_offsets.items()
             }
             for name in custom_fields:
-                if name not in field_name_set:
-                    field_name_set.add(name)
-                    field_names.append(name)
+                field_name_d[name] = None
         else:
             custom_fields = {}
 
-        result_type = namedtuple('search_result', field_names)
+        result_type = namedtuple('search_result', list(field_name_d.keys()))  # type: ignore[misc]
 
         for _, results in self._do_search_by_product(query,
                                                      return_fields=True,
-                                                     select_field_names=field_names,
+                                                     select_field_names=list(field_name_d.keys()),
                                                      additional_fields=custom_fields,
                                                      limit=limit,
                                                      archived=archived):
@@ -705,7 +709,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 def extract_field(f):
                     # Custom fields are not type-aware and returned as stringified json.
                     return json.loads(coldict.get(f)) if f in custom_fields else coldict.get(f)
-                kwargs = {f: extract_field(f) for f in field_names}
+                kwargs = {f: extract_field(f) for f in field_name_d}
                 yield result_type(**kwargs)
 
     def count(self, archived: bool | None = False, **query):

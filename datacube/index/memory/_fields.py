@@ -2,13 +2,13 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Any, Mapping, MutableMapping
+from typing import Any, Mapping
 from datacube.model.fields import SimpleField, Field, get_dataset_fields as generic_get_dataset_fields
 from datacube.index.abstract import Offset
 
 
 # TODO: SimpleFields cannot handle non-metadata fields because e.g. the extract API expects a doc, not a Dataset model
-def get_native_fields() -> MutableMapping[str, Field]:
+def get_native_fields() -> dict[str, Field]:
     return {
         "id": SimpleField(
             ["id"],
@@ -43,17 +43,17 @@ def get_native_fields() -> MutableMapping[str, Field]:
     }
 
 
-def get_dataset_fields(metadata_definition: Mapping[str, Any]) -> Mapping[str, Field]:
+def get_dataset_fields(metadata_definition: Mapping[str, Any]) -> dict[str, Field]:
     fields = get_native_fields()
     fields.update(generic_get_dataset_fields(metadata_definition))
     return fields
 
 
-def build_custom_fields(custom_offsets: Mapping[str, Offset]):
+def build_custom_fields(custom_offsets: Mapping[str, Offset]) -> dict[str, Field]:
     return {
         name: SimpleField(
             offset,
-            lambda x: x, 'Any',
+            lambda x: x, 'any',
             name=name,
             description=f"Custom field: {name}"
         )

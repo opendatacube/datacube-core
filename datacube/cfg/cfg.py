@@ -53,23 +53,24 @@ def find_config(paths_in: None | str | PathLike | list[str | PathLike]) -> str:
     :return: The contents of the first readable file found.
     """
     using_default_paths: bool = False
+    paths: list[str | PathLike] = []
     if paths_in is None:
         if os.environ.get("ODC_CONFIG_PATH"):
-            paths: list[str | PathLike] = os.environ["ODC_CONFIG_PATH"].split(':')
+            paths.extend(os.environ["ODC_CONFIG_PATH"].split(':'))
         elif os.environ.get("DATACUBE_CONFIG_PATH"):
             warnings.warn(
                 "Datacube config path being determined by legacy $DATACUBE_CONFIG_PATH environment variable. "
                 "This environment variable is deprecated and the behaviour of it has changed somewhat since datacube "
                 "1.8.x.   Please refer to the documentation for details and switch to $ODC_CONFIG_PATH"
             )
-            paths = os.environ["DATACUBE_CONFIG_PATH"].split(':')
+            paths.extend(os.environ["DATACUBE_CONFIG_PATH"].split(':'))
         else:
-            paths: list[str | PathLike] = _DEFAULT_CONFIG_SEARCH_PATH
+            paths.extend(_DEFAULT_CONFIG_SEARCH_PATH)
             using_default_paths = True
     elif isinstance(paths_in, str) or isinstance(paths_in, PathLike):
-        paths = [paths_in]
+        paths.append(paths_in)
     else:
-        paths = paths_in
+        paths.extend(paths_in)
 
     for path in paths:
         try:

@@ -2,14 +2,12 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-#
-# type: ignore
 # TODO: typehints need attention
 """ Tools for working with EO3 metadata
 """
 from affine import Affine
 from functools import reduce
-from typing import Dict, Any, Iterable, Optional, Tuple, Union
+from typing import Dict, Any, Iterable, Optional, Union, cast
 from uuid import UUID
 
 from odc.geo import (
@@ -32,7 +30,7 @@ class EO3Grid:
             raise ValueError("Each grid must have a shape")
         if len(shape) != 2:
             raise ValueError("Grid shape must be two dimensional")
-        self.shape: Tuple[int, int] = tuple(int(x) for x in shape)
+        self.shape: tuple[int, int] = cast(tuple[int, int], tuple(int(x) for x in shape))
         xform = grid.get("transform")
         if xform is None:
             raise ValueError("Each grid must have a transform")
