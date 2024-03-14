@@ -666,11 +666,7 @@ class PostgisDbAPI:
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids,
                                                   limit, geom=geom, archived=archived)
-        try:
-            str_qry = str(select_query)
-        except AmbiguousForeignKeysError as e:
-            pass
-        _LOG.debug("search_datasets SQL: %s", str_qry)
+        _LOG.debug("search_datasets SQL: %s", str(select_query))
         return self._connection.execute(select_query)
 
     def bulk_simple_dataset_search(self, products=None, batch_size=0):
