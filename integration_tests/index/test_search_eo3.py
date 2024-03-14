@@ -471,6 +471,21 @@ def test_search_returning_eo3(index: Index,
     assert ls8_eo3_dataset.id in (result.id for result in results)
 
 
+@pytest.mark.parametrize('datacube_env_name', ('experimental', ))
+def test_temp_special(index,
+                      cfg_env: ODCEnvironment,
+                      ls8_eo3_dataset: Dataset,
+                      ls8_eo3_dataset2: Dataset,
+                      wo_eo3_dataset: Dataset) -> None:
+    # All Fields
+    results = list(index.datasets.search_returning(
+        platform='landsat-8',
+    ))
+    assert len(results) == 3
+
+    assert ls8_eo3_dataset.id in (result.id for result in results)
+
+
 def test_search_returning_rows_eo3(index,
                                    eo3_ls8_dataset_doc,
                                    eo3_ls8_dataset2_doc,

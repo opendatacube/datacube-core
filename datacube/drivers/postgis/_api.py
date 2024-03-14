@@ -23,7 +23,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql.expression import Select
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, AmbiguousForeignKeysError
 from sqlalchemy.engine import Row
 
 from typing import Iterable, Sequence, Optional, Set, Any
@@ -111,7 +111,8 @@ def get_native_fields() -> dict[str, NativeField]:
         'product': NativeField(
             'product',
             'Product name',
-            Product.name
+            Product.name,
+            join_clause=(Product.id == Dataset.product_ref)
         ),
         'product_id': NativeField(
             'product_id',
@@ -121,8 +122,9 @@ def get_native_fields() -> dict[str, NativeField]:
         'metadata_type': NativeField(
             'metadata_type',
             'Metadata type name of dataset',
-            MetadataType.name
-        ),
+            MetadataType.name,
+            join_clause=(MetadataType.id == Dataset.metadata_type_ref),
+    ),
         'metadata_type_id': NativeField(
             'metadata_type_id',
             'ID of a metadata type',
@@ -142,6 +144,7 @@ def get_native_fields() -> dict[str, NativeField]:
             "Dataset URI",
             DatasetLocation.uri_body,
             alchemy_expression=DatasetLocation.uri,
+            join_clause=(DatasetLocation.dataset_ref == Dataset.id),
             affects_row_selection=True
         ),
     }
@@ -663,7 +666,10 @@ class PostgisDbAPI:
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids,
                                                   limit, geom=geom, archived=archived)
-        str_qry = str(select_query)
+        try:
+            str_qry = str(select_query)
+        except AmbiguousForeignKeysError as e:
+            pass
         _LOG.debug("search_datasets SQL: %s", str_qry)
         return self._connection.execute(select_query)
 
@@ -820,7 +826,7 @@ class PostgisDbAPI:
 
         query = select(
             func.array_agg(func.distinct(time_overlap.c.id)).label("ids"),
-            *fields,
+            *fields,  # type: ignore[arg-type]
             text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
         ).select_from(
             time_overlap  # type: ignore[arg-type]
@@ -1024,7 +1030,7 @@ class PostgisDbAPI:
         if expressions:
             join_args.update(expression.field.dataset_join_args for expression in expressions)
         if fields:
-            join_args.update((field.select_alchemy_table,) for field in fields)
+            join_args.update(field.dataset_join_args for field in fields)
         join_args.discard((Dataset.__table__,))
         # Sort simple joins before qualified joins
         return sorted(join_args, key=len)
