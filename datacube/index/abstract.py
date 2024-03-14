@@ -21,7 +21,7 @@ from datetime import timedelta
 from datacube.config import LocalConfig
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
-from datacube.model import Dataset, MetadataType, Range, NotType
+from datacube.model import Dataset, MetadataType, Range, Not
 from datacube.model import Product
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
@@ -374,7 +374,7 @@ class AbstractMetadataTypeResource(ABC):
             yield mdt.definition
 
 
-QueryField = Union[str, float, int, Range, datetime.datetime, NotType]
+QueryField = Union[str, float, int, Range, datetime.datetime, Not]
 QueryDict = Mapping[str, QueryField]
 
 

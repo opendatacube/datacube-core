@@ -10,7 +10,7 @@ from datetime import date, datetime, time
 from dateutil.tz import tz
 from typing import List
 
-from datacube.model import Range, NotType
+from datacube.model import Range, Not
 from datacube.model.fields import Expression, Field
 
 __all__ = ['Field',
@@ -54,7 +54,7 @@ def as_expression(field: Field, value) -> Expression:
         return field.between(value.begin, value.end)
     elif isinstance(value, list):
         return OrExpression(*(as_expression(field, val) for val in value))
-    elif isinstance(value, NotType):
+    elif isinstance(value, Not):
         return NotExpression(as_expression(field, value.value))
     # Treat a date (day) as a time range.
     elif isinstance(value, date) and not isinstance(value, datetime):
