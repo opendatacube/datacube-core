@@ -23,7 +23,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql.expression import Select
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.exc import IntegrityError, AmbiguousForeignKeysError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.engine import Row
 
 from typing import Iterable, Sequence, Optional, Set, Any
