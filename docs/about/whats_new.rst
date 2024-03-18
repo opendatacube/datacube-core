@@ -8,7 +8,7 @@ What's New
 v1.9.next
 =========
 
-- Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`, :pull:`1532`, :pull:`1548`)
+- Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`, :pull:`1532`, :pull:`1548`, :pull:`1565`)
 - External Lineage API (:pull:`1401`)
 - Add lineage support to index clone operation (:pull:`1429`)
 - Migrate to SQLAlchemy 2.0 (:pull:`1432`)
