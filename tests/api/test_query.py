@@ -144,7 +144,7 @@ testdata = [
     ((datetime.date(2008, 1, 1), None),
      format_test('2008-01-01T00:00:00', datetime.datetime.now().strftime("%Y-%m-%dT23:59:59.999999"))),
     ((None, '2008'),
-     format_test(datetime.datetime.fromtimestamp(0).strftime("%Y-%m-%dT%H:%M:%S"), '2008-12-31T23:59:59.999999'))
+     format_test(datetime.datetime.fromtimestamp(0).strftime("%Y-%m-%dT%H:%M:%S"), '2008-12-31T23:59:59.999999')),
 ]
 
 
@@ -153,6 +153,11 @@ def test_time_handling(time_param, expected):
     query = Query(time=time_param)
     assert 'time' in query.search_terms
     assert query.search_terms['time'] == expected
+
+
+def test_time_handling_int():
+    with pytest.raises(TypeError):
+        Query(time=2008)
 
 
 def test_solar_day():

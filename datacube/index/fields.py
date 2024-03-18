@@ -10,7 +10,7 @@ from datetime import date, datetime, time
 from dateutil.tz import tz
 from typing import List
 
-from datacube.model import Range
+from datacube.model import Range, Not
 from datacube.model.fields import Expression, Field
 
 __all__ = ['Field',
@@ -36,6 +36,16 @@ class OrExpression(Expression):
         return any(expr.evaluate(ctx) for expr in self.exprs)
 
 
+class NotExpression(Expression):
+    def __init__(self, expr):
+        super(NotExpression, self).__init__()
+        self.expr = expr
+        self.field = expr.field
+
+    def evaluate(self, ctx):
+        return not self.expr.evaluate(ctx)
+
+
 def as_expression(field: Field, value) -> Expression:
     """
     Convert a single field/value to expression, following the "simple" conventions.
@@ -44,6 +54,8 @@ def as_expression(field: Field, value) -> Expression:
         return field.between(value.begin, value.end)
     elif isinstance(value, list):
         return OrExpression(*(as_expression(field, val) for val in value))
+    elif isinstance(value, Not):
+        return NotExpression(as_expression(field, value.value))
     # Treat a date (day) as a time range.
     elif isinstance(value, date) and not isinstance(value, datetime):
         return as_expression(

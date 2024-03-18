@@ -8,7 +8,7 @@ What's New
 v1.9.next
 =========
 
-- Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`, :pull:`1532`, :pull:`1548`)
+- Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`, :pull:`1532`, :pull:`1548`, :pull:`1565`)
 - External Lineage API (:pull:`1401`)
 - Add lineage support to index clone operation (:pull:`1429`)
 - Migrate to SQLAlchemy 2.0 (:pull:`1432`)
@@ -50,6 +50,10 @@ v1.8.next
 - Update github-Dockerhub credential-passing mechanism. (:pull:`1528`)
 - Tweak ``list_products`` logic for getting crs and resolution values (:pull:`1535`)
 - Add new ODC Cheatsheet reference doc to Data Access & Analysis documentation page (:pull:`1543`)
+- Fix broken codecov github action. (:pull:`1554`)
+- Throw error if ``time`` dimension is provided as an int or float to Query construction
+  instead of assuming it to be seconds since epoch (:pull:`1561`)
+- Add generic NOT operator and for ODC queries and ``Not`` type wrapper (:pull:`1563`)
 
 v1.8.17 (8th November 2023)
 ===========================

@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
     schema_validated, DocReader
 from .fields import Field, get_dataset_fields
-from ._base import Range, ranges_overlap  # noqa: F401
+from ._base import Range, ranges_overlap, Not  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
 from .lineage import LineageDirection, LineageTree, LineageRelation, InconsistentLineageException  # noqa: F401
 
