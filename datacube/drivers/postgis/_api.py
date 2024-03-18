@@ -224,12 +224,13 @@ class PostgisDbAPI(object):
         return self._connection.in_transaction()
 
     def begin(self):
-        self._connection.execution_options(isolation_level="REPEATABLE READ")
+        # execution_options does not modify connection in-place in sqlalchemy 1.4
+        self._connection = self._connection.execution_options(isolation_level="REPEATABLE READ")
         self._sqla_txn = self._connection.begin()
 
     def _end_transaction(self):
         self._sqla_txn = None
-        self._connection.execution_options(isolation_level="AUTOCOMMIT")
+        self._connection = self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
     def commit(self):
         self._sqla_txn.commit()
