@@ -18,6 +18,7 @@ v1.8.next
 - Fix broken codecov github action. (:pull:`1554`)
 - Throw error if ``time`` dimension is provided as an int or float to Query construction
   instead of assuming it to be seconds since epoch (:pull:`1561`)
+- Add generic NOT operator and for ODC queries and ``Not`` type wrapper (:pull:`1563`)
 
 v1.8.17 (8th November 2023)
 ===========================
