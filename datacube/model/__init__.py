@@ -1028,6 +1028,9 @@ def metadata_from_doc(doc: Mapping[str, Any]) -> MetadataType:
     return MetadataType(doc, get_dataset_fields(doc))
 
 
+ExtraDimensionSlices = dict[str, float | tuple[float, float]]
+
+
 class ExtraDimensions:
     """
     Definition for the additional dimensions between (t) and (y, x)
@@ -1071,7 +1074,7 @@ class ExtraDimensions:
                 return True
         return False
 
-    def __getitem__(self, dim_slices: Dict[str, Union[float, Tuple[float, float]]]) -> "ExtraDimensions":
+    def __getitem__(self, dim_slices: ExtraDimensionSlices) -> "ExtraDimensions":
         """Return a ExtraDimensions subsetted by dim_slices
 
         :param dim_slices: Dict of dimension slices to subset by.
