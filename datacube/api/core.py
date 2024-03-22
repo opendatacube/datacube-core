@@ -55,18 +55,21 @@ class Datacube:
     """
 
     def __init__(self,
+                 app: str | None = None,
                  index: Index | None = None,
                  config: GeneralisedCfg | None = None,
-                 app: str | None = None,
                  env: GeneralisedEnv | None = None,
                  raw_config: GeneralisedRawCfg | None = None,
                  validate_connection: bool = True) -> None:
         """
-        Create the interface for the query and storage access.
+        Create an interface for the query and storage access.
 
-        :param Index index: The database index to use. If provided, config, app, env and raw_config should all be None.
+        :param app: A short, alphanumeric name to identify this application.
 
-        :type index: :py:class:`datacube.index.Index` or None.  The index to use.
+            The application name is used to track down problems with database queries, so it is strongly
+            advised that be used.  Should be None if an index is supplied.
+
+        :param index: The database index to use. If provided, config, app, env and raw_config should all be None.
 
         :param config: One of:
             - None (Use provided ODCEnvironment or Index, or perform default config loading.)
@@ -75,13 +78,8 @@ class Datacube:
             - A list of file system paths to search for config files. The first readable file found will be used.
             If an index or an explicit ODCEnvironment is supplied, config and raw_config should be None.
 
-        :param str app: A short, alphanumeric name to identify this application.
-
-            The application name is used to track down problems with database queries, so it is strongly
-            advised that be used.  Should be None if an index is supplied.
-
         :param str env: The datacube environment to use.
-            Either an ODCEnvironment object, or a section name in the loaded config file.
+            Either an explicit ODCEnvironment object, or a str which is a section name in the loaded config file.
 
             Defaults to 'default'. Falls back to 'datacube' with a deprecation warning if config file does not
             contain a 'default' section.
@@ -93,12 +91,10 @@ class Datacube:
 
         :param raw_config: Explicit configuration to use.  Either as a string (serialised in ini or yaml format) or
             a dictionary (deserialised).  If provided, config should be None.
+            If an index or an explicit ODCEnvironment is supplied, config and raw_config should be None.
 
         :param bool validate_connection: Should we check that the database connection is available and valid.
             Defaults to True. Ignored if index is passed.
-
-        :return: Datacube object
-
         """
 
         # Validate arguments
@@ -142,7 +138,7 @@ class Datacube:
             'dataset_count' (optional)
 
         :param bool with_pandas:
-            Return the list as a Pandas DataFrame. If False, return a list of dicts.
+            Return the list as a Pandas DataFrame. Defaults to True.  If False, return a list of dicts.
 
         :param bool dataset_count:
             Return a "dataset_count" column containing the number of datasets
@@ -216,8 +212,7 @@ class Datacube:
         """
         List measurements for each product
 
-        :param show_archived: include products that have been archived.
-        :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
+        :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict. (defaults to True)
         :rtype: pandas.DataFrame or list(dict)
         """
         measurements = self._list_measurements()
@@ -225,7 +220,6 @@ class Datacube:
             return measurements
 
         import pandas
-        # The pandas stubs typehints
         return pandas.DataFrame.from_dict(measurements).set_index(['product', 'measurement'])
 
     def _list_measurements(self) -> list[dict[str, Any]]:
@@ -247,7 +241,7 @@ class Datacube:
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self,
              product: str | None = None,
-             measurements: list[str] | None = None,
+             measurements: str | list[str] | None = None,
              output_crs: Any = None,
              resolution: int | float | tuple[int | float, int | float] | Resolution | None = None,
              resampling: str | dict[str, str] | None = None,
@@ -270,19 +264,15 @@ class Datacube:
         :class:`xarray.Dataset` and :class:`xarray.DataArray` objects.
 
         **Product and Measurements**
-            A product can be specified using the product name, or by search fields that uniquely describe a single
-            product.
+            A product can be specified using the product name.
             ::
 
                 product='ls5_ndvi_albers'
 
             See :meth:`list_products` for the list of products with their names and properties.
 
-            A product can also be selected by searching using fields, but must only match one product.
-            For example::
-
-                platform='LANDSAT_5',
-                product_type='ndvi'
+            A product name MUST be supplied unless search is bypassed all together by supplying an explicit
+            list of datasets.
 
             The ``measurements`` argument is a list of measurement names, as listed in :meth:`list_measurements`.
             If not provided, all measurements for the product will be returned. ::
@@ -302,6 +292,13 @@ class Datacube:
             or ::
 
                 x=(1516200, 1541300), y=(-3867375, -3867350), crs='EPSG:3577'
+
+
+            You can also specify a polygon with an arbitrary CRS (in e.g. the native CRS)::
+
+                geopolygon=polygon(coords, crs="EPSG:3577")
+
+            Performance and accuracy of geopolygon queries may vary depending on the index driver in use and the CRS.
 
             The ``time`` dimension can be specified using a single or tuple of datetime objects or strings with
             ``YYYY-MM-DD hh:mm:ss`` format. Data will be loaded inclusive of the start and finish times.
@@ -359,11 +356,13 @@ class Datacube:
                         resampling='cubic'
                 )
 
+            odc-geo style xy objects are preferred for passing in resolution and align pairs to avoid x/y ordering
+            ambiguity.
 
         :param str product:
-            The product to be loaded.
+            The name of the product to be loaded. Either product or datasets must be supplied
 
-        :param list(str) measurements:
+        :param measurements:
             Measurements name or list of names to be included, as listed in :meth:`list_measurements`.
             These will be loaded as individual ``xr.DataArray`` variables in
             the output ``xarray.Dataset`` object.
@@ -371,24 +370,25 @@ class Datacube:
             If a list is specified, the measurements will be returned in the order requested.
             By default all available measurements are included.
 
-        :param **query:
-            Search parameters for products and dimension ranges as described above.
-            For example: ``'x', 'y', 'time', 'crs'``.
-
         :param str output_crs:
             The CRS of the returned data, for example ``EPSG:3577``.
             If no CRS is supplied, the CRS of the stored data is used if available.
 
+            Any form that can be converted to a CRS by odc-geo is accepted.
+
             This differs from the ``crs`` parameter desribed above, which is used to define the CRS
             of the coordinates in the query itself.
 
-        :param int|float|(float,float) resolution:
+        :param resolution:
             The spatial resolution of the returned data. If using square pixels with an inverted Y axis, it
-            should be provided as an int or float. If not, it should be provided as a tuple.
-            Units are in the coordinate space of ``output_crs``. This includes the direction
-            (as indicated by a positive or negative number).
+            should be provided as an int or float. If not, it should be provided as an odc-geo XY object
+            to avoid coordinate-order ambiguity.  (if passed as a tuple Y,X order is assumed for backwards
+            compatibility.)
 
-        :param str|dict resampling:
+            Units are in the coordinate space of ``output_crs``. This includes the direction (as indicated by
+            a positive or negative number).
+
+        :param resampling:
             The resampling method to use if re-projection is required. This could be a string or
             a dictionary mapping band name to resampling mode. When using a dict use ``'*'`` to
             indicate "apply to all other bands", for example ``{'*': 'cubic', 'fmask': 'nearest'}`` would
@@ -404,12 +404,17 @@ class Datacube:
             .. seealso::
                :meth:`load_data`
 
-        :param (float,float) align:
-            Load data such that point 'align' lies on the pixel boundary.
-            Units are in the coordinate space of ``output_crs``.
-            Expected in `(x, y)` order.
+        :param align:
+            Load data such that point 'align' lies on the pixel boundary.  A pair of floats between 0 and 1.
+
+            An odc-geo XY object is preferred to avoid coordinate-order ambiguity.  If passed as a tuple x,y
+            order is assumed for backwards compatibility.
 
             Default is ``(0, 0)``
+
+        :param bool skip_broken_datasets:
+            Optional. If this is True, then don't break when failing to load a broken dataset.
+            Default is False.
 
         :param dict dask_chunks:
             If the data should be lazily loaded using :class:`dask.array.Array`,
@@ -420,30 +425,28 @@ class Datacube:
 
         :param xarray.Dataset like:
             Use the output of a previous :meth:`load()` to load data into the same spatial grid and
-            resolution (i.e. :class:`odc.geo.geobox.GeoBox`).
+            resolution (i.e. :class:`odc.geo.geobox.GeoBox` or an xarray `Dataset` or `DataArray`).
             E.g.::
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
-
-        :param str group_by:
-            When specified, perform basic combining/reducing of the data. For example, ``group_by='solar_day'``
-            can be used to combine consecutive observations along a single satellite overpass into a single time slice.
 
         :param fuse_func:
             Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
             data is simply copied over the top of each other in a relatively undefined manner. This function can
             perform a specific combining step. This can be a dictionary if different
-            fusers are needed per band.
+            fusers are needed per band (similar format to the resampling dict described above).
+
+        :param group_by:
+            When specified, perform basic combining/reducing of the data. For example, ``group_by='solar_day'``
+            can be used to combine consecutive observations along a single satellite overpass into a single time slice.
+
+            See also :class:`datacube.api.query.GroupBy`
 
         :param datasets:
             Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects, these will be loaded
             instead of performing a database lookup.
 
-        :param bool skip_broken_datasets:
-            Optional. If this is True, then don't break when failing to load a broken dataset.
-            Default is False.
-
-        :param function dataset_predicate:
+        :param dataset_predicate:
             Optional. A function that can be passed to restrict loaded datasets. A predicate function should
             take a :class:`datacube.model.Dataset` object (e.g. as returned from :meth:`find_datasets`) and
             return a boolean.
@@ -452,18 +455,21 @@ class Datacube:
 
                 def filter_jan(dataset): return dataset.time.begin.month == 1
 
-        :param int limit:
-            Optional. If provided, limit the maximum number of datasets
-            returned. Useful for testing and debugging.
-
         :param progress_cbk:
             ``Int, Int -> None``,
             if supplied will be called for every file read with ``files_processed_so_far, total_files``. This is
             only applicable to non-lazy loads, ignored when using dask.
 
-        :param Callable[[str], str], patch_url:
+        :param patch_url:
             if supplied, will be used to patch/sign the url(s), as required to access some commercial archives
             (e.g. Microsoft Planetary Computer).
+
+        :param limit:
+            Optional. If provided, limit the maximum number of datasets returned. Useful for testing and debugging.
+
+        :param **query:
+            Search parameters for products and dimension ranges as described above.
+            For example: ``'x', 'y', 'time', 'crs'``.
 
         :return:
             Requested data in a :class:`xarray.Dataset`
@@ -549,9 +555,18 @@ class Datacube:
         """
         Search the index and return all datasets for a product matching the search terms.
 
+        :param ensure_location: only return datasets that have locations
+        :param dataset_predicate: an optional predicate to filter datasets
+        :param xarray.Dataset like:
+            Use the output of a previous :meth:`load()` to load data into the same spatial grid and
+            resolution (i.e. :class:`odc.geo.geobox.GeoBox` or an xarray `Dataset` or `DataArray`).
+            E.g.::
+
+                pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
+
+        :param limit: if provided, limit the maximum number of datasets returned
         :param search_terms: see :class:`datacube.api.query.Query`
         :return: list of datasets
-        :rtype: list[:class:`datacube.model.Dataset`]
 
         .. seealso:: :meth:`group_datasets` :meth:`load_data` :meth:`find_datasets_lazy`
         """
@@ -568,10 +583,16 @@ class Datacube:
         """
         Find datasets matching query.
 
-        :param kwargs: see :class:`datacube.api.query.Query`
-        :param ensure_location: only return datasets that have locations
         :param limit: if provided, limit the maximum number of datasets returned
+        :param ensure_location: only return datasets that have locations
         :param dataset_predicate: an optional predicate to filter datasets
+        :param xarray.Dataset like:
+            Use the output of a previous :meth:`load()` to load data into the same spatial grid and
+            resolution (i.e. :class:`odc.geo.geobox.GeoBox` or an xarray `Dataset` or `DataArray`).
+            E.g.::
+
+                pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
+        :param kwargs: see :class:`datacube.api.query.Query`
         :return: iterator of datasets
         :rtype: __generator[:class:`datacube.model.Dataset`]
 
