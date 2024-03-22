@@ -55,19 +55,14 @@ class Datacube:
     """
 
     def __init__(self,
-                 app: str | None = None,
                  index: Index | None = None,
                  config: GeneralisedCfg | None = None,
                  env: GeneralisedEnv | None = None,
                  raw_config: GeneralisedRawCfg | None = None,
+                 app: str | None = None,
                  validate_connection: bool = True) -> None:
         """
         Create an interface for the query and storage access.
-
-        :param app: A short, alphanumeric name to identify this application.
-
-            The application name is used to track down problems with database queries, so it is strongly
-            advised that be used.  Should be None if an index is supplied.
 
         :param index: The database index to use. If provided, config, app, env and raw_config should all be None.
 
@@ -92,6 +87,11 @@ class Datacube:
         :param raw_config: Explicit configuration to use.  Either as a string (serialised in ini or yaml format) or
             a dictionary (deserialised).  If provided, config should be None.
             If an index or an explicit ODCEnvironment is supplied, config and raw_config should be None.
+
+        :param app: A short, alphanumeric name to identify this application.
+
+            The application name is used to track down problems with database queries, so it is strongly
+            advised that be used.  Should be None if an index is supplied.
 
         :param bool validate_connection: Should we check that the database connection is available and valid.
             Defaults to True. Ignored if index is passed.
