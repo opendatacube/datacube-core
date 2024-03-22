@@ -360,7 +360,7 @@ class Datacube:
             ambiguity.
 
         :param str product:
-            The name of the product to be loaded. Either product or datasets must be supplied
+            The name of the product to be loaded. Either ``product`` or ``datasets`` must be supplied
 
         :param measurements:
             Measurements name or list of names to be included, as listed in :meth:`list_measurements`.
@@ -382,8 +382,8 @@ class Datacube:
         :param resolution:
             The spatial resolution of the returned data. If using square pixels with an inverted Y axis, it
             should be provided as an int or float. If not, it should be provided as an odc-geo XY object
-            to avoid coordinate-order ambiguity.  (if passed as a tuple Y,X order is assumed for backwards
-            compatibility.)
+            to avoid coordinate-order ambiguity.  If passed as a tuple, y,x order is assumed for backwards
+            compatibility.
 
             Units are in the coordinate space of ``output_crs``. This includes the direction (as indicated by
             a positive or negative number).
@@ -407,7 +407,7 @@ class Datacube:
         :param align:
             Load data such that point 'align' lies on the pixel boundary.  A pair of floats between 0 and 1.
 
-            An odc-geo XY object is preferred to avoid coordinate-order ambiguity.  If passed as a tuple x,y
+            An odc-geo XY object is preferred to avoid coordinate-order ambiguity.  If passed as a tuple, x,y
             order is assumed for backwards compatibility.
 
             Default is ``(0, 0)``
