@@ -317,3 +317,51 @@ def check_legacy_open(index):
         xx_lazy = dc.load_data(sources, gbox, mm, dask_chunks={'time': 1})
         assert xx_lazy['blue'].data.dask
         assert xx_lazy.blue[0, :, :].equals(xx.blue[0, :, :])
+
+        
+def check_odcgeo_geobox_load(index):
+    """
+    Test that users can use `dc.load(like=...)` by passing an
+    `odc-geo`-style GeoBox.
+    """
+    dc = Datacube(index=index)
+
+    # Create mock odc-geo GeoBox
+    class ODC_geo_geobox:
+        compat = GeoBox(
+            100, 100, Affine(0.0002, 0.0, 153.45, 0.0, -0.0002, -28.9), "EPSG:4326"
+        )
+        coords = compat.coords
+
+    odc_geo_geobox = ODC_geo_geobox()
+
+    # Load data using .compat method
+    ds_compat = dc.load(
+        product="ls5_nbar_albers",
+        measurements=["blue"],
+        like=odc_geo_geobox.compat,
+        output_crs="EPSG:4326",
+        resolution=(-0.0000125, 0.0000125),
+    )
+    assert "blue" in ds_compat.data_vars
+
+    # Load data using odc-geo GeoBox directly
+    ds_odcgeo = dc.load(
+        product="ls5_nbar_albers",
+        measurements=["blue"],
+        like=odc_geo_geobox,
+        output_crs="EPSG:4326",
+        resolution=(-0.0000125, 0.0000125),
+    )
+    assert "blue" in ds_odcgeo.data_vars
+
+    # Like behaves differently when time is specified; make sure this works too
+    ds_odcgeo_time = dc.load(
+        product="ls5_nbar_albers",
+        measurements=["blue"],
+        like=odc_geo_geobox,
+        time="1992-03-23T23:14:25.500000",
+        output_crs="EPSG:4326",
+        resolution=(-0.0000125, 0.0000125),
+    )
+    assert "blue" in ds_odcgeo_time.data_vars
