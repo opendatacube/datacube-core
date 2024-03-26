@@ -118,6 +118,7 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs, datacube_env
     check_open_with_dc(index)
     check_open_with_grid_workflow(index)
     check_load_via_dss(index)
+    check_odcgeo_geobox_load(index)
 
 
 def check_open_with_dc(index):
