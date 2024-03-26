@@ -332,7 +332,7 @@ def check_odcgeo_geobox_load(index):
     # Create mock odc-geo GeoBox
     class ODC_geo_geobox:
         compat = GeoBox(
-            100, 100, Affine(0.0002, 0.0, 153.45, 0.0, -0.0002, -28.9), "EPSG:4326"
+            500, 500, Affine(0.002, 0.0, 149.0, 0.0, -0.002, -35.0), "EPSG:4326"
         )
         coords = compat.coords
 
