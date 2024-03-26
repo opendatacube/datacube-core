@@ -7,9 +7,11 @@ from pathlib import Path
 import numpy
 import pytest
 import rasterio
+from affine import Affine
 
 from datacube.api.query import query_group_by
 from datacube.api.core import Datacube
+from datacube.utils.geometry import GeoBox
 
 from integration_tests.utils import prepare_test_ingestion_configuration
 
@@ -318,7 +320,7 @@ def check_legacy_open(index):
         assert xx_lazy['blue'].data.dask
         assert xx_lazy.blue[0, :, :].equals(xx.blue[0, :, :])
 
-        
+
 def check_odcgeo_geobox_load(index):
     """
     Test that users can use `dc.load(like=...)` by passing an
