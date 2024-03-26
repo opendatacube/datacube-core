@@ -882,8 +882,8 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
 
         # For `odc-geo` GeoBox compatibility: use "compat" attribute if
         # it exists to convert to a Datacube-style GeoBox
-        if hasattr(like, "compat"):
-            return like.compat
+        if isinstance(compat := getattr(like, "compat", None), GeoBox):
+            return compat
 
         return like.geobox
 
