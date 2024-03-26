@@ -1089,7 +1089,7 @@ def select_datasets_inside_polygon(datasets: Iterable[Dataset], polygon: Geometr
 
 
 def fuse_lazy(datasets: Iterable[Dataset], geobox: GeoBox, measurement: Measurement,
-              skip_broken_datasets=False, prepend_dims=0,
+              skip_broken_datasets: bool = False, prepend_dims: int = 0,
               extra_dim_index: int | None = None,
               patch_url: Callable[[str], str] | None = None) -> numpy.ndarray:
     prepend_shape = (1,) * prepend_dims
