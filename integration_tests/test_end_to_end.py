@@ -7,9 +7,11 @@ from pathlib import Path
 import numpy
 import pytest
 import rasterio
+from affine import Affine
 
 from datacube.api.query import query_group_by
 from datacube.api.core import Datacube
+from datacube.utils.geometry import GeoBox
 
 from integration_tests.utils import prepare_test_ingestion_configuration
 
@@ -116,6 +118,7 @@ def test_end_to_end(clirunner, index, testdata_dir, ingest_configs, datacube_env
     check_open_with_dc(index)
     check_open_with_grid_workflow(index)
     check_load_via_dss(index)
+    check_odcgeo_geobox_load(index)
 
 
 def check_open_with_dc(index):
@@ -317,3 +320,45 @@ def check_legacy_open(index):
         xx_lazy = dc.load_data(sources, gbox, mm, dask_chunks={'time': 1})
         assert xx_lazy['blue'].data.dask
         assert xx_lazy.blue[0, :, :].equals(xx.blue[0, :, :])
+
+
+def check_odcgeo_geobox_load(index):
+    """
+    Test that users can use `dc.load(like=...)` by passing an
+    `odc-geo`-style GeoBox.
+    """
+    dc = Datacube(index=index)
+
+    # Create mock odc-geo GeoBox
+    class ODC_geo_geobox:
+        compat = GeoBox(
+            500, 500, Affine(0.002, 0.0, 149.0, 0.0, -0.002, -35.0), "EPSG:4326"
+        )
+        coords = compat.coords
+
+    odc_geo_geobox = ODC_geo_geobox()
+
+    # Load data using .compat method
+    ds_compat = dc.load(
+        product="ls5_nbar_albers",
+        measurements=["blue"],
+        like=odc_geo_geobox.compat,
+    )
+    assert "blue" in ds_compat.data_vars
+
+    # Load data using odc-geo GeoBox directly
+    ds_odcgeo = dc.load(
+        product="ls5_nbar_albers",
+        measurements=["blue"],
+        like=odc_geo_geobox,
+    )
+    assert "blue" in ds_odcgeo.data_vars
+
+    # Like behaves differently when time is specified; make sure this works too
+    ds_odcgeo_time = dc.load(
+        product="ls5_nbar_albers",
+        measurements=["blue"],
+        like=odc_geo_geobox,
+        time="1992-03-23T23:14:25.500000",
+    )
+    assert "blue" in ds_odcgeo_time.data_vars

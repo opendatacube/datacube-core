@@ -875,8 +875,15 @@ def output_geobox(like=None, output_crs=None, resolution=None, align=None,
         assert output_crs is None, "'like' and 'output_crs' are not supported together"
         assert resolution is None, "'like' and 'resolution' are not supported together"
         assert align is None, "'like' and 'align' are not supported together"
+
+        # If user passes a GeoBox, return as-is
         if isinstance(like, GeoBox):
             return like
+
+        # For `odc-geo` GeoBox compatibility: use "compat" attribute if
+        # it exists to convert to a Datacube-style GeoBox
+        if isinstance(compat := getattr(like, "compat", None), GeoBox):
+            return compat
 
         return like.geobox
 

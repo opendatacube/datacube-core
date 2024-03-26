@@ -15,6 +15,7 @@ v1.8.next
 - Update github-Dockerhub credential-passing mechanism. (:pull:`1528`)
 - Tweak ``list_products`` logic for getting crs and resolution values (:pull:`1535`)
 - Add new ODC Cheatsheet reference doc to Data Access & Analysis documentation page (:pull:`1543`)
+- Compatibility fix to allow users to supply ``odc.geo``-style GeoBoxes to ``dc.load(like=...)`` (:pull:`1551`)
 - Fix broken codecov github action. (:pull:`1554`)
 - Throw error if ``time`` dimension is provided as an int or float to Query construction
   instead of assuming it to be seconds since epoch (:pull:`1561`)
