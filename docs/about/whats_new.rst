@@ -5,7 +5,7 @@
 What's New
 **********
 
-v1.9.next
+v1.9.0-rc1
 =========
 
 - Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`, :pull:`1532`, :pull:`1548`, :pull:`1565`)
@@ -39,6 +39,7 @@ v1.9.next
 - Fix and enhance typehints, automated static type checking with mypy.  (:pull:`1562`)
 - Improve SQLAlchemy join hints, addressing an recurring but intermittent bug.  (:pull:`1564`)
 - Improve typehints and update docstrings in datacube/api/core.py (:pull:`1567`)
+- Add migration notes, update documentation and whats_new.rst for 1.9.0-rc1 release (:pull:`15xx`)
 
 
 v1.8.next
