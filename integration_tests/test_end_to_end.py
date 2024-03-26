@@ -343,8 +343,6 @@ def check_odcgeo_geobox_load(index):
         product="ls5_nbar_albers",
         measurements=["blue"],
         like=odc_geo_geobox.compat,
-        output_crs="EPSG:4326",
-        resolution=(-0.0000125, 0.0000125),
     )
     assert "blue" in ds_compat.data_vars
 
@@ -353,8 +351,6 @@ def check_odcgeo_geobox_load(index):
         product="ls5_nbar_albers",
         measurements=["blue"],
         like=odc_geo_geobox,
-        output_crs="EPSG:4326",
-        resolution=(-0.0000125, 0.0000125),
     )
     assert "blue" in ds_odcgeo.data_vars
 
@@ -364,7 +360,5 @@ def check_odcgeo_geobox_load(index):
         measurements=["blue"],
         like=odc_geo_geobox,
         time="1992-03-23T23:14:25.500000",
-        output_crs="EPSG:4326",
-        resolution=(-0.0000125, 0.0000125),
     )
     assert "blue" in ds_odcgeo_time.data_vars
