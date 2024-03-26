@@ -24,8 +24,7 @@ types_require = [
     "types-redis",
     "types-setuptools",
     "boto3-stubs",
-    "botocore-stubs",
-    "pandas-stubs"
+    "botocore-stubs"
 ]
 
 doc_require = [
