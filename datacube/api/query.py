@@ -14,7 +14,6 @@ import warnings
 from typing import Optional, Union
 import pandas
 
-from dateutil import tz
 from pandas import to_datetime as pandas_to_datetime
 import numpy as np
 
@@ -58,7 +57,7 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
               'source_filter')
 
 
-class Query(object):
+class Query:
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
         """Parses search terms in preparation for querying the Data Cube Index.
 
@@ -69,7 +68,7 @@ class Query(object):
         Use by accessing :attr:`search_terms`:
 
         >>> query.search_terms['time']  # doctest: +NORMALIZE_WHITESPACE
-        Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=datetime.timezone.utc), \
+        Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=tzutc()), \
         end=datetime.datetime(2002, 1, 1, 23, 59, 59, 999999, tzinfo=tzutc()))
 
         By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
@@ -127,9 +126,9 @@ class Query(object):
                 time_coord = like.coords.get('time')
                 if time_coord is not None:
                     self.search['time'] = _time_to_search_dims(
+                        # convert from np.datetime64 to datetime.datetime
                         (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
-                            pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
-                            + datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
+                         pandas_to_datetime(time_coord.values[-1]).to_pydatetime())
                     )
 
     @property
@@ -304,27 +303,9 @@ def _values_to_search(**kwargs):
     return search
 
 
-def _to_datetime(t):
-    if isinstance(t, (float, int)):
-        t = datetime.datetime.fromtimestamp(t, tz=tz.tzutc())
-
-    if isinstance(t, tuple):
-        t = datetime.datetime(*t, tzinfo=tz.tzutc())
-    elif isinstance(t, str):
-        try:
-            t = datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except ValueError:
-            pass
-    elif isinstance(t, datetime.datetime):
-        return tz_aware(t)
-
-    return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
-
-
 def _time_to_search_dims(time_range):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-
         tr_start, tr_end = time_range, time_range
 
         if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
@@ -334,24 +315,29 @@ def _time_to_search_dims(time_range):
 
             tr_start, tr_end = tmp[0], tmp[-1]
 
-        # Attempt conversion to isoformat
-        # allows pandas.Period to handle
-        # date and datetime objects
-        if hasattr(tr_start, 'isoformat'):
-            tr_start = tr_start.isoformat()
-        if hasattr(tr_end, 'isoformat'):
-            tr_end = tr_end.isoformat()
+        if isinstance(tr_start, (int, float)) or isinstance(tr_end, (int, float)):
+            raise TypeError("Time dimension must be provided as a datetime or a string")
 
         if tr_start is None:
-            tr_start = datetime.datetime.fromtimestamp(0)
-        start = _to_datetime(tr_start)
+            start = datetime.datetime.fromtimestamp(0)
+        elif not isinstance(tr_start, datetime.datetime):
+            # convert to datetime.datetime
+            if hasattr(tr_start, 'isoformat'):
+                tr_start = tr_start.isoformat()
+            start = pandas_to_datetime(tr_start).to_pydatetime()
+        else:
+            start = tr_start
+
         if tr_end is None:
             tr_end = datetime.datetime.now().strftime("%Y-%m-%d")
-        end = _to_datetime(pandas.Period(tr_end)
-                           .end_time
-                           .to_pydatetime())
+        # Attempt conversion to isoformat
+        # allows pandas.Period to handle datetime objects
+        if hasattr(tr_end, 'isoformat'):
+            tr_end = tr_end.isoformat()
+        # get end of period to ensure range is inclusive
+        end = pandas.Period(tr_end).end_time.to_pydatetime()
 
-        tr = Range(start, end)
+        tr = Range(tz_aware(start), tz_aware(end))
         if start == end:
             return tr[0]
 
