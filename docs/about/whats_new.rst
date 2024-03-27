@@ -5,8 +5,11 @@
 What's New
 **********
 
-v1.9.0-rc1
+v1.9.next
 =========
+
+v1.9.0-rc1 (27th March 2024)
+============================
 
 - Merge in 1.8.x branch changes. (:pull:`1459`, :pull:`1473`, :pull:`1532`, :pull:`1548`, :pull:`1565`)
 - External Lineage API (:pull:`1401`)
@@ -15,9 +18,9 @@ v1.9.0-rc1
 - Clean up deprecated code and add deprecation warnings to legacy methods, simplify DocReader logic (:pull:`1406`)
 - Mark geometry module as deprecated and replace all usage with odc-geo (:pull:`1424`)
 - Mark GridSpec as deprecated, replace math and cog functions with odc-geo equivalents, enforce new odc-geo conventions (:pull:`1441`)
-- Rename `gbox` to `geobox` in parameter names (:pull:`1441`)
+- Rename ``gbox`` to ``geobox`` in parameter names (:pull:`1441`)
 - Remove executor API (:pull:`1462`)
-- Remove ingestion methods, `GridWorkflow` and `Tile` classes (:pull:`1465`)
+- Remove ingestion methods, ``GridWorkflow`` and ``Tile`` classes (:pull:`1465`)
 - Fix postgis queries for numeric custom search fields (:pull:`1475`)
 - Document best practice for pulling in changes from develop and update constraints.txt (:pull:`1478`)
 - Postgis index driver performance tuning (:pull:`1480`)
@@ -35,15 +38,17 @@ v1.9.0-rc1
 - Deprecate multiple locations. (:pull:`1546`)
 - Deprecate search_eager and search_summaries and add `archived` arg to all dataset search/count methods. (:pull:`1550`)
 - Migrate away from deprecated Python pkg_resources module (:pull:`1558`)
-- Add `custom_offsets` and `order_by` arguments to search_retunrning() - order_by still unimplemented. (:pull:`1557`)
+- Add ``custom_offsets`` and ``order_by`` arguments to search_retunrning() - order_by still unimplemented. (:pull:`1557`)
 - Fix and enhance typehints, automated static type checking with mypy.  (:pull:`1562`)
 - Improve SQLAlchemy join hints, addressing an recurring but intermittent bug.  (:pull:`1564`)
 - Improve typehints and update docstrings in datacube/api/core.py (:pull:`1567`)
 - Add migration notes, update documentation and whats_new.rst for 1.9.0-rc1 release (:pull:`15xx`)
 
-
 v1.8.next
 =========
+
+v1.8.18 (27th March 2024)
+=========================
 - Add dataset cli tool ``find-duplicates`` to identify duplicate indexed datasets (:pull:`1517`)
 - Make solar_day() timezone aware (:pull:`1521`)
 - Warn if non-eo3 dataset has eo3 metadata type (:pull:`1523`)
@@ -52,10 +57,13 @@ v1.8.next
 - Update github-Dockerhub credential-passing mechanism. (:pull:`1528`)
 - Tweak ``list_products`` logic for getting crs and resolution values (:pull:`1535`)
 - Add new ODC Cheatsheet reference doc to Data Access & Analysis documentation page (:pull:`1543`)
+- Compatibility fix to allow users to supply ``odc.geo``-style GeoBoxes to ``dc.load(like=...)`` (:pull:`1551`)
 - Fix broken codecov github action. (:pull:`1554`)
 - Throw error if ``time`` dimension is provided as an int or float to Query construction
   instead of assuming it to be seconds since epoch (:pull:`1561`)
 - Add generic NOT operator and for ODC queries and ``Not`` type wrapper (:pull:`1563`)
+- Update whats_new.rst for release (:pull:`1568`)
+
 
 v1.8.17 (8th November 2023)
 ===========================

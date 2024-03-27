@@ -97,6 +97,9 @@ Major Changes between 1.8.x and 1.9.x
    conversions to/from EPSG:4326 lat/long coordinates are highly non-linear (e.g. the Pacific around the
    anti-meridian and the north and south polar regions).
 
+   The postgis driver uses Alembic for managing schema migrations, so future changes to the postgis database
+   schema will be much easier to roll out than in the past.
+
    See below for more information about migrating to the Postgis index driver.
 
    Note that many other libraries in the ODC ecosystem may not work well with the Postgis driver at first. As noted
@@ -121,6 +124,10 @@ Major Changes between 1.8.x and 1.9.x
 6. Support for multi-dimensional loading of hyperspectral datasets (Coming Soon)
 
    This is a work in progress and will not be available in 1.9.0. It will appear in a later 1.9.x release.
+
+7. The long-deprecated "ingestion" workflow and "excecutor" API have both been removed.
+
+8. Multiple locations per dataset is now deprecated.
 
 The New Postgis Index Driver
 ----------------------------
