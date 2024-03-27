@@ -8,6 +8,12 @@ What's New
 v1.9.next
 =========
 
+v1.9.0-rc3 (27th March 2024)
+============================
+
+Re-pre-release of 1.9.0-rc1 to get PyPI version numbers back in sync.
+
+
 v1.9.0-rc1 (27th March 2024)
 ============================
 
