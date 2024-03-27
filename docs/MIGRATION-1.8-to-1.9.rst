@@ -27,21 +27,23 @@ not documented here.
 Major Changes between 1.8.x and 1.9.x
 -------------------------------------
 
-1. Integration with `odc-geo`.
+1. Integration with ``odc-geo``.
 
-   The old `datacube.utils.geometry` library has been replaced by `odc-geo`.
+   The old ``datacube.utils.geometry`` library has been replaced by ``odc-geo``.
 
-   If you have already used `odc-geo` you will appreciate the additional power and flexibility that this brings to
+   If you have already used ``odc-geo`` you will appreciate the additional power and flexibility that this brings to
    core.  If you have not, please take the time to have a read through the
    `odc-geo documentation <https://odc-geo.readthedocs.io/en/latest/>`_  and especially the
-   `migration notes <https://odc-geo.readthedocs.io/en/latest/migration.html>`_.
+   `migration notes <https://odc-geo.readthedocs.io/en/latest/migration.html>`_.  In particular, you should familiarise
+   yourself with ``.odc`` accessor which ``odc-geo`` dynamically adds to all xarray ``DataArray`` and ``Dataset``
+   objects.
 
-   Note that `dc.load()` now preferentially accepts `odc-geo` data types for passing `GeoBox` via the `like` parameter, as well as `resolution` and
-   `align` values, although backwards compatible behaviour with the old types is available with a deprecation
-   warning.
+   Note that ``dc.load()`` now preferentially accepts ``odc-geo`` data types for passing ``GeoBox`` via the ``like``
+   parameter, as well as ``resolution`` and ``align`` values, although backwards compatible behaviour with the old
+   types is available with a deprecation warning.
 
-   The classes and methods in `datacube.utils.geometry` are still available, but raise a deprecation warning when
-   used.  Please migrate all code to use the equivalent methods and classes in `odc-geo`.
+   The classes and methods in ``datacube.utils.geometry`` are still available, but raise a deprecation warning when
+   used.  Please migrate all code to use the equivalent methods and classes in ``odc-geo``.
 
 2. A new configuration engine has replaced the configuration engine used previously.
 
@@ -69,13 +71,13 @@ Major Changes between 1.8.x and 1.9.x
       active configuration file and environment variables.  Partial backwards compatibility is attempted, but
       full backwards compatibility is not possible due to the ad hoc nature of the previous implementation.
 
-      The new (preferred) environment variable names are of the form `$ODC_<env_name>_<item_name>`
+      The new (preferred) environment variable names are of the form ``$ODC_<env_name>_<item_name>``
 
    e. Tighter restrictions are applied to environment names.  This is required to ensure consistent interaction
       between config files and environment variables.  Environment names can now only contain alphanumeric characters.
       (Dashes and underscores must be removed).
 
-   f. The preferred default environment name is now `default`.  It is suggested that every config file should
+   f. The preferred default environment name is now ``default``.  It is suggested that every config file should
       start with a "default" section that is an alias to an environment defined in full elsewhere in the file.
 
 3. The index driver API has been cleaned up and simplified, facilitating easier development of new index backends.
@@ -136,7 +138,7 @@ Configuration
 +++++++++++++
 
 The configuration for a postgis index looks the same as the configuration for a legacy postgres index, you simply
-set the `index_driver` setting to `postgis`::
+set the ``index_driver`` setting to ``postgis``::
 
    [default]
       alias: prod
@@ -157,7 +159,7 @@ set the `index_driver` setting to `postgis`::
 Initialisation
 ++++++++++++++
 
-You then initialise the database as previously, using `system init` command (-E new says to use the `new` environment
+You then initialise the database as previously, using ``system init`` command (-E new says to use the ``new`` environment
 from the configuration file)::
 
    datacube -E new system init
@@ -176,27 +178,31 @@ To clone data from an old index to a new one (the two indexes may use different 
 
    datacube -E new system clone old
 
-Note that the target index is specified with the `-E` flag and the source index is provided as an argument to the
-`system clone` command.
+Note that the target index is specified with the ``-E`` flag and the source index is provided as an argument to the
+``system clone`` command.
 
 Data that cannot be directly copied is skipped, e.g.:
 
-* Non-EO3 compatible data cannot be copied from a `postgres` index into a `postgis` index.
-* External lineage information cannot be copied from a `postgis` index to a `postgres` index.
+* Non-EO3 compatible data cannot be copied from a ``postgres`` index into a ``postgis`` index.
+* External lineage information cannot be copied from a ``postgis`` index to a ``postgres`` index.
 
 The clone command supports the following options:
 
-* `--skip-lineage` If set, lineage data is not copied.  Default is to NOT skip lineage (to attempt to copy lineage data)
-* `--lineage-only`  If set, ONLY lineage data is copied.
-* `--batch-size N`  Index cloning is batched for performance. This option specifies the number of records to write to
+* ``--skip-lineage`` If set, lineage data is not copied.  Default is to NOT skip lineage (to attempt to copy lineage data)
+* ``--lineage-only``  If set, ONLY lineage data is copied.
+* ``--batch-size N``  Index cloning is batched for performance. This option specifies the number of records to write to
   the target database at a time.  Default is 1000.
 
 Geospatial search
 +++++++++++++++++
 
-Geopolygons for spatial search can be passed to `dc.load()`::
+Geopolygons for spatial search can be passed to ``dc.load()``, as before::
 
    dc.load(...., geopolygon=poly, ...)
+
+In the postgres driver, the search is done against a bounding box around the polygon projected into EPSG:4326,
+then the extents of datasets returned by the bounding box search are checked for overlap with the original
+geopolygon.  In the postgis driver, the polygon is passed directly to Postgis for an indexed spatial search.
 
 * Only datasets whose extents overlap the geopolygon will be loaded.
 * Geopolygons whose CRS does NOT have a native spatial index available will be projected to EPSG:4326 for search
