@@ -68,6 +68,7 @@ v1.8.next
 
 v1.8.18 (27th March 2024)
 =========================
+
 - Add dataset cli tool ``find-duplicates`` to identify duplicate indexed datasets (:pull:`1517`)
 - Make solar_day() timezone aware (:pull:`1521`)
 - Warn if non-eo3 dataset has eo3 metadata type (:pull:`1523`)
