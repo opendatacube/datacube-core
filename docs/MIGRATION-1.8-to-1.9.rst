@@ -36,7 +36,7 @@ Major Changes between 1.8.x and 1.9.x
    `odc-geo documentation <https://odc-geo.readthedocs.io/en/latest/>`_  and especially the
    `migration notes <https://odc-geo.readthedocs.io/en/latest/migration.html>`_.
 
-   Note that `dc.load()` now preferentially accepts `odc-geo` data types for `GeoBox`, as well as `resolution` and
+   Note that `dc.load()` now preferentially accepts `odc-geo` data types for passing `GeoBox` via the `like` parameter, as well as `resolution` and
    `align` values, although backwards compatible behaviour with the old types is available with a deprecation
    warning.
 
