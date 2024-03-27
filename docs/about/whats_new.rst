@@ -21,6 +21,7 @@ v1.8.18 (27th March 2024)
 - Add new ODC Cheatsheet reference doc to Data Access & Analysis documentation page (:pull:`1543`)
 - Compatibility fix to allow users to supply ``odc.geo``-style GeoBoxes to ``dc.load(like=...)`` (:pull:`1551`)
 - Fix broken codecov github action. (:pull:`1554`)
+- Update documentation links to DEA Knowledge Hub (:pull:`1559`)
 - Throw error if ``time`` dimension is provided as an int or float to Query construction
   instead of assuming it to be seconds since epoch (:pull:`1561`)
 - Add generic NOT operator and for ODC queries and ``Not`` type wrapper (:pull:`1563`)
