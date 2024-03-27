@@ -33,6 +33,10 @@ setting up or using the Open Data Cube.
 Please help us to keep the Open Data Cube community open and inclusive by
 reading and following our `Code of Conduct <code-of-conduct.md>`__.
 
+This is a ``1.9.x`` series release of the Open Data Cube.  If you are migrating from a ``1.8.x``
+series release, please refer to the
+`1.8.x to 1.9.x Migration Notes <https://datacube-core.readthedocs.io/en/latest/MIGRATION-1.8-to-1.9.html>`_.
+
 Requirements
 ============
 

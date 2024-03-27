@@ -102,7 +102,7 @@ def check(cfg_env: ODCEnvironment):
               default=1000)
 @click.option(
     '--skip-lineage/--no-skip-lineage', is_flag=True, default=False,
-    help="Clone lineage data where possible. (default: true)"
+    help="Do not load lineage data where possible. (default: false - i.e. do not skip lineage)"
 )
 @click.option(
     '--lineage-only/--no-lineage-only', is_flag=True, default=False,
