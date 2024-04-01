@@ -18,6 +18,7 @@ from datacube.migration import ODC2DeprecationWarning
 from .io import check_write_path
 from odc.geo.geobox import GeoBox
 from odc.geo.math import align_up
+from odc.geo.warp import Resampling, resampling_s2rio
 
 from deprecat import deprecat
 
@@ -38,7 +39,7 @@ def _write_cog(
     nodata: Optional[float] = None,
     overwrite: bool = False,
     blocksize: Optional[int] = None,
-    overview_resampling: Optional[str] = None,
+    overview_resampling: Optional[Resampling] = None,
     overview_levels: Optional[List[int]] = None,
     ovr_blocksize: Optional[int] = None,
     use_windowed_writes: bool = False,
@@ -118,7 +119,10 @@ def _write_cog(
             fname, overwrite
         )  # aborts if overwrite=False and file exists already
 
-    resampling = rasterio.enums.Resampling[overview_resampling]
+    if isinstance(overview_resampling, str):
+        resampling = resampling_s2rio(overview_resampling)
+    else:
+        resampling = overview_resampling
 
     if (blocksize % 16) != 0:
         warnings.warn("Block size must be a multiple of 16, will be adjusted")
@@ -219,7 +223,7 @@ def write_cog(
     overwrite: bool = False,
     blocksize: Optional[int] = None,
     ovr_blocksize: Optional[int] = None,
-    overview_resampling: Optional[str] = None,
+    overview_resampling: Optional[Resampling] = None,
     overview_levels: Optional[List[int]] = None,
     use_windowed_writes: bool = False,
     intermediate_compression: Union[bool, str, Dict[str, Any]] = False,

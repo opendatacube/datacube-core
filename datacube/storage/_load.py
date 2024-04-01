@@ -23,6 +23,7 @@ from datacube.utils.math import invalid_mask
 from odc.geo.geobox import GeoBox
 from odc.geo.roi import roi_is_empty
 from odc.geo.xr import xr_coords
+from odc.geo.warp import Resampling
 from datacube.model import Measurement
 from datacube.drivers._types import ReaderDriver
 from ..drivers.datasource import DataSource
@@ -47,7 +48,7 @@ def reproject_and_fuse(datasources: List[DataSource],
                        destination: np.ndarray,
                        dst_geobox: GeoBox,
                        dst_nodata: Optional[Union[int, float]],
-                       resampling: str = 'nearest',
+                       resampling: Resampling = 'nearest',
                        fuse_func: Optional[FuserFunction] = None,
                        skip_broken_datasets: bool = False,
                        progress_cbk: Optional[ProgressFunction] = None,

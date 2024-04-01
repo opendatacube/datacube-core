@@ -4,6 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 import numpy as np
 
+import pytest
+from rasterio.enums import Resampling
+
 from datacube.storage._read import (
     read_time_slice,
     read_time_slice_v2,
@@ -27,6 +30,11 @@ from datacube.testutils.geom import (
 )
 
 
+nearest_resampling_parametrize = pytest.mark.parametrize(
+    "nearest_resampling", ['nearest', Resampling.nearest, Resampling.nearest.value]
+)
+
+
 def test_pick_read_scale():
     assert pick_read_scale(0.7) == 1
     assert pick_read_scale(1.3) == 1
@@ -34,7 +42,8 @@ def test_pick_read_scale():
     assert pick_read_scale(1.99999) == 2
 
 
-def test_read_paste(tmpdir):
+@nearest_resampling_parametrize
+def test_read_paste(nearest_resampling, tmpdir):
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from pathlib import Path
@@ -46,7 +55,7 @@ def test_read_paste(tmpdir):
 
     mm = write_gtiff(pp/'tst-read-paste-128x64-int16.tif', xx, nodata=None)
 
-    def _read(geobox, resampling='nearest',
+    def _read(geobox, resampling=nearest_resampling,
               fallback_nodata=-999,
               dst_nodata=-999,
               check_paste=False):
@@ -112,7 +121,8 @@ def test_read_paste(tmpdir):
     np.testing.assert_array_equal(xx[1::2, 1::2], yy)
 
 
-def test_read_with_reproject(tmpdir):
+@nearest_resampling_parametrize
+def test_read_with_reproject(nearest_resampling, tmpdir):
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from pathlib import Path
@@ -131,7 +141,7 @@ def test_read_with_reproject(tmpdir):
     assert mm.geobox == tile
 
     def _read(geobox,
-              resampling='nearest',
+              resampling=nearest_resampling,
               fallback_nodata=None,
               dst_nodata=-999):
         with RasterFileDataSource(mm.path, 1, nodata=fallback_nodata).open() as rdr:
@@ -171,7 +181,8 @@ def test_read_with_reproject(tmpdir):
     assert nvalid > nempty
 
 
-def test_read_paste_v2(tmpdir):
+@nearest_resampling_parametrize
+def test_read_paste_v2(nearest_resampling, tmpdir):
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from datacube.testutils.iodriver import open_reader
@@ -184,7 +195,7 @@ def test_read_paste_v2(tmpdir):
 
     mm = write_gtiff(pp/'tst-read-paste-128x64-int16.tif', xx, nodata=None)
 
-    def _read(geobox, resampling='nearest',
+    def _read(geobox, resampling=nearest_resampling,
               fallback_nodata=-999,
               dst_nodata=-999,
               check_paste=False):
@@ -256,7 +267,8 @@ def test_read_paste_v2(tmpdir):
     np.testing.assert_array_equal(xx[1::2, 1::2], yy)
 
 
-def test_read_with_reproject_v2(tmpdir):
+@nearest_resampling_parametrize
+def test_read_with_reproject_v2(nearest_resampling, tmpdir):
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from datacube.testutils.iodriver import open_reader
@@ -268,7 +280,7 @@ def test_read_with_reproject_v2(tmpdir):
     assert (xx != -999).all()
     tile = AlbersGS.tile_geobox((17, -40))[:64, :128]
 
-    def _read(geobox, resampling='nearest',
+    def _read(geobox, resampling=nearest_resampling,
               fallback_nodata=-999,
               dst_nodata=-999):
 
