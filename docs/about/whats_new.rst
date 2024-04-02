@@ -8,6 +8,9 @@ What's New
 v1.9.next
 =========
 
+- Standardize resampling input supported to `odc.geo.warp.Resampling`.
+
+
 v1.9.0-rc3 (27th March 2024)
 ============================
 

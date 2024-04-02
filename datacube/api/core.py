@@ -18,6 +18,7 @@ from datacube.cfg import GeneralisedRawCfg, GeneralisedCfg, GeneralisedEnv, ODCC
 from datacube.storage import reproject_and_fuse, BandInfo
 from datacube.utils import ignore_exceptions_if
 from odc.geo import CRS, yx_, res_, resyx_, Resolution, XY
+from odc.geo.warp import Resampling
 from odc.geo.xr import xr_coords
 from datacube.utils.dates import normalise_dt
 from odc.geo.geom import intersects, box, bbox_union, Geometry
@@ -244,7 +245,7 @@ class Datacube:
              measurements: str | list[str] | None = None,
              output_crs: Any = None,
              resolution: int | float | tuple[int | float, int | float] | Resolution | None = None,
-             resampling: str | dict[str, str] | None = None,
+             resampling: Resampling | dict[str, Resampling] | None = None,
              align: XY[float] | Iterable[float] | None = None,
              skip_broken_datasets: bool = False,
              dask_chunks: dict[str, str | int] | None = None,
@@ -878,7 +879,7 @@ class Datacube:
     @staticmethod
     def load_data(sources: xarray.DataArray, geobox: GeoBox,
                   measurements: Mapping[str, Measurement] | list[Measurement],
-                  resampling: str | dict[str, str] | None = None,
+                  resampling: Resampling | dict[str, Resampling] | None = None,
                   fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
                   dask_chunks: dict[str, str | int] | None = None,
                   skip_broken_datasets: bool = False,
@@ -969,7 +970,7 @@ class Datacube:
 
 
 def per_band_load_data_settings(measurements: list[Measurement] | Mapping[str, Measurement],
-                                resampling: str | Mapping[str, str] | None = None,
+                                resampling: Resampling | Mapping[str, Resampling] | None = None,
                                 fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None
                                 ) -> list[Measurement]:
     def with_resampling(m, resampling, default=None):
@@ -982,7 +983,7 @@ def per_band_load_data_settings(measurements: list[Measurement] | Mapping[str, M
         m['fuser'] = fuser.get(m.name, default)
         return m
 
-    if isinstance(resampling, str):
+    if resampling is not None and not isinstance(resampling, dict):
         resampling = {'*': resampling}
 
     if fuse_func is None or callable(fuse_func):
