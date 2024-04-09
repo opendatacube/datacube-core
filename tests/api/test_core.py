@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from datacube.api.query import GroupBy
-from datacube.api.core import _calculate_chunk_sizes
+from datacube.api.core import _calculate_chunk_sizes, output_geobox
 from datacube import Datacube
 from datacube.testutils.geom import AlbersGS
 from datacube.testutils import mk_sample_dataset
@@ -122,3 +122,31 @@ def test_index_validation():
         dc = Datacube(index=index, config=["/a/path", "/a/nother/path"], env="prod", app="this_is_me", raw_config="{}")
     estr = str(e.value)
     assert "config,raw_config,app,env" in estr
+
+
+def test_output_geobox():
+    from odc.geo.geobox import GeoBox as ODCGeoGeoBox, CRS as ODCGeoCRS
+    from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox, CRS as LegacyCRS
+    from odc.geo.xr import xr_zeros
+
+    odc_gbox = ODCGeoGeoBox.from_bbox(
+        (-2_000_000, -5_000_000, 2_250_000, -1_000_000),
+        "epsg:3577",
+        resolution=1000
+    )
+    legacy_gbox = LegacyGeoGeoBox(width=odc_gbox.width, height=odc_gbox.height,
+                                  affine=odc_gbox.affine,
+                                  crs=LegacyCRS(str(odc_gbox.crs)))
+
+    assert legacy_gbox != odc_gbox
+
+    xra = xr_zeros(odc_gbox, chunks=(1000, 1000))
+
+    assert xra.odc.geobox == odc_gbox
+
+    gbox = output_geobox(like=xra)
+    assert gbox == odc_gbox
+
+    gbox = output_geobox(like=legacy_gbox)
+    assert gbox == odc_gbox
+    assert isinstance(gbox.crs, ODCGeoCRS)
