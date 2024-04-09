@@ -220,7 +220,9 @@ class ODCConfig:
                               "this fallback behaviour is deprecated and may change in a future release.")
                 item = "datacube"
             else:
-                raise ConfigException("No environment specified and no default environment could be identified.")
+                # No explicitly defined (known) environments - assume default and hope there's config
+                # available in environment variables.
+                item = "default"
         if item not in self.known_environments:
             self.known_environments[item] = ODCEnvironment(self, item, {}, True)
         return self.known_environments[item]

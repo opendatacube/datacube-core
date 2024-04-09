@@ -542,5 +542,4 @@ def test_default_environment(simple_config, monkeypatch):
         'weirdname': {"index_driver": "memory"},
         'stupidenv': {"index_driver": "null"},
     })
-    with pytest.raises(ConfigException):
-        cfg[None]._name
+    assert cfg[None]._name == "default"
