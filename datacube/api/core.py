@@ -1019,8 +1019,12 @@ def output_geobox(like: GeoBox | xarray.Dataset | xarray.DataArray | None = None
         assert resolution is None, "'like' and 'resolution' are not supported together"
         assert align is None, "'like' and 'align' are not supported together"
         if isinstance(like, GeoBox):
+            # Is already a GeoBox
             return like
-
+        if like.__class__.__name__ == "GeoBox" and like.__class__.__module__ == 'datacube.utils.geometry._base':
+            # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox (check class without importing deprecated class)
+            return GeoBox(shape=(like.height, like.width), affine=like.affine, crs=like.crs)
+        # Is an Xarray object
         return like.odc.geobox
 
     if load_hints:

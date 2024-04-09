@@ -10,6 +10,7 @@ v1.9.next
 
 - Standardize resampling input supported to `odc.geo.warp.Resampling` (:pull:`1571`)
 - Refine default behaviour for config engine to support easier migration from 1.8 (:pull:`1573`)
+- Convert legacy GeoBoxes to odc.geo GeoBoxes in the core API (:pull:`1574`)
 
 
 v1.9.0-rc3 (27th March 2024)
@@ -47,6 +48,7 @@ v1.9.0-rc1 (27th March 2024)
 - Index driver API type hint cleanup. (:pull:`1541`)
 - Deprecate multiple locations. (:pull:`1546`)
 - Deprecate search_eager and search_summaries and add `archived` arg to all dataset search/count methods. (:pull:`1550`)
+- Compatibility fix - dc.load can take odc.geo GeoBox (:pull:`1551`)
 - Migrate away from deprecated Python pkg_resources module (:pull:`1558`)
 - Add ``custom_offsets`` and ``order_by`` arguments to search_retunrning() - order_by still unimplemented. (:pull:`1557`)
 - Fix and enhance typehints, automated static type checking with mypy.  (:pull:`1562`)
