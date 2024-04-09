@@ -8,7 +8,8 @@ What's New
 v1.9.next
 =========
 
-- Standardize resampling input supported to `odc.geo.warp.Resampling`.
+- Standardize resampling input supported to `odc.geo.warp.Resampling` (:pull:`1571`)
+- Refine default behaviour for config engine to support easier migration from 1.8 (:pull:`1573`)
 
 
 v1.9.0-rc3 (27th March 2024)
