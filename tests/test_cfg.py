@@ -525,7 +525,7 @@ def test_raw_by_environment(simple_config, monkeypatch):
 
 
 def test_default_environment(simple_config, monkeypatch):
-    from datacube.cfg import ODCConfig, ConfigException
+    from datacube.cfg import ODCConfig
     cfg = ODCConfig(text=simple_config)
     assert cfg[None]._name == 'legacy'
     monkeypatch.setenv('ODC_ENVIRONMENT', 'exp2')
