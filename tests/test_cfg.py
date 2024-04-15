@@ -213,8 +213,9 @@ def test_single_env(single_env_config):
 
     assert cfg['experimental'].index_driver == "postgis"
     assert cfg['experimental'].db_url == "postgresql://foo:bar@server.subdomain.domain/mytestdb"
+    assert cfg['experimental'].db_username == "foo"
     with pytest.raises(AttributeError):
-        assert cfg['experimental'].db_username
+        assert cfg['experimental'].not_an_option
     assert cfg['experimental']['db_iam_authentication']
     assert cfg['experimental'].db_iam_timeout == 600
     assert cfg['experimental']['db_connection_timeout'] == 60
@@ -257,8 +258,9 @@ def assert_simple_options(cfg):
         assert cfg['default']["db_iam_timeout"]
 
     assert cfg['exp2'].db_url == "postgresql://foo:bar@server.subdomain.domain/mytestdb"
+    assert cfg['exp2'].db_username == "foo"
     with pytest.raises(AttributeError):
-        assert cfg['exp2'].db_username
+        assert cfg['exp2'].not_an_option
     assert cfg['exp2']['db_iam_authentication']
     assert cfg['exp2'].db_iam_timeout == 300
     assert cfg['exp2']['db_connection_timeout'] == 60
@@ -284,8 +286,7 @@ def test_noenv_overrides_in_text(simple_config, monkeypatch):
     cfg = ODCConfig(text=simple_config)
 
     assert cfg["legacy"].db_username != 'bar'
-    with pytest.raises(AttributeError):
-        cfg["experimental"].db_username
+    assert cfg["experimental"].db_username != "bar"
 
 
 @pytest.fixture
@@ -389,8 +390,7 @@ def test_envvar_overrides(path_to_yaml_config, monkeypatch):
     assert cfg["experimental"].db_iam_authentication
     assert cfg["exp2"].db_iam_authentication
     assert cfg["exp2"].db_connection_timeout == 20
-    with pytest.raises(AttributeError):
-        assert cfg["experimental"].db_username == 'bar'
+    assert cfg["experimental"].db_username != 'bar'
 
 
 def test_intopt_validation():
