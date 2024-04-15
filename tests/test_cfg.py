@@ -467,6 +467,12 @@ def test_pgurl_from_config(simple_dict):
         psql_url_from_config(
             cfg["memory"]
         )
+    assert cfg["exp2"].db_url == "postgresql://foo:bar@server.subdomain.domain/mytestdb"
+    assert cfg["exp2"].db_username == "foo"
+    assert cfg["exp2"].db_password == "bar"
+    assert cfg["exp2"].db_hostname == "server.subdomain.domain"
+    assert not cfg["exp2"].db_port
+    assert cfg["exp2"].db_database == "mytestdb"
 
     cfg = ODCConfig(raw_dict={
         "foo": {

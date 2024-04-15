@@ -207,7 +207,7 @@ class PostgresURLOptionHandler(ODCOptionHandler):
 
     def handle_dependent_options(self, value: Any) -> None:
         if value is None:
-            for handler in (
+            handlers = (
                     ODCOptionHandler("db_username", self.env, legacy_env_aliases=['DB_USERNAME'],
                                      default=_DEFAULT_DB_USER),
                     ODCOptionHandler("db_password", self.env, legacy_env_aliases=['DB_PASSWORD']),
@@ -217,8 +217,39 @@ class PostgresURLOptionHandler(ODCOptionHandler):
                                      minval=1, maxval=49151),
                     ODCOptionHandler("db_database", self.env, legacy_env_aliases=['DB_DATABASE'],
                                      default=_DEFAULT_DATABASE),
-            ):
-                self.env._option_handlers.append(handler)
+            )
+        else:
+            # These pseudo-handlers extract the equivalent config from the url returned by this handler.
+            handlers = (
+                PostgresURLPartHandler(self, "username", "db_username", self.env),
+                PostgresURLPartHandler(self, "password", "db_password", self.env),
+                PostgresURLPartHandler(self, "hostname", "db_hostname", self.env),
+                PostgresURLPartHandler(self, "port", "db_port", self.env),
+                PostgresURLPartHandler(self, "path", "db_database", self.env),
+            )
+
+        for handler in handlers:
+            self.env._option_handlers.append(handler)
+
+class PostgresURLPartHandler(ODCOptionHandler):
+    def __init__(self, urlhandler: PostgresURLOptionHandler, urlpart: str, name: str, env: "ODCEnvironment"):
+        self.urlhandler = urlhandler
+        self.urlpart = urlpart
+        super().__init__(name, env)
+
+    def validate_and_normalise(self, value: Any) -> Any:
+        url = self.env._normalised[self.urlhandler.name]
+        purl = urlparse(url)
+        part = getattr(purl, self.urlpart)
+        if self.urlpart == "path" and part.startswith('/'):
+            # Remove leading slash
+            return str(part)[1:]
+        else:
+            return part
+
+    def get_val_from_environment(self) -> str | None:
+        # Never read from environment - take from URL, wherever it came from
+        return None
 
 
 def config_options_for_psql_driver(env: "ODCEnvironment"):
