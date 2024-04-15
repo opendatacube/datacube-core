@@ -207,7 +207,7 @@ class PostgresURLOptionHandler(ODCOptionHandler):
 
     def handle_dependent_options(self, value: Any) -> None:
         if value is None:
-            handlers = (
+            handlers: tuple[ODCOptionHandler, ...] = (
                     ODCOptionHandler("db_username", self.env, legacy_env_aliases=['DB_USERNAME'],
                                      default=_DEFAULT_DB_USER),
                     ODCOptionHandler("db_password", self.env, legacy_env_aliases=['DB_PASSWORD']),
