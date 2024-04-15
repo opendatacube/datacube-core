@@ -208,15 +208,15 @@ class PostgresURLOptionHandler(ODCOptionHandler):
     def handle_dependent_options(self, value: Any) -> None:
         if value is None:
             handlers: tuple[ODCOptionHandler, ...] = (
-                    ODCOptionHandler("db_username", self.env, legacy_env_aliases=['DB_USERNAME'],
-                                     default=_DEFAULT_DB_USER),
-                    ODCOptionHandler("db_password", self.env, legacy_env_aliases=['DB_PASSWORD']),
-                    ODCOptionHandler("db_hostname", self.env, legacy_env_aliases=['DB_HOSTNAME'],
-                                     default=_DEFAULT_HOSTNAME),
-                    IntOptionHandler("db_port", self.env, default=5432, legacy_env_aliases=['DB_PORT'],
-                                     minval=1, maxval=49151),
-                    ODCOptionHandler("db_database", self.env, legacy_env_aliases=['DB_DATABASE'],
-                                     default=_DEFAULT_DATABASE),
+                ODCOptionHandler("db_username", self.env, legacy_env_aliases=['DB_USERNAME'],
+                                 default=_DEFAULT_DB_USER),
+                ODCOptionHandler("db_password", self.env, legacy_env_aliases=['DB_PASSWORD']),
+                ODCOptionHandler("db_hostname", self.env, legacy_env_aliases=['DB_HOSTNAME'],
+                                 default=_DEFAULT_HOSTNAME),
+                IntOptionHandler("db_port", self.env, default=5432, legacy_env_aliases=['DB_PORT'],
+                                 minval=1, maxval=49151),
+                ODCOptionHandler("db_database", self.env, legacy_env_aliases=['DB_DATABASE'],
+                                 default=_DEFAULT_DATABASE),
             )
         else:
             # These pseudo-handlers extract the equivalent config from the url returned by this handler.
@@ -230,6 +230,7 @@ class PostgresURLOptionHandler(ODCOptionHandler):
 
         for handler in handlers:
             self.env._option_handlers.append(handler)
+
 
 class PostgresURLPartHandler(ODCOptionHandler):
     def __init__(self, urlhandler: PostgresURLOptionHandler, urlpart: str, name: str, env: "ODCEnvironment"):
