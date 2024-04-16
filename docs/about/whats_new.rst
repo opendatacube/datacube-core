@@ -8,9 +8,14 @@ What's New
 v1.9.next
 =========
 
+v1.9.0-rc4 (15th April 2024)
+============================
+
 - Standardize resampling input supported to `odc.geo.warp.Resampling` (:pull:`1571`)
 - Refine default behaviour for config engine to support easier migration from 1.8 (:pull:`1573`)
 - Convert legacy GeoBoxes to odc.geo GeoBoxes in the core API (:pull:`1574`)
+- Add URL component pseudo to config layer to expose components to the api when configured as a URL,
+  and reformat whats_new for 1.9.0-rc4 release. (:pull:`1575`)
 
 
 v1.9.0-rc3 (27th March 2024)
