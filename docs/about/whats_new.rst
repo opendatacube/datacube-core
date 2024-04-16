@@ -8,6 +8,8 @@ What's New
 v1.9.next
 =========
 
+- Fix typos in docs (:pull:`1577`)
+
 v1.9.0-rc4 (15th April 2024)
 ============================
 

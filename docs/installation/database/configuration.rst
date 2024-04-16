@@ -57,7 +57,7 @@ looks something like this:
 
    dev:
       # Dev use the new PostGIS-based ODC index schema.
-      index_driver: postgres
+      index_driver: postgis
       db_url: postgresql://user:passwd@internal.server.domain:5555/development_db
       db_connection_timeout: 120
 
