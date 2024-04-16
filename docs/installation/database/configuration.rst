@@ -39,7 +39,7 @@ looks something like this:
 
    # This is a YAML file and the # symbol marks comments
    default:
-      # The 'default' environment is used if now environment is specified.
+      # The 'default' environment is used if no environment is specified.
       # It is often convenient to define it as an alias to another environment
       alias: prod
 
@@ -106,7 +106,7 @@ Configuration Environments
 
 A valid configuration file consists of one or more named environment definition sections.
 
-Evironment names must start with a lowercase letter and can only include lowercase
+Environment names must start with a lowercase letter and can only include lowercase
 letters and digits.  (This restriction it to support generic environment variable
 overrides, as discussed below.)
 
@@ -223,7 +223,7 @@ specified per-environment.
 
    Database connection details can be specified in a single option with the
    ``db_url`` field.  If a ``db_url`` is not provided, connection details can
-   be specfied with separate :confval:`db_hostname`, :confval:`db_port`, :confval:`db_database`,
+   be specified with separate :confval:`db_hostname`, :confval:`db_port`, :confval:`db_database`,
    :confval:`db_username`, and :confval:`db_password` fields, as described below.
 
    If a `db_url` is provided, it takes precedence over the separate connection
@@ -300,7 +300,7 @@ specified per-environment.
    Defaults to False.
 
    .. code-block::
-      :caption: Example showing :confval:`db_iam_authenticaion`
+      :caption: Example showing :confval:`db_iam_authentication`
 
       [main]
       index_driver: postgis
@@ -602,7 +602,7 @@ Notes:
 4b. Environment Variable Overrides and Environment Aliases
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-To avoid troublesome and unpredictable corner carse, aliases can only be
+To avoid troublesome and unpredictable corner cases, aliases can only be
 defined in raw configuration or in config files - they cannot be defined
 through environment variables.
 
@@ -721,7 +721,7 @@ a new preferred environment variable, as listed in the table below.
 The auto_config() function
 --------------------------
 
-There used to be an undocumentd ``auto_config()`` function (also available through ``python -m datacube``) that read
+There used to be an undocumented ``auto_config()`` function (also available through ``python -m datacube``) that read
 in the configuration (from multiple files and environment variables) and wrote it out as a single consolidated
 configuration file.
 
