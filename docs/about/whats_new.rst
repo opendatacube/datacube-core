@@ -9,6 +9,7 @@ v1.9.next
 =========
 
 - Fix typos in docs (:pull:`1577`)
+- Merge in 1.8.x branch changes. (:pull:`1568`, :pull:`1579`)
 
 v1.9.0-rc4 (15th April 2024)
 ============================
@@ -66,8 +67,11 @@ v1.9.0-rc1 (27th March 2024)
 v1.8.next
 =========
 
+- Update readthedocs stylesheet for dark theme (:pull:`1579`)
+
 v1.8.18 (27th March 2024)
 =========================
+
 - Add dataset cli tool ``find-duplicates`` to identify duplicate indexed datasets (:pull:`1517`)
 - Make solar_day() timezone aware (:pull:`1521`)
 - Warn if non-eo3 dataset has eo3 metadata type (:pull:`1523`)
