@@ -9,6 +9,7 @@ v1.9.next
 =========
 
 - Fix typos in docs (:pull:`1577`)
+- Merge in 1.8.x branch changes. (:pull:`1568`, :pull:`1579`)
 
 v1.9.0-rc4 (15th April 2024)
 ============================
