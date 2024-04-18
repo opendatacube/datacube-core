@@ -445,6 +445,7 @@ stacker
 stacspec
 stdlib
 str
+stylesheet
 subcommands
 sudo
 sv
