@@ -8,6 +8,8 @@ What's New
 v1.8.next
 =========
 
+- Update readthedocs stylesheet for dark theme (:pull:`1579`)
+
 v1.8.18 (27th March 2024)
 =========================
 

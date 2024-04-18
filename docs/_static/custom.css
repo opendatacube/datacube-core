@@ -105,6 +105,10 @@
     padding: 40px;
 }
 
+.bd-container {
+    padding-top: var(--pst-header-height);
+}
+
 .section p {
     line-height: 1.8rem;
 }
@@ -184,4 +188,25 @@ dt:target, span.highlighted {
 .footer .container {
     max-width: 100%;
     font-size: 0.9rem;
+}
+
+html[data-theme="dark"] {
+    --pst-color-text-base: var(--pst-color-text-muted);
+    --pst-color-sidebar-link-active: var(--pst-color-link);
+}
+
+html[data-theme="dark"] .container-xl {
+    background-color: #3B3B3B;
+}
+
+html[data-theme="dark"] .editthispage a {
+    color: var(--pst-color-link);
+}
+
+html[data-theme="dark"] .bd-sidebar {
+    border-right: 3px solid #ffffff1a;
+}
+
+html[data-theme="dark"] .navbar-light>.container-xl {
+    background-color: var(--pst-color-surface);
 }
