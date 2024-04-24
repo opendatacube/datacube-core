@@ -8,6 +8,8 @@ What's New
 v1.9.next
 =========
 
+- Add Product delete methods to API and command in CLI, plus misc cleanup of the surrounds (:pull:`1583`)
+
 v1.9.0-rc4 (15th April 2024)
 ============================
 
