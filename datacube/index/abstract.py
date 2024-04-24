@@ -587,7 +587,7 @@ class AbstractProductResource(ABC):
 
     @abstractmethod
     def update(self,
-               metadata_type: Product,
+               product: Product,
                allow_unsafe_updates: bool = False,
                allow_table_lock: bool = False
                ) -> Product:
@@ -597,7 +597,7 @@ class AbstractProductResource(ABC):
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param metadata_type: Product model with unpersisted updates
+        :param product: Product model with unpersisted updates
         :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
@@ -640,6 +640,14 @@ class AbstractProductResource(ABC):
         """
         type_ = self.from_doc(definition)
         return self.add(type_)
+
+    @abstractmethod
+    def delete(self, product: Product):
+        """
+        Delete the specified product.
+
+        :param product: Product to be deleted
+        """
 
     def get(self, id_: int) -> Product | None:
         """

@@ -385,7 +385,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for id_ in ids:
                 transaction.delete_dataset(id_)
 
-    def get_all_dataset_ids(self, archived: bool):
+    def get_all_dataset_ids(self, archived: bool | None = False):
         """
         Get list of all dataset IDs based only on archived status
 
@@ -748,7 +748,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def _get_product_queries(self, query):
         for product, q in self.products.search_robust(**query):
-            q['dataset_type_id'] = product.id
+            q['product_id'] = product.id
             yield q, product
 
     # pylint: disable=too-many-locals

@@ -131,6 +131,53 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
     sys.exit(failures)
 
 
+@product_cli.command('delete', help="Delete products and all associated datasets")
+@click.option(
+    '--force', is_flag=True, default=False,
+    help="Allow a product with active datasets to be deleted (default: false)"
+)
+@click.option('--dry-run', '-d', is_flag=True, default=False,
+              help='Check if everything is ok')
+@click.argument('product_names', type=str, nargs=-1)
+@ui.pass_index()
+def delete_products(index: Index, force: bool, dry_run: bool, product_names: List):
+    """
+    Delete products.
+
+    An error will be thrown if the product has active datasets, unless the force option is provided.
+    """
+    if not product_names:
+        print_help_msg(delete_products)
+        sys.exit(1)
+
+    try:
+        products = [index.products.get_by_name_unsafe(name) for name in product_names]
+    except KeyError as e:
+        click.echo(str(e))
+        sys.exit(1)
+
+    # Check if any of the products have active datasets
+    active_product = False
+    for name in product_names:
+        active_ds = list(index.datasets.search_returning(('id',), archived=False, product=name))
+        if len(active_ds):
+            click.echo(f"Product {name} has active datasets: {' '.join([str(ds.id) for ds in active_ds])}")
+            active_product = True
+
+    if active_product:
+        if not force:
+            click.echo("Cannot delete products with active datasets. Use the --force option to delete anyway.")
+            sys.exit(1)
+        click.confirm("Warning: you will be deleting active datasets. Proceed?", abort=True)
+    if not dry_run:
+        for product in products:
+            index.products.delete(product)
+    else:
+        click.echo(f"{len(products)} products not deleted (dry run)")
+
+    click.echo('Completed product deletion.')
+
+
 def _write_csv(products):
     product_dicts = [prod.to_dict() for prod in products]
     writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description',

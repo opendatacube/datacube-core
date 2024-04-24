@@ -10,12 +10,13 @@ import copy
 import pytest
 import yaml
 from sqlalchemy import text
+from unittest import mock
 
 from datacube.drivers.postgres._fields import NumericRangeDocField as PgrNumericRangeDocField, PgField as PgrPgField
 from datacube.drivers.postgis._fields import NumericRangeDocField as PgsNumericRangeDocField, PgField as PgsPgField
 from datacube.index import Index
 from datacube.index.abstract import default_metadata_type_docs
-from datacube.model import MetadataType, DatasetType
+from datacube.model import MetadataType, Product
 from datacube.model import Range, Not, Dataset
 from datacube.utils import changes
 from datacube.utils.documents import documents_equal
@@ -260,9 +261,9 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc):
+def test_update_product_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc):
     """
-    :type ls5_telem_type: datacube.model.DatasetType
+    :type ls5_telem_type: datacube.model.Product
     :type index: datacube.index.Index
     """
     assert index.products.get_by_name(ls5_telem_type.name) is not None
@@ -314,7 +315,7 @@ def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_t
 
 def test_product_update_cli(index: Index,
                             clirunner,
-                            ls8_eo3_product: DatasetType,
+                            ls8_eo3_product: Product,
                             extended_eo3_product_doc: dict,
                             extended_eo3_metadata_type: MetadataType,
                             tmpdir) -> None:
@@ -388,6 +389,58 @@ def test_product_update_cli(index: Index,
     modified_doc['metadata']['42'] = 'hello'
     fresh = get_current(index, extended_eo3_product_doc)
     assert documents_equal(fresh, modified_doc)
+
+
+def test_product_delete_cli(index: Index,
+                            clirunner,
+                            ls8_eo3_product: Product,
+                            ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3, ls8_eo3_dataset4,
+                            extended_eo3_metadata_type: MetadataType) -> None:
+    from pathlib import Path
+    TESTDIR = Path(__file__).parent.parent / "data" / "eo3"
+    # prduct with some archived and some active datasets
+    clirunner(['dataset', 'archive', 'c21648b1-a6fa-4de0-9dc3-9c445d8b295a', '4a30d008-4e82-4d67-99af-28bc1629f766'])
+    runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3'], verbose_flag=False, expect_success=False)
+    assert "Product ga_ls8c_ard_3 has active datasets" in runner.output
+    assert "c21648b1-a6fa-4de0-9dc3-9c445d8b295a" not in runner.output
+    assert "1154087c-211c-4834-a1f8-b4b59101b644" in runner.output
+    assert "Cannot delete products with active datasets" in runner.output
+    assert runner.exit_code == 1
+
+    # active datasets, force without confirmation
+    runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', '--force'], verbose_flag=False, expect_success=False)
+    assert "Product ga_ls8c_ard_3 has active datasets" in runner.output
+    assert "Proceed?" in runner.output
+    assert runner.exit_code == 1
+
+    # adding back product should cause error since it still exists
+    add = clirunner(['product', 'add', str(TESTDIR / "ard_ls8.odc-product.yaml")])
+    assert "is already in the database" in add.output
+
+    # archive the product's active datasets; delete should not require force option
+    clirunner(['dataset', 'archive', '1154087c-211c-4834-a1f8-b4b59101b644', '0ee5fe0a-6acd-4583-8554-36ad963bf40b'])
+    runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', '--dry-run'], verbose_flag=False)
+    assert "Completed product deletion" in runner.output
+    assert runner.exit_code == 0
+
+    # ensure deletion involving active datasets works with confirmation
+    clirunner(['dataset', 'restore', '1154087c-211c-4834-a1f8-b4b59101b644', '0ee5fe0a-6acd-4583-8554-36ad963bf40b'])
+    with mock.patch('click.confirm', return_value=True):
+        runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', '--force'], verbose_flag=False)
+        assert "Product ga_ls8c_ard_3 has active datasets" in runner.output
+        assert "Completed product deletion" in runner.output
+        assert runner.exit_code == 0
+
+    runner = clirunner(['dataset', 'archive', '1154087c-211c-4834-a1f8-b4b59101b644'],
+                       verbose_flag=False, expect_success=False)
+    assert "No dataset found with id" in runner.output
+
+    index.products.get_by_name_unsafe.cache_clear()
+    assert index.products.get_by_name("ga_ls8c_ard_3") is None
+
+    # should be able to add product back now
+    add = clirunner(['product', 'add', str(TESTDIR / "ard_ls8.odc-product.yaml")])
+    assert "is already in the database" not in add.output
 
 
 def _to_yaml(ls5_telem_doc):

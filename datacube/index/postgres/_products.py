@@ -187,7 +187,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             #                 name, field.sql_expression, new_field.sql_expression
             #             )
             #         )
-        metadata_type = cast(MetadataType, self._index.metadata_types.get_by_name(product.metadata_type.name))
+        # metadata_type = cast(MetadataType, self._index.metadata_types.get_by_name(product.metadata_type.name))
+        metadata_type = product.metadata_type
         #     Given we cannot change metadata type because of the check above, and this is an
         #     update method, the metadata type is guaranteed to already exist.
         with self._db_connection(transaction=allow_table_lock) as conn:
@@ -224,6 +225,27 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             allow_unsafe_updates=allow_unsafe_updates,
             allow_table_lock=allow_table_lock,
         )
+
+    def delete(self, product: Product):
+        """
+        Delete a Product, as well as all related datasets
+
+        :param product: the Proudct to delete
+        """
+        # First find and delete all related datasets
+        product_datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
+        self._index.datasets.purge([ds.id for ds in product_datasets])
+
+        # Now we can safely delete the Product
+        # Pass along metadata type information as well to update indexes/views
+        with self._db_connection(transaction=True) as conn:
+            mt = product.metadata_type
+            conn.delete_product(
+                name=product.name,
+                mt_id=mt.id,
+                mt_name=mt.name,
+                mt_def=mt.definition
+            )
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
@@ -301,8 +323,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         :rtype: list[Product]
         """
         with self._db_connection() as connection:
-            for dataset in self._make_many(connection.search_products_by_metadata(metadata)):
-                yield dataset
+            for product in self._make_many(connection.search_products_by_metadata(metadata)):
+                yield product
 
     def get_all(self) -> Iterable[Product]:
         """

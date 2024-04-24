@@ -234,6 +234,20 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             allow_table_lock=allow_table_lock,
         )
 
+    def delete(self, product: Product):
+        """
+        Delete a Product, as well as all related datasets
+
+        :param product: the Proudct to delete
+        """
+        # First find and delete all related datasets
+        product_datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
+        self._index.datasets.purge([ds.id for ds in product_datasets])
+
+        # Now we can safely delete the Product
+        with self._db_connection() as conn:
+            conn.delete_product(product.name)
+
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_unsafe(self, id_):  # type: ignore
@@ -313,8 +327,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         :rtype: list[Product]
         """
         with self._db_connection() as connection:
-            for dataset in self._make_many(connection.search_products_by_metadata(metadata)):
-                yield dataset
+            for product in self._make_many(connection.search_products_by_metadata(metadata)):
+                yield product
 
     def get_all(self) -> Iterable[Product]:
         """

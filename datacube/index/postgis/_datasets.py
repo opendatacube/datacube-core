@@ -414,7 +414,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for id_ in ids:
                 transaction.delete_dataset(id_)
 
-    def get_all_dataset_ids(self, archived: bool):
+    def get_all_dataset_ids(self, archived: bool | None = False):
         """
         Get list of all dataset IDs based only on archived status
 
@@ -922,7 +922,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     __slots__ = ()
 
             with self._db_connection() as connection:
-                results = connection.search_unique_datasets(
+                results = connection.search_datasets(
                     query_exprs,
                     select_fields=select_fields,
                     limit=limit,

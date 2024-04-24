@@ -25,6 +25,7 @@ from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.engine import Row
+from deprecat import deprecat
 
 from typing import Iterable, Sequence, Optional, Set, Any
 from typing import cast as type_cast
@@ -35,6 +36,7 @@ from odc.geo import CRS, Geometry
 from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
 from datacube.model.lineage import LineageRelation, LineageDirection
+from datacube.migration import ODC2DeprecationWarning
 from . import _core
 from ._fields import parse_fields, Expression, PgField, PgExpression, DateRangeDocField  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
@@ -464,15 +466,15 @@ class PostgisDbAPI:
             )
         ).fetchall()
 
-    def all_dataset_ids(self, archived: bool):
+    def all_dataset_ids(self, archived: bool | None = False):
         query = select(Dataset.id)
         if archived:
             query = query.where(
-                Dataset.archived != None
+                Dataset.archived.is_not(None)
             )
-        else:
+        elif archived is not None:
             query = query.where(
-                Dataset.archived == None
+                Dataset.archived.is_(None)
             )
         return self._connection.execute(query).fetchall()
 
@@ -746,6 +748,10 @@ class PostgisDbAPI:
         # TODO
         raise NotImplementedError()
 
+    @deprecat(
+        reason="This method is unnecessary as multiple locations have been deprecated. Use search_datasets instead.",
+        version='1.9.0',
+        category=ODC2DeprecationWarning)
     def search_unique_datasets(self, expressions, select_fields=None, limit=None, archived: bool | None = False):
         """
         Processes a search query without duplicating datasets.
@@ -1105,6 +1111,13 @@ class PostgisDbAPI:
             )
 
         return prod_id
+
+    def delete_product(self, name):
+        res = self._connection.execute(
+            delete(Product).returning(Product.id).where(Product.name == name)
+        )
+
+        return res.first()[0]
 
     def insert_metadata_type(self, name, definition):
         res = self._connection.execute(

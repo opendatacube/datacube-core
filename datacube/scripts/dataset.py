@@ -610,20 +610,20 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
         sys.exit(1)
 
     if all_ds:
-        datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
+        datasets_for_purge = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
     else:
-        datasets_for_archive = {UUID(dataset_id): exists
-                                for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
+        datasets_for_purge = {UUID(dataset_id): exists
+                              for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
 
         # Check for non-existent datasets
-        if False in datasets_for_archive.values():
-            for dataset_id, exists in datasets_for_archive.items():
+        if False in datasets_for_purge.values():
+            for dataset_id, exists in datasets_for_purge.items():
                 if not exists:
                     click.echo(f'No dataset found with id: {dataset_id}')
             sys.exit(-1)
 
         # Check for unarchived datasets
-        datasets = index.datasets.bulk_get(datasets_for_archive.keys())
+        datasets = index.datasets.bulk_get(datasets_for_purge.keys())
         unarchived_datasets = False
         for d in datasets:
             if not d.is_archived:
@@ -632,15 +632,15 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
         if unarchived_datasets:
             sys.exit(-1)
 
-    for dataset in datasets_for_archive.keys():
+    for dataset in datasets_for_purge.keys():
         click.echo(f'Purging dataset: {dataset}')
 
     if not dry_run:
         # Perform purge
-        index.datasets.purge(datasets_for_archive.keys())
-        click.echo(f'{len(datasets_for_archive)} datasets purged')
+        index.datasets.purge(datasets_for_purge.keys())
+        click.echo(f'{len(datasets_for_purge)} datasets purged')
     else:
-        click.echo(f'{len(datasets_for_archive)} datasets not purged (dry run)')
+        click.echo(f'{len(datasets_for_purge)} datasets not purged (dry run)')
 
     click.echo('Completed dataset purge.')
 
