@@ -116,10 +116,12 @@ class ProductResource(AbstractProductResource):
         return cast(Product, self.get_by_name(product.name))
 
     def delete(self, product: Product):
-        ids: Iterable[UUID] = self._index.datasets.search_returning(archived=None, product=product.name)
-        self._index.datasets.purge(ids)
+        datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
+        if datasets:
+            self._index.datasets.purge([ds.id for ds in datasets])  # type: ignore[attr-defined]
 
-        del self.by_id[product.id]
+        if product.id is not None:
+            del self.by_id[product.id]
         del self.by_name[product.name]
 
     def get_unsafe(self, id_: int) -> Product:

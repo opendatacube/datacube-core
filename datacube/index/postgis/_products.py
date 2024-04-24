@@ -242,7 +242,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         # First find and delete all related datasets
         product_datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
-        self._index.datasets.purge([ds.id for ds in product_datasets])
+        self._index.datasets.purge([ds.id for ds in product_datasets])  # type: ignore[attr-defined]
 
         # Now we can safely delete the Product
         with self._db_connection() as conn:

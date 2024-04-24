@@ -161,7 +161,8 @@ def delete_products(index: Index, force: bool, dry_run: bool, product_names: Lis
     for name in product_names:
         active_ds = list(index.datasets.search_returning(('id',), archived=False, product=name))
         if len(active_ds):
-            click.echo(f"Product {name} has active datasets: {' '.join([str(ds.id) for ds in active_ds])}")
+            click.echo(f"Product {name} has active datasets: "
+                       f"{' '.join([str(ds.id) for ds in active_ds])}")  # type: ignore[attr-defined]
             active_product = True
 
     if active_product:
