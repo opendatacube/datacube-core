@@ -34,7 +34,7 @@ Add conda-forge to package channels::
 
     conda config --add channels conda-forge
 
-Conda Environments are recommended for use in isolating your ODC development environment from your system installation and other python evironments.
+Conda Environments are recommended for use in isolating your ODC development environment from your system installation and other python environments.
 
 Install required python packages and create an ``odc`` conda environment.
 
