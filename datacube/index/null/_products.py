@@ -23,6 +23,9 @@ class ProductResource(AbstractProductResource):
     def update(self, product: Product, allow_unsafe_updates=False, allow_table_lock=False):
         raise NotImplementedError()
 
+    def delete(self, product: Product):
+        raise NotImplementedError()
+
     def get_unsafe(self, id_):
         raise KeyError(id_)
 

@@ -115,6 +115,13 @@ class ProductResource(AbstractProductResource):
         self.by_name[persisted.name] = persisted
         return cast(Product, self.get_by_name(product.name))
 
+    def delete(self, product: Product):
+        ids: Iterable[UUID] = self._index.datasets.search_returning(archived=None, product=product.name)
+        self._index.datasets.purge(ids)
+
+        del self.by_id[product.id]
+        del self.by_name[product.name]
+
     def get_unsafe(self, id_: int) -> Product:
         return self.clone(self.by_id[id_])
 

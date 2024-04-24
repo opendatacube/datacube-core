@@ -80,6 +80,8 @@ def test_null_product_resource(null_config: ODCEnvironment):
             dc.index.products.can_update(MagicMock())
         with pytest.raises(NotImplementedError) as e:
             dc.index.products.update(MagicMock())
+        with pytest.raises(NotImplementedError) as e:
+            dc.index.products.delete(MagicMock())
 
 
 def test_null_dataset_resource(null_config: ODCEnvironment):

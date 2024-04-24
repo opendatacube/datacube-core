@@ -281,9 +281,8 @@ class DatasetResource(AbstractDatasetResource):
     def purge(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
-            if id_ in self._archived_by_id:
-                ds = self._archived_by_id.pop(id_)
-                del self._by_id[id_]
+            if id_ in self._by_id:
+                ds = self._by_id.pop(id_)
                 if id_ in self._derived_from:
                     for classifier, src_id in self._derived_from[id_].items():
                         del self._derivations[src_id][classifier]
@@ -292,13 +291,20 @@ class DatasetResource(AbstractDatasetResource):
                     for classifier, child_id in self._derivations[id_].items():
                         del self._derived_from[child_id][classifier]
                     del self._derivations[id_]
-                self._archived_by_product[ds.product.name].remove(id_)
+                if id_ in self._archived_by_id:
+                    del self._archived_by_id[id_]
+                    self._archived_by_product[ds.product.name].remove(id_)
+                else:
+                    del self._active_by_id[id_]
+                    self._by_product[ds.product.name].remove(id_)
 
-    def get_all_dataset_ids(self, archived: bool) -> Iterable[UUID]:
+    def get_all_dataset_ids(self, archived: bool | None = False) -> Iterable[UUID]:
         if archived:
             return (id_ for id_ in self._archived_by_id.keys())
-        else:
+        elif archived is not None:
             return (id_ for id_ in self._active_by_id.keys())
+        else:
+            return (id_ for id_ in self._by_id.keys())
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
