@@ -230,7 +230,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         Delete a Product, as well as all related datasets
 
-        :param product: the Proudct to delete
+        :param product: the Product to delete
         """
         # First find and delete all related datasets
         product_datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)

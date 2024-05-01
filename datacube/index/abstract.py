@@ -642,7 +642,7 @@ class AbstractProductResource(ABC):
         return self.add(type_)
 
     @abstractmethod
-    def delete(self, product: Product):
+    def delete(self, product: Product) -> None:
         """
         Delete the specified product.
 

@@ -398,7 +398,7 @@ def test_product_delete_cli(index: Index,
                             extended_eo3_metadata_type: MetadataType) -> None:
     from pathlib import Path
     TESTDIR = Path(__file__).parent.parent / "data" / "eo3"
-    # prduct with some archived and some active datasets
+    # product with some archived and some active datasets
     clirunner(['dataset', 'archive', 'c21648b1-a6fa-4de0-9dc3-9c445d8b295a', '4a30d008-4e82-4d67-99af-28bc1629f766'])
     runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3'], verbose_flag=False, expect_success=False)
     assert "Product ga_ls8c_ard_3 has active datasets" in runner.output
