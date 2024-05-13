@@ -391,25 +391,43 @@ def test_product_update_cli(index: Index,
     assert documents_equal(fresh, modified_doc)
 
 
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
+def test_product_delete(index, ls8_eo3_product: Product):
+    # test that postgres dynamic indexes and views are deleted
+    assert index.products.get_by_name(ls8_eo3_product.name) is not None
+    assert _object_exists(index, "dix_ga_ls8c_ard_3_region_code")
+    assert _object_exists(index, "dv_ga_ls8c_ard_3_dataset")
+
+    index.products.delete([ls8_eo3_product])
+
+    index.products.get_by_name_unsafe.cache_clear()
+    assert index.products.get_by_name(ls8_eo3_product.name) is None
+    assert not _object_exists(index, "dix_ga_ls8c_ard_3_region_code")
+    assert not _object_exists(index, "dv_ga_ls8c_ard_3_dataset")
+
+
 def test_product_delete_cli(index: Index,
                             clirunner,
                             ls8_eo3_product: Product,
-                            ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3, ls8_eo3_dataset4,
-                            extended_eo3_metadata_type: MetadataType) -> None:
+                            ls8_eo3_dataset, ls8_eo3_dataset2,
+                            wo_eo3_product) -> None:
     from pathlib import Path
     TESTDIR = Path(__file__).parent.parent / "data" / "eo3"
     # product with some archived and some active datasets
-    clirunner(['dataset', 'archive', 'c21648b1-a6fa-4de0-9dc3-9c445d8b295a', '4a30d008-4e82-4d67-99af-28bc1629f766'])
-    runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3'], verbose_flag=False, expect_success=False)
-    assert "Product ga_ls8c_ard_3 has active datasets" in runner.output
-    assert "c21648b1-a6fa-4de0-9dc3-9c445d8b295a" not in runner.output
-    assert "1154087c-211c-4834-a1f8-b4b59101b644" in runner.output
-    assert "Cannot delete products with active datasets" in runner.output
-    assert runner.exit_code == 1
+    clirunner(['dataset', 'archive', 'c21648b1-a6fa-4de0-9dc3-9c445d8b295a'])
 
-    # active datasets, force without confirmation
+    runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', 'ga_ls_wo_3'], verbose_flag=False, expect_success=False)
+    assert "1 out of 2 products successfully deleted" in runner.output
+    assert "ga_ls_wo_3 could not be deleted" not in runner.output
+    assert "ga_ls8c_ard_3 could not be deleted" in runner.output
+    assert runner.exit_code == 0
+
+    index.products.get_by_name_unsafe.cache_clear()
+    assert index.products.get_by_name("ga_ls8c_ard_3") is not None
+    assert index.products.get_by_name("ga_ls_wo_3") is None
+
+    # force without confirmation
     runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', '--force'], verbose_flag=False, expect_success=False)
-    assert "Product ga_ls8c_ard_3 has active datasets" in runner.output
     assert "Proceed?" in runner.output
     assert runner.exit_code == 1
 
@@ -417,21 +435,13 @@ def test_product_delete_cli(index: Index,
     add = clirunner(['product', 'add', str(TESTDIR / "ard_ls8.odc-product.yaml")])
     assert "is already in the database" in add.output
 
-    # archive the product's active datasets; delete should not require force option
-    clirunner(['dataset', 'archive', '1154087c-211c-4834-a1f8-b4b59101b644', '0ee5fe0a-6acd-4583-8554-36ad963bf40b'])
-    runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', '--dry-run'], verbose_flag=False)
-    assert "Completed product deletion" in runner.output
-    assert runner.exit_code == 0
-
-    # ensure deletion involving active datasets works with confirmation
-    clirunner(['dataset', 'restore', '1154087c-211c-4834-a1f8-b4b59101b644', '0ee5fe0a-6acd-4583-8554-36ad963bf40b'])
+    # ensure deletion involving active datasets works with force
     with mock.patch('click.confirm', return_value=True):
         runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', '--force'], verbose_flag=False)
-        assert "Product ga_ls8c_ard_3 has active datasets" in runner.output
         assert "Completed product deletion" in runner.output
         assert runner.exit_code == 0
 
-    runner = clirunner(['dataset', 'archive', '1154087c-211c-4834-a1f8-b4b59101b644'],
+    runner = clirunner(['dataset', 'archive', '4a30d008-4e82-4d67-99af-28bc1629f766'],
                        verbose_flag=False, expect_success=False)
     assert "No dataset found with id" in runner.output
 

@@ -25,7 +25,6 @@ from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.engine import Row
-from deprecat import deprecat
 
 from typing import Iterable, Sequence, Optional, Set, Any
 from typing import cast as type_cast
@@ -36,7 +35,6 @@ from odc.geo import CRS, Geometry
 from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
 from datacube.model.lineage import LineageRelation, LineageDirection
-from datacube.migration import ODC2DeprecationWarning
 from . import _core
 from ._fields import parse_fields, Expression, PgField, PgExpression, DateRangeDocField  # noqa: F401
 from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
@@ -733,37 +731,6 @@ class PostgisDbAPI:
             values
         )
         return res.rowcount, requested - res.rowcount
-
-    @staticmethod
-    def search_unique_datasets_query(expressions, select_fields, limit, archived: bool | None = False):
-        """
-        'unique' here refer to that the query results do not contain datasets
-        having the same 'id' more than once.
-
-        We are not dealing with dataset_source table here and we are not joining
-        dataset table with dataset_location table. We are aggregating stuff
-        in dataset_location per dataset basis if required. It returns the constructed
-        query.
-        """
-        # TODO
-        raise NotImplementedError()
-
-    @deprecat(
-        reason="This method is unnecessary as multiple locations have been deprecated. Use search_datasets instead.",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
-    def search_unique_datasets(self, expressions, select_fields=None, limit=None, archived: bool | None = False):
-        """
-        Processes a search query without duplicating datasets.
-
-        'unique' here refer to that the results do not contain datasets having the same 'id'
-        more than once. we achieve this by not allowing dataset table to join with
-        dataset_location or dataset_source tables. Joining with other tables would not
-        result in multiple records per dataset due to the direction of cardinality.
-        """
-        select_query = self.search_unique_datasets_query(expressions, select_fields, limit, archived=archived)
-
-        return self._connection.execute(select_query)
 
     def get_duplicates(self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]) -> Iterable[Row]:
         # TODO

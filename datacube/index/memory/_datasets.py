@@ -278,11 +278,21 @@ class DatasetResource(AbstractDatasetResource):
                 self._archived_by_product[ds.product.name].remove(ds.id)
                 self._by_product[ds.product.name].add(ds.id)
 
-    def purge(self, ids: Iterable[DSID]) -> None:
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Iterable[DSID]:
+        purged = []
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
             if id_ in self._by_id:
                 ds = self._by_id.pop(id_)
+                if id_ in self._active_by_id:
+                    if not allow_delete_active:
+                        _LOG.warning(f"Cannot purge unarchived dataset: {id_}")
+                        continue
+                    del self._active_by_id[id_]
+                    self._by_product[ds.product.name].remove(id_)
+                if id_ in self._archived_by_id:
+                    del self._archived_by_id[id_]
+                    self._archived_by_product[ds.product.name].remove(id_)
                 if id_ in self._derived_from:
                     for classifier, src_id in self._derived_from[id_].items():
                         del self._derivations[src_id][classifier]
@@ -291,12 +301,8 @@ class DatasetResource(AbstractDatasetResource):
                     for classifier, child_id in self._derivations[id_].items():
                         del self._derived_from[child_id][classifier]
                     del self._derivations[id_]
-                if id_ in self._archived_by_id:
-                    del self._archived_by_id[id_]
-                    self._archived_by_product[ds.product.name].remove(id_)
-                else:
-                    del self._active_by_id[id_]
-                    self._by_product[ds.product.name].remove(id_)
+                purged.append(id_)
+        return purged
 
     def get_all_dataset_ids(self, archived: bool | None = False) -> Iterable[UUID]:
         if archived:

@@ -601,9 +601,13 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 @click.option('--all', "all_ds",
               help="Ignore id list - purge ALL archived datasets  (warning: may be slow on large databases)",
               is_flag=True, default=False)
+@click.option(
+    '--force', is_flag=True, default=False,
+    help="Allow active datasets to be deleted (default: false)"
+)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
+def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: List[str]):
     if not ids and not all_ds:
         click.echo('Error: no datasets provided\n')
         print_help_msg(purge_cmd)
@@ -622,23 +626,17 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
                     click.echo(f'No dataset found with id: {dataset_id}')
             sys.exit(-1)
 
-        # Check for unarchived datasets
-        datasets = index.datasets.bulk_get(datasets_for_purge.keys())
-        unarchived_datasets = False
-        for d in datasets:
-            if not d.is_archived:
-                click.echo(f'Cannot purge non-archived dataset: {d.id}')
-                unarchived_datasets = True
-        if unarchived_datasets:
-            sys.exit(-1)
-
-    for dataset in datasets_for_purge.keys():
-        click.echo(f'Purging dataset: {dataset}')
+    if force:
+        click.confirm("Warning: you may be deleting active datasets. Proceed?", abort=True)
 
     if not dry_run:
         # Perform purge
-        index.datasets.purge(datasets_for_purge.keys())
-        click.echo(f'{len(datasets_for_purge)} datasets purged')
+        purged = index.datasets.purge(datasets_for_purge.keys(), force)
+        not_purged = set(datasets_for_purge.keys()).difference(set(purged))
+        if not force and not_purged:
+            click.echo(f"The following datasets are still active and could not be purged: {', '.join(not_purged)} "
+                       "Use the --force option to delete anyway.")
+        click.echo(f'{len(purged)} of {len(datasets_for_purge)} datasets purged')
     else:
         click.echo(f'{len(datasets_for_purge)} datasets not purged (dry run)')
 

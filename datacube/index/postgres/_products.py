@@ -226,26 +226,35 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             allow_table_lock=allow_table_lock,
         )
 
-    def delete(self, product: Product):
+    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Iterable[Product]:
         """
-        Delete a Product, as well as all related datasets
+        Delete Products, as well as all related datasets
 
-        :param product: the Product to delete
+        :param products: the Products to delete
+        :param bool allow_delete_active:
+            Whether to delete products with active datasets
         """
-        # First find and delete all related datasets
-        product_datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
-        self._index.datasets.purge([ds.id for ds in product_datasets])  # type: ignore[attr-defined]
-
-        # Now we can safely delete the Product
-        # Pass along metadata type information as well to update indexes/views
-        with self._db_connection(transaction=True) as conn:
-            mt = product.metadata_type
-            conn.delete_product(
-                name=product.name,
-                mt_id=mt.id,
-                mt_name=mt.name,
-                mt_def=mt.definition
-            )
+        deleted = []
+        for product in products:
+            with self._db_connection(transaction=True) as conn:
+                # First find and delete all related datasets
+                product_datasets = list(self._index.datasets.search_returning(('id',),
+                                                                              archived=None, product=product.name))
+                product_datasets = [ds.id for ds in product_datasets]  # type: ignore[attr-defined]
+                purged = self._index.datasets.purge(product_datasets, allow_delete_active)
+                # if not all product datasets are purged, it must be because
+                # we're not allowing active datasets to be purged
+                if len(purged) != len(product_datasets):
+                    _LOG.warning(f"Product {product.name} cannot be deleted because it has active datasets.")
+                    continue
+                # Now we can safely delete the Product
+                conn.delete_product(
+                    name=product.name,
+                    fields=product.metadata_type.dataset_fields,
+                    definition=product.definition,
+                )
+                deleted.append(product)
+        return deleted
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden

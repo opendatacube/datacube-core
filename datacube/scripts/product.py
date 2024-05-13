@@ -156,23 +156,16 @@ def delete_products(index: Index, force: bool, dry_run: bool, product_names: Lis
         click.echo(str(e))
         sys.exit(1)
 
-    # Check if any of the products have active datasets
-    active_product = False
-    for name in product_names:
-        active_ds = list(index.datasets.search_returning(('id',), archived=False, product=name))
-        if len(active_ds):
-            click.echo(f"Product {name} has active datasets: "
-                       f"{' '.join([str(ds.id) for ds in active_ds])}")  # type: ignore[attr-defined]
-            active_product = True
+    if force:
+        click.confirm("Warning: you may be deleting active datasets. Proceed?", abort=True)
 
-    if active_product:
-        if not force:
-            click.echo("Cannot delete products with active datasets. Use the --force option to delete anyway.")
-            sys.exit(1)
-        click.confirm("Warning: you will be deleting active datasets. Proceed?", abort=True)
     if not dry_run:
-        for product in products:
-            index.products.delete(product)
+        deleted = index.products.delete(products, force)
+        not_deleted = set(product_names).difference(set([p.name for p in deleted]))
+        if not force and not_deleted:
+            click.echo(f"Product(s) {', '.join(not_deleted)} could not be deleted due to active datasets. "
+                       "Use the --force option to delete anyway.")
+        click.echo(f"{len(deleted)} out of {len(product_names)} products successfully deleted.")
     else:
         click.echo(f"{len(products)} products not deleted (dry run)")
 

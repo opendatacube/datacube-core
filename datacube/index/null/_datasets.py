@@ -51,7 +51,7 @@ class DatasetResource(AbstractDatasetResource):
     def restore(self, ids):
         raise NotImplementedError()
 
-    def purge(self, ids: Iterable[DSID]):
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False):
         raise NotImplementedError()
 
     def get_all_dataset_ids(self, archived: bool):

@@ -115,14 +115,21 @@ class ProductResource(AbstractProductResource):
         self.by_name[persisted.name] = persisted
         return cast(Product, self.get_by_name(product.name))
 
-    def delete(self, product: Product):
-        datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
-        if datasets:
-            self._index.datasets.purge([ds.id for ds in datasets])  # type: ignore[attr-defined]
-
-        if product.id is not None:
-            del self.by_id[product.id]
-        del self.by_name[product.name]
+    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Iterable[Product]:
+        deleted = []
+        for product in products:
+            datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
+            if datasets:
+                purged = self._index.datasets.purge([ds.id for ds in datasets],  # type: ignore[attr-defined]
+                                                    allow_delete_active)
+                if len(purged) != len(datasets):
+                    _LOG.warning(f"Product {product.name} cannot be deleted because it has active datasets.")
+                    continue
+            if product.id is not None:
+                del self.by_id[product.id]
+            del self.by_name[product.name]
+            deleted.append(product)
+        return deleted
 
     def get_unsafe(self, id_: int) -> Product:
         return self.clone(self.by_id[id_])

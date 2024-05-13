@@ -404,15 +404,26 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
-    def purge(self, ids: Iterable[DSID]):
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Iterable[DSID]:
         """
-        Delete archived datasets
+        Delete datasets
 
         :param ids: iterable of dataset ids to purge
+        :param allow_delete_active: whether active datasets can be deleted
         """
+        purged = []
         with self._db_connection(transaction=True) as transaction:
             for id_ in ids:
+                ds = self.get(id_)
+                if ds is None:
+                    continue
+                if not ds.is_archived and not allow_delete_active:
+                    _LOG.warning(f"Cannot purge unarchived dataset: {id_}")
+                    continue
                 transaction.delete_dataset(id_)
+                purged.append(id_)
+
+        return purged
 
     def get_all_dataset_ids(self, archived: bool | None = False):
         """

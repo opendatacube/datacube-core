@@ -642,11 +642,16 @@ class AbstractProductResource(ABC):
         return self.add(type_)
 
     @abstractmethod
-    def delete(self, product: Product) -> None:
+    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> None:
         """
-        Delete the specified product.
+        Delete the specified products.
 
-        :param product: Product to be deleted
+        :param products: Products to be deleted
+        :param bool allow_delete_active:
+            Whether to allow the deletion of a Product with active datasets
+            (and thereby said active datasets). Use with caution.
+
+            If false (default), will error if a Product has active datasets.
         """
 
     def get(self, id_: int) -> Product | None:
@@ -1406,11 +1411,12 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def purge(self, ids: Iterable[DSID]) -> None:
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> None:
         """
-        Delete archived datasets
+        Delete datasets
 
         :param ids: iterable of dataset ids to purge
+        :param allow_delete_active: if false, only archived datasets can be deleted
         """
 
     @abstractmethod
