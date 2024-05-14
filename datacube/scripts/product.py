@@ -156,7 +156,7 @@ def delete_products(index: Index, force: bool, dry_run: bool, product_names: Lis
         click.echo(str(e))
         sys.exit(1)
 
-    if force:
+    if sys.stdin.isatty() and force:
         click.confirm("Warning: you may be deleting active datasets. Proceed?", abort=True)
 
     if not dry_run:

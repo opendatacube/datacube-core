@@ -626,7 +626,7 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: List[
                     click.echo(f'No dataset found with id: {dataset_id}')
             sys.exit(-1)
 
-    if force:
+    if sys.stdin.isatty() and force:
         click.confirm("Warning: you may be deleting active datasets. Proceed?", abort=True)
 
     if not dry_run:

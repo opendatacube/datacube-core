@@ -10,7 +10,6 @@ import copy
 import pytest
 import yaml
 from sqlalchemy import text
-from unittest import mock
 
 from datacube.drivers.postgres._fields import NumericRangeDocField as PgrNumericRangeDocField, PgField as PgrPgField
 from datacube.drivers.postgis._fields import NumericRangeDocField as PgsNumericRangeDocField, PgField as PgsPgField
@@ -426,20 +425,14 @@ def test_product_delete_cli(index: Index,
     assert index.products.get_by_name("ga_ls8c_ard_3") is not None
     assert index.products.get_by_name("ga_ls_wo_3") is None
 
-    # force without confirmation
-    runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', '--force'], verbose_flag=False, expect_success=False)
-    assert "Proceed?" in runner.output
-    assert runner.exit_code == 1
-
     # adding back product should cause error since it still exists
     add = clirunner(['product', 'add', str(TESTDIR / "ard_ls8.odc-product.yaml")])
     assert "is already in the database" in add.output
 
     # ensure deletion involving active datasets works with force
-    with mock.patch('click.confirm', return_value=True):
-        runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', '--force'], verbose_flag=False)
-        assert "Completed product deletion" in runner.output
-        assert runner.exit_code == 0
+    runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3', '--force'], verbose_flag=False)
+    assert "Completed product deletion" in runner.output
+    assert runner.exit_code == 0
 
     runner = clirunner(['dataset', 'archive', '4a30d008-4e82-4d67-99af-28bc1629f766'],
                        verbose_flag=False, expect_success=False)
