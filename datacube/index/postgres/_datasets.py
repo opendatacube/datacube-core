@@ -11,7 +11,7 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, List, Union, Mapping, Any, Optional
+from typing import Iterable, List, Union, Mapping, Any, Optional, Sequence
 from uuid import UUID
 from deprecat import deprecat
 
@@ -375,17 +375,29 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
-    def purge(self, ids: Iterable[DSID]):
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Sequence[DSID]:
         """
-        Delete archived datasets
+        Delete datasets
 
         :param ids: iterable of dataset ids to purge
+        :param allow_delete_active: whether active datasets can be deleted
+        :return: list of purged dataset ids
         """
+        purged = []
         with self._db_connection(transaction=True) as transaction:
             for id_ in ids:
+                ds = self.get(id_)
+                if ds is None:
+                    continue
+                if not ds.is_archived and not allow_delete_active:
+                    _LOG.warning(f"Cannot purge unarchived dataset: {id_}")
+                    continue
                 transaction.delete_dataset(id_)
+                purged.append(id_)
 
-    def get_all_dataset_ids(self, archived: bool):
+        return purged
+
+    def get_all_dataset_ids(self, archived: bool | None = False):
         """
         Get list of all dataset IDs based only on archived status
 
@@ -748,7 +760,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def _get_product_queries(self, query):
         for product, q in self.products.search_robust(**query):
-            q['dataset_type_id'] = product.id
+            q['product_id'] = product.id
             yield q, product
 
     # pylint: disable=too-many-locals
@@ -876,6 +888,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         raise NotImplementedError("Sorry Temporal Extent by dataset ids is not supported in postgres driver.")
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None,
                                         archived: bool | None = False,
@@ -922,7 +940,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     __slots__ = ()
 
             with self._db_connection() as connection:
-                results = connection.search_unique_datasets(
+                results = connection.search_datasets(
                     query_exprs,
                     select_fields=select_fields,
                     limit=limit,

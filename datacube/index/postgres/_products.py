@@ -6,7 +6,7 @@ import datetime
 import logging
 
 from cachetools.func import lru_cache
-from typing import Iterable, cast
+from typing import Iterable, Sequence, cast
 
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource, JsonDict
@@ -187,7 +187,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             #                 name, field.sql_expression, new_field.sql_expression
             #             )
             #         )
-        metadata_type = cast(MetadataType, self._index.metadata_types.get_by_name(product.metadata_type.name))
+        # metadata_type = cast(MetadataType, self._index.metadata_types.get_by_name(product.metadata_type.name))
+        metadata_type = product.metadata_type
         #     Given we cannot change metadata type because of the check above, and this is an
         #     update method, the metadata type is guaranteed to already exist.
         with self._db_connection(transaction=allow_table_lock) as conn:
@@ -224,6 +225,37 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             allow_unsafe_updates=allow_unsafe_updates,
             allow_table_lock=allow_table_lock,
         )
+
+    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
+        """
+        Delete Products, as well as all related datasets
+
+        :param products: the Products to delete
+        :param bool allow_delete_active:
+            Whether to delete products with active datasets
+        :return: list of deleted products
+        """
+        deleted = []
+        for product in products:
+            with self._db_connection(transaction=True) as conn:
+                # First find and delete all related datasets
+                product_datasets = self._index.datasets.search_returning(('id',),
+                                                                         archived=None, product=product.name)
+                product_datasets = [ds.id for ds in product_datasets]  # type: ignore[attr-defined]
+                purged = self._index.datasets.purge(product_datasets, allow_delete_active)
+                # if not all product datasets are purged, it must be because
+                # we're not allowing active datasets to be purged
+                if len(purged) != len(product_datasets):
+                    _LOG.warning(f"Product {product.name} cannot be deleted because it has active datasets.")
+                    continue
+                # Now we can safely delete the Product
+                conn.delete_product(
+                    name=product.name,
+                    fields=product.metadata_type.dataset_fields,
+                    definition=product.definition,
+                )
+                deleted.append(product)
+        return deleted
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
@@ -301,8 +333,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         :rtype: list[Product]
         """
         with self._db_connection() as connection:
-            for dataset in self._make_many(connection.search_products_by_metadata(metadata)):
-                yield dataset
+            for product in self._make_many(connection.search_products_by_metadata(metadata)):
+                yield product
 
     def get_all(self) -> Iterable[Product]:
         """

@@ -5,7 +5,7 @@
 import datetime
 import logging
 
-from typing import Iterable, cast
+from typing import Iterable, Sequence, cast
 from uuid import UUID
 
 from datacube.index.fields import as_expression
@@ -114,6 +114,22 @@ class ProductResource(AbstractProductResource):
         self.by_id[persisted.id] = persisted
         self.by_name[persisted.name] = persisted
         return cast(Product, self.get_by_name(product.name))
+
+    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
+        deleted = []
+        for product in products:
+            datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
+            if datasets:
+                purged = self._index.datasets.purge([ds.id for ds in datasets],  # type: ignore[attr-defined]
+                                                    allow_delete_active)
+                if len(purged) != len(list(datasets)):
+                    _LOG.warning(f"Product {product.name} cannot be deleted because it has active datasets.")
+                    continue
+            if product.id is not None:
+                del self.by_id[product.id]
+            del self.by_name[product.name]
+            deleted.append(product)
+        return deleted
 
     def get_unsafe(self, id_: int) -> Product:
         return self.clone(self.by_id[id_])

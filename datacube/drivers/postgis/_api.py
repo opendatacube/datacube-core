@@ -464,15 +464,15 @@ class PostgisDbAPI:
             )
         ).fetchall()
 
-    def all_dataset_ids(self, archived: bool):
+    def all_dataset_ids(self, archived: bool | None = False):
         query = select(Dataset.id)
         if archived:
             query = query.where(
-                Dataset.archived != None
+                Dataset.archived.is_not(None)
             )
-        else:
+        elif archived is not None:
             query = query.where(
-                Dataset.archived == None
+                Dataset.archived.is_(None)
             )
         return self._connection.execute(query).fetchall()
 
@@ -731,33 +731,6 @@ class PostgisDbAPI:
             values
         )
         return res.rowcount, requested - res.rowcount
-
-    @staticmethod
-    def search_unique_datasets_query(expressions, select_fields, limit, archived: bool | None = False):
-        """
-        'unique' here refer to that the query results do not contain datasets
-        having the same 'id' more than once.
-
-        We are not dealing with dataset_source table here and we are not joining
-        dataset table with dataset_location table. We are aggregating stuff
-        in dataset_location per dataset basis if required. It returns the constructed
-        query.
-        """
-        # TODO
-        raise NotImplementedError()
-
-    def search_unique_datasets(self, expressions, select_fields=None, limit=None, archived: bool | None = False):
-        """
-        Processes a search query without duplicating datasets.
-
-        'unique' here refer to that the results do not contain datasets having the same 'id'
-        more than once. we achieve this by not allowing dataset table to join with
-        dataset_location or dataset_source tables. Joining with other tables would not
-        result in multiple records per dataset due to the direction of cardinality.
-        """
-        select_query = self.search_unique_datasets_query(expressions, select_fields, limit, archived=archived)
-
-        return self._connection.execute(select_query)
 
     def get_duplicates(self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]) -> Iterable[Row]:
         # TODO
@@ -1105,6 +1078,13 @@ class PostgisDbAPI:
             )
 
         return prod_id
+
+    def delete_product(self, name):
+        res = self._connection.execute(
+            delete(Product).returning(Product.id).where(Product.name == name)
+        )
+
+        return res.first()[0]
 
     def insert_metadata_type(self, name, definition):
         res = self._connection.execute(

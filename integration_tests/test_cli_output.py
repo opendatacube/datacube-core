@@ -31,6 +31,14 @@ def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs):
     assert "All files are empty, exit" in runner.output
     assert runner.exit_code == 1
 
+    runner = clirunner(['product', 'delete'], verbose_flag=False, expect_success=False)
+    assert "Usage:  [OPTIONS] [PRODUCT_NAMES]" in runner.output
+    assert "Delete products" in runner.output
+
+    runner = clirunner(['product', 'delete', 'ga_ls8c_ard_3'], verbose_flag=False, expect_success=False)
+    assert '"ga_ls8c_ard_3" is not a valid Product name' in runner.output
+    assert runner.exit_code == 1
+
 
 def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs):
     runner = clirunner(['metadata', 'update'], verbose_flag=False, expect_success=False)
@@ -116,6 +124,7 @@ def test_cli_dataset_subcommand(index, clirunner,
     assert runner.exit_code == 1
 
     runner = clirunner(['dataset', 'archive', "--all"], verbose_flag=False)
+    assert "Archiving dataset:" in runner.output
     assert "Completed dataset archival." in runner.output
     assert "Usage:  [OPTIONS] [IDS]" not in runner.output
     assert "Archive datasets" not in runner.output

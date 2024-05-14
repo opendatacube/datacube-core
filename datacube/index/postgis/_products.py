@@ -16,7 +16,7 @@ from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
-from typing import Iterable, cast
+from typing import Iterable, Sequence, cast
 
 _LOG = logging.getLogger(__name__)
 
@@ -234,6 +234,33 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             allow_table_lock=allow_table_lock,
         )
 
+    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
+        """
+        Delete Products, as well as all related datasets
+
+        :param products: the Products to delete
+        :param bool allow_delete_active:
+            Whether to delete active datasets
+        :return: list of deleted products
+        """
+        deleted = []
+        for product in products:
+            with self._db_connection(transaction=True) as conn:
+                # First find and delete all related datasets
+                product_datasets = self._index.datasets.search_returning(('id',),
+                                                                         archived=None, product=product.name)
+                product_datasets = [ds.id for ds in product_datasets]  # type: ignore[attr-defined]
+                purged = self._index.datasets.purge(product_datasets, allow_delete_active)
+                # if not all product datasets are purged, it must be because
+                # we're not allowing active datasets to be purged
+                if len(purged) != len(product_datasets):
+                    _LOG.warning(f"Product {product.name} cannot be deleted because it has active datasets.")
+                    continue
+                # Now we can safely delete the Product
+                conn.delete_product(product.name)
+                deleted.append(product)
+        return deleted
+
     # This is memoized in the constructor
     # pylint: disable=method-hidden
     def get_unsafe(self, id_):  # type: ignore
@@ -313,8 +340,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         :rtype: list[Product]
         """
         with self._db_connection() as connection:
-            for dataset in self._make_many(connection.search_products_by_metadata(metadata)):
-                yield dataset
+            for product in self._make_many(connection.search_products_by_metadata(metadata)):
+                yield product
 
     def get_all(self) -> Iterable[Product]:
         """

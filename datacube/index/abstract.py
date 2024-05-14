@@ -587,7 +587,7 @@ class AbstractProductResource(ABC):
 
     @abstractmethod
     def update(self,
-               metadata_type: Product,
+               product: Product,
                allow_unsafe_updates: bool = False,
                allow_table_lock: bool = False
                ) -> Product:
@@ -597,7 +597,7 @@ class AbstractProductResource(ABC):
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param metadata_type: Product model with unpersisted updates
+        :param product: Product model with unpersisted updates
         :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
@@ -640,6 +640,20 @@ class AbstractProductResource(ABC):
         """
         type_ = self.from_doc(definition)
         return self.add(type_)
+
+    @abstractmethod
+    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
+        """
+        Delete the specified products.
+
+        :param products: Products to be deleted
+        :param bool allow_delete_active:
+            Whether to allow the deletion of a Product with active datasets
+            (and thereby said active datasets). Use with caution.
+
+            If false (default), will error if a Product has active datasets.
+        :return: list of deleted Products
+        """
 
     def get(self, id_: int) -> Product | None:
         """
@@ -1398,11 +1412,13 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def purge(self, ids: Iterable[DSID]) -> None:
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Sequence[DSID]:
         """
-        Delete archived datasets
+        Delete datasets
 
         :param ids: iterable of dataset ids to purge
+        :param allow_delete_active: if false, only archived datasets can be deleted
+        :return: list of purged dataset ids
         """
 
     @abstractmethod

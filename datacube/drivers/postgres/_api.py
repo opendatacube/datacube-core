@@ -18,7 +18,7 @@ import logging
 import uuid  # noqa: F401
 from typing import Iterable, Any
 from typing import cast as type_cast
-from sqlalchemy import cast, String, Label, Table, FromClause
+from sqlalchemy import cast, String, Label, FromClause
 from sqlalchemy import delete, column, values
 from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
 from sqlalchemy.dialects.postgresql import INTERVAL
@@ -108,9 +108,9 @@ def get_native_fields() -> dict[str, NativeField]:
             'Product name',
             PRODUCT.c.name
         ),
-        'dataset_type_id': NativeField(
-            'dataset_type_id',
-            'ID of a dataset type',
+        'product_id': NativeField(
+            'product_id',
+            'ID of a product',
             DATASET.c.dataset_type_ref
         ),
         'metadata_type': NativeField(
@@ -344,7 +344,7 @@ class PostgresDbAPI(object):
             )
         ).fetchall()
 
-    def all_dataset_ids(self, archived: bool):
+    def all_dataset_ids(self, archived: bool | None = False):
         query = select(
             DATASET.c.id  # type: ignore[arg-type]
         ).select_from(
@@ -352,11 +352,11 @@ class PostgresDbAPI(object):
         )
         if archived:
             query = query.where(
-                DATASET.c.archived != None
+                DATASET.c.archived.is_not(None)
             )
-        else:
+        elif archived is not None:
             query = query.where(
-                DATASET.c.archived == None
+                DATASET.c.archived.is_(None)
             )
         return self._connection.execute(query).fetchall()
 
@@ -476,7 +476,7 @@ class PostgresDbAPI(object):
 
         return self._connection.execute(query).fetchall()
 
-    def search_datasets_by_metadata(self, metadata, archived: bool | None):
+    def search_datasets_by_metadata(self, metadata, archived: bool | None = False):
         """
         Find any datasets that have the given metadata.
 
@@ -721,90 +721,6 @@ class PostgresDbAPI(object):
         )
         res = self._connection.execute(query)
         return res.rowcount, requested - res.rowcount
-
-    @staticmethod
-    def search_unique_datasets_query(expressions, select_fields, limit, archived: bool | None = False):
-        """
-        'unique' here refer to that the query results do not contain datasets
-        having the same 'id' more than once.
-
-        We are not dealing with dataset_source table here and we are not joining
-        dataset table with dataset_location table. We are aggregating stuff
-        in dataset_location per dataset basis if required. It returns the construted
-        query.
-        """
-
-        # expressions involving DATASET_SOURCE cannot not done for now
-        for expression in expressions:
-            assert expression.field.required_alchemy_table != DATASET_SOURCE, \
-                'Joins with dataset_source cannot be done for this query'
-
-        # expressions involving 'uri' and 'uris' will be handled different
-        expressions = [expression for expression in expressions
-                       if expression.field.required_alchemy_table != DATASET_LOCATION]
-
-        if select_fields:
-            select_columns: list[Label[Any] | Table] = []
-            for field in select_fields:
-                if field.name in {'uri', 'uris'}:
-                    # All active URIs, from newest to oldest
-                    uris_field = func.array(
-                        select(
-                            _dataset_uri_field(SELECTED_DATASET_LOCATION)
-                        ).where(
-                            and_(
-                                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-                                SELECTED_DATASET_LOCATION.c.archived == None
-                            )
-                        ).order_by(
-                            SELECTED_DATASET_LOCATION.c.added.desc(),
-                            SELECTED_DATASET_LOCATION.c.id.desc()
-                        ).label('uris')
-                    ).label('uris')
-                    select_columns.append(uris_field)
-                else:
-                    select_columns.append(field.alchemy_expression.label(field.name))
-        else:
-            select_columns = list(_DATASET_SELECT_FIELDS)
-
-        raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
-
-        # We don't need 'DATASET_LOCATION table in the from expression
-        select_fields_ = [field for field in select_fields if field.name not in {'uri', 'uris'}]
-
-        from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields_)
-        if archived:
-            where_expr = and_(DATASET.c.archived.is_not(None), *raw_expressions)
-        elif archived is not None:
-            where_expr = and_(DATASET.c.archived.is_(None), *raw_expressions)
-        if archived:
-            where_expr = and_(*raw_expressions)
-
-        return (
-            select(
-                *select_columns
-            ).select_from(
-                from_expression
-            ).where(
-                where_expr
-            ).limit(
-                limit
-            )
-        )
-
-    def search_unique_datasets(self, expressions, select_fields=None, limit=None, archived: bool | None = False):
-        """
-        Processes a search query without duplicating datasets.
-
-        'unique' here refer to that the results do not contain datasets having the same 'id'
-        more than once. we achieve this by not allowing dataset table to join with
-        dataset_location or dataset_source tables. Joining with other tables would not
-        result in multiple records per dataset due to the direction of cardinality.
-        """
-
-        select_query = self.search_unique_datasets_query(expressions, select_fields, limit, archived=archived)
-
-        return self._connection.execute(select_query)
 
     def get_duplicates(self, match_fields: Iterable[Field], expressions: Iterable[Expression]) -> Iterable[Row]:
         if "time" in [f.name for f in match_fields]:
@@ -1066,6 +982,19 @@ class PostgresDbAPI(object):
                                    rebuild_view=True)
         return type_id
 
+    def delete_product(self, name, fields, definition):
+        res = self._connection.execute(
+            PRODUCT.delete().returning(PRODUCT.c.id).where(
+                PRODUCT.c.name == name
+            )
+        )
+        type_id = res.first()[0]
+
+        # Update dynamic fields to remove deleted product fields
+        self._setup_product_fields(type_id, name, fields, definition['metadata'], concurrently=False, delete=True)
+
+        return type_id
+
     def insert_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(
             METADATA_TYPE.insert().values(
@@ -1075,9 +1004,8 @@ class PostgresDbAPI(object):
         )
         type_id = res.inserted_primary_key[0]
 
-        search_fields = get_dataset_fields(definition)
         self._setup_metadata_type_fields(
-            type_id, name, search_fields, concurrently=concurrently
+            type_id, name, definition, concurrently=concurrently
         )
 
     def update_metadata_type(self, name, definition, concurrently=False):
@@ -1091,9 +1019,8 @@ class PostgresDbAPI(object):
         )
         type_id = res.first()[0]
 
-        search_fields = get_dataset_fields(definition)
         self._setup_metadata_type_fields(
-            type_id, name, search_fields,
+            type_id, name, definition,
             concurrently=concurrently,
             rebuild_views=True,
         )
@@ -1103,24 +1030,21 @@ class PostgresDbAPI(object):
     def check_dynamic_fields(self, concurrently=False, rebuild_views=False, rebuild_indexes=False):
         _LOG.info('Checking dynamic views/indexes. (rebuild views=%s, indexes=%s)', rebuild_views, rebuild_indexes)
 
-        search_fields = {}
-
         for metadata_type in self.get_all_metadata_types():
-            fields = get_dataset_fields(metadata_type.definition)
-            search_fields[metadata_type.id] = fields
             self._setup_metadata_type_fields(
                 metadata_type.id,
                 metadata_type.name,
-                fields,
+                metadata_type.definition,
                 rebuild_indexes=rebuild_indexes,
                 rebuild_views=rebuild_views,
                 concurrently=concurrently,
             )
 
-    def _setup_metadata_type_fields(self, id_, name, fields,
+    def _setup_metadata_type_fields(self, id_, name, definition,
                                     rebuild_indexes=False, rebuild_views=False, concurrently=True):
         # Metadata fields are no longer used (all queries are per-dataset-type): exclude all.
         # This will have the effect of removing any old indexes that still exist.
+        fields = get_dataset_fields(definition)
         exclude_fields = tuple(fields)
 
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == id_)
@@ -1140,13 +1064,17 @@ class PostgresDbAPI(object):
             )
 
     def _setup_product_fields(self, id_, name, fields, metadata_doc,
-                              rebuild_indexes=False, rebuild_view=False, concurrently=True):
+                              rebuild_indexes=False, rebuild_view=False, concurrently=True, delete=False):
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_)
-        excluded_field_names = tuple(self._get_active_field_names(fields, metadata_doc))
+        if delete:
+            excluded_field_names = [field.name for field in fields.values()]
+        else:
+            excluded_field_names = tuple(self._get_active_field_names(fields, metadata_doc))
 
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
                                      excluded_field_names, fields, name,
-                                     rebuild_indexes=rebuild_indexes, rebuild_view=rebuild_view)
+                                     rebuild_indexes=rebuild_indexes, rebuild_view=rebuild_view,
+                                     delete_view=delete)
 
     @staticmethod
     def _get_active_field_names(fields, metadata_doc):

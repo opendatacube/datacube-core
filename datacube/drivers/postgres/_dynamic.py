@@ -32,7 +32,7 @@ def contains_all(d_, *keys):
     return all([d_.get(key) for key in keys])
 
 
-def _ensure_view(conn, fields, name, replace_existing, where_expression):
+def _ensure_view(conn, fields, name, replace_existing, where_expression, delete=False):
     """
     Ensure a view exists for the given fields
     """
@@ -62,6 +62,9 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
                 ).where(where_expression)
             )
         )
+    elif exists and delete:
+        _LOG.debug(f"Dropping view: {view_name}")
+        conn.execute(text(f'drop view {view_name}'))
     else:
         _LOG.debug('View exists: %s (replace=%r)', view_name, replace_existing)
     legacy_name = schema_qualified('{}_dataset'.format(name))
@@ -71,7 +74,7 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
 
 
 def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names, fields, name,
-                         rebuild_indexes=False, rebuild_view=False):
+                         rebuild_indexes=False, rebuild_view=False, delete_view=False):
     """
     Check that we have expected indexes and views for the given fields
     """
@@ -114,7 +117,7 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
             replace_existing=rebuild_indexes,
         )
     # A view of all fields
-    _ensure_view(conn, fields, name, rebuild_view, dataset_filter)
+    _ensure_view(conn, fields, name, rebuild_view, dataset_filter, delete_view)
 
 
 def _check_field_index(conn, fields, name_prefix, filter_expression,

@@ -601,46 +601,45 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 @click.option('--all', "all_ds",
               help="Ignore id list - purge ALL archived datasets  (warning: may be slow on large databases)",
               is_flag=True, default=False)
+@click.option(
+    '--force', is_flag=True, default=False,
+    help="Allow active datasets to be deleted (default: false)"
+)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def purge_cmd(index: Index, dry_run: bool, all_ds: bool, ids: List[str]):
+def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: List[str]):
     if not ids and not all_ds:
         click.echo('Error: no datasets provided\n')
         print_help_msg(purge_cmd)
         sys.exit(1)
 
     if all_ds:
-        datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
+        datasets_for_purge = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
     else:
-        datasets_for_archive = {UUID(dataset_id): exists
-                                for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
+        datasets_for_purge = {UUID(dataset_id): exists
+                              for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
 
         # Check for non-existent datasets
-        if False in datasets_for_archive.values():
-            for dataset_id, exists in datasets_for_archive.items():
+        if False in datasets_for_purge.values():
+            for dataset_id, exists in datasets_for_purge.items():
                 if not exists:
                     click.echo(f'No dataset found with id: {dataset_id}')
             sys.exit(-1)
 
-        # Check for unarchived datasets
-        datasets = index.datasets.bulk_get(datasets_for_archive.keys())
-        unarchived_datasets = False
-        for d in datasets:
-            if not d.is_archived:
-                click.echo(f'Cannot purge non-archived dataset: {d.id}')
-                unarchived_datasets = True
-        if unarchived_datasets:
-            sys.exit(-1)
-
-    for dataset in datasets_for_archive.keys():
-        click.echo(f'Purging dataset: {dataset}')
+    if sys.stdin.isatty() and force:
+        click.confirm("Warning: you may be deleting active datasets. Proceed?", abort=True)
 
     if not dry_run:
         # Perform purge
-        index.datasets.purge(datasets_for_archive.keys())
-        click.echo(f'{len(datasets_for_archive)} datasets purged')
+        purged = index.datasets.purge(datasets_for_purge.keys(), force)
+        not_purged = set(datasets_for_purge.keys()).difference(set(purged))
+        if not force and not_purged:
+            click.echo("The following datasets are still active and could not be purged: "
+                       f"{', '.join([str(id_) for id_ in not_purged])}\n"
+                       "Use the --force option to delete anyway.")
+        click.echo(f'{len(purged)} of {len(datasets_for_purge)} datasets purged')
     else:
-        click.echo(f'{len(datasets_for_archive)} datasets not purged (dry run)')
+        click.echo(f'{len(datasets_for_purge)} datasets not purged (dry run)')
 
     click.echo('Completed dataset purge.')
 

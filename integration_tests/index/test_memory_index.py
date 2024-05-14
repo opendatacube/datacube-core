@@ -156,6 +156,7 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
             assert unmatched == {}
         else:
             assert unmatched["platform"] == 'landsat-8'
+    # Test search_by_metadata
     lds = list(mem_index_fresh.index.products.search_by_metadata({"product_family": "ard"}))
     assert len(lds) == 0
     lds = list(mem_index_fresh.index.products.search_by_metadata({"odc:product_family": "ard"}))
@@ -164,6 +165,9 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
     assert len(lds) == 0
     lds = list(mem_index_fresh.index.products.search_by_metadata({"eo:platform": "landsat-8"}))
     assert len(lds) == 1
+    # Test delete
+    mem_index_fresh.index.products.delete([ls8_fresh])
+    assert mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3") is None
 
 
 # Hand crafted tests with recent real-world eo3 examples

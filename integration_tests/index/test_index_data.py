@@ -169,7 +169,10 @@ def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner):
     dsid = ls8_eo3_dataset.id
 
     # Attempt to purge non-archived dataset should fail
-    clirunner(['dataset', 'purge', str(dsid)], expect_success=False)
+    runner = clirunner(['dataset', 'purge', str(dsid)])
+    assert "could not be purged" in runner.output
+    assert str(dsid) in runner.output
+    assert "0 of 1 datasets purged" in runner.output
 
     # Archive dataset
     index.datasets.archive([dsid])

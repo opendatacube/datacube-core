@@ -131,6 +131,47 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
     sys.exit(failures)
 
 
+@product_cli.command('delete', help="Delete products and all associated datasets")
+@click.option(
+    '--force', is_flag=True, default=False,
+    help="Allow a product with active datasets to be deleted (default: false)"
+)
+@click.option('--dry-run', '-d', is_flag=True, default=False,
+              help='Check if everything is ok')
+@click.argument('product_names', type=str, nargs=-1)
+@ui.pass_index()
+def delete_products(index: Index, force: bool, dry_run: bool, product_names: List):
+    """
+    Delete products.
+
+    An error will be thrown if the product has active datasets, unless the force option is provided.
+    """
+    if not product_names:
+        print_help_msg(delete_products)
+        sys.exit(1)
+
+    try:
+        products = [index.products.get_by_name_unsafe(name) for name in product_names]
+    except KeyError as e:
+        click.echo(str(e))
+        sys.exit(1)
+
+    if sys.stdin.isatty() and force:
+        click.confirm("Warning: you may be deleting active datasets. Proceed?", abort=True)
+
+    if not dry_run:
+        deleted = index.products.delete(products, force)
+        not_deleted = set(product_names).difference(set([p.name for p in deleted]))
+        if not force and not_deleted:
+            click.echo(f"Product(s) {', '.join(not_deleted)} could not be deleted due to active datasets. "
+                       "Use the --force option to delete anyway.")
+        click.echo(f"{len(deleted)} out of {len(product_names)} products successfully deleted.")
+    else:
+        click.echo(f"{len(products)} products not deleted (dry run)")
+
+    click.echo('Completed product deletion.')
+
+
 def _write_csv(products):
     product_dicts = [prod.to_dict() for prod in products]
     writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description',

@@ -11,7 +11,7 @@ from itertools import chain
 from deprecat import deprecat
 from collections import namedtuple
 from time import monotonic
-from typing import (Any, Callable, Iterable, Mapping, cast)
+from typing import (Any, Callable, Iterable, Mapping, Sequence, cast)
 from uuid import UUID
 
 from datacube.migration import ODC2DeprecationWarning
@@ -278,12 +278,21 @@ class DatasetResource(AbstractDatasetResource):
                 self._archived_by_product[ds.product.name].remove(ds.id)
                 self._by_product[ds.product.name].add(ds.id)
 
-    def purge(self, ids: Iterable[DSID]) -> None:
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Sequence[DSID]:
+        purged = []
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
-            if id_ in self._archived_by_id:
-                ds = self._archived_by_id.pop(id_)
-                del self._by_id[id_]
+            if id_ in self._by_id:
+                ds = self._by_id.pop(id_)
+                if id_ in self._active_by_id:
+                    if not allow_delete_active:
+                        _LOG.warning(f"Cannot purge unarchived dataset: {id_}")
+                        continue
+                    del self._active_by_id[id_]
+                    self._by_product[ds.product.name].remove(id_)
+                if id_ in self._archived_by_id:
+                    del self._archived_by_id[id_]
+                    self._archived_by_product[ds.product.name].remove(id_)
                 if id_ in self._derived_from:
                     for classifier, src_id in self._derived_from[id_].items():
                         del self._derivations[src_id][classifier]
@@ -292,13 +301,16 @@ class DatasetResource(AbstractDatasetResource):
                     for classifier, child_id in self._derivations[id_].items():
                         del self._derived_from[child_id][classifier]
                     del self._derivations[id_]
-                self._archived_by_product[ds.product.name].remove(id_)
+                purged.append(id_)
+        return purged
 
-    def get_all_dataset_ids(self, archived: bool) -> Iterable[UUID]:
+    def get_all_dataset_ids(self, archived: bool | None = False) -> Iterable[UUID]:
         if archived:
             return (id_ for id_ in self._archived_by_id.keys())
-        else:
+        elif archived is not None:
             return (id_ for id_ in self._active_by_id.keys())
+        else:
+            return (id_ for id_ in self._by_id.keys())
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
