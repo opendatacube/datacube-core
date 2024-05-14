@@ -166,7 +166,7 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
     lds = list(mem_index_fresh.index.products.search_by_metadata({"eo:platform": "landsat-8"}))
     assert len(lds) == 1
     # Test delete
-    mem_index_fresh.index.products.delete(ls8_fresh)
+    mem_index_fresh.index.products.delete([ls8_fresh])
     assert mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3") is None
 
 

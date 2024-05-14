@@ -122,7 +122,7 @@ class ProductResource(AbstractProductResource):
             if datasets:
                 purged = self._index.datasets.purge([ds.id for ds in datasets],  # type: ignore[attr-defined]
                                                     allow_delete_active)
-                if len(purged) != len(datasets):
+                if len(purged) != len(list(datasets)):
                     _LOG.warning(f"Product {product.name} cannot be deleted because it has active datasets.")
                     continue
             if product.id is not None:

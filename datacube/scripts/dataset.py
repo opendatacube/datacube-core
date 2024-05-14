@@ -634,7 +634,8 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: List[
         purged = index.datasets.purge(datasets_for_purge.keys(), force)
         not_purged = set(datasets_for_purge.keys()).difference(set(purged))
         if not force and not_purged:
-            click.echo(f"The following datasets are still active and could not be purged: {', '.join(not_purged)} "
+            click.echo("The following datasets are still active and could not be purged: "
+                       f"{', '.join([str(id_) for id_ in not_purged])}\n"
                        "Use the --force option to delete anyway.")
         click.echo(f'{len(purged)} of {len(datasets_for_purge)} datasets purged')
     else:
