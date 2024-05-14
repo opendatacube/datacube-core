@@ -11,7 +11,7 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, List, Union, Mapping, Any, Optional
+from typing import Iterable, List, Union, Mapping, Any, Optional, Sequence
 from uuid import UUID
 from deprecat import deprecat
 
@@ -375,12 +375,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
-    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Iterable[DSID]:
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Sequence[DSID]:
         """
         Delete datasets
 
         :param ids: iterable of dataset ids to purge
         :param allow_delete_active: whether active datasets can be deleted
+        :return: list of purged dataset ids
         """
         purged = []
         with self._db_connection(transaction=True) as transaction:
@@ -887,6 +888,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         raise NotImplementedError("Sorry Temporal Extent by dataset ids is not supported in postgres driver.")
 
+    @deprecat(
+        reason="This method is deprecated and will be removed in 2.0.  "
+               "Consider migrating to search_returning()",
+        version="1.9.0",
+        category=ODC2DeprecationWarning
+    )
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None,
                                         archived: bool | None = False,
@@ -933,7 +940,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     __slots__ = ()
 
             with self._db_connection() as connection:
-                results = connection.search_unique_datasets(
+                results = connection.search_datasets(
                     query_exprs,
                     select_fields=select_fields,
                     limit=limit,

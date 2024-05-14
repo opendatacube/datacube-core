@@ -11,7 +11,7 @@ from itertools import chain
 from deprecat import deprecat
 from collections import namedtuple
 from time import monotonic
-from typing import (Any, Callable, Iterable, Mapping, cast)
+from typing import (Any, Callable, Iterable, Mapping, Sequence, cast)
 from uuid import UUID
 
 from datacube.migration import ODC2DeprecationWarning
@@ -278,7 +278,7 @@ class DatasetResource(AbstractDatasetResource):
                 self._archived_by_product[ds.product.name].remove(ds.id)
                 self._by_product[ds.product.name].add(ds.id)
 
-    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Iterable[DSID]:
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Sequence[DSID]:
         purged = []
         for id_ in ids:
             id_ = dsid_to_uuid(id_)

@@ -6,7 +6,7 @@ import datetime
 import logging
 
 from cachetools.func import lru_cache
-from typing import Iterable, cast
+from typing import Iterable, Sequence, cast
 
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource, JsonDict
@@ -226,20 +226,21 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             allow_table_lock=allow_table_lock,
         )
 
-    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Iterable[Product]:
+    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
         """
         Delete Products, as well as all related datasets
 
         :param products: the Products to delete
         :param bool allow_delete_active:
             Whether to delete products with active datasets
+        :return: list of deleted products
         """
         deleted = []
         for product in products:
             with self._db_connection(transaction=True) as conn:
                 # First find and delete all related datasets
-                product_datasets = list(self._index.datasets.search_returning(('id',),
-                                                                              archived=None, product=product.name))
+                product_datasets = self._index.datasets.search_returning(('id',),
+                                                                         archived=None, product=product.name)
                 product_datasets = [ds.id for ds in product_datasets]  # type: ignore[attr-defined]
                 purged = self._index.datasets.purge(product_datasets, allow_delete_active)
                 # if not all product datasets are purged, it must be because

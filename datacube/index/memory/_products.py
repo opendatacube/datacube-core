@@ -5,7 +5,7 @@
 import datetime
 import logging
 
-from typing import Iterable, cast
+from typing import Iterable, Sequence, cast
 from uuid import UUID
 
 from datacube.index.fields import as_expression
@@ -115,7 +115,7 @@ class ProductResource(AbstractProductResource):
         self.by_name[persisted.name] = persisted
         return cast(Product, self.get_by_name(product.name))
 
-    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Iterable[Product]:
+    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
         deleted = []
         for product in products:
             datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
