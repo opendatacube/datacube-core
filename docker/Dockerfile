@@ -34,10 +34,10 @@ RUN apt-get update -y \
 # Build constrained python environment
 
 RUN virtualenv /virtualenv
-ENV VIRTUAL_ENV /virtualenv
-ENV PATH /virtualenv/bin:$PATH
+ENV PYENV /virtualenv
+
 # Needed to build cf-units wheels.
-ENV UDUNITS2_XML_PATH /usr/share/xml/udunits/udunits2-common.xml
+ARG UDUNITS2_XML_PATH=/usr/share/xml/udunits/udunits2-common.xml
 
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
@@ -46,15 +46,15 @@ COPY docker/constraints.in /conf/requirements.txt
 COPY docker/constraints.txt docker/nobinary.txt /conf/
 
 
-RUN python3 -m pip install --upgrade pip setuptools
-RUN python3 -m pip install -r /conf/requirements.txt \
+RUN . /virtualenv/bin/activate && python3 -m pip install --upgrade pip setuptools
+RUN . /virtualenv/bin/activate && python3 -m pip install -r /conf/requirements.txt \
                            -c /conf/constraints.txt \
                            -c /conf/nobinary.txt
 
 # Copy datacube-core source code into container and install from source (with addons for tests).
 COPY . /code
 
-RUN python3 -m pip install '/code/[all]' \
+RUN . /virtualenv/bin/activate && python3 -m pip install '/code/[all]' \
     && python3 -m pip install /code/examples/io_plugin \
     && python3 -m pip install /code/tests/drivers/fail_drivers
 
