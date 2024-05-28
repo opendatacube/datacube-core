@@ -36,6 +36,7 @@ doc_require = [
     'beautifulsoup4',
     'nbsphinx',
     'pydata-sphinx-theme==0.9.0',
+    'twine'
 ]
 
 extras_require = {
