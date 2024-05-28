@@ -1,12 +1,13 @@
 ##
 ## This file is part of the Open Data Cube, see https://opendatacube.org for more information
 ##
-## Copyright (c) 2015-2020 ODC Contributors
+## Copyright (c) 2015-2024 ODC Contributors
 ## SPDX-License-Identifier: Apache-2.0
 ##
-FROM ghcr.io/osgeo/gdal:ubuntu-small-latest
-ARG V_PG=14
-ARG V_PGIS=14-postgis-3
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.9.0 as builder
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.9.0
+ARG V_PG=16
+ARG V_PGIS=16-postgis-3
 
 # Update and install Ubuntu packages
 
@@ -17,9 +18,11 @@ RUN apt-get update -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-change-held-packages --fix-missing --no-install-recommends \
         git \
         libpq-dev libudunits2-dev libproj-dev \
-        python3-dev python3-distutils python3-pip \
+        libhdf5-dev libnetcdf-dev libgeos-dev libudunits2-dev \
+        python3-dev virtualenv \
         build-essential \
         postgresql \
+        python3-pip \
         redis-server \
         postgresql-client-${V_PG} \
         postgresql-${V_PG} \
@@ -30,6 +33,12 @@ RUN apt-get update -y \
 
 # Build constrained python environment
 
+RUN virtualenv /virtualenv
+ENV VIRTUAL_ENV /virtualenv
+ENV PATH /virtualenv/bin:$PATH
+# Needed to build cf-units wheels.
+ENV UDUNITS2_XML_PATH /usr/share/xml/udunits/udunits2-common.xml
+
 # Set the locale, this is required for some of the Python packages
 ENV LC_ALL C.UTF-8
 
@@ -37,9 +46,10 @@ COPY docker/constraints.in /conf/requirements.txt
 COPY docker/constraints.txt docker/nobinary.txt /conf/
 
 
-RUN python3 -m pip install \
-       -r /conf/requirements.txt \
-       -c /conf/constraints.txt
+RUN python3 -m pip install --upgrade pip setuptools
+RUN python3 -m pip install -r /conf/requirements.txt \
+                           -c /conf/constraints.txt \
+                           -c /conf/nobinary.txt
 
 # Copy datacube-core source code into container and install from source (with addons for tests).
 COPY . /code
@@ -56,9 +66,9 @@ RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/po
   && sudo -u postgres "$(find /usr/lib/postgresql/ -type f -name initdb)" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
 
 # users and groups.
-RUN groupadd --gid 1000 odc \
-  && useradd --gid 1000 \
-  --uid 1000 \
+RUN groupadd --gid 2000 odc \
+  && useradd --gid 2000 \
+  --uid 2000 \
   --create-home \
   --shell /bin/bash -N odc \
   && adduser odc users \
