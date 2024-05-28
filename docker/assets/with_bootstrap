@@ -6,7 +6,7 @@ launch_db () {
     local bin=$(find /usr/lib/postgresql/ -type d -name bin)
 
     [ -e "${pgdata}/PG_VERSION" ] || {
-        sudo -u postgres "${bin}/initdb" -D "${pgdata}" --auth-host=md5 --encoding=UTF8
+        sudo -u postgres "${bin}/initdb" -A -D "${pgdata}" --auth-host=md5 --encoding=UTF8
     }
 
     sudo -u postgres "${bin}/pg_ctl" -D "${pgdata}" -l "${pgdata}/pg.log" start
@@ -34,6 +34,8 @@ launch_db () {
 
     target_uid=$(stat -c '%u' .)
     target_gid=$(stat -c '%g' .)
+
+    echo '$target_uid :: $target_gid'
 
     [[ $target_uid -eq 0 ]] || {
 
@@ -82,6 +84,7 @@ env="${PYENV:-/env}"
 
 if [ -e "${env}/bin/activate" ]; then
     [ -n "${VIRTUAL_ENV:-}" ] || {
+      echo "Activating virtual environment"
         source "${env}/bin/activate"
 
         # if there is no .egg-info then we need to install in
