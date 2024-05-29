@@ -33,8 +33,8 @@ RUN apt-get update -y \
 
 # Build constrained python environment
 
-RUN virtualenv /virtualenv
-ENV PYENV /virtualenv
+RUN virtualenv /env
+ENV PYENV /env
 
 # Needed to build cf-units wheels.
 ARG UDUNITS2_XML_PATH=/usr/share/xml/udunits/udunits2-common.xml
@@ -46,15 +46,15 @@ COPY docker/constraints.in /conf/requirements.txt
 COPY docker/constraints.txt docker/nobinary.txt /conf/
 
 
-RUN . /virtualenv/bin/activate && python3 -m pip install --upgrade pip setuptools
-RUN . /virtualenv/bin/activate && python3 -m pip install -r /conf/requirements.txt \
+RUN . /env/bin/activate && python3 -m pip install --upgrade pip setuptools
+RUN . /env/bin/activate && python3 -m pip install -r /conf/requirements.txt \
                            -c /conf/constraints.txt \
                            -c /conf/nobinary.txt
 
 # Copy datacube-core source code into container and install from source (with addons for tests).
 COPY . /code
 
-RUN . /virtualenv/bin/activate && python3 -m pip install '/code/[all]' \
+RUN . /env/bin/activate && python3 -m pip install '/code/[all]' \
     && python3 -m pip install /code/examples/io_plugin \
     && python3 -m pip install /code/tests/drivers/fail_drivers
 
@@ -66,16 +66,12 @@ RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/po
   && sudo -u postgres "$(find /usr/lib/postgresql/ -type f -name initdb)" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
 
 # users and groups.
-RUN groupadd --gid 2000 odc \
-  && useradd --gid 2000 \
-  --uid 2000 \
-  --create-home \
-  --shell /bin/bash -N odc \
+RUN groupmod ubuntu -n odc  \
+  && usermod ubuntu -l odc \
   && adduser odc users \
   && adduser odc sudo \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
-  && install -d -o odc -g odc /env \
-  && install -d -o odc -g odc /code \
+  && chown -R odc:odc /env /code \
   && true
 
 USER root
