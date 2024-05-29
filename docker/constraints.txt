@@ -12,7 +12,7 @@ alabaster==0.7.13
     # via sphinx
 antlr4-python3-runtime==4.7.2
     # via cf-units
-astroid==2.3.3
+astroid==3.2.2
     # via pylint
 async-timeout==4.0.2
     # via redis
@@ -110,6 +110,8 @@ decorator==5.1.1
     # via validators
 deprecat==2.1.1
     # via -r constraints.in
+dill==0.3.8
+    # via pylint
 distributed==2023.2.0
     # via -r constraints.in
 docutils==0.18.1
@@ -176,8 +178,6 @@ kiwisolver==1.4.4
     # via matplotlib
 lark==1.1.5
     # via -r constraints.in
-lazy-object-proxy==1.4.3
-    # via astroid
 locket==1.0.0
     # via
     #   distributed
@@ -250,6 +250,8 @@ pillow==9.4.0
     # via matplotlib
 pkginfo==1.9.6
     # via twine
+platformdirs==4.2.2
+    # via pylint
 pluggy==1.0.0
     # via pytest
 psutil==5.9.4
@@ -267,7 +269,7 @@ pygments==2.14.0
     #   readme-renderer
     #   rich
     #   sphinx
-pylint==2.4.4
+pylint==3.2.2
     # via -r constraints.in
 pyparsing==3.0.9
     # via
@@ -358,7 +360,6 @@ shapely==2.0.4
     #   compliance-checker
 six==1.16.0
     # via
-    #   astroid
     #   bleach
     #   isodate
     #   munch
@@ -410,6 +411,8 @@ toml==0.10.2
     # via
     #   -r constraints.in
     #   responses
+tomlkit==0.12.5
+    # via pylint
 toolz==0.12.0
     # via
     #   -r constraints.in
@@ -422,8 +425,9 @@ twine==4.0.2
     # via -r constraints.in
 types-toml==0.10.8.3
     # via responses
-typing-extensions==4.4.0
+typing-extensions==4.12.0
     # via
+    #   -r constraints.in
     #   pygeoif
     #   setuptools-scm
 tzdata==2023.4
@@ -447,9 +451,9 @@ werkzeug==2.2.2
     #   pytest-httpserver
 wheel==0.38.4
     # via -r constraints.in
-wrapt==1.11.2
+wrapt==1.16.0
     # via
-    #   astroid
+    #   -r constraints.in
     #   deprecat
 xarray==2023.12.0
     # via -r constraints.in
