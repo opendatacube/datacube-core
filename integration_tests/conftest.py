@@ -525,7 +525,7 @@ def cleanup_db(local_cfg, db):
     db.close()
 
 
-@pytest.fixture(params=["US/Pacific", "UTC", ])
+@pytest.fixture(params=["America/Los_Angeles", "UTC", ])
 def uninitialised_postgres_db(local_config, request):
     """
     Return a connection to an empty PostgreSQL or PostGIS database
