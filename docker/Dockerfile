@@ -4,8 +4,9 @@
 ## Copyright (c) 2015-2024 ODC Contributors
 ## SPDX-License-Identifier: Apache-2.0
 ##
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.9.0 as builder
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.9.0
+# gdal:ubuntu-small no longer comes with netcdf support compiled into gdal
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.9.0 as builder
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.9.0
 ARG V_PG=16
 ARG V_PGIS=16-postgis-3
 
@@ -35,6 +36,7 @@ RUN apt-get update -y \
 
 RUN virtualenv /env
 ENV PYENV /env
+ENV GDAL_CONFIG /usr/bin/gdal-config
 
 # Needed to build cf-units wheels.
 ARG UDUNITS2_XML_PATH=/usr/share/xml/udunits/udunits2-common.xml
@@ -71,7 +73,7 @@ RUN groupmod ubuntu -n odc  \
   && adduser odc users \
   && adduser odc sudo \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
-  && chown -R odc:odc /env /code \
+  && chown -R odc:odc /env \
   && true
 
 USER root

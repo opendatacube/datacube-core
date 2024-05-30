@@ -521,7 +521,7 @@ def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb):
     db.close()
 
 
-@pytest.fixture(params=["US/Pacific", "UTC"])
+@pytest.fixture(params=["America/Los_Angeles", "UTC"])
 def uninitialised_postgres_db(cfg_env: ODCEnvironment, request) -> PostgresDb | PostGisDb:
     """
     Return a connection to an empty PostgreSQL or PostGIS database
