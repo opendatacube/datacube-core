@@ -23,7 +23,6 @@ RUN apt-get update -y \
         python3-dev virtualenv \
         build-essential \
         postgresql \
-        python3-pip \
         redis-server \
         postgresql-client-${V_PG} \
         postgresql-${V_PG} \
