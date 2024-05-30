@@ -27,7 +27,7 @@ lark
 # For Python 3.12 support
 lxml>=5.0.0
 matplotlib
-moto
+moto<5
 netcdf4>=1.5.8
 # 1.26.0 is the first version to support Python 3.12
 numpy>=1.26.0
