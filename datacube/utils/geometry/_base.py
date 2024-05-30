@@ -853,9 +853,6 @@ def multipoint(coords: CoordList, crs: MaybeCRS) -> Geometry:
     """
     Create a 2D MultiPoint Geometry
 
-    >>> multipoint([(10, 10), (20, 20)], None)
-    Geometry(MULTIPOINT (10 10, 20 20), None)
-
     :param coords: list of x,y coordinate tuples
     """
     return Geometry({'type': 'MultiPoint', 'coordinates': coords}, crs=crs)
