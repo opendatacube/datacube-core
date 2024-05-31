@@ -8,6 +8,7 @@ What's New
 v1.9.next
 =========
 
+- Update docker image to GDAL 3.9/Python 3.12/Ubuntu 24.04 (:pull:`1588`)
 - Fix typos in docs (:pull:`1577`)
 - Merge in 1.8.x branch changes. (:pull:`1568`, :pull:`1579`)
 - Add Product delete methods to API and command in CLI, plus misc cleanup of the surrounds (:pull:`1583`)
@@ -68,6 +69,7 @@ v1.9.0-rc1 (27th March 2024)
 v1.8.next
 =========
 
+- Update docker image to GDAL 3.9/Python 3.12/Ubuntu 24.04 (:pull:`1587`)
 - Update readthedocs stylesheet for dark theme (:pull:`1579`)
 
 v1.8.18 (27th March 2024)
