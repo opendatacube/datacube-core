@@ -152,7 +152,7 @@ setup(
             *extra_plugins['write'],
         ],
         'datacube.plugins.index': [
-            'default = datacube.index.postgres.index:index_driver_init',
+            'postgres = datacube.index.postgres.index:index_driver_init',
             'null = datacube.index.null.index:index_driver_init',
             'memory = datacube.index.memory.index:index_driver_init',
             'postgis = datacube.index.postgis.index:index_driver_init',
