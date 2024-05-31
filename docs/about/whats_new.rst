@@ -8,6 +8,8 @@ What's New
 v1.9.next
 =========
 
+- The canonical name of tthe postgres driver is now "postgres" with "default" as an alias instead of the other
+  way around. (:pull:`1590`)
 - Update docker image to GDAL 3.9/Python 3.12/Ubuntu 24.04 (:pull:`1588`)
 - Fix typos in docs (:pull:`1577`)
 - Merge in 1.8.x branch changes. (:pull:`1568`, :pull:`1579`)
