@@ -186,8 +186,8 @@ class Index(AbstractIndex):
                 yield conn
 
 
-class DefaultIndexDriver(AbstractIndexDriver):
-    aliases = ['postgres', 'legacy']
+class PostgresIndexDriver(AbstractIndexDriver):
+    aliases = ['legacy', 'default']
 
     @classmethod
     def index_class(cls) -> Type[AbstractIndex]:
@@ -213,4 +213,4 @@ class DefaultIndexDriver(AbstractIndexDriver):
 
 
 def index_driver_init():
-    return DefaultIndexDriver()
+    return PostgresIndexDriver()
