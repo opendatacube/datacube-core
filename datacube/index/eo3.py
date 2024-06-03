@@ -251,10 +251,10 @@ def prep_eo3(doc: Dict[str, Any],
                     else:
                         return {name: {'id': stringify(uuids[0])}}
 
-                out = {}
+                out: dict[str, Any] = {}
                 for idx, uuid in enumerate(uuids, start=1):
                     if isinstance(uuids, dict):
-                        out[idx] = uuid
+                        out[name] = uuid
                     else:
                         out[name+str(idx)] = {'id': stringify(uuid)}
                 return out
