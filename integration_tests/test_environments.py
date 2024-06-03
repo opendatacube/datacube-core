@@ -19,7 +19,7 @@ index_driver: default
 [default]
 db_hostname: db.opendatacube.test
 
-[test_alt]
+[testalt]
 db_hostname: alt-db.opendatacube.test
     """)
 
@@ -27,7 +27,7 @@ db_hostname: alt-db.opendatacube.test
 
     config = LocalConfig.find([config_path])
     assert config['db_hostname'] == 'db.opendatacube.test'
-    alt_config = LocalConfig.find([config_path], env='test_alt')
+    alt_config = LocalConfig.find([config_path], env='testalt')
     assert alt_config['db_hostname'] == 'alt-db.opendatacube.test'
 
     # Make sure the correct config is passed through the API
@@ -42,12 +42,12 @@ db_hostname: alt-db.opendatacube.test
     with Datacube(config=str(config_path), validate_connection=False) as dc:
         assert str(dc.index.url) == db_url
     # When specific environment is loaded
-    with Datacube(config=config_path, env='test_alt', validate_connection=False) as dc:
+    with Datacube(config=config_path, env='testalt', validate_connection=False) as dc:
         assert str(dc.index.url) == alt_db_url
 
     # An environment that isn't in any config files
     with pytest.raises(ValueError):
-        with Datacube(config=config_path, env='undefined-env', validate_connection=False) as dc:
+        with Datacube(config=config_path, env='undefinedenv', validate_connection=False) as dc:
             pass
 
 

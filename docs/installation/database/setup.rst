@@ -48,7 +48,7 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
 
     # A blank host will use a local socket. Specify a hostname (such as localhost) to use TCP.
     db_hostname:
-    
+
     # Port is optional. The default port is 5432.
     # db_port:
 
@@ -66,13 +66,14 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
     # A "null" environment for working with no index.
     index_driver: null
 
-    [local_memory]
+    [localmemory]
     # A local non-persistent in-memory index.
     #   Compatible with the default index driver, but resides purely in memory with no persistent database.
     #   Note that each new invocation will receive a new, empty index.
     index_driver: memory
 
-Uncomment and fill in lines as required.
+Uncomment and fill in lines as required.   Environment names should start with a lower case letter and contain
+only lower case letters and numbers.  This will be strictly enforced from 1.9.0.
 
 Alternately, you can configure the ODC connection to Postgres using environment variables::
 
@@ -82,16 +83,12 @@ Alternately, you can configure the ODC connection to Postgres using environment 
     DB_DATABASE
 
 To configure a database as a single connection url instead of individual environment variables::
-    
+
     export DATACUBE_DB_URL=postgresql://[username]:[password]@[hostname]:[port]/[database]
 
 Alternatively, for password-less access to a database on localhost::
 
     export DATACUBE_DB_URL=postgresql:///[database]
-
-Further information on database configuration can be found `here <https://github.com/opendatacube/datacube-core/wiki/ODC-EP-010---Replace-Configuration-Layer>`__.
-Although the enhancement proposal details incoming changes in v1.9 and beyond, it should largely be compatible with the current behaviour, barring a few
-obscure corner cases.
 
 The desired environment can be specified:
 
