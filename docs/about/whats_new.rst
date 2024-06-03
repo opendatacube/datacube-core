@@ -8,6 +8,7 @@ What's New
 v1.9.next
 =========
 
+- Ensure pre-prepared EO3 datasets can be indexed. (i.e. ensure the `prep_eo3()` function is idempotent) (:pull:`1591`)
 - The canonical name of tthe postgres driver is now "postgres" with "default" as an alias instead of the other
   way around. (:pull:`1590`)
 - Update docker image to GDAL 3.9/Python 3.12/Ubuntu 24.04 (:pull:`1588`)
