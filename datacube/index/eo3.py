@@ -151,8 +151,10 @@ def add_eo3_parts(doc: Dict[str, Any],
                   resolution: Optional[float] = None) -> Dict[str, Any]:
     """Add spatial keys the DB requires to eo3 metadata
     """
-    return dict(**doc,
-                **eo3_grid_spatial(doc, resolution=resolution))
+    # Clone and update to ensure idempotency
+    out = dict(**doc)
+    out.update(eo3_grid_spatial(doc, resolution=resolution))
+    return out
 
 
 def is_doc_eo3(doc: Dict[str, Any]) -> bool:
@@ -206,6 +208,9 @@ def prep_eo3(doc: Dict[str, Any],
              resolution: Optional[float] = None,
              remap_lineage=True) -> Dict[str, Any]:
     """ Modify spatial and lineage sections of eo3 metadata
+
+    Should be idempotent:  prep_eo3(doc, **kwargs) == prep_eo3(prep_eo3(doc, **kwargs), **kwargs)
+
     :param doc: input document
     :param auto_skip: If true check if dataset is EO3 and if not
                       silently return input dataset without modifications
@@ -229,25 +234,34 @@ def prep_eo3(doc: Dict[str, Any],
     doc = add_eo3_parts(doc, resolution=resolution)
     if remap_lineage:
         lineage = doc.pop('lineage', {})
+        if isinstance(lineage, dict) and "source_datasets" in lineage:
+            # Is already in pseudo-embedded rewritten form - keep as is.
+            doc['lineage'] = lineage
+        else:
+            def lineage_remap(name, uuids) -> Dict[str, Any]:
+                """ Turn name, [uuid] -> {name: {id: uuid}}
+                """
+                if len(uuids) == 0:
+                    return {}
+                if isinstance(uuids, dict) or isinstance(uuids[0], dict):
+                    raise ValueError("Embedded lineage not supported for eo3 metadata types")
+                if len(uuids) == 1:
+                    if isinstance(uuids[0], dict):
+                        return {name: uuids}
+                    else:
+                        return {name: {'id': stringify(uuids[0])}}
 
-        def lineage_remap(name, uuids) -> Dict[str, Any]:
-            """ Turn name, [uuid] -> {name: {id: uuid}}
-            """
-            if len(uuids) == 0:
-                return {}
-            if isinstance(uuids, dict) or isinstance(uuids[0], dict):
-                raise ValueError("Embedded lineage not supported for eo3 metadata types")
-            if len(uuids) == 1:
-                return {name: {'id': stringify(uuids[0])}}
+                out: dict[str, Any] = {}
+                for idx, uuid in enumerate(uuids, start=1):
+                    if isinstance(uuids, dict):
+                        out[name] = uuid
+                    else:
+                        out[name+str(idx)] = {'id': stringify(uuid)}
+                return out
 
-            out = {}
-            for idx, uuid in enumerate(uuids, start=1):
-                out[name+str(idx)] = {'id': stringify(uuid)}
-            return out
+            sources = {}
+            for name, uuids in lineage.items():
+                sources.update(lineage_remap(name, uuids))
 
-        sources = {}
-        for name, uuids in lineage.items():
-            sources.update(lineage_remap(name, uuids))
-
-        doc['lineage'] = dict(source_datasets=sources)
+            doc['lineage'] = dict(source_datasets=sources)
     return doc

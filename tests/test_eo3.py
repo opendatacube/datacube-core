@@ -252,6 +252,24 @@ def test_prep_eo3(sample_doc, sample_doc_180, eo3_metadata):
         prep_eo3(non_eo3_doc)
 
 
+def test_prep_eo3_idempotency(sample_doc, sample_doc_180):
+    # without lineage
+    call1 = prep_eo3(sample_doc, remap_lineage=False)
+    call2 = prep_eo3(call1, remap_lineage=False)
+    assert call1 == call2
+    call1 = prep_eo3(sample_doc_180, remap_lineage=False)
+    call2 = prep_eo3(call1, remap_lineage=False)
+    assert call1 == call2
+
+    # with lineage
+    call1 = prep_eo3(sample_doc)
+    call2 = prep_eo3(call1)
+    assert call1 == call2
+    call1 = prep_eo3(sample_doc_180)
+    call2 = prep_eo3(call1)
+    assert call1 == call2
+
+
 def test_val_eo3_offset():
     from datacube.model.eo3 import validate_eo3_offset
     # Simple offsets
