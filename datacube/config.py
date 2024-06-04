@@ -94,7 +94,7 @@ class LocalConfig(object):
         if env:
             if config.has_section(env):
                 self._env = env
-                if not re.match(r'[a-z]+$', self._env):
+                if not re.fullmatch(r'^[a-z][a-z0-9]*$', self._env):
                     warnings.warn(f"Configuration environment names like '{self._env}' are deprecated. "
                                   "From datacube 1.9, environment names must start with a lowercase letter and "
                                   "consist of only lowercase letters and digits.",
