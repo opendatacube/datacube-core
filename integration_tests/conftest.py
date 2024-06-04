@@ -465,14 +465,14 @@ def local_config_pair(datacube_env_name_pair):
 def null_config():
     """Provides a :class:`LocalConfig` configured with null index driver
     """
-    return LocalConfig.find(CONFIG_FILE_PATHS, env="null_driver")
+    return LocalConfig.find(CONFIG_FILE_PATHS, env="nulldriver")
 
 
 @pytest.fixture
 def in_memory_config():
     """Provides a :class:`LocalConfig` configured with memory index driver
     """
-    return LocalConfig.find(CONFIG_FILE_PATHS, env="local_memory")
+    return LocalConfig.find(CONFIG_FILE_PATHS, env="localmemory")
 
 
 @pytest.fixture

@@ -261,6 +261,7 @@ libyaml
 linux
 literalinclude
 localhost
+localmemory
 lon
 lonlat
 lr
