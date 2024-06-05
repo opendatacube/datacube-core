@@ -8,13 +8,22 @@ What's New
 v1.9.next
 =========
 
-- Expand extra dimension support, WIP (:pull:`1593`) 
+v1.9.0-rc5 (5th June 2024)
+==========================
+
+Another release candidate for the 1.9.0 release.  The 1.9.0 branch will remain in pre-release until we have
+working 1.9-compatible versions of the following key ODC packages: `datacube-explorer`, `datacube-ows`,
+`eodatasets`, and `odc-apps-dc-tools`.  Work on migrating these packages is underway, and this pre-release
+is mostly a response to that work - applying changes intended to ease 1.8.x to 1.9.x migration.
+
+- Update whats_new.rst, ready for 1.9.0-rc5 release (:pull:`1594`)
+- Expand extra dimension support, WIP (:pull:`1593`)
 - Ensure pre-prepared EO3 datasets can be indexed. (i.e. ensure the `prep_eo3()` function is idempotent) (:pull:`1591`)
-- The canonical name of tthe postgres driver is now "postgres" with "default" as an alias instead of the other
+- The canonical name of the postgres driver is now "postgres" with "default" as an alias instead of the other
   way around. (:pull:`1590`)
 - Update docker image to GDAL 3.9/Python 3.12/Ubuntu 24.04 (:pull:`1588`)
 - Fix typos in docs (:pull:`1577`)
-- Merge in 1.8.x branch changes. (:pull:`1568`, :pull:`1579`)
+- Merge in recent 1.8.x branch changes. (:pull:`1568`, :pull:`1579`)
 - Add Product delete methods to API and command in CLI, plus misc cleanup of the surrounds (:pull:`1583`)
 
 v1.9.0-rc4 (15th April 2024)
@@ -73,6 +82,7 @@ v1.9.0-rc1 (27th March 2024)
 v1.8.next
 =========
 
+- Add deprecation warning for config environment names that will not be supported in 1.9 (:pull:`1592`)
 - Update docker image to GDAL 3.9/Python 3.12/Ubuntu 24.04 (:pull:`1587`)
 - Update readthedocs stylesheet for dark theme (:pull:`1579`)
 
