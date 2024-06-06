@@ -45,7 +45,7 @@ def driver_based_load(
 
     if extra_dims is None:
         extra_dims = {}
-    extra_coords = {k: FixedCoord(k, []) for k in extra_dims}
+    extra_coords = [FixedCoord(k, []) for k in extra_dims]
 
     rdr = reader_driver(driver)
 
@@ -53,7 +53,7 @@ def driver_based_load(
         datetime.utcfromtimestamp(float(ts) * 1e-9)
         for ts in sources.coords["time"].data.ravel()
     ]
-    band_query = [m.name for m in measurements]
+    band_query: list[str] = [m.name for m in measurements]
     load_cfg = {
         m.name: RasterLoadParams(
             m.dtype,
@@ -70,7 +70,7 @@ def driver_based_load(
             )
             for m in measurements
         },
-        aliases={name: (name, 1) for name in band_query},
+        aliases={name: [(name, 1)] for name in band_query},
         extra_dims=extra_dims,
         extra_coords=extra_coords,
     )
@@ -84,9 +84,9 @@ def driver_based_load(
     else:
         chunk_shape = (1, 2048, 2048)
 
-    gbt = GeoboxTiles(geobox, chunk_shape[1:])
+    gbt = GeoboxTiles(geobox, (chunk_shape[1], chunk_shape[2]))
 
-    tyx_bins = {}  # (int,int,int) -> [int]
+    tyx_bins: dict[tuple[int, int, int], list[int]] = {}
     srcs = []
 
     if patch_url is None:
