@@ -36,6 +36,7 @@ jobs:
         run: |
           sudo apt-get remove python3-openssl
           pip install --upgrade -e '.[test]'
+          pip install pylint>3.2
           pylint -j 2 --reports no datacube
           
 
