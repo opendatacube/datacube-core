@@ -10,6 +10,7 @@ import os
 import warnings
 
 from os import PathLike
+from threading import Lock
 from typing import Any, TypeAlias, Union, cast
 
 from .cfg import find_config, parse_text
@@ -252,6 +253,7 @@ class ODCEnvironment:
         self._name: str = name
         self._raw: dict[str, Any] = raw
         self._allow_envvar_overrides: bool = allow_env_overrides
+        self._lock = Lock()
         self._normalised: dict[str, Any] = {}
 
         if name == "user" and "default_environment" in raw:
@@ -277,12 +279,13 @@ class ODCEnvironment:
         return self._cfg.get_aliases(self._name)
 
     def __getitem__(self, key: str) -> Any:
-        if not self._normalised:
-            # First access of environment - process config
-            # Loop through content handlers.
-            # Note that handlers may add more handlers to the end of the list while we are iterating over it.
-            for handler in self._option_handlers:
-                self._handle_option(handler)
+        with self._lock:
+            if not self._normalised:
+                # First access of environment - process config
+                # Loop through content handlers.
+                # Note that handlers may add more handlers to the end of the list while we are iterating over it.
+                for handler in self._option_handlers:
+                    self._handle_option(handler)
 
         # Config already processed
         # 1. From Normalised
