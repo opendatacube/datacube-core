@@ -8,6 +8,8 @@ What's New
 v1.9.next
 =========
 
+- Fix multi-threading race condition in config API. (:pull:`1596`)
+
 v1.9.0-rc5 (5th June 2024)
 ==========================
 
