@@ -9,6 +9,7 @@ v1.9.next
 =========
 
 - Fix multi-threading race condition in config API. (:pull:`1596`)
+- Move alembic.ini to a location where it will get installed by pip (without -e). (:pull:`1597`)
 
 v1.9.0-rc5 (5th June 2024)
 ==========================

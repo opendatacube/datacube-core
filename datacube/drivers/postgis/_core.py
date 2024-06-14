@@ -37,17 +37,9 @@ SQL_NAMING_CONVENTIONS = {
     # tix: test-index, created by hand for testing, particularly in dev.
 }
 
-SRC_CODE_ROOT = os.path.dirname(  # Source code root
-    os.path.dirname(              # datacube
-        os.path.dirname(          # drivers
-            os.path.dirname(      # postgis
-                __file__          # This file
-            )
-        )
-    )
-)
+POSTGIS_DRIVER_DIR = os.path.dirname(__file__)
 
-ALEMBIC_INI_LOCATION = os.path.join(SRC_CODE_ROOT, "alembic.ini")
+ALEMBIC_INI_LOCATION = os.path.join(POSTGIS_DRIVER_DIR, "alembic.ini")
 
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
