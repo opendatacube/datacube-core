@@ -8,6 +8,17 @@ What's New
 v1.9.next
 =========
 
+v1.9.0-rc6 (17th June 2024)
+===========================
+
+Bugfix pre-release.
+
+The 1.9.0 branch will remain in pre-release until we have working 1.9-compatible versions of the following
+key ODC packages: `datacube-explorer`, `datacube-ows`, `eodatasets`, and `odc-apps-dc-tools`.
+Work on migrating these packages is underway, and this pre-release addresses issues identified in
+the course of that work.
+
+- Update whats_new.rst and dropped nominal support for Windows, ready for 1.9.0-rc6 release. (:pull:`1598`)
 - Fix multi-threading race condition in config API. (:pull:`1596`)
 - Move alembic.ini to a location where it will get installed by pip (without -e). (:pull:`1597`)
 
