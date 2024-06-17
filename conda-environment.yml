@@ -23,9 +23,11 @@ dependencies:
   - pyproj >=2.5
   - shapely >=2.0
   - jsonschema >=4.18
+  - gdal
   - lark
   - netcdf4
   - numpy
+  - odc-geo
   - pandas
   - psycopg2
   - python-dateutil
