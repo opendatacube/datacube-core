@@ -18,7 +18,7 @@ key ODC packages: `datacube-explorer`, `datacube-ows`, `eodatasets`, and `odc-ap
 Work on migrating these packages is underway, and this pre-release addresses issues identified in
 the course of that work.
 
-- Update whats_new.rst, ready for 1.9.0-rc6 release (:pull:`1598`)
+- Update whats_new.rst and dropped nominal support for Windows, ready for 1.9.0-rc6 release. (:pull:`1598`)
 - Fix multi-threading race condition in config API. (:pull:`1596`)
 - Move alembic.ini to a location where it will get installed by pip (without -e). (:pull:`1597`)
 
