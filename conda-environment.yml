@@ -40,3 +40,4 @@ dependencies:
   - xarray >=0.9
   - toolz
   - odc-geo
+  - minizip ==4.0.6
