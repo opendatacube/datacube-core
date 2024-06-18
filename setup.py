@@ -103,6 +103,7 @@ setup(
     package_data={
         '': ['*.yaml', '*/*.yaml'],
         'datacube': ['py.typed'],
+        'datacube.drivers.postgis': ['alembic.ini', 'alembic/*.py*', 'alembic/README', 'alembic/versions/*.py'],
     },
     scripts=[],
     install_requires=[

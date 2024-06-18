@@ -8,7 +8,7 @@ What's New
 v1.9.next
 =========
 
-v1.9.0-rc6 (17th June 2024)
+v1.9.0-rc8 (18th June 2024)
 ===========================
 
 Bugfix pre-release.
@@ -17,6 +17,26 @@ The 1.9.0 branch will remain in pre-release until we have working 1.9-compatible
 key ODC packages: `datacube-explorer`, `datacube-ows`, `eodatasets`, and `odc-apps-dc-tools`.
 Work on migrating these packages is underway, and this pre-release addresses issues identified in
 the course of that work.
+
+Due to an error in packaging, schema creation and maintenance via alembic for the postgis
+index driver has been broken for wheels based installations (including installing from PyPI via pip)
+since it was first introduced in 1.9.0-rc1.  There was a failed attempt to fix this in the previous
+pre-release.  This pre-release finally fixes it properly.
+
+- Fix packaging so that alembic data files are correctly packaged in wheels and update whats_news.rst
+  ready for 1.9.0-rc8 pre-release.  (:pull:`1599`)
+
+v1.9.0-rc7 (17th June 2024)
+===========================
+
+Bugfix pre-release.
+
+The 1.9.0 branch will remain in pre-release until we have working 1.9-compatible versions of the following
+key ODC packages: `datacube-explorer`, `datacube-ows`, `eodatasets`, and `odc-apps-dc-tools`.
+Work on migrating these packages is underway, and this pre-release addresses issues identified in
+the course of that work.
+
+Note: rc6 was accidentally released off the wrong branch and has been pulled from PyPI.
 
 - Update whats_new.rst and dropped nominal support for Windows, ready for 1.9.0-rc6 release. (:pull:`1598`)
 - Fix multi-threading race condition in config API. (:pull:`1596`)
