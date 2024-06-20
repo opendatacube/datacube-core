@@ -177,7 +177,7 @@ def test_product_load_hints():
 
     hints = product._extract_load_hints()
     assert hints['crs'] == CRS('epsg:3857')
-    assert hints['resolution'] == (-10, 10)
+    assert hints['resolution'].yx == (-10, 10)
     assert 'align' not in hints
 
     product = mk_sample_product('test_product',
@@ -187,10 +187,10 @@ def test_product_load_hints():
 
     hints = product.load_hints()
     assert hints['output_crs'] == CRS('epsg:3857')
-    assert hints['resolution'] == (-10, 10)
+    assert hints['resolution'].yx == (-10, 10)
     assert hints['align'] == (6, 5)
     assert product.default_crs == CRS('epsg:3857')
-    assert product.default_resolution == (-10, 10)
+    assert product.default_resolution.yx == (-10, 10)
     assert product.default_align == (6, 5)
 
     product = mk_sample_product('test_product',
@@ -200,7 +200,7 @@ def test_product_load_hints():
 
     hints = product.load_hints()
     assert hints['output_crs'] == CRS('epsg:4326')
-    assert hints['resolution'] == (-1.1, 1.2)
+    assert hints['resolution'].yx == (-1.1, 1.2)
     assert hints['align'] == (0.6, 0.5)
 
     # check it's cached
@@ -227,7 +227,7 @@ def test_product_load_hints():
         crs='EPSG:3857',
         resolution={'x': 10, 'y': -10}))
     assert product.grid_spec is None
-    assert product.default_resolution == (-10, 10)
+    assert product.default_resolution.yx == (-10, 10)
     assert product.default_crs == CRS('EPSG:3857')
 
     # check for fallback into partially defined `storage:`
