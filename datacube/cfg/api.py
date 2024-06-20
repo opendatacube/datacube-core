@@ -104,7 +104,7 @@ class ODCConfig:
         self.allow_envvar_overrides = not text and not raw_dict
 
         if not raw_dict and not text:
-            # No explict config passed in.  Check for ODC_CONFIG environmnet variables
+            # No explict config passed in.  Check for ODC_CONFIG environment variables
             if os.environ.get("ODC_CONFIG"):
                 text = os.environ["ODC_CONFIG"]
             else:
