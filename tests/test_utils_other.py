@@ -588,7 +588,12 @@ def test_num2numpy():
     assert num2numpy(256, 'uint8') is None
     assert num2numpy(-1, 'uint16') is None
     assert num2numpy(-1, 'uint32') is None
-    assert num2numpy(-1, 'uint8', ignore_range=True) == np.uint8(255)
+    try:
+        # Numpy 1.x supports wrapping of unsisinged types
+        assert num2numpy(-1, 'uint8', ignore_range=True) == np.uint8(255)
+    except OverflowError:
+        # Numpy 2.0 will throw Overflow error rather than wrapping
+        pass
 
     assert num2numpy(0, 'uint8') == 0
     assert num2numpy(255, 'uint8') == 255
