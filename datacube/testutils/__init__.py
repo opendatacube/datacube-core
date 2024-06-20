@@ -416,10 +416,10 @@ def gen_tiff_dataset(bands,
 
         gbox = meta.gbox
         bdict = dict(name=name,
-                       path=fname,
-                       layer=1,
-                       nodata=band.nodata,
-                       dtype=meta.dtype)
+                     path=fname,
+                     layer=1,
+                     nodata=band.nodata,
+                     dtype=meta.dtype)
         mm.append(bdict)
 
     uri = Path(base_folder_of_record/'metadata.yaml').absolute().as_uri()
