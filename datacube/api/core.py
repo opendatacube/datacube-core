@@ -530,9 +530,12 @@ class Datacube:
                              "with odc.geo.resxy_ or odc.geo.resyx_")
                 resolution = resyx_(*resolution)
 
+        load_hints = datacube_product.load_hints()
+        grid_spec = None if load_hints is not None else datacube_product.grid_spec
+
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
-                               grid_spec=datacube_product.grid_spec,
-                               load_hints=datacube_product.load_hints(),
+                               grid_spec=grid_spec,
+                               load_hints=load_hints,
                                datasets=datasets, geopolygon=None,
                                **query)
         group_by = query_group_by(**query)
@@ -618,7 +621,7 @@ class Datacube:
             datasets = select_datasets_inside_polygon(datasets, query.geopolygon)
 
         if ensure_location:
-            datasets = (dataset for dataset in datasets if dataset.uris)
+            datasets = (dataset for dataset in datasets if dataset.uri)
 
         # If a predicate function is provided, use this to filter datasets before load
         if dataset_predicate is not None:
