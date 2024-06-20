@@ -33,7 +33,7 @@ __all__ = [
     "ExtraDimensions"
 ]
 
-from odc.geo import CRS, BoundingBox, Geometry, wh_
+from odc.geo import CRS, BoundingBox, Geometry, wh_, resyx_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
 from datacube.migration import ODC2DeprecationWarning
@@ -730,6 +730,10 @@ class Product:
 
         params = {name: extract_point(name) for name in ('resolution', 'align')}
         params = {name: v for name, v in params.items() if v is not None}
+
+        if "resolution" in params:
+            params["resolution"] = resyx_(*params["resolution"])
+
         return dict(crs=crs, **params)
 
     @property
