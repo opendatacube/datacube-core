@@ -10,7 +10,7 @@ tests_require = [
     'pytest-cov',
     'pytest-timeout',
     'pytest-httpserver',
-    'moto',
+    'moto<5.0',  # 5.0 will require changes to some tests.
 ]
 
 types_require = [

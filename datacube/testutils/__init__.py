@@ -430,6 +430,7 @@ def gen_tiff_dataset(bands,
         mm.append(dict(name=name,
                        path=fname,
                        layer=1,
+                       nodata=band.nodata,
                        dtype=meta.dtype))
 
     uri = Path(base_folder_of_record/'metadata.yaml').absolute().as_uri()

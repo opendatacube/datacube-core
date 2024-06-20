@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
+import math
 from pathlib import Path
 import numpy as np
 import xarray as xr
@@ -18,8 +19,8 @@ from datacube.testutils.io import native_load, rio_slurp_xarray, rio_slurp
 from datacube.utils.cog import write_cog, to_cog, _write_cog
 
 
-def gen_test_data(prefix, dask=False, shape=None):
-    w, h, dtype, nodata, ndw = 96, 64, "int16", -999, 7
+def gen_test_data(prefix, dask=False, shape=None, dtype="int16", nodata=-999):
+    w, h, ndw = 96, 64, 7
     if shape is not None:
         h, w = shape
 
@@ -107,6 +108,20 @@ def test_cog_file(tmpdir, opts):
 
     with pytest.warns(UserWarning):
         write_cog(xx, pp / "cog_badblocksize.tif", blocksize=50)  # Test of deprecated method
+
+    # check writing floating point COG with no explicit nodata
+    zz, ds = gen_test_data(pp, dtype="float32", nodata=None)
+    # write to file
+    ff = write_cog(
+        zz,
+        pp / "cog_float.tif",
+        **opts
+    )
+    assert isinstance(ff, Path)
+    assert ff == pp / "cog_float.tif"
+    assert ff.exists()
+    aa = rio_slurp_xarray(pp / "cog_float.tif")
+    assert aa.attrs["nodata"] == "nan" or math.isnan(aa.attrs["nodata"])
 
 
 def test_cog_file_dask(tmpdir):

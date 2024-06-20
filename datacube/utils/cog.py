@@ -142,6 +142,10 @@ def _write_cog(
         compress="DEFLATE",
     )
 
+    # If nodata is not set, but the array is of floating point type, force nodata=nan
+    if nodata is None and np.issubdtype(pix.dtype, np.floating):
+        nodata = np.nan
+
     if nodata is not None:
         rio_opts.update(nodata=nodata)
 
