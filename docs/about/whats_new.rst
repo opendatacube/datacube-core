@@ -8,6 +8,7 @@ What's New
 v1.8.next
 =========
 
+- Always write floating point bands to cogs with nodata=nan for ESRI and GDAL compatibility (:pull:`1602`)
 - Add deprecation warning for config environment names that will not be supported in 1.9 (:pull:`1592`)
 - Update docker image to GDAL 3.9/Python 3.12/Ubuntu 24.04 (:pull:`1587`)
 - Update readthedocs stylesheet for dark theme (:pull:`1579`)

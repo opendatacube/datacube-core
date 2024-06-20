@@ -76,7 +76,7 @@ jobs:
         password: ${{ secrets.DOCKERHUBPASSWD }}
 
     - name: Build Docker
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         file: docker/Dockerfile
         context: .
@@ -108,7 +108,7 @@ jobs:
         github.event_name == 'push'
         && github.ref == 'refs/heads/develop'
         && steps.changes.outputs.docker == 'true'
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         file: docker/Dockerfile
         context: .

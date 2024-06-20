@@ -415,11 +415,12 @@ def gen_tiff_dataset(bands,
                            **kwargs)
 
         gbox = meta.gbox
-
-        mm.append(dict(name=name,
-                       path=fname,
-                       layer=1,
-                       dtype=meta.dtype))
+        bdict = dict(name=name,
+                     path=fname,
+                     layer=1,
+                     nodata=band.nodata,
+                     dtype=meta.dtype)
+        mm.append(bdict)
 
     uri = Path(base_folder_of_record/'metadata.yaml').absolute().as_uri()
     ds = mk_sample_dataset(mm,
