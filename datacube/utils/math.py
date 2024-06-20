@@ -116,6 +116,7 @@ def num2numpy(x, dtype, ignore_range=None):
     :param x int|float: Numerical value to convert to numpy.type
     :param dtype str|numpy.dtype|numpy.type: Destination dtype
     :param ignore_range: If set to True skip range check and cast anyway (for example: -1 -> 255)
+                         (Not supported in numpy 2.0+)
 
     :returns: None if x is None
     :returns: None if x is outside the valid range of dtype and ignore_range is not set
