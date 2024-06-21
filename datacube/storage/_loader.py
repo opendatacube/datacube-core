@@ -12,8 +12,10 @@ separate file to reduce formatting issues.
 from __future__ import annotations
 
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Sequence
 
+import xarray as xr
 from odc.geo.geobox import GeoBox, GeoboxTiles
 from odc.loader import (
     FixedCoord,
@@ -25,55 +27,81 @@ from odc.loader import (
     reader_driver,
     resolve_chunk_shape,
 )
+from odc.loader.types import ReaderDriverSpec
 
-from ..model import Dataset, Measurement
+from ..model import Dataset, ExtraDimensions, Measurement
 from . import BandInfo
 
 
+def ds_geobox(ds: Dataset, **kw) -> GeoBox | None:
+    from ..testutils.io import eo3_geobox
+
+    try:
+        return eo3_geobox(ds, **kw)
+    except ValueError:
+        return None
+
+
+def _extract_coords(extra_dims: ExtraDimensions) -> list[FixedCoord]:
+    coords = extra_dims.dims
+
+    return [
+        FixedCoord(
+            name=k,
+            values=d["values"],
+            dtype=str(d.get("dtype", "float32")),
+            dim=k,
+            units=d.get("units", None),
+        )
+        for k, d in coords.items()
+    ]
+
+
 def driver_based_load(
-    driver,
-    sources,
+    driver: ReaderDriverSpec,
+    sources: xr.DataArray,
     geobox: GeoBox,
     measurements: Sequence[Measurement],
     dask_chunks=None,
     skip_broken_datasets=False,
     progress_cbk=None,
-    extra_dims=None,
+    extra_dims: ExtraDimensions | None = None,
     patch_url=None,
 ):
     fail_on_error = not skip_broken_datasets
 
     if extra_dims is None:
-        extra_dims = {}
-    extra_coords = [FixedCoord(k, []) for k in extra_dims]
-
-    rdr = reader_driver(driver)
+        extra_coords = []
+    else:
+        extra_coords = _extract_coords(extra_dims)
 
     tss = [
-        datetime.utcfromtimestamp(float(ts) * 1e-9)
+        datetime.fromtimestamp(float(ts) * 1e-9)
         for ts in sources.coords["time"].data.ravel()
     ]
     band_query: list[str] = [m.name for m in measurements]
+    template = RasterGroupMetadata(
+        bands={
+            (m.name, 1): RasterBandMetadata(
+                m.dtype, m.nodata, m.units, dims=tuple(m.get("dims", ()))
+            )
+            for m in measurements
+        },
+        aliases={name: [(name, 1)] for name in band_query},
+        extra_dims={coord.dim: len(coord.values) for coord in extra_coords},
+        extra_coords=extra_coords,
+    )
+
     load_cfg = {
         m.name: RasterLoadParams(
             m.dtype,
             m.nodata,
             resampling=m.get("resampling", "nearest"),
             fail_on_error=fail_on_error,
+            dims=tuple(m.get("dims", ())),
         )
         for m in measurements
     }
-    template = RasterGroupMetadata(
-        bands={
-            (m.name, 1): RasterBandMetadata(
-                m.dtype, m.nodata, m.units, dims=m.get("dims", None)
-            )
-            for m in measurements
-        },
-        aliases={name: [(name, 1)] for name in band_query},
-        extra_dims=extra_dims,
-        extra_coords=extra_coords,
-    )
 
     chunks = dask_chunks
 
@@ -101,9 +129,17 @@ def driver_based_load(
         out = {}
         for n in band_query:
             bi = BandInfo(ds, n)
+            band_idx = bi.band if bi.band is not None else 1
+
+            if bi.dims is not None and len(bi.dims) > 2:
+                band_idx = 0  # 0 indicates extra dims
+
             out[n] = RasterSource(
                 patch_url(bi.uri),
+                band=band_idx,
                 subdataset=bi.layer,
+                geobox=ds_geobox(ds, band=n),
+                meta=template.bands[(n, band_idx or 1)],
                 driver_data=bi.driver_data,
             )
 
@@ -113,6 +149,18 @@ def driver_based_load(
         srcs.append(_ds_extract(ds))
         for iy, ix in gbt.tiles(ds.extent):
             tyx_bins.setdefault((tidx, iy, ix), []).append(len(srcs) - 1)
+
+    if driver == "kk-debug":
+        return SimpleNamespace(
+            load_cfg=load_cfg,
+            template=template,
+            srcs=srcs,
+            tyx_bins=tyx_bins,
+            gbt=gbt,
+            tss=tss,
+        )
+
+    rdr = reader_driver(driver)
 
     return chunked_load(
         load_cfg,
