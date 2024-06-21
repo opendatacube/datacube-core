@@ -8,6 +8,8 @@ What's New
 v1.9.next
 =========
 
+- Ensure config API works with a blank config/empty file. (:pull:`1604`)
+
 v1.9.0-rc8 (18th June 2024)
 ===========================
 

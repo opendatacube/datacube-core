@@ -54,5 +54,5 @@ def smells_like_ini(cfg_text: str):
             return True
         else:
             return False
-    # Doesn't smell like anything
-    return False
+    # Empty file - parse as ini so we end up with the right high level structure at least
+    return True

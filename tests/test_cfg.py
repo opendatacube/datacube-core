@@ -45,7 +45,7 @@ spagoots:
 aasdfer\\faw043[]]][""")
 
     # Pure white space
-    assert not smells_like_ini("   \n  \n    \n \n  \t  \t  \n   \n")
+    assert smells_like_ini("   \n  \n    \n \n  \t  \t  \n   \n")
 
 
 @pytest.fixture
