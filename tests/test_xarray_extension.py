@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2024 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import numpy.testing as npt
 import pytest
 import xarray as xr
 import pandas as pd
@@ -40,8 +41,8 @@ def test_xr_extension(odc_style_xr_dataset):
     # affine should still be valid
     A = _xarray_affine(xx)
     assert A is not None
-    assert A * (0.5, 0.5) == (xx.longitude[0], xx.latitude[0])
-    assert A * (0.5, 1.5) == (xx.longitude[0], xx.latitude[1])
+    npt.assert_allclose(A * (0.5, 0.5), (xx.longitude.data[0], xx.latitude.data[0]))
+    npt.assert_allclose(A * (0.5, 1.5), (xx.longitude.data[0], xx.latitude.data[1]))
 
 
 def test_xr_geobox():
