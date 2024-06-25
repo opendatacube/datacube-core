@@ -80,19 +80,10 @@ def driver_based_load(
         for ts in sources.coords["time"].data.ravel()
     ]
     band_query: list[str] = [m.name for m in measurements]
-    load_cfg = {
-        m.name: RasterLoadParams(
-            m.dtype,
-            m.nodata,
-            resampling=m.get("resampling", "nearest"),
-            fail_on_error=fail_on_error,
-        )
-        for m in measurements
-    }
     template = RasterGroupMetadata(
         bands={
             (m.name, 1): RasterBandMetadata(
-                m.dtype, m.nodata, m.units, dims=m.get("dims", None)
+                m.dtype, m.nodata, m.units, dims=tuple(m.get("dims", ()))
             )
             for m in measurements
         },
@@ -100,6 +91,17 @@ def driver_based_load(
         extra_dims={coord.dim: len(coord.values) for coord in extra_coords},
         extra_coords=extra_coords,
     )
+
+    load_cfg = {
+        m.name: RasterLoadParams(
+            m.dtype,
+            m.nodata,
+            resampling=m.get("resampling", "nearest"),
+            fail_on_error=fail_on_error,
+            dims=tuple(m.get("dims", ())),
+        )
+        for m in measurements
+    }
 
     chunks = dask_chunks
 
