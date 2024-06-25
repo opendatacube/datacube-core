@@ -60,22 +60,22 @@ def get_raster_info(ds: Dataset, measurements=None):
             for n in measurements}
 
 
-def eo3_geobox(ds: Dataset, band: str) -> GeoBox:
-    mm = ds.measurements.get(ds.product.canonical_measurement(band),
-                             None)
-    if mm is None:
-        raise ValueError(f"No such band: {band}")
+def eo3_geobox(ds: Dataset, band: str | None = None, grid: str = "default") -> GeoBox:
+    if band is not None:
+        mm = ds.measurements.get(ds.product.canonical_measurement(band), None)
+        if mm is None:
+            raise ValueError(f"No such band: {band}")
+        grid = mm.get("grid", "default")
 
     crs = ds.crs
-    doc_path = ('grids', mm.get('grid', 'default'))
+    doc_path = ("grids", grid)
 
     grid_spec = toolz.get_in(doc_path, ds.metadata_doc)
     if crs is None or grid_spec is None:
-        raise ValueError('Not a valid EO3 dataset')
+        raise ValueError("Not a valid EO3 dataset")
 
-    grid = EO3Grid(grid_spec)
-
-    return GeoBox(grid.shape, grid.transform, crs)
+    parsed = EO3Grid(grid_spec)
+    return GeoBox(parsed.shape, parsed.transform, crs)
 
 
 def native_geobox(ds, measurements=None, basis=None):
