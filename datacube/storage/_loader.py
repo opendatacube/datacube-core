@@ -33,6 +33,15 @@ from ..model import Dataset, ExtraDimensions, Measurement
 from . import BandInfo
 
 
+def ds_geobox(ds: Dataset, **kw) -> GeoBox | None:
+    from ..testutils.io import eo3_geobox
+
+    try:
+        return eo3_geobox(ds, **kw)
+    except ValueError:
+        return None
+
+
 def _extract_coords(extra_dims: ExtraDimensions) -> list[FixedCoord]:
     coords = extra_dims.dims
 
@@ -127,6 +136,7 @@ def driver_based_load(
                 patch_url(bi.uri),
                 band=band_idx,
                 subdataset=bi.layer,
+                geobox=ds_geobox(ds, band=n),
                 meta=template.bands[(n, band_idx or 1)],
                 driver_data=bi.driver_data,
             )
