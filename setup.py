@@ -125,7 +125,7 @@ setup(
         'pyyaml',
         'rasterio>=1.3.2',  # Warping broken in 1.3.0 and 1.3.1
         'ruamel.yaml',
-        'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.  SqlAlchemy2 *may* work but has not been tested yet.
+        'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
         'GeoAlchemy2',
         "alembic",
         'toolz',
