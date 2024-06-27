@@ -590,6 +590,20 @@ class PostgisDbAPI:
 
         return [raw_expr(expression) for expression in expressions]
 
+    def geospatial_query(self, geom):
+        if not geom.crs:
+            raise ValueError("Search geometry must have a CRS")
+        SpatialIndex = self._db.spatial_index(geom.crs)  # noqa: N806
+        if SpatialIndex is None:
+            _LOG.info("No spatial index for crs %s - converting to 4326", geom.crs)
+            default_crs = CRS("EPSG:4326")
+            geom = geom.to_crs(default_crs)
+            SpatialIndex = self._db.spatial_index(default_crs)  # noqa: N806
+        geom_sql = geom_alchemy(geom)
+        _LOG.info("query geometry = %s (%s)", geom.json, geom.crs)
+        spatialquery = func.ST_Intersects(SpatialIndex.extent, geom_sql)
+        return SpatialIndex, spatialquery
+
     def search_datasets_query(self,
                               expressions, source_exprs=None,
                               select_fields=None, with_source_ids=False, limit=None, geom=None,
@@ -616,20 +630,7 @@ class PostgisDbAPI:
             select_columns = _dataset_select_fields()
 
         if geom:
-            # Check geom CRS - do we have a spatial index for this CRS?
-            #           Yes? Use it!
-            #           No? Convert to 4326 which we should always have a spatial index for by default
-            if not geom.crs:
-                raise ValueError("Search geometry must have a CRS")
-            SpatialIndex = self._db.spatial_index(geom.crs)   # noqa: N806
-            if SpatialIndex is None:
-                _LOG.info("No spatial index for crs %s - converting to 4326", geom.crs)
-                default_crs = CRS("EPSG:4326")
-                geom = geom.to_crs(default_crs)
-                SpatialIndex = self._db.spatial_index(default_crs)  # noqa: N806
-            geom_sql = geom_alchemy(geom)
-            _LOG.info("query geometry = %s (%s)", geom.json, geom.crs)
-            spatialquery = func.ST_Intersects(SpatialIndex.extent, geom_sql)
+            SpatialIndex, spatialquery = self.geospatial_query(geom)
         else:
             spatialquery = None
             SpatialIndex = None  # noqa: N806
@@ -806,7 +807,7 @@ class PostgisDbAPI:
         )
         return self._connection.execute(query)
 
-    def count_datasets(self, expressions, archived: bool | None = False):
+    def count_datasets(self, expressions, archived: bool | None = False, geom: Geometry | None = None):
         """
         :type expressions: tuple[datacube.drivers.postgis._fields.PgExpression]
         :rtype: int
@@ -820,13 +821,13 @@ class PostgisDbAPI:
         else:
             where_expressions = and_(*raw_expressions)
 
-        select_query = (
-            select(
-                func.count(Dataset.id)
-            ).where(
-                where_expressions
-            )
-        )
+        query = select(func.count(Dataset.id))
+        if geom:
+            SpatialIndex, spatialquery = self.geospatial_query(geom)
+            where_expressions = and_(where_expressions, spatialquery)
+            query = query.join(SpatialIndex)
+
+        select_query = query.where(where_expressions)
         return self._connection.scalar(select_query)
 
     def count_datasets_through_time(self, start, end, period, time_field, expressions):

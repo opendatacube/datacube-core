@@ -833,10 +833,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         product_queries = self._get_product_queries(query)
 
         for q, product in product_queries:
+            geom = self._extract_geom_from_query(q)
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:
-                count = connection.count_datasets(query_exprs, archived=archived)
+                count = connection.count_datasets(query_exprs, archived=archived, geom=geom)
             if count > 0:
                 yield product, count
 
