@@ -205,18 +205,22 @@ def test_spatial_search(index,
     assert len(dssids) == 2
     assert ls8_eo3_dataset.id in dssids
     assert ls8_eo3_dataset2.id in dssids
+    assert index.datasets.count(product=ls8_eo3_dataset.product.name, geometry=exact1_4326) == 2
     dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.product.name, geometry=exact1_3577)]
     assert len(dssids) == 2
     assert ls8_eo3_dataset.id in dssids
     assert ls8_eo3_dataset2.id in dssids
+    assert index.datasets.count(product=ls8_eo3_dataset.product.name, geometry=exact1_3577) == 2
     dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.product.name, geometry=exact3_4326)]
     assert len(dssids) == 2
     assert ls8_eo3_dataset3.id in dssids
     assert ls8_eo3_dataset3.id in dssids
+    assert index.datasets.count(product=ls8_eo3_dataset.product.name, geometry=exact3_4326) == 2
     dssids = [ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.product.name, geometry=exact3_3577)]
     assert len(dssids) == 2
     assert ls8_eo3_dataset3.id in dssids
     assert ls8_eo3_dataset3.id in dssids
+    assert index.datasets.count(product=ls8_eo3_dataset.product.name, geometry=exact3_3577) == 2
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
