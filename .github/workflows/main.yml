@@ -87,7 +87,7 @@ jobs:
     - name: Verify and Run Tests
       run: |
         echo "Verify that twine is installed"
-        docker run --rm opendatacube/datacube-tests:latest twine --version
+        docker run --rm ${{ env.DOCKER_IMAGE }} twine --version
 
         echo "Run tests"
         cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ env.DOCKER_IMAGE }} bash -
