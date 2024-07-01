@@ -79,7 +79,8 @@ class Query:
         Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=tzutc()), \
         end=datetime.datetime(2002, 1, 1, 23, 59, 59, 999999, tzinfo=tzutc()))
 
-        By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
+        By passing in an ``index``, the search parameters will be validated as existing on the ``product``,
+        and a spatial search appropriate for the index driver can be extracted.
 
         Used by :meth:`datacube.Datacube.find_datasets` and :meth:`datacube.Datacube.load`.
 
