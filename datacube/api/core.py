@@ -256,6 +256,7 @@ class Datacube:
              progress_cbk: ProgressFunction | None = None,
              patch_url: Callable[[str], str] | None = None,
              limit: int | None = None,
+             driver: Any | None = None,
              **query: QueryField):
         r"""
         Load data as an ``xarray.Dataset`` object.
@@ -546,7 +547,8 @@ class Datacube:
                                 skip_broken_datasets=skip_broken_datasets,
                                 progress_cbk=progress_cbk,
                                 extra_dims=extra_dims,
-                                patch_url=patch_url)
+                                patch_url=patch_url,
+                                driver=driver)
 
         return result
 
@@ -940,6 +942,13 @@ class Datacube:
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
         measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
+        if driver := extra.pop('driver', None):
+            from ..storage._loader import driver_based_load
+
+            return driver_based_load(driver, sources, geobox, measurements, dask_chunks,
+                                     skip_broken_datasets=skip_broken_datasets,
+                                     extra_dims=extra_dims,
+                                     patch_url=patch_url)
 
         if dask_chunks is not None:
             return Datacube._dask_load(sources, geobox, measurements, dask_chunks,
