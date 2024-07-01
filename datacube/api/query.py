@@ -96,6 +96,7 @@ class Query:
          * `crs` - spatial coordinate reference system to interpret the spatial bounds
          * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
         """
+        self.index = index
         self.product = product
         self.geopolygon = query_geopolygon(geopolygon=geopolygon, **search_terms)
         if 'source_filter' in search_terms and search_terms['source_filter'] is not None:
@@ -104,7 +105,7 @@ class Query:
             self.source_filter = None
 
         remaining_keys = set(search_terms.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
-        if index:
+        if self.index:
             # Retrieve known keys for extra dimensions
             known_dim_keys = set()
             if product is not None:
@@ -149,15 +150,18 @@ class Query:
         kwargs = {}
         kwargs.update(self.search)
         if self.geopolygon:
-            geo_bb = lonlat_bounds(self.geopolygon, resolution=100_000)  # TODO: pick resolution better
-            if geo_bb.bottom != geo_bb.top:
-                kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
+            if self.index and self.index.supports_spatial_indexes:
+                kwargs['geopolygon'] = self.geopolygon
             else:
-                kwargs['lat'] = geo_bb.bottom
-            if geo_bb.left != geo_bb.right:
-                kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
-            else:
-                kwargs['lon'] = geo_bb.left
+                geo_bb = lonlat_bounds(self.geopolygon, resolution=100_000)  # TODO: pick resolution better
+                if geo_bb.bottom != geo_bb.top:
+                    kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
+                else:
+                    kwargs['lat'] = geo_bb.bottom
+                if geo_bb.left != geo_bb.right:
+                    kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
+                else:
+                    kwargs['lon'] = geo_bb.left
         if self.product:
             kwargs['product'] = self.product
         if self.source_filter:
@@ -177,7 +181,7 @@ class Query:
                    geopolygon=self.geopolygon)
 
 
-def query_geopolygon(geopolygon=None, **kwargs):
+def query_geopolygon(geopolygon=None, **kwargs) -> Geometry | None:
     spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
     crs = [v for k, v in kwargs.items() if k in CRS_KEYS]
     if len(crs) == 1:
@@ -191,7 +195,19 @@ def query_geopolygon(geopolygon=None, **kwargs):
     if geopolygon is None:
         return _range_to_geopolygon(**spatial_dims)
 
-    return geopolygon
+    try:
+        # Are we or can we convert to a single Geometry?
+        geom = Geometry(geopolygon)
+    except ValueError:
+        # Can't convert to single Geometry.
+        # Treat an iterable of things that can be converted to a single Geometry, and return the union
+        for term in geopolygon:
+            if geom is None:
+                geom = Geometry(term)
+            else:
+                geom = geom.union(Geometry(term))
+
+    return geom
 
 
 def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
