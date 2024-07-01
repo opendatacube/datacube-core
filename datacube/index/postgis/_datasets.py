@@ -799,9 +799,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             _LOG.warning("Querying product %s", product)
             # Extract Geospatial search geometry
             geom = self._extract_geom_from_query(q)
-            assert "lat" not in q
-            assert "lon" not in q
-
             dataset_fields = product.metadata_type.dataset_fields
             if additional_fields:
                 dataset_fields.update(additional_fields)
@@ -813,7 +810,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     select_fields = tuple(field for name, field in dataset_fields.items()
                                           if not field.affects_row_selection)
                 else:
-                    # Allow place holder columns for requested fields that are not
+                    # Allow placeholder columns for requested fields that are not
                     # valid for this product query.
                     select_fields = tuple(dataset_fields[field_name]
                                           for field_name in select_field_names

@@ -470,6 +470,8 @@ class DatasetResource(AbstractDatasetResource):
             archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[Dataset | tuple[Iterable[Dataset], Product]]:
+        if "geopolygon" in query:
+            raise NotImplementedError("Spatial search index API not supported by this index.")
         if source_filter:
             product_queries = list(self._get_prod_queries(**source_filter))
             if not product_queries:
@@ -606,10 +608,12 @@ class DatasetResource(AbstractDatasetResource):
                          archived: bool | None = False,
                          order_by: str | Field | None = None,
                          **query: QueryField) -> Iterable[tuple]:
-        # Note that this implementation relies on dictionaries being ordered by insertion - this has been the case
-        # since Py3.6, and officially guaranteed behaviour since Py3.7.
+        if "geopolygon" in query:
+            raise NotImplementedError("Spatial search index API not supported by this index.")
         if order_by:
             raise ValueError("order_by argument is not currently supported by the memory index driver.")
+        # Note that this implementation relies on dictionaries being ordered by insertion - this has been the case
+        # since Py3.6, and officially guaranteed behaviour since Py3.7.
         if field_names is None and custom_offsets is None:
             field_name_d = {f: None for f in self._index.products.get_field_names()}
         elif field_names:

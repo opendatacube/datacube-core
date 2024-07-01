@@ -1633,6 +1633,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Matching datasets
         """
@@ -1759,6 +1760,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Matching datasets, grouped by Product
         """
@@ -1791,6 +1793,7 @@ class AbstractDatasetResource(ABC):
                          True: Return archived datasets only.
         :param order_by: a field name or field by which to sort output.  None is unsorted and may allow faster return
                          of first result depending on the index driver's implementation.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Namedtuple of requested fields, for each matching dataset.
         """
@@ -1803,6 +1806,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Count active datasets only.
                          None: Count archived and active datasets.
                          True: Count archived datasets only.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Count of matching datasets in index
         """
@@ -1812,6 +1816,10 @@ class AbstractDatasetResource(ABC):
         """
         Perform a search, returning a count of for each matching product type.
 
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
+        :param archived: False (default): Count active datasets only.
+                         None: Count archived and active datasets.
+                         True: Count archived datasets only.
         :param query: search query parameters
         :return: Counts of matching datasets in index, grouped by product.
         """
@@ -1850,6 +1858,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Count active datasets only.
                          None: Count archived and active datasets.
                          True: Count archived datasets only.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :returns: The product, a list of time ranges and the count of matching datasets.
         """
@@ -1865,6 +1874,7 @@ class AbstractDatasetResource(ABC):
         """
         Perform a search, returning just the search fields of each dataset.
 
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Mappings of search fields for matching datasets
         """
@@ -1973,9 +1983,9 @@ class AbstractDatasetResource(ABC):
         :return: A polygon or multipolygon type Geometry.  None if no spatial query clauses.
         """
         geom: Geometry | None = None
-        if "geometry" in q:
+        if "geopolygon" in q:
             # New geometry-style spatial query
-            geom_term = cast(JsonDict | Geometry, q.pop("geometry"))
+            geom_term = cast(JsonDict | Geometry, q.pop("geopolygon"))
             try:
                 geom = Geometry(geom_term)
             except ValueError:

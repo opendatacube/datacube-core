@@ -770,6 +770,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                               with_source_ids=False, source_filter=None,
                               limit=None,
                               archived: bool | None = False):
+        if "geopolygon" in query:
+            raise NotImplementedError("Spatial search API not supported by this index.")
         if source_filter:
             product_queries = list(self._get_product_queries(source_filter))
             if not product_queries:
@@ -820,6 +822,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                        ))
 
     def _do_count_by_product(self, query, archived: bool | None = False):
+        if "geopolygon" in query:
+            raise NotImplementedError("Spatial index API not supported by this index.")
         product_queries = self._get_product_queries(query)
 
         for q, product in product_queries:
@@ -831,6 +835,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 yield product, count
 
     def _do_time_count(self, period, query, ensure_single=False):
+        if "geopolygon" in query:
+            raise NotImplementedError("Spatial index API not supported by this index.")
         if 'time' not in query:
             raise ValueError('Counting through time requires a "time" range query argument')
 
