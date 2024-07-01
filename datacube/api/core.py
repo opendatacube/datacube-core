@@ -469,6 +469,9 @@ class Datacube:
         :param limit:
             Optional. If provided, limit the maximum number of datasets returned. Useful for testing and debugging.
 
+        :param driver:
+            Optional. If provided, use the specified driver to load the data.
+
         :param **query:
             Search parameters for products and dimension ranges as described above.
             For example: ``'x', 'y', 'time', 'crs'``.
@@ -891,6 +894,7 @@ class Datacube:
                   progress_cbk: ProgressFunction | None = None,
                   extra_dims: ExtraDimensions | None = None,
                   patch_url: Callable[[str], str] | None = None,
+                  driver: Any | None = None,
                   **extra) -> xarray.Dataset:
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
@@ -937,12 +941,15 @@ class Datacube:
         :param Callable[[str], str], patch_url:
             if supplied, will be used to patch/sign the url(s), as required to access some commercial archives.
 
+        :param driver:
+            Optional. If provided, use the specified driver to load the data.
+
         :rtype: xarray.Dataset
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
         measurements = per_band_load_data_settings(measurements, resampling=resampling, fuse_func=fuse_func)
-        if driver := extra.pop('driver', None):
+        if driver is not None:
             from ..storage._loader import driver_based_load
 
             return driver_based_load(driver, sources, geobox, measurements, dask_chunks,
