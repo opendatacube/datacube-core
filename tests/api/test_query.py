@@ -57,7 +57,6 @@ def test_query_kwargs(mock_index):
 
     query = Query(index=mock_index, latitude=-35, longitude=148)
 
-
     query = Query(index=mock_index, y=(-4174726, -4180011), x=(1515184, 1523263), crs='EPSG:3577')
     assert query.geopolygon
     assert 'lat' in query.search_terms
@@ -119,6 +118,7 @@ def test_query_kwargs_postgis(mock_index, test_geom):
     query = Query(index=mock_index, geopolygon=test_geom)
     assert query.geopolygon
     assert 'geopolygon' in query.search_terms
+
 
 def format_test(start_out, end_out):
     return Range(pandas.to_datetime(start_out, utc=True).to_pydatetime(),
