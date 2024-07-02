@@ -303,6 +303,7 @@ nc
 NCI
 nci
 ncml
+nd
 ndarray
 ndexpr
 NDVI
