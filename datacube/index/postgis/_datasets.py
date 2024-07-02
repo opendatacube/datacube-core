@@ -798,7 +798,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for q, product in product_queries:
             _LOG.warning("Querying product %s", product)
             # Extract Geospatial search geometry
-            geom = self._extract_geom_from_query(q)
+            geom = self.extract_geom_from_query(**q)
+            q = self.strip_spatial_fields_from_query(q)
             dataset_fields = product.metadata_type.dataset_fields
             if additional_fields:
                 dataset_fields.update(additional_fields)

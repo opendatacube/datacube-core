@@ -26,10 +26,10 @@ from odc.geo.geobox import GeoBox, GeoboxTiles
 from datacube.model import ExtraDimensions, ExtraDimensionSlices, Dataset, Measurement, GridSpec
 from datacube.model.utils import xr_apply
 
-from .query import Query, query_group_by, query_geopolygon, GroupBy
+from .query import Query, query_group_by, GroupBy
 from ..index import index_connect, Index
 from ..drivers import new_datasource
-from ..index.abstract import QueryField
+from ..index.abstract import QueryField, AbstractDatasetResource
 from ..migration import ODC2DeprecationWarning
 from ..storage._load import ProgressFunction, FuserFunction
 
@@ -1083,7 +1083,7 @@ def output_geobox(like: GeoBox | xarray.Dataset | xarray.DataArray | None = None
     #  3. Computed from dataset footprints
     #  4. fail with ValueError
     if geopolygon is None:
-        geopolygon = query_geopolygon(**query)
+        geopolygon = AbstractDatasetResource.extract_geom_from_query(**query)
 
         if geopolygon is None:
             if datasets is None:

@@ -37,6 +37,12 @@ JsonAtom = None | bool | str | float | int
 JsonLike = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
 JsonDict = dict[str, JsonLike]
 
+H_SPATIAL_KEYS = ("lon", "longitude", "x")
+V_SPATIAL_KEYS = ("lat", "latitude", "y")
+CRS_SPATIAL_KEYS = ("crs", "coordinate_reference_system")
+COORDS_SPATIAL_KEYS = H_SPATIAL_KEYS + V_SPATIAL_KEYS
+SPATIAL_KEYS = COORDS_SPATIAL_KEYS + CRS_SPATIAL_KEYS
+ALL_SPATIAL_KEYS = SPATIAL_KEYS + ("geopolygon",)
 
 class BatchStatus(NamedTuple):
     """
@@ -1973,7 +1979,16 @@ class AbstractDatasetResource(ABC):
         :return: The combined spatial extents of the datasets.
         """
 
-    def _extract_geom_from_query(self, q: QueryDict) -> Geometry | None:
+    @staticmethod
+    def strip_spatial_fields_from_query(q: QueryDict) -> QueryDict:
+        return {
+            k: v
+            for k, v in q.items()
+            if k not in ALL_SPATIAL_KEYS
+        }
+
+    @staticmethod
+    def extract_geom_from_query(**q: QueryField) -> Geometry | None:
         """
         Utility method for index drivers supporting spatial indexes.
 
@@ -1983,9 +1998,9 @@ class AbstractDatasetResource(ABC):
         :return: A polygon or multipolygon type Geometry.  None if no spatial query clauses.
         """
         geom: Geometry | None = None
-        if "geopolygon" in q:
+        if q.get("geopolygon") is not None:
             # New geometry-style spatial query
-            geom_term = cast(JsonDict | Geometry, q.pop("geopolygon"))
+            geom_term = cast(JsonDict | Geometry, q.get("geopolygon"))
             try:
                 geom = Geometry(geom_term)
             except ValueError:
@@ -1995,51 +2010,60 @@ class AbstractDatasetResource(ABC):
                         geom = Geometry(term)
                     else:
                         geom = geom.union(Geometry(term))
-            if "lat" in q or "lon" in q:
-                raise ValueError("Cannot specify lat/lon AND geometry in the same query")
+            for spatial_key in SPATIAL_KEYS:
+                if spatial_key in q:
+                    raise ValueError(f"Cannot specify spatial key {spatial_key} AND geopolygon in the same query")
             assert geom and geom.crs
         else:
             # Old lat/lon--style spatial query (or no spatial query)
             # TODO: latitude/longitude/x/y aliases for lat/lon
             #       Also some stuff is precalced at the api.core.Datacube level.
             #       THAT needs to offload to index driver when it can.
-            lat = q.pop("lat", None)
-            lon = q.pop("lon", None)
+            lon = lat = None
+            for coord in H_SPATIAL_KEYS:
+                if coord in q:
+                    if lon is not None:
+                        raise ValueError(
+                            "Multiple horizontal coordinate ranges supplied: use only one of x, lon, longitude")
+                    lon = q.get(coord)
+            for coord in V_SPATIAL_KEYS:
+                if coord in q:
+                    if lat is not None:
+                        raise ValueError(
+                            "Multiple vertical coordinate ranges supplied: use only one of y, lat, latitude")
+                    lat = q.get(coord)
+            crs_in = None
+            for coord in CRS_SPATIAL_KEYS:
+                if coord in q:
+                    if crs_in is not None:
+                        raise ValueError("CRS is supplied twice")
+                    crs_in = q.get(coord)
+            if crs_in is None:
+                crs = CRS("epsg:4326")
+            else:
+                crs = CRS(crs_in)
             if lat is None and lon is None:
                 # No spatial query
                 _LOG.info("No spatial query")
                 return None
 
             # Old lat/lon--style spatial query
+            # Normalise input to numeric ranges.
+            delta = 0.000001
             if lat is None:
                 lat = Range(begin=-90, end=90)
+            elif isinstance(lat, (int, float)):
+                lat = Range(lat - delta, lat + delta)
+            else:
+                lat = Range(*lat)
+
             if lon is None:
                 lon = Range(begin=-180, end=180)
-            delta = 0.000001
-            if isinstance(lat, Range) and isinstance(lon, Range):
-                # ranges for both - build a box.
-                geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=CRS("EPSG:4326"))
-            elif isinstance(lat, Range):
-                if isinstance(lon, (int, float)):
-                    # lat is a range, but lon is scalar - geom is ideally a line
-                    # odc.geo is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = box(lon - delta, lat.begin, lon + delta, lat.end, crs=CRS("EPSG:4326"))
-                else:
-                    raise ValueError("lon search term must be a Range or a numeric scalar")
-            elif isinstance(lon, Range):
-                if isinstance(lat, (int, float)):
-                    # lon is a range, but lat is scalar - geom is ideally a line
-                    # odc.geo is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = box(lon.begin, lat - delta, lon.end, lat + delta, crs=CRS("EPSG:4326"))
-                else:
-                    raise ValueError("lat search term must be a Range or a numeric scalar")
+            elif isinstance(lon, (int, float)):
+                lon = Range(lon - delta, lon + delta)
             else:
-                if isinstance(lon, (int, float)) and isinstance(lat, (int, float)):
-                    # Lat and Lon are both scalars - geom is ideally point
-                    # odc.geo is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = box(lon - delta, lat - delta, lon + delta, lat + delta, crs=CRS("EPSG:4326"))
-                else:
-                    raise ValueError("lat and lon search terms must be of type Range or a numeric scalar")
+                lon = Range(*lon)
+            geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=crs)
         _LOG.info("Spatial Query Geometry: %s", geom.wkt)
         return geom
 
