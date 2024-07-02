@@ -25,8 +25,7 @@ def strip_all_spatial_fields_from_query(q: QueryDict) -> QueryDict:
     }
 
 
-@staticmethod
-def extract_geom_from_query(**q: QueryField) -> Geometry | None:
+def extract_geom_from_query(**q: QueryField | tuple) -> Geometry | None:
     """
     Utility method for index drivers supporting spatial indexes.
 
@@ -92,13 +91,17 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
         elif isinstance(lat, (int, float)):
             lat = Range(lat - delta, lat + delta)
         else:
-            lat = Range(*lat)
+            # Treat as tuple
+            begin, end = cast(tuple[int | float, int | float], lat)
+            lat = Range(begin, end)
 
         if lon is None:
             lon = Range(begin=-180, end=180)
         elif isinstance(lon, (int, float)):
             lon = Range(lon - delta, lon + delta)
         else:
-            lon = Range(*lon)
+            # Treat as tuple
+            begin, end = cast(tuple[int | float, int | float], lon)
+            lon = Range(begin, end)
         geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=crs)
     return geom

@@ -832,7 +832,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         product_queries = self._get_product_queries(query)
 
         for q, product in product_queries:
-            geom = self._extract_geom_from_query(q)
+            geom = extract_geom_from_query(**q)
+            q = strip_all_spatial_fields_from_query(q)
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:
