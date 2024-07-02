@@ -9,12 +9,12 @@ from typing import Iterable, Sequence, cast
 from uuid import UUID
 
 from datacube.index.fields import as_expression
-from datacube.index.abstract import AbstractProductResource, QueryField, QueryDict, JsonDict, AbstractIndex
+from datacube.index.abstract import AbstractProductResource, AbstractIndex
+from datacube.model._base import QueryField, QueryDict
 from datacube.model import Product
 from datacube.utils import changes, jsonify_document, _readable_offset
 from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes, classify_changes
-from datacube.utils.documents import metadata_subset
-
+from datacube.utils.documents import metadata_subset, JsonDict
 
 _LOG = logging.getLogger(__name__)
 

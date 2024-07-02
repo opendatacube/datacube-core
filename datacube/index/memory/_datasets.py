@@ -17,7 +17,8 @@ from uuid import UUID
 from datacube.migration import ODC2DeprecationWarning
 from datacube.index import fields
 from datacube.index.abstract import (AbstractDatasetResource, DSID, dsid_to_uuid, BatchStatus,
-                                     QueryField, DatasetSpatialMixin, NoLineageResource, AbstractIndex, JsonDict)
+                                     DatasetSpatialMixin, NoLineageResource, AbstractIndex)
+from datacube.model._base import QueryField
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
@@ -25,7 +26,7 @@ from datacube.utils import jsonify_document, _readable_offset
 from datacube.utils import changes
 from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
 from datacube.utils.dates import tz_aware
-from datacube.utils.documents import metadata_subset
+from datacube.utils.documents import metadata_subset, JsonDict
 
 _LOG = logging.getLogger(__name__)
 

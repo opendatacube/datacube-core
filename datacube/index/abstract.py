@@ -17,32 +17,22 @@ from uuid import UUID
 from datetime import timedelta
 from deprecat import deprecat
 
+from odc.geo import CRS, Geometry
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
-from datacube.model import Product, Dataset, MetadataType, Range, Not
+from datacube.model import Product, Dataset, MetadataType, Range
 from datacube.model import LineageTree, LineageDirection, LineageRelation
+from datacube.model import QueryField, QueryDict
 from datacube.model.lineage import LineageRelations
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException, report_to_user
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.generic import thread_local_cache
 from datacube.migration import ODC2DeprecationWarning
-from odc.geo import CRS, Geometry
-from odc.geo.geom import box
-from datacube.utils.documents import UnknownMetadataType
+from datacube.utils.documents import UnknownMetadataType, JsonLike, JsonDict
 
 _LOG = logging.getLogger(__name__)
 
-JsonAtom = None | bool | str | float | int
-JsonLike = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
-JsonDict = dict[str, JsonLike]
-
-H_SPATIAL_KEYS = ("lon", "longitude", "x")
-V_SPATIAL_KEYS = ("lat", "latitude", "y")
-CRS_SPATIAL_KEYS = ("crs", "coordinate_reference_system")
-COORDS_SPATIAL_KEYS = H_SPATIAL_KEYS + V_SPATIAL_KEYS
-SPATIAL_KEYS = COORDS_SPATIAL_KEYS + CRS_SPATIAL_KEYS
-ALL_SPATIAL_KEYS = SPATIAL_KEYS + ("geopolygon",)
 
 class BatchStatus(NamedTuple):
     """
@@ -291,7 +281,7 @@ class AbstractMetadataTypeResource(ABC):
     def update_document(self,
                         definition: JsonDict,
                         allow_unsafe_updates: bool = False,
-                       ) -> MetadataType:
+                        ) -> MetadataType:
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -397,10 +387,6 @@ class AbstractMetadataTypeResource(ABC):
         # Default implementation calls get_all()
         for mdt in self.get_all():
             yield cast(JsonDict, mdt.definition)
-
-
-QueryField = str | float | int | Range | datetime.datetime | Not
-QueryDict = dict[str, QueryField]
 
 
 class AbstractProductResource(ABC):
@@ -617,7 +603,7 @@ class AbstractProductResource(ABC):
                         definition: JsonDict,
                         allow_unsafe_updates: bool = False,
                         allow_table_lock: bool = False
-                       ) -> Product:
+                        ) -> Product:
         """
         Update a metadata type from a document. Unsafe changes will throw a ValueError by default.
 
@@ -1600,7 +1586,7 @@ class AbstractDatasetResource(ABC):
     def search_by_metadata(self,
                            metadata: JsonDict,
                            archived: bool | None = False
-                          ) -> Iterable[Dataset]:
+                           ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -1978,94 +1964,6 @@ class AbstractDatasetResource(ABC):
         :param crs: A CRS (defaults to EPSG:4326)
         :return: The combined spatial extents of the datasets.
         """
-
-    @staticmethod
-    def strip_spatial_fields_from_query(q: QueryDict) -> QueryDict:
-        return {
-            k: v
-            for k, v in q.items()
-            if k not in ALL_SPATIAL_KEYS
-        }
-
-    @staticmethod
-    def extract_geom_from_query(**q: QueryField) -> Geometry | None:
-        """
-        Utility method for index drivers supporting spatial indexes.
-
-        Extract a Geometry from a dataset query.  Backwards compatible with old lat/lon style queries.
-
-        :param q: A query dictionary
-        :return: A polygon or multipolygon type Geometry.  None if no spatial query clauses.
-        """
-        geom: Geometry | None = None
-        if q.get("geopolygon") is not None:
-            # New geometry-style spatial query
-            geom_term = cast(JsonDict | Geometry, q.get("geopolygon"))
-            try:
-                geom = Geometry(geom_term)
-            except ValueError:
-                # Can't convert to single Geometry. If it is an iterable of Geometries, return the union
-                for term in geom_term:
-                    if geom is None:
-                        geom = Geometry(term)
-                    else:
-                        geom = geom.union(Geometry(term))
-            for spatial_key in SPATIAL_KEYS:
-                if spatial_key in q:
-                    raise ValueError(f"Cannot specify spatial key {spatial_key} AND geopolygon in the same query")
-            assert geom and geom.crs
-        else:
-            # Old lat/lon--style spatial query (or no spatial query)
-            # TODO: latitude/longitude/x/y aliases for lat/lon
-            #       Also some stuff is precalced at the api.core.Datacube level.
-            #       THAT needs to offload to index driver when it can.
-            lon = lat = None
-            for coord in H_SPATIAL_KEYS:
-                if coord in q:
-                    if lon is not None:
-                        raise ValueError(
-                            "Multiple horizontal coordinate ranges supplied: use only one of x, lon, longitude")
-                    lon = q.get(coord)
-            for coord in V_SPATIAL_KEYS:
-                if coord in q:
-                    if lat is not None:
-                        raise ValueError(
-                            "Multiple vertical coordinate ranges supplied: use only one of y, lat, latitude")
-                    lat = q.get(coord)
-            crs_in = None
-            for coord in CRS_SPATIAL_KEYS:
-                if coord in q:
-                    if crs_in is not None:
-                        raise ValueError("CRS is supplied twice")
-                    crs_in = q.get(coord)
-            if crs_in is None:
-                crs = CRS("epsg:4326")
-            else:
-                crs = CRS(crs_in)
-            if lat is None and lon is None:
-                # No spatial query
-                _LOG.info("No spatial query")
-                return None
-
-            # Old lat/lon--style spatial query
-            # Normalise input to numeric ranges.
-            delta = 0.000001
-            if lat is None:
-                lat = Range(begin=-90, end=90)
-            elif isinstance(lat, (int, float)):
-                lat = Range(lat - delta, lat + delta)
-            else:
-                lat = Range(*lat)
-
-            if lon is None:
-                lon = Range(begin=-180, end=180)
-            elif isinstance(lon, (int, float)):
-                lon = Range(lon - delta, lon + delta)
-            else:
-                lon = Range(*lon)
-            geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=crs)
-        _LOG.info("Spatial Query Geometry: %s", geom.wkt)
-        return geom
 
 
 class AbstractTransaction(ABC):

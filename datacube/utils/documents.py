@@ -34,6 +34,11 @@ except ImportError:
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.uris import mk_part_uri, as_url, uri_to_local_path
 
+
+JsonAtom = None | bool | str | float | int
+JsonLike = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
+JsonDict = dict[str, JsonLike]
+
 PY35 = sys.version_info <= (3, 6)
 _LOG = logging.getLogger(__name__)
 

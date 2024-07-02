@@ -10,7 +10,8 @@ from cachetools.func import lru_cache
 
 from odc.geo.geom import CRS, Geometry
 from datacube.index import fields
-from datacube.index.abstract import AbstractProductResource, BatchStatus, JsonDict
+from datacube.index.abstract import AbstractProductResource, BatchStatus
+from datacube.utils.documents import JsonDict
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset

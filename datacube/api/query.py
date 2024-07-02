@@ -16,11 +16,9 @@ import pandas
 
 from pandas import to_datetime as pandas_to_datetime
 import numpy as np
-
-
+from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
 from ..model import Range, Dataset
 from ..utils.dates import normalise_dt, tz_aware
-from ..index.abstract import AbstractDatasetResource
 from odc.geo import Geometry
 from odc.geo.geom import lonlat_bounds, mid_longitude
 
@@ -90,13 +88,13 @@ class Query:
         """
         self.index = index
         self.product = product
-        self.geopolygon = AbstractDatasetResource.extract_geom_from_query(geopolygon=geopolygon, **search_terms)
+        self.geopolygon = extract_geom_from_query(geopolygon=geopolygon, **search_terms)
         if 'source_filter' in search_terms and search_terms['source_filter'] is not None:
             self.source_filter = Query(**search_terms['source_filter'])
         else:
             self.source_filter = None
 
-        search_terms = AbstractDatasetResource.strip_spatial_fields_from_query(search_terms)
+        search_terms = strip_all_spatial_fields_from_query(search_terms)
         remaining_keys = set(search_terms.keys()) - set(OTHER_KEYS)
         if self.index:
             # Retrieve known keys for extra dimensions

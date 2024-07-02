@@ -22,15 +22,16 @@ from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fie
 from datacube.utils.uris import split_uri
 from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
 from datacube.migration import ODC2DeprecationWarning
-from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple, \
-    JsonDict, QueryField
+from datacube.index.abstract import AbstractDatasetResource, DatasetSpatialMixin, DSID, BatchStatus, DatasetTuple
+from datacube.utils.documents import JsonDict
+from datacube.model._base import QueryField
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Dataset, Product, Range, LineageTree
 from datacube.model.fields import Field
 from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes, Offset
 from odc.geo import CRS, Geometry
-from datacube.index import fields
+from datacube.index import fields, extract_geom_from_query, strip_all_spatial_fields_from_query
 
 _LOG = logging.getLogger(__name__)
 
@@ -798,8 +799,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for q, product in product_queries:
             _LOG.warning("Querying product %s", product)
             # Extract Geospatial search geometry
-            geom = self.extract_geom_from_query(**q)
-            q = self.strip_spatial_fields_from_query(q)
+            geom = extract_geom_from_query(**q)
+            q = strip_all_spatial_fields_from_query(q)
             dataset_fields = product.metadata_type.dataset_fields
             if additional_fields:
                 dataset_fields.update(additional_fields)
