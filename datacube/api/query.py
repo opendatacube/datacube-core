@@ -146,11 +146,11 @@ class Query:
                 kwargs['geopolygon'] = self.geopolygon
             else:
                 geo_bb = lonlat_bounds(self.geopolygon, resolution="auto")
-                if math.isclose(geo_bb.bottom, geo_bb.top, tol=1e-5):
+                if math.isclose(geo_bb.bottom, geo_bb.top, abs_tol=1e-5):
                     kwargs['lat'] = geo_bb.bottom
                 else:
                     kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
-                if math.isclose(geo_bb.left, geo_bb.right, tol=1e-5):
+                if math.isclose(geo_bb.left, geo_bb.right, abs_tol=1e-5):
                     kwargs['lon'] = geo_bb.left
                 else:
                     kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
