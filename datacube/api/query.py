@@ -10,25 +10,18 @@ Storage Query and Access API module
 import logging
 import datetime
 import collections
+import math
 import warnings
 from typing import Optional, Union
 import pandas
 
 from pandas import to_datetime as pandas_to_datetime
 import numpy as np
-
-
+from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
 from ..model import Range, Dataset
 from ..utils.dates import normalise_dt, tz_aware
-
-from odc.geo import CRS, Geometry
-from odc.geo.geom import (
-    lonlat_bounds,
-    point,
-    line,
-    polygon,
-    mid_longitude,
-)
+from odc.geo import Geometry
+from odc.geo.geom import lonlat_bounds, mid_longitude
 
 _LOG = logging.getLogger(__name__)
 
@@ -59,8 +52,6 @@ class GroupBy:
         self.group_key = group_key
 
 
-SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
-CRS_KEYS = ('crs', 'coordinate_reference_system')
 OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan', 'product', 'geopolygon', 'like',
               'source_filter')
 
@@ -79,14 +70,18 @@ class Query:
         Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=tzutc()), \
         end=datetime.datetime(2002, 1, 1, 23, 59, 59, 999999, tzinfo=tzutc()))
 
-        By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
+        By passing in an ``index``, the search parameters will be validated as existing on the ``product``,
+        and a spatial search appropriate for the index driver can be extracted.
 
         Used by :meth:`datacube.Datacube.find_datasets` and :meth:`datacube.Datacube.load`.
 
         :param datacube.index.Index index: An optional `index` object, if checking of field names is desired.
         :param str product: name of product
-        :param geopolygon: spatial bounds of the search
-        :type geopolygon: geometry.Geometry or None
+        :type geopolygon: the spatial boundaries of the search, can be:
+                          odc.geo.geom.Geometry: A Geometry object
+                          Any string or JsonLike object that can be converted to a Geometry object.
+                          An iterable of either of the above; or
+                          None: no geopolygon defined (may be derived from like or lat/lon/x/y/crs search terms)
         :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
         :param search_terms:
          * `measurements` - list of measurements to retrieve
@@ -96,15 +91,17 @@ class Query:
          * `crs` - spatial coordinate reference system to interpret the spatial bounds
          * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
         """
+        self.index = index
         self.product = product
-        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **search_terms)
+        self.geopolygon = extract_geom_from_query(geopolygon=geopolygon, **search_terms)
         if 'source_filter' in search_terms and search_terms['source_filter'] is not None:
             self.source_filter = Query(**search_terms['source_filter'])
         else:
             self.source_filter = None
 
-        remaining_keys = set(search_terms.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
-        if index:
+        search_terms = strip_all_spatial_fields_from_query(search_terms)
+        remaining_keys = set(search_terms.keys()) - set(OTHER_KEYS)
+        if self.index:
             # Retrieve known keys for extra dimensions
             known_dim_keys = set()
             if product is not None:
@@ -149,15 +146,18 @@ class Query:
         kwargs = {}
         kwargs.update(self.search)
         if self.geopolygon:
-            geo_bb = lonlat_bounds(self.geopolygon, resolution=100_000)  # TODO: pick resolution better
-            if geo_bb.bottom != geo_bb.top:
-                kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
+            if self.index and self.index.supports_spatial_indexes:
+                kwargs['geopolygon'] = self.geopolygon
             else:
-                kwargs['lat'] = geo_bb.bottom
-            if geo_bb.left != geo_bb.right:
-                kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
-            else:
-                kwargs['lon'] = geo_bb.left
+                geo_bb = lonlat_bounds(self.geopolygon, resolution="auto")
+                if math.isclose(geo_bb.bottom, geo_bb.top, abs_tol=1e-5):
+                    kwargs['lat'] = geo_bb.bottom
+                else:
+                    kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
+                if math.isclose(geo_bb.left, geo_bb.right, abs_tol=1e-5):
+                    kwargs['lon'] = geo_bb.left
+                else:
+                    kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
         if self.product:
             kwargs['product'] = self.product
         if self.source_filter:
@@ -175,23 +175,6 @@ class Query:
         """.format(type=self.product,
                    search=self.search,
                    geopolygon=self.geopolygon)
-
-
-def query_geopolygon(geopolygon=None, **kwargs):
-    spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
-    crs = [v for k, v in kwargs.items() if k in CRS_KEYS]
-    if len(crs) == 1:
-        spatial_dims['crs'] = crs[0]
-    elif len(crs) > 1:
-        raise ValueError('CRS is supplied twice')
-
-    if geopolygon is not None and len(spatial_dims) > 0:
-        raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS + CRS_KEYS,))
-
-    if geopolygon is None:
-        return _range_to_geopolygon(**spatial_dims)
-
-    return geopolygon
 
 
 def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
@@ -243,45 +226,6 @@ def query_group_by(group_by='time', **kwargs):
         raise LookupError(
             f'No group by function for {group_by}, valid options are: {group_by_map.keys()}',  # pylint: disable=W1655
         )
-
-
-def _range_to_geopolygon(**kwargs):
-    input_crs = None
-    input_coords = {'left': None, 'bottom': None, 'right': None, 'top': None}
-    for key, value in kwargs.items():
-        if value is None:
-            continue
-        key = key.lower()
-        if key in ['latitude', 'lat', 'y']:
-            input_coords['top'], input_coords['bottom'] = _value_to_range(value)
-        if key in ['longitude', 'lon', 'long', 'x']:
-            input_coords['left'], input_coords['right'] = _value_to_range(value)
-        if key in ['crs', 'coordinate_reference_system']:
-            input_crs = CRS(value)
-    input_crs = input_crs or CRS('EPSG:4326')
-    if any(v is not None for v in input_coords.values()):
-        if input_coords['left'] == input_coords['right']:
-            if input_coords['top'] == input_coords['bottom']:
-                return point(input_coords['left'], input_coords['top'], crs=input_crs)
-            else:
-                points = [(input_coords['left'], input_coords['bottom']),
-                          (input_coords['left'], input_coords['top'])]
-                return line(points, crs=input_crs)
-        else:
-            if input_coords['top'] == input_coords['bottom']:
-                points = [(input_coords['left'], input_coords['top']),
-                          (input_coords['right'], input_coords['top'])]
-                return line(points, crs=input_crs)
-            else:
-                points = [
-                    (input_coords['left'], input_coords['top']),
-                    (input_coords['right'], input_coords['top']),
-                    (input_coords['right'], input_coords['bottom']),
-                    (input_coords['left'], input_coords['bottom']),
-                    (input_coords['left'], input_coords['top'])
-                ]
-                return polygon(points, crs=input_crs)
-    return None
 
 
 def _value_to_range(value):

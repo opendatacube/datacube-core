@@ -131,7 +131,7 @@ setup(
         'toolz',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
         'packaging',
-        'odc-geo',
+        'odc-geo>=0.4',
         'deprecat',
         'importlib_metadata>3.5;python_version<"3.10"',
     ],

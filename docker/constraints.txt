@@ -148,7 +148,6 @@ imagesize==1.4.1
     # via sphinx
 importlib-metadata==6.0.0
     # via
-    #   compliance-checker
     #   keyring
     #   twine
 iniconfig==2.0.0
@@ -234,7 +233,7 @@ numpy==1.26.4
     #   shapely
     #   snuggs
     #   xarray
-odc-geo==0.3.3
+odc-geo==0.4.7
     # via -r constraints.in
 owslib==0.27.2
     # via compliance-checker

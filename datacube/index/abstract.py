@@ -17,25 +17,21 @@ from uuid import UUID
 from datetime import timedelta
 from deprecat import deprecat
 
+from odc.geo import CRS, Geometry
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.index.exceptions import TransactionException
 from datacube.index.fields import Field
-from datacube.model import Product, Dataset, MetadataType, Range, Not
+from datacube.model import Product, Dataset, MetadataType, Range
 from datacube.model import LineageTree, LineageDirection, LineageRelation
+from datacube.model import QueryField, QueryDict
 from datacube.model.lineage import LineageRelations
 from datacube.utils import cached_property, jsonify_document, read_documents, InvalidDocException, report_to_user
 from datacube.utils.changes import AllowPolicy, Change, Offset, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.generic import thread_local_cache
 from datacube.migration import ODC2DeprecationWarning
-from odc.geo import CRS, Geometry
-from odc.geo.geom import box
-from datacube.utils.documents import UnknownMetadataType
+from datacube.utils.documents import UnknownMetadataType, JsonLike, JsonDict
 
 _LOG = logging.getLogger(__name__)
-
-JsonAtom = None | bool | str | float | int
-JsonLike = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
-JsonDict = dict[str, JsonLike]
 
 
 class BatchStatus(NamedTuple):
@@ -285,7 +281,7 @@ class AbstractMetadataTypeResource(ABC):
     def update_document(self,
                         definition: JsonDict,
                         allow_unsafe_updates: bool = False,
-                       ) -> MetadataType:
+                        ) -> MetadataType:
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -391,10 +387,6 @@ class AbstractMetadataTypeResource(ABC):
         # Default implementation calls get_all()
         for mdt in self.get_all():
             yield cast(JsonDict, mdt.definition)
-
-
-QueryField = str | float | int | Range | datetime.datetime | Not
-QueryDict = dict[str, QueryField]
 
 
 class AbstractProductResource(ABC):
@@ -611,7 +603,7 @@ class AbstractProductResource(ABC):
                         definition: JsonDict,
                         allow_unsafe_updates: bool = False,
                         allow_table_lock: bool = False
-                       ) -> Product:
+                        ) -> Product:
         """
         Update a metadata type from a document. Unsafe changes will throw a ValueError by default.
 
@@ -1594,7 +1586,7 @@ class AbstractDatasetResource(ABC):
     def search_by_metadata(self,
                            metadata: JsonDict,
                            archived: bool | None = False
-                          ) -> Iterable[Dataset]:
+                           ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -1633,6 +1625,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Matching datasets
         """
@@ -1759,6 +1752,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Matching datasets, grouped by Product
         """
@@ -1791,6 +1785,7 @@ class AbstractDatasetResource(ABC):
                          True: Return archived datasets only.
         :param order_by: a field name or field by which to sort output.  None is unsorted and may allow faster return
                          of first result depending on the index driver's implementation.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Namedtuple of requested fields, for each matching dataset.
         """
@@ -1803,6 +1798,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Count active datasets only.
                          None: Count archived and active datasets.
                          True: Count archived datasets only.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Count of matching datasets in index
         """
@@ -1812,6 +1808,10 @@ class AbstractDatasetResource(ABC):
         """
         Perform a search, returning a count of for each matching product type.
 
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
+        :param archived: False (default): Count active datasets only.
+                         None: Count archived and active datasets.
+                         True: Count archived datasets only.
         :param query: search query parameters
         :return: Counts of matching datasets in index, grouped by product.
         """
@@ -1850,6 +1850,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Count active datasets only.
                          None: Count archived and active datasets.
                          True: Count archived datasets only.
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :returns: The product, a list of time ranges and the count of matching datasets.
         """
@@ -1865,6 +1866,7 @@ class AbstractDatasetResource(ABC):
         """
         Perform a search, returning just the search fields of each dataset.
 
+        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Mappings of search fields for matching datasets
         """
@@ -1962,76 +1964,6 @@ class AbstractDatasetResource(ABC):
         :param crs: A CRS (defaults to EPSG:4326)
         :return: The combined spatial extents of the datasets.
         """
-
-    def _extract_geom_from_query(self, q: QueryDict) -> Geometry | None:
-        """
-        Utility method for index drivers supporting spatial indexes.
-
-        Extract a Geometry from a dataset query.  Backwards compatible with old lat/lon style queries.
-
-        :param q: A query dictionary
-        :return: A polygon or multipolygon type Geometry.  None if no spatial query clauses.
-        """
-        geom: Geometry | None = None
-        if "geometry" in q:
-            # New geometry-style spatial query
-            geom_term = cast(JsonDict | Geometry, q.pop("geometry"))
-            try:
-                geom = Geometry(geom_term)
-            except ValueError:
-                # Can't convert to single Geometry. If it is an iterable of Geometries, return the union
-                for term in geom_term:
-                    if geom is None:
-                        geom = Geometry(term)
-                    else:
-                        geom = geom.union(Geometry(term))
-            if "lat" in q or "lon" in q:
-                raise ValueError("Cannot specify lat/lon AND geometry in the same query")
-            assert geom and geom.crs
-        else:
-            # Old lat/lon--style spatial query (or no spatial query)
-            # TODO: latitude/longitude/x/y aliases for lat/lon
-            #       Also some stuff is precalced at the api.core.Datacube level.
-            #       THAT needs to offload to index driver when it can.
-            lat = q.pop("lat", None)
-            lon = q.pop("lon", None)
-            if lat is None and lon is None:
-                # No spatial query
-                _LOG.info("No spatial query")
-                return None
-
-            # Old lat/lon--style spatial query
-            if lat is None:
-                lat = Range(begin=-90, end=90)
-            if lon is None:
-                lon = Range(begin=-180, end=180)
-            delta = 0.000001
-            if isinstance(lat, Range) and isinstance(lon, Range):
-                # ranges for both - build a box.
-                geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=CRS("EPSG:4326"))
-            elif isinstance(lat, Range):
-                if isinstance(lon, (int, float)):
-                    # lat is a range, but lon is scalar - geom is ideally a line
-                    # odc.geo is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = box(lon - delta, lat.begin, lon + delta, lat.end, crs=CRS("EPSG:4326"))
-                else:
-                    raise ValueError("lon search term must be a Range or a numeric scalar")
-            elif isinstance(lon, Range):
-                if isinstance(lat, (int, float)):
-                    # lon is a range, but lat is scalar - geom is ideally a line
-                    # odc.geo is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = box(lon.begin, lat - delta, lon.end, lat + delta, crs=CRS("EPSG:4326"))
-                else:
-                    raise ValueError("lat search term must be a Range or a numeric scalar")
-            else:
-                if isinstance(lon, (int, float)) and isinstance(lat, (int, float)):
-                    # Lat and Lon are both scalars - geom is ideally point
-                    # odc.geo is always (x, y) order - ignore lat,lon order specified by EPSG:4326
-                    geom = box(lon - delta, lat - delta, lon + delta, lat + delta, crs=CRS("EPSG:4326"))
-                else:
-                    raise ValueError("lat and lon search terms must be of type Range or a numeric scalar")
-        _LOG.info("Spatial Query Geometry: %s", geom.wkt)
-        return geom
 
 
 class AbstractTransaction(ABC):

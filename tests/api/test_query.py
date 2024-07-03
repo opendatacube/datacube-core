@@ -18,7 +18,21 @@ from odc.geo import CRS
 @pytest.fixture
 def mock_index():
     from unittest.mock import MagicMock
-    return MagicMock()
+    idx = MagicMock()
+    idx.supports_spatial_indexes = False
+    return idx
+
+
+@pytest.fixture
+def test_geom():
+    from odc.geo.geom import polygon
+    return polygon([
+        (-35.0, 110.0),
+        (-35.0, 125.0),
+        (-45.0, 125.0),
+        (-45.0, 110),
+        (-35.0, 110),
+    ], crs="EPSG:4326")
 
 
 def test_query_kwargs(mock_index):
@@ -41,6 +55,8 @@ def test_query_kwargs(mock_index):
     assert 'lat' in query.search_terms
     assert 'lon' in query.search_terms
 
+    query = Query(index=mock_index, latitude=-35, longitude=148)
+
     query = Query(index=mock_index, y=(-4174726, -4180011), x=(1515184, 1523263), crs='EPSG:3577')
     assert query.geopolygon
     assert 'lat' in query.search_terms
@@ -61,6 +77,7 @@ def test_query_kwargs(mock_index):
     assert 'lat' in query.search_terms
     assert 'lon' in query.search_terms
 
+    mock_index.supports_spatial_indexes = True
     query = Query(index=mock_index, time='2001')
     assert 'time' in query.search
 
@@ -87,6 +104,20 @@ def test_query_kwargs(mock_index):
     gb = query_group_by('time')
     assert isinstance(gb, GroupBy)
     assert query_group_by(group_by=gb) is gb
+
+
+def test_query_kwargs_postgis(mock_index, test_geom):
+    mock_index.supports_spatial_indexes = True
+
+    query = Query(index=mock_index, latitude=-35, longitude=148)
+    assert query.geopolygon
+    assert 'lat' not in query.search_terms
+    assert 'lon' not in query.search_terms
+    assert 'geopolygon' in query.search_terms
+
+    query = Query(index=mock_index, geopolygon=test_geom)
+    assert query.geopolygon
+    assert 'geopolygon' in query.search_terms
 
 
 def format_test(start_out, end_out):

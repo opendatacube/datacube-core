@@ -8,10 +8,15 @@ What's New
 v1.9.next
 =========
 
+v1.9.0-rc9 (3rd July 2024)
+==========================
+
 - Ensure config API works with a blank config/empty file. (:pull:`1604`)
 - Various minor maintenance fixes. (:pull:`1607`)
-- Add new driver based loader (via odc.loader) (:pull:`1609`)
 - Misc cleanup, and add support for geospatial queries to count methods in postgis driver. (:pull:`1608`)
+- Add new driver based loader (via odc.loader) (:pull:`1609`)
+- Fix 1.9 docker image in GHA (:pull:`1610`)
+- Consolidate spatial search argument handling in index layer and prepare for release. (:pull:`1611`)
 
 v1.9.0-rc8 (18th June 2024)
 ===========================
@@ -121,6 +126,10 @@ v1.9.0-rc1 (27th March 2024)
 v1.8.next
 =========
 
+v1.8.19 (2nd July 2024)
+=======================
+
+- Update whats_new for 1.8.19 release (:pull:`1612`)
 - Always write floating point bands to cogs with nodata=nan for ESRI and GDAL compatibility (:pull:`1602`)
 - Add deprecation warning for config environment names that will not be supported in 1.9 (:pull:`1592`)
 - Update docker image to GDAL 3.9/Python 3.12/Ubuntu 24.04 (:pull:`1587`)

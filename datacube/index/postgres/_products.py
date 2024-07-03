@@ -9,7 +9,8 @@ from cachetools.func import lru_cache
 from typing import Iterable, Sequence, cast
 
 from datacube.index import fields
-from datacube.index.abstract import AbstractProductResource, JsonDict
+from datacube.index.abstract import AbstractProductResource
+from datacube.utils.documents import JsonDict
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.model import MetadataType, Product
 from datacube.utils import jsonify_document, changes, _readable_offset

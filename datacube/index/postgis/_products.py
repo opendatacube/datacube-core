@@ -10,7 +10,8 @@ from cachetools.func import lru_cache
 
 from odc.geo.geom import CRS, Geometry
 from datacube.index import fields
-from datacube.index.abstract import AbstractProductResource, BatchStatus, JsonDict
+from datacube.index.abstract import AbstractProductResource, BatchStatus
+from datacube.utils.documents import JsonDict
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
@@ -306,7 +307,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
             # Check that all the keys they specified match this product.
             for key, value in list(remaining_matchable.items()):
-                if key == "geometry":
+                if key == "geopolygon":
                     # Geometry field is handled elsewhere by index drivers that support spatial indexes.
                     continue
                 field = type_.metadata_type.dataset_fields.get(key)

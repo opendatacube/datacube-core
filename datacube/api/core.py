@@ -26,10 +26,10 @@ from odc.geo.geobox import GeoBox, GeoboxTiles
 from datacube.model import ExtraDimensions, ExtraDimensionSlices, Dataset, Measurement, GridSpec
 from datacube.model.utils import xr_apply
 
-from .query import Query, query_group_by, query_geopolygon, GroupBy
-from ..index import index_connect, Index
+from .query import Query, query_group_by, GroupBy
+from ..index import index_connect, Index, extract_geom_from_query
 from ..drivers import new_datasource
-from ..index.abstract import QueryField
+from ..model import QueryField
 from ..migration import ODC2DeprecationWarning
 from ..storage._load import ProgressFunction, FuserFunction
 
@@ -300,6 +300,13 @@ class Datacube:
 
                 geopolygon=polygon(coords, crs="EPSG:3577")
 
+            Or an iterable of polygons (search is done against the union of all polygons:
+
+                geopolygon=[poly1, poly2, poly3, ....]
+
+            You can also pass a WKT string, or a GeoJSON string or any other object that can be passed to the
+            odc.geo.Geometry constructor, or an iterable of any of the above.
+
             Performance and accuracy of geopolygon queries may vary depending on the index driver in use and the CRS.
 
             The ``time`` dimension can be specified using a single or tuple of datetime objects or strings with
@@ -540,8 +547,6 @@ class Datacube:
 
         measurement_dicts = datacube_product.lookup_measurements(measurements)
 
-        # `extra_dims` put last for backwards compability, but should really be the second position
-        # betwween `grouped` and `geobox`
         result = self.load_data(grouped, geobox,
                                 measurement_dicts,
                                 resampling=resampling,
@@ -614,7 +619,7 @@ class Datacube:
         datasets = self.index.datasets.search(limit=limit,
                                               **query.search_terms)
 
-        if query.geopolygon is not None:
+        if query.geopolygon is not None and not self.index.supports_spatial_indexes:
             datasets = select_datasets_inside_polygon(datasets, query.geopolygon)
 
         if ensure_location:
@@ -1078,7 +1083,7 @@ def output_geobox(like: GeoBox | xarray.Dataset | xarray.DataArray | None = None
     #  3. Computed from dataset footprints
     #  4. fail with ValueError
     if geopolygon is None:
-        geopolygon = query_geopolygon(**query)
+        geopolygon = extract_geom_from_query(**query)
 
         if geopolygon is None:
             if datasets is None:
@@ -1105,6 +1110,7 @@ def output_geobox(like: GeoBox | xarray.Dataset | xarray.DataArray | None = None
 
 def select_datasets_inside_polygon(datasets: Iterable[Dataset], polygon: Geometry) -> Iterable[Dataset]:
     # Check against the bounding box of the original scene, can throw away some portions
+    # (Only needed for index drivers without spatial index support)
     assert polygon is not None
     query_crs = polygon.crs
     for dataset in datasets:

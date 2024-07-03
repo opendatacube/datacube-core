@@ -248,6 +248,16 @@ def _write_geographical_extents_attributes(nco, extent):
     # nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
 
 
+class DimensionWrapper:
+    """
+    Needed calling data_resolution_and_offset() from odc-geo 0.4.4
+
+    TODO: Remove this code and pin odc-geo if/when this gets fixed there.
+    """
+    def __init__(self, dim):
+        self.values = dim
+
+
 def create_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
     if crs.geographic:
         crs_var = _create_latlon_grid_mapping_variable(nco, crs, name)
@@ -271,8 +281,13 @@ def create_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
     crs_var.spatial_ref = crs.wkt
 
     dims = crs.dimensions
-    xres, xoff = data_resolution_and_offset(nco[dims[1]])
-    yres, yoff = data_resolution_and_offset(nco[dims[0]])
+    try:
+        xres, xoff = data_resolution_and_offset(nco[dims[1]])
+        yres, yoff = data_resolution_and_offset(nco[dims[0]])
+    except AttributeError:
+        xres, xoff = data_resolution_and_offset(DimensionWrapper(nco[dims[1]]))
+        yres, yoff = data_resolution_and_offset(DimensionWrapper(nco[dims[0]]))
+
     crs_var.GeoTransform = [xoff, xres, 0.0, yoff, 0.0, yres]
 
     left, right = nco[dims[1]][0] - 0.5 * xres, nco[dims[1]][-1] + 0.5 * xres
