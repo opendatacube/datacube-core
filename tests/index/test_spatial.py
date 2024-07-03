@@ -28,3 +28,6 @@ def test_extract_geom():
 
     with pytest.raises(ValueError):
         geom = extract_geom_from_query(latitude=(22, 23), y=(10011.1, 585585.5), crs="epsg:3577")
+
+    with pytest.raises(ValueError):
+        geom = extract_geom_from_query(lon=(22, 23), x=(10011.1, 585585.5), crs="epsg:3577")

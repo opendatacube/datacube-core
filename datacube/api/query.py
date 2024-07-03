@@ -10,6 +10,7 @@ Storage Query and Access API module
 import logging
 import datetime
 import collections
+import math
 import warnings
 from typing import Optional, Union
 import pandas
@@ -144,15 +145,15 @@ class Query:
             if self.index and self.index.supports_spatial_indexes:
                 kwargs['geopolygon'] = self.geopolygon
             else:
-                geo_bb = lonlat_bounds(self.geopolygon, resolution=100_000)  # TODO: pick resolution better
-                if geo_bb.bottom != geo_bb.top:
-                    kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
-                else:
+                geo_bb = lonlat_bounds(self.geopolygon, resolution="auto")
+                if math.isclose(geo_bb.bottom, geo_bb.top, tol=1e-5):
                     kwargs['lat'] = geo_bb.bottom
-                if geo_bb.left != geo_bb.right:
-                    kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
                 else:
+                    kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
+                if math.isclose(geo_bb.left, geo_bb.right, tol=1e-5):
                     kwargs['lon'] = geo_bb.left
+                else:
+                    kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
         if self.product:
             kwargs['product'] = self.product
         if self.source_filter:
