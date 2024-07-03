@@ -77,7 +77,11 @@ class Query:
 
         :param datacube.index.Index index: An optional `index` object, if checking of field names is desired.
         :param str product: name of product
-        :type geopolygon: geometry.Geometry | None the spatial boundaries of the search
+        :type geopolygon: the spatial boundaries of the search, can be:
+                          odc.geo.geom.Geometry: A Geometry object
+                          Any string or JsonLike object that can be converted to a Geometry object.
+                          An iterable of either of the above; or
+                          None: no geopolygon defined (may be derived from like or lat/lon/x/y/crs search terms)
         :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
         :param search_terms:
          * `measurements` - list of measurements to retrieve

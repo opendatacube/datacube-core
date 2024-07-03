@@ -12,16 +12,19 @@ V_SPATIAL_KEYS = ("lat", "latitude", "y")
 COORDS_SPATIAL_KEYS = H_SPATIAL_KEYS + V_SPATIAL_KEYS
 
 CRS_SPATIAL_KEYS = ("crs", "coordinate_reference_system")
-SPATIAL_KEYS = COORDS_SPATIAL_KEYS + CRS_SPATIAL_KEYS
 
-ALL_SPATIAL_KEYS = SPATIAL_KEYS + ("geopolygon",)
+# All of the above
+NON_GEOPOLYGON_SPATIAL_KEYS = COORDS_SPATIAL_KEYS + CRS_SPATIAL_KEYS
+
+# All of the above plus geopolygon
+SPATIAL_KEYS = NON_GEOPOLYGON_SPATIAL_KEYS + ("geopolygon",)
 
 
 def strip_all_spatial_fields_from_query(q: QueryDict) -> QueryDict:
     return {
         k: v
         for k, v in q.items()
-        if k not in ALL_SPATIAL_KEYS
+        if k not in SPATIAL_KEYS
     }
 
 
@@ -47,7 +50,7 @@ def extract_geom_from_query(**q: QueryField | tuple) -> Geometry | None:
                     geom = Geometry(term)
                 else:
                     geom = geom.union(Geometry(term))
-        for spatial_key in SPATIAL_KEYS:
+        for spatial_key in NON_GEOPOLYGON_SPATIAL_KEYS:
             if spatial_key in q:
                 raise ValueError(f"Cannot specify spatial key {spatial_key} AND geopolygon in the same query")
         assert geom and geom.crs
