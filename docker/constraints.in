@@ -57,7 +57,7 @@ alembic
 sqlalchemy>=2.0.18
 toolz
 xarray>=2023.9.0
-odc-geo
+odc-geo>=0.4
 # For Python 3.12 support
 wrapt>=1.16.0
 
