@@ -94,8 +94,7 @@ def ensure_db(engine, with_permissions=True):
         if with_permissions:
             _LOG.info('Ensuring user roles.')
             _ensure_role(c, 'odc_user')
-            _ensure_role(c, 'odc_ingest', inherits_from='odc_user')
-            _ensure_role(c, 'odc_manage', inherits_from='odc_ingest')
+            _ensure_role(c, 'odc_manage', inherits_from='odc_user')
             _ensure_role(c, 'odc_admin', inherits_from='odc_manage', add_user=True)
 
             c.execute(text(f"""
@@ -136,10 +135,10 @@ def ensure_db(engine, with_permissions=True):
 
             grant insert on {SCHEMA_NAME}.dataset,
                             {SCHEMA_NAME}.location,
-                            {SCHEMA_NAME}.dataset_lineage to odc_ingest;
-            grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_ingest;
+                            {SCHEMA_NAME}.dataset_lineage to odc_manage;
+            grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_manage;
 
-            -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
+            -- Manage allows deletion of types that have nothing written yet (admin needed delete the data itself)
             grant insert, delete on {SCHEMA_NAME}.product,
                                     {SCHEMA_NAME}.metadata_type to odc_manage;
             -- Allow creation of indexes, views
