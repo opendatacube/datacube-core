@@ -251,7 +251,7 @@ def test_user_creation(clirunner, example_user):
     username, user_description = example_user
 
     # Create them
-    args = ['user', 'create', 'ingest', username]
+    args = ['user', 'create', 'user', username]
     if user_description:
         args.extend(['--description', user_description])
     clirunner(args)

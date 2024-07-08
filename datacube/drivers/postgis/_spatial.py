@@ -15,7 +15,7 @@ from sqlalchemy.dialects import postgresql as postgres
 from geoalchemy2 import Geometry
 
 from sqlalchemy.engine import Engine
-from sqlalchemy import Column
+from sqlalchemy import Column, text
 from sqlalchemy.orm import Session
 
 from odc.geo import CRS, Geometry as Geom
@@ -154,6 +154,17 @@ def ensure_spindex(engine: Engine, sp_idx: Type[SpatialIndex]) -> None:
         session.add(SpatialIndexRecord.from_spindex(sp_idx))
         session.commit()
         session.flush()
+    # Permissions Management
+    with engine.connect() as c:
+        for command in [
+            # Read access to odc_user
+            f"grant select on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_user;",  # type: ignore[attr-defined]
+            # Insert access to odc_manage
+            f"grant insert on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_manage;",  # type: ignore[attr-defined]
+            # Full access to odc_admin
+            f"grant all on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_admin;",  # type: ignore[attr-defined]
+        ]:
+            c.execute(text(command))
     return
 
 

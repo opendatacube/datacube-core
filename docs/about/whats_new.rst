@@ -8,6 +8,8 @@ What's New
 v1.9.next
 =========
 
+- Permissions management cleanup in postgis driver. (:pull:`1613`)
+
 v1.9.0-rc9 (3rd July 2024)
 ==========================
 

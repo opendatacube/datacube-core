@@ -24,7 +24,7 @@ from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                           UPDATE_TIMESTAMP_SQL,
                                           escape_pg_identifier)
 
-USER_ROLES = ('odc_user', 'odc_ingest', 'odc_manage', 'odc_admin')
+USER_ROLES = ('odc_user', 'odc_manage', 'odc_admin')
 
 SQL_NAMING_CONVENTIONS = {
     "ix": 'ix_%(column_0_label)s',
@@ -94,8 +94,7 @@ def ensure_db(engine, with_permissions=True):
         if with_permissions:
             _LOG.info('Ensuring user roles.')
             _ensure_role(c, 'odc_user')
-            _ensure_role(c, 'odc_ingest', inherits_from='odc_user')
-            _ensure_role(c, 'odc_manage', inherits_from='odc_ingest')
+            _ensure_role(c, 'odc_manage', inherits_from='odc_user')
             _ensure_role(c, 'odc_admin', inherits_from='odc_manage', add_user=True)
 
             c.execute(text(f"""
@@ -136,10 +135,10 @@ def ensure_db(engine, with_permissions=True):
 
             grant insert on {SCHEMA_NAME}.dataset,
                             {SCHEMA_NAME}.location,
-                            {SCHEMA_NAME}.dataset_lineage to odc_ingest;
-            grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_ingest;
+                            {SCHEMA_NAME}.dataset_lineage to odc_manage;
+            grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_manage;
 
-            -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
+            -- Manage allows deletion of types that have nothing written yet (admin needed to delete the data itself)
             grant insert, delete on {SCHEMA_NAME}.product,
                                     {SCHEMA_NAME}.metadata_type to odc_manage;
             -- Allow creation of indexes, views
@@ -266,8 +265,8 @@ def to_pg_role(role):
 
     Why are we even doing this? Can't we use the same names internally and externally?
 
-    >>> to_pg_role('ingest')
-    'odc_ingest'
+    >>> to_pg_role('user')
+    'odc_user'
     >>> to_pg_role('fake')
     Traceback (most recent call last):
     ...
