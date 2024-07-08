@@ -138,7 +138,7 @@ def ensure_db(engine, with_permissions=True):
                             {SCHEMA_NAME}.dataset_lineage to odc_manage;
             grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_manage;
 
-            -- Manage allows deletion of types that have nothing written yet (admin needed delete the data itself)
+            -- Manage allows deletion of types that have nothing written yet (admin needed to delete the data itself)
             grant insert, delete on {SCHEMA_NAME}.product,
                                     {SCHEMA_NAME}.metadata_type to odc_manage;
             -- Allow creation of indexes, views
