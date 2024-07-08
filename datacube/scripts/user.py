@@ -20,7 +20,7 @@ from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.index.abstract import AbstractIndex
 
 _LOG = logging.getLogger('datacube-user')
-USER_ROLES = ('user', 'ingest', 'manage', 'admin')
+USER_ROLES = ('user', 'manage', 'admin')
 
 
 @cli.group(name='user', help='User management commands')
