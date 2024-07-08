@@ -24,7 +24,7 @@ from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                           UPDATE_TIMESTAMP_SQL,
                                           escape_pg_identifier)
 
-USER_ROLES = ('odc_user', 'odc_ingest', 'odc_manage', 'odc_admin')
+USER_ROLES = ('odc_user', 'odc_manage', 'odc_admin')
 
 SQL_NAMING_CONVENTIONS = {
     "ix": 'ix_%(column_0_label)s',
@@ -265,8 +265,8 @@ def to_pg_role(role):
 
     Why are we even doing this? Can't we use the same names internally and externally?
 
-    >>> to_pg_role('ingest')
-    'odc_ingest'
+    >>> to_pg_role('user')
+    'odc_user'
     >>> to_pg_role('fake')
     Traceback (most recent call last):
     ...
