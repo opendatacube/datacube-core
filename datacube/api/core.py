@@ -120,9 +120,9 @@ class Datacube:
             return
 
         # Obtain an ODCEnvironment object:
-        cfg_env = ODCConfig.get_environment(env=env, config=config, raw_config=raw_config)
+        self.cfg_env = ODCConfig.get_environment(env=env, config=config, raw_config=raw_config)
 
-        self.index = index_connect(cfg_env,
+        self.index = index_connect(self.cfg_env,
                                    application_name=app,
                                    validate_connection=validate_connection)
 
