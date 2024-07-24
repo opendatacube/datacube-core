@@ -79,6 +79,7 @@ def check(cfg_env: ODCEnvironment):
     echo_field('Index Driver', cfg_env.index_driver)
     db_url = psql_url_from_config(cfg_env)
     echo_field('Database URL:', db_url)
+    echo_field('Skip broken datasets:', cfg_env.skip_broken_datasets)
 
     echo()
     echo('Valid connection:\t', nl=False)

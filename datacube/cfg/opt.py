@@ -168,6 +168,20 @@ class IntOptionHandler(ODCOptionHandler):
         return ival
 
 
+class BoolOptionHandler(ODCOptionHandler):
+    """
+    Handle config option expecting a boolean value
+    """
+    def validate_and_normalise(self, value: Any) -> Any:
+        value = super().validate_and_normalise(value)
+        if isinstance(value, bool):
+            return value
+        elif isinstance(value, str) and value.lower() == "true":
+            return True
+        else:
+            return False
+
+
 class IAMAuthenticationOptionHandler(ODCOptionHandler):
     """
     A simple boolean, compatible with the historic behaviour of the IAM Authentication on/off option.

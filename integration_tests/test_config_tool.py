@@ -122,6 +122,7 @@ def test_config_check(clirunner, index, cfg_env):
 
     assert cfg_env['db_hostname'] in result.output
     assert cfg_env['db_username'] in result.output
+    assert str(cfg_env['skip_broken_datasets']) in result.output
 
 
 def test_list_users_does_not_fail(clirunner, cfg_env, index):
