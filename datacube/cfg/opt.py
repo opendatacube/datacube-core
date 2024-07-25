@@ -90,6 +90,7 @@ class ODCOptionHandler:
         2. Check canonical envvar name first.  E.g. option "bar" in environment "foo" -> $ODC_FOO_BAR
         3. Check canonical envvar name for any alias environments that point to this one.
         4. Check any legacy envvar names, and raise warnings if found.
+        5. Check global envvar name, denoted by "all" instead of an environment name
 
         :return: First environment variable with non-empty value, or None if none found.
         """
@@ -97,16 +98,17 @@ class ODCOptionHandler:
             canonical_name = f"odc_{self.env._name}_{self.name}".upper()
             for env_name in self.env.get_all_aliases():
                 envvar_name = f"odc_{env_name}_{self.name}".upper()
-                val = os.environ.get(envvar_name)
-                if val:
+                if val := os.environ.get(envvar_name):
                     return val
-            for env_name in self.legacy_env_aliases:
-                val = os.environ.get(env_name)
-                if val:
+            for envvar_name in self.legacy_env_aliases:
+                if val := os.environ.get(envvar_name):
                     warnings.warn(
-                        f"Config being passed in by legacy environment variable ${env_name}. "
+                        f"Config being passed in by legacy environment variable ${envvar_name}. "
                         f"Please use ${canonical_name} instead.")
                     return val
+            global_name = f"odc_all_{self.name}".upper()
+            if val := os.environ.get(global_name):
+                return val
         return None
 
 

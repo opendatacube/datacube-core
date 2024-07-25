@@ -22,6 +22,8 @@ def check_valid_env_name(name: str) -> None:
     """
     if not re.fullmatch(r"^[a-z][a-z0-9]*$", name):
         raise ConfigException(f'Environment names must consist of only lower case letters and numbers: {name}')
+    if name.lower() == "all":
+        raise ConfigException('Environments cannot be named "ALL"')
 
 
 def check_valid_option(name: str) -> None:
