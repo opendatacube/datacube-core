@@ -15,7 +15,7 @@ from typing import Any, TypeAlias, Union, cast
 
 from .cfg import find_config, parse_text
 from .exceptions import ConfigException
-from .opt import ODCOptionHandler, AliasOptionHandler, IndexDriverOptionHandler
+from .opt import ODCOptionHandler, AliasOptionHandler, IndexDriverOptionHandler, BoolOptionHandler, IntOptionHandler
 from .utils import ConfigDict, check_valid_env_name
 
 
@@ -272,7 +272,9 @@ class ODCEnvironment:
 
         self._option_handlers: list[ODCOptionHandler] = [
             AliasOptionHandler("alias", self),
-            IndexDriverOptionHandler("index_driver", self, default="default")
+            IndexDriverOptionHandler("index_driver", self, default="default"),
+            BoolOptionHandler("skip_broken_datasets", self, default=False),
+            IntOptionHandler("dc_load_limit", self, minval=0),
         ]
 
     def get_all_aliases(self):

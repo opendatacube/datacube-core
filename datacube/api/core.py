@@ -247,7 +247,7 @@ class Datacube:
              resolution: int | float | tuple[int | float, int | float] | Resolution | None = None,
              resampling: Resampling | dict[str, Resampling] | None = None,
              align: XY[float] | Iterable[float] | None = None,
-             skip_broken_datasets: bool = False,
+             skip_broken_datasets: bool | None = None,
              dask_chunks: dict[str, str | int] | None = None,
              like: GeoBox | xarray.Dataset | xarray.DataArray | None = None,
              fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
@@ -423,6 +423,7 @@ class Datacube:
 
         :param bool skip_broken_datasets:
             Optional. If this is True, then don't break when failing to load a broken dataset.
+            If None, the value will come from the environment variable of the same name.
             Default is False.
 
         :param dict dask_chunks:
@@ -475,6 +476,7 @@ class Datacube:
 
         :param limit:
             Optional. If provided, limit the maximum number of datasets returned. Useful for testing and debugging.
+            Can also be provided via the ``dc_load_limit`` config option.
 
         :param driver:
             Optional. If provided, use the specified driver to load the data.
@@ -494,6 +496,9 @@ class Datacube:
 
         if datasets is None:
             assert product is not None   # For type checker
+            if limit is None:
+                # check if a value was provided via the envvar
+                limit = self.index.environment["dc_load_limit"]
             datasets = self.find_datasets(ensure_location=True,
                                           dataset_predicate=dataset_predicate, like=like,
                                           limit=limit,
@@ -546,6 +551,10 @@ class Datacube:
         grouped = self.group_datasets(datasets, group_by)
 
         measurement_dicts = datacube_product.lookup_measurements(measurements)
+
+        if skip_broken_datasets is None:
+            # default to value from env var, which defaults to False
+            skip_broken_datasets = self.index.environment["skip_broken_datasets"]
 
         result = self.load_data(grouped, geobox,
                                 measurement_dicts,

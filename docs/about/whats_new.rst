@@ -9,6 +9,8 @@ v1.9.next
 =========
 
 - Permissions management cleanup in postgis driver. (:pull:`1613`)
+- Add `skip_broken_datasets` and `dc_load_limit` config options. (:pull:`1616`)
+- Enable global environment variables with `ODC_ALL` naming convention (:pull:`1616`)
 
 v1.9.0-rc9 (3rd July 2024)
 ==========================
