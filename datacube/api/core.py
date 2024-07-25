@@ -476,6 +476,7 @@ class Datacube:
 
         :param limit:
             Optional. If provided, limit the maximum number of datasets returned. Useful for testing and debugging.
+            Can also be provided via the ``dc_load_limit`` config option.
 
         :param driver:
             Optional. If provided, use the specified driver to load the data.
@@ -495,6 +496,9 @@ class Datacube:
 
         if datasets is None:
             assert product is not None   # For type checker
+            if limit is None:
+                # check if a value was provided via the envvar
+                limit = self.index.environment["dc_load_limit"]
             datasets = self.find_datasets(ensure_location=True,
                                           dataset_predicate=dataset_predicate, like=like,
                                           limit=limit,

@@ -159,6 +159,8 @@ class IntOptionHandler(ODCOptionHandler):
     def validate_and_normalise(self, value: Any) -> Any:
         # Call super() to get handle default value
         value = super().validate_and_normalise(value)
+        if value is None:
+            return value
         try:
             ival = int(value)
         except ValueError:
