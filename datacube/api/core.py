@@ -120,9 +120,9 @@ class Datacube:
             return
 
         # Obtain an ODCEnvironment object:
-        self.cfg_env = ODCConfig.get_environment(env=env, config=config, raw_config=raw_config)
+        cfg_env = ODCConfig.get_environment(env=env, config=config, raw_config=raw_config)
 
-        self.index = index_connect(self.cfg_env,
+        self.index = index_connect(cfg_env,
                                    application_name=app,
                                    validate_connection=validate_connection)
 
@@ -550,7 +550,7 @@ class Datacube:
 
         if skip_broken_datasets is None:
             # default to value from env var, which defaults to False
-            skip_broken_datasets = self.cfg_env["skip_broken_datasets"]
+            skip_broken_datasets = self.index.environment["skip_broken_datasets"]
 
         result = self.load_data(grouped, geobox,
                                 measurement_dicts,
