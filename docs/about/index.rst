@@ -1,6 +1,7 @@
 *****
 About
 *****
+ This a small documentation change!
 
 .. toctree::
     :caption: About
