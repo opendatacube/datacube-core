@@ -13,7 +13,7 @@ Open Data Cube Core
     :alt: Documentation Status
     :target: http://datacube-core.readthedocs.org/en/latest/
 
-.. image:: https://img.shields.io/badge/Discord-7289DA?style=flat&logo=discord&logoColor=white
+.. image:: https://img.shields.io/discord/1212501566326571070?label=Discord&logo=discord&logoColor=white&color=7289DA)](https://discord.gg/4hhBQVas5U
     :alt: Discord
     :target: https://discord.com/invite/4hhBQVas5U
 
