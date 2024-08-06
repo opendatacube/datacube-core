@@ -13,6 +13,10 @@ Open Data Cube Core
     :alt: Documentation Status
     :target: http://datacube-core.readthedocs.org/en/latest/
 
+.. image:: https://img.shields.io/discord/1212501566326571070?label=Discord&logo=discord&logoColor=white&color=7289DA)](https://discord.gg/4hhBQVas5U
+    :alt: Discord
+    :target: https://discord.com/invite/4hhBQVas5U
+
 Overview
 ========
 
@@ -27,7 +31,7 @@ Documentation
 See the `user guide <http://datacube-core.readthedocs.io/en/latest/>`__ for
 installation and usage of the datacube, and for documentation of the API.
 
-`Join our Slack <http://slack.opendatacube.org>`__ if you need help
+`Join our Discord <https://discord.com/invite/4hhBQVas5U>`__ if you need help
 setting up or using the Open Data Cube.
 
 Please help us to keep the Open Data Cube community open and inclusive by
