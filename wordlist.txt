@@ -188,6 +188,7 @@ GeoTiff
 geotiff
 GeoTIFFs
 GeoTiffs
+gg
 gh
 GIS
 Github
@@ -203,6 +204,7 @@ gridWorkflow
 GroupBy
 HDF
 hdf
+hhBQVas
 hl
 hoc
 hostname
@@ -263,6 +265,7 @@ linux
 literalinclude
 localhost
 localmemory
+logoColor
 lon
 lonlat
 lr
