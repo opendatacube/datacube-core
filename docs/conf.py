@@ -130,9 +130,9 @@ html_theme_options = {
             "icon": "fab fa-github",
         },
         {
-            "name": "Slack",
-            "url": "http://slack.opendatacube.org/",
-            "icon": "fab fa-slack",
+            "name": "Discord",
+            "url": "https://discord.com/invite/4hhBQVas5U",
+            "icon": "fab fa-discord",
         },
     ],
 }

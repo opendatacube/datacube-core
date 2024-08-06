@@ -3,7 +3,7 @@
 Firstly, thank you for contributing! We are very grateful for your assistance in improving the Open Data Cube.
 
 When contributing to this repository, please first discuss the change you wish to make via an issue,
-Slack, or any other method with the owners of this repository before proposing a change.
+Discord, or any other method with the owners of this repository before proposing a change.
 
 We have a [code of conduct](code-of-conduct.md), so please follow it in all your interactions with the project.
 
@@ -40,5 +40,5 @@ and consider major enhancements, and there are a number of [current and past enh
 In case you haven't found them yet, please checkout the following resources:
 
 * [Documentation](https://datacube-core.readthedocs.io/en/latest/)
-* [Slack](http://slack.opendatacube.org)
+* [Discord](https://discord.com/invite/4hhBQVas5U)
 * [GIS Stack Exchange](https://gis.stackexchange.com/questions/tagged/open-data-cube).
