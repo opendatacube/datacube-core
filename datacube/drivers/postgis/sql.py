@@ -43,16 +43,6 @@ end;
 $$ language plpgsql;
 """.format(schema=SCHEMA_NAME)
 
-UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE = """
-alter table {schema}.{table} add column if not exists updated
-timestamptz default null;
-"""
-
-ADDED_COLUMN_MIGRATE_SQL_TEMPLATE = """
-alter table {schema}.{table} add column if not exists added
-timestamptz default now();
-"""
-
 INSTALL_TRIGGER_SQL_TEMPLATE = """
 drop trigger if exists row_update_time_{table} on {schema}.{table};
 create trigger row_update_time_{table}

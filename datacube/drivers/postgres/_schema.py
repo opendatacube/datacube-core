@@ -30,8 +30,8 @@ METADATA_TYPE = Table(
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', sql.PGNAME, server_default=func.current_user(), nullable=False),
 
-    # Note that the `updated` column is not included here to maintain backwards-compatibility
-    # with pre-1.8.3 datacubes (and it is not used by any internal ODC functionality yet anyway)
+    # Note that the `updated` column is not present in pre-1.8.3 datacubes
+    Column('updated', DateTime(timezone=True), default=None, nullable=True),
 
     # Name must be alphanumeric + underscores.
     CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
@@ -58,8 +58,8 @@ PRODUCT = Table(
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', sql.PGNAME, server_default=func.current_user(), nullable=False),
 
-    # Note that the `updated` column is not included here to maintain backwards-compatibility
-    # with pre-1.8.3 datacubes (and it is not used by any internal ODC functionality yet anyway)
+    # Note that the `updated` column is not present in pre-1.8.3 datacubes
+    Column('updated', DateTime(timezone=True), default=None, nullable=True),
 
     # Name must be alphanumeric + underscores.
     CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
@@ -74,7 +74,7 @@ DATASET = Table(
     #   Typing note: sqlalchemy-stubs doesn't handle this legitimate calling pattern.
     Column('dataset_type_ref', None, ForeignKey(PRODUCT.c.id), index=True, nullable=False),  # type: ignore[call-overload] # noqa: E501
 
-    Column('metadata', postgres.JSONB, index=False, nullable=False),
+    Column('metadata', postgres.JSONB, nullable=False),
 
     # Date it was archived. Null for active datasets.
     Column('archived', DateTime(timezone=True), default=None, nullable=True),
@@ -83,8 +83,8 @@ DATASET = Table(
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', sql.PGNAME, server_default=func.current_user(), nullable=False),
 
-    # Note that the `updated` column is not included here to maintain backwards-compatibility
-    # with pre-1.8.3 datacubes (and it is not used by any internal ODC functionality yet anyway)
+    # Note that the `updated` column is not present in pre-1.8.3 datacubes
+    Column('updated', DateTime(timezone=True), default=None, nullable=True),
 )
 
 
@@ -117,9 +117,6 @@ DATASET_LOCATION = Table(
     Column('archived', DateTime(timezone=True), default=None, nullable=True),
 
     UniqueConstraint('uri_scheme', 'uri_body', 'dataset_ref'),
-
-    # Note that the `updated` column is not included here to maintain backwards-compatibility
-    # with pre-1.8.3 datacubes (and it is not used by any internal ODC functionality yet anyway)
 )
 
 # Link datasets to their source datasets.
@@ -137,9 +134,6 @@ DATASET_SOURCE = Table(
 
     PrimaryKeyConstraint('dataset_ref', 'classifier'),
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),
-
-    # Note that the `updated` column is not included here to maintain backwards-compatibility
-    # with pre-1.8.3 datacubes (and it is not used by any internal ODC functionality yet anyway)
 
     # This table is immutable and uses a migrations based `added` column to keep track of new
     # dataset locations being added. The added column defaults to `now()`
