@@ -281,12 +281,8 @@ def create_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
     crs_var.spatial_ref = crs.wkt
 
     dims = crs.dimensions
-    try:
-        xres, xoff = data_resolution_and_offset(nco[dims[1]])
-        yres, yoff = data_resolution_and_offset(nco[dims[0]])
-    except AttributeError:
-        xres, xoff = data_resolution_and_offset(DimensionWrapper(nco[dims[1]]))
-        yres, yoff = data_resolution_and_offset(DimensionWrapper(nco[dims[0]]))
+    xres, xoff = data_resolution_and_offset(nco[dims[1]])
+    yres, yoff = data_resolution_and_offset(nco[dims[0]])
 
     crs_var.GeoTransform = [xoff, xres, 0.0, yoff, 0.0, yres]
 

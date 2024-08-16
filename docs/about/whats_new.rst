@@ -9,6 +9,7 @@ v1.9.next
 =========
 
 - Permissions management cleanup in postgis driver. (:pull:`1613`)
+- Remove workaround for an odc-geo bug that is now fixed. (:pull:`16??`)
 
 v1.9.0-rc9 (3rd July 2024)
 ==========================
