@@ -22,7 +22,7 @@ from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql.expression import Select
 from sqlalchemy import select, text, and_, or_, func
-from sqlalchemy.dialects.postgresql import INTERVAL, TSTZRANGE
+from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.engine import Row
 
@@ -565,7 +565,6 @@ class PostgisDbAPI:
         :type metadata: dict
         :rtype: dict
         """
-
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         where = Dataset.metadata_doc.contains(metadata)
         if archived:
@@ -829,9 +828,7 @@ class PostgisDbAPI:
             }
             for f in fields:
                 drow[f.key] = getattr(row, f.key)
-            times = (row.time.lower, row.time.upper)
-            norm_times = time_field.normalise_value(times)
-            drow["time"] = norm_times
+            drow["time"] = time_field.normalise_value((row.time.lower, row.time.upper))
             yield drow
 
     def count_datasets(self, expressions, archived: bool | None = False, geom: Geometry | None = None):
