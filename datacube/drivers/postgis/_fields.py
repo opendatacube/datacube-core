@@ -475,7 +475,6 @@ class DateRangeDocField(RangeDocField):
             type_=TSTZRANGE,
         )
 
-
     def normalise_value(self, value):
         if isinstance(value, datetime):
             return tz_as_utc(value)
