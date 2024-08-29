@@ -931,10 +931,29 @@ def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_da
     assert len(all_datasets) == 3
 
     dupe_fields = namedtuple('search_result', ['region_code', 'time'])
-    expected_result = [
+
+    expected_result_old = [
         (
             dupe_fields('090086', '("2023-04-30 23:50:33.884549","2023-04-30 23:50:34.884549")'),
             {nrt_dataset.id, final_dataset.id}
+        )
+    ]
+    expected_result_new = [
+        (
+            dupe_fields(
+                '090086',
+                (
+                    datetime.datetime(
+                       2023, 4, 30,
+                       23, 50, 33, 884549,
+                        tzinfo=datetime.timezone.utc),
+                    datetime.datetime(
+                        2023, 4, 30,
+                        23, 50, 34, 884549,
+                        tzinfo=datetime.timezone.utc)
+                ),
+            ),
+        {nrt_dataset.id, final_dataset.id}
         )
     ]
     res = sorted(index.datasets.search_product_duplicates(
@@ -942,7 +961,7 @@ def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_da
         'region_code', 'time',
     ))
 
-    assert res == expected_result
+    assert res == expected_result_old or res == expected_result_new
 
 
 def test_csv_search_via_cli_eo3(clirunner: Any,
