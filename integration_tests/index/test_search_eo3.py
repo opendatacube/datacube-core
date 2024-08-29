@@ -458,8 +458,8 @@ def test_search_returning_eo3(index: Index,
     assert format_ == 'GeoTIFF'
 
     # It's always UTC in the document
-    expected_time = creation_time.astimezone(tz.tzutc())
-    assert expected_time == datetime.datetime.fromisoformat(ls8_eo3_dataset.metadata.creation_dt)
+    expected_time = creation_time.astimezone(tz.tzutc()).replace(tzinfo=None)
+    assert expected_time.isoformat() == ls8_eo3_dataset.metadata.creation_dt
     assert label == ls8_eo3_dataset.metadata.label
 
     # All Fields
@@ -846,7 +846,7 @@ def test_cli_info_eo3(index: Index,
         'status: active',
         'location: file:///tmp/location1',
         'fields:',
-        '    creation_time: 2019-10-07 20:19:19.218290+00:00',
+        '    creation_time: 2019-10-07 20:19:19.218290',
         '    format: GeoTIFF',
         '    instrument: OLI_TIRS',
         '    label: ga_ls8c_ard_3-0-0_090086_2016-05-12_final',

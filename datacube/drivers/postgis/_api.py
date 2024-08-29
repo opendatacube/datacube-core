@@ -831,8 +831,7 @@ class PostgisDbAPI:
                 drow[f.key] = getattr(row, f.key)
             times = (row.time.lower, row.time.upper)
             norm_times = time_field.normalise_value(times)
-            utc_times = tuple(dt.astimezone(datetime.timezone.utc) for dt in times)
-            drow["time"] = utc_times
+            drow["time"] = norm_times
             yield drow
 
     def count_datasets(self, expressions, archived: bool | None = False, geom: Geometry | None = None):

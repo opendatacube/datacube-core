@@ -332,18 +332,24 @@ class DateDocField(SimpleDocField):
         """
         if isinstance(value, datetime):
             return self.normalise_value(value)
+        elif isinstance(value, str):
+            return tz_as_utc(datetime.fromisoformat(value))
         elif isinstance(value, (ColumnElement, str)):
             # SQLAlchemy expression or string are parsed in pg as dates.
-            return cast(value, TIMESTAMP(timezone=True))
+            # return cast(value, TIMESTAMP(timezone=True))
+            return value
         else:
             raise ValueError("Value not readable as date: %r" % value)
 
     def normalise_value(self, value):
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
         return tz_as_utc(value)
 
     def search_value_to_alchemy(self, value):
         if isinstance(value, datetime):
             value = tz_as_utc(value)
+        value = cast(value, TIMESTAMP(timezone=True))
         return func.tstzrange(
             value, value,
             # Inclusive on both sides.
@@ -366,6 +372,10 @@ class DateDocField(SimpleDocField):
             self.alchemy_column,
             alchemy_expression=cast(func.date_trunc('day', self.alchemy_expression), TIMESTAMP(timezone=True))
         )
+
+    @property
+    def alchemy_expression(self):
+        return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc).label(self.name)
 
 
 class RangeDocField(PgDocField):
@@ -455,6 +465,10 @@ class DateRangeDocField(RangeDocField):
 
     def value_to_alchemy(self, value):
         low, high = value
+        if isinstance(low, (ColumnElement, str)):
+            low = cast(low, TIMESTAMP(timezone=True))
+        if isinstance(high, (ColumnElement, str)):
+            high = cast(high, TIMESTAMP(timezone=True))
         return func.tstzrange(
             low, high,
             # Inclusive on both sides.
@@ -503,8 +517,8 @@ class DateRangeDocField(RangeDocField):
 
     @property
     def expression_with_leniency(self):
-        low = self.lower.alchemy_expression - cast('500 milliseconds', INTERVAL)
-        high = self.greater.alchemy_expression + cast('500 milliseconds', INTERVAL)
+        low = cast(self.lower.alchemy_expression, TIMESTAMP(timezone=True)) - cast('500 milliseconds', INTERVAL)
+        high = cast(self.greater.alchemy_expression, TIMESTAMP(timezone=True)) + cast('500 milliseconds', INTERVAL)
         return func.tstzrange(
             low, high,
             # Inclusive on both sides.
