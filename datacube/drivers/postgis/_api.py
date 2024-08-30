@@ -24,7 +24,6 @@ from sqlalchemy.sql.expression import Select
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.engine import Row
 
 from typing import Iterable, Sequence, Optional, Set, Any
 from typing import cast as type_cast
@@ -50,7 +49,7 @@ _LOG = logging.getLogger(__name__)
 
 # Make a function because it's broken
 def _dataset_select_fields() -> tuple:
-    return (f.alchemy_expression for f in _dataset_fields())
+    return tuple(f.alchemy_expression for f in _dataset_fields())
 
 
 def _dataset_fields() -> tuple:
@@ -82,7 +81,7 @@ def _dataset_fields() -> tuple:
                             SelectedDatasetLocation.id.desc()
                         ).label('uris')
                     ),
-                    alchemy_table=Dataset.__table__
+                    alchemy_table=Dataset.__table__  # type: ignore[attr-defined]
         )
     )
 
@@ -676,6 +675,7 @@ class PostgisDbAPI:
                                                   select_fields, with_source_ids,
                                                   limit, geom=geom, archived=archived)
         _LOG.debug("search_datasets SQL: %s", str(select_query))
+
         def decode_row(raw):
             return {f.name: f.normalise_value(r) for r, f in zip(raw, select_fields)}
 
@@ -745,7 +745,9 @@ class PostgisDbAPI:
         )
         return res.rowcount, requested - res.rowcount
 
-    def get_duplicates(self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]) -> Iterable[Row]:
+    def get_duplicates(self,
+                       match_fields: Sequence[PgField],
+                       expressions: Sequence[PgExpression]) -> Iterable[dict[str, Any]]:
         # TODO
         if "time" in [f.name for f in match_fields]:
             yield from self.get_duplicates_with_time(match_fields, expressions)
@@ -775,13 +777,13 @@ class PostgisDbAPI:
 
     def get_duplicates_with_time(
             self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]
-    ) -> Iterable[Row]:
+    ) -> Iterable[dict[str, Any]]:
         fields = []
-        for f in match_fields:
-            if f.name == "time":
-                time_field = type_cast(DateRangeDocField, f)
+        for fld in match_fields:
+            if fld.name == "time":
+                time_field = type_cast(DateRangeDocField, fld)
             else:
-                fields.append(f.alchemy_expression)
+                fields.append(fld.alchemy_expression)
 
         join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
 
@@ -823,11 +825,11 @@ class PostgisDbAPI:
         )
 
         for row in self._connection.execute(query):
-            drow = {
+            drow: dict[str, Any] = {
                 "ids": row.ids,
             }
             for f in fields:
-                drow[f.key] = getattr(row, f.key)
+                drow[f.key] = getattr(row, f.key)  # type: ignore[union-attr]
             drow["time"] = time_field.normalise_value((row.time.lower, row.time.upper))
             yield drow
 

@@ -6,7 +6,7 @@
 Custom types for postgres & sqlalchemy
 """
 
-from sqlalchemy import TIMESTAMP, text
+from sqlalchemy import text
 from sqlalchemy.types import Double
 from sqlalchemy.dialects.postgresql.ranges import AbstractRange, Range
 from sqlalchemy.ext.compiler import compiles

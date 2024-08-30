@@ -944,8 +944,8 @@ def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_da
                 '090086',
                 (
                     datetime.datetime(
-                       2023, 4, 30,
-                       23, 50, 33, 884549,
+                        2023, 4, 30,
+                        23, 50, 33, 884549,
                         tzinfo=datetime.timezone.utc),
                     datetime.datetime(
                         2023, 4, 30,
@@ -953,7 +953,7 @@ def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_da
                         tzinfo=datetime.timezone.utc)
                 ),
             ),
-        {nrt_dataset.id, final_dataset.id}
+            {nrt_dataset.id, final_dataset.id}
         )
     ]
     res = sorted(index.datasets.search_product_duplicates(

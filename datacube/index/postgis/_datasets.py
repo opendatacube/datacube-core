@@ -267,6 +267,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Returns each set of those field values and the datasets that have them.
         """
         dataset_fields = product.metadata_type.dataset_fields
+
         def load_field(f: Union[str, fields.Field]) -> fields.Field:
             if isinstance(f, str):
                 return dataset_fields[f]
