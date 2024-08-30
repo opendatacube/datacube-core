@@ -34,14 +34,13 @@ RUN apt-get update -y \
 # Build constrained python environment
 
 RUN virtualenv /env
-ENV PYENV /env
-ENV GDAL_CONFIG /usr/bin/gdal-config
+# Set the locale, this is required for some of the Python packages
+ENV PYENV=/env \
+    GDAL_CONFIG=/usr/bin/gdal-config \
+    LC_ALL=C.UTF-8
 
 # Needed to build cf-units wheels.
 ARG UDUNITS2_XML_PATH=/usr/share/xml/udunits/udunits2-common.xml
-
-# Set the locale, this is required for some of the Python packages
-ENV LC_ALL C.UTF-8
 
 COPY docker/constraints.in /conf/requirements.txt
 COPY docker/constraints.txt docker/nobinary.txt /conf/
