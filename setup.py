@@ -108,6 +108,7 @@ setup(
     scripts=[],
     install_requires=[
         'affine',
+        'antimeridian',
         'attrs>=18.1',
         'pyproj>=2.5',
         'shapely>=2.0',

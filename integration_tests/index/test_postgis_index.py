@@ -91,30 +91,33 @@ def test_spatial_index_crs_sanitise():
     # Equal to entire valid region
     entire = polygon((
         (112.85, -43.7),
-        (112.85, -9.86),
-        (153.69, -9.86),
         (153.69, -43.7),
-        (112.85, -43.7)), crs=epsg4326)
+        (153.69, -9.86),
+        (112.85, -9.86),
+        (112.85, -43.7)
+    ), crs=epsg4326)
     # inside valid region
     valid = polygon((
         (130.15, -25.7),
-        (130.15, -19.86),
-        (135.22, -19.86),
         (135.22, -25.7),
-        (130.15, -25.7)), crs=epsg4326)
+        (135.22, -19.86),
+        (130.15, -19.86),
+        (130.15, -25.7)
+    ), crs=epsg4326)
     # completely outside valid region
     invalid = polygon((
         (-10.15, 25.7),
-        (-10.15, 33.86),
-        (5.22, 33.86),
         (5.22, 25.7),
-        (-10.15, 25.7)), crs=epsg4326)
+        (5.22, 33.86),
+        (-10.15, 33.86),
+        (-10.15, 25.7)
+    ), crs=epsg4326)
     # intersects valid region
     partial = polygon((
         (103.15, -25.7),
-        (103.15, -19.86),
-        (135.22, -19.86),
         (135.22, -25.7),
+        (135.22, -19.86),
+        (103.15, -19.86),
         (103.15, -25.7)), crs=epsg4326)
     from datacube.drivers.postgis._spatial import sanitise_extent
 
@@ -122,7 +125,7 @@ def test_spatial_index_crs_sanitise():
     assert sanitise_extent(valid, epsg3577) == valid.to_crs("EPSG:3577")
     assert sanitise_extent(invalid, epsg3577) is None
     assert sanitise_extent(partial, epsg3577).area < partial.to_crs("EPSG:3577").area
-    assert sanitise_extent(entire, epsg4326) == entire.to_crs("EPSG:4326")
+    assert entire.to_crs(epsg4326).geom.almost_equals(sanitise_extent(entire, epsg4326).geom)
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
