@@ -545,7 +545,7 @@ class Datacube:
         geobox = output_geobox(like=like, output_crs=output_crs, resolution=resolution, align=align,
                                grid_spec=grid_spec,
                                load_hints=load_hints,
-                               datasets=datasets, geopolygon=None,
+                               datasets=datasets,
                                **query)
         group_by = query_group_by(**query)
         grouped = self.group_datasets(datasets, group_by)
