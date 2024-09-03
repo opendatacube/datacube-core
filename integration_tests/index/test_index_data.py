@@ -18,7 +18,8 @@ from dateutil import tz
 
 from datacube.index.exceptions import MissingRecordError
 from datacube.index import Index
-from datacube.model import Dataset, MetadataType
+from datacube.model import Dataset, Product, MetadataType
+from datacube.index.eo3 import prep_eo3
 
 _telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
 _telemetry_dataset = {
@@ -256,6 +257,14 @@ def test_get_dataset(index: Index, ls8_eo3_dataset: Dataset) -> None:
 
     assert index.datasets.bulk_get(['f226a278-e422-11e6-b501-185e0f80a5c0',
                                     'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
+
+
+def test_add_dataset_no_product_id(index: Index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset_doc):
+    product_no_id = Product(extended_eo3_metadata_type, ls8_eo3_product.definition)
+    assert product_no_id.id is None
+    dataset_doc, _ = eo3_ls8_dataset_doc
+    dataset = Dataset(product_no_id, prep_eo3(dataset_doc))
+    assert index.datasets.add(dataset, with_lineage=False)
 
 
 def test_transactions_api_ctx_mgr(index,

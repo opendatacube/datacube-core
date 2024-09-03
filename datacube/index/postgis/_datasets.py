@@ -169,7 +169,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             if product_id is None:
                 # don't assume the product has an id value since it's optional
                 # but we should error if the product doesn't exist in the db
-                product_id = self._index.products.get_by_name_unsafe(dataset.product.name).id
+                product_id = self.products.get_by_name_unsafe(dataset.product.name).id
             is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product_id)
             if is_new:
                 # 1b. Prepare spatial index extents
