@@ -165,7 +165,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return dataset
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
-            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
+            product_id = dataset.product.id
+            if product_id is None:
+                # don't assume the product has an id value since it's optional
+                # but we should error if the product doesn't exist in the db
+                product_id = self._index.products.get_by_name_unsafe(dataset.product.name).id
+            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product_id)
             if is_new:
                 # 1b. Prepare spatial index extents
                 transaction.update_spindex(dsids=[dataset.id])
