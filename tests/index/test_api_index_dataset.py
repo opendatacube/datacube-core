@@ -208,6 +208,9 @@ class MockTypesResource:
     def get_by_name(self, *args, **kwargs):
         return self.type
 
+    def get_by_name_unsafe(self, *args, **kwargs):
+        return self.type
+
     @contextmanager
     def _db_connection(self, transaction=False):
         yield MockDb()

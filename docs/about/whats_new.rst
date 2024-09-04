@@ -138,6 +138,7 @@ v1.9.0-rc1 (27th March 2024)
 
 v1.8.next
 =========
+- Don't error when adding a dataset whose product doesn't have an id value (:pull:`1630`)
 
 v1.8.19 (2nd July 2024)
 =======================

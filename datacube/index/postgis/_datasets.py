@@ -161,13 +161,19 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return dataset
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
-            transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
-            # 1b. Prepare spatial index extents
-            transaction.update_spindex(dsids=[dataset.id])
-            transaction.update_search_index(dsids=[dataset.id])
-            # 1c. Store locations
-            if dataset.uri is not None:
-                self._ensure_new_locations(dataset, transaction=transaction)
+            product_id = dataset.product.id
+            if product_id is None:
+                # don't assume the product has an id value since it's optional
+                # but we should error if the product doesn't exist in the db
+                product_id = self.products.get_by_name_unsafe(dataset.product.name).id
+            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product_id)
+            if is_new:
+                # 1b. Prepare spatial index extents
+                transaction.update_spindex(dsids=[dataset.id])
+                transaction.update_search_index(dsids=[dataset.id])
+                # 1c. Store locations
+                if dataset.uris is not None:
+                    self._ensure_new_locations(dataset, transaction=transaction)
             if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
             if dataset.source_tree is not None:
