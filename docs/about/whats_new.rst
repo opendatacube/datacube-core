@@ -14,6 +14,7 @@ v1.9.next
 - Remove workaround for an odc-geo bug that is now fixed. (:pull:`1622`)
 - Fix call to geopolygon search. (:pull:`1627`)
 - Use antimeridian package to "fix" extent polygons. (:pull:`1628`)
+- Record lineage when adding datasets with postgis index (:pull:`1632`)
 
 v1.9.0-rc9 (3rd July 2024)
 ==========================
