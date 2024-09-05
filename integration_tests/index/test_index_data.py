@@ -424,6 +424,15 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     index.datasets.add(child, with_lineage=False)
 
 
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_index_dataset_with_lineage(index, ds_with_lineage, ls8_eo3_dataset):
+    assert ds_with_lineage.source_tree
+    index.datasets.add(ds_with_lineage)
+    sources = index.lineage.get_source_tree(ds_with_lineage.id).children
+    assert len(sources["ard"]) == 1
+    assert sources["ard"][0].dataset_id == ls8_eo3_dataset.id
+
+
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_index_dataset_with_location(index: Index, default_metadata_type: MetadataType):
     first_file = Path('/tmp/first/something.yaml').absolute()
