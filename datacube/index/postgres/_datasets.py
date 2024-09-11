@@ -28,6 +28,7 @@ from datacube.utils.changes import get_doc_changes, Offset
 from datacube.index import fields
 from datacube.drivers.postgres._api import split_uri
 from datacube.migration import ODC2DeprecationWarning
+from sqlalchemy.sql.functions import Function
 
 _LOG = logging.getLogger(__name__)
 
@@ -614,7 +615,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             }
         }
     )
-    def search(self, limit=None, source_filter=None, archived: bool | None = False, **query):
+    def search(self, limit=None, source_filter=None, archived: bool | None = False, order_by=None, **query):
         """
         Perform a search, returning results as Dataset objects.
 
@@ -626,7 +627,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for product, datasets in self._do_search_by_product(query,
                                                             source_filter=source_filter,
                                                             limit=limit,
-                                                            archived=archived):
+                                                            archived=archived,
+                                                            order_by=order_by):
             yield from self._make_many(datasets, product)
 
     def search_by_product(self, archived: bool | None = False, **query):
@@ -644,7 +646,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit=None,
                          archived: bool | None = False,
-                         order_by: str | Field | None = None,
+                         order_by: Iterable[str | Field | Function] | None = None,
                          **query):
         """
         Perform a search, returning only the specified fields.
@@ -656,10 +658,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param tuple[str] field_names: defaults to all known search fields
         :param Union[str,float,Range,list] query:
         :param int limit: Limit number of datasets
+        :param Iterable[str|Field|Function] order_by: sql text, dataset field, or sqlalchemy function
+        by which to order results
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
-        if order_by:
-            raise ValueError("order_by argument is not currently supported by the postgres index driver.")
         field_name_d: dict[str, None] = {}
         if field_names is None and custom_offsets is None:
             for f in self._index.products.get_field_names():
@@ -686,7 +688,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                        select_field_names=list(field_name_d.keys()),
                                                        additional_fields=custom_fields,
                                                        limit=limit,
-                                                       archived=archived):
+                                                       archived=archived,
+                                                       order_by=order_by):
             for columns in p_results:
                 coldict = columns._asdict()
 
@@ -769,7 +772,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                               select_field_names=None,
                               with_source_ids=False, source_filter=None,
                               limit=None,
-                              archived: bool | None = False):
+                              archived: bool | None = False,
+                              order_by=None):
         if "geopolygon" in query:
             raise NotImplementedError("Spatial search API not supported by this index.")
         if source_filter:
@@ -818,7 +822,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                            select_fields=select_fields,
                            limit=limit,
                            with_source_ids=with_source_ids,
-                           archived=archived
+                           archived=archived,
+                           order_by=order_by
                        ))
 
     def _do_count_by_product(self, query, archived: bool | None = False):

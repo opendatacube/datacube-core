@@ -379,9 +379,17 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         return result
 
-    def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
+    def spatial_extent(self, product: int | str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)
         ids = [ds.id for ds in self._index.datasets.search(product=product.name)]
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
+
+    def most_recent_change(self, product: str | Product) -> datetime.datetime:
+        if isinstance(product, str):
+            product = self._index.products.get_by_name_unsafe(product)
+        assert isinstance(product, Product)
+        assert product.id is not None
+        with self._db_connection() as connection:
+            return connection.find_most_recent_change(product.id)

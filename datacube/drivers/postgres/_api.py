@@ -517,7 +517,7 @@ class PostgresDbAPI(object):
     @staticmethod
     def search_datasets_query(expressions, source_exprs=None,
                               select_fields=None, with_source_ids=False, limit=None,
-                              archived: bool | None = False):
+                              archived: bool | None = False, order_by=None):
         """
         :type expressions: tuple[Expression]
         :type source_exprs: tuple[Expression]
@@ -536,6 +536,18 @@ class PostgresDbAPI(object):
             )
         else:
             select_columns = _DATASET_SELECT_FIELDS
+
+        def _ob_exprs(o):
+            if isinstance(o, str):
+                # does this need to be more robust?
+                return text(o)
+            elif isinstance(o, PgField):
+                return o.alchemy_expression.asc()
+            # if a func, leave as-is
+            return o
+
+        if order_by is not None:
+            order_by = [_ob_exprs(o) for o in order_by]
 
         if with_source_ids:
             # Include the IDs of source datasets
@@ -571,6 +583,8 @@ class PostgresDbAPI(object):
                     from_expression
                 ).where(
                     where_expr
+                ).order_by(
+                    *order_by
                 ).limit(
                     limit
                 )
@@ -626,6 +640,8 @@ class PostgresDbAPI(object):
                 recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
             ).where(
                 where_expr
+            ).order_by(
+                *order_by
             ).limit(
                 limit
             )
@@ -634,7 +650,7 @@ class PostgresDbAPI(object):
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
                         with_source_ids=False, limit=None,
-                        archived: bool | None = False):
+                        archived: bool | None = False, order_by=None):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgres._fields.PgField]
@@ -642,7 +658,7 @@ class PostgresDbAPI(object):
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids, limit,
-                                                  archived=archived)
+                                                  archived=archived, order_by=order_by)
         return self._connection.execute(select_query)
 
     def bulk_simple_dataset_search(self, products=None, batch_size=0):
@@ -1271,3 +1287,18 @@ class PostgresDbAPI(object):
                 raise ValueError('Unknown user %r' % user)
 
         _core.grant_role(self._connection, pg_role, users)
+
+    def find_most_recent_change(self, product_id: int):
+        """
+        Find the database-local time of the last dataset that changed for this product.
+        """
+        return self._connection.execute(
+            select(
+                func.max(
+                    func.greatest(
+                        DATASET.c.added,
+                        column("updated"),
+                    )
+                )
+            ).where(DATASET.c.dataset_type_ref == product_id)
+        ).scalar()
