@@ -542,12 +542,14 @@ class PostgresDbAPI(object):
                 # does this need to be more robust?
                 return text(o)
             elif isinstance(o, PgField):
-                return o.alchemy_expression.asc()
+                return o.alchemy_expression
             # if a func, leave as-is
             return o
 
         if order_by is not None:
             order_by = [_ob_exprs(o) for o in order_by]
+        else:
+            order_by = []
 
         if with_source_ids:
             # Include the IDs of source datasets

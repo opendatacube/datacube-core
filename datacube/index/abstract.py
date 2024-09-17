@@ -2178,6 +2178,11 @@ class AbstractIndex(ABC):
 
     @property
     @abstractmethod
+    def name(self) -> str:
+        """The index name"""
+
+    @property
+    @abstractmethod
     def environment(self) -> ODCEnvironment:
         """The cfg.ODCEnvironment object this Index was initialised from."""
 

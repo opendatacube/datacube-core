@@ -641,6 +641,8 @@ class PostgisDbAPI:
 
         if order_by is not None:
             order_by = [_ob_exprs(o) for o in order_by]
+        else:
+            order_by = []
 
         if geom:
             SpatialIndex, spatialquery = self.geospatial_query(geom)
