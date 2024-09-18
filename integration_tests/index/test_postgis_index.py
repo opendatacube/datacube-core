@@ -144,11 +144,11 @@ def test_spatial_index_crs_sanitise():
     ), crs=epsg3857)
 
     am_3832 = polygon((
-       (3116945, 2857692),
-       (3562223, 2857692),
-       (3562223, 2615329),
-       (3116945, 2615329),
-       (3116945, 2857692)
+        (3116945, 2857692),
+        (3562223, 2857692),
+        (3562223, 2615329),
+        (3116945, 2615329),
+        (3116945, 2857692)
     ), crs=epsg3832)
 
     from datacube.drivers.postgis._spatial import sanitise_extent
