@@ -85,47 +85,103 @@ def test_spatial_index_crs_validity(index: Index,
 
 def test_spatial_index_crs_sanitise():
     epsg4326 = CRS("EPSG:4326")
-    epsg3577 = CRS("EPSG:3577")
+    epsg3857 = CRS("EPSG:3857")
+    epsg3832 = CRS("EPSG:3832")
     from odc.geo.geom import polygon
-    # EPSG:4326 polygons to be converted in EPSG:3577
-    # Equal to entire valid region
-    entire = polygon((
-        (112.85, -43.7),
-        (153.69, -43.7),
-        (153.69, -9.86),
-        (112.85, -9.86),
-        (112.85, -43.7)
+
+    # 4326, crossing the Prime-Meridian, wound clockwise
+    pm_4326_cw = polygon((
+        (-2.0, 25.0),
+        (2.0, 25.0),
+        (2.0, 23.0),
+        (-2.0, 23.0),
+        (-2.0, 25.0),
     ), crs=epsg4326)
-    # inside valid region
-    valid = polygon((
-        (130.15, -25.7),
-        (135.22, -25.7),
-        (135.22, -19.86),
-        (130.15, -19.86),
-        (130.15, -25.7)
+
+    # 4326, crossing the Prime-Meridian, wound counter-clockwise
+    pm_4326_ccw = polygon((
+        (-2.0, 25.0),
+        (-2.0, 23.0),
+        (2.0, 23.0),
+        (2.0, 25.0),
+        (-2.0, 25.0),
     ), crs=epsg4326)
-    # completely outside valid region
-    invalid = polygon((
-        (-10.15, 25.7),
-        (5.22, 25.7),
-        (5.22, 33.86),
-        (-10.15, 33.86),
-        (-10.15, 25.7)
+
+    # 4326, crossing the Prime-Meridian, wound clockwise
+    am_4326_ccw = polygon((
+        (178.0, 25.0),
+        (178.0, 23.0),
+        (-178.0, 23.0),
+        (-178.0, 25.0),
+        (178.0, 25.0),
     ), crs=epsg4326)
-    # intersects valid region
-    partial = polygon((
-        (103.15, -25.7),
-        (135.22, -25.7),
-        (135.22, -19.86),
-        (103.15, -19.86),
-        (103.15, -25.7)), crs=epsg4326)
+
+    # 4326, crossing the Prime-Meridian, wound counter-clockwise
+    am_4326_cw = polygon((
+        (178.0, 25.0),
+        (-178.0, 25.0),
+        (-178.0, 23.0),
+        (178.0, 23.0),
+        (178.0, 25.0),
+    ), crs=epsg4326)
+
+    pm_3857 = polygon((
+        (-222638, 2875744),
+        (-222638, 2632018),
+        (222638, 2632018),
+        (222638, 2632018),
+        (-222638, 2875744),
+    ), crs=epsg3857)
+
+    am_3857 = polygon((
+        (-19814869, 2875744),
+
+
+        (19814869, 2632018),
+
+
+        (-19814869, 2875744),
+    ), crs=epsg3857)
+
+    am_3832 = polygon((
+       (3116945, 2857692),
+       (3562223, 2857692),
+       (3562223, 2615329),
+       (3116945, 2615329),
+       (3116945, 2857692)
+    ), crs=epsg3832)
+
     from datacube.drivers.postgis._spatial import sanitise_extent
 
-    assert sanitise_extent(entire, epsg3577) == entire.to_crs("EPSG:3577")
-    assert sanitise_extent(valid, epsg3577) == valid.to_crs("EPSG:3577")
-    assert sanitise_extent(invalid, epsg3577) is None
-    assert sanitise_extent(partial, epsg3577).area < partial.to_crs("EPSG:3577").area
-    assert entire.to_crs(epsg4326).geom.almost_equals(sanitise_extent(entire, epsg4326).geom)
+    assert sanitise_extent(pm_4326_ccw, epsg4326) == pm_4326_ccw
+    assert sanitise_extent(pm_4326_cw, epsg4326) == pm_4326_ccw
+    assert sanitise_extent(pm_4326_ccw, epsg3857) == pm_4326_ccw.to_crs(epsg3857)
+
+    sanitised = sanitise_extent(am_4326_ccw, epsg4326)
+    assert sanitised.type == "MultiPolygon"
+    assert sanitised.json["coordinates"] == [
+        ((
+            (180.0, 25.0),
+            (178.0, 25.0),
+            (178.0, 23.0),
+            (180.0, 23.0),
+            (180.0, 25.0),
+        ),),
+        ((
+            (-180.0, 23.0),
+            (-178.0, 23.0),
+            (-178.0, 25.0),
+            (-180.0, 25.0),
+            (-180.0, 23.0),
+        ),),
+    ]
+
+    assert sanitise_extent(pm_4326_ccw, epsg3857) == pm_4326_ccw.to_crs(epsg3857)
+    assert sanitise_extent(pm_3857, epsg3857).geom.almost_equals(pm_3857.geom)
+    assert sanitise_extent(am_3857, epsg3857).type == "MultiPolygon"
+
+    assert sanitise_extent(am_3832, epsg3832) == am_3832
+    assert sanitise_extent(am_3832, epsg4326).type == "MultiPolygon"
 
 
 @pytest.mark.parametrize('datacube_env_name', ('experimental',))
@@ -156,7 +212,7 @@ def test_spatial_extent(index,
         [ls8_eo3_dataset.id, ls8_eo3_dataset2.id, africa_eo3_dataset.id],
         crs=epsg3577
     )
-    assert extau12 == extau12africa
+    assert extau12.area < extau12africa.area
     ext3 = index.datasets.spatial_extent(ids=[ls8_eo3_dataset3.id], crs=epsg4326)
     ext1234 = index.datasets.spatial_extent(
         [

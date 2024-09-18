@@ -225,9 +225,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 metadata_doc["grid_spatial"]["projection"]  # type: ignore[misc,call-overload,index]
             )
             if extent:
-                geo_extent = extent.to_crs(CRS("EPSG:4326"))
                 for crs in crses:
-                    values = generate_dataset_spatial_values(dsid, crs, extent, geo_extent=geo_extent)
+                    values = generate_dataset_spatial_values(dsid, crs, extent)
                     if values is not None:
                         batch.spatial_indexes[crs].append(values)
             if prod.metadata_type.name in cache:
