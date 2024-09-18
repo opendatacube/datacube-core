@@ -42,6 +42,7 @@ class MetadataType:
     # When it was added and by whom.
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
+    updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when last updated")
 
     products = relationship("Product")
     datasets = relationship("Dataset")
@@ -72,6 +73,7 @@ All datasets of this type should contain these fields.
     definition = Column('definition', postgres.JSONB, nullable=False, comment="Full product definition document")
     added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
+    updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when last updated")
 
     datasets = relationship("Dataset")
 
@@ -93,12 +95,15 @@ class Dataset:
                          comment="The product this dataset belongs to")
     # DB column named metadata for (temporary) backwards compatibility,
     # but is forbidden by SQLAlchemy declarative style
-    metadata_doc = Column(name="metadata", type_=postgres.JSONB, index=False, nullable=False,
+    metadata_doc = Column(name="metadata", type_=postgres.JSONB, nullable=False,
                           comment="The dataset metadata document")
-    archived = Column(DateTime(timezone=True), default=None, nullable=True,
+    archived = Column(DateTime(timezone=True), default=None, nullable=True, index=True,
                       comment="when archived, null if active")
-    added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
+    added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True, comment="when added")
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
+
+    updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False,
+                     index=True, comment="when last updated")
 
     locations = relationship("DatasetLocation", viewonly=True)
     active_locations = relationship("DatasetLocation",

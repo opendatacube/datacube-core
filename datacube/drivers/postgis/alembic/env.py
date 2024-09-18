@@ -82,10 +82,7 @@ def include_name(name, type_, parent_names):
             # Ignore any other schemas
             return False
     elif type_ == "column":
-        if name == "updated" and parent_names["schema_name"] == SCHEMA_NAME:
-            # Ignore updated columns with triggers - handled manually
-            return False
-        # Include other columns
+        # Include all columns
         return True
     else:
         # Include any constraints, indexes, etc, that made it this far.

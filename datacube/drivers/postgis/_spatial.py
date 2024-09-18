@@ -14,6 +14,8 @@ from sqlalchemy import ForeignKey, select, delete
 from sqlalchemy.dialects import postgresql as postgres
 from geoalchemy2 import Geometry
 
+from antimeridian import fix_shape
+
 from sqlalchemy.engine import Engine
 from sqlalchemy import Column, text
 from sqlalchemy.orm import Session
@@ -210,7 +212,7 @@ def spindexes(engine: Engine) -> Mapping[int, Type[SpatialIndex]]:
 
 def promote_to_multipolygon(geom: Geom) -> Geom:
     # Assumes input is a polygon or multipolygon - does not work on lines or points
-    if geom.geom_type == "Multipolygon":
+    if geom.geom_type == "MultiPolygon":
         return geom
     elif geom.geom_type == "Polygon":
         # Promote to multipolygon (is there a more elegant way to do this??
@@ -236,7 +238,9 @@ def sanitise_extent(extent, crs, geo_extent=None):
         # No valid region on CRS, just reproject
         return extent.to_crs(crs)
     if geo_extent is None:
-        geo_extent = extent.to_crs(CRS("EPSG:4326"))
+        wgs84 = CRS("EPSG:4326")
+        prelim = extent.to_crs(wgs84)
+        geo_extent = Geom(fix_shape(prelim), crs=wgs84)
     if crs.epsg == 4326:
         # geo_extent is what we want anyway - shortcut
         return geo_extent

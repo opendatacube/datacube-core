@@ -45,12 +45,22 @@ $$ language plpgsql;
 
 UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE = """
 alter table {schema}.{table} add column if not exists updated
-timestamptz default null;
+timestamptz default now();
+"""
+
+UPDATE_COLUMN_INDEX_SQL_TEMPLATE = """
+create index if not exists ix_{table}_updated
+on {schema}.{table}(updated);
 """
 
 ADDED_COLUMN_MIGRATE_SQL_TEMPLATE = """
 alter table {schema}.{table} add column if not exists added
 timestamptz default now();
+"""
+
+ADDED_COLUMN_INDEX_SQL_TEMPLATE = """
+create index if not exists ix_{table}_added
+on {schema}.{table}(added);
 """
 
 INSTALL_TRIGGER_SQL_TEMPLATE = """

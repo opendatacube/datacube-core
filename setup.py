@@ -108,6 +108,7 @@ setup(
     scripts=[],
     install_requires=[
         'affine',
+        'antimeridian',
         'attrs>=18.1',
         'pyproj>=2.5',
         'shapely>=2.0',
@@ -123,7 +124,7 @@ setup(
         'pandas',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=1.3.2',  # Warping broken in 1.3.0 and 1.3.1
+        'rasterio>=1.3.11',  # Deleted Numpy version in 1.3.10
         'ruamel.yaml',
         'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
         'GeoAlchemy2',
@@ -131,7 +132,7 @@ setup(
         'toolz',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
         'packaging',
-        'odc-geo>=0.4',
+        'odc-geo>=0.4.8',
         'deprecat',
         'importlib_metadata>3.5;python_version<"3.10"',
     ],

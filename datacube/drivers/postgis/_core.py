@@ -20,7 +20,6 @@ from alembic.runtime.environment import EnvironmentContext
 
 from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                           SCHEMA_NAME, TYPES_INIT_SQL,
-                                          UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
                                           UPDATE_TIMESTAMP_SQL,
                                           escape_pg_identifier)
 
@@ -57,8 +56,6 @@ def install_timestamp_trigger(connection):
     connection.execute(text(UPDATE_TIMESTAMP_SQL))
 
     for name in TABLE_NAMES:
-        # Add update columns
-        connection.execute(text(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
         connection.execute(text(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
 
 
