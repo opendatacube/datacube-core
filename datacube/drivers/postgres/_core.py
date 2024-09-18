@@ -11,7 +11,9 @@ import logging
 from datacube.drivers.postgres.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
                                            SCHEMA_NAME, TYPES_INIT_SQL,
                                            UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
+                                           UPDATE_COLUMN_INDEX_SQL_TEMPLATE,
                                            ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
+                                           ADDED_COLUMN_INDEX_SQL_TEMPLATE,
                                            UPDATE_TIMESTAMP_SQL,
                                            escape_pg_identifier,
                                            pg_column_exists)
@@ -52,6 +54,11 @@ def install_timestamp_trigger(connection):
         # Add update columns
         connection.execute(text(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
         connection.execute(text(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
+
+    # Add indexes for dataset table
+    ds_table = _schema.DATASET.name
+    connection.execute(text(UPDATE_COLUMN_INDEX_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=ds_table)))
+    connection.execute(text(ADDED_COLUMN_INDEX_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=ds_table)))
 
 
 def install_added_column(connection):
