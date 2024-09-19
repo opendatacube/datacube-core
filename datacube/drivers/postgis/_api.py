@@ -1385,22 +1385,24 @@ class PostgisDbAPI:
                     updates += res.rowcount
                 return updates
         else:
-            values = [
-                {
-                    "derived_dataset_ref": rel.derived_id,
-                    "source_dataset_ref": rel.source_id,
-                    "classifier": rel.classifier
-                }
-                for rel in relations
-            ]
-            qry = insert(DatasetLineage)
-            try:
-                res = self._connection.execute(
-                    qry, values
-                )
-                return res.rowcount
-            except IntegrityError:
-                return 0
+            if len(relations):
+                values = [
+                    {
+                        "derived_dataset_ref": rel.derived_id,
+                        "source_dataset_ref": rel.source_id,
+                        "classifier": rel.classifier
+                    }
+                    for rel in relations
+                ]
+                qry = insert(DatasetLineage)
+                try:
+                    res = self._connection.execute(
+                        qry, values
+                    )
+                    return res.rowcount
+                except IntegrityError:
+                    return 0
+            return
 
     def load_lineage_relations(self,
                                roots: Iterable[uuid.UUID],

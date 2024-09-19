@@ -280,11 +280,10 @@ def test_transactions_api_ctx_mgr(index,
         index.datasets.add(ds1, with_lineage=False)
         assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds1.id) is not None
-    with pytest.raises(Exception) as e:
-        with index.transaction() as trans:
-            index.datasets.add(ds2, with_lineage=False)
-            assert index.datasets.get(ds2.id) is not None
-            raise trans.rollback_exception("Rollback")
+    with index.transaction() as trans:
+        index.datasets.add(ds2, with_lineage=False)
+        assert index.datasets.get(ds2.id) is not None
+        raise trans.rollback_exception("Rollback")
     assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds2.id) is None
 
@@ -313,12 +312,11 @@ def test_transactions_api_ctx_mgr_nested(index,
             index.datasets.add(ds1, False)
             assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds1.id) is not None
-    with pytest.raises(Exception) as e:
-        with index.transaction() as trans_outer:
-            with index.transaction() as trans:
-                index.datasets.add(ds2, False)
-                assert index.datasets.get(ds2.id) is not None
-                raise trans.rollback_exception("Rollback")
+    with index.transaction() as trans_outer:
+        with index.transaction() as trans:
+            index.datasets.add(ds2, False)
+            assert index.datasets.get(ds2.id) is not None
+            raise trans.rollback_exception("Rollback")
     assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds2.id) is None
 
@@ -433,6 +431,7 @@ def test_index_dataset_with_lineage(index, ds_with_lineage, ls8_eo3_dataset):
     sources = index.lineage.get_source_tree(ds_with_lineage.id).children
     assert len(sources["ard"]) == 1
     assert sources["ard"][0].dataset_id == ls8_eo3_dataset.id
+    assert index.datasets.get(ds_with_lineage.id)
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
