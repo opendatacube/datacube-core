@@ -280,10 +280,11 @@ def test_transactions_api_ctx_mgr(index,
         index.datasets.add(ds1, with_lineage=False)
         assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds1.id) is not None
-    with index.transaction() as trans:
-        index.datasets.add(ds2, with_lineage=False)
-        assert index.datasets.get(ds2.id) is not None
-        raise trans.rollback_exception("Rollback")
+    with pytest.raises(Exception) as e:
+        with index.transaction() as trans:
+            index.datasets.add(ds2, with_lineage=False)
+            assert index.datasets.get(ds2.id) is not None
+            raise trans.rollback_exception("Rollback")
     assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds2.id) is None
 
@@ -312,11 +313,12 @@ def test_transactions_api_ctx_mgr_nested(index,
             index.datasets.add(ds1, False)
             assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds1.id) is not None
-    with index.transaction() as trans_outer:
-        with index.transaction() as trans:
-            index.datasets.add(ds2, False)
-            assert index.datasets.get(ds2.id) is not None
-            raise trans.rollback_exception("Rollback")
+    with pytest.raises(Exception) as e:
+        with index.transaction() as trans_outer:
+            with index.transaction() as trans:
+                index.datasets.add(ds2, False)
+                assert index.datasets.get(ds2.id) is not None
+                raise trans.rollback_exception("Rollback")
     assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds2.id) is None
 

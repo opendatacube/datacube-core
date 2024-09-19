@@ -251,6 +251,10 @@ def doc_to_ds(index, product_name, ds_doc, ds_path, src_tree=None, derived_tree=
     resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
     ds, err = resolver(ds_doc, ds_path)
     assert err is None and ds is not None
+    if src_tree is not None:
+        ds.source_tree = src_tree
+    if derived_tree is not None:
+        ds.derived_tree = derived_tree
     index.datasets.add(ds, with_lineage=index.supports_lineage)
     return index.datasets.get(ds.id)
 
