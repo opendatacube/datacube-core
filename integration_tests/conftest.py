@@ -251,17 +251,11 @@ def doc_to_ds(index, product_name, ds_doc, ds_path, src_tree=None, derived_tree=
     resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)
     ds, err = resolver(ds_doc, ds_path)
     assert err is None and ds is not None
-    if index.supports_external_lineage:
-        index.datasets.add(ds, with_lineage=False)
-        if src_tree:
-            index.lineage.add(src_tree)
-        if derived_tree:
-            index.lineage.add(derived_tree)
-        if not (src_tree or derived_tree):
-            eo3_tree = LineageTree.from_eo3_doc(ds_doc)
-            index.lineage.add(eo3_tree)
-    else:
-        index.datasets.add(ds, with_lineage=index.supports_lineage)
+    if src_tree is not None:
+        ds.source_tree = src_tree
+    if derived_tree is not None:
+        ds.derived_tree = derived_tree
+    index.datasets.add(ds, with_lineage=index.supports_lineage)
     return index.datasets.get(ds.id)
 
 
@@ -384,6 +378,17 @@ def ds_no_region(index, extended_eo3_metadata_type, ls8_eo3_product, final_datas
         index,
         ls8_eo3_product.name,
         *doc_no_region)
+
+
+@pytest.fixture
+def ds_with_lineage(index, wo_eo3_product, eo3_wo_dataset_doc, ls8_eo3_dataset):
+    doc, path = eo3_wo_dataset_doc
+    # rewrite lineage to correct format
+    doc["lineage"] = {"source_datasets": {"ard": [ls8_eo3_dataset.id]}}
+    return doc_to_ds_no_add(
+        index,
+        wo_eo3_product.name,
+        doc, path)
 
 
 @pytest.fixture

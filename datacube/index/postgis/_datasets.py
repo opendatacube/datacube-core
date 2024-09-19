@@ -143,9 +143,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dataset: dataset to add
 
         :param with_lineage:
-           - ``True (default)`` attempt adding lineage datasets if missing
-           - ``False`` record lineage relations, but do not attempt
-             adding lineage datasets to the db
+           - ``True (default)`` record lineage relations in the db
+           Since we no longer accept embedded lineage, any lineage relations should
+           already exist in the db, so there's no longer a need for differentiating between
+           adding and recording. This parameter has been kept for compatibility reasons.s
 
         :param archive_less_mature: if integer, search for less
                mature versions of the dataset with the int value as a millisecond
@@ -153,10 +154,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :rtype: Dataset
         """
-
-        if with_lineage:
-            raise ValueError("Lineage is not yet supported by the postgis driver")
-
         _LOG.info('Indexing %s', dataset.id)
 
         if self.has(dataset.id):
@@ -164,16 +161,19 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return dataset
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
-            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
-            if is_new:
-                # 1b. Prepare spatial index extents
-                transaction.update_spindex(dsids=[dataset.id])
-                transaction.update_search_index(dsids=[dataset.id])
-                # 1c. Store locations
-                if dataset.uri is not None:
-                    self._ensure_new_locations(dataset, transaction=transaction)
+            transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
+            # 1b. Prepare spatial index extents
+            transaction.update_spindex(dsids=[dataset.id])
+            transaction.update_search_index(dsids=[dataset.id])
+            # 1c. Store locations
+            if dataset.uri is not None:
+                self._ensure_new_locations(dataset, transaction=transaction)
             if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
+            if dataset.source_tree is not None:
+                self._index.lineage.add(dataset.source_tree)
+            if dataset.derived_tree is not None:
+                self._index.lineage.add(dataset.derived_tree)
 
         return dataset
 
