@@ -552,10 +552,10 @@ class PostgisDbAPI:
         ).fetchall()
 
     def get_derived_datasets(self, dataset_id):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def get_dataset_sources(self, dataset_id):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def search_datasets_by_metadata(self, metadata, archived):
         """
@@ -676,7 +676,7 @@ class PostgisDbAPI:
                                                   limit, geom=geom, archived=archived)
         _LOG.debug("search_datasets SQL: %s", str(select_query))
 
-        def decode_row(raw):
+        def decode_row(raw: Iterable[Any]) -> dict[str, Any]:
             return {f.name: f.normalise_value(r) for r, f in zip(raw, select_fields)}
 
         for row in self._connection.execute(select_query):
@@ -1500,16 +1500,18 @@ class PostgisDbAPI:
     def temporal_extent_by_prod(self, product_id: int) -> tuple[datetime.datetime, datetime.datetime]:
         query = self.temporal_extent_full().where(Dataset.product_ref == product_id)
         res = self._connection.execute(query)
-        tmin, tmax = res.first()
-        return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
+        for tmin, tmax in res:
+            return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
+        raise RuntimeError("Product has no datasets and therefore no temporal extent")
 
     def temporal_extent_by_ids(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         query = self.temporal_extent_full().where(Dataset.id.in_(ids))
         res = self._connection.execute(query)
-        tmin, tmax = res.first()
-        return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
+        for tmin, tmax in res:
+            return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
+        raise ValueError("no dataset ids provided")
 
-    time_min = DateDocField('aquisition_time_min',
+    time_min = DateDocField('acquisition_time_min',
                             'Min of time when dataset was acquired',
                             Dataset.metadata_doc,
                             False,  # is it indexed
@@ -1519,7 +1521,7 @@ class PostgisDbAPI:
                             ],
                             selection='least')
 
-    time_max = DateDocField('aquisition_time_max',
+    time_max = DateDocField('acquisition_time_max',
                             'Max of time when dataset was acquired',
                             Dataset.metadata_doc,
                             False,  # is it indexed
