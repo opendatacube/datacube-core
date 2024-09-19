@@ -15,6 +15,8 @@ v1.9.next
 - Fix call to geopolygon search. (:pull:`1627`)
 - Use antimeridian package to "fix" extent polygons. (:pull:`1628`)
 - Record lineage when adding datasets with postgis index (:pull:`1632`)
+- Update schema logic (:pull:`1634`)
+- Drop valid-area check and anti-meridian fix 3857 extents (:pull:1635)
 
 v1.9.0-rc9 (3rd July 2024)
 ==========================
