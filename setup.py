@@ -124,7 +124,7 @@ setup(
         'pandas',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=1.3.11',  # 1.3.10 is broken
+        'rasterio>=1.3.11',  # Deleted Numpy version in 1.3.10
         'ruamel.yaml',
         'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
         'GeoAlchemy2',
