@@ -233,33 +233,30 @@ def geom_alchemy(geom: Geom) -> str:
     return f"SRID={epsg};{geom.wkt}"
 
 
-def sanitise_extent(extent, crs, geo_extent=None):
-    if not crs.valid_region:
-        # No valid region on CRS, just reproject
-        return extent.to_crs(crs)
-    if geo_extent is None:
-        wgs84 = CRS("EPSG:4326")
-        prelim = extent.to_crs(wgs84)
-        geo_extent = Geom(fix_shape(prelim), crs=wgs84)
+# 4326-like EPSG codes.
+# extents in these CRSs will be projected to 4326, antimeridian-fixed, and then projected back, so it
+# is very important that only CRSs where this is appropriate are included.
+# It should only include CRSs that use the WGS84 datum, an equatorial cylindrical projection and are centred on
+# the prime meridian (and therefore have a discontinuity at the anti-meridian).
+#
+# Just epsg:3857 for now (Web Mercator)
+EPSG4326_LIKE_CODES = [3857]
+
+
+def sanitise_extent(extent, crs):
     if crs.epsg == 4326:
-        # geo_extent is what we want anyway - shortcut
-        return geo_extent
-    if crs.valid_region.contains(geo_extent):
-        # Valid region contains extent, just reproject
+        prelim = extent.to_crs(crs)
+        return Geom(fix_shape(prelim.geom), crs=crs)
+    elif crs.epsg in EPSG4326_LIKE_CODES:
+        prelim = extent.to_crs("epsg:4326")
+        fixed = Geom(fix_shape(prelim.geom), crs="epsg:4326")
+        return fixed.to_crs(crs)
+    else:
         return extent.to_crs(crs)
-    if not crs.valid_region.intersects(geo_extent):
-        # Extent is entirely outside of valid region - return None
-        return None
-    # Clip to valid region and reproject
-    valid_extent = geo_extent & crs.valid_region
-    if valid_extent.wkt == "POLYGON EMPTY":
-        # Extent is entirely outside of valid region - return None
-        return None
-    return valid_extent.to_crs(crs)
 
 
-def generate_dataset_spatial_values(dataset_id, crs, extent, geo_extent=None):
-    extent = sanitise_extent(extent, crs, geo_extent=geo_extent)
+def generate_dataset_spatial_values(dataset_id, crs, extent):
+    extent = sanitise_extent(extent, crs)
     if extent is None:
         return None
     geom_alch = geom_alchemy(extent)
