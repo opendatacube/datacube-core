@@ -1355,7 +1355,7 @@ class PostgisDbAPI:
                                   source_id=rel.source_dataset_ref,
                                   derived_id=rel.derived_dataset_ref)
 
-    def write_relations(self, relations: Iterable[LineageRelation], allow_updates: bool):
+    def write_relations(self, relations: Iterable[LineageRelation], allow_updates: bool) -> int:
         """
         Write a set of LineageRelation objects to the database.
 
@@ -1363,6 +1363,7 @@ class PostgisDbAPI:
         :param allow_updates: if False, only allow adding new relations, not updating old ones.
         :return: Count of database rows affected
         """
+        affected = 0
         if allow_updates:
             by_classifier: dict[str, Any] = {}
             for rel in relations:
@@ -1375,34 +1376,31 @@ class PostgisDbAPI:
                     by_classifier[rel.classifier].append(db_repr)
                 else:
                     by_classifier[rel.classifier] = [db_repr]
-                updates = 0
                 for classifier, values in by_classifier.items():
                     qry = insert(DatasetLineage).on_conflict_do_update(
                         index_elements=["derived_dataset_ref", "source_dataset_ref"],
                         set_={"classifier": classifier},
                         where=(DatasetLineage.classifier != classifier))
                     res = self._connection.execute(qry, values)
-                    updates += res.rowcount
-                return updates
+                    affected += res.rowcount
         else:
-            if len(relations):
+            for rel in relations:
                 values = [
                     {
                         "derived_dataset_ref": rel.derived_id,
                         "source_dataset_ref": rel.source_id,
                         "classifier": rel.classifier
                     }
-                    for rel in relations
                 ]
                 qry = insert(DatasetLineage)
                 try:
                     res = self._connection.execute(
                         qry, values
                     )
-                    return res.rowcount
+                    affected += res.rowcount
                 except IntegrityError:
                     return 0
-            return
+        return affected
 
     def load_lineage_relations(self,
                                roots: Iterable[uuid.UUID],
