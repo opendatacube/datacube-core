@@ -19,6 +19,7 @@ v1.9.next
 - Drop valid-area check and anti-meridian fix 3857 extents (:pull:1635)
 - Remove problematic "common_timestamp" postgresql function from postgis driver. Some internal API changes
   required to accommodate and preserve all previous index-driver level behaviour. (:pull:`1623`)
+- Cherry picks from 1.8 (#1624-#1626, #1629-#1631) (:pull:`1635`)
 
 v1.9.0-rc9 (3rd July 2024)
 ==========================
