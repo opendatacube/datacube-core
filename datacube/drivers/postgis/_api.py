@@ -247,6 +247,29 @@ def extract_dataset_fields(ds_metadata, fields):
     return result
 
 
+# Min/Max aggregating time fields for temporal_extent methods
+time_min = DateDocField('acquisition_time_min',
+                        'Min of time when dataset was acquired',
+                        Dataset.metadata_doc,
+                        False,  # is it indexed
+                        offset=[
+                            ['properties', 'dtr:start_datetime'],
+                            ['properties', 'datetime']
+                        ],
+                        selection='least')
+
+
+time_max = DateDocField('acquisition_time_max',
+                        'Max of time when dataset was acquired',
+                        Dataset.metadata_doc,
+                        False,  # is it indexed
+                        offset=[
+                            ['properties', 'dtr:end_datetime'],
+                            ['properties', 'datetime']
+                        ],
+                        selection='greatest')
+
+
 class PostgisDbAPI:
     def __init__(self, parentdb, connection):
         self._db = parentdb
@@ -1512,25 +1535,6 @@ class PostgisDbAPI:
             return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
         raise ValueError("no dataset ids provided")
 
-    time_min = DateDocField('acquisition_time_min',
-                            'Min of time when dataset was acquired',
-                            Dataset.metadata_doc,
-                            False,  # is it indexed
-                            offset=[
-                                ['properties', 'dtr:start_datetime'],
-                                ['properties', 'datetime']
-                            ],
-                            selection='least')
-
-    time_max = DateDocField('acquisition_time_max',
-                            'Max of time when dataset was acquired',
-                            Dataset.metadata_doc,
-                            False,  # is it indexed
-                            offset=[
-                                ['properties', 'dtr:end_datetime'],
-                                ['properties', 'datetime']
-                            ],
-                            selection='greatest')
 
     def temporal_extent_full(self) -> Select:
         # Hardcode eo3 standard time locations - do not use this approach in a legacy index driver.
