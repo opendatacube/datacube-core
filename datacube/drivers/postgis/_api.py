@@ -1535,7 +1535,6 @@ class PostgisDbAPI:
             return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
         raise ValueError("no dataset ids provided")
 
-
     def temporal_extent_full(self) -> Select:
         # Hardcode eo3 standard time locations - do not use this approach in a legacy index driver.
 
