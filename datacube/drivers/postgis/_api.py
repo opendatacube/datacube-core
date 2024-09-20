@@ -825,6 +825,7 @@ class PostgisDbAPI:
         )
 
         for row in self._connection.execute(query):
+            # TODO: Use decode_rows above - would require creating a field class for the ids array.
             drow: dict[str, Any] = {
                 "ids": row.ids,
             }
