@@ -24,7 +24,6 @@ from sqlalchemy.sql.expression import Select
 from sqlalchemy import select, text, and_, or_, func
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.engine import Row
 
 from typing import Iterable, Sequence, Optional, Set, Any
 from typing import cast as type_cast
@@ -50,22 +49,40 @@ _LOG = logging.getLogger(__name__)
 
 # Make a function because it's broken
 def _dataset_select_fields() -> tuple:
+    return tuple(f.alchemy_expression for f in _dataset_fields())
+
+
+def _dataset_fields() -> tuple:
+    native_flds = get_native_fields()
     return (
-        Dataset,
-        # All active URIs, from newest to oldest
-        func.array(
-            select(
-                SelectedDatasetLocation.uri
-            ).where(
-                and_(
-                    SelectedDatasetLocation.dataset_ref == Dataset.id,
-                    SelectedDatasetLocation.archived == None
-                )
-            ).order_by(
-                SelectedDatasetLocation.added.desc(),
-                SelectedDatasetLocation.id.desc()
-            ).label('uris')
-        ).label('uris')
+        native_flds["id"],
+        native_flds["indexed_time"],
+        native_flds["indexed_by"],
+        native_flds["product_id"],
+        native_flds["metadata_type_id"],
+        native_flds["metadata_doc"],
+        NativeField(
+            'archived',
+            'Archived date',
+            Dataset.archived
+        ),
+        NativeField("uris",
+                    "all uris",
+                    func.array(
+                        select(
+                            SelectedDatasetLocation.uri
+                        ).where(
+                            and_(
+                                SelectedDatasetLocation.dataset_ref == Dataset.id,
+                                SelectedDatasetLocation.archived == None
+                            )
+                        ).order_by(
+                            SelectedDatasetLocation.added.desc(),
+                            SelectedDatasetLocation.id.desc()
+                        ).label('uris')
+                    ),
+                    alchemy_table=Dataset.__table__  # type: ignore[attr-defined]
+        )
     )
 
 
@@ -228,6 +245,29 @@ def extract_dataset_fields(ds_metadata, fields):
         except UnindexableValue:
             continue
     return result
+
+
+# Min/Max aggregating time fields for temporal_extent methods
+time_min = DateDocField('acquisition_time_min',
+                        'Min of time when dataset was acquired',
+                        Dataset.metadata_doc,
+                        False,  # is it indexed
+                        offset=[
+                            ['properties', 'dtr:start_datetime'],
+                            ['properties', 'datetime']
+                        ],
+                        selection='least')
+
+
+time_max = DateDocField('acquisition_time_max',
+                        'Max of time when dataset was acquired',
+                        Dataset.metadata_doc,
+                        False,  # is it indexed
+                        offset=[
+                            ['properties', 'dtr:end_datetime'],
+                            ['properties', 'datetime']
+                        ],
+                        selection='greatest')
 
 
 class PostgisDbAPI:
@@ -476,19 +516,6 @@ class PostgisDbAPI:
             )
         return self._connection.execute(query).fetchall()
 
-    # Not currently implemented.
-    # def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
-        # r = self._connection.execute(
-        #     insert(DatasetSource).on_conflict_do_nothing(
-        #         index_elements=['classifier', 'dataset_ref']
-        #     ).values(
-        #         classifier=classifier,
-        #         dataset_ref=dataset_id,
-        #         source_dataset_ref=source_dataset_id
-        #     )
-        # )
-        # return r.rowcount > 0
-
     def archive_dataset(self, dataset_id):
         r = self._connection.execute(
             update(Dataset).where(
@@ -548,10 +575,10 @@ class PostgisDbAPI:
         ).fetchall()
 
     def get_derived_datasets(self, dataset_id):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def get_dataset_sources(self, dataset_id):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def search_datasets_by_metadata(self, metadata, archived):
         """
@@ -621,14 +648,13 @@ class PostgisDbAPI:
         assert source_exprs is None
         assert not with_source_ids
 
-        if select_fields:
-            select_columns = tuple(
-                f.alchemy_expression.label(f.name)
-                for f in select_fields
-            )
-        else:
-            select_columns = _dataset_select_fields()
+        if not select_fields:
+            select_fields = _dataset_fields()
 
+        select_columns = tuple(
+            f.alchemy_expression.label(f.name)
+            for f in select_fields
+        )
         if geom:
             SpatialIndex, spatialquery = self.geospatial_query(geom)
         else:
@@ -663,12 +689,21 @@ class PostgisDbAPI:
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgis._fields.PgField]
         :type expressions: tuple[datacube.drivers.postgis._fields.PgExpression]
+
+        :return: An iterable of tuples of decoded values
         """
+        if select_fields is None:
+            select_fields = _dataset_fields()
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids,
                                                   limit, geom=geom, archived=archived)
         _LOG.debug("search_datasets SQL: %s", str(select_query))
-        return self._connection.execute(select_query)
+
+        def decode_row(raw: Iterable[Any]) -> dict[str, Any]:
+            return {f.name: f.normalise_value(r) for r, f in zip(raw, select_fields)}
+
+        for row in self._connection.execute(select_query):
+            yield decode_row(row)
 
     def bulk_simple_dataset_search(self, products=None, batch_size=0):
         """
@@ -690,7 +725,7 @@ class PostgisDbAPI:
         query = select(
             *_dataset_bulk_select_fields()
         ).select_from(Dataset).where(
-            Dataset.archived == None
+            Dataset.archived.is_(None)
         )
         if products:
             query = query.where(Dataset.product_ref.in_(products))
@@ -733,10 +768,12 @@ class PostgisDbAPI:
         )
         return res.rowcount, requested - res.rowcount
 
-    def get_duplicates(self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]) -> Iterable[Row]:
+    def get_duplicates(self,
+                       match_fields: Sequence[PgField],
+                       expressions: Sequence[PgExpression]) -> Iterable[dict[str, Any]]:
         # TODO
         if "time" in [f.name for f in match_fields]:
-            return self.get_duplicates_with_time(match_fields, expressions)
+            yield from self.get_duplicates_with_time(match_fields, expressions)
 
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
         join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
@@ -749,27 +786,31 @@ class PostgisDbAPI:
             query = query.join(*joins)
 
         query = query.where(
-            and_(Dataset.archived == None, *(PostgisDbAPI._alchemify_expressions(expressions)))
+            and_(Dataset.archived.is_(None), *(PostgisDbAPI._alchemify_expressions(expressions)))
         ).group_by(
             *group_expressions
         ).having(
             func.count(Dataset.id) > 1
         )
-        return self._connection.execute(query)
+        for row in self._connection.execute(query):
+            drow = {"ids": row.ids}
+            for f in match_fields:
+                drow[f.name] = getattr(row, f.name)
+            yield drow
 
     def get_duplicates_with_time(
             self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]
-    ) -> Iterable[Row]:
+    ) -> Iterable[dict[str, Any]]:
         fields = []
-        for f in match_fields:
-            if f.name == "time":
-                time_field = type_cast(DateRangeDocField, f).expression_with_leniency
+        for fld in match_fields:
+            if fld.name == "time":
+                time_field = type_cast(DateRangeDocField, fld)
             else:
-                fields.append(f.alchemy_expression)
+                fields.append(fld.alchemy_expression)
 
         join_tables = PostgisDbAPI._join_tables(expressions, match_fields)
 
-        cols = [Dataset.id, time_field.label('time'), *fields]
+        cols = [Dataset.id, time_field.expression_with_leniency.label('time'), *fields]
         query = select(
             *cols
         ).select_from(Dataset)
@@ -777,7 +818,7 @@ class PostgisDbAPI:
             query = query.join(*joins)
 
         query = query.where(
-            and_(Dataset.archived == None, *(PostgisDbAPI._alchemify_expressions(expressions)))
+            and_(Dataset.archived.is_(None), *(PostgisDbAPI._alchemify_expressions(expressions)))
         )
 
         t1 = query.alias("t1")
@@ -785,7 +826,7 @@ class PostgisDbAPI:
 
         time_overlap = select(
             t1.c.id,
-            text("t1.time * t2.time as time_intersect"),
+            t1.c.time.intersection(t2.c.time).label('time_intersect'),
             *fields
         ).select_from(
             t1.join(
@@ -797,7 +838,7 @@ class PostgisDbAPI:
         query = select(
             func.array_agg(func.distinct(time_overlap.c.id)).label("ids"),
             *fields,  # type: ignore[arg-type]
-            text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
+            text("time_intersect as time")
         ).select_from(
             time_overlap  # type: ignore[arg-type]
         ).group_by(
@@ -805,7 +846,16 @@ class PostgisDbAPI:
         ).having(
             func.count(time_overlap.c.id) > 1
         )
-        return self._connection.execute(query)
+
+        for row in self._connection.execute(query):
+            # TODO: Use decode_rows above - would require creating a field class for the ids array.
+            drow: dict[str, Any] = {
+                "ids": row.ids,
+            }
+            for f in fields:
+                drow[f.key] = getattr(row, f.key)  # type: ignore[union-attr]
+            drow["time"] = time_field.normalise_value((row.time.lower, row.time.upper))
+            yield drow
 
     def count_datasets(self, expressions, archived: bool | None = False, geom: Geometry | None = None):
         """
@@ -1474,33 +1524,20 @@ class PostgisDbAPI:
     def temporal_extent_by_prod(self, product_id: int) -> tuple[datetime.datetime, datetime.datetime]:
         query = self.temporal_extent_full().where(Dataset.product_ref == product_id)
         res = self._connection.execute(query)
-        return res.first()
+        for tmin, tmax in res:
+            return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
+        raise RuntimeError("Product has no datasets and therefore no temporal extent")
 
     def temporal_extent_by_ids(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         query = self.temporal_extent_full().where(Dataset.id.in_(ids))
         res = self._connection.execute(query)
-        return res.first()
+        for tmin, tmax in res:
+            return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
+        raise ValueError("no dataset ids provided")
 
     def temporal_extent_full(self) -> Select:
         # Hardcode eo3 standard time locations - do not use this approach in a legacy index driver.
-        time_min = DateDocField('aquisition_time_min',
-                                'Min of time when dataset was acquired',
-                                Dataset.metadata_doc,
-                                False,  # is it indexed
-                                offset=[
-                                    ['properties', 'dtr:start_datetime'],
-                                    ['properties', 'datetime']
-                                ],
-                                selection='least')
-        time_max = DateDocField('aquisition_time_max',
-                                'Max of time when dataset was acquired',
-                                Dataset.metadata_doc,
-                                False,  # is it indexed
-                                offset=[
-                                    ['properties', 'dtr:end_datetime'],
-                                    ['properties', 'datetime']
-                                ],
-                                selection='greatest')
+
         return select(
-            func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)
+            func.min(self.time_min.alchemy_expression), func.max(self.time_max.alchemy_expression)
         )

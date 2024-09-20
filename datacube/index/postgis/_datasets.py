@@ -266,22 +266,22 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         Returns each set of those field values and the datasets that have them.
         """
+        dataset_fields = product.metadata_type.dataset_fields
 
         def load_field(f: Union[str, fields.Field]) -> fields.Field:
             if isinstance(f, str):
-                return product.metadata_type.dataset_fields[f]
+                return dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
 
         group_fields = [cast(PgField, load_field(f)) for f in args]
-        expressions = [cast(PgExpression, product.metadata_type.dataset_fields.get('product') == product.name)]
+        expressions = [cast(PgExpression, dataset_fields.get('product') == product.name)]
 
         with self._db_connection() as connection:
             for record in connection.get_duplicates(group_fields, expressions):
-                as_dict = record._asdict()
-                if 'ids' in as_dict.keys():
-                    ids = as_dict.pop('ids')
-                    yield namedtuple('search_result', as_dict.keys())(**as_dict), set(ids)
+                if 'ids' in record:
+                    ids = record.pop('ids')
+                    yield namedtuple('search_result', record.keys())(**record), set(ids)
 
     def can_update(self, dataset, updates_allowed=None):
         """
@@ -597,19 +597,21 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param bool full_info: Include all available fields
         """
         kwargs = {}
-        if dataset_res.uris:
-            uris = [uri for uri in dataset_res.uris if uri]
+        if not isinstance(dataset_res, dict):
+            dataset_res = dataset_res._asdict()
+        if "uris" in dataset_res:
+            uris = [uri for uri in dataset_res["uris"] if uri]
             if len(uris) == 1:
                 kwargs["uri"] = uris[0]
             else:
                 kwargs["uris"] = uris
 
         return Dataset(
-            product=product or self.products.get(dataset_res.product_ref),
-            metadata_doc=dataset_res.metadata,
-            indexed_by=dataset_res.added_by if full_info else None,
-            indexed_time=dataset_res.added if full_info else None,
-            archived_time=dataset_res.archived,
+            product=product or self.products.get(dataset_res["product_id"]),
+            metadata_doc=dataset_res["metadata_doc"],
+            indexed_by=dataset_res["indexed_by"] if full_info else None,
+            indexed_time=dataset_res["indexed_time"] if full_info else None,
+            archived_time=dataset_res["archived"],
             source_tree=source_tree,
             derived_tree=derived_tree,
             **kwargs
@@ -716,11 +718,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                      limit=limit,
                                                      archived=archived):
             for columns in results:
-                coldict = columns._asdict()
-
                 def extract_field(f):
                     # Custom fields are not type-aware and returned as stringified json.
-                    return json.loads(coldict.get(f)) if f in custom_fields else coldict.get(f)
+                    return json.loads(columns.get(f)) if f in custom_fields else columns.get(f)
                 kwargs = {f: extract_field(f) for f in field_name_d}
                 yield result_type(**kwargs)
 

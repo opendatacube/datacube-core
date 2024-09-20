@@ -8,14 +8,16 @@ Build and index fields within documents.
 import math
 
 from collections import namedtuple
+from datetime import timezone
 from datetime import datetime, date
 from decimal import Decimal
-from typing import Any, Callable, Tuple, Union
+from typing import Any, Callable, Type, Tuple, Union
 
 from psycopg2.extras import NumericRange, DateTimeTZRange
+from sqlalchemy.types import TIMESTAMP
 from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
+from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE, Range as PgRange
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.sql import ColumnElement, FromClause, ColumnExpressionArgument
 from sqlalchemy.orm import aliased
@@ -27,7 +29,7 @@ from datacube.utils import get_doc_offset
 
 from datacube.drivers.postgis._schema import Dataset, search_field_index_map
 from datacube.utils import cached_property
-from datacube.utils.dates import tz_aware
+from datacube.utils.dates import tz_as_utc
 
 DatasetJoinArgs = tuple[FromClause] | tuple[FromClause, ColumnExpressionArgument]
 
@@ -41,16 +43,29 @@ class PgField(Field):
     def __init__(self,
                  name: str, description: str,
                  alchemy_column: ColumnElement,
-                 indexed: bool):
+                 indexed: bool,
+                 alchemy_table: FromClause | None = None):
         super().__init__(name, description)
 
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
         self.alchemy_column = alchemy_column
         self.indexed = indexed
+        self.alchemy_table = alchemy_table
 
     @property
     def select_alchemy_table(self) -> FromClause:
+        if self.alchemy_table is not None:
+            return self.alchemy_table
         return self.alchemy_column.table
+
+    def normalise_value(self, value):
+        """
+        Wrap the given value with any necessary type casts/conversions for this field.
+
+        Overridden by other classes as needed.
+        """
+        # Default do nothing (eg. string datatypes)
+        return value
 
     @cached_property
     def search_index_table(self) -> FromClause:
@@ -122,9 +137,10 @@ class NativeField(PgField):
                  alchemy_column: ColumnElement,
                  alchemy_expression: ColumnExpressionArgument | None = None,
                  join_clause: ColumnExpressionArgument | None = None,
+                 alchemy_table: FromClause | None = None,
                  # Should this be selected by default when selecting all fields?
                  affects_row_selection: bool = False):
-        super(NativeField, self).__init__(name, description, alchemy_column, False)
+        super(NativeField, self).__init__(name, description, alchemy_column, indexed=False, alchemy_table=alchemy_table)
         self._expression = alchemy_expression
         self.affects_row_selection = affects_row_selection
         self.join_clause = join_clause
@@ -171,7 +187,8 @@ class PgDocField(PgField):
 
     def _alchemy_offset_value(self,
                               doc_offsets: Tuple[Tuple[str]],
-                              agg_function: Callable[[Any], ColumnElement]) -> ColumnElement:
+                              agg_function: Callable[[Any], ColumnElement],
+                              type_: Type | None = None) -> ColumnElement:
         """
         Get an sqlalchemy value for the given offsets of this field's sqlalchemy column.
         If there are multiple they will be combined using the given aggregate function.
@@ -192,6 +209,8 @@ class PgDocField(PgField):
             doc_offsets = [doc_offsets]
 
         alchemy_values = [self.value_to_alchemy(self.alchemy_column[offset].astext) for offset in doc_offsets]
+        if type_ is not None:
+            alchemy_values = [cast(v, type_) for v in alchemy_values]
         # If there's multiple fields, we aggregate them (eg. "min()"). Otherwise use the one.
         return agg_function(*alchemy_values) if len(alchemy_values) > 1 else alchemy_values[0]
 
@@ -312,14 +331,25 @@ class DateDocField(SimpleDocField):
         Wrap a value as needed for this field type.
         """
         if isinstance(value, datetime):
-            return tz_aware(value)
-        # SQLAlchemy expression or string are parsed in pg as dates.
+            return self.normalise_value(value)
+        elif isinstance(value, str):
+            return tz_as_utc(datetime.fromisoformat(value))
         elif isinstance(value, (ColumnElement, str)):
-            return func.odc.common_timestamp(value)
+            # SQLAlchemy expression or string are parsed in pg as dates.
+            # NB: Do not cast here - casting here breaks expected behaviour in other timezones
+            return value
         else:
             raise ValueError("Value not readable as date: %r" % value)
 
+    def normalise_value(self, value):
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+        return tz_as_utc(value)
+
     def search_value_to_alchemy(self, value):
+        if isinstance(value, datetime):
+            value = tz_as_utc(value)
+        value = cast(value, TIMESTAMP(timezone=True))
         return func.tstzrange(
             value, value,
             # Inclusive on both sides.
@@ -340,8 +370,12 @@ class DateDocField(SimpleDocField):
             '{}_day'.format(self.name),
             'Day of {}'.format(self.description),
             self.alchemy_column,
-            alchemy_expression=cast(func.date_trunc('day', self.alchemy_expression), postgres.TIMESTAMP)
+            alchemy_expression=cast(func.date_trunc('day', self.alchemy_expression), TIMESTAMP(timezone=True))
         )
+
+    @property
+    def alchemy_expression(self):
+        return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc).label(self.name)
 
 
 class RangeDocField(PgDocField):
@@ -431,12 +465,38 @@ class DateRangeDocField(RangeDocField):
 
     def value_to_alchemy(self, value):
         low, high = value
+        # Is OK to cast, because we are wrapping it in timezone-aware datatype.
+        if isinstance(low, (ColumnElement, str)):
+            low = cast(low, TIMESTAMP(timezone=True))
+        if isinstance(high, (ColumnElement, str)):
+            high = cast(high, TIMESTAMP(timezone=True))
         return func.tstzrange(
             low, high,
             # Inclusive on both sides.
             '[]',
             type_=TSTZRANGE,
         )
+
+    def search_value_to_alchemy(self, value):
+        low, high = value
+        if isinstance(low, datetime):
+            low = tz_as_utc(low)
+        if isinstance(high, datetime):
+            high = tz_as_utc(high)
+        return func.tstzrange(
+            low, high,
+            # Inclusive on both sides.
+            '[]',
+            type_=TSTZRANGE,
+        )
+
+    def normalise_value(self, value):
+        if isinstance(value, datetime):
+            return tz_as_utc(value)
+        elif isinstance(value, PgRange):
+            return PgRange(lower=tz_as_utc(value.lower), upper=tz_as_utc(value.upper), bounds=value.bounds)
+        else:
+            return tuple(tz_as_utc(v) for v in value)
 
     def between(self, low, high):
         """
@@ -448,8 +508,8 @@ class DateRangeDocField(RangeDocField):
         if isinstance(low, datetime) and isinstance(high, datetime):
             return RangeBetweenExpression(
                 self,
-                tz_aware(low),
-                tz_aware(high),
+                tz_as_utc(low).astimezone(timezone.utc),
+                tz_as_utc(high).astimezone(timezone.utc),
                 _range_class=DateTimeTZRange
             )
         else:
@@ -458,9 +518,10 @@ class DateRangeDocField(RangeDocField):
 
     @property
     def expression_with_leniency(self):
+        low = cast(self.lower.alchemy_expression, TIMESTAMP(timezone=True)) - cast('500 milliseconds', INTERVAL)
+        high = cast(self.greater.alchemy_expression, TIMESTAMP(timezone=True)) + cast('500 milliseconds', INTERVAL)
         return func.tstzrange(
-            self.lower.alchemy_expression - cast('500 milliseconds', INTERVAL),
-            self.greater.alchemy_expression + cast('500 milliseconds', INTERVAL),
+            low, high,
             # Inclusive on both sides.
             '[]',
             type_=TSTZRANGE,

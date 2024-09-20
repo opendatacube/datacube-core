@@ -128,7 +128,6 @@ def ensure_db(engine, with_permissions=True):
             c.execute(text(f"""
             grant usage on schema {SCHEMA_NAME} to odc_user;
             grant select on all tables in schema {SCHEMA_NAME} to odc_user;
-            grant execute on function {SCHEMA_NAME}.common_timestamp(text) to odc_user;
 
             grant insert on {SCHEMA_NAME}.dataset,
                             {SCHEMA_NAME}.location,
