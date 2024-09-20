@@ -336,7 +336,7 @@ class DateDocField(SimpleDocField):
             return tz_as_utc(datetime.fromisoformat(value))
         elif isinstance(value, (ColumnElement, str)):
             # SQLAlchemy expression or string are parsed in pg as dates.
-            # return cast(value, TIMESTAMP(timezone=True))
+            # NB: Do not cast here - casting here breaks expected behaviour in other timezones
             return value
         else:
             raise ValueError("Value not readable as date: %r" % value)
@@ -465,6 +465,7 @@ class DateRangeDocField(RangeDocField):
 
     def value_to_alchemy(self, value):
         low, high = value
+        # Is OK to cast, because we are wrapping it in timezone-aware datatype.
         if isinstance(low, (ColumnElement, str)):
             low = cast(low, TIMESTAMP(timezone=True))
         if isinstance(high, (ColumnElement, str)):
