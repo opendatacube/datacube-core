@@ -1525,19 +1525,19 @@ class PostgisDbAPI:
         query = self.temporal_extent_full().where(Dataset.product_ref == product_id)
         res = self._connection.execute(query)
         for tmin, tmax in res:
-            return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
+            return (time_min.normalise_value(tmin), time_max.normalise_value(tmax))
         raise RuntimeError("Product has no datasets and therefore no temporal extent")
 
     def temporal_extent_by_ids(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         query = self.temporal_extent_full().where(Dataset.id.in_(ids))
         res = self._connection.execute(query)
         for tmin, tmax in res:
-            return (self.time_min.normalise_value(tmin), self.time_max.normalise_value(tmax))
+            return (time_min.normalise_value(tmin), time_max.normalise_value(tmax))
         raise ValueError("no dataset ids provided")
 
     def temporal_extent_full(self) -> Select:
         # Hardcode eo3 standard time locations - do not use this approach in a legacy index driver.
 
         return select(
-            func.min(self.time_min.alchemy_expression), func.max(self.time_max.alchemy_expression)
+            func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)
         )
