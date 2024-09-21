@@ -46,17 +46,17 @@ COPY docker/constraints.in /conf/requirements.txt
 COPY docker/constraints.txt docker/nobinary.txt /conf/
 
 
-RUN . /env/bin/activate && python3 -m pip install --no-cache-dir --upgrade pip setuptools
-RUN . /env/bin/activate && python3 -m pip install --no-cache-dir -r /conf/requirements.txt \
+RUN . /env/bin/activate && python3 -m pip --disable-pip-version-check install --no-cache-dir --upgrade pip setuptools
+RUN . /env/bin/activate && python3 -m pip --disable-pip-version-check install --no-cache-dir -r /conf/requirements.txt \
                            -c /conf/constraints.txt \
                            -c /conf/nobinary.txt
 
 # Copy datacube-core source code into container and install from source (with addons for tests).
 COPY . /code
 
-RUN . /env/bin/activate && python3 -m pip install --no-cache-dir '/code/[all]' \
-    && python3 -m pip install --no-cache-dir /code/examples/io_plugin \
-    && python3 -m pip install --no-cache-dir /code/tests/drivers/fail_drivers
+RUN . /env/bin/activate && python3 -m pip --disable-pip-version-check install --no-cache-dir '/code/[all]' \
+    && python3 -m pip --disable-pip-version-check install --no-cache-dir /code/examples/io_plugin \
+    && python3 -m pip --disable-pip-version-check install --no-cache-dir /code/tests/drivers/fail_drivers
 
 # Copy bootstrap script into image.
 COPY docker/assets/with_bootstrap /usr/local/bin/
