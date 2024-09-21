@@ -89,6 +89,7 @@ CRSMismatchError
 CSIRO
 csiro
 CSV
+ctrl
 cubeenv
 currentmodule
 cyear
@@ -100,6 +101,7 @@ DataArray
 DataCube
 Datacube
 datacube
+datacubecoredocs
 dataflow
 DataFrame
 DataSet
