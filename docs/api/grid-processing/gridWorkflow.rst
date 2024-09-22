@@ -1,6 +1,6 @@
-============
+=============
 Grid Workflow
-============
+=============
 
 .. currentmodule:: datacube
 
