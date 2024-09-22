@@ -40,6 +40,10 @@ extensions = [
     'sphinx.ext.autosectionlabel'
 ]
 
+suppress_warnings = [
+    'sphinx.ext.autosectionlabel',  # Suppress warnings for autosectionlabel duplicates
+]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -90,8 +94,8 @@ autodoc_default_options = {
     'inherited-members': True
 }
 
-extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue '),
-            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR ')}
+extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'issue %s'),
+            'pull': ('https://github.com/opendatacube/datacube-core/pulls/%s', 'PR %s')}
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
