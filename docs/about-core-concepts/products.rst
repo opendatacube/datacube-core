@@ -98,7 +98,7 @@ Product Definition API
          Units of the measurement
 
     dtype
-        Data type. One of ``(u)int(8,16,32,64), float(16, 32, 64), complex(64,128) ``
+        Data type. One of ``(u)int(8,16,32,64), float(16, 32, 64), complex(64,128)``
 
         The allowed type can be found in schema file: ``datacube/model/schema/dataset-type-schema.yaml``
 

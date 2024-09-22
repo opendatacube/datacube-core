@@ -7,5 +7,5 @@ About
 
     whats_new
     glossary
-    licence
+    license
     release_process
