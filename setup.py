@@ -14,6 +14,7 @@ tests_require = [
 ]
 doc_require = [
     'Sphinx',
+    'sphinx-autobuild',
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',
     'recommonmark',
