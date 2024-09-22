@@ -8,43 +8,49 @@ affine==2.4.0
     # via
     #   datacube (setup.py)
     #   rasterio
-alabaster==0.7.13
+alabaster==1.0.0
     # via sphinx
-attrs==22.2.0
+anyio==4.5.0
+    # via
+    #   starlette
+    #   watchfiles
+attrs==24.2.0
     # via
     #   datacube (setup.py)
     #   jsonschema
     #   rasterio
-autodocsumm==0.2.9
+    #   referencing
+autodocsumm==0.2.13
     # via datacube (setup.py)
-babel==2.11.0
+babel==2.16.0
     # via sphinx
-beautifulsoup4==4.11.0
+beautifulsoup4==4.12.3
     # via
     #   datacube (setup.py)
     #   nbconvert
     #   pydata-sphinx-theme
-bleach==6.0.0
+bleach==6.1.0
     # via nbconvert
-boto3==1.26.65
+boto3==1.35.23
     # via datacube (setup.py)
-botocore==1.29.65
+botocore==1.35.23
     # via
     #   boto3
     #   datacube (setup.py)
     #   s3transfer
-cachetools==5.3.0
+cachetools==5.5.0
     # via datacube (setup.py)
-certifi==2022.12.7
+certifi==2024.8.30
     # via
+    #   netcdf4
     #   pyproj
     #   rasterio
     #   requests
-cftime==1.6.2
+cftime==1.6.4
     # via netcdf4
-charset-normalizer==3.0.1
+charset-normalizer==3.3.2
     # via requests
-click==8.1.3
+click==8.1.7
     # via
     #   click-plugins
     #   cligj
@@ -53,49 +59,56 @@ click==8.1.3
     #   distributed
     #   rasterio
     #   sphinx-click
+    #   uvicorn
 click-plugins==1.1.1
     # via rasterio
 cligj==0.7.2
     # via rasterio
-cloudpickle==2.2.1
+cloudpickle==3.0.0
     # via
     #   dask
     #   datacube (setup.py)
     #   distributed
+colorama==0.4.6
+    # via sphinx-autobuild
 commonmark==0.9.1
     # via recommonmark
-dask[array]==2023.1.1
+dask[array]==2024.9.0
     # via
     #   datacube (setup.py)
     #   distributed
 defusedxml==0.7.1
     # via nbconvert
-deprecat==2.1.1
+deprecat==2.1.3
     # via datacube (setup.py)
-distributed==2023.1.1
+distributed==2024.9.0
     # via datacube (setup.py)
-docutils==0.17.1
+docutils==0.21.2
     # via
     #   nbsphinx
     #   pydata-sphinx-theme
     #   recommonmark
     #   sphinx
     #   sphinx-click
-fastjsonschema==2.16.2
+fastjsonschema==2.20.0
     # via nbformat
-fsspec==2023.1.0
+fsspec==2024.9.0
     # via dask
-geoalchemy2==0.13.1
+geoalchemy2==0.15.2
     # via datacube (setup.py)
-greenlet==2.0.2
+greenlet==3.1.0
     # via sqlalchemy
-heapdict==1.0.1
-    # via zict
-idna==3.4
-    # via requests
+h11==0.14.0
+    # via uvicorn
+idna==3.10
+    # via
+    #   anyio
+    #   requests
 imagesize==1.4.1
     # via sphinx
-jinja2==3.1.2
+importlib-metadata==8.5.0
+    # via dask
+jinja2==3.1.4
     # via
     #   distributed
     #   nbconvert
@@ -105,48 +118,50 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonschema==4.17.3
+jsonschema==4.23.0
     # via
     #   datacube (setup.py)
     #   nbformat
-jupyter-client==8.0.2
+jsonschema-specifications==2023.12.1
+    # via jsonschema
+jupyter-client==8.6.3
     # via nbclient
-jupyter-core==5.2.0
+jupyter-core==5.7.2
     # via
     #   jupyter-client
     #   nbclient
     #   nbconvert
     #   nbformat
-jupyterlab-pygments==0.2.2
+jupyterlab-pygments==0.3.0
     # via nbconvert
-lark==1.1.5
+lark==1.2.2
     # via datacube (setup.py)
 locket==1.0.0
     # via
     #   distributed
     #   partd
-markupsafe==2.1.2
+markupsafe==2.1.5
     # via
     #   jinja2
     #   nbconvert
-mistune==2.0.4
+mistune==3.0.2
     # via nbconvert
-msgpack==1.0.4
+msgpack==1.1.0
     # via distributed
-nbclient==0.7.2
+nbclient==0.10.0
     # via nbconvert
-nbconvert==7.2.9
+nbconvert==7.16.4
     # via nbsphinx
-nbformat==5.7.3
+nbformat==5.10.4
     # via
     #   nbclient
     #   nbconvert
     #   nbsphinx
-nbsphinx==0.8.9
+nbsphinx==0.9.5
     # via datacube (setup.py)
-netcdf4==1.6.2
+netcdf4==1.7.1.post2
     # via datacube (setup.py)
-numpy==1.24.2
+numpy==2.1.1
     # via
     #   cftime
     #   dask
@@ -157,7 +172,7 @@ numpy==1.24.2
     #   shapely
     #   snuggs
     #   xarray
-packaging==23.0
+packaging==24.1
     # via
     #   dask
     #   datacube (setup.py)
@@ -167,117 +182,130 @@ packaging==23.0
     #   pydata-sphinx-theme
     #   sphinx
     #   xarray
-pandas==1.5.3
+pandas==2.2.2
     # via
     #   datacube (setup.py)
     #   xarray
-pandocfilters==1.5.0
+pandocfilters==1.5.1
     # via nbconvert
-partd==1.3.0
+partd==1.4.2
     # via dask
-platformdirs==3.0.0
+platformdirs==4.3.6
     # via jupyter-core
-psutil==5.9.4
+psutil==6.0.0
     # via distributed
-#psycopg2==2.9.5
+psycopg2==2.9.9
     # via datacube (setup.py)
 pydata-sphinx-theme==0.9.0
     # via datacube (setup.py)
-pygments==2.14.0
+pygments==2.18.0
     # via
     #   nbconvert
     #   sphinx
-pyparsing==3.0.9
+pyparsing==3.1.4
     # via snuggs
-pyproj==3.4.1
+pyproj==3.6.1
     # via datacube (setup.py)
-pyrsistent==0.19.3
-    # via jsonschema
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   datacube (setup.py)
     #   jupyter-client
     #   pandas
-pytz==2022.7.1
-    # via
-    #   babel
-    #   pandas
-pyyaml==6.0
+pytz==2024.2
+    # via pandas
+pyyaml==6.0.2
     # via
     #   dask
     #   datacube (setup.py)
     #   distributed
-pyzmq==25.0.0
+pyzmq==26.2.0
     # via jupyter-client
-rasterio==1.3.5.post1
+rasterio==1.3.11
     # via datacube (setup.py)
 recommonmark==0.7.1
     # via datacube (setup.py)
-requests==2.28.2
+referencing==0.35.1
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
+requests==2.32.3
     # via sphinx
-ruamel-yaml==0.17.21
+rpds-py==0.20.0
+    # via
+    #   jsonschema
+    #   referencing
+ruamel-yaml==0.18.6
     # via datacube (setup.py)
-s3transfer==0.6.0
+ruamel-yaml-clib==0.2.8
+    # via ruamel-yaml
+s3transfer==0.10.2
     # via boto3
-shapely==2.0.1
+shapely==2.0.6
     # via datacube (setup.py)
 six==1.16.0
     # via
     #   bleach
     #   python-dateutil
+sniffio==1.3.1
+    # via anyio
 snowballstemmer==2.2.0
     # via sphinx
 snuggs==1.4.7
     # via rasterio
 sortedcontainers==2.4.0
     # via distributed
-soupsieve==2.3.2.post1
+soupsieve==2.6
     # via beautifulsoup4
-sphinx==4.5.0
+sphinx==8.0.2
     # via
     #   autodocsumm
     #   datacube (setup.py)
     #   nbsphinx
     #   pydata-sphinx-theme
     #   recommonmark
+    #   sphinx-autobuild
     #   sphinx-autodoc-typehints
     #   sphinx-click
-sphinx-autodoc-typehints==1.19.0
+sphinx-autobuild==2024.9.19
     # via datacube (setup.py)
-sphinx-click==4.2.0
+sphinx-autodoc-typehints==2.4.4
     # via datacube (setup.py)
-sphinxcontrib-applehelp==1.0.4
+sphinx-click==6.0.0
+    # via datacube (setup.py)
+sphinxcontrib-applehelp==2.0.0
     # via sphinx
-sphinxcontrib-devhelp==1.0.2
+sphinxcontrib-devhelp==2.0.0
     # via sphinx
-sphinxcontrib-htmlhelp==2.0.1
+sphinxcontrib-htmlhelp==2.1.0
     # via sphinx
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
-sphinxcontrib-qthelp==1.0.3
+sphinxcontrib-qthelp==2.0.0
     # via sphinx
-sphinxcontrib-serializinghtml==1.1.5
+sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
-sqlalchemy==1.4.46
+sqlalchemy==1.4.54
     # via
     #   datacube (setup.py)
     #   geoalchemy2
-tblib==1.7.0
+starlette==0.38.5
+    # via sphinx-autobuild
+tblib==3.0.0
     # via distributed
-tinycss2==1.2.1
+tinycss2==1.3.0
     # via nbconvert
-toolz==0.12.0
+toolz==0.12.1
     # via
     #   dask
     #   datacube (setup.py)
     #   distributed
     #   partd
-tornado==6.2
+tornado==6.4.1
     # via
     #   distributed
     #   jupyter-client
-traitlets==5.9.0
+traitlets==5.14.3
     # via
     #   jupyter-client
     #   jupyter-core
@@ -285,21 +313,31 @@ traitlets==5.9.0
     #   nbconvert
     #   nbformat
     #   nbsphinx
-urllib3==1.26.14
+tzdata==2024.1
+    # via pandas
+urllib3==2.2.3
     # via
     #   botocore
     #   distributed
     #   requests
+uvicorn==0.30.6
+    # via sphinx-autobuild
+watchfiles==0.24.0
+    # via sphinx-autobuild
 webencodings==0.5.1
     # via
     #   bleach
     #   tinycss2
-wrapt==1.15.0
+websockets==13.0.1
+    # via sphinx-autobuild
+wrapt==1.16.0
     # via deprecat
-xarray==2023.1.0
+xarray==2024.9.0
     # via datacube (setup.py)
-zict==2.2.0
+zict==3.0.0
     # via distributed
+zipp==3.20.2
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
