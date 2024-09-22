@@ -183,11 +183,11 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
         soup = bs(context["body"], "html.parser")
 
         class_sections = soup.find(class_='class')
-        if class_sections != None:
+        if class_sections is not None:
             return ""
 
         matches = soup.find_all('dl')
-        if matches == None or len(matches) == 0:
+        if matches is None or len(matches) == 0:
             return ""
 
         out = {
@@ -198,13 +198,13 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
         #  remove the class dt
         pyclass = matches.pop(0)
         pyclass = pyclass.find('dt')
-        if pyclass != None:
+        if pyclass is not None:
             out['title'] = pyclass.get('id')
 
         for match in matches:
             match_dt = match.find('dt')
             link = match.find(class_="headerlink")
-            if link != None:
+            if link is not None:
                 out['menu_items'].append({
                     'title': match_dt.get('id'),
                     'link': link['href']
@@ -216,7 +216,7 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
         soup = bs(context["body"], "html.parser")
 
         class_sections = soup.find_all(class_='autosummary')
-        if class_sections == None or len(class_sections) == 0:
+        if class_sections is None or len(class_sections) == 0:
             return ""
 
         out = {
@@ -224,11 +224,11 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
             'menu_items': []
         }
         class_title = soup.find(class_='class')
-        if class_title == None:
+        if class_title is None:
             return ""
 
         pyclass = class_title.find('dt')
-        if pyclass != None:
+        if pyclass is not None:
             out['title'] = pyclass.get('id')
 
         for section in class_sections:
@@ -241,9 +241,9 @@ def custom_page_funcs(app, pagename, templatename, context, doctree):
             for match in matches:
                 link = match.find(class_="internal")
 
-                if link != None:
+                if link is not None:
                     title = link['title']
-                    if title != None:
+                    if title is not None:
                         title = title.replace(out['title'], '')
                     out_section['menu_items'].append({
                         'title': title,
