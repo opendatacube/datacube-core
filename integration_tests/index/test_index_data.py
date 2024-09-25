@@ -18,7 +18,8 @@ from dateutil import tz
 
 from datacube.index.exceptions import MissingRecordError
 from datacube.index import Index
-from datacube.model import Dataset, MetadataType
+from datacube.model import Dataset, Product, MetadataType
+from datacube.index.eo3 import prep_eo3
 
 _telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
 _telemetry_dataset = {
@@ -258,6 +259,14 @@ def test_get_dataset(index: Index, ls8_eo3_dataset: Dataset) -> None:
                                     'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
 
 
+def test_add_dataset_no_product_id(index: Index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset_doc):
+    product_no_id = Product(extended_eo3_metadata_type, ls8_eo3_product.definition)
+    assert product_no_id.id is None
+    dataset_doc, _ = eo3_ls8_dataset_doc
+    dataset = Dataset(product_no_id, prep_eo3(dataset_doc))
+    assert index.datasets.add(dataset, with_lineage=False)
+
+
 def test_transactions_api_ctx_mgr(index,
                                   extended_eo3_metadata_type_doc,
                                   ls8_eo3_product,
@@ -422,6 +431,16 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     parent_doc['platform'] = {'code': 'LANDSAT_9'}
     index.datasets.add(child, with_lineage=True)
     index.datasets.add(child, with_lineage=False)
+
+
+@pytest.mark.parametrize('datacube_env_name', ('experimental',))
+def test_index_dataset_with_lineage(index, ds_with_lineage, ls8_eo3_dataset):
+    assert ds_with_lineage.source_tree
+    index.datasets.add(ds_with_lineage)
+    sources = index.lineage.get_source_tree(ds_with_lineage.id).children
+    assert len(sources["ard"]) == 1
+    assert sources["ard"][0].dataset_id == ls8_eo3_dataset.id
+    assert index.datasets.get(ds_with_lineage.id)
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))

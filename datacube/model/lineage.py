@@ -166,17 +166,12 @@ class LineageTree:
         """
         Generate a shallow (depth=1) LineageTree from an EO3 dataset document
 
-        :param dsid: The (derived) dataset id
-        :param sources: A dictionary of classifiers to list of source IDs
-        :param direction: Tree direction (default SOURCEwards, as per an EO3 dataset)
+        :param doc: The dataset metadata dictionary
         :param home: Home database for source datasets (defaults to None).
         :param home_derived: Home database for the derived dataset (defaults to None).
         :return: A depth==1 LineageTree
-
-        :param doc_in:
-        :return:
         """
-        lineage = doc.get("lineage", {})
+        lineage = doc.get("lineage")
         return cls.from_data(doc["id"], lineage, home=home, home_derived=home_derived)
 
     @classmethod
@@ -195,7 +190,7 @@ class LineageTree:
         :param home_derived: Home database for the derived dataset (defaults to None).
         :return: A depth==1 LineageTree
         """
-        if sources is None:
+        if not sources:
             children = None
         else:
             children = {

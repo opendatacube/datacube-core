@@ -160,7 +160,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
             # First insert all new datasets
             for ds in dss:
-                is_new = transaction.insert_dataset(ds.metadata_doc_without_lineage(), ds.id, ds.product.id)
+                product_id = ds.product.id
+                if product_id is None:
+                    # don't assume the product has an id value since it's optional
+                    # but we should error if the product doesn't exist in the db
+                    product_id = self.products.get_by_name_unsafe(ds.product.name).id
+                is_new = transaction.insert_dataset(ds.metadata_doc_without_lineage(), ds.id, product_id)
                 sources = ds.sources
                 if is_new and sources is not None:
                     edges.extend((name, ds.id, src.id)

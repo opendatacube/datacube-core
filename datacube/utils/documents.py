@@ -437,7 +437,8 @@ class SimpleDocNav(object):
     @property
     def sources(self):
         if self._sources is None:
-            self._sources = {k: SimpleDocNav(v)
+            # sources aren't expected to be embedded documents anymore
+            self._sources = {k: SimpleDocNav(v) if isinstance(v, collections.abc.Mapping) else v
                              for k, v in get_doc_offset(self._sources_path, self._doc, {}).items()}
         return self._sources
 

@@ -6,7 +6,7 @@
 Custom types for postgres & sqlalchemy
 """
 
-from sqlalchemy import TIMESTAMP, text
+from sqlalchemy import text
 from sqlalchemy.types import Double
 from sqlalchemy.dialects.postgresql.ranges import AbstractRange, Range
 from sqlalchemy.ext.compiler import compiles
@@ -52,10 +52,7 @@ execute procedure {schema}.set_row_update_time();
 """
 
 TYPES_INIT_SQL = """
-create or replace function {schema}.common_timestamp(text)
-returns timestamp with time zone as $$
-select ($1)::timestamp at time zone 'utc';
-$$ language sql immutable returns null on null input;
+drop function if exists {schema}.common_timestamp(text);
 
 create type {schema}.float8range as range (
     subtype = float8,
@@ -72,21 +69,6 @@ class FLOAT8RANGE(AbstractRange[Range[Double]]):
 @compiles(FLOAT8RANGE)
 def visit_float8range(element, compiler, **kw):
     return "FLOAT8RANGE"
-
-
-# Register the function with SQLAlchemhy.
-# pylint: disable=too-many-ancestors
-class CommonTimestamp(GenericFunction):
-    type = TIMESTAMP(timezone=True)
-    package = 'odc'
-    identifier = 'common_timestamp'
-    inherit_cache = False
-
-    name = 'common_timestamp'
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.packagenames = ['%s' % SCHEMA_NAME]
 
 
 # pylint: disable=too-many-ancestors

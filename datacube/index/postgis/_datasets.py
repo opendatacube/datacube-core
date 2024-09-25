@@ -144,9 +144,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dataset: dataset to add
 
         :param with_lineage:
-           - ``True (default)`` attempt adding lineage datasets if missing
-           - ``False`` record lineage relations, but do not attempt
-             adding lineage datasets to the db
+           - ``True (default)`` record lineage relations in the db
+           Since we no longer accept embedded lineage, any lineage relations should
+           already exist in the db, so there's no longer a need for differentiating between
+           adding and recording. This parameter has been kept for compatibility reasons.s
 
         :param archive_less_mature: if integer, search for less
                mature versions of the dataset with the int value as a millisecond
@@ -154,10 +155,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :rtype: Dataset
         """
-
-        if with_lineage:
-            raise ValueError("Lineage is not yet supported by the postgis driver")
-
         _LOG.info('Indexing %s', dataset.id)
 
         if self.has(dataset.id):
@@ -165,16 +162,25 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return dataset
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
-            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, dataset.product.id)
+            product_id = dataset.product.id
+            if product_id is None:
+                # don't assume the product has an id value since it's optional
+                # but we should error if the product doesn't exist in the db
+                product_id = self.products.get_by_name_unsafe(dataset.product.name).id
+            is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product_id)
             if is_new:
                 # 1b. Prepare spatial index extents
                 transaction.update_spindex(dsids=[dataset.id])
                 transaction.update_search_index(dsids=[dataset.id])
                 # 1c. Store locations
-                if dataset.uri is not None:
+                if dataset.uris is not None:
                     self._ensure_new_locations(dataset, transaction=transaction)
             if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
+            if dataset.source_tree is not None:
+                self._index.lineage.add(dataset.source_tree)
+            if dataset.derived_tree is not None:
+                self._index.lineage.add(dataset.derived_tree)
 
         return dataset
 
@@ -226,9 +232,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 metadata_doc["grid_spatial"]["projection"]  # type: ignore[misc,call-overload,index]
             )
             if extent:
-                geo_extent = extent.to_crs(CRS("EPSG:4326"))
                 for crs in crses:
-                    values = generate_dataset_spatial_values(dsid, crs, extent, geo_extent=geo_extent)
+                    values = generate_dataset_spatial_values(dsid, crs, extent)
                     if values is not None:
                         batch.spatial_indexes[crs].append(values)
             if prod.metadata_type.name in cache:
@@ -268,22 +273,22 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         Returns each set of those field values and the datasets that have them.
         """
+        dataset_fields = product.metadata_type.dataset_fields
 
         def load_field(f: Union[str, fields.Field]) -> fields.Field:
             if isinstance(f, str):
-                return product.metadata_type.dataset_fields[f]
+                return dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
 
         group_fields = [cast(PgField, load_field(f)) for f in args]
-        expressions = [cast(PgExpression, product.metadata_type.dataset_fields.get('product') == product.name)]
+        expressions = [cast(PgExpression, dataset_fields.get('product') == product.name)]
 
         with self._db_connection() as connection:
             for record in connection.get_duplicates(group_fields, expressions):
-                as_dict = record._asdict()
-                if 'ids' in as_dict.keys():
-                    ids = as_dict.pop('ids')
-                    yield namedtuple('search_result', as_dict.keys())(**as_dict), set(ids)
+                if 'ids' in record:
+                    ids = record.pop('ids')
+                    yield namedtuple('search_result', record.keys())(**record), set(ids)
 
     def can_update(self, dataset, updates_allowed=None):
         """
@@ -599,19 +604,21 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param bool full_info: Include all available fields
         """
         kwargs = {}
-        if dataset_res.uris:
-            uris = [uri for uri in dataset_res.uris if uri]
+        if not isinstance(dataset_res, dict):
+            dataset_res = dataset_res._asdict()
+        if "uris" in dataset_res:
+            uris = [uri for uri in dataset_res["uris"] if uri]
             if len(uris) == 1:
                 kwargs["uri"] = uris[0]
             else:
                 kwargs["uris"] = uris
 
         return Dataset(
-            product=product or self.products.get(dataset_res.product_ref),
-            metadata_doc=dataset_res.metadata,
-            indexed_by=dataset_res.added_by if full_info else None,
-            indexed_time=dataset_res.added if full_info else None,
-            archived_time=dataset_res.archived,
+            product=product or self.products.get(dataset_res["product_id"]),
+            metadata_doc=dataset_res["metadata_doc"],
+            indexed_by=dataset_res["indexed_by"] if full_info else None,
+            indexed_time=dataset_res["indexed_time"] if full_info else None,
+            archived_time=dataset_res["archived"],
             source_tree=source_tree,
             derived_tree=derived_tree,
             **kwargs
@@ -721,11 +728,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                      archived=archived,
                                                      order_by=order_by):
             for columns in results:
-                coldict = columns._asdict()
-
                 def extract_field(f):
                     # Custom fields are not type-aware and returned as stringified json.
-                    return json.loads(coldict.get(f)) if f in custom_fields else coldict.get(f)
+                    return json.loads(columns.get(f)) if f in custom_fields else columns.get(f)
                 kwargs = {f: extract_field(f) for f in field_name_d}
                 yield result_type(**kwargs)
 
