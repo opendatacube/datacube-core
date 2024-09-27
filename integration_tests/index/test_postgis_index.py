@@ -76,6 +76,7 @@ def test_spatial_index_populate(index: Index,
 def test_spatial_index_crs_validity(index: Index,
                                     ls8_eo3_product, ls8_eo3_dataset,
                                     africa_s2_eo3_product, africa_eo3_dataset):
+    # TODO: potentially include africa_eo3_dataset2 in this test
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
     index.create_spatial_index(epsg3577)
@@ -189,6 +190,7 @@ def test_spatial_extent(index,
                         ls8_eo3_dataset, ls8_eo3_dataset2,
                         ls8_eo3_dataset3, ls8_eo3_dataset4,
                         africa_s2_eo3_product, africa_eo3_dataset):
+    # TODO: include africa_eo3_dataset2 in this test
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
     index.create_spatial_index(epsg3577)
