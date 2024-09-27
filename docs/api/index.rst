@@ -2,7 +2,8 @@
 API Reference
 *************
 
-The following pages provide a full API reference for the ``datacube`` python library.
+The following pages provide a full API reference for the ``datacube`` python
+library.
 
 
 .. toctree::

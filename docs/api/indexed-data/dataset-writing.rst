@@ -12,8 +12,7 @@ When connected to an ODC Database, these methods are available for adding, updat
 .. currentmodule:: datacube.index.abstract.AbstractDatasetResource
 
 .. autosummary::
-
-   :toctree: generate/
+   :toctree: generate
 
    add
    add_location

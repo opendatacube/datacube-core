@@ -5,7 +5,7 @@ Creating Geometries
 .. currentmodule:: datacube.utils.geometry
 
 .. autosummary::
-   :toctree: generate/
+   :toctree: generate
 
    point
    multipoint

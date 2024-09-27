@@ -3,7 +3,7 @@ Product Querying
 ================
 When connected to an ODC Database, these methods are available for discovering information about Products:
 
-.. code-block:: bash
+.. code-block:: python
 
    dc = Datacube()
    dc.index.products.{method}
@@ -12,9 +12,8 @@ When connected to an ODC Database, these methods are available for discovering i
 .. currentmodule:: datacube.index.abstract.AbstractProductResource
 
 .. autosummary::
-
+   :toctree: generate
    :nosignatures:
-   :toctree: generate/
 
    can_update
    get

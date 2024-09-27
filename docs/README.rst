@@ -20,17 +20,21 @@ Requires a Unix like system that includes ``make``.
 
    git switch -c docs-<feature>
 
-#. Change directory to the docs folder
-
-.. code-block:: bash
-
-   cd docs
-
 #. Create a conda environment for python 3.11, with conda-forge as the channel
 
 .. code-block:: bash
 
    conda create --name datacubecoredocs -c conda-forge python=3.11
+
+#. (optional) Update the `docs/requirements.txt`
+.. code-block:: bash
+   pip-compile --extra=doc,s3 --output-file=docs/requirements.txt
+
+#. Change directory to the docs folder
+
+.. code-block:: bash
+
+   cd docs
 
 #. Activate the conda environment
 
@@ -48,7 +52,7 @@ Requires a Unix like system that includes ``make``.
 
 .. code-block:: bash
 
-   pip install -r requirements.txt 
+   pip install -r requirements.txt
 
 #. Run the autobuild.
 

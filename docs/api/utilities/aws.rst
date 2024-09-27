@@ -5,8 +5,7 @@ AWS
 .. currentmodule:: datacube.utils.aws
 
 .. autosummary::
-
-   :toctree: generate/
+   :toctree: generate
 
    s3_client
    s3_open

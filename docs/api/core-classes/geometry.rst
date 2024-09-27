@@ -5,8 +5,7 @@ Geometry Classes
 .. currentmodule:: datacube
 
 .. autosummary::
-
-   :toctree: generate/
+   :toctree: generate
 
    utils.geometry.Coordinate
    utils.geometry.BoundingBox

@@ -5,7 +5,7 @@ Spatial Operations
 .. currentmodule:: datacube.utils.geometry
 
 .. autosummary::
-   :toctree: generate/
+   :toctree: generate
 
    unary_union
    unary_intersection

@@ -5,9 +5,9 @@ Data Loading
 .. currentmodule:: datacube
 
 .. autosummary::
-
+   :toctree: generate
    :nosignatures:
-   :toctree: generate/
+
 
    Datacube.load
 
@@ -21,8 +21,7 @@ for example, to pre-filter the available datasets before loading.
 .. currentmodule:: datacube
 
 .. autosummary::
-
-   :toctree: generate/
+   :toctree: generate
 
    Datacube.find_datasets
    Datacube.group_datasets
@@ -38,8 +37,7 @@ Group by
 .. currentmodule:: datacube.api.query
 
 .. autosummary::
-
-   :toctree: generate/
+   :toctree: generate
 
    query_group_by
    solar_day

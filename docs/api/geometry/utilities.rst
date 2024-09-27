@@ -5,7 +5,7 @@ Utilities
 .. currentmodule:: datacube.utils.geometry
 
 .. autosummary::
-   :toctree: generate/
+   :toctree: generate
 
    assign_crs
    crs_units_per_degree

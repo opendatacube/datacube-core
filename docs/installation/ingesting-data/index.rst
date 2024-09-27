@@ -26,8 +26,6 @@ tile it up into a faster storage format or projection system.
 
 .. figure:: ../../diagrams/f4.png
 
-    :name: ingest-data
-
         Ingest Data
 
 .. _ingest-config:
@@ -131,7 +129,7 @@ storage
 
 
 measurements
-    Mapping of the input measurement names as specified in the :ref:`dataset-metadata-doc`
+    Mapping of the input measurement names as specified in the :ref:`dataset-metadata-doc-eo3`
     to the per-measurement ingestion parameters
 
     dtype
@@ -154,7 +152,6 @@ Ingest Some Data
 A command line tool is used to ingest data
 
 .. click:: datacube.scripts.ingest:ingest_cmd
-
     :prog: datacube ingest
 
 

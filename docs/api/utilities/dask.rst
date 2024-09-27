@@ -5,8 +5,7 @@ Dask
 .. currentmodule:: datacube
 
 .. autosummary::
-
-   :toctree: generate/
+   :toctree: generate
 
    utils.dask.start_local_dask
    utils.dask.partition_map

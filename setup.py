@@ -13,7 +13,10 @@ tests_require = [
     'moto<5.0',  # 5.0 will require changes to some tests.
 ]
 doc_require = [
-    'Sphinx',
+    'doc8',
+    'rstcheck',
+    'pandoc',
+    'Sphinx<8',
     'sphinx-autobuild',
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',

@@ -29,7 +29,7 @@ Product Definition API
 :description: Product description
 
 :metadata_type:
-    Name of the :ref:`metadata-type-definition`
+    Name of the `metadata-type`
 
 :license:
     The license of the data.
@@ -41,7 +41,7 @@ Product Definition API
     Dictionary containing bits of metadata common to all the datasets in the product.
 
     It is used during indexing to match datasets to their products. That is, the keys and values defined
-    here must also be in the :ref:`dataset-metadata-doc`.
+    here must also be in the :ref:`dataset-metadata-doc-eo3`.
 
     In the above example, ``product: name`` would match a specific product.
 
@@ -89,7 +89,7 @@ Product Definition API
 
 :measurements:
     List of measurements in this product. The measurement names defined here need to match 1:1 with the measurement
-    key names defined in the :ref:`dataset-metadata-doc`.
+    key names defined in the :ref:`dataset-metadata-doc-eo3`.
 
     name
          Name of the measurement
@@ -133,7 +133,7 @@ Product Definition API
                   response: [0.0261, 0.029, 0.0318]
                 - wavelength: [410, 411, 412]
                   response: [0.0261, 0.029, 0.0318]
-                ...
+
 
     flags_definition (optional)
         Bit flag meanings of the bitset 'measurement'

@@ -5,8 +5,7 @@ Cloud Optimised GeoTiffs
 .. currentmodule:: datacube.utils.cog
 
 .. autosummary::
-
-   :toctree: generate/
+   :toctree: generate
 
    write_cog
    to_cog
