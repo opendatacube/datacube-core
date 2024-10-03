@@ -1,3 +1,4 @@
+.. _setup-ubuntu:
 
 Ubuntu Developer Setup
 **********************
