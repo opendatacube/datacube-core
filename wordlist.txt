@@ -74,6 +74,7 @@ COGs
 combinator
 combinators
 conda
+condabin
 conf
 config
 coord
@@ -209,6 +210,8 @@ hdf
 hhBQVas
 hl
 hoc
+HOMEDRIVE
+HOMEPATH
 hostname
 HPC
 html
@@ -284,6 +287,7 @@ maxdepth
 md
 metadataType
 MetadataTypes
+miniforge
 mk
 mkdir
 MODIS
