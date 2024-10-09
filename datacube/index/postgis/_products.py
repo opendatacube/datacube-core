@@ -379,7 +379,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         return result
 
-    def spatial_extent(self, product: int | str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
+    def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)
         ids = [ds.id for ds in self._index.datasets.search(product=product.name)]

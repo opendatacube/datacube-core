@@ -351,7 +351,7 @@ def ls8_eo3_dataset4(index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8
 
 
 @pytest.fixture
-def wo_eo3_dataset(index, wo_eo3_product, eo3_wo_dataset_doc):
+def wo_eo3_dataset(index, wo_eo3_product, eo3_wo_dataset_doc, ls8_eo3_dataset):
     return doc_to_ds(index,
                      wo_eo3_product.name,
                      *eo3_wo_dataset_doc)
