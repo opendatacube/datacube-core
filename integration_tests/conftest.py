@@ -93,6 +93,7 @@ def eo3_dataset_paths():
         str(EO3_TESTDIR / "ls8_dataset4.yaml"),
         str(EO3_TESTDIR / "wo_dataset.yaml"),
         str(EO3_TESTDIR / "s2_africa_dataset.yaml"),
+        str(EO3_TESTDIR / "s2_africa_dataset2.yaml"),
     ]
 
 
@@ -161,6 +162,15 @@ def eo3_africa_dataset_doc():
         get_eo3_test_data_doc("s2_africa_dataset.yaml"),
         's3://deafrica-sentinel-2/sentinel-s2-l2a-cogs/37/M/CQ/'
         '2022/8/S2A_37MCQ_20220808_0_L2A/S2A_37MCQ_20220808_0_L2A.json'
+    )
+
+
+@pytest.fixture
+def eo3_africa_dataset2_doc():
+    return (
+        get_eo3_test_data_doc("s2_africa_dataset2.yaml"),
+        's3://deafrica-sentinel-2/sentinel-s2-l2a-cogs/39/M/XR/'
+        '2020/9/S2A_39MXR_20200909_0_L2A/S2A_39MXR_20200909_0_L2A.json'
     )
 
 
@@ -352,6 +362,13 @@ def africa_eo3_dataset(index, africa_s2_eo3_product, eo3_africa_dataset_doc):
     return doc_to_ds(index,
                      africa_s2_eo3_product.name,
                      *eo3_africa_dataset_doc)
+
+
+@pytest.fixture
+def africa_eo3_dataset2(index, africa_s2_eo3_product, eo3_africa_dataset2_doc):
+    return doc_to_ds(index,
+                     africa_s2_eo3_product.name,
+                     *eo3_africa_dataset2_doc)
 
 
 @pytest.fixture
@@ -569,7 +586,7 @@ def index_pair_populated_empty(cfg_env_pair, uninitialised_postgres_db_pair,
                                base_eo3_product_doc, extended_eo3_product_doc, africa_s2_product_doc,
                                eo3_ls8_dataset_doc, eo3_ls8_dataset2_doc,
                                eo3_ls8_dataset3_doc, eo3_ls8_dataset4_doc,
-                               eo3_wo_dataset_doc, eo3_africa_dataset_doc):
+                               eo3_wo_dataset_doc, eo3_africa_dataset_doc, eo3_africa_dataset2_doc):
     populated_cfg, empty_cfg = cfg_env_pair
     populated_idx = index_connect(populated_cfg, validate_connection=False)
     empty_idx = index_connect(empty_cfg, validate_connection=False)
@@ -585,7 +602,7 @@ def index_pair_populated_empty(cfg_env_pair, uninitialised_postgres_db_pair,
         populated_idx.products.add_document(prod_doc)
     for ds_doc, ds_path in (eo3_ls8_dataset_doc, eo3_ls8_dataset2_doc,
                             eo3_ls8_dataset3_doc, eo3_ls8_dataset4_doc,
-                            eo3_wo_dataset_doc, eo3_africa_dataset_doc):
+                            eo3_wo_dataset_doc, eo3_africa_dataset_doc, eo3_africa_dataset2_doc):
         doc_to_ds(populated_idx, ds_doc['product']['name'], ds_doc, ds_path)
     assert list(populated_idx.products.get_all()) != list(empty_idx.products.get_all())
     assert list(empty_idx.products.get_all()) == []

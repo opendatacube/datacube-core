@@ -21,7 +21,7 @@ from sqlalchemy import cast
 from sqlalchemy import delete, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql.expression import Select
-from sqlalchemy import select, text, and_, or_, func
+from sqlalchemy import select, text, and_, or_, func, column
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
 
@@ -634,13 +634,14 @@ class PostgisDbAPI:
     def search_datasets_query(self,
                               expressions, source_exprs=None,
                               select_fields=None, with_source_ids=False, limit=None, geom=None,
-                              archived: bool | None = False):
+                              archived: bool | None = False, order_by=None):
         """
         :type expressions: Tuple[Expression]
         :type source_exprs: Tuple[Expression]
         :type select_fields: Iterable[PgField]
         :type with_source_ids: bool
         :type limit: int
+        :type order_by: Iterable[str | PgField | sqlalchemy.Function]
         :type geom: Geometry
         :rtype: sqlalchemy.Expression
         """
@@ -650,6 +651,20 @@ class PostgisDbAPI:
 
         if not select_fields:
             select_fields = _dataset_fields()
+
+        def _ob_exprs(o):
+            if isinstance(o, str):
+                # does this need to be more robust?
+                return text(o)
+            elif isinstance(o, PgField):
+                return o.alchemy_expression
+            # if a func, leave as-is
+            return o
+
+        if order_by is not None:
+            order_by = [_ob_exprs(o) for o in order_by]
+        else:
+            order_by = []
 
         select_columns = tuple(
             f.alchemy_expression.label(f.name)
@@ -678,13 +693,13 @@ class PostgisDbAPI:
         if spatialquery is not None:
             where_expr = and_(where_expr, spatialquery)
             query = query.join(SpatialIndex)
-        query = query.where(where_expr).limit(limit)
+        query = query.where(where_expr).order_by(*order_by).limit(limit)
         return query
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
                         with_source_ids=False, limit=None, geom=None,
-                        archived: bool | None = False):
+                        archived: bool | None = False, order_by=None):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgis._fields.PgField]
@@ -692,11 +707,12 @@ class PostgisDbAPI:
 
         :return: An iterable of tuples of decoded values
         """
+        assert source_exprs is None
+        assert not with_source_ids
         if select_fields is None:
             select_fields = _dataset_fields()
-        select_query = self.search_datasets_query(expressions, source_exprs,
-                                                  select_fields, with_source_ids,
-                                                  limit, geom=geom, archived=archived)
+        select_query = self.search_datasets_query(expressions, select_fields=select_fields, limit=limit,
+                                                  geom=geom, archived=archived, order_by=order_by)
         _LOG.debug("search_datasets SQL: %s", str(select_query))
 
         def decode_row(raw: Iterable[Any]) -> dict[str, Any]:
@@ -1541,3 +1557,18 @@ class PostgisDbAPI:
         return select(
             func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)
         )
+
+    def find_most_recent_change(self, product_id: int):
+        """
+        Find the database-local time of the last dataset that changed for this product.
+        """
+        return self._connection.execute(
+            select(
+                func.max(
+                    func.greatest(
+                        Dataset.added,
+                        column("updated"),
+                    )
+                )
+            ).where(Dataset.product_ref == product_id)
+        ).scalar()

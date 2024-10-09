@@ -1763,7 +1763,7 @@ class AbstractDatasetResource(ABC):
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit: int | None = None,
                          archived: bool | None = False,
-                         order_by: str | Field | None = None,
+                         order_by: Iterable[str | Field | None] = None,
                          **query: QueryField
                         ) -> Iterable[tuple]:
         """
@@ -2175,6 +2175,11 @@ class AbstractIndex(ABC):
     supports_external_lineage = False
     #   supports an external lineage home field.  Requires supports_external_lineage
     supports_external_home = False
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """The index name"""
 
     @property
     @abstractmethod

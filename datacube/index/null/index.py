@@ -41,6 +41,10 @@ class Index(AbstractIndex):
         self._datasets = DatasetResource(self)
 
     @property
+    def name(self) -> str:
+        return "null_index"
+
+    @property
     def environment(self) -> ODCEnvironment:
         return self._env
 

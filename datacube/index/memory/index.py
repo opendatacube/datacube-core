@@ -56,6 +56,10 @@ class Index(AbstractIndex):
             self._index_id = f"memory={counter}"
 
     @property
+    def name(self) -> str:
+        return "memory_index"
+
+    @property
     def environment(self) -> ODCEnvironment:
         return self._env
 

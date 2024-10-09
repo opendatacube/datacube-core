@@ -330,11 +330,9 @@ class DateDocField(SimpleDocField):
         """
         Wrap a value as needed for this field type.
         """
-        if isinstance(value, datetime):
+        if isinstance(value, (datetime, str)):
             return self.normalise_value(value)
-        elif isinstance(value, str):
-            return tz_as_utc(datetime.fromisoformat(value))
-        elif isinstance(value, (ColumnElement, str)):
+        elif isinstance(value, ColumnElement):
             # SQLAlchemy expression or string are parsed in pg as dates.
             # NB: Do not cast here - casting here breaks expected behaviour in other timezones
             return value
@@ -372,10 +370,6 @@ class DateDocField(SimpleDocField):
             self.alchemy_column,
             alchemy_expression=cast(func.date_trunc('day', self.alchemy_expression), TIMESTAMP(timezone=True))
         )
-
-    @property
-    def alchemy_expression(self):
-        return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc).label(self.name)
 
 
 class RangeDocField(PgDocField):
@@ -441,6 +435,14 @@ class NumericRangeDocField(RangeDocField):
             '[]',
             type_=NUMRANGE,
         )
+
+    def search_value_to_alchemy(self, value):
+        low, high = value
+        if isinstance(low, float) and math.isnan(low):
+            raise UnindexableValue("Cannot index NaNs")
+        if isinstance(high, float) and math.isnan(high):
+            raise UnindexableValue("Cannot index NaNs")
+        return self.value_to_alchemy(value)
 
     def between(self, low, high):
         """
