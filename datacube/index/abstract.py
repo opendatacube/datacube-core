@@ -1763,7 +1763,7 @@ class AbstractDatasetResource(ABC):
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit: int | None = None,
                          archived: bool | None = False,
-                         order_by: str | Field | None = None,
+                         order_by: Iterable[str | Field | None] = None,
                          **query: QueryField
                         ) -> Iterable[tuple]:
         """
