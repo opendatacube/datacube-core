@@ -5,8 +5,8 @@
 ## SPDX-License-Identifier: Apache-2.0
 ##
 # gdal:ubuntu-small no longer comes with netcdf support compiled into gdal
-FROM ghcr.io/osgeo/gdal:ubuntu-full-3.9.2 AS builder
-FROM ghcr.io/osgeo/gdal:ubuntu-full-3.9.2
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.9.3 AS builder
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.9.3
 ARG V_PG=16
 ARG V_PGIS=16-postgis-3
 
