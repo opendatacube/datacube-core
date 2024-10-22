@@ -608,7 +608,7 @@ class PostgresDbAPI(object):
         if not source_exprs:
             return (
                 select(
-                    *select_columns
+                    *select_columns  # type: ignore[arg-type]
                 ).select_from(
                     from_expression
                 ).where(
