@@ -17,11 +17,20 @@ import datetime
 import json
 import logging
 import uuid  # noqa: F401
-from sqlalchemy import cast
-from sqlalchemy import delete, update
+from sqlalchemy import (
+    cast,
+    delete,
+    update,
+    select,
+    text,
+    and_,
+    or_,
+    func,
+    column,
+    Function,
+)
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql.expression import Select
-from sqlalchemy import select, text, and_, or_, func, column
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
 
@@ -61,11 +70,6 @@ def _dataset_fields() -> tuple:
         native_flds["product_id"],
         native_flds["metadata_type_id"],
         native_flds["metadata_doc"],
-        NativeField(
-            'archived',
-            'Archived date',
-            Dataset.archived
-        ),
         NativeField("uris",
                     "all uris",
                     func.array(
@@ -151,6 +155,11 @@ def get_native_fields() -> dict[str, NativeField]:
             'metadata_doc',
             'Full metadata document',
             Dataset.metadata_doc
+        ),
+        'archived': NativeField(
+            'archived',
+            'Archived date',
+            Dataset.archived
         ),
         # Fields that can affect row selection
 
@@ -652,14 +661,20 @@ class PostgisDbAPI:
         if not select_fields:
             select_fields = _dataset_fields()
 
+        known_fields = set().union(get_native_fields().values(), select_fields)
+
         def _ob_exprs(o):
             if isinstance(o, str):
-                # does this need to be more robust?
-                return text(o)
+                for f in known_fields:
+                    if o.lower() == f.name:
+                        return f.alchemy_expression
+                raise ValueError(f"Cannot order by unknown field {o}")
             elif isinstance(o, PgField):
                 return o.alchemy_expression
-            # if a func, leave as-is
-            return o
+            elif isinstance(o, Function):
+                # if a func, leave as-is
+                return o
+            raise TypeError(f"Invalid order_by clause type: {type(o)}. Must be str, PgField, or sqlalchemy.Function.")
 
         if order_by is not None:
             order_by = [_ob_exprs(o) for o in order_by]

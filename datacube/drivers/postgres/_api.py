@@ -18,9 +18,24 @@ import logging
 import uuid  # noqa: F401
 from typing import Iterable, Any
 from typing import cast as type_cast
-from sqlalchemy import cast, String, Label, FromClause
-from sqlalchemy import delete, column, values
-from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
+from sqlalchemy import (
+    cast,
+    String,
+    Label,
+    FromClause,
+    delete,
+    column,
+    values,
+    select,
+    text,
+    bindparam,
+    and_,
+    or_,
+    func,
+    literal,
+    distinct,
+    Function,
+)
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB, insert, UUID
 from sqlalchemy.exc import IntegrityError
@@ -48,41 +63,42 @@ def _dataset_uri_field(table):
 # Fields for selecting dataset with uris
 # Need to alias the table, as queries may join the location table for filtering.
 SELECTED_DATASET_LOCATION = DATASET_LOCATION.alias('selected_dataset_location')
+# All active URIs, from newest to oldest
+_ALL_ACTIVE_URIS = func.array(
+    select(
+        _dataset_uri_field(SELECTED_DATASET_LOCATION)
+    ).where(
+        and_(
+            SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+            SELECTED_DATASET_LOCATION.c.archived == None
+        )
+    ).order_by(
+        SELECTED_DATASET_LOCATION.c.added.desc(),
+        SELECTED_DATASET_LOCATION.c.id.desc()
+    ).label('uris')
+).label('uris')
+
 _DATASET_SELECT_FIELDS = (
     DATASET,
-    # All active URIs, from newest to oldest
-    func.array(
-        select(
-            _dataset_uri_field(SELECTED_DATASET_LOCATION)
-        ).where(
-            and_(
-                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-                SELECTED_DATASET_LOCATION.c.archived == None
-            )
-        ).order_by(
-            SELECTED_DATASET_LOCATION.c.added.desc(),
-            SELECTED_DATASET_LOCATION.c.id.desc()
-        ).label('uris')
-    ).label('uris')
+    _ALL_ACTIVE_URIS,
 )
+
 _DATASET_BULK_SELECT_FIELDS = (
     PRODUCT.c.name,
     DATASET.c.metadata,
-    # All active URIs, from newest to oldest
-    func.array(
-        select(
-            _dataset_uri_field(SELECTED_DATASET_LOCATION)
-        ).where(
-            and_(
-                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-                SELECTED_DATASET_LOCATION.c.archived == None
-            )
-        ).order_by(
-            SELECTED_DATASET_LOCATION.c.added.desc(),
-            SELECTED_DATASET_LOCATION.c.id.desc()
-        ).label('uris')
-    ).label('uris')
+    _ALL_ACTIVE_URIS,
 )
+
+
+def _base_known_fields():
+    return (
+        *get_native_fields().values(),
+        NativeField(
+            "uris",
+            "all active uris",
+            _ALL_ACTIVE_URIS,
+        )
+    )
 
 
 def get_native_fields() -> dict[str, NativeField]:
@@ -127,6 +143,11 @@ def get_native_fields() -> dict[str, NativeField]:
             'metadata_doc',
             'Full metadata document',
             DATASET.c.metadata
+        ),
+        'archived': NativeField(
+            'archived',
+            'Archived date',
+            DATASET.c.archived
         ),
         # Fields that can affect row selection
 
@@ -535,16 +556,23 @@ class PostgresDbAPI(object):
                 for f in select_fields
             )
         else:
+            select_fields = []
             select_columns = _DATASET_SELECT_FIELDS
+
+        known_fields = set().union(_base_known_fields(), select_fields)
 
         def _ob_exprs(o):
             if isinstance(o, str):
-                # does this need to be more robust?
-                return text(o)
+                for f in known_fields:
+                    if o.lower() == f.name:
+                        return f.alchemy_expression
+                raise ValueError(f"Cannot order by unknown field {o}")
             elif isinstance(o, PgField):
                 return o.alchemy_expression
-            # if a func, leave as-is
-            return o
+            elif isinstance(o, Function):
+                # if a func, leave as-is
+                return o
+            raise TypeError(f"Invalid order_by clause type: {type(o)}. Must be str, PgField, or sqlalchemy.Function.")
 
         if order_by is not None:
             order_by = [_ob_exprs(o) for o in order_by]
