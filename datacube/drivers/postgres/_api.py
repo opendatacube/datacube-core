@@ -91,14 +91,13 @@ _DATASET_BULK_SELECT_FIELDS = (
 
 
 def _base_known_fields():
-    return (
-        *get_native_fields().values(),
-        NativeField(
-            "uris",
-            "all active uris",
-            _ALL_ACTIVE_URIS,
-        )
+    fields = get_native_fields().copy()
+    fields["uris"] = NativeField(
+        "uris",
+        "all active uris",
+        _ALL_ACTIVE_URIS,
     )
+    return fields
 
 
 def get_native_fields() -> dict[str, NativeField]:
@@ -555,17 +554,15 @@ class PostgresDbAPI(object):
                 f.alchemy_expression.label(f.name) if f is not None else None
                 for f in select_fields
             )
+            known_fields = _base_known_fields() | {f.name: f.alchemy_expression for f in select_fields}
         else:
-            select_fields = []
             select_columns = _DATASET_SELECT_FIELDS
-
-        known_fields = set().union(_base_known_fields(), select_fields)
+            known_fields = _base_known_fields()
 
         def _ob_exprs(o):
             if isinstance(o, str):
-                for f in known_fields:
-                    if o.lower() == f.name:
-                        return f.alchemy_expression
+                if known_fields.get(o.lower()):
+                    return known_fields[o.lower()]
                 raise ValueError(f"Cannot order by unknown field {o}")
             elif isinstance(o, PgField):
                 return o.alchemy_expression
