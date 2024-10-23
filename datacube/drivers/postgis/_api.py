@@ -70,6 +70,7 @@ def _dataset_fields() -> tuple:
         native_flds["product_id"],
         native_flds["metadata_type_id"],
         native_flds["metadata_doc"],
+        native_flds["archived"],
         NativeField("uris",
                     "all uris",
                     func.array(
