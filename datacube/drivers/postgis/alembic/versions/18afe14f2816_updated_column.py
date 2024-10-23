@@ -37,7 +37,7 @@ def upgrade() -> None:
     else:
         op.alter_column("dataset", "updated", schema="odc", type_=DateTime(timezone=True),
                         server_default=func.now(), nullable=False, comment="when last updated")
-        op.create_index("ix_dataset_updated", "dataset", ["updated"], schema="odc", if_not_exists=True)
+    op.create_index("ix_dataset_updated", "dataset", ["updated"], schema="odc", if_not_exists=True)
 
     if not column_exists("metadata_type", "updated"):
         op.add_column("metadata_type", Column("updated", DateTime(timezone=True), server_default=func.now(),
@@ -59,4 +59,4 @@ def downgrade() -> None:
     op.drop_column("metadata_type", "updated", schema="odc")
     op.drop_column("product", "updated", schema="odc")
 
-    op.drop_index("ix_dataset_updated", schema="odc")
+    op.drop_index("ix_dataset_updated", schema="odc", if_exists=True)
