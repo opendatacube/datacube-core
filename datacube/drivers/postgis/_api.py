@@ -27,7 +27,6 @@ from sqlalchemy import (
     or_,
     func,
     column,
-    Function,
 )
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql.expression import Select
@@ -61,6 +60,34 @@ def _dataset_select_fields() -> tuple:
     return tuple(f.alchemy_expression for f in _dataset_fields())
 
 
+def _base_known_fields():
+    fields = get_native_fields().copy()
+    fields['archived'] = NativeField(
+        'archived',
+        'Archived date',
+        Dataset.archived
+    )
+    fields["uris"] = NativeField(
+        "uris",
+        "all uris",
+        func.array(
+            select(
+                SelectedDatasetLocation.uri
+            ).where(
+                and_(
+                    SelectedDatasetLocation.dataset_ref == Dataset.id,
+                    SelectedDatasetLocation.archived == None
+                )
+            ).order_by(
+                SelectedDatasetLocation.added.desc(),
+                SelectedDatasetLocation.id.desc()
+            ).label('uris')
+        ),
+        alchemy_table=Dataset.__table__  # type: ignore[attr-defined]
+    )
+    return fields
+
+
 def _dataset_fields() -> tuple:
     native_flds = get_native_fields()
     return (
@@ -70,7 +97,11 @@ def _dataset_fields() -> tuple:
         native_flds["product_id"],
         native_flds["metadata_type_id"],
         native_flds["metadata_doc"],
-        native_flds["archived"],
+        NativeField(
+            'archived',
+            'Archived date',
+            Dataset.archived
+        ),
         NativeField("uris",
                     "all uris",
                     func.array(
@@ -156,11 +187,6 @@ def get_native_fields() -> dict[str, NativeField]:
             'metadata_doc',
             'Full metadata document',
             Dataset.metadata_doc
-        ),
-        'archived': NativeField(
-            'archived',
-            'Archived date',
-            Dataset.archived
         ),
         # Fields that can affect row selection
 
@@ -651,7 +677,7 @@ class PostgisDbAPI:
         :type select_fields: Iterable[PgField]
         :type with_source_ids: bool
         :type limit: int
-        :type order_by: Iterable[str | PgField | sqlalchemy.Function]
+        :type order_by: Iterable[Any]
         :type geom: Geometry
         :rtype: sqlalchemy.Expression
         """
@@ -662,19 +688,18 @@ class PostgisDbAPI:
         if not select_fields:
             select_fields = _dataset_fields()
 
-        known_fields = get_native_fields() | {f.name: f.alchemy_expression for f in select_fields}
+        known_fields = _base_known_fields() | {f.name: f for f in select_fields}
 
         def _ob_exprs(o):
             if isinstance(o, str):
-                if known_fields.get(o.lower()):
-                    return known_fields[o.lower()]
+                if known_fields.get(o.lower()) is not None:
+                    return known_fields[o.lower()].alchemy_expression
                 raise ValueError(f"Cannot order by unknown field {o}")
             elif isinstance(o, PgField):
                 return o.alchemy_expression
-            elif isinstance(o, Function):
-                # if a func, leave as-is
+            else:
+                # assume func, clause, or other expression, and leave as-is
                 return o
-            raise TypeError(f"Invalid order_by clause type: {type(o)}. Must be str, PgField, or sqlalchemy.Function.")
 
         if order_by is not None:
             order_by = [_ob_exprs(o) for o in order_by]

@@ -32,7 +32,6 @@ from datacube.utils import jsonify_document, _readable_offset, changes
 from datacube.utils.changes import get_doc_changes, Offset
 from odc.geo import CRS, Geometry
 from datacube.index import fields, extract_geom_from_query, strip_all_spatial_fields_from_query
-from sqlalchemy.sql.functions import Function
 
 _LOG = logging.getLogger(__name__)
 
@@ -685,7 +684,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit: int | None = None,
                          archived: bool | None = False,
-                         order_by: Iterable[str | Field | Function] | None = None,
+                         order_by: Iterable[Any] | None = None,
                          **query: QueryField):
         """
         Perform a search, returning only the specified fields.
@@ -697,7 +696,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param tuple[str] field_names:
         :param Union[str,float,Range,list] query:
         :param int limit: Limit number of datasets
-        :param Iterable[str|Field|Function] order_by: sql text, dataset field, or sqlalchemy function
+        :param Iterable[Any] order_by: sql text, dataset field, or sqlalchemy expression
         by which to order results
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """

@@ -34,7 +34,6 @@ from sqlalchemy import (
     func,
     literal,
     distinct,
-    Function,
 )
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB, insert, UUID
@@ -92,6 +91,11 @@ _DATASET_BULK_SELECT_FIELDS = (
 
 def _base_known_fields():
     fields = get_native_fields().copy()
+    fields['archived'] = NativeField(
+        'archived',
+        'Archived date',
+        DATASET.c.archived
+    )
     fields["uris"] = NativeField(
         "uris",
         "all active uris",
@@ -142,11 +146,6 @@ def get_native_fields() -> dict[str, NativeField]:
             'metadata_doc',
             'Full metadata document',
             DATASET.c.metadata
-        ),
-        'archived': NativeField(
-            'archived',
-            'Archived date',
-            DATASET.c.archived
         ),
         # Fields that can affect row selection
 
@@ -554,22 +553,21 @@ class PostgresDbAPI(object):
                 f.alchemy_expression.label(f.name) if f is not None else None
                 for f in select_fields
             )
-            known_fields = _base_known_fields() | {f.name: f.alchemy_expression for f in select_fields}
+            known_fields = _base_known_fields() | {f.name: f for f in select_fields}
         else:
             select_columns = _DATASET_SELECT_FIELDS
             known_fields = _base_known_fields()
 
         def _ob_exprs(o):
             if isinstance(o, str):
-                if known_fields.get(o.lower()):
-                    return known_fields[o.lower()]
+                if known_fields.get(o.lower()) is not None:
+                    return known_fields[o.lower()].alchemy_expression
                 raise ValueError(f"Cannot order by unknown field {o}")
             elif isinstance(o, PgField):
                 return o.alchemy_expression
-            elif isinstance(o, Function):
-                # if a func, leave as-is
+            else:
+                # assume func, clause, or other expression, and leave as-is
                 return o
-            raise TypeError(f"Invalid order_by clause type: {type(o)}. Must be str, PgField, or sqlalchemy.Function.")
 
         if order_by is not None:
             order_by = [_ob_exprs(o) for o in order_by]

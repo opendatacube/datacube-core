@@ -16,7 +16,6 @@ from urllib.parse import urlparse, ParseResult
 from uuid import UUID
 from datetime import timedelta
 from deprecat import deprecat
-from sqlalchemy import Function
 
 from odc.geo import CRS, Geometry
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
@@ -1764,7 +1763,7 @@ class AbstractDatasetResource(ABC):
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit: int | None = None,
                          archived: bool | None = False,
-                         order_by: Iterable[str | Field | Function] | None = None,
+                         order_by: Iterable[Any] | None = None,
                          **query: QueryField
                         ) -> Iterable[tuple]:
         """
@@ -1784,7 +1783,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
-        :param order_by: a field name, field, or function by which to sort output.  None is unsorted and may allow
+        :param order_by: a field name, field, function or clause by which to sort output. None is unsorted and may allow
                          faster return of first result depending on the index driver's implementation.
         :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters

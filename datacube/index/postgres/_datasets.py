@@ -28,7 +28,6 @@ from datacube.utils.changes import get_doc_changes, Offset
 from datacube.index import fields
 from datacube.drivers.postgres._api import split_uri
 from datacube.migration import ODC2DeprecationWarning
-from sqlalchemy.sql.functions import Function
 
 _LOG = logging.getLogger(__name__)
 
@@ -653,7 +652,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit=None,
                          archived: bool | None = False,
-                         order_by: Iterable[str | Field | Function] | None = None,
+                         order_by: Iterable[Any] | None = None,
                          **query):
         """
         Perform a search, returning only the specified fields.
@@ -665,7 +664,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param tuple[str] field_names: defaults to all known search fields
         :param Union[str,float,Range,list] query:
         :param int limit: Limit number of datasets
-        :param Iterable[str|Field|Function] order_by: sql text, dataset field, or sqlalchemy function
+        :param Iterable[Any] order_by: sql text, dataset field, sqlalchemy function, or expression
         by which to order results
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """

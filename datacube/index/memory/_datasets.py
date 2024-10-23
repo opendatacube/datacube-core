@@ -13,7 +13,6 @@ from collections import namedtuple
 from time import monotonic
 from typing import (Any, Callable, Iterable, Mapping, Sequence, cast)
 from uuid import UUID
-from sqlalchemy import Function
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.index import fields
@@ -608,7 +607,7 @@ class DatasetResource(AbstractDatasetResource):
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit: int | None = None,
                          archived: bool | None = False,
-                         order_by: Iterable[str | Field | Function] | None = None,
+                         order_by: Iterable[Any] | None = None,
                          **query: QueryField) -> Iterable[tuple]:
         if "geopolygon" in query:
             raise NotImplementedError("Spatial search index API not supported by this index.")
