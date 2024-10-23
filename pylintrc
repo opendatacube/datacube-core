@@ -86,9 +86,6 @@ enable=print-statement,
 
 [BASIC]
 
-# List of builtins function names that should not be used, separated by a comma
-bad-functions=apply,input
-
 # Regular expression which should only match correct module names
 module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 
