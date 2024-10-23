@@ -12,7 +12,7 @@ Create Date: 2024-08-08 04:16:19.168213
 from typing import Sequence, Union
 
 from alembic import op
-from sqlalchemy import Column, DateTime
+from sqlalchemy import Column, DateTime, inspect
 from sqlalchemy.sql import func
 
 
@@ -23,18 +23,40 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def column_exists(table_name, column_name):
+    bind = op.get_context().bind
+    insp = inspect(bind)
+    columns = insp.get_columns(table_name, "odc")
+    return any(c["name"] == column_name for c in columns)
+
+
 def upgrade() -> None:
-    op.add_column("dataset", Column("updated", DateTime(timezone=True), server_default=func.now(),
-                                    nullable=False, index=True, comment="when last updated"))
-    op.add_column("metadata_type", Column("updated", DateTime(timezone=True), server_default=func.now(),
-                                          nullable=False, comment="when last updated"))
-    op.add_column("product", Column("updated", DateTime(timezone=True), server_default=func.now(),
-                                    nullable=False, comment="when last updated"))
+    if not column_exists("dataset", "updated"):
+        op.add_column("dataset", Column("updated", DateTime(timezone=True), server_default=func.now(),
+                                        nullable=False, index=True, comment="when last updated"), schema="odc")
+    else:
+        op.alter_column("dataset", "updated", schema="odc", type_=DateTime(timezone=True),
+                        server_default=func.now(), nullable=False, comment="when last updated")
+        op.create_index("ix_dataset_updated", "dataset", ["updated"], schema="odc", if_not_exists=True)
+
+    if not column_exists("metadata_type", "updated"):
+        op.add_column("metadata_type", Column("updated", DateTime(timezone=True), server_default=func.now(),
+                                              nullable=False, comment="when last updated"), schema="odc")
+    else:
+        op.alter_column("metadata_type", "updated", schema="odc", type_=DateTime(timezone=True),
+                        server_default=func.now(), nullable=False, comment="when last updated")
+
+    if not column_exists("product", "updated"):
+        op.add_column("product", Column("updated", DateTime(timezone=True), server_default=func.now(),
+                                        nullable=False, comment="when last updated"), schema="odc")
+    else:
+        op.alter_column("product", "updated", schema="odc", type_=DateTime(timezone=True),
+                        server_default=func.now(), nullable=False, comment="when last updated")
 
 
 def downgrade() -> None:
-    op.drop_column("dataset", "updated")
-    op.drop_column("metadata_type", "updated")
-    op.drop_column("product", "updated")
+    op.drop_column("dataset", "updated", schema="odc")
+    op.drop_column("metadata_type", "updated", schema="odc")
+    op.drop_column("product", "updated", schema="odc")
 
-    op.drop_index("ix_dataset_updated")
+    op.drop_index("ix_dataset_updated", schema="odc")
