@@ -65,7 +65,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             if not include_sources:
                 dataset = connection.get_dataset(id_)
-                return self._make(dataset, full_info=True) if dataset else None
+                if not dataset:
+                    raise KeyError(id_)
+                return self._make(dataset, full_info=True)
 
             datasets = {result.id: (self._make(result, full_info=True), result)
                         for result in connection.get_dataset_sources(id_)}
