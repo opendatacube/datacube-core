@@ -22,10 +22,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.create_index("ix_dataset_added", "dataset", ["added"])
-    op.create_index("ix_dataset_archived", "dataset", ["archived"])
+    op.create_index("ix_dataset_added", "dataset", ["added"], schema="odc", if_not_exists=True)
+    op.create_index("ix_dataset_archived", "dataset", ["archived"], schema="odc", if_not_exists=True)
 
 
 def downgrade() -> None:
-    op.drop_index("ix_dataset_added")
-    op.drop_index("ix_dataset_archived")
+    op.drop_index("ix_dataset_added", schema="odc")
+    op.drop_index("ix_dataset_archived", schema="odc")
