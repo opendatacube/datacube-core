@@ -18,9 +18,23 @@ import logging
 import uuid  # noqa: F401
 from typing import Iterable, Any
 from typing import cast as type_cast
-from sqlalchemy import cast, String, Label, FromClause
-from sqlalchemy import delete, column, values
-from sqlalchemy import select, text, bindparam, and_, or_, func, literal, distinct
+from sqlalchemy import (
+    cast,
+    String,
+    Label,
+    FromClause,
+    delete,
+    column,
+    values,
+    select,
+    text,
+    bindparam,
+    and_,
+    or_,
+    func,
+    literal,
+    distinct,
+)
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB, insert, UUID
 from sqlalchemy.exc import IntegrityError
@@ -48,41 +62,46 @@ def _dataset_uri_field(table):
 # Fields for selecting dataset with uris
 # Need to alias the table, as queries may join the location table for filtering.
 SELECTED_DATASET_LOCATION = DATASET_LOCATION.alias('selected_dataset_location')
+# All active URIs, from newest to oldest
+_ALL_ACTIVE_URIS = func.array(
+    select(
+        _dataset_uri_field(SELECTED_DATASET_LOCATION)
+    ).where(
+        and_(
+            SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+            SELECTED_DATASET_LOCATION.c.archived == None
+        )
+    ).order_by(
+        SELECTED_DATASET_LOCATION.c.added.desc(),
+        SELECTED_DATASET_LOCATION.c.id.desc()
+    ).label('uris')
+).label('uris')
+
 _DATASET_SELECT_FIELDS = (
     DATASET,
-    # All active URIs, from newest to oldest
-    func.array(
-        select(
-            _dataset_uri_field(SELECTED_DATASET_LOCATION)
-        ).where(
-            and_(
-                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-                SELECTED_DATASET_LOCATION.c.archived == None
-            )
-        ).order_by(
-            SELECTED_DATASET_LOCATION.c.added.desc(),
-            SELECTED_DATASET_LOCATION.c.id.desc()
-        ).label('uris')
-    ).label('uris')
+    _ALL_ACTIVE_URIS,
 )
+
 _DATASET_BULK_SELECT_FIELDS = (
     PRODUCT.c.name,
     DATASET.c.metadata,
-    # All active URIs, from newest to oldest
-    func.array(
-        select(
-            _dataset_uri_field(SELECTED_DATASET_LOCATION)
-        ).where(
-            and_(
-                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-                SELECTED_DATASET_LOCATION.c.archived == None
-            )
-        ).order_by(
-            SELECTED_DATASET_LOCATION.c.added.desc(),
-            SELECTED_DATASET_LOCATION.c.id.desc()
-        ).label('uris')
-    ).label('uris')
+    _ALL_ACTIVE_URIS,
 )
+
+
+def _base_known_fields():
+    fields = get_native_fields().copy()
+    fields['archived'] = NativeField(
+        'archived',
+        'Archived date',
+        DATASET.c.archived
+    )
+    fields["uris"] = NativeField(
+        "uris",
+        "all active uris",
+        _ALL_ACTIVE_URIS,
+    )
+    return fields
 
 
 def get_native_fields() -> dict[str, NativeField]:
@@ -517,7 +536,7 @@ class PostgresDbAPI(object):
     @staticmethod
     def search_datasets_query(expressions, source_exprs=None,
                               select_fields=None, with_source_ids=False, limit=None,
-                              archived: bool | None = False):
+                              archived: bool | None = False, order_by=None):
         """
         :type expressions: tuple[Expression]
         :type source_exprs: tuple[Expression]
@@ -534,8 +553,26 @@ class PostgresDbAPI(object):
                 f.alchemy_expression.label(f.name) if f is not None else None
                 for f in select_fields
             )
+            known_fields = _base_known_fields() | {f.name: f for f in select_fields}
         else:
             select_columns = _DATASET_SELECT_FIELDS
+            known_fields = _base_known_fields()
+
+        def _ob_exprs(o):
+            if isinstance(o, str):
+                if known_fields.get(o.lower()) is not None:
+                    return known_fields[o.lower()].alchemy_expression
+                raise ValueError(f"Cannot order by unknown field {o}")
+            elif isinstance(o, PgField):
+                return o.alchemy_expression
+            else:
+                # assume func, clause, or other expression, and leave as-is
+                return o
+
+        if order_by is not None:
+            order_by = [_ob_exprs(o) for o in order_by]
+        else:
+            order_by = []
 
         if with_source_ids:
             # Include the IDs of source datasets
@@ -566,11 +603,13 @@ class PostgresDbAPI(object):
         if not source_exprs:
             return (
                 select(
-                    *select_columns
+                    *select_columns  # type: ignore[arg-type]
                 ).select_from(
                     from_expression
                 ).where(
                     where_expr
+                ).order_by(
+                    *order_by
                 ).limit(
                     limit
                 )
@@ -626,6 +665,8 @@ class PostgresDbAPI(object):
                 recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
             ).where(
                 where_expr
+            ).order_by(
+                *order_by
             ).limit(
                 limit
             )
@@ -634,7 +675,7 @@ class PostgresDbAPI(object):
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
                         with_source_ids=False, limit=None,
-                        archived: bool | None = False):
+                        archived: bool | None = False, order_by=None):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.drivers.postgres._fields.PgField]
@@ -642,7 +683,7 @@ class PostgresDbAPI(object):
         """
         select_query = self.search_datasets_query(expressions, source_exprs,
                                                   select_fields, with_source_ids, limit,
-                                                  archived=archived)
+                                                  archived=archived, order_by=order_by)
         return self._connection.execute(select_query)
 
     def bulk_simple_dataset_search(self, products=None, batch_size=0):
@@ -1138,13 +1179,17 @@ class PostgresDbAPI(object):
                                 offset=max_time_offset,
                                 selection='greatest')
 
-        return self._connection.execute(
+        res = self._connection.execute(
             select(
                 func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)
             ).where(
                 DATASET.c.dataset_type_ref == product_id
             )
         ).first()
+
+        if res is None:
+            raise RuntimeError("Product has no datasets and therefore no temporal extent")
+        return res
 
     def get_locations(self, dataset_id):
         return [
@@ -1271,3 +1316,18 @@ class PostgresDbAPI(object):
                 raise ValueError('Unknown user %r' % user)
 
         _core.grant_role(self._connection, pg_role, users)
+
+    def find_most_recent_change(self, product_id: int):
+        """
+        Find the database-local time of the last dataset that changed for this product.
+        """
+        return self._connection.execute(
+            select(
+                func.max(
+                    func.greatest(
+                        DATASET.c.added,
+                        column("updated"),
+                    )
+                )
+            ).where(DATASET.c.dataset_type_ref == product_id)
+        ).scalar()

@@ -69,7 +69,7 @@ def _roi_to_window(roi: Optional[RasterWindow], shape: RasterShape) -> Optional[
     return (s1, s2)
 
 
-def _dc_crs(crs: Optional[rasterio.crs.CRS]) -> Optional[CRS]:
+def _dc_crs(crs: Optional[rasterio.crs.CRS]) -> Optional[CRS]:  # pylint: disable=c-extension-no-member
     """ Convert RIO version of CRS to datacube
     """
     if crs is None:

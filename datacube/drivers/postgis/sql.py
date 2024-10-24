@@ -100,7 +100,7 @@ def pg_exists(conn, name):
     Does a postgres object exist?
     :rtype bool
     """
-    return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
+    return conn.execute(text(f"SELECT to_regclass('{name}')")).scalar() is not None
 
 
 def pg_column_exists(conn, table, column):
@@ -108,12 +108,12 @@ def pg_column_exists(conn, table, column):
     Does a postgres object exist?
     :rtype bool
     """
-    return conn.execute("""
+    return conn.execute(text(f"""
                         SELECT 1 FROM pg_attribute
-                        WHERE attrelid = to_regclass(%s)
-                        AND attname = %s
+                        WHERE attrelid = to_regclass('{table}')
+                        AND attname = '{column}'
                         AND NOT attisdropped
-                        """, table, column).scalar() is not None
+                        """)).scalar() is not None
 
 
 def escape_pg_identifier(engine, name):

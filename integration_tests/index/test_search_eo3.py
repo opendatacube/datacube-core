@@ -37,6 +37,15 @@ def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product):
     assert len(lds) == 1
 
 
+def test_find_most_recent_change(index: Index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3):
+    product = ls8_eo3_dataset.product
+    dt = index.products.most_recent_change(product)
+    assert dt == ls8_eo3_dataset3.indexed_time
+    index.datasets.archive([ls8_eo3_dataset.id, ls8_eo3_dataset2.id])
+    dt = index.products.most_recent_change(product.name)
+    assert dt == index.datasets.get(ls8_eo3_dataset2.id).archived_time
+
+
 def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset):
     datasets = list(index.datasets.search(
         platform='landsat-8'
@@ -351,6 +360,30 @@ def test_search_archived_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_da
     assert len(datasets) == 2
     datasets = list(index.datasets.search(archived=True, product=prod))
     assert len(datasets) == 2
+
+
+def test_search_order_by_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3):
+    # provided as a string
+    datasets = list(index.datasets.search(order_by=['id']))
+    assert len(datasets) == 3
+    assert str(datasets[0].id) < str(datasets[1].id)
+    assert str(datasets[1].id) < str(datasets[2].id)
+
+    # provided as a Field
+    prod = ls8_eo3_dataset.product
+    fields = prod.metadata_type.dataset_fields
+    index.datasets.archive([ls8_eo3_dataset3.id])
+    datasets = list(index.datasets.search(order_by=[fields['id']]))
+    assert len(datasets) == 2
+    assert str(datasets[0].id) < str(datasets[1].id)
+
+    # ensure limit doesn't interfere with ordering
+    datasets = list(index.datasets.search(order_by=['id'], limit=1))
+    assert datasets[0] == ls8_eo3_dataset2
+
+    datasets = list(index.datasets.search(order_by=[fields['id'].alchemy_expression.desc()]))
+    assert len(datasets) == 2
+    assert str(datasets[0].id) > str(datasets[1].id)
 
 
 def test_search_or_expressions_eo3(index: Index,

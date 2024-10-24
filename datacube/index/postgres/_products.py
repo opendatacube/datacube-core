@@ -381,3 +381,11 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         assert product.id is not None
         with self._db_connection() as connection:
             return connection.temporal_extent_by_product(product.id, min_offset, max_offset)
+
+    def most_recent_change(self, product: str | Product) -> datetime.datetime | None:
+        if isinstance(product, str):
+            product = self._index.products.get_by_name_unsafe(product)
+        assert isinstance(product, Product)
+        assert product.id is not None
+        with self._db_connection() as connection:
+            return connection.find_most_recent_change(product.id)

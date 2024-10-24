@@ -140,7 +140,7 @@ class DatasetResource(AbstractDatasetResource):
             }
         }
     )
-    def search(self, limit=None, archived=False, **query):
+    def search(self, limit=None, archived=False, order_by=None, **query):
         return []
 
     def search_by_product(self, archived=False, **query):

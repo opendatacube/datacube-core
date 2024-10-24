@@ -73,6 +73,10 @@ class Index(AbstractIndex):
         self._datasets = DatasetResource(db, self)
 
     @property
+    def name(self) -> str:
+        return "pg_index"
+
+    @property
     def environment(self) -> ODCEnvironment:
         return self._env
 

@@ -11,7 +11,7 @@ from . import GeoBox
 
 Resampling = Union[str, int, rasterio.warp.Resampling]  # pylint: disable=invalid-name
 Nodata = Optional[Union[int, float]]  # pylint: disable=invalid-name
-_WRP_CRS = rasterio.crs.CRS.from_epsg(3857)
+_WRP_CRS = rasterio.crs.CRS.from_epsg(3857)  # pylint: disable=c-extension-no-member
 
 
 def resampling_s2rio(name: str) -> rasterio.warp.Resampling:

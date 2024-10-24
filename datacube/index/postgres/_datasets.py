@@ -64,7 +64,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             if not include_sources:
                 dataset = connection.get_dataset(id_)
-                return self._make(dataset, full_info=True) if dataset else None
+                if not dataset:
+                    raise KeyError(id_)
+                return self._make(dataset, full_info=True)
 
             datasets = {result.id: (self._make(result, full_info=True), result)
                         for result in connection.get_dataset_sources(id_)}
@@ -619,7 +621,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             }
         }
     )
-    def search(self, limit=None, source_filter=None, archived: bool | None = False, **query):
+    def search(self, limit=None, source_filter=None, archived: bool | None = False, order_by=None, **query):
         """
         Perform a search, returning results as Dataset objects.
 
@@ -631,7 +633,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for product, datasets in self._do_search_by_product(query,
                                                             source_filter=source_filter,
                                                             limit=limit,
-                                                            archived=archived):
+                                                            archived=archived,
+                                                            order_by=order_by):
             yield from self._make_many(datasets, product)
 
     def search_by_product(self, archived: bool | None = False, **query):
@@ -649,7 +652,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit=None,
                          archived: bool | None = False,
-                         order_by: str | Field | None = None,
+                         order_by: Iterable[Any] | None = None,
                          **query):
         """
         Perform a search, returning only the specified fields.
@@ -661,10 +664,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param tuple[str] field_names: defaults to all known search fields
         :param Union[str,float,Range,list] query:
         :param int limit: Limit number of datasets
+        :param Iterable[Any] order_by: sql text, dataset field, sqlalchemy function, or expression
+        by which to order results
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
         """
-        if order_by:
-            raise ValueError("order_by argument is not currently supported by the postgres index driver.")
         field_name_d: dict[str, None] = {}
         if field_names is None and custom_offsets is None:
             for f in self._index.products.get_field_names():
@@ -691,7 +694,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                        select_field_names=list(field_name_d.keys()),
                                                        additional_fields=custom_fields,
                                                        limit=limit,
-                                                       archived=archived):
+                                                       archived=archived,
+                                                       order_by=order_by):
             for columns in p_results:
                 coldict = columns._asdict()
 
@@ -774,7 +778,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                               select_field_names=None,
                               with_source_ids=False, source_filter=None,
                               limit=None,
-                              archived: bool | None = False):
+                              archived: bool | None = False,
+                              order_by=None):
         if "geopolygon" in query:
             raise NotImplementedError("Spatial search API not supported by this index.")
         if source_filter:
@@ -823,7 +828,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                            select_fields=select_fields,
                            limit=limit,
                            with_source_ids=with_source_ids,
-                           archived=archived
+                           archived=archived,
+                           order_by=order_by
                        ))
 
     def _do_count_by_product(self, query, archived: bool | None = False):

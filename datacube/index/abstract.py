@@ -809,10 +809,21 @@ class AbstractProductResource(ABC):
     def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of a product.
-        Raises KeyError if product has no datasets in the index
+        Raises KeyError if product is not found, RuntimeError if product has no datasets in the index
 
         :param product: Product or name of product
         :return: minimum and maximum acquisition times
+        """
+
+    @abstractmethod
+    def most_recent_change(self, product: str | Product) -> datetime.datetime | None:
+        """
+        Finds the time of the latest change to a dataset belonging to the product.
+        Raises KeyError if product is not in the index
+        Returns None if product has no datasets in the index
+
+        :param product: Product or name of product
+        :return: datetime of most recent dataset change
         """
 
 
@@ -1614,6 +1625,7 @@ class AbstractDatasetResource(ABC):
                limit: int | None = None,
                source_filter: QueryDict | None = None,
                archived: bool | None = False,
+               order_by: Iterable[Any] | None = None,
                **query: QueryField) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
@@ -1625,6 +1637,7 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
+        :param order_by: field or expression by which to order results
         :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Matching datasets
@@ -1763,7 +1776,7 @@ class AbstractDatasetResource(ABC):
                          custom_offsets: Mapping[str, Offset] | None = None,
                          limit: int | None = None,
                          archived: bool | None = False,
-                         order_by: str | Field | None = None,
+                         order_by: Iterable[Any] | None = None,
                          **query: QueryField
                         ) -> Iterable[tuple]:
         """
@@ -1783,8 +1796,8 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
-        :param order_by: a field name or field by which to sort output.  None is unsorted and may allow faster return
-                         of first result depending on the index driver's implementation.
+        :param order_by: a field name, field, function or clause by which to sort output. None is unsorted and may allow
+                         faster return of first result depending on the index driver's implementation.
         :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Namedtuple of requested fields, for each matching dataset.
@@ -2175,6 +2188,11 @@ class AbstractIndex(ABC):
     supports_external_lineage = False
     #   supports an external lineage home field.  Requires supports_external_lineage
     supports_external_home = False
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """The index name"""
 
     @property
     @abstractmethod
