@@ -590,8 +590,10 @@ class DatasetResource(AbstractDatasetResource):
     def search(self,
                limit: int | None = None,
                source_filter: Mapping[str, QueryField] | None = None,
-               archived: bool | None = False,
+               archived: bool | None = False, order_by: Iterable[Any] | None = None,
                **query: QueryField) -> Iterable[Dataset]:
+        if order_by:
+            raise NotImplementedError("order_by argument is not currently supported by the memory index driver.")
         return cast(
             Iterable[Dataset],
             self._search_flat(limit=limit, source_filter=source_filter, archived=archived, **query)
@@ -612,7 +614,7 @@ class DatasetResource(AbstractDatasetResource):
         if "geopolygon" in query:
             raise NotImplementedError("Spatial search index API not supported by this index.")
         if order_by:
-            raise ValueError("order_by argument is not currently supported by the memory index driver.")
+            raise NotImplementedError("order_by argument is not currently supported by the memory index driver.")
         # Note that this implementation relies on dictionaries being ordered by insertion - this has been the case
         # since Py3.6, and officially guaranteed behaviour since Py3.7.
         if field_names is None and custom_offsets is None:
@@ -793,6 +795,8 @@ class DatasetResource(AbstractDatasetResource):
     def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         min_time: datetime.datetime | None = None
         max_time: datetime.datetime | None = None
+        if len(ids) == 0:
+            raise ValueError("no dataset ids provided")
         for dsid in ids:
             ds = self.get_unsafe(dsid)
             time_fld = ds.product.metadata_type.dataset_fields["time"]

@@ -46,3 +46,6 @@ class ProductResource(AbstractProductResource):
 
     def spatial_extent(self, product, crs=None):
         raise KeyError(str(product))
+
+    def most_recent_change(self, product: str | Product) -> datetime.datetime | None:
+        raise KeyError(str(product))

@@ -1179,13 +1179,17 @@ class PostgresDbAPI(object):
                                 offset=max_time_offset,
                                 selection='greatest')
 
-        return self._connection.execute(
+        res = self._connection.execute(
             select(
                 func.min(time_min.alchemy_expression), func.max(time_max.alchemy_expression)
             ).where(
                 DATASET.c.dataset_type_ref == product_id
             )
         ).first()
+
+        if res is None:
+            raise RuntimeError("Product has no datasets and therefore no temporal extent")
+        return res
 
     def get_locations(self, dataset_id):
         return [
