@@ -37,9 +37,11 @@ automethod
 automodule
 autoselectionlabel
 autosummary
+auxuser
 aws
 backends
 backported
+backquote
 BandDataSource
 BandInfo
 bbox
@@ -49,15 +51,18 @@ Bilby
 bilinear
 bom
 bool
+boolean
 boto
 BoundingBox
 brazil
+Bugfix
 Bugfixes
 bY
 carrotandcompany
 cbk
 cd
 CEOS
+cfg
 cheatsheet
 Cheatsheet
 cheatsheets
@@ -76,6 +81,9 @@ combinators
 conda
 conf
 config
+configparser
+ConfigException
+confval
 coord
 cov
 cp
@@ -83,6 +91,7 @@ createdb
 createuser
 creds
 CRS
+CRSes
 crs
 CRSError
 CRSMismatchError
@@ -126,7 +135,10 @@ digitalearth
 digitalearthafrica
 Dingley
 distutils
+DocReader
 Dockerfile
+Dockerhub
+docstrings
 dropdb
 ds
 dsm
@@ -141,7 +153,9 @@ EnterpriseDB
 entrypoint
 env
 ENVI
+environ
 envs
+envvar
 EO
 eo
 eodatasets
@@ -171,12 +185,15 @@ gedi
 geo
 geobase
 GeoBox
+GeoBoxes
 geobox
 GeoboxTiles
 GEOGCS
 GeoJSON
 Geomedian
 geomedian
+geopolygon
+geopolygons
 GeoPolygon
 Geoscience
 geoscience
@@ -189,6 +206,7 @@ geotiff
 GeoTIFFs
 GeoTiffs
 gh
+GHA
 GIS
 Github
 github
@@ -210,16 +228,22 @@ HPC
 html
 http
 https
+hyperspectral
+iam
 IAM
 ident
 identifer
 img
+importlib
 INEGI
 inegi
 ing
+IndexDriver
 Ingester
 ingester
 ingestor
+ini
+INI
 init
 installable
 insted
@@ -290,7 +314,10 @@ multiline
 multipoint
 multipolygon
 mx
+mydb
+mypassword
 mypy
+myuser
 NaN
 NaNs
 nan
@@ -301,6 +328,7 @@ nc
 NCI
 nci
 ncml
+nd
 ndarray
 ndexpr
 NDVI
@@ -325,6 +353,7 @@ nx
 ny
 ODC
 odc
+ODCConfig
 odcintegration
 ODCv
 OGC
@@ -335,6 +364,7 @@ omad
 OPeNDAP
 opendatacube
 ORM
+os
 osgeo
 osr
 OSX
@@ -342,6 +372,7 @@ ows
 pandoc
 param
 params
+passwd
 pc
 pdf
 petewa
@@ -402,6 +433,7 @@ redis
 Reflectance
 reflectance
 repin
+repo
 Reproject
 reproject
 reprojected
@@ -435,6 +467,7 @@ singledispatch
 spatio
 SpatioTemporal
 SPDX
+spindex
 SQLAlchemy
 SRTM
 srtm
@@ -456,6 +489,7 @@ Terria
 th
 TIF
 tif
+timedelta
 timeslice
 timeslot
 TIRS
@@ -465,6 +499,7 @@ TODO
 ToFloat
 txt
 typechecking
+typehints
 ubuntu
 uGuGdZQQDYhqN
 UI
@@ -487,6 +522,7 @@ usgslsprepare
 UsingODC
 usr
 utils
+uid
 UUID
 uuid
 UUIDs
@@ -507,6 +543,7 @@ VSRs
 WCS
 wget
 WGS
+WIP
 WKT
 WMS
 WPS
