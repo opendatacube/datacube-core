@@ -8,6 +8,9 @@ What's New
 v1.9.next
 =========
 
+v1.9.0-rc10 (25th October 2024)
+===============================
+
 - Permissions management cleanup in postgis driver. (:pull:`1613`)
 - Add `skip_broken_datasets` and `dc_load_limit` config options. (:pull:`1616`)
 - Enable global environment variables with `ODC_ALL` naming convention (:pull:`1616`)
@@ -22,6 +25,7 @@ v1.9.next
 - Cherry picks from 1.8 (#1624-#1626, #1629-#1631) (:pull:`1637`)
 - Updates to index APIs - add `order_by` to dataset search, index name attribute, product most recent change method (:pull:`1643`)
 - Fix alembic migrations (:pull:`1645`)
+- Cherry pick recent merged PRs from develop branch and update whats_new for rc10 release. (:pull:`1647`)
 
 v1.9.0-rc9 (3rd July 2024)
 ==========================
@@ -132,7 +136,7 @@ v1.9.0-rc1 (27th March 2024)
 - Deprecate search_eager and search_summaries and add `archived` arg to all dataset search/count methods. (:pull:`1550`)
 - Compatibility fix - dc.load can take odc.geo GeoBox (:pull:`1551`)
 - Migrate away from deprecated Python pkg_resources module (:pull:`1558`)
-- Add ``custom_offsets`` and ``order_by`` arguments to search_retunrning() - order_by still unimplemented. (:pull:`1557`)
+- Add ``custom_offsets`` and ``order_by`` arguments to search_returning() - order_by still unimplemented. (:pull:`1557`)
 - Fix and enhance typehints, automated static type checking with mypy.  (:pull:`1562`)
 - Improve SQLAlchemy join hints, addressing an recurring but intermittent bug.  (:pull:`1564`)
 - Improve typehints and update docstrings in datacube/api/core.py (:pull:`1567`)

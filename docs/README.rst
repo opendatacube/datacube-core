@@ -8,7 +8,7 @@ Developing Locally
 
 Requires a Unix like system that includes ``make``.
 
-#. Clone the datacube-core repository. If you don't have permissions to push to the datacube-core library, you will need to fork the repo and clone your fork.
+#. Clone the datacube-core repository. If you don't have permissions to push to the datacube-core library, you will need to fork the repository and clone your fork.
 
 .. code-block:: bash
 
@@ -48,7 +48,7 @@ Requires a Unix like system that includes ``make``.
 
 .. code-block:: bash
 
-   pip install -r requirements.txt 
+   pip install -r requirements.txt
 
 #. Run the autobuild.
 

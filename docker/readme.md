@@ -13,3 +13,14 @@ docker run --rm \
   opendatacube/datacube-tests:latest \
   ./check-code.sh integration_tests
 ```
+
+## Updating Dependencies
+
+Run the command:
+
+```shell
+docker run --rm \
+  -v $(pwd):/code -w /code/docker \
+  -it opendatacube/datacube-tests \
+  bash -c "python3 -m pip install pip-tools && pip-compile --upgrade --output-file=constraints.txt --strip-extras constraints.in"
+```

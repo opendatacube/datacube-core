@@ -94,7 +94,7 @@ Major Changes between 1.8.x and 1.9.x
    metadata, such tools may not be possible in all cases.  (The legacy postgres driver will continue to support
    non-EO3 metadata types until it is dropped in 2.0)
 
-   The postgis driver will support the creation of PostGIS spatial indexes for arbitrary CRSs.  This will improve
+   The postgis driver will support the creation of PostGIS spatial indexes for arbitrary CRSes.  This will improve
    efficiency and accuracy of database searches, particularly when working with data covering regions where
    conversions to/from EPSG:4326 lat/long coordinates are highly non-linear (e.g. the Pacific around the
    anti-meridian and the north and south polar regions).
@@ -140,21 +140,21 @@ Configuration
 The configuration for a postgis index looks the same as the configuration for a legacy postgres index, you simply
 set the ``index_driver`` setting to ``postgis``::
 
-   [default]
-      alias: prod
+    [default]
+        alias: prod
 
-   [old]
-      index_driver: postgres
-      db_hostname: production.dbs.internal
-      db_database: odc_prod
-      db_username: odc
-      db_password: secret_and_secure
+    [old]
+        index_driver: postgres
+        db_hostname: production.dbs.internal
+        db_database: odc_prod
+        db_username: odc
+        db_password: secret_and_secure
 
-   [new]
-      index_driver: postgis
-      db_hostname: dev.dbs.example.net
-      db_database: odc_dev
-      db_username: odc
+    [new]
+        index_driver: postgis
+        db_hostname: dev.dbs.example.net
+        db_database: odc_dev
+        db_username: odc
 
 Initialisation
 ++++++++++++++
@@ -162,21 +162,21 @@ Initialisation
 You then initialise the database as previously, using ``system init`` command (-E new says to use the ``new`` environment
 from the configuration file)::
 
-   datacube -E new system init
+    datacube -E new system init
 
 You should also create Postgis spatial indexes for any CRS you want to be able to search on (note that an EPSG:4326
 spatial index is created by default).   Postgis spatial indexes should be created before indexing any data where
 possible.  Adding a new spatial index to a populated index will be very slow.  For example to create a spatial index
 for EPSG:3577::
 
-   datacube -E new spindex create 3577
+    datacube -E new spindex create 3577
 
 Migrating (Cloning) Data From a Postgres Index
 ++++++++++++++++++++++++++++++++++++++++++++++
 
 To clone data from an old index to a new one (the two indexes may use different index drivers)::
 
-   datacube -E new system clone old
+    datacube -E new system clone old
 
 Note that the target index is specified with the ``-E`` flag and the source index is provided as an argument to the
 ``system clone`` command.
@@ -198,7 +198,7 @@ Geospatial search
 
 Geopolygons for spatial search can be passed to ``dc.load()``, as before::
 
-   dc.load(...., geopolygon=poly, ...)
+    dc.load(...., geopolygon=poly, ...)
 
 In the postgres driver, the search is done against a bounding box around the polygon projected into EPSG:4326,
 then the extents of datasets returned by the bounding box search are checked for overlap with the original
@@ -207,5 +207,5 @@ geopolygon.  In the postgis driver, the polygon is passed directly to Postgis fo
 * Only datasets whose extents overlap the geopolygon will be loaded.
 * Geopolygons whose CRS does NOT have a native spatial index available will be projected to EPSG:4326 for search
   purposes.
-* Datasets whose projected extents are not contained within a given CRS's "valid area" will NOT be included in that
-  CRS's spatial index.
+* Datasets whose projected extents are not contained within a given CRSes "valid area" will NOT be included in that
+  CRSes spatial index.
