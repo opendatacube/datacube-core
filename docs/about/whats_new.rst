@@ -8,6 +8,9 @@ What's New
 v1.9.next
 =========
 
+v1.9.0-rc10 (25th October 2024)
+===============================
+
 - Permissions management cleanup in postgis driver. (:pull:`1613`)
 - Add `skip_broken_datasets` and `dc_load_limit` config options. (:pull:`1616`)
 - Enable global environment variables with `ODC_ALL` naming convention (:pull:`1616`)
@@ -22,6 +25,7 @@ v1.9.next
 - Cherry picks from 1.8 (#1624-#1626, #1629-#1631) (:pull:`1637`)
 - Updates to index APIs - add `order_by` to dataset search, index name attribute, product most recent change method (:pull:`1643`)
 - Fix alembic migrations (:pull:`1645`)
+- Cherry pick recent merged PRs from develop branch and update whats_new for rc10 release. (:pull:`1647`)
 
 v1.9.0-rc9 (3rd July 2024)
 ==========================
