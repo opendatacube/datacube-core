@@ -795,7 +795,7 @@ class DatasetResource(AbstractDatasetResource):
     def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         min_time: datetime.datetime | None = None
         max_time: datetime.datetime | None = None
-        if len(ids) == 0:
+        if len(list(ids)) == 0:
             raise ValueError("no dataset ids provided")
         for dsid in ids:
             ds = self.get_unsafe(dsid)

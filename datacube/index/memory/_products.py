@@ -198,7 +198,7 @@ class ProductResource(AbstractProductResource):
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)
         ids: Iterable[UUID] = self._index.datasets._by_product.get(product.name, [])
-        if len(ids) == 0:
+        if len(list(ids)) == 0:
             raise RuntimeError("Product has no datasets and therefore no temporal extent")
         return self._index.datasets.temporal_extent(ids)
 
