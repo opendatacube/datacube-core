@@ -1,9 +1,16 @@
 name: Doc QA
+
 on:
-  # Triggers the workflow on pull request events for the main branch
+   # Triggers the workflow on pull request events for the main branch
+  push:
+    branches:
+      - main
+      - develop
+      - develop-1.9
   pull_request:
-    paths:
-      - '**'
+    branches:
+      - develop
+      - develop-1.9
 
 # When a PR is updated, cancel the jobs from the previous version. Merges
 # do not define head_ref, so use run_id to never cancel those jobs.

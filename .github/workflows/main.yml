@@ -1,8 +1,12 @@
 name: build
 
 on:
-  pull_request:
   push:
+    branches:
+      - main
+      - develop
+      - develop-1.9
+  pull_request:
     branches:
       - develop
       - develop-1.9
@@ -66,6 +70,7 @@ jobs:
         version: 0.5.5
         enable-cache: 'true'
         cache-suffix: 3.12
+        python-version: 3.12
 
     - name: Verify and Run Tests
       run: |
