@@ -5,10 +5,8 @@ on:
   push:
     branches:
       - develop
-    paths:
-      - '**'
-      - '!docs/**'
-      - '!contrib/**'
+      - develop-1.9
+
   release:
     types:
       - published
@@ -24,51 +22,66 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+        lint-command:
+          - "pylint --j 2 --reports no datacube"
+          - "--group types mypy datacube"
+          - "pycodestyle tests integration_tests examples --max-line-length 120"
+
+    name: Code Lint
+    steps:
+      - name: checkout git
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: 0.5.5
+          enable-cache: 'true'
+          cache-suffix: ${{ matrix.python-version }}
+      - name: Run ${{ matrix.lint-command }}
+        run: |
+          uv run ${{ matrix.lint-command }}
+
   main:
     runs-on: ubuntu-latest
     # Permit authenticating to PyPI
     permissions:
       id-token: write
+    needs: ['lint']
 
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build Docker
-      uses: docker/build-push-action@v6
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
       with:
-        file: docker/Dockerfile
-        context: .
-        tags: ${{ env.DOCKER_IMAGE }}
-        load: true
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        version: 0.5.5
+        enable-cache: 'true'
+        cache-suffix: 3.12
 
     - name: Verify and Run Tests
       run: |
         echo "Run tests"
-        cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ env.DOCKER_IMAGE }} bash -
-          set -euo pipefail
-
-          pip install -e /code/tests/drivers/fail_drivers --no-deps
-          pip install -e /code/examples/io_plugin --no-deps
-
-          pytest -r a \
-            --cov datacube \
-            --cov-report=xml \
-            --doctest-ignore-import-errors \
-            --durations=5 \
-            datacube \
-            tests \
-            integration_tests
-        EOF
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v6
+        uv sync 
+        source .venv/bin/activate
+        uv pip install -e ./tests/drivers/fail_drivers --no-deps
+        uv pip install -e ./examples/io_plugin --no-deps
+        pytest -r a \
+          --cov datacube \
+          --cov-report=xml \
+          --doctest-ignore-import-errors \
+          --durations=5 \
+          datacube \
+          tests \
+          integration_tests
 
     - name: Build Packages
       run: |

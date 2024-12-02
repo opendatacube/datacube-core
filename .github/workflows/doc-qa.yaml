@@ -22,7 +22,6 @@ jobs:
 
       - uses: igsekor/pyspelling-any@v1.0.4
         name: Spellcheck
-
   doctor-rst:
     name: Lint (DOCtor-RST)
     runs-on: ubuntu-latest

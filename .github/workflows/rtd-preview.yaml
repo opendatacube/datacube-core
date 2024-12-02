@@ -1,0 +1,21 @@
+name: RTD Preview
+
+# Runs once on a new Pull Request
+# Lets Read the Docs add a comment and link to the preview documentation build
+
+
+on:
+  pull_request_target:
+    types:
+      - opened
+
+permissions:
+  pull-requests: write
+
+jobs:
+  documentation-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: readthedocs/actions/preview@v1
+        with:
+          project-slug: "datacube-core"
