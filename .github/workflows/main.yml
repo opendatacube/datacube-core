@@ -66,7 +66,6 @@ jobs:
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
-          # POSTGRES_DB: pgintegration
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -88,6 +87,10 @@ jobs:
         enable-cache: 'true'
         cache-suffix: 3.12
         python-version: 3.12
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12' 
 
     - name: Config
       id: cfg
@@ -119,11 +122,7 @@ jobs:
 
     - name: Run Unit and Doc Tests
       run: |
-        echo "Run tests"
-        uv sync --all-extras
         source .venv/bin/activate
-        uv pip install -e ./tests/drivers/fail_drivers --no-deps
-        uv pip install -e ./examples/io_plugin --no-deps
         pytest -r a \
           --cov datacube \
           --cov-report=xml \
@@ -134,23 +133,18 @@ jobs:
 
     - name: Run Integration Tests
       run: |
-        echo "Run tests"
-        uv sync --all-extras
         source .venv/bin/activate
-        uv pip install -e ./tests/drivers/fail_drivers --no-deps
-        uv pip install -e ./examples/io_plugin --no-deps
         pytest -r a \
           --cov datacube \
           --cov-report=xml \
           --doctest-ignore-import-errors \
           --durations=5 \
-          datacube \
-          tests \
           integration_tests
       env:
         PGHOST: localhost
         PGUSER: postgres
         PGPASSWORD: postgres
+        DB_USERNAME: postgres
 
     - name: Build Packages
       run: |
