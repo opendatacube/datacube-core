@@ -46,7 +46,7 @@ jobs:
         uses: astral-sh/setup-uv@v2
         with:
           version: 0.5.5
-          enable-cache: 'true'
+          enable-cache: "true"
           cache-suffix: ${{ matrix.python-version }}
       - name: Run ${{ matrix.lint-command }}
         run: |
@@ -58,6 +58,10 @@ jobs:
     permissions:
       id-token: write
     needs: ['lint']
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     services:
       # Label used to access the service container
       postgres:
@@ -76,90 +80,89 @@ jobs:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v2
-      with:
-        version: 0.5.5
-        enable-cache: 'true'
-        cache-suffix: 3.12
-        python-version: 3.12
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: 0.5.5
+          enable-cache: "true"
+          cache-suffix: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.12' 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Config
-      id: cfg
-      run: |
-        push_test_pypi=no
-        push_pypi=no
+      - name: Config
+        id: cfg
+        run: |
+          push_test_pypi=no
+          push_pypi=no
 
-        if [[ "${GITHUB_REF}" =~ refs/tags/.* ]]; then
-          echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
-          echo "push_pypi=yes" >> $GITHUB_OUTPUT
-        fi
+          if [[ "${GITHUB_REF}" =~ refs/tags/.* ]]; then
+            echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
+            echo "push_pypi=yes" >> $GITHUB_OUTPUT
+          fi
 
-    - name: Setup test Database
-      run: |
-        createdb -h localhost -U postgres pgintegration
-        createdb -h localhost -U postgres pgisintegration
-      env:
-        PGHOST: localhost
-        PGUSER: postgres
-        PGPASSWORD: postgres
-        
+      - name: Setup test Database
+        run: |
+          createdb -h localhost -U postgres pgintegration
+          createdb -h localhost -U postgres pgisintegration
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
 
-    - name: Setup test environment
-      run: |
-        uv sync --all-extras
-        source .venv/bin/activate
-        uv pip install -e ./tests/drivers/fail_drivers --no-deps
-        uv pip install -e ./examples/io_plugin --no-deps
+      - name: Setup test environment
+        run: |
+          uv sync --all-extras
+          source .venv/bin/activate
+          uv pip install -e ./tests/drivers/fail_drivers --no-deps
+          uv pip install -e ./examples/io_plugin --no-deps
 
-    - name: Run Unit and Doc Tests
-      run: |
-        source .venv/bin/activate
-        pytest -r a \
-          --cov datacube \
-          --cov-report=xml \
-          --doctest-ignore-import-errors \
-          --durations=5 \
-          datacube \
-          tests
+      - name: Run Unit and Doc Tests
+        run: |
+          source .venv/bin/activate
+          pytest -r a \
+            --cov datacube \
+            --cov-report=xml \
+            --doctest-ignore-import-errors \
+            --durations=5 \
+            datacube \
+            tests
 
-    - name: Run Integration Tests
-      run: |
-        source .venv/bin/activate
-        pytest -r a \
-          --cov datacube \
-          --cov-report=xml \
-          --doctest-ignore-import-errors \
-          --durations=5 \
-          integration_tests
-      env:
-        PGHOST: localhost
-        PGUSER: postgres
-        PGPASSWORD: postgres
-        DB_USERNAME: postgres
+      - name: Run Integration Tests
+        run: |
+          source .venv/bin/activate
+          pytest -r a \
+            --cov datacube \
+            --cov-report=xml \
+            --doctest-ignore-import-errors \
+            --durations=5 \
+            integration_tests
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          DB_USERNAME: postgres
 
-    - name: Build Packages
-      run: |
-        uv build
-        uv tool run twine check dist/*
+      - name: Build Packages
+        run: |
+          uv build
+          uv tool run twine check dist/*
 
-    # Uses to OIDC identification between GitHub and PyPI
-    - name: Upload package to PyPI on GitHub Release
-      if: "github.repository_owner == 'opendatacube' && github.event.action == 'published'"
-      uses: pypa/gh-action-pypi-publish@release/v1
+      # Uses to OIDC identification between GitHub and PyPI
+      - name: Upload package to PyPI on GitHub Release
+        if: "github.repository_owner == 'opendatacube' && github.event.action == 'published'"
+        uses: pypa/gh-action-pypi-publish@release/v1
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v5
-      with:
-        files: ./coverage.xml
-        disable_search: true
-        fail_ci_if_error: false
-        token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          disable_search: true
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
