@@ -58,7 +58,24 @@ jobs:
     permissions:
       id-token: write
     needs: ['lint']
-
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgis/postgis:16-3.5
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+          # POSTGRES_DB: pgintegration
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
     steps:
     - uses: actions/checkout@v4
       with:
@@ -72,7 +89,50 @@ jobs:
         cache-suffix: 3.12
         python-version: 3.12
 
-    - name: Verify and Run Tests
+    - name: Config
+      id: cfg
+      run: |
+        push_test_pypi=no
+        push_pypi=no
+
+        if [[ "${GITHUB_REF}" =~ refs/tags/.* ]]; then
+          echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
+          echo "push_pypi=yes" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Setup test Database
+      run: |
+        createdb -h localhost -U postgres pgintegration
+        createdb -h localhost -U postgres pgisintegration
+      env:
+        PGHOST: localhost
+        PGUSER: postgres
+        PGPASSWORD: postgres
+        
+
+    - name: Setup test environment
+      run: |
+        uv sync --all-extras
+        source .venv/bin/activate
+        uv pip install -e ./tests/drivers/fail_drivers --no-deps
+        uv pip install -e ./examples/io_plugin --no-deps
+
+    - name: Run Unit and Doc Tests
+      run: |
+        echo "Run tests"
+        uv sync --all-extras
+        source .venv/bin/activate
+        uv pip install -e ./tests/drivers/fail_drivers --no-deps
+        uv pip install -e ./examples/io_plugin --no-deps
+        pytest -r a \
+          --cov datacube \
+          --cov-report=xml \
+          --doctest-ignore-import-errors \
+          --durations=5 \
+          datacube \
+          tests
+
+    - name: Run Integration Tests
       run: |
         echo "Run tests"
         uv sync --all-extras
@@ -87,6 +147,10 @@ jobs:
           datacube \
           tests \
           integration_tests
+      env:
+        PGHOST: localhost
+        PGUSER: postgres
+        PGPASSWORD: postgres
 
     - name: Build Packages
       run: |
