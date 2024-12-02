@@ -70,7 +70,7 @@ jobs:
     - name: Verify and Run Tests
       run: |
         echo "Run tests"
-        uv sync 
+        uv sync --all-extras
         source .venv/bin/activate
         uv pip install -e ./tests/drivers/fail_drivers --no-deps
         uv pip install -e ./examples/io_plugin --no-deps
