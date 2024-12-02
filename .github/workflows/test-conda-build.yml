@@ -1,14 +1,16 @@
 name: Conda Smoke Test
-on:
-  pull_request:
-    paths:
-      - '**'
 
+on:
   push:
     branches:
+      - main
       - develop
-    paths:
-      - '**'
+      - develop-1.9
+  pull_request:
+    branches:
+      - develop
+      - develop-1.9
+
 
 # When a PR is updated, cancel the jobs from the previous version. Merges
 # do not define head_ref, so use run_id to never cancel those jobs.
