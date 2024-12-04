@@ -118,7 +118,7 @@ jobs:
 
       - name: Setup test environment
         run: |
-          uv sync --all-extras
+          uv sync --all-extras --no-binary-package rasterio --no-binary-package fiona --no-binary-package shapely --no-binary-package cf-units --no-binary-package netCDF4
           source .venv/bin/activate
           uv pip install -e ./tests/drivers/fail_drivers --no-deps
           uv pip install -e ./examples/io_plugin --no-deps
