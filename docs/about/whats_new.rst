@@ -73,6 +73,7 @@ Other Changes
 - Speed up AWS Utils tests :pull:`1878`
 - Dependabot: disable weekly updates :pull:`1886`
 - pyproject: set a fallback version :pull:`1887`
+- ``compliance-checker``` is no longer a dependency :pull:`1888`
 
 v1.9.3 (15th April 2025)
 ========================
