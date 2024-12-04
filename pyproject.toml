@@ -69,7 +69,6 @@ Chat = "https://discord.com/invite/4hhBQVas5U"
 performance = ['ciso8601', 'bottleneck']
 distributed = ['distributed', 'dask[distributed]']
 s3 = ['boto3', 'botocore']
-cf = ['compliance-checker>=4.0.0']
 netcdf = ['netcdf4']
 postgres = ['psycopg2']
 
