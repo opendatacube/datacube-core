@@ -2,12 +2,12 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import datetime
 import os
 import platform
 import sys
 import uuid
 import toolz
+from datetime import datetime, timezone
 
 import numpy
 import xarray
@@ -90,7 +90,7 @@ def geobox_info(extent, valid_data=None):
 def new_dataset_info():
     return {
         'id': str(uuid.uuid4()),
-        'creation_dt': datetime.datetime.utcnow().isoformat(),
+        'creation_dt': datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
     }
 
 

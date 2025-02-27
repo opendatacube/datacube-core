@@ -464,6 +464,14 @@ def test_search_returning_eo3(index: Index,
     assert region_code == '090086'
     assert maturity == 'final'
 
+    count_by_date = index.datasets.count(
+        product='ga_ls8c_ard_3',
+        time=Range(
+            begin=datetime.datetime(2016, 5, 12, 18, tzinfo=datetime.timezone.utc),
+            end=datetime.datetime(2016, 5, 13, 2, tzinfo=datetime.timezone.utc)
+        )
+    )
+    assert count_by_date == 1
     results = list(index.datasets.search_returning(
         ('id', 'metadata_doc',),
         platform='landsat-8',

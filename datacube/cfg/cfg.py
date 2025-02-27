@@ -79,9 +79,7 @@ def find_config(paths_in: None | str | PathLike | list[str | PathLike],
         try:
             with open(path, "r") as fp:
                 return fp.read()
-        except PermissionError:
-            continue
-        except FileNotFoundError:
+        except OSError:
             continue
 
     if using_default_paths:

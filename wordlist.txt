@@ -64,6 +64,7 @@ brazil
 Bugfix
 Bugfixes
 bY
+cartesian
 cbk
 cd
 CEOS
@@ -146,6 +147,7 @@ Dingley
 distutils
 Dockerfile
 Dockerhub
+DockerHub
 DocReader
 docstrings
 dropdb
@@ -378,6 +380,7 @@ odcintegration
 ODCv
 OGC
 ogr
+OIDC
 oldscripts
 OLI
 omad

@@ -15,74 +15,33 @@ on:
       - '!docker/**'
       - '!docs/**'
       - '!contrib/**'
+  workflow_dispatch:
+
+permissions: {}
 
 jobs:
-  pylint:
+  lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10"]
-    name: Pylint
+        python-version: ["3.12"]
+        lintcommand:
+          - "pylint -j 2 --report no datacube"
+          - "mypy datacube"
+          - "pycodestyle tests integration_tests examples --max-line-length 120"
+    name: Linting
     steps:
       - name: checkout git
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Setup conda
-        uses: s-weigand/setup-conda@v1
-        with:
-          update-conda: true
-          python-version: ${{ matrix.python-version }}
-          conda-channels: anaconda, conda-forge
-      - name: run pylint
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: run linter
         run: |
-          sudo apt-get remove python3-openssl
-          pip install --upgrade -e '.[test]'
-          pip install pylint>3.2
-          pylint -j 2 --reports no datacube
-          
-
-  mypy:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10"]
-    name: MyPy
-    steps:
-      - name: checkout git
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup conda
-        uses: s-weigand/setup-conda@v1
-        with:
-          update-conda: true
-          python-version: ${{ matrix.python-version }}
-          conda-channels: anaconda, conda-forge
-      - name: run mypy
-        run: |
-          sudo apt-get remove python3-openssl
-          pip install --upgrade -e '.[types]'
-          mypy datacube
-
-
-  pycodestyle:
-    name: pycodestyle
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup conda
-        uses: s-weigand/setup-conda@v1
-        with:
-          update-conda: true
-          python-version: ${{ matrix.python-version }}
-          conda-channels: anaconda, conda-forge
-      - name: Run pycodestyle
-        run: |
-          sudo apt-get remove python3-openssl
-          pip install --upgrade -e '.[test]'
-          pycodestyle tests integration_tests examples --max-line-length 120
+          uv run --no-project --with '.[test,types]' ${LINT_COMMAND}
+        env:
+          LINT_COMMAND: ${{matrix.lintcommand}}
+          UV_PYTHON: ${{ matrix.python-version }}
+          UV_PYTHON_PREFERENCE: managed

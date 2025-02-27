@@ -23,7 +23,7 @@ repos:
         -   id: pylint
             language_version: '3.12'  # Reqd of 2025-01-15
     -   repo: https://github.com/pycqa/flake8
-        rev: '7.1.1'
+        rev: '7.1.2'
         hooks:
         -   id: flake8
     - repo: https://github.com/Lucas-C/pre-commit-hooks

@@ -398,7 +398,7 @@ class Dataset:
         return without_lineage_sources(self.metadata_doc, self.metadata_type)
 
 
-class Measurement(dict):
+class Measurement():
     """
     Describes a single data variable of a Product or Dataset.
 
@@ -418,30 +418,114 @@ class Measurement(dict):
     REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
     OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition', 'scale_factor', 'add_offset',
                      'extra_dim', 'dims')
-    ATTR_SKIP = set(['name', 'dtype', 'aliases', 'resampling_method', 'fuser', 'extra_dim', 'dims', 'extra_dim_index'])
+    ATTR_SKIP = ['name', 'dtype', 'aliases', 'resampling_method', 'fuser', 'extra_dim', 'dims', 'extra_dim_index']
 
-    def __init__(self, canonical_name=None, **kwargs):
+    def __init__(self, canonical_name=None, *args, **kwargs):
+        self._data = {}
+
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
         if missing_keys:
             raise ValueError("Measurement required keys missing: {}".format(missing_keys))
 
         self.canonical_name = canonical_name or kwargs.get('name')
-        super().__init__(**kwargs)
+
+        # Handle positional arguments (e.g., Measurement([('a', 1), ('b', 2)]))
+        if args:
+            if len(args) == 1:
+                raise TypeError("Measurement() takes at most 1 positional argument")
+            arg = args[0]
+            if isinstance(arg, dict):
+                self._data = arg.copy()  # Copy the dict to avoid modifying the original
+            elif hasattr(arg, '__iter__'):  # Handle iterables like lists of tuples
+                for key, value in arg:
+                    self[key] = value  # Use self.__setitem__ for assignment
+            else:
+                raise TypeError("Measurement() argument must be a dict or iterable")
+        self.update(kwargs)
 
     def __getattr__(self, key: str) -> Any:
         """ Allow access to items as attributes. """
-        v = self.get(key, self)
-        if v is self:
-            raise AttributeError("'Measurement' object has no attribute '{}'".format(key))
-        return v
+        if key == '_data':
+            # return self._data
+            raise AttributeError("Measurement() object has no attribute '_data'")
+        return self._data.get(key)
+
+    def __getitem__(self, key):
+        """
+        Retrieves the value associated with the given key.
+        """
+        return self._data[key]
+
+    def __setitem__(self, key, value):
+        """
+        Sets the value associated with the given key.
+        """
+        self._data[key] = value
+
+    def __delitem__(self, key):
+        if key in self.REQUIRED_KEYS:
+            raise KeyError("Measurement() requires key {}".format(key))
+        del self._data[key]
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def __len__(self):
+        return len(self._data)
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __str__(self):
+        return repr(self)
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def items(self):
+        return self._data.items()
+
+    def get(self, key, default=None):
+        return self._data.get(key, default)
+
+    def setdefault(self, key, default=None):
+        return self._data.setdefault(key, default)
+
+    def pop(self, key, default=None):
+        """
+        Removes the key and returns its value from the dictionary or a default value if the key is not found.
+        """
+        if key in self.REQUIRED_KEYS:
+            raise KeyError("Measurement() requires key {}".format(key))
+        return self._data.pop(key, default)
+
+    def update(self, *args, **kwargs):
+        if args:
+            if len(args) > 1:
+                raise TypeError("update() takes at most 1 positional argument")
+            arg = args[0]
+            if isinstance(arg, dict):
+                for key, value in arg.items():
+                    self[key] = value
+            elif hasattr(arg, '__iter__'):
+                for key, value in arg:
+                    self[key] = value
+            else:
+                raise TypeError("update() argument must be a dict or iterable")
+
+        for key, value in kwargs.items():
+            self[key] = value
 
     def __repr__(self) -> str:
-        return "Measurement({})".format(super(Measurement, self).__repr__())
+        return f"Measurement({repr(self._data)})"
 
     def copy(self) -> 'Measurement':
         """Required as the super class `dict` method returns a `dict`
            and does not preserve Measurement class"""
-        return Measurement(**self)
+        return Measurement(**self._data)
 
     def dataarray_attrs(self) -> Dict[str, Any]:
         """This returns attributes filtered for display in a dataarray."""

@@ -2,9 +2,6 @@ name: build
 
 on:
   pull_request:
-    paths:
-      - '**'
-
   push:
     branches:
       - develop
@@ -12,69 +9,28 @@ on:
       - '**'
       - '!docs/**'
       - '!contrib/**'
-
+  release:
+    types:
+      - published
   workflow_dispatch:
 
 env:
-  DOCKER_USER: gadockersvc
-  DOCKER_IMAGE: opendatacube/datacube-tests:latest
-
+  DOCKER_IMAGE: ghrc.io/opendatacube/datacube-core:tests
 
 jobs:
   main:
     runs-on: ubuntu-latest
+    # Permit authenticating to PyPI
+    permissions:
+      id-token: write
 
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Config
-      id: cfg
-      run: |
-        push_test_pypi=no
-        push_pypi=no
-
-        if [[ "${GITHUB_REF}" =~ refs/tags/.* ]]; then
-          echo "push_test_pypi=yes" >> $GITHUB_OUTPUT
-          echo "push_pypi=yes" >> $GITHUB_OUTPUT
-        fi
-
-    - uses: dorny/paths-filter@v3
-      id: changes
-      if: |
-        github.event_name == 'push'
-      with:
-        filters: |
-          docker:
-            - 'docker/**'
-    - name: Pull Docker
-      if: steps.changes.outputs.docker == 'false'
-      run: |
-        docker pull "${{ env.DOCKER_IMAGE }}"
-
     - name: Set up Docker Buildx
-      if: steps.changes.outputs.docker == 'true'
       uses: docker/setup-buildx-action@v3
-
-    - name: Cache Docker layers
-      if: steps.changes.outputs.docker == 'true'
-      uses: pat-s/always-upload-cache@v3.0.11
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
-
-    - name: DockerHub Login
-      id: login
-      if: |
-        github.event_name == 'push'
-        && github.ref == 'refs/heads/develop'
-      uses: docker/login-action@v3
-      with:
-        username: ${{ env.DOCKER_USER }}
-        password: ${{ secrets.GADOCKERSVC_PASSWORD }}
 
     - name: Build Docker
       uses: docker/build-push-action@v6
@@ -83,16 +39,18 @@ jobs:
         context: .
         tags: ${{ env.DOCKER_IMAGE }}
         load: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Verify and Run Tests
       run: |
-        echo "Verify that twine is installed"
-        docker run --rm ${{ env.DOCKER_IMAGE }} twine --version
-
         echo "Run tests"
         cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ env.DOCKER_IMAGE }} bash -
+          set -euo pipefail
+
           pip install -e /code/tests/drivers/fail_drivers --no-deps
           pip install -e /code/examples/io_plugin --no-deps
+
           pytest -r a \
             --cov datacube \
             --cov-report=xml \
@@ -103,76 +61,18 @@ jobs:
             integration_tests
         EOF
 
-    - name: DockerHub Push
-      if: |
-        github.event_name == 'push'
-        && github.ref == 'refs/heads/develop'
-        && steps.changes.outputs.docker == 'true'
-      uses: docker/build-push-action@v6
-      with:
-        file: docker/Dockerfile
-        context: .
-        push: true
-        tags: ${{env.DOCKER_IMAGE}}
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
     - name: Build Packages
       run: |
-        cat <<EOF | docker run --rm -i  \
-                  -v $(pwd):/code \
-                  -e SKIP_DB=yes \
-                  ${{ env.DOCKER_IMAGE }} bash -
-        python setup.py bdist_wheel sdist
-        ls -lh ./dist/
-        twine check ./dist/*
-        EOF
+        uv build
+        uv tool run twine check dist/*
 
-    - name: Publish to Test PyPi
-      if: |
-        steps.cfg.outputs.push_test_pypi == 'yes'
-      run: |
-        if [ -n "${TWINE_PASSWORD}" ]; then
-          docker run --rm  \
-            -v $(pwd):/code \
-            -e SKIP_DB=yes \
-            ${{ env.DOCKER_IMAGE }} \
-            twine upload \
-              --verbose \
-              --non-interactive \
-              --disable-progress-bar \
-              --username=__token__ \
-              --password=${TWINE_PASSWORD} \
-              --repository-url=${TWINE_REPOSITORY_URL} \
-              --skip-existing dist/* || true
-        else
-           echo "Skipping upload as 'TestPyPiToken' is not set"
-        fi
-      env:
-        TWINE_PASSWORD: ${{ secrets.TestPyPiToken }}
-        TWINE_REPOSITORY_URL: 'https://test.pypi.org/legacy/'
-
-    - name: Publish to PyPi
-      if: |
-        github.event_name == 'push'
-        && steps.cfg.outputs.push_pypi == 'yes'
-      run: |
-        if [ -n "${TWINE_PASSWORD}" ]; then
-          docker run --rm  \
-            -v $(pwd):/code \
-            -e SKIP_DB=yes \
-            ${{ env.DOCKER_IMAGE }} \
-            twine upload \
-              --verbose \
-              --non-interactive \
-              --disable-progress-bar \
-              --username=__token__ \
-              --password=${TWINE_PASSWORD} \
-              --skip-existing dist/*
-        else
-           echo "Skipping upload as 'PyPiToken' is not set"
-        fi
-
-      env:
-        TWINE_PASSWORD: ${{ secrets.PyPiToken }}
+    # Uses to OIDC identification between GitHub and PyPI
+    - name: Upload package to PyPI on GitHub Release
+      if: "github.repository_owner == 'opendatacube' && github.event.action == 'published'"
+      uses: pypa/gh-action-pypi-publish@release/v1
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5

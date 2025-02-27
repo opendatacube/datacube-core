@@ -817,6 +817,7 @@ class PostgresDbAPI(object):
         t1 = candidates_table.alias("t1")
         t2 = candidates_table.alias("t2")
 
+        fields = [getattr(t1.c, f.name) for f in fields]
         overlapping = select(
             t1.c.id,
             text("t1.time * t2.time as time_intersect"),
@@ -828,6 +829,7 @@ class PostgresDbAPI(object):
             )
         )
 
+        fields = [getattr(overlapping.c, f.name) for f in fields]
         final_query = select(
             func.array_agg(func.distinct(overlapping.c.id)).label("ids"),
             *fields,

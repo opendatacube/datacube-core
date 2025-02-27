@@ -99,7 +99,7 @@ def mk_time_coord(dts, name='time', units=None):
     attrs = {'units': units} if units is not None else {}
 
     dts = [normalise_dt(dt) for dt in dts]
-    data = np.asarray(dts, dtype='datetime64')
+    data = np.asarray(dts, dtype='datetime64[ns]')
     return xr.DataArray(data,
                         name=name,
                         coords={name: data},

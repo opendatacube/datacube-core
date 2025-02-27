@@ -343,15 +343,15 @@ def test_ini_from_paths(path_to_ini_config, path_to_yaml_config, path_to_differe
     with pytest.raises(ConfigException):
         cfg = ODCConfig(paths=[
             "/non/existent/path.yml",
-            "/etc/shadow",  # A path that exists that we can't read
-            "/another/nonexistent/path.yml"
+            "/another/nonexistent/path.yml",
+            "/etc",
         ])
 
     with monkeypatch.context() as mp:
         mp.setattr("datacube.cfg.cfg._DEFAULT_CONFIG_SEARCH_PATH", [
             "/non/existent/path.yml",
-            "/etc/shadow",  # A path that exists that we can't read
             "/another/nonexistent/path.yml",
+            "/etc",
             path_to_yaml_config,
         ])
         cfg = ODCConfig()
@@ -360,7 +360,7 @@ def test_ini_from_paths(path_to_ini_config, path_to_yaml_config, path_to_differe
     with monkeypatch.context() as mp:
         mp.setattr("datacube.cfg.cfg._DEFAULT_CONFIG_SEARCH_PATH", [
             "/non/existent/path.yml",
-            "/etc/shadow",  # A path that exists that we can't read
+            "/etc",
             "/another/nonexistent/path.yml",
         ])
         cfg = ODCConfig()

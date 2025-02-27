@@ -160,22 +160,9 @@ def test_spatial_index_crs_sanitise():
 
     sanitised = sanitise_extent(am_4326_ccw, epsg4326)
     assert sanitised.type == "MultiPolygon"
-    assert sanitised.json["coordinates"] == [
-        ((
-            (180.0, 25.0),
-            (178.0, 25.0),
-            (178.0, 23.0),
-            (180.0, 23.0),
-            (180.0, 25.0),
-        ),),
-        ((
-            (-180.0, 23.0),
-            (-178.0, 23.0),
-            (-178.0, 25.0),
-            (-180.0, 25.0),
-            (-180.0, 23.0),
-        ),),
-    ]
+    # We used to check for the exact new geometry here, but antimeridian 0.4
+    # changed the algorithm to use great circle instead of 2d for the splitting.
+    assert len(list(sanitised.geoms)) == 2
 
     assert sanitise_extent(pm_4326_ccw, epsg3857) == pm_4326_ccw.to_crs(epsg3857)
     assert sanitise_extent(pm_3857, epsg3857).geom.almost_equals(pm_3857.geom)

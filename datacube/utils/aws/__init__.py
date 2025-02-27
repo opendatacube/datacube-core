@@ -172,8 +172,8 @@ def mk_boto_session(profile: Optional[str] = None,
     session = botocore.session.Session(profile=profile)
 
     if creds is not None:
-        session.set_credentials(creds.access_key,
-                                creds.secret_key,
+        session.set_credentials(creds.access_key,  # type: ignore[arg-type]
+                                creds.secret_key,  # type: ignore[arg-type]
                                 creds.token)
 
     _region = session.get_config_variable("region")
@@ -197,7 +197,7 @@ def _s3_cache_key(profile: Optional[str] = None,
              "T" if aws_unsigned else "F",
              profile or "",
              region_name or ""]
-    return ":".join(parts)
+    return ":".join(parts)  # type: ignore[arg-type]
 
 
 def _mk_s3_client(profile: Optional[str] = None,
