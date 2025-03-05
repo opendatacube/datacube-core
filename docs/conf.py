@@ -89,7 +89,7 @@ autodoc_default_options = {"autosummary": True, "inherited-members": True}
 
 extlinks = {
     "issue": ("https://github.com/opendatacube/datacube-core/issues/%s", "issue %s"),
-    "pull": ("https://github.com/opendatacube/datacube-core/pulls/%s", "PR %s"),
+    "pull": ("https://github.com/opendatacube/datacube-core/pull/%s", "PR %s"),
 }
 
 intersphinx_mapping = {
