@@ -30,9 +30,8 @@ This tutorial runs in an online environment that we have prepared for you.
 Launch tutorial environment
 ===========================
 
-Click on the Binder button below to launch the tutorial environment.
-We recommend right-clicking the button and selecting "Open Link in New Tab" 
-or "Open Link in New Window" so that you can keep the tutorial instructions in view.
+Right-click on the Binder button below and select "Open Link in New Window" to launch the tutorial environment.
+This will allow you to keep the tutorial instructions in view alongside the environment.
 
 The tutorial environment may take a few minutes to start.
 
