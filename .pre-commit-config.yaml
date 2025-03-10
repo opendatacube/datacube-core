@@ -18,7 +18,7 @@ repos:
         - id: check-added-large-files
         - id: check-merge-conflict
     -   repo: https://github.com/pylint-dev/pylint
-        rev: v3.3.4  # Use the sha / tag you want to point at
+        rev: v3.3.5  # Use the sha / tag you want to point at
         hooks:
         -   id: pylint
             language_version: '3.12'  # Reqd of 2025-01-15
