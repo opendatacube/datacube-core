@@ -12,8 +12,8 @@ Conda environment setup
 
 Conda environments are recommended for use in isolating your ODC development environment from your system installation and other Python environments.
 
-We recommend you use Mambaforge to set up your conda virtual environment, as all the required packages are obtained from the conda-forge channel.
-Download and install it from `the Miniforge GitHub <https://github.com/conda-forge/miniforge#mambaforge>`_.
+We recommend you use Miniforge to set up your conda virtual environment, as all the required packages are obtained from the conda-forge channel.
+Download and install it from `the Miniforge GitHub <https://github.com/conda-forge/miniforge>`_.
 
 Download the latest version of the Open Data Cube from the `repository <https://github.com/opendatacube/datacube-core>`_::
 

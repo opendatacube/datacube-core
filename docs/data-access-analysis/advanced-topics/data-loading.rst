@@ -363,5 +363,5 @@ Storage Classes
 
 
 .. _rasterio: https://rasterio.readthedocs.io/en/latest/
-.. _xarray: https://xarray.pydata.org/
-.. _dask: https://dask.pydata.org/
+.. _xarray: https://docs.xarray.dev/en/stable/
+.. _dask: https://docs.dask.org/en/stable/

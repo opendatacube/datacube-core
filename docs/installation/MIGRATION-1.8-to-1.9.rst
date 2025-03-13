@@ -149,7 +149,7 @@ Major Changes between 1.8.x and 1.9.x
 8. Multiple locations per dataset is now deprecated, and is not supported by the ``postgis`` index driver.
 
 .. _`odc-geo`: https://github.com/opendatacube/odc-geo
-.. _`odc-loader`: https://github.com/opendatacube/odc-load
+.. _`odc-loader`: https://github.com/opendatacube/odc-loader
 
 The New Postgis Index Driver
 ----------------------------
