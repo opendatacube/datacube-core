@@ -35,7 +35,7 @@ Product Definition.
 
 More detailed information on the structure of a product definition document can be found :ref:`here <product-doc>`
 
-Some example Product definitions are supplied `here <https://github.com/opendatacube/datacube-dataset-config/tree/master/products>`_.
+Some example Product definitions are supplied `here <https://github.com/opendatacube/datacube-dataset-config/tree/main/products>`_.
 Other examples include the `Digital Earth Africa product definitions <https://github.com/digitalearthafrica/config/tree/master/products>`_.
 
 
@@ -68,7 +68,7 @@ for searching, querying and accessing the data.
 The data from Geoscience Australia already comes with relevant files (named ``ga-metadata.yaml``), so
 no further steps are required for indexing them.
 
-For third party datasets, see the examples detailed `here <https://github.com/opendatacube/datacube-dataset-config#documented-examples>`__.
+For third party datasets, see the examples detailed `here <https://github.com/opendatacube/datacube-dataset-config?tab=readme-ov-file#documented-examples>`__.
 For common distribution formats, data can be indexed using one of the tools from `odc-apps-dc-tools <https://github.com/opendatacube/odc-tools/tree/develop/apps/dc_tools>`__.
 In other cases, the metadata may need to be mapped to an ODC-compatible format. You can find examples of data preparation scripts `here <https://github.com/opendatacube/datacube-dataset-config/tree/main/old-prep-scripts>`__.
 

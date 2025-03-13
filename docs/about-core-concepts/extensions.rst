@@ -128,5 +128,5 @@ producing datasets that are packaged completely.
 .. _odc-stats: https://github.com/opendatacube/odc-stats
 .. _datacube-alchemist: https://github.com/opendatacube/datacube-alchemist
 .. _`DEA Maps`: https://maps.dea.ga.gov.au
-.. _`Digital Earth Africa Maps`: http://maps.digitalearth.africa
-.. _`Digital Earth Australia Explorer`: https://explorer.sandbox.dea.ga.gov.au
+.. _`Digital Earth Africa Maps`: https://maps.digitalearth.africa
+.. _`Digital Earth Australia Explorer`: https://explorer.sandbox.dea.ga.gov.au/products

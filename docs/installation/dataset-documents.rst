@@ -123,7 +123,7 @@ eo3 `formal specification`_.
 
 
 A command-line tool to validate eo3 documents called ``eo3-validate`` is available
-in the `eodatasets3 library <https://github.com/GeoscienceAustralia/eo-datasets>`_,
+in the `eodatasets3 library <https://github.com/opendatacube/eo-datasets>`_,
 as well as optional tools to write these files more easily.
 
 A command-line tool also exists for dynamically converting STAC items to EO3 datasets

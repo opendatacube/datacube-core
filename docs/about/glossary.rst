@@ -35,14 +35,14 @@ This page lists definitions for terms used in the Open Data Cube and this manual
    Digital Earth Australia
 
       Geoscience Australia's deployment of ODC, hosted at the :term:`NCI`. See
-      the `DEA user guide <http://geoscienceaustralia.github.io/digitalearthau/>`_ for
+      the `DEA user guide <https://geoscienceaustralia.github.io/digitalearthau/>`_ for
       details on how to access the platform.
 
    GA
    Geoscience Australia
       The primary public sector geoscience organisation in Australia.
       It supports ODC through the development of Digital Earth Australia. For more
-      information see http://www.ga.gov.au/dea/.
+      information see https://www.ga.gov.au/scientific-topics/dea.
 
    grid spec
    Grid Specification
@@ -53,7 +53,7 @@ This page lists definitions for terms used in the Open Data Cube and this manual
 
       Australia's national research computing facility. It provides computing
       facilities for use by Australian researchers, industry and government. For
-      more information see http://nci.org.au/.
+      more information see https://nci.org.au/.
 
    HPC
    High Performance Computing
@@ -91,12 +91,6 @@ This page lists definitions for terms used in the Open Data Cube and this manual
    United States Geological Survey
       The USA government organisation which operates both the Landsat and MODIS satellites,
       which are available as free an open earth observation data.
-
-   VDI
-   Virtual Desktop Infrastructure
-      A virtual desktop environment at NCI that provides a linux desktop
-      environment for scientific computing. For more see
-      http://vdi.nci.org.au/help.
 
    WMS
    Web Map Service
