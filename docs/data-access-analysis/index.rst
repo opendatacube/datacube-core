@@ -24,8 +24,8 @@ To make it easier to get started with Open Data Cube, the following reference po
    :width: 400px
 
 
-.. _`Digital Earth Australia Sandbox`: https://www.dea.ga.gov.au/developers/sandbox
-.. _`Digital Earth Africa Sandbox`: https://sandbox.digitalearth.africa/
+.. _`Digital Earth Australia Sandbox`: https://app.sandbox.dea.ga.gov.au/hub/login?next=%2Fhub%2F
+.. _`Digital Earth Africa Sandbox`: https://sandbox.digitalearth.africa/hub/login?next=%2Fhub%2F
 .. _`Cube In a Box`: https://github.com/opendatacube/cube-in-a-box
 
 

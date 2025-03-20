@@ -19,13 +19,13 @@ Digital Earth Australia Notebooks
 `Digital Earth Australia Notebooks`_ hosts `Jupyter Notebooks`_, Python scripts and workflows for analysing data from the Digital Earth Australia (DEA) instance of the Open Data Cube. This documentation provides a guide to the wide range of geospatial analyses that can be achieved using Open Data Cube and ``xarray``. The repository contains the following key content:
 
 * `Beginners guide`_: Introductory notebooks aimed at introducing `Jupyter Notebooks`_ and how to load, plot and interact with Open Data Cube data
-* `Frequently used code`_: A recipe book of simple code examples demonstrating how to perform common geospatial analysis tasks using Open Data Cube
+* `How-to guides`_: Notebooks demonstrating how to perform common geospatial analysis tasks using Open Data Cube
 * `Real world examples`_: More complex workflows demonstrating how Open Data Cube can be used to address real-world challenges
 
 .. _`Digital Earth Australia Notebooks`: https://github.com/GeoscienceAustralia/dea-notebooks/
-.. _`Beginners guide`: https://knowledge.dea.ga.gov.au/notebooks/Beginners_guide/README.html
-.. _`Frequently used code`: https://knowledge.dea.ga.gov.au/notebooks/Frequently_used_code/README.html
-.. _`Real world examples`: https://knowledge.dea.ga.gov.au/notebooks/Real_world_examples/README.html
+.. _`Beginners guide`: https://knowledge.dea.ga.gov.au/notebooks/Beginners_guide/README/
+.. _`How-to guides`: https://knowledge.dea.ga.gov.au/notebooks/How_to_guides/README/
+.. _`Real world examples`: https://knowledge.dea.ga.gov.au/notebooks/Real_world_examples/README/
 .. _Jupyter Notebooks: https://jupyter.org/
 
 

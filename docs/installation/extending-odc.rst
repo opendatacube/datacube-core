@@ -20,7 +20,7 @@ demand, as well as handling any failures due to missing dependencies or
 other environment issues.
 
 .. _datacube/drivers/driver_cache.py: https://github.com/opendatacube/datacube-core/blob/60187e38669d529c55d05a962bd7c5288d906f1b/datacube/drivers/driver_cache.py
-.. _setuptools dynamic service and plugin discovery mechanism: https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata
+.. _setuptools dynamic service and plugin discovery mechanism: https://packaging.python.org/en/latest/guides/creating-and-discovering-plugins/#using-package-metadata
 
 .. Broken link
    .. _setuptools dynamic service and plugin discovery mechanism: http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins
@@ -256,7 +256,5 @@ References and History
 ======================
 
 - :pull:`346`
--  `Pluggable Back Ends Discussion [7 December
-   2017] <https://github.com/orgs/opendatacube/teams/developers/discussions/2>`__
 -  `Notes from ODC Storage and Index Driver
    Meeting <https://docs.google.com/document/d/1l2xOaKyvQRV4h35NELKvyM3DYOUosXJhcj-lgHC8MN4/edit>`__

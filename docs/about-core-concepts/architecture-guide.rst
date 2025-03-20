@@ -27,7 +27,7 @@ components that make up an implementation, as well as the ecosystem around it.
 
    Datacube-core vs odc-stac
 
-.. _`Cloud Optimised GeoTIFFs`: https://www.cogeo.org/
+.. _`Cloud Optimised GeoTIFFs`: https://cogeo.org/
 .. _`SpatioTemporal Asset Catalog`: https://stacspec.org/
 .. _`Sentinel-2 Indexing notes`: https://github.com/opendatacube/datacube-dataset-config/blob/main/sentinel-2-l2a-cogs.md
 .. _`Datacube Explorer`: https://github.com/opendatacube/datacube-explorer
