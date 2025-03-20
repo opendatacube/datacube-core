@@ -105,6 +105,8 @@ When you have finished, run the cell by pressing :code:`Shift+Enter` on your key
 Catalog and measurements
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+You can use the Radiant Earth [stac-browser website](https://radiantearth.github.io/stac-browser/#/?.language=en) to preview catalog, collection, and item information.
+
 Type the following into the empty cell below the **Catalog and measurements** heading:
 
 .. code-block:: python
@@ -117,6 +119,14 @@ When you have finished, run the cell by pressing :code:`Shift+Enter` on your key
 
 Connect to catalog and find items
 ---------------------------------
+
+Type the following into the empty cell below the **Connect to catalog and find items** heading:
+
+.. code-block:: python
+
+   stac_client = Client.open(catalog)
+
+When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 
 Search for items
 ^^^^^^^^^^^^^^^^
