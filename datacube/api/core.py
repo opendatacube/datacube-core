@@ -292,7 +292,7 @@ class Datacube:
         Load data as an ``xarray.Dataset`` object.
         Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
-        See the `xarray documentation <http://xarray.pydata.org/en/stable/data-structures.html>`_ for usage of the
+        See the `xarray documentation <https://xarray.pydata.org/en/stable/data-structures.html>`_ for usage of the
         :class:`xarray.Dataset` and :class:`xarray.DataArray` objects.
 
         **Product and Measurements**
@@ -459,7 +459,7 @@ class Datacube:
             If the data should be lazily loaded using :class:`dask.array.Array`,
             specify the chunking size in each output dimension.
 
-            See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
+            See the documentation on using `xarray with dask <https://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
         :param xarray.Dataset like:
@@ -1044,7 +1044,7 @@ class Datacube:
             Unspecified dimensions will be auto-guessed, currently this means use chunk size of 1 for non-spatial
             dimensions and use whole dimension (no chunking unless specified) for spatial dimensions.
 
-            See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
+            See the documentation on using `xarray with dask <https://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
         :param progress_cbk: Int, Int -> None

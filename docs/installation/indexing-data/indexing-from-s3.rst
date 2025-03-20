@@ -10,7 +10,7 @@ Configuring AWS CLI Credentials
 
 Install the AWS CLI package and configure it with your Amazon AWS credentials.
 For a more detailed tutorial on AWS CLI configurations, visit the
-`official AWS docs <https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html>`_.
+`official AWS docs <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html>`_.
 The only two fields required to be configured are the ``Access Key``, and
 ``Secret Access Key``. These keys can be found on your AWS login
 security page. Try not to lose your ``Secret Access Key`` as you will

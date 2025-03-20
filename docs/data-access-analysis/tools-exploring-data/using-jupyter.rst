@@ -48,4 +48,4 @@ DEA and DE Africa Tools code
 Both `Digital Earth Australia Notebooks`_ and `Digital Earth Africa Notebooks`_ provide pip-installable Python modules containing useful tools for analysing Open Data Cube data, including functions for loading and plotting satellite imagery, calculating band indices, analysing spatial datasets, and machine learning. These tools can be accessed here:
 
 * ``DEA Tools``: https://github.com/GeoscienceAustralia/dea-notebooks/tree/stable/Tools
-* ``DE Africa Tools``: https://github.com/digitalearthafrica/deafrica-sandbox-notebooks/tree/master/Tools
+* ``DE Africa Tools``: https://github.com/digitalearthafrica/deafrica-sandbox-notebooks/tree/main/Tools
