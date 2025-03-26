@@ -19,9 +19,8 @@ cloudpickle>=0.4
 compliance-checker>=5.1.0
 # For pyproj no-binary build
 cython>3
-# dask 2024.11.x is broken.
-dask>=2023.2.0,<2024.11.0
-distributed>=2024.2.0,<2024.11.0
+dask[array]
+distributed
 deprecat
 fiona
 geoalchemy2
