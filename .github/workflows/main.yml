@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_IMAGE: ghrc.io/opendatacube/datacube-core:tests
+  DOCKER_IMAGE: ghcr.io/opendatacube/datacube-core:tests
 
 jobs:
   main:
