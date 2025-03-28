@@ -826,7 +826,9 @@ class Reproject(VirtualProduct):
         result = xarray.Dataset()
         result.coords['time'] = grouped.box.coords['time']
 
-        coords: Mapping[Hashable, xarray.DataArray] = OrderedDict(**xr_coords(geobox, spatial_ref))
+        coords: Mapping[Hashable, xarray.DataArray] = OrderedDict(
+            [(str(k), v) for k, v in xr_coords(geobox, spatial_ref).items()]
+        )
         result.coords.update(coords)
 
         for measurement in measurements:
