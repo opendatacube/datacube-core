@@ -8,8 +8,7 @@ from warnings import warn
 
 warn(
     'datacube.utils.geometry is now deprecated. Please use the odc-geo library instead.',
-    DeprecationWarning,
-    stacklevel=2)
+    DeprecationWarning)
 
 from ._base import (  # noqa
     Coordinate,
