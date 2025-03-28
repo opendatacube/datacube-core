@@ -262,8 +262,11 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
             _LOG.warning("Refusing to %s old location, there are several", action_name)
             return None
 
-        new_uri, = new_ds.uris
-        old_uri, = existing_ds.uris
+        if new_ds.has_multiple_uris():
+            raise ValueError("More than one uri in new dataset")
+
+        new_uri = new_ds.uri
+        old_uri = existing_ds.uri
 
         if new_uri == old_uri:
             return None
