@@ -255,10 +255,10 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
         sys.exit(1)
 
     def loc_action(action, new_ds, existing_ds, action_name):
-        if len(existing_ds.uris) == 0:
+        if existing_ds.uri is None:
             return None
 
-        if len(existing_ds.uris) > 1:
+        if existing_ds.has_multiple_uris():
             _LOG.warning("Refusing to %s old location, there are several", action_name)
             return None
 
@@ -297,7 +297,7 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
         _LOG.info('Matched %s', dataset)
 
         if location_policy != 'keep':
-            if len(existing_ds.uris) > 1:
+            if existing_ds.has_multiple_uris():
                 # TODO:
                 pass
 
