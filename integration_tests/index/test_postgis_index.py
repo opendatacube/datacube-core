@@ -84,7 +84,7 @@ def test_spatial_index_crs_validity(index: Index,
     assert index.update_spatial_index(crses=[epsg3577]) == 2
 
 
-def test_spatial_index_crs_sanitise():
+def spatial_index_crs_sanitise_helper():
     epsg4326 = CRS("EPSG:4326")
     epsg3857 = CRS("EPSG:3857")
     epsg3832 = CRS("EPSG:3832")
@@ -170,6 +170,14 @@ def test_spatial_index_crs_sanitise():
 
     assert sanitise_extent(am_3832, epsg3832) == am_3832
     assert sanitise_extent(am_3832, epsg4326).type == "MultiPolygon"
+
+
+def test_spatial_index_crs_sanitise():
+    import warnings
+    from antimeridian import FixWindingWarning
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', FixWindingWarning)
+        spatial_index_crs_sanitise_helper()
 
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
