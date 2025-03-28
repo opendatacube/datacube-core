@@ -814,7 +814,10 @@ class Datacube:
             tuple(c.size for k, c in coords.items() if k in dims_default) + geobox.shape
         )
         coords_default: OrderedDict[str, xarray.DataArray] = OrderedDict(
-            **coords, **xr_coords(geobox, spatial_ref)
+            **coords
+        )
+        coords_default.update(
+            [(str(k), v) for k, v in xr_coords(geobox, spatial_ref).items()]
         )
 
         arrays = []
