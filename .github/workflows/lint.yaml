@@ -27,7 +27,7 @@ jobs:
         python-version: ["3.12"]
         lintcommand:
           - "pylint -j 2 --report no datacube"
-          - "mypy datacube"
+          - "mypy datacube --warn-unused-ignores"
           - "pycodestyle tests integration_tests examples --max-line-length 120"
     name: Linting
     steps:
