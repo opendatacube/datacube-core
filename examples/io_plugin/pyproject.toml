@@ -1,0 +1,20 @@
+[project]
+name = "dcio_example"
+version = "1.1"
+description = "Test IO plugins for datacube"
+authors = [
+    {name = "Open Data Cube"},
+]
+requires-python = ">=3.10"
+
+[project.entry-points."datacube.plugins.io.read"]
+pickle = "dcio_example.pickles:rdr_driver_init"
+xarray_3d = "dcio_example.xarray_3d:reader_driver_init"
+zeros = "dcio_example.zeros:init_driver"
+
+[project.entry-points."datacube.plugins.io.write"]
+pickle = "dcio_example.pickles:writer_driver_init"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
