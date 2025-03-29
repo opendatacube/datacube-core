@@ -16,9 +16,9 @@ import cachetools
 import numpy
 import xarray as xr
 from affine import Affine
-import rasterio                    # type: ignore[import]
-from shapely import geometry, ops, from_wkt  # type: ignore[import]
-from shapely.geometry import base  # type: ignore[import]
+import rasterio
+from shapely import geometry, ops, from_wkt
+from shapely.geometry import base
 from pyproj import CRS as _CRS
 from pyproj.enums import WktVersion
 from pyproj.transformer import Transformer
@@ -133,7 +133,7 @@ def _make_crs_key(crs_spec: Union[str, int, _CRS]) -> str:
     return crs_spec.to_wkt()
 
 
-@cachetools.cached({}, key=_make_crs_key)  # type: ignore[misc]
+@cachetools.cached({}, key=_make_crs_key)
 def _make_crs(crs: Union[str, int, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
     epsg: int | None = None
     crs = _CRS.from_user_input(crs)

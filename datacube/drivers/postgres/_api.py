@@ -365,7 +365,7 @@ class PostgresDbAPI(object):
 
     def all_dataset_ids(self, archived: bool | None = False):
         query = select(
-            DATASET.c.id  # type: ignore[arg-type]
+            DATASET.c.id
         ).select_from(
             DATASET
         )

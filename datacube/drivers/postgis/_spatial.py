@@ -182,7 +182,7 @@ def drop_spindex(engine: Engine, sp_idx: Type[SpatialIndex]):
             break
         record_del_result = False
         if spidx_record:
-            del_res = session.execute(  # type: ignore[assignment]
+            del_res = session.execute(
                 delete(SpatialIndexRecord).where(SpatialIndexRecord.srid == spidx_record.srid)
             )
             record_del_result = (del_res.rowcount == 1)

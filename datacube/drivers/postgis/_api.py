@@ -830,7 +830,7 @@ class PostgisDbAPI:
         tovlap_fields = [getattr(time_overlap.c, f.name) for f in fields]  # type: ignore[union-attr]
         query = select(
             func.array_agg(func.distinct(time_overlap.c.id)).label("ids"),
-            *tovlap_fields,  # type: ignore[arg-type]
+            *tovlap_fields,
             text("time_intersect as time")
         ).select_from(
             time_overlap  # type: ignore[arg-type]

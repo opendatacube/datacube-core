@@ -3,8 +3,8 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from typing import Union, Optional
-import rasterio.warp  # type: ignore[import]
-import rasterio.crs   # type: ignore[import]
+import rasterio.warp
+import rasterio.crs
 import numpy as np
 from affine import Affine
 from . import GeoBox

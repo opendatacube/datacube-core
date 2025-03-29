@@ -10,7 +10,7 @@ from ..model import Dataset
 from ..storage import reproject_and_fuse, BandInfo
 from ..storage._rio import RasterioDataSource, RasterDatasetDataSource
 from ..storage._read import rdr_geobox
-from ..index.eo3 import is_doc_eo3, EO3Grid  # type: ignore[attr-defined]
+from ..index.eo3 import is_doc_eo3, EO3Grid
 from types import SimpleNamespace
 from odc.geo.warp import resampling_s2rio
 from odc.geo.geobox import GeoBox, zoom_to

@@ -11,9 +11,9 @@ from typing import (
 import numpy as np
 from affine import Affine
 from concurrent.futures import ThreadPoolExecutor
-import rasterio                         # type: ignore[import]
-from rasterio.io import DatasetReader   # type: ignore[import]
-import rasterio.crs                     # type: ignore[import]
+import rasterio
+from rasterio.io import DatasetReader
+import rasterio.crs
 
 from datacube.storage import BandInfo
 from odc.geo import CRS

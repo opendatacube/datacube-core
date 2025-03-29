@@ -193,9 +193,9 @@ def apply_affine(A: Affine, x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, n
 
     shape = x.shape
 
-    A = np.asarray(A).reshape(3, 3)  # type: ignore[assignment]
-    t = A[:2, -1].reshape((2, 1))    # type: ignore[index]
-    A = A[:2, :2]                    # type: ignore[index]
+    A = np.asarray(A).reshape(3, 3)
+    t = A[:2, -1].reshape((2, 1))
+    A = A[:2, :2]
 
     x, y = A @ np.vstack([x.ravel(), y.ravel()]) + t
     x, y = (a.reshape(shape) for a in (x, y))
@@ -433,7 +433,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> Tuple[slice, s
 
     if needs_flip:
         # remap src from flipped space to normal
-        src = slice(Ns - src.stop, Ns - src.start)  # type: ignore
+        src = slice(Ns - src.stop, Ns - src.start)
 
     return (src, dst)
 

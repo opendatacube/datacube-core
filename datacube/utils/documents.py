@@ -21,11 +21,11 @@ from copy import deepcopy
 from uuid import UUID
 
 import numpy
-import toolz  # type: ignore[import]
+import toolz
 import yaml
 
 try:
-    from yaml import CSafeLoader as SafeLoader  # type: ignore
+    from yaml import CSafeLoader as SafeLoader
 except ImportError:
     from yaml import SafeLoader  # type: ignore
 
@@ -177,7 +177,7 @@ def netcdf_extract_string(chars):
     """
     Convert netcdf S|U chars to Unicode string.
     """
-    import netCDF4  # type: ignore[import]
+    import netCDF4
 
     if isinstance(chars, str):
         return chars

@@ -975,7 +975,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     else:
                         field_values[field.name] = result[i_]
 
-                yield DatasetLight(**field_values)  # type: ignore
+                yield DatasetLight(**field_values)
 
     def make_select_fields(self, product, field_names, custom_offsets):
         """

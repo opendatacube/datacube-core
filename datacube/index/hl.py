@@ -18,7 +18,7 @@ from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_d
 from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, flatten_datasets
 from datacube.utils.changes import get_doc_changes
 from datacube.model import LineageDirection
-from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo  # type: ignore[attr-defined]
+from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo
 
 _LOG = logging.getLogger(__name__)
 

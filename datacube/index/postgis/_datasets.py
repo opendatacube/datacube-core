@@ -223,7 +223,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 }
             )
             extent = extract_geometry_from_eo3_projection(
-                metadata_doc["grid_spatial"]["projection"]  # type: ignore[misc,call-overload,index]
+                metadata_doc["grid_spatial"]["projection"]  # type: ignore[call-overload,index]
             )
             if extent:
                 for crs in crses:
@@ -940,7 +940,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     else:
                         field_values[field.name] = result[i_]
 
-                yield DatasetLight(**field_values)  # type: ignore
+                yield DatasetLight(**field_values)
 
     def make_select_fields(self, product, field_names, custom_offsets):
         """

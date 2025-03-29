@@ -805,7 +805,7 @@ class AbstractDatasetResource(ABC):
         :param query: search query parameters
         :return: Fully instantiated list of matching dataset models
         """
-        return list(self.search(**query))  # type: ignore[arg-type]   # mypy isn't being very smart here :(
+        return list(self.search(**query))
 
     @abstractmethod
     def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
