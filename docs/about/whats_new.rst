@@ -5,6 +5,12 @@
 What's New
 **********
 
+Next Version
+============
+
+- Add a common table expression to fix a SQLAlchemy 2.0 sub-query warning :pull:`1747`
+
+
 v1.9.2 (26th February 2025)
 ===========================
 
