@@ -3,9 +3,9 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import warnings
-import toolz                                  # type: ignore[import]
-import rasterio                               # type: ignore[import]
-from rasterio.shutil import copy as rio_copy  # type: ignore[import]
+import toolz
+import rasterio
+from rasterio.shutil import copy as rio_copy
 import numpy as np
 import xarray as xr
 import dask

@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from threading import RLock
 import numpy as np
 from affine import Affine
-import rasterio  # type: ignore[import]
+import rasterio
 from urllib.parse import urlparse
 from typing import Optional, Iterator
 

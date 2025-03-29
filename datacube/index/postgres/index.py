@@ -11,7 +11,7 @@ from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
 from datacube.cfg.api import ODCEnvironment
 from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
 from datacube.index.postgres._transaction import PostgresTransaction
-from datacube.index.postgres._datasets import DatasetResource  # type: ignore
+from datacube.index.postgres._datasets import DatasetResource
 from datacube.index.postgres._lineage import LineageResource
 from datacube.index.postgres._metadata_types import MetadataTypeResource
 from datacube.index.postgres._products import ProductResource

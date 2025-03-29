@@ -7,7 +7,7 @@ from typing import Type
 
 from deprecat import deprecat
 from datacube.cfg import ODCEnvironment
-from datacube.index.null._datasets import DatasetResource  # type: ignore
+from datacube.index.null._datasets import DatasetResource
 from datacube.index.null._metadata_types import MetadataTypeResource
 from datacube.index.null._products import ProductResource
 from datacube.index.null._users import UserResource

@@ -152,7 +152,7 @@ class DatasetResource(AbstractDatasetResource):
         def values(ds: Dataset) -> GroupedVals:
             vals = []
             for field in fields:
-                vals.append(field.extract(ds.metadata_doc))  # type: ignore[attr-defined]
+                vals.append(field.extract(ds.metadata_doc))
             return GroupedVals(*vals)
 
         dups: dict[tuple, set[UUID]] = {}
@@ -635,7 +635,7 @@ class DatasetResource(AbstractDatasetResource):
 
         #    Typing note: mypy can't handle dynamically created namedtuples
         result_type = namedtuple('search_result', field_name_d.keys())  # type: ignore[misc]
-        for ds in self.search(limit=limit, archived=archived, **query):  # type: ignore[arg-type]
+        for ds in self.search(limit=limit, archived=archived, **query):
             ds_fields = get_dataset_fields(ds.metadata_type.definition)
             ds_fields.update(custom_fields)
             result_vals = {
@@ -645,7 +645,7 @@ class DatasetResource(AbstractDatasetResource):
             yield result_type(**result_vals)
 
     def count(self, archived: bool | None = False, **query: QueryField) -> int:
-        return len(list(self.search(archived=archived, **query)))  # type: ignore[arg-type]
+        return len(list(self.search(archived=archived, **query)))
 
     def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[tuple[Product, int]]:
         for datasets, prod in self.search_by_product(archived=archived, **query):
@@ -785,10 +785,10 @@ class DatasetResource(AbstractDatasetResource):
         def make_summary(ds: Dataset) -> Mapping[str, Any]:
             fields = ds.metadata_type.dataset_fields
             return {
-                field_name: field.extract(ds.metadata_doc)   # type: ignore[attr-defined]
+                field_name: field.extract(ds.metadata_doc)
                 for field_name, field in fields.items()
             }
-        for ds in self.search(**query):  # type: ignore[arg-type]
+        for ds in self.search(**query):
             yield make_summary(ds)
 
     def spatial_extent(self, ids, crs=None):
@@ -802,7 +802,7 @@ class DatasetResource(AbstractDatasetResource):
         for dsid in ids:
             ds = self.get_unsafe(dsid)
             time_fld = ds.product.metadata_type.dataset_fields["time"]
-            dsmin, dsmax = time_fld.extract(ds.metadata_doc)  # type: ignore[attr-defined]
+            dsmin, dsmax = time_fld.extract(ds.metadata_doc)
             if dsmax is None and dsmin is None:
                 continue
             elif dsmin is None:
@@ -844,11 +844,11 @@ class DatasetResource(AbstractDatasetResource):
                 class DatasetLight(result_type):  # type: ignore[no-redef]
                     __slots__ = ()
             fld_vals = {
-                fname: field.extract(ds.metadata_doc)  # type: ignore[attr-defined]
+                fname: field.extract(ds.metadata_doc)
                 for fname, field in fields.items()
             }
             return DatasetLight(**fld_vals)
-        for ds in self.search(limit=limit, archived=archived, **query):  # type: ignore[arg-type]
+        for ds in self.search(limit=limit, archived=archived, **query):
             yield make_ds_light(ds)
 
     def clone(self, orig: Dataset, for_save=False, lookup_locations=True) -> Dataset:

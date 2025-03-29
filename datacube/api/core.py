@@ -644,7 +644,7 @@ class Datacube:
                 like=like,
                 **search_terms,
             )
-        )  # type: ignore[arg-type]
+        )
 
     def find_datasets_lazy(
         self,
@@ -735,7 +735,7 @@ class Datacube:
         coords = numpy.asarray([coord for coord, _ in groups])
         data = numpy.empty(len(coords), dtype=object)
         for i, (_, dss) in enumerate(groups):
-            data[i] = dss  # type: ignore[assignment, call-overload]
+            data[i] = dss
 
         sources = xarray.DataArray(data, dims=[group_by.dimension], coords=[coords])
         if coords.dtype.kind == "M":

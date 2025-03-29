@@ -23,7 +23,7 @@ from odc.geo import CRS
 from odc.geo.geom import point
 
 try:
-    from yaml import CSafeDumper as SafeDumper  # type: ignore
+    from yaml import CSafeDumper as SafeDumper
 except ImportError:
     from yaml import SafeDumper  # type: ignore
 
