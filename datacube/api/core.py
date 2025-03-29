@@ -2,11 +2,12 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 import logging
 import uuid
 import collections.abc
 from itertools import groupby
-from typing import Any, Iterable, cast, Callable, Hashable, Mapping, Sequence
+from typing import Any, Iterable, cast, Callable, Hashable, Mapping, Sequence, TYPE_CHECKING
 import datetime
 
 import deprecat
@@ -28,9 +29,11 @@ from datacube.model import (
     ExtraDimensionSlices,
     Dataset,
     Measurement,
-    GridSpec,
 )
 from datacube.model.utils import xr_apply
+
+if TYPE_CHECKING:
+    from datacube.model import GridSpec
 
 from .query import Query, query_group_by, GroupBy
 from ..index import index_connect, Index, extract_geom_from_query
