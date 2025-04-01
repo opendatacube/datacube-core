@@ -254,8 +254,10 @@ class PostgresURLOptionHandler(ODCOptionHandler):
             return None
         components = urlparse(value)
         # Check URL scheme is postgresql:
-        if components.scheme != "postgresql" and not value.startswith(
-            "postgresql+psycopg2"
+        if (
+            components.scheme != "postgresql"
+            and not value.startswith("postgresql+psycopg2://")
+            and not value.startswith("postgresql+psycopg://")
         ):
             raise ConfigException("Database URL is not a postgresql connection URL")
         # Don't bother splitting up the url, we'd just have to put it back together again later
@@ -360,7 +362,7 @@ def psql_url_from_config(env: "ODCEnvironment"):
         return env.db_url
     if not env.db_database:
         raise ConfigException(f"No database name supplied for environment {env._name}")
-    url = "postgresql+psycopg2://"
+    url = f"postgresql+psycopg{'' if env.psycopg_version == 3 else '2'}://"
     if env.db_username:
         if env.db_password:
             escaped_password = quote_plus(env.db_password)

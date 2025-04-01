@@ -8,7 +8,7 @@ import pytest
 from datacube.index import Index
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_cli_spatial_indexes(index: Index, clirunner) -> None:
     runner = clirunner(["spindex", "list"], verbose_flag=False)
     assert "EPSG:4326" in runner.output
@@ -52,7 +52,7 @@ def test_cli_spatial_indexes(index: Index, clirunner) -> None:
     assert runner.exit_code == 0
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_cli_spatial_index_create_and_update(index: Index, clirunner) -> None:
     runner = clirunner(["spindex", "list"], verbose_flag=False)
     assert "EPSG:4326" in runner.output
@@ -75,7 +75,7 @@ def test_cli_spatial_index_create_and_update(index: Index, clirunner) -> None:
     assert runner.exit_code == 0
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_cli_spatial_indexes_on_non_supporting_index(index: Index, clirunner) -> None:
     runner = clirunner(["spindex", "list"], verbose_flag=False, expect_success=False)
     assert "does not support spatial indexes" in runner.output
@@ -100,7 +100,7 @@ def test_cli_spatial_indexes_on_non_supporting_index(index: Index, clirunner) ->
     assert runner.exit_code == 1
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_cli_spatial_indexes_no_srids(index: Index, clirunner) -> None:
     runner = clirunner(["spindex", "create"], verbose_flag=False, expect_success=False)
     assert "Must supply at least one CRS" in runner.output
@@ -115,7 +115,7 @@ def test_cli_spatial_indexes_no_srids(index: Index, clirunner) -> None:
     assert runner.exit_code == 1
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_cli_spatial_indexes_bad_srid(index: Index, clirunner) -> None:
     runner = clirunner(
         ["spindex", "create", "1"], verbose_flag=False, expect_success=False

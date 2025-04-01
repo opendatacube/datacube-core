@@ -15,9 +15,13 @@ services:
       - POSTGRES_DB=pgintegration,pgisintegration
       - ODC_DATACUBE_INDEX_DRIVER=postgres
       - ODC_POSTGIS_INDEX_DRIVER=postgis
+      - ODC_DATACUBE3_INDEX_DRIVER=postgres
+      - ODC_POSTGIS3_INDEX_DRIVER=postgis
       - ODC_NOSUCHDRIVERENV_INDEX_DRIVER=no_such_driver
       - ODC_DATACUBE_DB_URL=${ODC_DATACUBE_DB_URL:-postgresql://opendatacube:opendatacubepassword@postgres:35432/pgintegration}
       - ODC_POSTGIS_DB_URL=${ODC_POSTGIS_DB_URL:-postgresql://opendatacube:opendatacubepassword@postgres:35432/pgisintegration}
+      - ODC_DATACUBE3_DB_URL=${ODC_DATACUBE3_DB_URL:-postgresql+psycopg://opendatacube:opendatacubepassword@postgres:35432/pgintegration}
+      - ODC_POSTGIS3_DB_URL=${ODC_POSTGIS3_DB_URL:-postgresql+psycopg://opendatacube:opendatacubepassword@postgres:35432/pgisintegration}
       - ODC_NOSUCHDRIVERENV_DB_URL=${ODC_NOSUCHDRIVERENV_DB_URL:-postgresql://opendatacube:opendatacubepassword@postgres:35432/nosuchdriverenv}
     tty: true
     stdin_open: true

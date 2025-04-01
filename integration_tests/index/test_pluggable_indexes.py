@@ -7,7 +7,7 @@ import pytest
 from datacube.index.postgres.index import Index
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_with_standard_index(uninitialised_postgres_db, cfg_env) -> None:
     index = Index(uninitialised_postgres_db, cfg_env)
     index.init_db()

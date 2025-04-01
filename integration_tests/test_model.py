@@ -7,7 +7,7 @@ import pytest
 from datacube.model import Dataset, Product
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_crs_parse(indexed_ls5_scene_products: list[Product]) -> None:
     product = indexed_ls5_scene_products[2]
 

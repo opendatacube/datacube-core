@@ -108,6 +108,11 @@ def single_env_config():
 
 
 @pytest.fixture
+def single_env_config_psycopg3():
+    return mk_single_env_config("+psycopg")
+
+
+@pytest.fixture
 def single_env_config_no_connector():
     return mk_single_env_config("")
 
@@ -147,24 +152,26 @@ new2:
 
 
 @pytest.fixture
-def simple_dict():
-    return {
+def simple_dict() -> dict[str, dict[str, str | int]]:
+    legacy: dict[str, str | int] = {
+        "index_driver": "default",
+        "db_username": "foo",
+        "db_password": "bar",
+        "db_hostname": "server.subdomain.domain",
+        "db_port": 5433,
+        "db_database": "mytestdb",
+        "db_connection_timeout": 20,
+    }
+    postgis: dict[str, str | int] = {
+        "index_driver": "postgis",
+        "db_url": "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb",
+        "db_iam_authentication": "yes",
+    }
+    d: dict[str, dict[str, str | int]] = {
         "default": {"alias": "legacy"},
         "postgres": {"alias": "legacy"},
-        "legacy": {
-            "index_driver": "default",
-            "db_username": "foo",
-            "db_password": "bar",
-            "db_hostname": "server.subdomain.domain",
-            "db_port": 5433,
-            "db_database": "mytestdb",
-            "db_connection_timeout": 20,
-        },
-        "new": {
-            "index_driver": "postgis",
-            "db_url": "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb",
-            "db_iam_authentication": "yes",
-        },
+        "legacy": legacy,
+        "new": postgis,
         "postgis": {"alias": "new"},
         "memory": {"index_driver": "memory", "db_url": "@nota?valid:url//foo&bar%%%"},
         "new2": {
@@ -175,7 +182,19 @@ def simple_dict():
             "db_iam_authentication": "yes",
             "db_iam_timeout": 300,
         },
+        # No upper case and no kind of separator like _/+ permitted in names, so
+        # number drivers using psycopg3 in sequence.
+        "datacube3": legacy.copy(),
+        "postgis3": postgis.copy(),
     }
+    # Use identical configs for postgres/postgis drivers with psycopg3, just patch
+    # them up with the psycopg3 specific parts.
+    for k in ["datacube3", "postgis3"]:
+        d[k]["psycopg_version"] = 3
+        db_url = d[k].get("db_url")
+        if isinstance(db_url, str):
+            d[k]["db_url"] = db_url.replace("psycopg2://", "psycopg://")
+    return d
 
 
 def test_invalid_env() -> None:
@@ -226,12 +245,15 @@ def test_invalid_option() -> None:
         ODCOptionHandler("NO_CAPS", mockenv)
 
 
-def test_single_env(single_env_config, single_env_config_no_connector) -> None:
+def test_single_env(
+    single_env_config, single_env_config_psycopg3, single_env_config_no_connector
+) -> None:
     from datacube.cfg import ODCConfig
 
     db_urls = []
     for cfg in [
         ODCConfig(text=single_env_config),
+        ODCConfig(text=single_env_config_psycopg3),
         ODCConfig(text=single_env_config_no_connector),
     ]:
         assert cfg["new"].index_driver == "postgis"
@@ -244,6 +266,7 @@ def test_single_env(single_env_config, single_env_config_no_connector) -> None:
         assert cfg["new"]["db_connection_timeout"] == 60
     assert db_urls == [
         "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb",
+        "postgresql+psycopg://foo:bar@server.subdomain.domain/mytestdb",
         "postgresql://foo:bar@server.subdomain.domain/mytestdb",
     ]
 
@@ -535,6 +558,14 @@ def test_pgurl_from_config(simple_dict) -> None:
     assert (
         psql_url_from_config(cfg["new"])
         == "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb"
+    )
+    assert (
+        psql_url_from_config(cfg["datacube3"])
+        == "postgresql+psycopg://foo:bar@server.subdomain.domain:5433/mytestdb"
+    )
+    assert (
+        psql_url_from_config(cfg["postgis3"])
+        == "postgresql+psycopg://foo:bar@server.subdomain.domain/mytestdb"
     )
     with pytest.raises(AttributeError):
         psql_url_from_config(cfg["memory"])

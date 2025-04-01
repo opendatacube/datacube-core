@@ -28,6 +28,7 @@ dependencies:
   - netcdf4
   - numpy
   - pandas
+  - psycopg
   - psycopg2
   - python-dateutil
   - pyyaml

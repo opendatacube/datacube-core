@@ -218,7 +218,7 @@ def test_dataset_add_not_eo3(index: Index, ls8_eo3_product, eo3_wo_dataset_doc) 
     assert isinstance(_err, BadMatch)
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_eo3_no_schema(
     dataset_add_configs, index_empty, clirunner, caplog
 ) -> None:
@@ -250,7 +250,7 @@ def test_dataset_eo3_no_schema(
 
 
 # Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     p = dataset_add_configs
     index = index_empty
@@ -339,7 +339,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
 
 
 # Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_add_ambiguous_products(
     dataset_add_configs, index_empty, clirunner
 ) -> None:
@@ -400,7 +400,7 @@ metadata:
 
 
 # Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner) -> None:
     p = dataset_add_configs
     index = index_empty
@@ -451,7 +451,7 @@ def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner) -> N
 
 
 # Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_add_inconsistent_measurements(
     dataset_add_configs, index_empty, clirunner
 ) -> None:
@@ -550,7 +550,7 @@ def dataset_archive_prep(dataset_add_configs, index_empty, clirunner):
 
 
 # Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) -> None:
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
@@ -626,7 +626,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) ->
 
 
 # Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_archive_restore_invalid(
     dataset_add_configs, index_empty, clirunner
 ) -> None:
@@ -663,7 +663,7 @@ def test_dataset_archive_restore_invalid(
 
 
 # Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner) -> None:
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
@@ -713,7 +713,7 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner) ->
 
 
 # Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_add_http(
     dataset_add_configs,
     index: Index,

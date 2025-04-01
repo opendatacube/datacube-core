@@ -10,7 +10,7 @@ from datacube.model import Dataset
 from datacube.testutils import suppress_deprecations
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_legacy_location_behaviour(index: Index, ls8_eo3_dataset) -> None:
     with suppress_deprecations():
         locations = index.datasets.get_locations(
@@ -76,7 +76,7 @@ def test_legacy_location_behaviour(index: Index, ls8_eo3_dataset) -> None:
         assert index.datasets.get_location(ls8_eo3_dataset.id) is None
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_postgis_no_multiple_locations(index: Index, ls8_eo3_dataset) -> None:
     with suppress_deprecations():
         locations = index.datasets.get_locations(

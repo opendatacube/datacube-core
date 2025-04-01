@@ -648,7 +648,7 @@ def test_search_returning_rows_eo3(
     }
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_search_returning_uri(
     index: Index, eo3_ls8_dataset_doc, ls8_eo3_dataset
 ) -> None:
@@ -668,7 +668,7 @@ def test_search_returning_uri(
     assert len(results) == 1
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_search_returning_uris_legacy(
     index: Index,
     eo3_ls8_dataset_doc,
@@ -1135,7 +1135,8 @@ def test_find_duplicates_with_time(
 
     search_result = namedtuple("search_result", ["region_code", "time"])
 
-    # Postgis driver returns datetimes, postgres returns strings.
+    # Postgis driver returns tuple of datetime, postgres with psycopg3 returns
+    # tuple of strings, postgres with psycopg2 returns a string.
     time = (
         (
             datetime.datetime(
@@ -1146,6 +1147,8 @@ def test_find_duplicates_with_time(
             ),
         )
         if index._db.driver_name == "postgis"  # type: ignore[attr-defined]
+        else ("2023-04-30 23:50:33.884549", "2023-04-30 23:50:34.884549")
+        if str(index._db._engine.url).startswith("postgresql+psycopg:")  # type: ignore[attr-defined]
         else '("2023-04-30 23:50:33.884549","2023-04-30 23:50:34.884549")'
     )
     res = sorted(

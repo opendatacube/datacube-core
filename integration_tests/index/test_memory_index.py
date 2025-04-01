@@ -966,7 +966,7 @@ def test_default_clone_bulk_ops(
     assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset4.id)
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_default_clone_bulk_ops_multiloc(
     mem_index_fresh: Datacube,
     index,

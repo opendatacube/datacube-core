@@ -61,7 +61,7 @@ _DATASET_METADATA = {
 }
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_metadata_indexes_views_exist(
     index: Index, default_metadata_type: MetadataType
 ) -> None:
@@ -72,7 +72,7 @@ def test_metadata_indexes_views_exist(
     assert _object_exists(index, "dv_eo_dataset")
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_indexes_views_exist(index: Index, ls5_telem_type: DatasetType) -> None:
     assert ls5_telem_type.name == "ls5_telem_test"
 
@@ -92,7 +92,7 @@ def test_dataset_indexes_views_exist(index: Index, ls5_telem_type: DatasetType) 
     )
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_composite_indexes_exist(index: Index, ls5_telem_type) -> None:
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:
     # (following the naming conventions)
@@ -104,7 +104,7 @@ def test_dataset_composite_indexes_exist(index: Index, ls5_telem_type) -> None:
     assert not _object_exists(index, "dix_ls5_telem_test_time")
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_field_expression_unchanged(
     default_metadata_type: MetadataType, telemetry_metadata_type: MetadataType
 ) -> None:
@@ -186,7 +186,7 @@ def test_idempotent_add_dataset_type(
         # TODO: Support for adding/changing search fields?
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_update_dataset(
     index: Index, ls5_telem_doc, example_ls5_nbar_metadata_doc
 ) -> None:
@@ -276,7 +276,7 @@ def test_update_dataset(
     doc["product_type"] = "foobar"
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_update_product_type(
     index: Index, ls5_telem_type: Product, ls5_telem_doc, ga_metadata_type_doc
 ) -> None:
@@ -412,7 +412,7 @@ def test_product_update_cli(
     assert documents_equal(fresh, modified_doc)
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_product_delete(index: Index, ls8_eo3_product: Product) -> None:
     # test that postgres dynamic indexes and views are deleted
     assert index.products.get_by_name(ls8_eo3_product.name) is not None
@@ -606,7 +606,7 @@ def test_filter_types_by_search(index: Index, wo_eo3_product, ls8_eo3_product) -
     assert res == []
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_update_metadata_type_doc(index: Index, ls5_telem_type) -> None:
     type_doc = copy.deepcopy(ls5_telem_type.metadata_type.definition)
     type_doc["dataset"]["search_fields"]["test_indexed"] = {

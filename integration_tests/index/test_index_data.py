@@ -487,7 +487,7 @@ def test_get_missing_things(index: Index) -> None:
     assert missing_thing is None, "get() should return none when it doesn't exist"
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_index_dataset_with_sources(index: Index, default_metadata_type) -> None:
     type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
 
@@ -515,7 +515,7 @@ def test_index_dataset_with_sources(index: Index, default_metadata_type) -> None
     index.datasets.add(child, with_lineage=False)
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_index_dataset_with_lineage(
     index: Index, ds_with_lineage, ls8_eo3_dataset
@@ -529,7 +529,7 @@ def test_index_dataset_with_lineage(
     assert index.datasets.get(ds_with_lineage.id)
 
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_index_dataset_with_location(
     index: Index, default_metadata_type: MetadataType
 ) -> None:

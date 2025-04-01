@@ -11,12 +11,12 @@ from datacube.index import Index
 from datacube.model import Range
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_index_environment(index: Index) -> None:
     assert index.environment.index_driver in ("postgis")
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_create_drop_spatial_index(index: Index) -> None:
     # Default spatial index for 4326
     assert list(index.spatial_indexes()) == [CRS("epsg:4326")]
@@ -40,7 +40,7 @@ def test_create_drop_spatial_index(index: Index) -> None:
     assert index.spatial_indexes(refresh=True) == [CRS("epsg:4326")]
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_spatial_index_maintain(
     index: Index, ls8_eo3_product, eo3_ls8_dataset_doc
@@ -62,7 +62,7 @@ def test_spatial_index_maintain(
     # Can't really read yet, but seems to write at least
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_spatial_index_populate(
     index: Index,
@@ -104,7 +104,7 @@ def test_spatial_index_populate(
     )
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_spatial_index_crs_validity(
     index: Index,
     ls8_eo3_product,
@@ -236,7 +236,7 @@ def test_spatial_index_crs_sanitise() -> None:
         spatial_index_crs_sanitise_helper()
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_spatial_extent(
     index,
     ls8_eo3_dataset,
@@ -295,7 +295,7 @@ def test_spatial_extent(
     assert ext_ls8 == ext1234
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_spatial_search(
     index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3, ls8_eo3_dataset4
 ) -> None:
@@ -380,7 +380,7 @@ def test_spatial_search(
     )
 
 
-@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_temporal_extents(
     index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3, ls8_eo3_dataset4
 ) -> None:

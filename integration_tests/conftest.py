@@ -536,12 +536,19 @@ def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
     return mem_index_eo3, ds_ls8.id, ds_wo.id
 
 
-@pytest.fixture(scope="module", params=["datacube", "postgis"])
+@pytest.fixture(scope="module", params=["datacube", "postgis", "datacube3", "postgis3"])
 def datacube_env_name(request) -> str:
     return request.param
 
 
-@pytest.fixture(params=[("datacube", "postgis"), ("postgis", "datacube")])
+@pytest.fixture(
+    params=[
+        ("datacube", "postgis"),
+        ("postgis", "datacube"),
+        ("postgis", "datacube3"),
+        ("postgis3", "datacube"),
+    ]
+)
 def datacube_env_name_pair(request) -> tuple[str, str]:
     return request.param
 
@@ -583,7 +590,7 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
     url = psql_url_from_config(cfg_env)
     url_components = urlparse(url)
     db_name = url_components.path[1:]
-    if cfg_env._name in ("datacube", "default", "postgres"):
+    if cfg_env._name in ("datacube", "default", "postgres", "datacube3"):
         db: PostgresDb | PostGisDb = PostgresDb.from_config(
             cfg_env, application_name="test-run", validate_connection=False
         )
@@ -614,7 +621,7 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
 
 def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
     with db._engine.connect() as connection:
-        if cfg_env._name in ("datacube", "default", "postgres"):
+        if cfg_env._name in ("datacube", "default", "postgres", "datacube3"):
             pgres_core.drop_db(connection)
         else:
             pgis_core.drop_db(connection)

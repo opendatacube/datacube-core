@@ -87,6 +87,12 @@ file in ``.ini`` format::
     # db_url config entry, instead of the db_username, db_database, db_password, etc.
     db_url: postgresql://username:password@server.domain:5444/mydb
 
+    # FOR DEVELOPERS OF OPENDATACUBE:
+    # Using the experimental psycopg3 support can be done through the db_url,
+    # or setting psycopg_version to 3.
+    # db_url: postgresql+psycopg://username:password@server.domain:5444/mydb
+    # psycopg_version: 3
+
     [null]
     # A "null" environment for working with no index.
     index_driver: null
