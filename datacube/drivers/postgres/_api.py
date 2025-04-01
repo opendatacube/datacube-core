@@ -349,7 +349,10 @@ class PostgresDbAPI:
             )
             return r.rowcount > 0
         except IntegrityError as e:
-            if e.orig.pgcode == PGCODE_FOREIGN_KEY_VIOLATION:
+            if (
+                hasattr(e.orig, "pgcode")
+                and e.orig.pgcode == PGCODE_FOREIGN_KEY_VIOLATION
+            ) or "violates foreign key constraint" in str(e.orig):
                 raise MissingRecordError(
                     "Referenced source dataset doesn't exist"
                 ) from None

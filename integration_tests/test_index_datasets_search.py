@@ -11,7 +11,7 @@ from integration_tests.utils import ensure_datasets_are_indexed
 
 
 # Current formulation of this test relies on non-EO3 test data
-@pytest.mark.parametrize("datacube_env_name", ("datacube",))
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 @pytest.mark.usefixtures("default_metadata_type", "indexed_ls5_scene_products")
 def test_index_get_product_time_bounds(
     index, clirunner, example_ls5_dataset_paths
@@ -24,7 +24,7 @@ def test_index_get_product_time_bounds(
     # Ensure that datasets are actually indexed
     ensure_datasets_are_indexed(index, valid_uuids)
 
-    # lets get time values
+    # let's get time values.
     dataset_times = list(
         index.datasets.search_returning(field_names=("time",), product="ls5_nbar_scene")
     )

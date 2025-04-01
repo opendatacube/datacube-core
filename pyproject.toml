@@ -72,15 +72,15 @@ distributed = ['distributed', 'dask[distributed]']
 s3 = ['boto3', 'botocore']
 netcdf = ['netcdf4']
 postgres = ['psycopg2']
+psycopg3 = ['psycopg']
 
 [dependency-groups]
 dev = [
+    'datacube[netcdf,postgres,psycopg3]',
     # Test requirements
     'click>=8.2', # Only the tests need >=8.2, everything else works with older click.
     'hypothesis',
     'moto>=5.0',
-    'netcdf4',
-    'psycopg2',
     'pytest',
     'pytest-cov',
     'pytest-httpserver',

@@ -310,6 +310,7 @@ class ODCEnvironment:
         self._option_handlers: list[ODCOptionHandler] = [
             AliasOptionHandler("alias", self),
             IndexDriverOptionHandler("index_driver", self, default="default"),
+            IntOptionHandler("psycopg_version", self, minval=2, maxval=3, default=2),
             BoolOptionHandler("skip_broken_datasets", self, default=False),
             IntOptionHandler("dc_load_limit", self, minval=0),
         ]

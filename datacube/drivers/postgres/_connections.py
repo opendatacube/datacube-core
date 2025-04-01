@@ -113,6 +113,16 @@ class PostgresDb:
         iam_rds_timeout: float | int = 600,
         pool_timeout: int = 60,
     ) -> Engine:
+        connect_args: dict[str, Any] = {"application_name": application_name}
+        if str(url).startswith("postgresql+psycopg://"):
+            try:
+                from psycopg import ClientCursor
+            except ImportError:
+                raise IndexSetupError(
+                    "psycopg is required to work with the database. "
+                    "Please install the psycopg package manually."
+                ) from None
+            connect_args["cursor_factory"] = ClientCursor
         try:
             engine = create_engine(
                 url,
@@ -126,7 +136,7 @@ class PostgresDb:
                 # than assuming it's still open. Allows servers to close idle connections without clients
                 # getting errors.
                 pool_recycle=pool_timeout,
-                connect_args={"application_name": application_name},
+                connect_args=connect_args,
             )
         except ModuleNotFoundError:
             raise IndexSetupError(
