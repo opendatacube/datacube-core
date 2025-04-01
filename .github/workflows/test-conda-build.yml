@@ -33,6 +33,14 @@ jobs:
             hashFiles('conda-environment.yml') }}
 
       - uses: conda-incubator/setup-miniconda@v3
+        continue-on-error: true
+        id: conda1
+        with:
+          environment-file: conda-environment.yml
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version}}
+      - uses: conda-incubator/setup-miniconda@v3
+        if: steps.conda1.outcome == 'failure'
         with:
           environment-file: conda-environment.yml
           auto-update-conda: true
