@@ -36,9 +36,9 @@ def test_geom():
 
 
 def test_query_kwargs(mock_index):
-    mock_index.products.get_field_names = lambda: {u'product', u'lat', u'sat_path', 'type_id', u'time', u'lon',
-                                                   u'orbit', u'instrument', u'sat_row', u'platform', 'metadata_type',
-                                                   u'gsi', 'type', 'id'}
+    mock_index.products.get_field_names = lambda: {'product', 'lat', 'sat_path', 'type_id', 'time', 'lon',
+                                                   'orbit', 'instrument', 'sat_row', 'platform', 'metadata_type',
+                                                   'gsi', 'type', 'id'}
 
     query = Query(index=mock_index, product='ls5_nbar_albers')
     assert str(query)
