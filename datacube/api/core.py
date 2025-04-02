@@ -7,7 +7,8 @@ import logging
 import uuid
 import collections.abc
 from itertools import groupby
-from typing import Any, Iterable, cast, Callable, Hashable, Mapping, Sequence, TYPE_CHECKING
+from typing import Any, cast, TYPE_CHECKING
+from collections.abc import Iterable, Callable, Hashable, Mapping, Sequence
 import datetime
 
 import deprecat

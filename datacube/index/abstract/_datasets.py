@@ -7,7 +7,8 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from time import monotonic
-from typing import Iterable, Mapping, Sequence, Any
+from typing import Any
+from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
 
 from deprecat import deprecat

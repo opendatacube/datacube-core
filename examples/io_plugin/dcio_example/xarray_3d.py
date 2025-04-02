@@ -6,7 +6,8 @@
 """
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator, Optional, Tuple, Union
+from typing import Any
+from collections.abc import Generator
 from urllib.parse import urlparse
 
 import numpy as np
@@ -20,7 +21,7 @@ PROTOCOL = ["file", "xarray_3d"]
 FORMAT = "xarray_3d"
 
 
-def uri_split(uri: str) -> Tuple[str, str, str]:
+def uri_split(uri: str) -> tuple[str, str, str]:
     """
     Splits uri into protocol, root, and group
 
@@ -42,8 +43,8 @@ def uri_split(uri: str) -> Tuple[str, str, str]:
     return scheme, path, group
 
 
-RasterShape = Tuple[int, ...]
-RasterWindow = Tuple[Union[int, Tuple[int, int]], ...]
+RasterShape = tuple[int, ...]
+RasterWindow = tuple[int | tuple[int, int], ...]
 
 load_no = 0
 
@@ -54,7 +55,7 @@ class XArrayDataSource3D(object):
             self,
             dataset: xr.Dataset,
             var_name: str,
-            no_data: Optional[float],
+            no_data: float | None,
         ) -> None:
             """
             Initialises the BandDataSource class.
@@ -89,7 +90,7 @@ class XArrayDataSource3D(object):
             self._nodata = num2numpy(self._nodata, self.dtype)
 
         @property
-        def nodata(self) -> Optional[float]:
+        def nodata(self) -> float | None:
             return self._nodata  # type: ignore
 
         @property
@@ -110,8 +111,8 @@ class XArrayDataSource3D(object):
 
         def read(
             self,
-            window: Optional[RasterWindow] = None,
-            out_shape: Optional[RasterShape] = None,
+            window: RasterWindow | None = None,
+            out_shape: RasterShape | None = None,
         ) -> np.ndarray:
             """
             Reads a slice into the xr.DataArray.
@@ -122,7 +123,7 @@ class XArrayDataSource3D(object):
             """
 
             if window is None:
-                ix: Tuple = (...,)
+                ix: tuple = (...,)
             else:
                 ix = tuple(slice(*w) if isinstance(w, tuple) else w for w in window)
 

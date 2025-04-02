@@ -5,7 +5,6 @@
 import json
 import logging
 import sys
-from typing import List
 
 import yaml
 
@@ -65,7 +64,7 @@ def add_metadata_types(index, allow_exclusive_lock, files):
               help='Check if everything is ok')
 @click.argument('files', type=str, nargs=-1)
 @ui.pass_index()
-def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: List):
+def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: list):
     """
     Update existing metadata types.
 

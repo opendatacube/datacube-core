@@ -5,7 +5,7 @@
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, Iterator, Sequence, Type
+from collections.abc import Iterable, Iterator, Sequence
 
 from deprecat import deprecat
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
@@ -223,7 +223,7 @@ class Index(AbstractIndex):
 
 class PostgisIndexDriver(AbstractIndexDriver):
     @classmethod
-    def index_class(cls) -> Type[AbstractIndex]:
+    def index_class(cls) -> type[AbstractIndex]:
         return Index
 
     @staticmethod

@@ -7,7 +7,8 @@
 """
 from affine import Affine
 from functools import reduce
-from typing import Dict, Any, Iterable, Optional, Union, cast
+from typing import Any, cast
+from collections.abc import Iterable
 from uuid import UUID
 
 from odc.geo import (
@@ -24,7 +25,7 @@ EO3_SCHEMA = "https://schemas.opendatacube.org/dataset"
 
 
 class EO3Grid:
-    def __init__(self, grid: Dict[str, Any]) -> None:
+    def __init__(self, grid: dict[str, Any]) -> None:
         shape = grid.get("shape")
         if shape is None:
             raise ValueError("Each grid must have a shape")
@@ -50,19 +51,19 @@ class EO3Grid:
             pts += pts[:1]
         return [self.transform * pt for pt in pts]
 
-    def ref_points(self) -> Dict[str, Dict[str, float]]:
+    def ref_points(self) -> dict[str, dict[str, float]]:
         nn = ['ul', 'ur', 'lr', 'll']
         return {n: dict(x=x, y=y)
                 for n, (x, y) in zip(nn, self.points())}
 
-    def polygon(self, crs: Optional[SomeCRS] = None) -> Geometry:
+    def polygon(self, crs: SomeCRS | None = None) -> Geometry:
         return polygon(self.points(ring=True), crs=crs)
 
 
 def eo3_lonlat_bbox(grids: Iterable[EO3Grid],
                     crs: CRS,
-                    valid_data: Optional[Geometry] = None,
-                    resolution: Optional[float] = None) -> BoundingBox:
+                    valid_data: Geometry | None = None,
+                    resolution: float | None = None) -> BoundingBox:
     """ Compute bounding box for all grids in Lon/Lat
     """
     if valid_data is not None:
@@ -72,9 +73,9 @@ def eo3_lonlat_bbox(grids: Iterable[EO3Grid],
     return lonlat_bounds(all_grids_extent, resolution=resolution)
 
 
-def eo3_grid_spatial(doc: Dict[str, Any],
-                     resolution: Optional[float] = None,
-                     grid_name: str = "default") -> Dict[str, Any]:
+def eo3_grid_spatial(doc: dict[str, Any],
+                     resolution: float | None = None,
+                     grid_name: str = "default") -> dict[str, Any]:
     """Using doc[grids|crs|geometry] compute EO3 style grid spatial:
 
     Note that `geo_ref_points` are set to the 4 corners of the default grid
@@ -127,8 +128,8 @@ def eo3_grid_spatial(doc: Dict[str, Any],
 
     geometry = doc.get('geometry')
     if geometry is not None:
-        valid_data: Dict[str, Any] = dict(valid_data=geometry)
-        valid_geom: Optional[Geometry] = polygon(valid_data["valid_data"]["coordinates"][0], crs=crs)
+        valid_data: dict[str, Any] = dict(valid_data=geometry)
+        valid_geom: Geometry | None = polygon(valid_data["valid_data"]["coordinates"][0], crs=crs)
     else:
         valid_data = dict(valid_data=grid.polygon().json)
         valid_geom = None
@@ -147,8 +148,8 @@ def eo3_grid_spatial(doc: Dict[str, Any],
     return oo
 
 
-def add_eo3_parts(doc: Dict[str, Any],
-                  resolution: Optional[float] = None) -> Dict[str, Any]:
+def add_eo3_parts(doc: dict[str, Any],
+                  resolution: float | None = None) -> dict[str, Any]:
     """Add spatial keys the DB requires to eo3 metadata
     """
     # Clone and update to ensure idempotency
@@ -157,7 +158,7 @@ def add_eo3_parts(doc: Dict[str, Any],
     return out
 
 
-def is_doc_eo3(doc: Dict[str, Any]) -> bool:
+def is_doc_eo3(doc: dict[str, Any]) -> bool:
     """ Is this document eo3?
 
     :param doc: Parsed ODC Dataset metadata document
@@ -184,7 +185,7 @@ def is_doc_eo3(doc: Dict[str, Any]) -> bool:
     raise ValueError(f'Unsupported dataset schema: {schema!r}')
 
 
-def is_doc_geo(doc: Dict[str, Any], check_eo3: bool = True) -> bool:
+def is_doc_geo(doc: dict[str, Any], check_eo3: bool = True) -> bool:
     """ Is this document geospatial?
 
     :param doc: Parsed ODC Dataset metadata document
@@ -203,10 +204,10 @@ def is_doc_geo(doc: Dict[str, Any], check_eo3: bool = True) -> bool:
     return "extent" in doc or "grid_spatial" in doc
 
 
-def prep_eo3(doc: Dict[str, Any],
+def prep_eo3(doc: dict[str, Any],
              auto_skip: bool = False,
-             resolution: Optional[float] = None,
-             remap_lineage=True) -> Dict[str, Any]:
+             resolution: float | None = None,
+             remap_lineage=True) -> dict[str, Any]:
     """ Modify spatial and lineage sections of eo3 metadata
 
     Should be idempotent:  prep_eo3(doc, **kwargs) == prep_eo3(prep_eo3(doc, **kwargs), **kwargs)
@@ -226,7 +227,7 @@ def prep_eo3(doc: Dict[str, Any],
         if not is_doc_eo3(doc):
             return doc
 
-    def stringify(u: Optional[Union[str, UUID]]) -> Optional[str]:
+    def stringify(u: str | UUID | None) -> str | None:
         return u if isinstance(u, str) else str(u) if u else None
 
     doc['id'] = stringify(doc.get('id', None))
@@ -238,7 +239,7 @@ def prep_eo3(doc: Dict[str, Any],
             # Is already in pseudo-embedded rewritten form - keep as is.
             doc['lineage'] = lineage
         else:
-            def lineage_remap(name, uuids) -> Dict[str, Any]:
+            def lineage_remap(name, uuids) -> dict[str, Any]:
                 """ Turn name, [uuid] -> {name: {id: uuid}}
                 """
                 if len(uuids) == 0:

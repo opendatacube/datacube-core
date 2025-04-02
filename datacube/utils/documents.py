@@ -16,7 +16,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
-from typing import Dict, Any, Mapping
+from typing import Any
+from collections.abc import Mapping
 from copy import deepcopy
 from uuid import UUID
 
@@ -529,9 +530,9 @@ class DocReader:
         return {**self.system_fields, **self.search_fields}
 
 
-def without_lineage_sources(doc: Dict[str, Any],
+def without_lineage_sources(doc: dict[str, Any],
                             spec,
-                            inplace: bool = False) -> Dict[str, Any]:
+                            inplace: bool = False) -> dict[str, Any]:
     """ Replace lineage.source_datasets with {}
 
     :param dict doc: parsed yaml/json document describing dataset

@@ -2,7 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Iterable, cast
+from typing import cast
+from collections.abc import Iterable
 from datacube.index.abstract import AbstractUserResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.drivers.postgres import PostgresDb

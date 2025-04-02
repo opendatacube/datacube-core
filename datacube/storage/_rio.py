@@ -5,6 +5,7 @@
 """
 Driver implementation for Rasterio based reader.
 """
+from __future__ import annotations
 import logging
 import contextlib
 from contextlib import contextmanager
@@ -13,7 +14,7 @@ import numpy as np
 from affine import Affine
 import rasterio
 from urllib.parse import urlparse
-from typing import Optional, Iterator
+from collections.abc import Iterator
 
 from odc.geo import CRS
 from datacube.utils.math import num2numpy
@@ -47,7 +48,7 @@ class BandDataSource(GeoRasterReader):
     """
 
     def __init__(self, source, nodata=None,
-                 lock: Optional[RLock] = None):
+                 lock: "RLock" | None = None):
         self.source = source
         if nodata is None:
             nodata = self.source.ds.nodatavals[self.source.bidx-1]
@@ -75,8 +76,8 @@ class BandDataSource(GeoRasterReader):
     def shape(self) -> RasterShape:
         return self.source.shape
 
-    def read(self, window: Optional[RasterWindow] = None,
-             out_shape: Optional[RasterShape] = None) -> Optional[np.ndarray]:
+    def read(self, window: RasterWindow | None = None,
+             out_shape: RasterShape | None = None) -> np.ndarray | None:
         """Read data in the native format, returning a numpy array
         """
         with maybe_lock(self._lock):
@@ -166,7 +167,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         lock = HDF5_LOCK if self._hdf else None
         super(RasterDatasetDataSource, self).__init__(filename, nodata=band.nodata, lock=lock)
 
-    def get_bandnumber(self, src=None) -> Optional[int]:
+    def get_bandnumber(self, src=None) -> int | None:
 
         # If `band` property is set to an integer it overrides any other logic
         bi = self._band_info
@@ -224,7 +225,7 @@ def _build_hdf_uri(url_str: str, fmt: str, layer: str) -> str:
     return f'{fmt}:"{base}":{layer}'
 
 
-def _url2rasterio(url_str: str, fmt: str, layer: Optional[str]) -> str:
+def _url2rasterio(url_str: str, fmt: str, layer: str | None) -> str:
     """
     turn URL into a string that could be passed to raterio.open
     """

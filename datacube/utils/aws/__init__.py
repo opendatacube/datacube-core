@@ -16,10 +16,10 @@ from urllib.request import urlopen
 from urllib.parse import urlparse
 from sqlalchemy.engine.url import URL
 
-from typing import Optional, Dict, Tuple, Any, Union, IO
+from typing import Optional, Any, Union, IO
 from datacube.utils.generic import thread_local_cache
 
-ByteRange = Union[slice, Tuple[int, int]]       # pylint: disable=invalid-name
+ByteRange = Union[slice, tuple[int, int]]       # pylint: disable=invalid-name
 MaybeS3 = Optional[botocore.client.BaseClient]  # pylint: disable=invalid-name
 
 __all__ = (
@@ -40,7 +40,7 @@ __all__ = (
 )
 
 
-def _fetch_text(url: str, timeout: float = 0.1) -> Optional[str]:
+def _fetch_text(url: str, timeout: float = 0.1) -> str | None:
     try:
         with urlopen(url, timeout=timeout) as resp:
             if 200 <= resp.getcode() < 300:
@@ -51,7 +51,7 @@ def _fetch_text(url: str, timeout: float = 0.1) -> Optional[str]:
         return None
 
 
-def s3_url_parse(url: str) -> Tuple[str, str]:
+def s3_url_parse(url: str) -> tuple[str, str]:
     """ Return Bucket, Key tuple
     """
     uu = urlparse(url)
@@ -60,7 +60,7 @@ def s3_url_parse(url: str) -> Tuple[str, str]:
     return uu.netloc, uu.path.lstrip('/')
 
 
-def s3_fmt_range(r: Optional[ByteRange]):
+def s3_fmt_range(r: ByteRange | None):
     """ None -> None
         (in, out) -> "bytes={in}-{out-1}"
     """
@@ -84,7 +84,7 @@ def s3_fmt_range(r: Optional[ByteRange]):
     return f'bytes={_in:d}-{_out-1:d}'
 
 
-def ec2_metadata(timeout: float = 0.1) -> Optional[Dict[str, Any]]:
+def ec2_metadata(timeout: float = 0.1) -> dict[str, Any] | None:
     """ When running inside AWS returns dictionary describing instance identity.
         Returns None when not inside AWS
     """
@@ -100,7 +100,7 @@ def ec2_metadata(timeout: float = 0.1) -> Optional[Dict[str, Any]]:
         return None
 
 
-def ec2_current_region() -> Optional[str]:
+def ec2_current_region() -> str | None:
     """ Returns name of the region  this EC2 instance is running in.
     """
     cfg = ec2_metadata()
@@ -109,7 +109,7 @@ def ec2_current_region() -> Optional[str]:
     return cfg.get('region', None)
 
 
-def botocore_default_region(session: Optional[Session] = None) -> Optional[str]:
+def botocore_default_region(session: Session | None = None) -> str | None:
     """ Returns default region name as configured on the system.
     """
     if session is None:
@@ -117,7 +117,7 @@ def botocore_default_region(session: Optional[Session] = None) -> Optional[str]:
     return session.get_config_variable('region')
 
 
-def auto_find_region(session: Optional[Session] = None, default: Optional[str] = None) -> str:
+def auto_find_region(session: Session | None = None, default: str | None = None) -> str:
     """
     Try to figure out which region name to use
 
@@ -142,7 +142,7 @@ def auto_find_region(session: Optional[Session] = None, default: Optional[str] =
 
 def get_creds_with_retry(session: Session,
                          max_tries: int = 10,
-                         sleep: float = 0.1) -> Optional[Credentials]:
+                         sleep: float = 0.1) -> Credentials | None:
     """ Attempt to obtain credentials upto `max_tries` times with back off
     :param session: botocore session, see mk_boto_session
     :param max_tries: number of attempt before failing and returning None
@@ -160,9 +160,9 @@ def get_creds_with_retry(session: Session,
     return None
 
 
-def mk_boto_session(profile: Optional[str] = None,
-                    creds: Optional[ReadOnlyCredentials] = None,
-                    region_name: Optional[str] = None) -> Session:
+def mk_boto_session(profile: str | None = None,
+                    creds: ReadOnlyCredentials | None = None,
+                    region_name: str | None = None) -> Session:
     """ Get botocore session with correct `region` configured
 
     :param profile: profile name to lookup
@@ -187,9 +187,9 @@ def mk_boto_session(profile: Optional[str] = None,
     return session
 
 
-def _s3_cache_key(profile: Optional[str] = None,
-                  creds: Optional[ReadOnlyCredentials] = None,
-                  region_name: Optional[str] = None,
+def _s3_cache_key(profile: str | None = None,
+                  creds: ReadOnlyCredentials | None = None,
+                  region_name: str | None = None,
                   aws_unsigned: bool = False,
                   prefix: str = "s3") -> str:
     parts = [prefix,
@@ -200,10 +200,10 @@ def _s3_cache_key(profile: Optional[str] = None,
     return ":".join(parts)  # type: ignore[arg-type]
 
 
-def _mk_s3_client(profile: Optional[str] = None,
-                  creds: Optional[ReadOnlyCredentials] = None,
-                  region_name: Optional[str] = None,
-                  session: Optional[Session] = None,
+def _mk_s3_client(profile: str | None = None,
+                  creds: ReadOnlyCredentials | None = None,
+                  region_name: str | None = None,
+                  session: Session | None = None,
                   use_ssl: bool = True,
                   **cfg) -> botocore.client.BaseClient:
     """ Construct s3 client with configured region_name.
@@ -225,7 +225,7 @@ def _mk_s3_client(profile: Optional[str] = None,
                                   creds=creds,
                                   region_name=region_name)
 
-    extras = {}  # type: Dict[str, Any]
+    extras = {}  # type: dict[str, Any]
     if creds is not None:
         extras.update(aws_access_key_id=creds.access_key,
                       aws_secret_access_key=creds.secret_key,
@@ -251,13 +251,13 @@ def _aws_unsigned_check_env() -> bool:
     return False
 
 
-def s3_client(profile: Optional[str] = None,
-              creds: Optional[ReadOnlyCredentials] = None,
-              region_name: Optional[str] = None,
-              session: Optional[Session] = None,
-              aws_unsigned: Optional[bool] = None,
+def s3_client(profile: str | None = None,
+              creds: ReadOnlyCredentials | None = None,
+              region_name: str | None = None,
+              session: Session | None = None,
+              aws_unsigned: bool | None = None,
               use_ssl: bool = True,
-              cache: Union[bool, str] = False,
+              cache: bool | str = False,
               **cfg) -> botocore.client.BaseClient:
     """ Construct s3 client with configured region_name.
 
@@ -316,7 +316,7 @@ def s3_client(profile: Optional[str] = None,
 
 def s3_open(url: str,
             s3: MaybeS3 = None,
-            range: Optional[ByteRange] = None,  # pylint: disable=redefined-builtin
+            range: ByteRange | None = None,  # pylint: disable=redefined-builtin
             **kwargs):
     """ Open whole or part of S3 object
 
@@ -339,7 +339,7 @@ def s3_open(url: str,
 
 def s3_head_object(url: str,
                    s3: MaybeS3 = None,
-                   **kwargs) -> Optional[Dict[str, Any]]:
+                   **kwargs) -> dict[str, Any] | None:
     """
     Head object, return object metadata.
 
@@ -368,7 +368,7 @@ def s3_head_object(url: str,
 
 def s3_fetch(url: str,
              s3: MaybeS3 = None,
-             range: Optional[ByteRange] = None,  # pylint: disable=redefined-builtin
+             range: ByteRange | None = None,  # pylint: disable=redefined-builtin
              **kwargs) -> bytes:
     """ Read entire or part of object into memory and return as bytes
 
@@ -379,7 +379,7 @@ def s3_fetch(url: str,
     return s3_open(url, s3=s3, range=range, **kwargs).read()
 
 
-def s3_dump(data: Union[bytes, str, IO],
+def s3_dump(data: bytes | str | IO,
             url: str,
             s3: MaybeS3 = None,
             **kwargs):
@@ -405,10 +405,10 @@ def s3_dump(data: Union[bytes, str, IO],
     return 200 <= code < 300
 
 
-def get_aws_settings(profile: Optional[str] = None,
+def get_aws_settings(profile: str | None = None,
                      region_name: str = "auto",
                      aws_unsigned: bool = False,
-                     requester_pays: bool = False) -> Tuple[Dict[str, Any], Optional[Credentials]]:
+                     requester_pays: bool = False) -> tuple[dict[str, Any], Credentials | None]:
     """
     Compute ``aws=`` parameter for ``set_default_rio_config``.
 
@@ -442,7 +442,7 @@ def get_aws_settings(profile: Optional[str] = None,
                  requester_pays=requester_pays), creds)
 
 
-def obtain_new_iam_auth_token(url: URL, region_name: str = "auto", profile_name: Optional[str] = None) -> str:
+def obtain_new_iam_auth_token(url: URL, region_name: str = "auto", profile_name: str | None = None) -> str:
     # Boto3 is not core requirement, but ImportError is probably the right exception to throw anyway.
     from boto3.session import Session as Boto3Session
 

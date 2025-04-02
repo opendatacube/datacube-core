@@ -6,7 +6,8 @@ import datetime
 import logging
 
 from cachetools.func import lru_cache
-from typing import Iterable, Sequence, cast
+from typing import cast
+from collections.abc import Iterable, Sequence
 
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource

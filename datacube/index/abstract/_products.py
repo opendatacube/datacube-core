@@ -6,7 +6,8 @@ import datetime
 import logging
 from abc import ABC, abstractmethod
 from time import monotonic
-from typing import cast, Iterable, Sequence, Iterator, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
+from collections.abc import Iterable, Sequence, Iterator
 
 from odc.geo import CRS, Geometry
 

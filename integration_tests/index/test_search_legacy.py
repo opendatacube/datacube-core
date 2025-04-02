@@ -10,7 +10,7 @@ import datetime
 import uuid
 from decimal import Decimal
 from uuid import UUID
-from typing import List, Any
+from typing import Any
 
 import pytest
 import yaml
@@ -227,7 +227,7 @@ def ls5_dataset_w_children(index, clirunner, example_ls5_dataset_path, indexed_l
 
 @pytest.fixture
 def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
-                          indexed_ls5_scene_products: List[Product]) -> Product:
+                          indexed_ls5_scene_products: list[Product]) -> Product:
     for dataset_type in indexed_ls5_scene_products:
         if dataset_type.name == ls5_dataset_w_children.product.name:
             return dataset_type

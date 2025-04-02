@@ -5,7 +5,7 @@
 import logging
 from abc import ABC, abstractmethod
 from time import monotonic
-from typing import Mapping, Iterable
+from collections.abc import Mapping, Iterable
 from uuid import UUID
 
 from datacube.model import LineageTree, LineageDirection, LineageRelation

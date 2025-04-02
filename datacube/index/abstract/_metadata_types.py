@@ -6,7 +6,8 @@ import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from time import monotonic
-from typing import Iterable, cast
+from typing import cast
+from collections.abc import Iterable
 
 from datacube.model import MetadataType
 from datacube.utils import read_documents, jsonify_document, InvalidDocException

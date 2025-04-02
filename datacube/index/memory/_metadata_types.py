@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from copy import deepcopy
-from typing import cast, Any, Iterable, Mapping, Tuple
+from typing import cast, Any
+from collections.abc import Iterable, Mapping
 
 from datacube.index.abstract import AbstractMetadataTypeResource, default_metadata_type_docs
 from datacube.model import MetadataType
@@ -44,7 +45,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
         return cast(MetadataType, self.get_by_name(metadata_type.name))
 
     def can_update(self, metadata_type: MetadataType, allow_unsafe_updates: bool = False
-                   ) -> Tuple[bool, Iterable[Change], Iterable[Change]]:
+                   ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         MetadataType.validate(metadata_type.definition)  # type: ignore[attr-defined]
         existing = self.get_by_name(metadata_type.name)
         if not existing:

@@ -5,9 +5,10 @@
 """ reader
 """
 from typing import (
-    List, Optional, Union, Any, Iterable,
-    Tuple, NamedTuple, TypeVar
+    Any,
+    NamedTuple, TypeVar
 )
+from collections.abc import Iterable
 import numpy as np
 from affine import Affine
 from concurrent.futures import ThreadPoolExecutor
@@ -31,15 +32,15 @@ from datacube.drivers._types import (
     RasterWindow,
 )
 
-Overrides = NamedTuple('Overrides', [('crs', Optional[CRS]),
-                                     ('transform', Optional[Affine]),
-                                     ('nodata', Optional[Union[float, int]])])
+Overrides = NamedTuple('Overrides', [('crs', CRS | None),
+                                     ('transform', Affine | None),
+                                     ('nodata', float | int | None)])
 
-RioWindow = Tuple[Tuple[int, int], Tuple[int, int]]  # pylint: disable=invalid-name
+RioWindow = tuple[tuple[int, int], tuple[int, int]]  # pylint: disable=invalid-name
 T = TypeVar('T')
 
 
-def pick(a: Optional[T], b: Optional[T]) -> Optional[T]:
+def pick(a: T | None, b: T | None) -> T | None:
     """ Return first non-None value or None if all are None
     """
     return b if a is None else a
@@ -49,11 +50,11 @@ def _is_netcdf(fmt: str) -> bool:
     return fmt == 'NetCDF'
 
 
-def _roi_to_window(roi: Optional[RasterWindow], shape: RasterShape) -> Optional[RioWindow]:
+def _roi_to_window(roi: RasterWindow | None, shape: RasterShape) -> RioWindow | None:
     if roi is None:
         return None
 
-    def s2t(s: slice, n: int) -> Tuple[int, int]:
+    def s2t(s: slice, n: int) -> tuple[int, int]:
         _in = 0 if s.start is None else s.start
         _out = n if s.stop is None else s.stop
 
@@ -69,7 +70,7 @@ def _roi_to_window(roi: Optional[RasterWindow], shape: RasterShape) -> Optional[
     return (s1, s2)
 
 
-def _dc_crs(crs: Optional[rasterio.crs.CRS]) -> Optional[CRS]:  # pylint: disable=c-extension-no-member
+def _dc_crs(crs: rasterio.crs.CRS | None) -> CRS | None:  # pylint: disable=c-extension-no-member
     """ Convert RIO version of CRS to datacube
     """
     if crs is None:
@@ -85,8 +86,8 @@ def _dc_crs(crs: Optional[rasterio.crs.CRS]) -> Optional[CRS]:  # pylint: disabl
 
 def _read(src: DatasetReader,
           bidx: int,
-          window: Optional[RasterWindow],
-          out_shape: Optional[RasterShape]) -> np.ndarray:
+          window: RasterWindow | None,
+          out_shape: RasterShape | None) -> np.ndarray:
     return src.read(bidx,
                     window=_roi_to_window(window, src.shape),
                     out_shape=out_shape)
@@ -146,11 +147,11 @@ class RIOReader(GeoRasterReader):
         self._pool = pool
 
     @property
-    def crs(self) -> Optional[CRS]:
+    def crs(self) -> CRS | None:
         return self._crs
 
     @property
-    def transform(self) -> Optional[Affine]:
+    def transform(self) -> Affine | None:
         return self._transform
 
     @property
@@ -162,12 +163,12 @@ class RIOReader(GeoRasterReader):
         return self._src.shape
 
     @property
-    def nodata(self) -> Optional[Union[int, float]]:
+    def nodata(self) -> int | float | None:
         return self._nodata
 
     def read(self,
-             window: Optional[RasterWindow] = None,
-             out_shape: Optional[RasterShape] = None) -> FutureNdarray:
+             window: RasterWindow | None = None,
+             out_shape: RasterShape | None = None) -> FutureNdarray:
         return self._pool.submit(_read, self._src, self._band_idx, window, out_shape)
 
 
@@ -209,7 +210,7 @@ class RIORdrDriver(ReaderDriver):
 
     def new_load_context(self,
                          bands: Iterable[BandInfo],
-                         old_ctx: Optional[Any]) -> Any:
+                         old_ctx: Any | None) -> Any:
         return None  # TODO: implement file handle cache with this
 
     def open(self, band: BandInfo, ctx: Any) -> FutureGeoRasterReader:
@@ -221,11 +222,11 @@ class RDEntry(ReaderDriverEntry):
     FORMATS = ['GeoTIFF', 'NetCDF', 'JPEG2000']
 
     @property
-    def protocols(self) -> List[str]:
+    def protocols(self) -> list[str]:
         return RDEntry.PROTOCOLS
 
     @property
-    def formats(self) -> List[str]:
+    def formats(self) -> list[str]:
         return RDEntry.FORMATS
 
     def supports(self, protocol: str, fmt: str) -> bool:

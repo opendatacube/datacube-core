@@ -8,7 +8,8 @@ Build and index fields within documents.
 from collections import namedtuple
 from datetime import datetime, date
 from decimal import Decimal
-from typing import Any, Callable, Tuple, Union
+from typing import Any
+from collections.abc import Callable
 
 from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
@@ -122,7 +123,7 @@ class PgDocField(PgField):
         return value
 
     def _alchemy_offset_value(self,
-                              doc_offsets: Tuple[Tuple[str]],
+                              doc_offsets: tuple[tuple[str]],
                               agg_function: Callable[[Any], ColumnElement]) -> ColumnElement:
         """
         Get an sqlalchemy value for the given offsets of this field's sqlalchemy column.
@@ -252,8 +253,8 @@ class DateDocField(SimpleDocField):
     type_name = 'datetime'
 
     def value_to_alchemy(self,
-                         value: Union[datetime, date, str, ColumnElement]
-                        ) -> Union[datetime, date, str, ColumnElement]:
+                         value: datetime | date | str | ColumnElement
+                        ) -> datetime | date | str | ColumnElement:
         """
         Wrap a value as needed for this field type.
         """
@@ -439,7 +440,7 @@ class DateRangeDocField(RangeDocField):
         )
 
 
-def _number_implies_year(v: Union[int, datetime]) -> datetime:
+def _number_implies_year(v: int | datetime) -> datetime:
     """
     >>> _number_implies_year(1994)
     datetime.datetime(1994, 1, 1, 0, 0)

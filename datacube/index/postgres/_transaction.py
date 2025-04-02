@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
+from collections.abc import Iterator
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._api import PostgresDbAPI

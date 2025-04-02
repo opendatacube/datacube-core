@@ -9,7 +9,7 @@ from deprecat import deprecat
 from datacube.migration import ODC2DeprecationWarning
 from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, Product
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -33,7 +33,7 @@ class DatasetResource(AbstractDatasetResource):
 
     def add(self, dataset: Dataset,
             with_lineage: bool = True,
-            archive_less_mature: Optional[int] = None) -> Dataset:
+            archive_less_mature: int | None = None) -> Dataset:
         raise NotImplementedError()
 
     def search_product_duplicates(self, product: Product, *args):

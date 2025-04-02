@@ -12,7 +12,6 @@ import datetime
 import collections
 import math
 import warnings
-from typing import Optional, Union
 import pandas
 
 from pandas import to_datetime as pandas_to_datetime
@@ -298,7 +297,7 @@ def _convert_to_solar_time(utc, longitude):
     return utc + offset
 
 
-def _ds_mid_longitude(dataset: Dataset) -> Optional[float]:
+def _ds_mid_longitude(dataset: Dataset) -> float | None:
     m = dataset.metadata
     if hasattr(m, 'lon'):
         lon = m.lon
@@ -306,7 +305,7 @@ def _ds_mid_longitude(dataset: Dataset) -> Optional[float]:
     return None
 
 
-def solar_day(dataset: Dataset, longitude: Optional[float] = None) -> np.datetime64:
+def solar_day(dataset: Dataset, longitude: float | None = None) -> np.datetime64:
     """
     Adjust Dataset timestamp for "local time" given location and convert to numpy.
 
@@ -326,7 +325,7 @@ def solar_day(dataset: Dataset, longitude: Optional[float] = None) -> np.datetim
     return np.datetime64(solar_time.date(), 'D')
 
 
-def solar_offset(geom: Union[Geometry, Dataset],
+def solar_offset(geom: Geometry | Dataset,
                  precision: str = 'h') -> datetime.timedelta:
     """
     Given a geometry or a Dataset compute offset to add to UTC timestamp to get solar day right.

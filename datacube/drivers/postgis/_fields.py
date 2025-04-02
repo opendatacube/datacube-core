@@ -11,7 +11,8 @@ from collections import namedtuple
 from datetime import timezone
 from datetime import datetime, date
 from decimal import Decimal
-from typing import Any, Callable, Type, Tuple, Union
+from typing import Any, Union
+from collections.abc import Callable
 
 from sqlalchemy.types import TIMESTAMP
 from sqlalchemy import cast, func, and_
@@ -185,9 +186,9 @@ class PgDocField(PgField):
         return value
 
     def _alchemy_offset_value(self,
-                              doc_offsets: Tuple[Tuple[str]],
+                              doc_offsets: tuple[tuple[str]],
                               agg_function: Callable[[Any], ColumnElement],
-                              type_: Type | None = None) -> ColumnElement:
+                              type_: type | None = None) -> ColumnElement:
         """
         Get an sqlalchemy value for the given offsets of this field's sqlalchemy column.
         If there are multiple they will be combined using the given aggregate function.
@@ -529,7 +530,7 @@ class DateRangeDocField(RangeDocField):
         )
 
 
-def _number_implies_year(v: Union[int, datetime]) -> datetime:
+def _number_implies_year(v: int | datetime) -> datetime:
     """
     >>> _number_implies_year(1994)
     datetime.datetime(1994, 1, 1, 0, 0)

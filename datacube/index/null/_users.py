@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Iterable, Optional, Tuple
+from collections.abc import Iterable
 from datacube.index.abstract import AbstractUserResource
 
 
@@ -14,11 +14,11 @@ class UserResource(AbstractUserResource):
         raise NotImplementedError()
 
     def create_user(self, username: str, password: str,
-                    role: str, description: Optional[str] = None) -> None:
+                    role: str, description: str | None = None) -> None:
         raise NotImplementedError()
 
     def delete_user(self, *usernames: str) -> None:
         raise NotImplementedError()
 
-    def list_users(self) -> Iterable[Tuple[str, str, str]]:
+    def list_users(self) -> Iterable[tuple[str, str, str]]:
         return []

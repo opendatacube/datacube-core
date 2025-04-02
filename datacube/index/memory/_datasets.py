@@ -11,7 +11,8 @@ from itertools import chain
 from deprecat import deprecat
 from collections import namedtuple
 from time import monotonic
-from typing import (Any, Callable, Iterable, Mapping, Sequence, cast)
+from typing import (Any, cast)
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from uuid import UUID
 
 from datacube.migration import ODC2DeprecationWarning

@@ -4,10 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 import os
 from pathlib import Path
-from typing import Union, Optional
 
 
-def _norm_path(path: Union[str, Path], in_home_dir: bool = False) -> Path:
+def _norm_path(path: str | Path, in_home_dir: bool = False) -> Path:
     if isinstance(path, str):
         path = Path(path)
     if in_home_dir:
@@ -15,7 +14,7 @@ def _norm_path(path: Union[str, Path], in_home_dir: bool = False) -> Path:
     return path
 
 
-def check_write_path(fname: Union[Path, str], overwrite: bool) -> Path:
+def check_write_path(fname: Path | str, overwrite: bool) -> Path:
     """ Check is output file exists and either remove it first or raise IOError.
 
     :param fname: string or Path object
@@ -39,8 +38,8 @@ def check_write_path(fname: Union[Path, str], overwrite: bool) -> Path:
     return fname
 
 
-def write_user_secret_file(text: Union[str, bytes],
-                           fname: Union[str, Path],
+def write_user_secret_file(text: str | bytes,
+                           fname: str | Path,
                            in_home_dir: bool = False,
                            mode: str = 'w'):
     """Write file only readable/writeable by the user"""
@@ -53,9 +52,9 @@ def write_user_secret_file(text: Union[str, bytes],
         handle.close()
 
 
-def slurp(fname: Union[str, Path],
+def slurp(fname: str | Path,
           in_home_dir: bool = False,
-          mode: str = 'r') -> Optional[Union[bytes, str]]:
+          mode: str = 'r') -> bytes | str | None:
     """
     Read an entire file into a string
 
