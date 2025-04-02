@@ -596,10 +596,7 @@ class DatasetResource(AbstractDatasetResource):
                **query: QueryField) -> Iterable[Dataset]:
         if order_by:
             raise NotImplementedError("order_by argument is not currently supported by the memory index driver.")
-        return cast(
-            Iterable[Dataset],
-            self._search_flat(limit=limit, source_filter=source_filter, archived=archived, **query)
-        )
+        return self._search_flat(limit=limit, source_filter=source_filter, archived=archived, **query)
 
     def search_by_product(self,
                           archived: bool | None = False,
@@ -749,7 +746,7 @@ class DatasetResource(AbstractDatasetResource):
             if last_product and single_product_only:
                 raise ValueError(f"Multiple products match single query search: {repr(query)}")
             if last_product:
-                yield cast(YieldType, last_product)
+                yield last_product
             period_counts = []
             for p in periods:
                 count = 0
