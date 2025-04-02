@@ -397,7 +397,7 @@ class Dataset:
         return without_lineage_sources(self.metadata_doc, self.metadata_type)
 
 
-class Measurement():
+class Measurement:
     """
     Describes a single data variable of a Product or Dataset.
 
