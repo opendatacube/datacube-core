@@ -38,7 +38,7 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression, delete=
     """
     # Create a view of search fields (for debugging convenience).
     # 'dv_' prefix: dynamic view. To distinguish from views that are created as part of the schema itself.
-    view_name = schema_qualified('dv_{}_dataset'.format(name))
+    view_name = schema_qualified(f'dv_{name}_dataset')
     exists = pg_exists(conn, view_name)
     # This currently leaves a window of time without the views: it's primarily intended for development.
     if exists and replace_existing:
@@ -67,7 +67,7 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression, delete=
         conn.execute(text(f'drop view {view_name}'))
     else:
         _LOG.debug('View exists: %s (replace=%r)', view_name, replace_existing)
-    legacy_name = schema_qualified('{}_dataset'.format(name))
+    legacy_name = schema_qualified(f'{name}_dataset')
     if pg_exists(conn, legacy_name):
         _LOG.debug('Dropping legacy view: %s', legacy_name)
         conn.execute(text(f'drop view {legacy_name}'))
@@ -133,15 +133,9 @@ def _check_field_index(conn, fields, name_prefix, filter_expression,
 
     field_name = '_'.join([f.name.lower() for f in fields])
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-    index_name = 'dix_{prefix}_{field_name}'.format(
-        prefix=name_prefix.lower(),
-        field_name=field_name
-    )
+    index_name = f'dix_{name_prefix.lower()}_{field_name}'
     # Previous naming scheme
-    legacy_name = 'dix_field_{prefix}_dataset_{field_name}'.format(
-        prefix=name_prefix.lower(),
-        field_name=field_name,
-    )
+    legacy_name = f'dix_field_{name_prefix.lower()}_dataset_{field_name}'
     indexed_expressions = [f.alchemy_expression for f in fields]
     index = Index(
         index_name,

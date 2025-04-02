@@ -40,7 +40,7 @@ def write_pretty(out_f, field_names, search_results, terminal_size=shutil.get_te
     field_output_format = '{:<' + str(field_header_width) + '} | {}'
 
     for result in search_results:
-        separator_line = '-[ {} ]'.format(record_num)
+        separator_line = f'-[ {record_num} ]'
         separator_line += '-' * (terminal_width - len(separator_line) - 1)
         click.echo(separator_line, file=out_f)
 
@@ -113,7 +113,7 @@ def product_counts(index, period, expressions):
         click.echo(product.name)
         for timerange, count in series:
             formatted_dt = tz_as_utc(timerange[0]).strftime("%Y-%m-%d")
-            click.echo('    {}: {}'.format(formatted_dt, count))
+            click.echo(f'    {formatted_dt}: {count}')
 
 
 @singledispatch
@@ -144,7 +144,7 @@ def printable_r(val):
     if val.upper_inf:
         return printable(val.lower)
 
-    return '{} to {}'.format(printable(val.lower), printable(val.upper))
+    return f'{printable(val.lower)} to {printable(val.upper)}'
 
 
 if __name__ == '__main__':

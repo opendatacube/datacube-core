@@ -912,7 +912,7 @@ def test_cli_missing_info(clirunner, index):
     )
     assert result.exit_code == 1, "Should return exit status when dataset is missing"
     # This should have been output to stderr, but the CliRunner doesnit distinguish
-    assert result.output.endswith("{id} missing\n".format(id=id_))
+    assert result.output.endswith(f"{id_} missing\n")
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))

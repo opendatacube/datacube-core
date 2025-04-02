@@ -50,7 +50,7 @@ def parse_interval(interval):
     try:
         return count, FREQS[units]
     except KeyError:
-        raise ValueError('Invalid interval "{}", units not in of: {}'.format(interval, FREQS.keys))
+        raise ValueError(f'Invalid interval "{interval}", units not in of: {FREQS.keys}')
 
 
 def parse_duration(duration):
@@ -58,7 +58,7 @@ def parse_duration(duration):
     try:
         delta = {DURATIONS[units]: count}
     except KeyError:
-        raise ValueError('Duration "{}" not in months or years'.format(duration))
+        raise ValueError(f'Duration "{duration}" not in months or years')
 
     return relativedelta(**delta)
 

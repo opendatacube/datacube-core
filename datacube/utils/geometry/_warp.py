@@ -21,7 +21,7 @@ def resampling_s2rio(name: str) -> rasterio.warp.Resampling:
     try:
         return getattr(rasterio.warp.Resampling, name.lower())
     except AttributeError:
-        raise ValueError('Bad resampling parameter: {}'.format(name))
+        raise ValueError(f'Bad resampling parameter: {name}')
 
 
 def is_resampling_nn(resampling: Resampling) -> bool:

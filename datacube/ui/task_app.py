@@ -230,17 +230,16 @@ def check_existing_files(paths):
         if file_path.exists():
             existing_files.append(file_path)
             file_info = ' - ALREADY EXISTS'
-        click.echo('{}{}'.format(path, file_info))
+        click.echo(f'{path}{file_info}')
 
     if existing_files:
-        if click.confirm('There were {} existing files found that are not indexed. Delete those files now?'.format(
-                len(existing_files))):
+        if click.confirm(f'There were {len(existing_files)} existing files found '
+                         'that are not indexed. Delete those files now?'):
             for file_path in existing_files:
                 file_path.unlink()
 
-    click.echo('{total} tasks files to be created ({valid} valid files, {invalid} existing paths)'.format(
-        total=total, valid=total - len(existing_files), invalid=len(existing_files)
-    ))
+    click.echo(f'{total} tasks files to be created ({total - len(existing_files)} '
+               f'valid files, {len(existing_files)} existing paths)')
 
 
 def do_nothing(result):

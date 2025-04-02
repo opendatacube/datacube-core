@@ -126,7 +126,7 @@ def _log_queries(ctx, param, value):
 def _set_config(ctx, param, value):
     if value:
         if not any(os.path.exists(p) for p in value):
-            raise ValueError('No specified config paths exist: {}'.format(value))
+            raise ValueError(f'No specified config paths exist: {value}')
 
         if not ctx.obj:
             ctx.obj = {}

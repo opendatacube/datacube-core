@@ -79,7 +79,7 @@ def uri_to_local_path(local_uri: Optional[str]) -> Optional[pathlib.Path]:
 
     if components.netloc:
         if os.name == 'nt':
-            path = '//{}{}'.format(components.netloc, path)
+            path = f'//{components.netloc}{path}'
         else:
             raise ValueError('Only know how to use `netloc` urls on Windows')
 
@@ -89,7 +89,7 @@ def uri_to_local_path(local_uri: Optional[str]) -> Optional[pathlib.Path]:
 def mk_part_uri(uri: str, idx: int) -> str:
     """ Appends fragment part to the uri recording index of the part
     """
-    return '{}#part={:d}'.format(uri, idx)
+    return f'{uri}#part={idx:d}'
 
 
 def get_part_from_uri(uri: str) -> Optional[int]:

@@ -419,7 +419,7 @@ def force_2d(geojson: Dict[str, Any]) -> Dict[str, Any]:
                 return x[:2]
             return [go(y) for y in x]
 
-        raise ValueError('invalid coordinate {}'.format(x))
+        raise ValueError(f'invalid coordinate {x}')
 
     return {'type': geojson['type'],
             'coordinates': go(geojson['coordinates'])}
@@ -649,7 +649,7 @@ class Geometry:
                 return geometry.Polygon(densify(list(geom.exterior.coords), resolution),
                                         [densify(list(i.coords), resolution) for i in geom.interiors])
 
-            raise ValueError('unknown geometry type {}'.format(geom.geom_type))  # pragma: no cover
+            raise ValueError(f'unknown geometry type {geom.geom_type}')  # pragma: no cover
 
         return Geometry(segmentize_shapely(self.geom), self.crs)
 
@@ -1209,15 +1209,10 @@ class GeoBox:
     dims = dimensions
 
     def __str__(self):
-        return "GeoBox({})".format(self.geographic_extent)
+        return f"GeoBox({self.geographic_extent})"
 
     def __repr__(self):
-        return "GeoBox({width}, {height}, {affine!r}, {crs})".format(
-            width=self.width,
-            height=self.height,
-            affine=self.affine,
-            crs=self.extent.crs
-        )
+        return f"GeoBox({self.width}, {self.height}, {self.affine!r}, {self.extent.crs})"
 
     def __eq__(self, other):
         if not isinstance(other, GeoBox):

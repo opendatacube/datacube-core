@@ -210,7 +210,7 @@ class PostgresDb(object):
         return _api.get_dataset_fields(metadata_type_definition)
 
     def __repr__(self):
-        return "PostgresDb<engine={!r}>".format(self._engine)
+        return f"PostgresDb<engine={self._engine!r}>"
 
 
 def handle_dynamic_token_authentication(engine: Engine,
@@ -242,4 +242,4 @@ def _to_json(o):
 
 def _json_fallback(obj):
     """Fallback json serialiser."""
-    raise TypeError("Type not serializable: {}".format(type(obj)))
+    raise TypeError(f"Type not serializable: {type(obj)}")

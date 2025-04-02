@@ -12,8 +12,8 @@ def select_unique(things):
     first, *rest = things
     for other in rest:
         if first != other:
-            warnings.warn("select_unique may have failed: {} is not the same as {}"
-                          .format(first, other))
+            warnings.warn(f"select_unique may have failed: {first} is not the same as {other}"
+                          )
             break
 
     return first

@@ -223,7 +223,7 @@ def _test_read_docs_impl(sample_documents: Iterable[Tuple[str, int]]):
 
         url = as_url(doc_url)
         if num_docs > 1:
-            expect_uris = [as_url(url) + '#part={}'.format(i) for i in range(num_docs)]
+            expect_uris = [as_url(url) + f'#part={i}' for i in range(num_docs)]
         else:
             expect_uris = [as_url(url)]
 

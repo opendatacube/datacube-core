@@ -117,7 +117,7 @@ def valid_data_mask(data):
         return data.map(valid_data_mask)
 
     if not isinstance(data, DataArray):
-        raise TypeError('valid_data_mask not supported for type {}'.format(type(data)))
+        raise TypeError(f'valid_data_mask not supported for type {type(data)}')
 
     nodata = data.attrs.get('nodata', None)
 
@@ -150,7 +150,7 @@ def mask_invalid_data(data, keep_attrs=True):
                                     if key != 'nodata'}
         return out_data_array
 
-    raise TypeError('mask_invalid_data not supported for type {}'.format(type(data)))
+    raise TypeError(f'mask_invalid_data not supported for type {type(data)}')
 
 
 def create_mask_value(bits_def, **flags):

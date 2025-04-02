@@ -168,13 +168,11 @@ class Query:
         return self.__str__()
 
     def __str__(self):
-        return """Datacube Query:
-        type = {type}
-        search = {search}
-        geopolygon = {geopolygon}
-        """.format(type=self.product,
-                   search=self.search,
-                   geopolygon=self.geopolygon)
+        return f"""Datacube Query:
+        type = {self.product}
+        search = {self.search}
+        geopolygon = {self.geopolygon}
+        """
 
 
 def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:

@@ -79,7 +79,7 @@ def _dc_crs(crs: Optional[rasterio.crs.CRS]) -> Optional[CRS]:  # pylint: disabl
         return None
 
     if crs.is_epsg_code:
-        return CRS('epsg:{}'.format(crs.to_epsg()))
+        return CRS(f'epsg:{crs.to_epsg()}')
     return CRS(crs.wkt)
 
 
@@ -102,7 +102,7 @@ def _rio_uri(band: BandInfo) -> str:
         fname = str(uri_to_local_path(band.uri))
 
         if _is_netcdf(band.format):
-            fname = 'NETCDF:"{}":{}'.format(fname, band.layer)
+            fname = f'NETCDF:"{fname}":{band.layer}'
 
         return fname
 

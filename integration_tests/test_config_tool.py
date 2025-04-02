@@ -35,9 +35,9 @@ def test_add_example_dataset_types(clirunner, index, default_metadata_type, eo3_
 
     if index.supports_legacy:
         # Legacy EO test examples
-        print('{} mappings'.format(existing_mappings))
+        print(f'{existing_mappings} mappings')
         for mapping_path in EXAMPLE_DATASET_TYPE_DOCS:
-            print('Adding mapping {}'.format(mapping_path))
+            print(f'Adding mapping {mapping_path}')
 
             result = clirunner(['-v', 'product', 'add', mapping_path])
             assert result.exit_code == 0
@@ -149,7 +149,7 @@ def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product):
     )
     assert 'Updated.' in result.output
     # It should not rebuild indexes by default
-    assert 'Dropping index: dix_{}'.format(ls8_eo3_product.name) not in result.output
+    assert f'Dropping index: dix_{ls8_eo3_product.name}' not in result.output
 
     result = clirunner(['metadata', 'list'])
     assert "eo3 " in result.output
@@ -174,14 +174,10 @@ def test_db_init_rebuild(clirunner, cfg_env, ls5_telem_type):
     )
     assert 'Updated.' in result.output
     # It should have recreated views and indexes.
-    assert 'Dropping index: dix_{}'.format(ls5_telem_type.name) in result.output
-    assert 'Creating index: dix_{}'.format(ls5_telem_type.name) in result.output
-    assert 'Dropping view: {schema}.dv_{name}_dataset'.format(
-        schema=SCHEMA_NAME, name=ls5_telem_type.name
-    ) in result.output
-    assert 'Creating view: {schema}.dv_{name}_dataset'.format(
-        schema=SCHEMA_NAME, name=ls5_telem_type.name
-    ) in result.output
+    assert f'Dropping index: dix_{ls5_telem_type.name}' in result.output
+    assert f'Creating index: dix_{ls5_telem_type.name}' in result.output
+    assert f'Dropping view: {SCHEMA_NAME}.dv_{ls5_telem_type.name}_dataset' in result.output
+    assert f'Creating view: {SCHEMA_NAME}.dv_{ls5_telem_type.name}_dataset' in result.output
 
 
 def test_db_init(clirunner, index):

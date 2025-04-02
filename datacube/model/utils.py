@@ -295,7 +295,7 @@ def traverse_datasets(ds, cbk, mode='post-order', **kwargs):
             'pre-order': visit_pre_order}.get(mode, None)
 
     if proc is None:
-        raise ValueError('Unsupported traversal mode: {}'.format(mode))
+        raise ValueError(f'Unsupported traversal mode: {mode}')
 
     proc(ds, cbk)
 
@@ -398,10 +398,10 @@ def dedup_lineage(root):
             _ds, _doc, _sources = existing
 
             if not check_sources(sources, _sources):
-                raise InvalidDocException('Inconsistent lineage for repeated dataset with _id: {}'.format(ds.id))
+                raise InvalidDocException(f'Inconsistent lineage for repeated dataset with _id: {ds.id}')
 
             if doc != _doc:
-                raise InvalidDocException('Inconsistent metadata for repeated dataset with _id: {}'.format(ds.id))
+                raise InvalidDocException(f'Inconsistent metadata for repeated dataset with _id: {ds.id}')
 
             return _ds
 

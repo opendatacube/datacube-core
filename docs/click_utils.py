@@ -46,7 +46,7 @@ def generate_help_text(command, prefix):
                     title(None, full_cmd),
                     ids=[make_id(full_cmd)], names=[full_cmd])
     if help_opts:
-        h = "$ {} {}\n".format(full_cmd, help_opts[0]) + command.get_help(ctx)
+        h = f"$ {full_cmd} {help_opts[0]}\n" + command.get_help(ctx)
         block.append(literal_block(None, h, language='console'))
 
     if isinstance(command, click.core.MultiCommand):
@@ -58,7 +58,7 @@ def generate_help_text(command, prefix):
 
 
 def make_block(command, opt, content):
-    h = "$ {} {}\n".format(command, opt) + content
+    h = f"$ {command} {opt}\n" + content
     return section(None,
                    title(None, command),
                    literal_block(None, h, language='console'),

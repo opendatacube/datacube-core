@@ -1109,7 +1109,7 @@ class Datacube:
             )
 
     def __str__(self):
-        return "Datacube<index={!r}>".format(self.index)
+        return f"Datacube<index={self.index!r}>"
 
     def __repr__(self):
         return self.__str__()
@@ -1359,9 +1359,7 @@ def _calculate_chunk_sizes(
     bad_keys = cast(set[str], set(dask_chunks)) - cast(set[str], set(valid_keys))
     if bad_keys:
         raise KeyError(
-            "Unknown dask_chunk dimension {}. Valid dimensions are: {}".format(
-                bad_keys, valid_keys
-            )
+            f"Unknown dask_chunk dimension {bad_keys}. Valid dimensions are: {valid_keys}"
         )
 
     chunk_maxsz = dict(
@@ -1404,7 +1402,7 @@ def _calculate_chunk_sizes(
 
 
 def _tokenize_dataset(dataset: Dataset) -> str:
-    return "dataset-{}".format(dataset.id.hex)
+    return f"dataset-{dataset.id.hex}"
 
 
 # pylint: disable=too-many-locals
@@ -1421,7 +1419,7 @@ def _make_dask_array(
     dsk = dsk.copy()  # this contains mapping from dataset id to dataset object
 
     token = uuid.uuid4().hex
-    dsk_name = "dc_load_{name}-{token}".format(name=measurement.name, token=token)
+    dsk_name = f"dc_load_{measurement.name}-{token}"
 
     needed_irr_chunks, grid_chunks = chunks[:-2], chunks[-2:]
     actual_irr_chunks = (1,) * len(needed_irr_chunks)

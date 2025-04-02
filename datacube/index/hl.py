@@ -138,7 +138,7 @@ def check_consistent(a: Mapping[str, Any], b: Mapping[str, Any]) -> Tuple[bool, 
 
     def render_diff(offset, a, b):
         offset = '.'.join(map(str, offset))
-        return '{}: {!r}!={!r}'.format(offset, a, b)
+        return f'{offset}: {a!r}!={b!r}'
 
     return False, ", ".join([render_diff(offset, a, b) for offset, a, b in diffs])
 
@@ -260,7 +260,7 @@ def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: Product
                         bad_lineage.append((uuid, err))
 
             if len(bad_lineage) > 0:
-                error_report = '\n'.join('Inconsistent lineage dataset {}:\n> {}'.format(uuid, err)
+                error_report = '\n'.join(f'Inconsistent lineage dataset {uuid}:\n> {err}'
                                          for uuid, err in bad_lineage)
                 return None, error_report
 

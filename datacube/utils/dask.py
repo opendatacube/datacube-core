@@ -115,7 +115,7 @@ def start_local_dask(n_workers: int = 1,
 
 
 def _randomize(prefix):
-    return '{}-{:08x}'.format(prefix, randint(0, 0xFFFFFFFF))
+    return f'{prefix}-{randint(0, 0xFFFFFFFF):08x}'
 
 
 def partition_map(n: int, func: Any, its: Iterable[Any],

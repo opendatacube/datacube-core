@@ -24,7 +24,7 @@ def make_test_tasks(index, config, **kwargs):
 
     num_tasks = config['num_tasks']
     for i in range(0, num_tasks):
-        yield 'Task: {}'.format(i)
+        yield f'Task: {i}'
 
 
 @task_app(make_config=make_test_config, make_tasks=make_test_tasks)
