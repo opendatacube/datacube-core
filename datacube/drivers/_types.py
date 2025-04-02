@@ -31,7 +31,7 @@ RasterShape = tuple[int, int]
 RasterWindow = tuple[slice, slice]
 
 
-class GeoRasterReader(object, metaclass=ABCMeta):
+class GeoRasterReader(metaclass=ABCMeta):
     """ Abstract base class for dataset reader.
     """
 
@@ -67,7 +67,7 @@ class GeoRasterReader(object, metaclass=ABCMeta):
         ...  # pragma: no cover
 
 
-class ReaderDriver(object, metaclass=ABCMeta):
+class ReaderDriver(metaclass=ABCMeta):
     """ Interface for Reader Driver
     """
 
@@ -90,7 +90,7 @@ class ReaderDriver(object, metaclass=ABCMeta):
         ...  # pragma: no cover
 
 
-class ReaderDriverEntry(object, metaclass=ABCMeta):
+class ReaderDriverEntry(metaclass=ABCMeta):
     @property
     @abstractmethod
     def protocols(self) -> list[str]:

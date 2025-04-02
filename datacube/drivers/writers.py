@@ -7,7 +7,7 @@ from ._tools import singleton_setup
 from .driver_cache import load_drivers
 
 
-class WriterDriverCache(object):
+class WriterDriverCache:
     def __init__(self, group: str):
         self._drivers = load_drivers(group)
 

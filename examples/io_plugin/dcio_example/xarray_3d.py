@@ -49,8 +49,8 @@ RasterWindow = tuple[int | tuple[int, int], ...]
 load_no = 0
 
 
-class XArrayDataSource3D(object):
-    class BandDataSource(object):
+class XArrayDataSource3D:
+    class BandDataSource:
         def __init__(
             self,
             dataset: xr.Dataset,
@@ -174,7 +174,7 @@ class XArrayDataSource3D(object):
         )
 
 
-class XArrayReaderDriver3D(object):
+class XArrayReaderDriver3D:
     def __init__(self) -> None:
         self.name = "XArrayReader3D"
         self.protocols = PROTOCOL

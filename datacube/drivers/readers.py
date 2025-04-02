@@ -11,7 +11,7 @@ from datacube.storage._base import BandInfo
 DatasourceFactory = Callable[[BandInfo], DataSource]  # pylint: disable=invalid-name
 
 
-class ReaderDriverCache(object):
+class ReaderDriverCache:
     def __init__(self, group: str):
         self._drivers = load_drivers(group)
 
