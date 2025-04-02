@@ -11,7 +11,8 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, Mapping, Union, Optional, Any, NamedTuple, Sequence, cast
+from typing import Any, NamedTuple, cast
+from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
 
 from deprecat import deprecat
@@ -136,7 +137,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
     def add(self, dataset: Dataset,
-            with_lineage: bool = True, archive_less_mature: Optional[int] = None) -> Dataset:
+            with_lineage: bool = True, archive_less_mature: int | None = None) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
@@ -267,7 +268,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         dataset_fields = product.metadata_type.dataset_fields
 
-        def load_field(f: Union[str, fields.Field]) -> fields.Field:
+        def load_field(f: str | fields.Field) -> fields.Field:
             if isinstance(f, str):
                 return dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)

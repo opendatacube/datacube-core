@@ -11,7 +11,7 @@ import xarray as xr
 import dask
 from dask.delayed import Delayed
 from pathlib import Path
-from typing import Union, Optional, List, Any, Dict
+from typing import Any
 
 from datacube.migration import ODC2DeprecationWarning
 
@@ -35,17 +35,17 @@ def _adjust_blocksize(block, dim):
 def _write_cog(
     pix: np.ndarray,
     geobox: GeoBox,
-    fname: Union[Path, str],
-    nodata: Optional[float] = None,
+    fname: Path | str,
+    nodata: float | None = None,
     overwrite: bool = False,
-    blocksize: Optional[int] = None,
-    overview_resampling: Optional[Resampling] = None,
-    overview_levels: Optional[List[int]] = None,
-    ovr_blocksize: Optional[int] = None,
+    blocksize: int | None = None,
+    overview_resampling: Resampling | None = None,
+    overview_levels: list[int] | None = None,
+    ovr_blocksize: int | None = None,
     use_windowed_writes: bool = False,
-    intermediate_compression: Union[bool, str, Dict[str, Any]] = False,
+    intermediate_compression: bool | str | dict[str, Any] = False,
     **extra_rio_opts
-) -> Union[Path, bytes]:
+) -> Path | bytes:
     """Write geo-registered ndarray to a GeoTiff file or RAM.
 
     :param pix: ``xarray.DataArray`` with crs or (ndarray, geobox, nodata) triple
@@ -223,16 +223,16 @@ _delayed_write_cog_to_file = dask.delayed(  # pylint: disable=invalid-name
 @deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def write_cog(
     geo_im: xr.DataArray,
-    fname: Union[str, Path],
+    fname: str | Path,
     overwrite: bool = False,
-    blocksize: Optional[int] = None,
-    ovr_blocksize: Optional[int] = None,
-    overview_resampling: Optional[Resampling] = None,
-    overview_levels: Optional[List[int]] = None,
+    blocksize: int | None = None,
+    ovr_blocksize: int | None = None,
+    overview_resampling: Resampling | None = None,
+    overview_levels: list[int] | None = None,
     use_windowed_writes: bool = False,
-    intermediate_compression: Union[bool, str, Dict[str, Any]] = False,
+    intermediate_compression: bool | str | dict[str, Any] = False,
     **extra_rio_opts
-) -> Union[Path, bytes, Delayed]:
+) -> Path | bytes | Delayed:
     """
     Save ``xarray.DataArray`` to a file in Cloud Optimized GeoTiff format.
 
@@ -321,14 +321,14 @@ def write_cog(
 @deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
 def to_cog(
     geo_im: xr.DataArray,
-    blocksize: Optional[int] = None,
-    ovr_blocksize: Optional[int] = None,
-    overview_resampling: Optional[str] = None,
-    overview_levels: Optional[List[int]] = None,
+    blocksize: int | None = None,
+    ovr_blocksize: int | None = None,
+    overview_resampling: str | None = None,
+    overview_levels: list[int] | None = None,
     use_windowed_writes: bool = False,
-    intermediate_compression: Union[bool, str, Dict[str, Any]] = False,
+    intermediate_compression: bool | str | dict[str, Any] = False,
     **extra_rio_opts
-) -> Union[bytes, Delayed]:
+) -> bytes | Delayed:
     """
     Compress ``xarray.DataArray`` into Cloud Optimized GeoTiff bytes in memory.
 

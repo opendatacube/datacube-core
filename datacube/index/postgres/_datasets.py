@@ -11,7 +11,8 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, List, Union, Mapping, Any, Optional, Sequence
+from typing import Any
+from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
 from deprecat import deprecat
 
@@ -138,7 +139,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
     def add(self, dataset: Dataset,
-            with_lineage: bool = True, archive_less_mature: Optional[int] = None) -> Dataset:
+            with_lineage: bool = True, archive_less_mature: int | None = None) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
@@ -250,13 +251,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Returns each set of those field values and the datasets that have them.
         """
 
-        def load_field(f: Union[str, fields.Field]) -> fields.Field:
+        def load_field(f: str | fields.Field) -> fields.Field:
             if isinstance(f, str):
                 return product.metadata_type.dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
 
-        group_fields: List[fields.Field] = [load_field(f) for f in args]
+        group_fields: list[fields.Field] = [load_field(f) for f in args]
         expressions: list[Expression] = [product.metadata_type.dataset_fields['product'] == product.name]
 
         with self._db_connection() as connection:
@@ -296,7 +297,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return not bad_changes, good_changes, bad_changes
 
-    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature: Optional[int] = None):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature: int | None = None):
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset to update

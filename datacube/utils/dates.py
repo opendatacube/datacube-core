@@ -8,7 +8,6 @@ Date and time utility functions
 Includes sequence generation functions to be used by statistics apps
 
 """
-from typing import Union
 from datetime import datetime, tzinfo
 
 import dateutil
@@ -67,7 +66,7 @@ def _split_duration(duration):
     return int(duration[:-1]), duration[-1:]
 
 
-def normalise_dt(dt: Union[str, datetime]) -> datetime:
+def normalise_dt(dt: str | datetime) -> datetime:
     """ Turn strings into dates, turn timestamps with timezone info into UTC and remove timezone info.
     """
     if isinstance(dt, str):
@@ -107,7 +106,7 @@ def mk_time_coord(dts, name='time', units=None):
                         attrs=attrs)
 
 
-def parse_time(time: Union[str, datetime]) -> datetime:
+def parse_time(time: str | datetime) -> datetime:
     """Convert string to datetime object
 
     This function deals with ISO8601 dates fast, and fallbacks to python for

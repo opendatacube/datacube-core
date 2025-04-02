@@ -6,7 +6,8 @@
 
 This allows extraction of fields of interest from dataset metadata document.
 """
-from typing import Mapping, Dict, Any
+from typing import Any
+from collections.abc import Mapping
 import toolz
 import decimal
 from datacube.utils import parse_time
@@ -202,7 +203,7 @@ def parse_search_field(doc, name=''):
                       description=doc.get('description', ''))
 
 
-def get_dataset_fields(metadata_definition: Mapping[str, Any]) -> Dict[str, Field]:
+def get_dataset_fields(metadata_definition: Mapping[str, Any]) -> dict[str, Field]:
     """Construct search fields dictionary not tied to any specific db
     implementation.
 

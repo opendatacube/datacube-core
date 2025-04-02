@@ -5,7 +5,8 @@
 """ Dask Distributed Tools
 
 """
-from typing import Any, Iterable, Optional, Union, Tuple
+from typing import Any
+from collections.abc import Iterable
 from random import randint
 import toolz
 import queue
@@ -43,8 +44,8 @@ def get_total_available_memory(check_jupyter_hub=True):
 
 
 def compute_memory_per_worker(n_workers: int = 1,
-                              mem_safety_margin: Optional[Union[str, int]] = None,
-                              memory_limit: Optional[Union[str, int]] = None) -> int:
+                              mem_safety_margin: str | int | None = None,
+                              memory_limit: str | int | None = None) -> int:
     """ Figure out how much memory to assign per worker.
 
         result can be passed into ``memory_limit=`` parameter of dask worker/cluster/client
@@ -73,9 +74,9 @@ def compute_memory_per_worker(n_workers: int = 1,
 
 
 def start_local_dask(n_workers: int = 1,
-                     threads_per_worker: Optional[int] = None,
-                     mem_safety_margin: Optional[Union[str, int]] = None,
-                     memory_limit: Optional[Union[str, int]] = None,
+                     threads_per_worker: int | None = None,
+                     mem_safety_margin: str | int | None = None,
+                     memory_limit: str | int | None = None,
                      **kw):
     """
     Wrapper around ``distributed.Client(..)`` constructor that deals with memory better.
@@ -239,9 +240,9 @@ def pmap(func: Any,
         yield from xx
 
 
-def _save_blob_to_file(data: Union[bytes, str],
+def _save_blob_to_file(data: bytes | str,
                        fname: str,
-                       with_deps=None) -> Tuple[str, bool]:
+                       with_deps=None) -> tuple[str, bool]:
     if isinstance(data, str):
         data = data.encode('utf8')
 
@@ -254,13 +255,13 @@ def _save_blob_to_file(data: Union[bytes, str],
     return (fname, True)
 
 
-def _save_blob_to_s3(data: Union[bytes, str],
+def _save_blob_to_s3(data: bytes | str,
                      url: str,
-                     profile: Optional[str] = None,
+                     profile: str | None = None,
                      creds=None,
-                     region_name: Optional[str] = None,
+                     region_name: str | None = None,
                      with_deps=None,
-                     **kw) -> Tuple[str, bool]:
+                     **kw) -> tuple[str, bool]:
     from botocore.errorfactory import ClientError
     from botocore.exceptions import BotoCoreError
     from .aws import s3_dump, s3_client

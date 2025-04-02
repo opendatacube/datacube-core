@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
-from typing import Iterable, Iterator, Type
+from collections.abc import Iterable, Iterator
 
 from deprecat import deprecat
 from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
@@ -194,7 +194,7 @@ class PostgresIndexDriver(AbstractIndexDriver):
     aliases = ['legacy', 'default']
 
     @classmethod
-    def index_class(cls) -> Type[AbstractIndex]:
+    def index_class(cls) -> type[AbstractIndex]:
         return Index
 
     @staticmethod

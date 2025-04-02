@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from abc import ABC, abstractmethod
-from typing import Mapping, Iterable, Sequence, Type
+from collections.abc import Mapping, Iterable, Sequence
 from urllib.parse import ParseResult, urlparse
 
 from deprecat import deprecat
@@ -357,7 +357,7 @@ class AbstractIndexDriver(ABC):
     """
     @classmethod
     @abstractmethod
-    def index_class(cls) -> Type[AbstractIndex]:
+    def index_class(cls) -> type[AbstractIndex]:
         ...
 
     @classmethod

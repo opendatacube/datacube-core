@@ -11,7 +11,6 @@ from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Union
 from uuid import uuid4
 
 import pytest
@@ -571,7 +570,7 @@ def uninitialised_postgres_db_pair(cfg_env_pair):
 
 @pytest.fixture
 def index(cfg_env,
-          uninitialised_postgres_db: Union[PostGisDb, PostgresDb]):
+          uninitialised_postgres_db: PostGisDb | PostgresDb):
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db()
     yield index
@@ -613,7 +612,7 @@ def index_pair_populated_empty(cfg_env_pair, uninitialised_postgres_db_pair,
 
 
 @pytest.fixture
-def index_empty(cfg_env, uninitialised_postgres_db: Union[PostGisDb, PostgresDb]):
+def index_empty(cfg_env, uninitialised_postgres_db: PostGisDb | PostgresDb):
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db(with_default_types=False)
     yield index

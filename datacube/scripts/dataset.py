@@ -8,7 +8,8 @@ import logging
 import sys
 from collections import OrderedDict
 from textwrap import dedent
-from typing import cast, Iterable, Mapping, MutableMapping, Any, List, Set
+from typing import cast, Any
+from collections.abc import Iterable, Mapping, MutableMapping
 from uuid import UUID
 
 import click
@@ -462,7 +463,7 @@ def search_cmd(index, limit, f, expressions):
     )
 
 
-def _get_derived_set(index: Index, id_: UUID) -> Set[Dataset]:
+def _get_derived_set(index: Index, id_: UUID) -> set[Dataset]:
     """
     Get a single flat set of all derived datasets.
     (children, grandchildren, great-grandchildren...)
@@ -481,7 +482,7 @@ def _get_derived_set(index: Index, id_: UUID) -> Set[Dataset]:
               type=click.Choice(['exact', 'prefix', 'guess']), default='prefix')
 @click.argument('paths', nargs=-1)
 @ui.pass_index()
-def uri_search_cmd(index: Index, paths: List[str], search_mode):
+def uri_search_cmd(index: Index, paths: list[str], search_mode):
     """
     Search by dataset locations
 
@@ -512,13 +513,13 @@ def uri_search_cmd(index: Index, paths: List[str], search_mode):
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: List[str]):
+def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: list[str]):
     if not ids and not all_ds:
         click.echo('Error: no datasets provided\n')
         print_help_msg(archive_cmd)
         sys.exit(1)
 
-    derived_dataset_ids: List[UUID] = []
+    derived_dataset_ids: list[UUID] = []
     if all_ds:
         datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=False)}
     else:
@@ -561,7 +562,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int,
-                dry_run: bool, all_ds: bool, ids: List[str]):
+                dry_run: bool, all_ds: bool, ids: list[str]):
     if not ids and not all_ds:
         click.echo('Error: no datasets provided\n')
         print_help_msg(restore_cmd)
@@ -613,7 +614,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 )
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: List[str]):
+def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: list[str]):
     if not ids and not all_ds:
         click.echo('Error: no datasets provided\n')
         print_help_msg(purge_cmd)

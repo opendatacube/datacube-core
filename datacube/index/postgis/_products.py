@@ -17,7 +17,8 @@ from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
-from typing import Iterable, Sequence, cast
+from typing import cast
+from collections.abc import Iterable, Sequence
 
 _LOG = logging.getLogger(__name__)
 

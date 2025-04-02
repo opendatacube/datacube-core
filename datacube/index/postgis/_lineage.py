@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from time import monotonic
-from typing import Mapping, Optional, Iterable
+from collections.abc import Mapping, Iterable
 from uuid import UUID
 
 from datacube.index.abstract import AbstractIndex, AbstractLineageResource, DSID, BatchStatus, dsid_to_uuid
@@ -117,7 +117,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             ids = (dsid_to_uuid(id_) for id_ in args)
             return connection.insert_home(home, ids, allow_updates)
 
-    def clear_home(self, *args: DSID, home: Optional[str] = None) -> int:
+    def clear_home(self, *args: DSID, home: str | None = None) -> int:
         ids = [dsid_to_uuid(id_) for id_ in args]
         with self._db_connection() as connection:
             return connection.delete_home(ids)

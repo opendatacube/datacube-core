@@ -2,7 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Mapping, Any, cast
+from typing import Any, cast
+from collections.abc import Mapping
 import copy
 
 from .impl import VirtualProduct, Transformation, VirtualProductException

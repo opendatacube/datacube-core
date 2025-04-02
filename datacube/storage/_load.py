@@ -15,9 +15,9 @@ import numpy as np
 from xarray.core.dataarray import DataArray as XrDataArray, DataArrayCoordinates
 from xarray.core.dataset import Dataset as XrDataset
 from typing import (
-    Union, Optional, Callable,
-    List, Any, Iterator, Iterable, Mapping, Tuple, Hashable, cast
+    Any, cast
 )
+from collections.abc import Callable, Iterator, Iterable, Mapping, Hashable
 
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.math import invalid_mask
@@ -45,15 +45,15 @@ def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata) -> None:
     np.copyto(dst, src, where=invalid_mask(dst, dst_nodata))
 
 
-def reproject_and_fuse(datasources: List[DataSource],
+def reproject_and_fuse(datasources: list[DataSource],
                        destination: np.ndarray,
                        dst_geobox: GeoBox,
-                       dst_nodata: Optional[Union[int, float]],
+                       dst_nodata: int | float | None,
                        resampling: Resampling = 'nearest',
-                       fuse_func: Optional[FuserFunction] = None,
+                       fuse_func: FuserFunction | None = None,
                        skip_broken_datasets: bool = False,
-                       progress_cbk: Optional[ProgressFunction] = None,
-                       extra_dim_index: Optional[int] = None):
+                       progress_cbk: ProgressFunction | None = None,
+                       extra_dim_index: int | None = None):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
@@ -132,16 +132,16 @@ def _allocate_storage(coords: DataArrayCoordinates,
 
 def xr_load(sources: XrDataArray,
             geobox: GeoBox,
-            measurements: List[Measurement],
+            measurements: list[Measurement],
             driver: ReaderDriver,
-            driver_ctx_prev: Optional[Any] = None,
-            skip_broken_datasets: bool = False) -> Tuple[XrDataset, Any]:
+            driver_ctx_prev: Any | None = None,
+            skip_broken_datasets: bool = False) -> tuple[XrDataset, Any]:
     # pylint: disable=too-many-locals
     from ._read import read_time_slice_v2
 
     out = _allocate_storage(sources.coords, geobox, measurements)
 
-    def all_groups() -> Iterator[Tuple[Measurement, Tuple[int, ...], List[BandInfo]]]:
+    def all_groups() -> Iterator[tuple[Measurement, tuple[int, ...], list[BandInfo]]]:
         for idx, dss in np.ndenumerate(sources.values):
             for m in measurements:
                 bbi = [BandInfo(ds, m.name) for ds in dss]

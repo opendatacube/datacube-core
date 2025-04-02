@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from time import monotonic
-from typing import Iterable
+from collections.abc import Iterable
 
 from cachetools.func import lru_cache
 

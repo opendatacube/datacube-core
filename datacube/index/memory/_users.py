@@ -2,13 +2,13 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Iterable, Optional, Tuple
+from collections.abc import Iterable
 from datacube.index.abstract import AbstractUserResource
 
 
 class User:
     def __init__(self, username: str, password: str, role: str,
-                 description: Optional[str] = None):
+                 description: str | None = None):
         self.username = username
         self.password = password
         self.default_role = role
@@ -51,7 +51,7 @@ class UserResource(AbstractUserResource):
             self.users[user].grant_role(role)
 
     def create_user(self, username: str, password: str,
-                    role: str, description: Optional[str] = None) -> None:
+                    role: str, description: str | None = None) -> None:
         if username in self.users:
             raise ValueError(f"User {username} already exists")
         if role not in self.roles:
@@ -65,5 +65,5 @@ class UserResource(AbstractUserResource):
         for user in usernames:
             del self.users[user]
 
-    def list_users(self) -> Iterable[Tuple[str, str, Optional[str]]]:
+    def list_users(self) -> Iterable[tuple[str, str, str | None]]:
         return [(u.default_role, u.username, u.description) for u in self.users.values()]

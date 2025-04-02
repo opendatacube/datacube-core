@@ -3,7 +3,6 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Type
 
 from deprecat import deprecat
 from datacube.cfg import ODCEnvironment
@@ -103,7 +102,7 @@ class Index(AbstractIndex):
 
 class NullIndexDriver(AbstractIndexDriver):
     @classmethod
-    def index_class(cls) -> Type[AbstractIndex]:
+    def index_class(cls) -> type[AbstractIndex]:
         return Index
 
     @staticmethod

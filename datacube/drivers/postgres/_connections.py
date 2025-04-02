@@ -16,7 +16,7 @@ import json
 import logging
 import re
 from contextlib import contextmanager
-from typing import Callable, Union
+from collections.abc import Callable
 
 from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
@@ -215,7 +215,7 @@ class PostgresDb(object):
 
 def handle_dynamic_token_authentication(engine: Engine,
                                         new_token: Callable[..., str],
-                                        timeout: Union[float, int] = 600,
+                                        timeout: float | int = 600,
                                         **kwargs) -> None:
     last_token = [None]
     last_token_time = [0.0]

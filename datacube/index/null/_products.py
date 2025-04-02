@@ -8,7 +8,7 @@ import datetime
 from datacube.index.abstract import AbstractProductResource
 from datacube.model import Product
 
-from typing import Iterable
+from collections.abc import Iterable
 
 _LOG = logging.getLogger(__name__)
 

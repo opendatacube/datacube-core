@@ -16,7 +16,8 @@ Persistence API implementation for postgres.
 import datetime
 import logging
 import uuid  # noqa: F401
-from typing import Iterable, Any
+from typing import Any
+from collections.abc import Iterable
 from typing import cast as type_cast
 from sqlalchemy import (
     cast,

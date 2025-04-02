@@ -5,7 +5,8 @@
 import datetime
 import logging
 
-from typing import Iterable, Sequence, cast
+from typing import cast
+from collections.abc import Iterable, Sequence
 from uuid import UUID
 
 from datacube.index.fields import as_expression

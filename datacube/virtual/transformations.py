@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Optional, Collection
+from collections.abc import Collection
 import warnings
 
 import numpy
@@ -93,7 +93,7 @@ class ApplyMask(Transformation):
     :param erosion: the erosion to apply to mask in pixels
     :param dilation: the dilation to apply to mask in pixels
     """
-    def __init__(self, mask_measurement_name, apply_to: Optional[Collection[str]] = None,
+    def __init__(self, mask_measurement_name, apply_to: Collection[str] | None = None,
                  preserve_dtype=True, fallback_dtype='float32', erosion: int = 0, dilation: int = 0):
         self.mask_measurement_name = mask_measurement_name
         self.apply_to = apply_to

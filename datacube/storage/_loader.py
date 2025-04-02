@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from types import SimpleNamespace
-from typing import Sequence
+from collections.abc import Sequence
 
 import xarray as xr
 from odc.geo.geobox import GeoBox, GeoboxTiles

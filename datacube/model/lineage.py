@@ -5,7 +5,8 @@
 from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
-from typing import Mapping, Optional, Sequence, Tuple, Iterable, Any, cast
+from typing import Optional, Any, cast
+from collections.abc import Mapping, Sequence, Iterable
 
 
 class LineageDirection(Enum):
@@ -434,7 +435,7 @@ class LineageRelations:
 
     def relations_diff(self,
                        existing_relations: Optional["LineageRelations"] = None,
-                       allow_updates: bool = False) -> Tuple[Mapping[LineageIDPair, str],
+                       allow_updates: bool = False) -> tuple[Mapping[LineageIDPair, str],
                                                              Mapping[LineageIDPair, str],
                                                              Mapping[UUID, str],
                                                              Mapping[UUID, str]]:

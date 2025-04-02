@@ -8,7 +8,6 @@ Common datatypes for DB drivers.
 
 from datetime import date, datetime, time
 from dateutil.tz import tz
-from typing import List
 
 from datacube.model import Range, Not
 from datacube.model.fields import Expression, Field
@@ -76,7 +75,7 @@ def _to_expression(get_field, name: str, value) -> Expression:
     return as_expression(field, value)
 
 
-def to_expressions(get_field, **query) -> List[Expression]:
+def to_expressions(get_field, **query) -> list[Expression]:
     """
     Convert a simple query (dict of param names and values) to expression objects.
     :type get_field: (str) -> Field

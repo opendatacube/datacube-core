@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
-from typing import Any, TypeAlias, Callable
+from typing import Any, TypeAlias
+from collections.abc import Callable
 
 from .exceptions import ConfigException
 

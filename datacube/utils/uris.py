@@ -6,7 +6,6 @@ import os
 
 import pathlib
 import re
-from typing import Optional, List, Union
 from deprecat import deprecat
 import urllib.parse
 from urllib.parse import urlparse, parse_qsl, urljoin
@@ -55,7 +54,7 @@ def vsi_join(base: str, path: str) -> str:
     return base.rstrip('/') + '/' + path
 
 
-def uri_to_local_path(local_uri: Optional[str]) -> Optional[pathlib.Path]:
+def uri_to_local_path(local_uri: str | None) -> pathlib.Path | None:
     """
     Transform a URI to a platform dependent Path.
 
@@ -92,7 +91,7 @@ def mk_part_uri(uri: str, idx: int) -> str:
     return '{}#part={:d}'.format(uri, idx)
 
 
-def get_part_from_uri(uri: str) -> Optional[int]:
+def get_part_from_uri(uri: str) -> int | None:
     """
     Reverse of mk_part_uri
 
@@ -150,8 +149,8 @@ def default_base_dir() -> pathlib.Path:
     return pwd
 
 
-def normalise_path(p: Union[str, pathlib.Path],
-                   base: Optional[Union[str, pathlib.Path]] = None) -> pathlib.Path:
+def normalise_path(p: str | pathlib.Path,
+                   base: str | pathlib.Path | None = None) -> pathlib.Path:
     """Turn path into absolute path resolving any `../` and `.`
 
        If path is relative prepend `base` path to it, `base` if set should be
@@ -182,7 +181,7 @@ def normalise_path(p: Union[str, pathlib.Path],
     return norm(base / p)
 
 
-def uri_resolve(base: str, path: Optional[str] = None) -> str:
+def uri_resolve(base: str, path: str | None = None) -> str:
     """
     path                  -- if path is a uri or /vsi.* style path
     Path(path).as_uri()   -- if path is absolute filename
@@ -208,14 +207,14 @@ def uri_resolve(base: str, path: Optional[str] = None) -> str:
     reason="Multiple uris are deprecated. Please ensure that datasets only have one location",
     version='1.9.0',
     category=ODC2DeprecationWarning)
-def pick_uri(uris: List[str], scheme: Optional[str] = None) -> str:
+def pick_uri(uris: list[str], scheme: str | None = None) -> str:
     """ If scheme is supplied:
           Return first uri matching the scheme or raises Exception
         If scheme is not supplied:
           Return first `file:` uri, or failing that the very first uri
     """
 
-    def pick(uris: List[str], scheme: str) -> Optional[str]:
+    def pick(uris: list[str], scheme: str) -> str | None:
         for uri in uris:
             if uri.startswith(scheme):
                 return uri

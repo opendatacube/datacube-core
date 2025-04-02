@@ -3,12 +3,13 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Dict, Any, Tuple, Iterable
+from typing import Any
+from collections.abc import Iterable
 
 _LOG = logging.getLogger(__name__)
 
 
-def load_drivers(group: str) -> Dict[str, Any]:
+def load_drivers(group: str) -> dict[str, Any]:
     """
     Load available drivers for a given group name.
 
@@ -45,7 +46,7 @@ def load_drivers(group: str) -> Dict[str, Any]:
 
         return driver
 
-    def resolve_all(group: str) -> Iterable[Tuple[str, Any]]:
+    def resolve_all(group: str) -> Iterable[tuple[str, Any]]:
         from importlib.metadata import entry_points
         for ep in entry_points(group=group):
             driver = safe_load(ep)

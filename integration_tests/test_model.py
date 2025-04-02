@@ -5,11 +5,10 @@
 import pytest
 
 from datacube.model import Dataset, Product
-from typing import List
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_crs_parse(indexed_ls5_scene_products: List[Product]) -> None:
+def test_crs_parse(indexed_ls5_scene_products: list[Product]) -> None:
     product = indexed_ls5_scene_products[2]
 
     # Explicit CRS, should load fine.
