@@ -146,7 +146,7 @@ class Index(AbstractIndex):
         return PostgresTransaction(self._db, self.index_id)
 
     def __repr__(self):
-        return "Index<db={!r}>".format(self._db)
+        return f"Index<db={self._db!r}>"
 
     @contextmanager
     def _active_connection(self, transaction: bool = False) -> Iterator[PostgresDbAPI]:

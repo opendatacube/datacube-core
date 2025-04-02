@@ -221,7 +221,7 @@ def _build_hdf_uri(url_str: str, fmt: str, layer: str) -> str:
             raise RuntimeError("Can't access %s over %s" % (fmt, url.scheme))
         base = str(uri_to_local_path(url_str))
 
-    return '{}:"{}":{}'.format(fmt, base, layer)
+    return f'{fmt}:"{base}":{layer}'
 
 
 def _url2rasterio(url_str: str, fmt: str, layer: Optional[str]) -> str:

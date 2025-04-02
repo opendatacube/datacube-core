@@ -173,7 +173,7 @@ class Index(AbstractIndex):
             return conn.update_spindex(crses, product_names, dataset_ids)
 
     def __repr__(self):
-        return "Index<db={!r}>".format(self._db)
+        return f"Index<db={self._db!r}>"
 
     def drop_spatial_index(self, crs: CRS) -> bool:
         return self._db.drop_spatial_index(crs)

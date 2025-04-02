@@ -35,12 +35,12 @@ def _get_band_and_layer(b: Dict[str, Any]) -> Tuple[Optional[int], Optional[str]
         if layer is None or isinstance(layer, str):
             return (None, layer)
 
-        raise ValueError('Expect `layer` to be one of None,int,str but it is {}'.format(type(layer)))
+        raise ValueError(f'Expect `layer` to be one of None,int,str but it is {type(layer)}')
     else:
         if not isinstance(band, int):
-            raise ValueError('Expect `band` to be an integer (it is {})'.format(type(band)))
+            raise ValueError(f'Expect `band` to be an integer (it is {type(band)})')
         if layer is not None and not isinstance(layer, str):
-            raise ValueError('Expect `layer` to be one of None,str but it is {}'.format(type(layer)))
+            raise ValueError(f'Expect `layer` to be one of None,str but it is {type(layer)}')
 
         return (band, layer)
 
@@ -96,12 +96,12 @@ class BandInfo:
         try:
             mp, = ds.product.lookup_measurements([band]).values()
         except KeyError:
-            raise ValueError('No such band: {}'.format(band))
+            raise ValueError(f'No such band: {band}')
 
         mm = ds.measurements.get(mp.canonical_name)
 
         if mm is None:
-            raise ValueError('No such band: {}'.format(band))
+            raise ValueError(f'No such band: {band}')
 
         if not ds.uri:
             raise ValueError('No uris defined on a dataset')

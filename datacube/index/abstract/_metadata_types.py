@@ -121,7 +121,7 @@ class AbstractMetadataTypeResource(ABC):
                     check_doc_unchanged(
                         existing[mdt.name].definition,
                         jsonify_document(mdt.definition),
-                        'Metadata Type {}'.format(mdt.name)
+                        f'Metadata Type {mdt.name}'
                     )
                     _LOG.warning("%s: Skipped - already exists", mdt.name)
                     skipped += 1

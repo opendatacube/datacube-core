@@ -69,7 +69,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(product.definition),
-                'Metadata Type {}'.format(product.name)
+                f'Metadata Type {product.name}'
             )
         else:
             metadata_type = self._index.metadata_types.get_by_name(product.metadata_type.name)

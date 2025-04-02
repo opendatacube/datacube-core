@@ -30,7 +30,7 @@ def get_metadata_path(possible_path: Union[str, Path]) -> str:
         return str(dataset_path)
 
     # Otherwise there may be a sibling file with appended suffix '.agdc-md.yaml'.
-    expected_name = dataset_path.parent.joinpath('{}.agdc-md'.format(dataset_path.name))
+    expected_name = dataset_path.parent.joinpath(f'{dataset_path.name}.agdc-md')
     found = _find_any_metadata_suffix(expected_name)
     if found:
         return str(found)
@@ -63,7 +63,7 @@ def _find_any_metadata_suffix(path: Path) -> Optional[Path]:
         return None
 
     if len(existing_paths) > 1:
-        raise ValueError('Multiple matched metadata files: {!r}'.format(existing_paths))
+        raise ValueError(f'Multiple matched metadata files: {existing_paths!r}')
 
     return existing_paths[0]
 

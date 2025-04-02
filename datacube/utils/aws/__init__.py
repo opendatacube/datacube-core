@@ -81,7 +81,7 @@ def s3_fmt_range(r: Optional[ByteRange]):
     if _in < 0 or _out < 0:
         raise ValueError("Slice has to be positive")
 
-    return 'bytes={:d}-{:d}'.format(_in, _out-1)
+    return f'bytes={_in:d}-{_out-1:d}'
 
 
 def ec2_metadata(timeout: float = 0.1) -> Optional[Dict[str, Any]]:

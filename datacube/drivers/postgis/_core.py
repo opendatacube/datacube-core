@@ -64,7 +64,7 @@ def schema_qualified(name):
     >>> schema_qualified('dataset')
     'odc.dataset'
     """
-    return '{}.{}'.format(SCHEMA_NAME, name)
+    return f'{SCHEMA_NAME}.{name}'
 
 
 def _get_quoted_connection_info(connection):

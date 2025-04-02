@@ -765,7 +765,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             # Otherwise search any metadata type that has all the given search fields.
             types = self.products.get_with_fields(tuple(q.keys()))
             if not types:
-                raise ValueError('No type of dataset has fields: {}'.format(q.keys()))
+                raise ValueError(f'No type of dataset has fields: {q.keys()}')
 
         return types
 

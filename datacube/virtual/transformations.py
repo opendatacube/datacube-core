@@ -62,8 +62,8 @@ class MakeMask(Transformation):
 
     def measurements(self, input_measurements):
         if self.mask_measurement_name not in input_measurements:
-            raise VirtualProductException("required measurement {} not found"
-                                          .format(self.mask_measurement_name))
+            raise VirtualProductException(f"required measurement {self.mask_measurement_name} not found"
+                                          )
 
         def worker(_, value):
             result = value.copy()
@@ -145,7 +145,7 @@ class ApplyMask(Transformation):
         def worker(key, value):
             if self.preserve_dtype:
                 if 'nodata' not in value.attrs:
-                    raise VirtualProductException("measurement {} has no nodata value".format(key))
+                    raise VirtualProductException(f"measurement {key} has no nodata value")
                 return value.where(mask, value.attrs['nodata'])
 
             result = value.where(mask).astype(self.fallback_dtype)

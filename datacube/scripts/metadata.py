@@ -126,7 +126,7 @@ def show_metadata_type(index, metadata_type_name, output_format):
         for name in metadata_type_name:
             m = index.metadata_types.get_by_name(name)
             if m is None:
-                echo('No such metadata: {!r}'.format(name), err=True)
+                echo(f'No such metadata: {name!r}', err=True)
                 sys.exit(1)
             else:
                 mm.append(m)

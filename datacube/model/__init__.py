@@ -381,9 +381,7 @@ class Dataset:
 
     def __str__(self):
         str_loc = 'not available' if not self.uri else self.uri
-        return "Dataset <id={id} product={type} location={loc}>".format(id=self.id,
-                                                                        type=self.product.name,
-                                                                        loc=str_loc)
+        return f"Dataset <id={self.id} product={self.product.name} location={str_loc}>"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -425,7 +423,7 @@ class Measurement():
 
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
         if missing_keys:
-            raise ValueError("Measurement required keys missing: {}".format(missing_keys))
+            raise ValueError(f"Measurement required keys missing: {missing_keys}")
 
         self.canonical_name = canonical_name or kwargs.get('name')
 
@@ -464,7 +462,7 @@ class Measurement():
 
     def __delitem__(self, key):
         if key in self.REQUIRED_KEYS:
-            raise KeyError("Measurement() requires key {}".format(key))
+            raise KeyError(f"Measurement() requires key {key}")
         del self._data[key]
 
     def __contains__(self, key):
@@ -499,7 +497,7 @@ class Measurement():
         Removes the key and returns its value from the dictionary or a default value if the key is not found.
         """
         if key in self.REQUIRED_KEYS:
-            raise KeyError("Measurement() requires key {}".format(key))
+            raise KeyError(f"Measurement() requires key {key}")
         return self._data.pop(key, default)
 
     def update(self, *args, **kwargs):
@@ -572,7 +570,7 @@ class MetadataType:
         return self.name == other.name
 
     def __str__(self) -> str:
-        return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
+        return f"MetadataType(name={self.name!r}, id_={self.id!r})"
 
     def __repr__(self) -> str:
         return str(self)
@@ -893,7 +891,7 @@ class Product:
         return row
 
     def __str__(self) -> str:
-        return "Product(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
+        return f"Product(name={self.name!r}, id_={self.id!r})"
 
     def __repr__(self) -> str:
         return self.__str__()

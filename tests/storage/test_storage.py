@@ -693,8 +693,8 @@ def test_rio_driver_specifics():
 
     vsi_url = '/vsicurl/https://host.tld/path'
     assert _url2rasterio(vsi_url, 'GeoTIFF', None) is vsi_url
-    assert _url2rasterio(vsi_url, 'NetCDF', 'aa') == 'NetCDF:"{}":aa'.format(vsi_url)
-    assert _url2rasterio(vsi_url, 'HDF5', 'aa') == 'HDF5:"{}":aa'.format(vsi_url)
+    assert _url2rasterio(vsi_url, 'NetCDF', 'aa') == f'NetCDF:"{vsi_url}":aa'
+    assert _url2rasterio(vsi_url, 'HDF5', 'aa') == f'HDF5:"{vsi_url}":aa'
 
     with pytest.raises(ValueError):
         _url2rasterio('file:///f.nc', 'NetCDF', None)

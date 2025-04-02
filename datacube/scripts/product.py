@@ -267,7 +267,7 @@ def show_product(dc, product_name, output_format):
         for name in product_name:
             p = dc.index.products.get_by_name(name)
             if p is None:
-                echo('No such product: {!r}'.format(name), err=True)
+                echo(f'No such product: {name!r}', err=True)
                 sys.exit(1)
             else:
                 products.append(p)

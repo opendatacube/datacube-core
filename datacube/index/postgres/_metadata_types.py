@@ -67,7 +67,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(metadata_type.definition),
-                'Metadata Type {}'.format(metadata_type.name)
+                f'Metadata Type {metadata_type.name}'
             )
         else:
             with self._db_connection(transaction=allow_table_lock) as connection:

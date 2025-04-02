@@ -49,10 +49,10 @@ class NameResolver:
                 try:
                     result = import_function(name)
                 except (ImportError, AttributeError):
-                    msg = "could not resolve {} {} in {}".format(kind, name, recipe)
+                    msg = f"could not resolve {kind} {name} in {recipe}"
                     raise VirtualProductException(msg)
 
-            self._assert(callable(result), "{} not callable in {}".format(kind, recipe))
+            self._assert(callable(result), f"{kind} not callable in {recipe}")
 
             return result
 
@@ -67,20 +67,20 @@ class NameResolver:
             cls_name = recipe['transform']
             input_product = cast(Mapping, get('input'))
 
-            self._assert(input_product is not None, "no input for transformation in {}".format(recipe))
+            self._assert(input_product is not None, f"no input for transformation in {recipe}")
 
             return from_validated_recipe(dict(transform=lookup(cls_name, 'transform'),
                                               input=self.construct(**input_product),
                                               **reject_keys(recipe, ['transform', 'input'])))
 
         if kind == 'collate':
-            self._assert(len(recipe['collate']) > 0, "no children for collate in {}".format(recipe))
+            self._assert(len(recipe['collate']) > 0, f"no children for collate in {recipe}")
 
             return from_validated_recipe(dict(collate=[self.construct(**child) for child in recipe['collate']],
                                               **reject_keys(recipe, ['collate'])))
 
         if kind == 'juxtapose':
-            self._assert(len(recipe['juxtapose']) > 0, "no children for juxtapose in {}".format(recipe))
+            self._assert(len(recipe['juxtapose']) > 0, f"no children for juxtapose in {recipe}")
 
             return from_validated_recipe(dict(juxtapose=[self.construct(**child) for child in recipe['juxtapose']],
                                               **reject_keys(recipe, ['juxtapose'])))
@@ -90,8 +90,8 @@ class NameResolver:
             input_product = cast(Mapping, get('input'))
             group_by = get('group_by')
 
-            self._assert(input_product is not None, "no input for aggregate in {}".format(recipe))
-            self._assert(group_by is not None, "no group_by for aggregate in {}".format(recipe))
+            self._assert(input_product is not None, f"no input for aggregate in {recipe}")
+            self._assert(group_by is not None, f"no group_by for aggregate in {recipe}")
 
             return from_validated_recipe(dict(aggregate=lookup(cls_name, 'aggregate'),
                                               group_by=lookup(group_by, 'aggregate/group_by', kind='group_by'),
@@ -104,15 +104,15 @@ class NameResolver:
             resolution = recipe['reproject'].get('resolution')
             align = recipe['reproject'].get('align')
 
-            self._assert(input_product is not None, "no input for reproject in {}".format(recipe))
-            self._assert(output_crs is not None, "no output_crs for reproject in {}".format(recipe))
-            self._assert(resolution is not None, "no resolution for reproject in {}".format(recipe))
+            self._assert(input_product is not None, f"no input for reproject in {recipe}")
+            self._assert(output_crs is not None, f"no output_crs for reproject in {recipe}")
+            self._assert(resolution is not None, f"no resolution for reproject in {recipe}")
 
             return from_validated_recipe(dict(reproject=recipe['reproject'],
                                               input=self.construct(**input_product),
                                               **reject_keys(recipe, ['reproject', 'input'])))
 
-        raise VirtualProductException("could not understand virtual product recipe: {}".format(recipe))
+        raise VirtualProductException(f"could not understand virtual product recipe: {recipe}")
 
     def register(self, namespace: str, name: str, callable_obj):
         """ Register a callable to the name resolver. """
@@ -120,7 +120,7 @@ class NameResolver:
             self.lookup_table[namespace] = {}
 
         if name in self.lookup_table[namespace]:
-            raise VirtualProductException("name {} under {} is already registered".format(name, namespace))
+            raise VirtualProductException(f"name {name} under {namespace} is already registered")
 
         self.lookup_table[namespace][name] = callable_obj
 

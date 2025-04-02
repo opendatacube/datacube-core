@@ -104,7 +104,7 @@ def load_datasets_for_update(doc_stream, index):
 
         existing = index.datasets.get(uuid)
         if existing is None:
-            return None, None, "No such dataset in the database: {}".format(uuid)
+            return None, None, f"No such dataset in the database: {uuid}"
 
         ds = SimpleDocNav(
             prep_eo3(ds.doc, auto_skip=True),
@@ -272,7 +272,7 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
             return None
 
         if dry_run:
-            echo('Will {} old location {}, and add new one {}'.format(action_name, old_uri, new_uri))
+            echo(f'Will {action_name} old location {old_uri}, and add new one {new_uri}')
             return True
 
         return action(existing_ds.id, old_uri)

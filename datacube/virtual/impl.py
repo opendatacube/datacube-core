@@ -90,7 +90,7 @@ class VirtualDatasetBag:
             yield VirtualDatasetBag(child, self.geopolygon, self.product_definitions)
 
     def __repr__(self):
-        return "<VirtualDatasetBag of {} datacube datasets>".format(len(list(self.contained_datasets())))
+        return f"<VirtualDatasetBag of {len(list(self.contained_datasets()))} datacube datasets>"
 
 
 class VirtualDatasetBox:
@@ -110,7 +110,7 @@ class VirtualDatasetBox:
 
     def __repr__(self):
         if not self.load_natively:
-            return "<VirtualDatasetBox of shape {}>".format(dict(zip(self.dims, self.shape)))
+            return f"<VirtualDatasetBox of shape {dict(zip(self.dims, self.shape))}>"
 
         return "<natively loaded VirtualDatasetBox>"
 
@@ -328,7 +328,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
     def output_measurements(self, product_definitions: TypeMapping[str, Product],  # type: ignore[override]
                             measurements: Optional[List[str]] = None) -> TypeMapping[str, Measurement]:
         self._assert(self._product in product_definitions,
-                     "product {} not found in definitions".format(self._product))
+                     f"product {self._product} not found in definitions")
 
         if measurements is None:
             measurements = self.get('measurements')
@@ -339,14 +339,14 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
     def query(self, dc: Datacube, **search_terms: Dict[str, Any]) -> VirtualDatasetBag:
         product = dc.index.products.get_by_name(self._product)
         if product is None:
-            raise VirtualProductException("could not find product {}".format(self._product))
+            raise VirtualProductException(f"could not find product {self._product}")
 
         merged_terms = merge_search_terms(reject_keys(self, self._NON_QUERY_KEYS),
                                           reject_keys(search_terms, self._NON_QUERY_KEYS))
 
         query = Query(dc.index, **reject_keys(merged_terms, self._ADDITIONAL_SEARCH_KEYS))
         self._assert(query.product == self._product,
-                     "query for {} returned another product {}".format(self._product, query.product))
+                     f"query for {self._product} returned another product {query.product}")
 
         return VirtualDatasetBag(dc.find_datasets(**merged_terms), query.geopolygon,
                                  {product.name: product})
@@ -396,7 +396,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
         if 'measurements' in self and 'measurements' in load_settings:
             for measurement in load_settings['measurements']:
                 self._assert(measurement in self['measurements'],
-                             '{} not found in {}'.format(measurement, self._product))
+                             f'{measurement} not found in {self._product}')
 
         measurement_dicts = self.output_measurements(grouped.product_definitions,
                                                      cast(List[str], load_settings.get('measurements')))
@@ -446,9 +446,9 @@ class Transform(VirtualProduct):
         try:
             obj = cls(**{key: value for key, value in self.items() if key not in ['transform', 'input']})
         except TypeError:
-            raise VirtualProductException("transformation {} could not be instantiated".format(cls))
+            raise VirtualProductException(f"transformation {cls} could not be instantiated")
 
-        self._assert(isinstance(obj, Transformation), "not a transformation object: {}".format(obj))
+        self._assert(isinstance(obj, Transformation), f"not a transformation object: {obj}")
 
         return cast(Transformation, obj)
 
@@ -494,9 +494,9 @@ class Aggregate(VirtualProduct):
             obj = cls(**{key: value for key, value in self.items()
                          if key not in ['aggregate', 'input', 'group_by']})
         except TypeError:
-            raise VirtualProductException("transformation {} could not be instantiated".format(cls))
+            raise VirtualProductException(f"transformation {cls} could not be instantiated")
 
-        self._assert(isinstance(obj, Transformation), "not a transformation object: {}".format(obj))
+        self._assert(isinstance(obj, Transformation), f"not a transformation object: {obj}")
 
         return cast(Transformation, obj)
 
@@ -586,7 +586,7 @@ class Collate(VirtualProduct):
         if name is None:
             return first
 
-        self._assert(name not in first, "source index measurement '{}' already present".format(name))
+        self._assert(name not in first, f"source index measurement '{name}' already present")
 
         first.update({name: Measurement(name=name, dtype='int8', nodata=-1, units='1')})
         return first
@@ -693,7 +693,7 @@ class Juxtapose(VirtualProduct):
         result = cast(Dict[str, Measurement], {})
         for measurements in input_measurement_list:
             common = set(result) & set(measurements)
-            self._assert(not common, "common measurements {} between children".format(common))
+            self._assert(not common, f"common measurements {common} between children")
 
             result.update(measurements)
 
@@ -849,7 +849,7 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
         data = reproject_array(band.data, band.nodata, band.geobox, geobox, resampling)
         return wrap_in_dataarray(data, band, geobox, dims)
 
-    dask_name = 'warp_{name}-{token}'.format(name=band.name, token=uuid.uuid4().hex)
+    dask_name = f'warp_{band.name}-{uuid.uuid4().hex}'
     dependencies = [band.data]
 
     spatial_chunks = tuple(dask_chunks.get(k, geobox.shape[i])
@@ -922,9 +922,9 @@ def virtual_product_kind(recipe):
     candidates = [key for key in list(recipe)
                   if key in ['product', 'transform', 'collate', 'juxtapose', 'aggregate', 'reproject']]
     if len(candidates) > 1:
-        raise VirtualProductException("ambiguous kind in recipe: {}".format(recipe))
+        raise VirtualProductException(f"ambiguous kind in recipe: {recipe}")
     if len(candidates) < 1:
-        raise VirtualProductException("virtual product kind not specified in recipe: {}".format(recipe))
+        raise VirtualProductException(f"virtual product kind not specified in recipe: {recipe}")
     return candidates[0]
 
 

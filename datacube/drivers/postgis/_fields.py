@@ -364,8 +364,8 @@ class DateDocField(SimpleDocField):
     def day(self):
         """Get field truncated to the day"""
         return NativeField(
-            '{}_day'.format(self.name),
-            'Day of {}'.format(self.description),
+            f'{self.name}_day',
+            f'Day of {self.description}',
             self.alchemy_column,
             alchemy_expression=cast(func.date_trunc('day', self.alchemy_expression), TIMESTAMP(timezone=True))
         )
@@ -684,9 +684,7 @@ def parse_fields(doc, table_column):
             return field_class(name, description, column, indexed, **ctorargs)
         except TypeError as e:
             raise RuntimeError(
-                'Field {name} has unexpected argument for a {type}'.format(
-                    name=name, type=type_name
-                ), e
+                f'Field {name} has unexpected argument for a {type_name}', e
             )
 
     return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}

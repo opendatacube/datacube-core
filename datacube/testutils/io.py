@@ -259,7 +259,7 @@ def dc_crs_from_rio(crs):
     from odc.geo import CRS
 
     if crs.is_epsg_code:
-        return CRS('EPSG:{}'.format(crs.to_epsg()))
+        return CRS(f'EPSG:{crs.to_epsg()}')
     return CRS(crs.wkt)
 
 
