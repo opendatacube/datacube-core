@@ -577,7 +577,7 @@ def test_check_write_path(tmpdir):
     assert isinstance(check_write_path(str(some_path), overwrite=False), Path)
 
     p = tmpdir/"ttt.tmp"
-    with open(str(p), 'wt') as f:
+    with open(str(p), 'w') as f:
         f.write("text")
 
     assert p.exists()

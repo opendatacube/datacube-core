@@ -77,7 +77,7 @@ def find_config(paths_in: None | str | PathLike | list[str | PathLike],
 
     for path in paths:
         try:
-            with open(path, "r") as fp:
+            with open(path) as fp:
                 return fp.read()
         except OSError:
             continue
