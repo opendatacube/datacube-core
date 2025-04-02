@@ -539,7 +539,7 @@ def test_subtree(big_src_lineage_tree, big_src_tree_ids, src_lineage_tree, src_t
     assert sub.children is not None
 
     # Test no nodes with children
-    sub = src_lineage_tree.find_subtree((src_tree_ids["atmos"]))
+    sub = src_lineage_tree.find_subtree(src_tree_ids["atmos"])
     assert sub.dataset_id == src_tree_ids["atmos"]
     assert sub.children is None
 
