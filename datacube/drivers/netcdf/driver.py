@@ -12,7 +12,7 @@ PROTOCOL = 'file'
 FORMAT = 'NetCDF'
 
 
-class NetcdfReaderDriver(object):
+class NetcdfReaderDriver:
     def __init__(self):
         self.name = 'NetcdfReader'
         self.protocols = [PROTOCOL]
@@ -30,7 +30,7 @@ def reader_driver_init():
     return NetcdfReaderDriver()
 
 
-class NetcdfWriterDriver(object):
+class NetcdfWriterDriver:
     def __init__(self):
         pass
 

@@ -393,7 +393,7 @@ def metadata_subset(element, document, full_recursion=False) -> bool:
     return False
 
 
-class SimpleDocNav(object):
+class SimpleDocNav:
     """
     Allows navigation of Dataset metadata document lineage tree without
     creating full Dataset objects.

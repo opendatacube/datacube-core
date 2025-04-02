@@ -22,8 +22,8 @@ def uri_split(uri):
     return uri[loc+3:], uri[:loc]
 
 
-class PickleDataSource(object):
-    class BandDataSource(object):
+class PickleDataSource:
+    class BandDataSource:
         def __init__(self, da):
             self._da = da
             self.nodata = da.nodata
@@ -72,7 +72,7 @@ class PickleDataSource(object):
         yield PickleDataSource.BandDataSource(ds[self._band.name].isel(time=0))
 
 
-class PickleReaderDriver(object):
+class PickleReaderDriver:
     def __init__(self):
         self.name = 'PickleReader'
         self.protocols = [PROTOCOL, 'pickle']
@@ -90,7 +90,7 @@ def rdr_driver_init():
     return PickleReaderDriver()
 
 
-class PickleWriterDriver(object):
+class PickleWriterDriver:
     def __init__(self):
         pass
 

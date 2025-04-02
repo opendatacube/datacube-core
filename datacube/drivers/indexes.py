@@ -8,7 +8,7 @@ from .driver_cache import load_drivers
 from ..index.abstract import AbstractIndexDriver
 
 
-class IndexDriverCache(object):
+class IndexDriverCache:
     def __init__(self, group: str) -> None:
         self._drivers = load_drivers(group)
 

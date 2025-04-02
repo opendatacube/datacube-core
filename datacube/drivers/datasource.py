@@ -20,7 +20,7 @@ RasterWindow = Union[                         # pylint: disable=invalid-name
 # pylint: disable=pointless-statement
 
 
-class GeoRasterReader(object, metaclass=ABCMeta):
+class GeoRasterReader(metaclass=ABCMeta):
     """ Abstract base class for dataset reader.
     """
 
@@ -56,7 +56,7 @@ class GeoRasterReader(object, metaclass=ABCMeta):
         ...  # pragma: no cover
 
 
-class DataSource(object, metaclass=ABCMeta):
+class DataSource(metaclass=ABCMeta):
     """ Abstract base class for dataset source.
     """
 

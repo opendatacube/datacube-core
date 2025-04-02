@@ -202,7 +202,7 @@ def get_dataset_fields(metadata_type_definition):
     return fields
 
 
-class PostgresDbAPI(object):
+class PostgresDbAPI:
     def __init__(self, connection):
         self._connection = connection
         self._sqla_txn = None

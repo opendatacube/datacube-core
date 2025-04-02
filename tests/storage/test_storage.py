@@ -124,7 +124,7 @@ def test_mixed_result_when_first_source_partially_empty_with_nan_nodata():
     assert (output_data == [[1, 1], [2, 2]]).all()
 
 
-class FakeBandDataSource(object):
+class FakeBandDataSource:
     def __init__(self, value, nodata, shape=(2, 2), *args, **kwargs):
         self.value = value
         self.crs = epsg4326
@@ -199,7 +199,7 @@ def test_read_from_broken_source():
     assert (output_data == [[2, 2], [2, 2]]).all()
 
 
-class FakeDataSource(object):
+class FakeDataSource:
     def __init__(self):
         self.crs = epsg4326
         self.transform = Affine(0.25, 0, 100, 0, -0.25, -30)
@@ -417,7 +417,7 @@ def _read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, r
         read_time_slice(rdr, dest, geobox, resampling=resampling, dst_nodata=dst_nodata)
 
 
-class TestRasterDataReading(object):
+class TestRasterDataReading:
     @pytest.mark.parametrize("dst_nodata", [
         np.nan, float("nan"), -999
     ])

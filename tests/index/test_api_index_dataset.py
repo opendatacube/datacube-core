@@ -155,7 +155,7 @@ DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref
                                              'added', 'added_by', 'archived'])
 
 
-class MockDb(object):
+class MockDb:
     def __init__(self):
         self.dataset = {}
         self.dataset_source = set()

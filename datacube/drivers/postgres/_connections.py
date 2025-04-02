@@ -35,7 +35,7 @@ _LIB_ID = 'odc-' + str(datacube.__version__)
 _LOG = logging.getLogger(__name__)
 
 
-class PostgresDb(object):
+class PostgresDb:
     """
     A thin database access api.
 
