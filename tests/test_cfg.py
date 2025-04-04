@@ -91,14 +91,23 @@ def test_parse_text(simple_valid_ini, simple_valid_yaml):
         yaml_as_ini = parse_text(simple_valid_yaml, fmt=CfgFormat.INI)
 
 
-@pytest.fixture
-def single_env_config():
-    return """# Simple single environment config
+def mk_single_env_config(connector: str) -> str:
+    return f"""# Simple single environment config
 new:
    index_driver: postgis
-   db_url: postgresql://foo:bar@server.subdomain.domain/mytestdb
+   db_url: postgresql{connector}://foo:bar@server.subdomain.domain/mytestdb
    db_iam_authentication: yes
 """
+
+
+@pytest.fixture
+def single_env_config():
+    return mk_single_env_config("+psycopg2")
+
+
+@pytest.fixture
+def single_env_config_no_connector():
+    return mk_single_env_config("")
 
 
 @pytest.fixture
@@ -118,7 +127,7 @@ legacy:
    db_connection_timeout: 20
 new:
    index_driver: postgis
-   db_url: postgresql://foo:bar@server.subdomain.domain/mytestdb
+   db_url: postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb
    db_iam_authentication: yes
 postgis:
    alias: new
@@ -127,7 +136,7 @@ memory:
    db_url: '@nota?valid:url//foo&bar%%%'
 new2:
    index_driver: postgis
-   db_url: postgresql://foo:bar@server.subdomain.domain/mytestdb
+   db_url: postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb
    db_database: not_read
    db_port: ignored
    db_iam_authentication: yes
@@ -151,7 +160,7 @@ def simple_dict():
         },
         "new": {
             "index_driver": "postgis",
-            "db_url": "postgresql://foo:bar@server.subdomain.domain/mytestdb",
+            "db_url": "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb",
             "db_iam_authentication": "yes"
         },
         "postgis": {"alias": "new"},
@@ -161,7 +170,7 @@ def simple_dict():
         },
         "new2": {
             "index_driver": "postgis",
-            "db_url": "postgresql://foo:bar@server.subdomain.domain/mytestdb",
+            "db_url": "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb",
             "db_database": "not_read",
             "db_port": "ignored",
             "db_iam_authentication": "yes",
@@ -209,18 +218,21 @@ def test_invalid_option():
         handler = ODCOptionHandler("NO_CAPS", mockenv)
 
 
-def test_single_env(single_env_config):
+def test_single_env(single_env_config, single_env_config_no_connector):
     from datacube.cfg import ODCConfig
-    cfg = ODCConfig(text=single_env_config)
-
-    assert cfg['new'].index_driver == "postgis"
-    assert cfg['new'].db_url == "postgresql://foo:bar@server.subdomain.domain/mytestdb"
-    assert cfg['new'].db_username == "foo"
-    with pytest.raises(AttributeError):
-        assert cfg['new'].not_an_option
-    assert cfg['new']['db_iam_authentication']
-    assert cfg['new'].db_iam_timeout == 600
-    assert cfg['new']['db_connection_timeout'] == 60
+    db_urls = []
+    for cfg in [ODCConfig(text=single_env_config),
+                ODCConfig(text=single_env_config_no_connector)]:
+        assert cfg['new'].index_driver == "postgis"
+        db_urls.append(cfg['new'].db_url)
+        assert cfg['new'].db_username == "foo"
+        with pytest.raises(AttributeError):
+            assert cfg['new'].not_an_option
+        assert cfg['new']['db_iam_authentication']
+        assert cfg['new'].db_iam_timeout == 600
+        assert cfg['new']['db_connection_timeout'] == 60
+    assert db_urls == ["postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb",
+                       "postgresql://foo:bar@server.subdomain.domain/mytestdb"]
 
 
 def assert_simple_aliases(cfg):
@@ -259,7 +271,7 @@ def assert_simple_options(cfg):
     with pytest.raises(KeyError):
         assert cfg['default']["db_iam_timeout"]
 
-    assert cfg['new2'].db_url == "postgresql://foo:bar@server.subdomain.domain/mytestdb"
+    assert cfg['new2'].db_url == "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb"
     assert cfg['new2'].db_username == "foo"
     with pytest.raises(AttributeError):
         assert cfg['new2'].not_an_option
@@ -463,15 +475,15 @@ def test_pgurl_from_config(simple_dict):
     cfg = ODCConfig(raw_dict=simple_dict)
     assert psql_url_from_config(
         cfg["legacy"]
-    ) == "postgresql://foo:bar@server.subdomain.domain:5433/mytestdb"
+    ) == "postgresql+psycopg2://foo:bar@server.subdomain.domain:5433/mytestdb"
     assert psql_url_from_config(
         cfg["new"]
-    ) == "postgresql://foo:bar@server.subdomain.domain/mytestdb"
+    ) == "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb"
     with pytest.raises(AttributeError):
         psql_url_from_config(
             cfg["memory"]
         )
-    assert cfg["new2"].db_url == "postgresql://foo:bar@server.subdomain.domain/mytestdb"
+    assert cfg["new2"].db_url == "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb"
     assert cfg["new2"].db_username == "foo"
     assert cfg["new2"].db_password == "bar"
     assert cfg["new2"].db_hostname == "server.subdomain.domain"
@@ -488,7 +500,7 @@ def test_pgurl_from_config(simple_dict):
     })
     assert psql_url_from_config(
         cfg["foo"]
-    ) == "postgresql://penelope@remotehost.local:5544/mydb"
+    ) == "postgresql+psycopg2://penelope@remotehost.local:5544/mydb"
     cfg = ODCConfig(raw_dict={
         "foo": {
             "db_hostname": "remotehost.local",
@@ -528,7 +540,7 @@ def test_raw_by_environment(simple_config, monkeypatch):
     from datacube.cfg import ODCConfig
     monkeypatch.setenv(
         'ODC_CONFIG',
-        '{"default":{"alias": "foo"},"foo":{"index_driver":"postgis","db_url":"postgresql:///mydb"}}'
+        '{"default":{"alias": "foo"},"foo":{"index_driver":"postgis","db_url":"postgresql+psycopg2:///mydb"}}'
     )
     cfg = ODCConfig()
     assert cfg[None]._name == 'foo'

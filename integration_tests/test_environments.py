@@ -29,8 +29,8 @@ db_hostname: alt-db.opendatacube.test
 
     # Make sure the correct config is passed through the API
     # Parsed config:
-    db_url = f'postgresql://{cfg_env.db_username}@db.opendatacube.test:5432/datacube'
-    alt_db_url = f'postgresql://{alt_env.db_username}@alt-db.opendatacube.test:5432/datacube'
+    db_url = f'postgresql+psycopg2://{cfg_env.db_username}@db.opendatacube.test:5432/datacube'
+    alt_db_url = f'postgresql+psycopg2://{alt_env.db_username}@alt-db.opendatacube.test:5432/datacube'
 
     with Datacube(env=cfg_env, validate_connection=False) as dc:
         assert str(dc.index.url) == db_url
