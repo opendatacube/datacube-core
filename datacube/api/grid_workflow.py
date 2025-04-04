@@ -1,6 +1,6 @@
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
-# Copyright (c) 2015-2024 ODC Contributors
+# Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 import logging
@@ -23,13 +23,22 @@ if typing.TYPE_CHECKING:
 
 def _fast_slice(array: xr.DataArray, indexers):
     data = array.values[indexers]
-    dims = [dim for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice)]
-    coords = OrderedDict((dim,
-                          xr.Variable((dim,),
-                                          array.coords[dim].values[indexer],
-                                          attrs=array.coords[dim].attrs,
-                                          fastpath=True))
-                         for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice))
+    dims = [
+        dim for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice)
+    ]
+    coords = OrderedDict(
+        (
+            dim,
+            xr.Variable(
+                (dim,),
+                array.coords[dim].values[indexer],
+                attrs=array.coords[dim].attrs,
+                fastpath=True,
+            ),
+        )
+        for dim, indexer in zip(array.dims, indexers)
+        if isinstance(indexer, slice)
+    )
     return xr.DataArray(data, dims=dims, coords=coords, attrs=array.attrs)
 
 
@@ -61,14 +70,14 @@ class Tile:
         self.geobox: GeoBox = geobox
 
     @property
-    def dims(self) -> tuple[str]:
+    def dims(self) -> tuple[Hashable, ...]:
         """Names of the dimensions, eg ``('time', 'y', 'x')``
         :return: tuple(str)
         """
         return self.sources.dims + self.geobox.dimensions
 
     @property
-    def shape(self) -> tuple[int]:
+    def shape(self) -> tuple[int, ...]:
         """Lengths of each dimension, eg ``(285, 4000, 4000)``
         :return: tuple(int)
         """
@@ -82,7 +91,7 @@ class Tile:
         return self.sources.values[0][0].product
 
     def __getitem__(self, chunk):
-        sources = _fast_slice(self.sources, chunk[:len(self.sources.shape)])
+        sources = _fast_slice(self.sources, chunk[: len(self.sources.shape)])
         geobox = self.geobox[chunk[len(self.sources.shape):]]
         return Tile(sources, geobox)
 
@@ -102,7 +111,7 @@ class Tile:
             indexer[axis] = slice(i, min(size, i + step))
             yield self.sources[dim].values[i], self[tuple(indexer)]
 
-    def split_by_time(self, freq:str = 'A', time_dim:str = 'time', **kwargs):
+    def split_by_time(self, freq: str = "A", time_dim: str = "time", **kwargs):
         """
         Splits along the `time` dimension, into periods, using pandas offsets, such as:
         :
@@ -120,11 +129,10 @@ class Tile:
         # work with 1 element arrays as well
         start_range, end_range = self.sources[time_dim].data[[0, -1]]
 
-        for p in pd.period_range(start=start_range,
-                                 end=end_range,
-                                 freq=freq,
-                                 **kwargs):
-            sources_slice = self.sources.loc[{time_dim: slice(p.start_time, p.end_time)}]
+        for p in pd.period_range(start=start_range, end=end_range, freq=freq, **kwargs):
+            sources_slice = self.sources.loc[
+                {time_dim: slice(p.start_time, p.end_time)}
+            ]
             yield str(p), Tile(sources=sources_slice, geobox=self.geobox)
 
     def __str__(self):
@@ -145,7 +153,12 @@ class GridWorkflow:
     and can be serialized for use with the `distributed` package.
     """
 
-    def __init__(self, index: Index, grid_spec: GridWorkflow | None = None, product: Product | str | None = None):
+    def __init__(
+        self,
+        index: Index,
+        grid_spec: GridWorkflow | None = None,
+        product: Product | str | None = None,
+    ):
         """
         Create a grid workflow tool.
 
@@ -160,19 +173,25 @@ class GridWorkflow:
             if product is None:
                 raise ValueError("Have to supply either grid_spec or product")
 
-            product = self.index.products.get_by_name(product)
+            if isinstance(product, str):
+                product = self.index.products.get_by_name(product)
+
             if product is None:
                 raise ValueError(f"No such product: {product}")
 
             if product.grid_spec is None:
-                raise ValueError(f"Supplied product `{product}` does not have a gridspec")
+                raise ValueError(
+                    f"Supplied product `{product}` does not have a gridspec"
+                )
 
             grid_spec = product.grid_spec
         self.grid_spec = grid_spec
 
         assert self.grid_spec is not None
 
-    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=None, **indexers):
+    def cell_observations(
+        self, cell_index=None, geopolygon=None, tile_buffer=None, **indexers
+    ):
         """
         List datasets, grouped by cell.
 
@@ -196,11 +215,13 @@ class GridWorkflow:
         # TODO: split this method into 3: cell/polygon/unconstrained querying
 
         if tile_buffer is not None and geopolygon is not None:
-            raise ValueError('Cannot process tile_buffering and geopolygon together.')
+            raise ValueError("Cannot process tile_buffering and geopolygon together.")
         cells = {}
 
         def add_dataset_to_cells(tile_index, tile_geobox, dataset_):
-            cells.setdefault(tile_index, {'datasets': [], 'geobox': tile_geobox})['datasets'].append(dataset_)
+            cells.setdefault(tile_index, {"datasets": [], "geobox": tile_geobox})[
+                "datasets"
+            ].append(dataset_)
 
         if cell_index:
             assert len(cell_index) == 2
@@ -220,8 +241,11 @@ class GridWorkflow:
             if query.geopolygon:
                 # Get a rough region of tiles
                 query_tiles = set(
-                    tile_index for tile_index, tile_geobox in
-                    self.grid_spec.tiles_from_geopolygon(query.geopolygon, geobox_cache=geobox_cache))
+                    tile_index
+                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(
+                        query.geopolygon, geobox_cache=geobox_cache
+                    )
+                )
 
                 for dataset in datasets:
                     # Go through our datasets and see which tiles each dataset produces, and whether they intersect
@@ -230,15 +254,24 @@ class GridWorkflow:
                     bbox = dataset_extent.boundingbox
                     bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
 
-                    for tile_index, tile_geobox in self.grid_spec.tiles(bbox, geobox_cache=geobox_cache):
-                        if tile_index in query_tiles and intersects(tile_geobox.extent, dataset_extent):
+                    for tile_index, tile_geobox in self.grid_spec.tiles(
+                        bbox, geobox_cache=geobox_cache
+                    ):
+                        if tile_index in query_tiles and intersects(
+                            tile_geobox.extent, dataset_extent
+                        ):
                             add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             else:
                 for dataset in datasets:
-                    dataset_extent = dataset.extent.buffer(*tile_buffer) if tile_buffer else dataset.extent
-                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(dataset_extent,
-                                                                                        geobox_cache=geobox_cache):
+                    dataset_extent = (
+                        dataset.extent.buffer(*tile_buffer)
+                        if tile_buffer
+                        else dataset.extent
+                    )
+                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(
+                        dataset_extent, geobox_cache=geobox_cache
+                    ):
                         if tile_buffer:
                             tile_geobox = tile_geobox.buffered(*tile_buffer)
                         add_dataset_to_cells(tile_index, tile_geobox, dataset)
@@ -248,7 +281,7 @@ class GridWorkflow:
     def _find_datasets(self, geopolygon, indexers):
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
         if not query.product:
-            raise RuntimeError('must specify a product')
+            raise RuntimeError("must specify a product")
         datasets = self.index.datasets.search_eager(**query.search_terms)
         return datasets, query
 
@@ -270,8 +303,8 @@ class GridWorkflow:
         """
         cells = {}
         for cell_index, observation in observations.items():
-            sources = Datacube.group_datasets(observation['datasets'], group_by)
-            cells[cell_index] = Tile(sources, observation['geobox'])
+            sources = Datacube.group_datasets(observation["datasets"], group_by)
+            cells[cell_index] = Tile(sources, observation["geobox"])
         return cells
 
     @staticmethod
@@ -292,14 +325,14 @@ class GridWorkflow:
         """
         tiles = {}
         for cell_index, observation in observations.items():
-            dss = observation['datasets']
-            geobox = observation['geobox']
+            dss = observation["datasets"]
+            geobox = observation["geobox"]
 
             sources = Datacube.group_datasets(dss, group_by)
             coord = sources[sources.dims[0]]
             for i in range(coord.size):
                 tile_index = cell_index + (coord.values[i],)
-                tiles[tile_index] = Tile(sources[i:i+1], geobox)
+                tiles[tile_index] = Tile(sources[i:i + 1], geobox)
 
         return tiles
 
@@ -344,7 +377,14 @@ class GridWorkflow:
         return self.tile_sources(observations, query_group_by(**query))
 
     @staticmethod
-    def load(tile, measurements=None, dask_chunks=None, fuse_func=None, resampling=None, skip_broken_datasets=False):
+    def load(
+        tile,
+        measurements=None,
+        dask_chunks=None,
+        fuse_func=None,
+        resampling=None,
+        skip_broken_datasets=False,
+    ):
         """
         Load data for a cell/tile.
 
@@ -388,22 +428,29 @@ class GridWorkflow:
         """
         measurement_dicts = tile.product.lookup_measurements(measurements)
 
-        dataset = Datacube.load_data(tile.sources, tile.geobox,
-                                     measurement_dicts, resampling=resampling,
-                                     dask_chunks=dask_chunks, fuse_func=fuse_func,
-                                     skip_broken_datasets=skip_broken_datasets)
+        dataset = Datacube.load_data(
+            tile.sources,
+            tile.geobox,
+            measurement_dicts,
+            resampling=resampling,
+            dask_chunks=dask_chunks,
+            fuse_func=fuse_func,
+            skip_broken_datasets=skip_broken_datasets,
+        )
 
         return dataset
 
     def update_tile_lineage(self, tile: Tile):
         for i in range(tile.sources.size):
             sources = tile.sources.values[i]
-            tile.sources.values[i] = tuple(self.index.datasets.get(dataset.id, include_sources=True)
-                                           for dataset in sources)
+            tile.sources.values[i] = tuple(
+                self.index.datasets.get(dataset.id, include_sources=True)
+                for dataset in sources
+            )
         return tile
 
     def __str__(self):
-        return "GridWorkflow<index={!r},\n\tgridspec={!r}>".format(self.index, self.grid_spec)
+        return f"GridWorkflow<index={self.index!r},\n\tgridspec={self.grid_spec!r}>"
 
     def __repr__(self):
         return self.__str__()
