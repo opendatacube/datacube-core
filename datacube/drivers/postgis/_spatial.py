@@ -145,7 +145,7 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
     with Session(engine) as session:
         results = session.execute(
             select(SpatialIndexRecord.srid).where(
-                SpatialIndexRecord.srid == sp_idx.__tablename__[8:])  # type: ignore[attr-defined]
+                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:]))  # type: ignore[arg-type,attr-defined]
         )
         for result in results:
             # SpatialIndexRecord exists - actual index assumed to exist too.
@@ -174,7 +174,7 @@ def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex]):
     with Session(engine) as session:
         results = session.execute(
             select(SpatialIndexRecord).where(
-                SpatialIndexRecord.srid == sp_idx.__tablename__[8:])  # type: ignore[attr-defined]
+                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:]))  # type: ignore[arg-type,attr-defined]
         )
         spidx_record = None
         for result in results:
