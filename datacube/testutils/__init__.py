@@ -174,12 +174,12 @@ dataset:
 
 
 def mk_sample_product(name: str,
-                      description: str = 'Sample',
-                      measurements=('red', 'green', 'blue'),
+                      description: str='Sample',
+                      measurements: Sequence[str] = ('red', 'green', 'blue'),
                       with_grid_spec: bool = False,
                       metadata_type=None,
                       storage=None,
-                      load: bool | None = None):
+                      load: bool | None = None) -> Product:
 
     if storage is None and with_grid_spec is True:
         storage = {'crs': 'EPSG:3577',
