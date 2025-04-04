@@ -137,7 +137,7 @@ postgis = 'datacube.index.postgis.index:index_driver_init'
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
 testpaths = ["datacube", "tests", "integration_tests"]
-norecursedirs = [".*", "build", "dist", ".git", "tmp*"]
+norecursedirs = [".*", "build", "dist", ".git", "tmp*", "docs", ".jj"]
 filterwarnings = [
     "ignore::FutureWarning",
     "ignore:datetime.datetime.utcnow*:DeprecationWarning:botocore.*",
