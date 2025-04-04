@@ -23,8 +23,8 @@ def index_connect(config_env: ODCEnvironment | None = None,
     It contains all the required connection parameters, but doesn't actually
     check that the server is available.
 
+    :param config_env: Config environment to use. (optional)
     :param application_name: A short, alphanumeric name to identify this application.
-    :param local_config: Config object to use. (optional)
     :param validate_connection: Validate database connection and schema immediately
     :raises datacube.index.Exceptions.IndexSetupError:
     """

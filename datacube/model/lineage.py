@@ -49,7 +49,7 @@ class LineageTree:
           children=None means that there may be children in the database.
           children={} means there are no children in the database.
           children represent source datasets or derived datasets depending on the direction.
-    home (Optional[str]):
+     - home (Optional[str]):
           The home index associated with this node's dataset.
           Optional. Index drivers may not implement a home table, in which case this value
           will always be None.

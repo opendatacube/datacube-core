@@ -32,7 +32,7 @@ class AbstractLineageResource(ABC):
     """
     def __init__(self, index) -> None:
         self._index = index
-        # THis is explicitly for indexes that do not support the External Lineage API.
+        # This is explicitly for indexes that do not support the External Lineage API.
         assert self._index.supports_external_lineage
 
     @abstractmethod
@@ -46,7 +46,7 @@ class AbstractLineageResource(ABC):
 
         Tree may be empty (i.e. just the root node) if no lineage for id is stored.
 
-        :param id: the id of the dataset at the root of the returned tree
+        :param id_: the id of the dataset at the root of the returned tree
         :param max_depth: Maximum recursion depth.  Default/Zero = unlimited depth
         :return: A derived-direction Lineage tree with id at the root.
         """
@@ -61,7 +61,7 @@ class AbstractLineageResource(ABC):
 
         Tree may be empty (i.e. just the root node) if no lineage for id is stored.
 
-        :param id: the id of the dataset at the root of the returned tree
+        :param id_: the id of the dataset at the root of the returned tree
         :param max_depth: Maximum recursion depth.  Default/Zero = unlimited depth
         :return: A source-direction Lineage tree with id at the root.
         """
@@ -225,10 +225,10 @@ class NoLineageResource(AbstractLineageResource):
         self._index = index
         assert not self._index.supports_external_lineage
 
-    def get_derived_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
+    def get_derived_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         raise NotImplementedError()
 
-    def get_source_tree(self, id: DSID, max_depth: int = 0) -> LineageTree:
+    def get_source_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         raise NotImplementedError()
 
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:

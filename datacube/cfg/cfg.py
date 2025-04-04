@@ -52,6 +52,7 @@ def find_config(paths_in: None | str | PathLike | list[str | PathLike],
     If None was passed in, AND no readable file could be found, a default configuration text is returned.
 
     :param paths_in: A file system path, or a list of file system paths, or None.
+    :param default_cb: A default semaphore callback object, or None.
     :return: The contents of the first readable file found.
     """
     using_default_paths: bool = False
@@ -107,7 +108,7 @@ def parse_text(cfg_text: str, fmt: CfgFormat = CfgFormat.AUTO) -> ConfigDict:
     Raises a ConfigException if the file cannot be parsed.
 
     :param cfg_text: Configuration string in INI, YAML or JSON format
-    :param fmt: Whether to use the ini or yaml/json parser. By default autodetects file format.
+    :param fmt: Whether to use the ini or yaml/json parser. Autodetects file format by default.
     :return: A raw config dictionary
     """
     raw_config = {}

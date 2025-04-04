@@ -235,8 +235,8 @@ class AbstractDatasetResource(ABC):
 
         :param Dataset ds: dataset to search
         :param delta: millisecond delta for time range.
-        If True, default to 500ms. If False, do not find or archive less mature datasets.
-        Bool value accepted only for improving backwards compatibility, int preferred.
+            If True, default to 500ms. If False, do not find or archive less mature datasets.
+            Bool value accepted only for improving backwards compatibility, int preferred.
         """
         less_mature = self.find_less_mature(ds, delta)
         less_mature_ids = map(lambda x: x.id, less_mature)
@@ -251,8 +251,8 @@ class AbstractDatasetResource(ABC):
 
         :param Dataset ds: Dataset to search
         :param delta: millisecond delta for time range.
-        If True, default to 500ms. If None or False, do not find or archive less mature datasets.
-        Bool value accepted only for improving backwards compatibility, int preferred.
+            If True, default to 500ms. If None or False, do not find or archive less mature datasets.
+            Bool value accepted only for improving backwards compatibility, int preferred.
         :return: Iterable of less mature datasets
         """
         if isinstance(delta, bool):
@@ -479,7 +479,7 @@ class AbstractDatasetResource(ABC):
 
         :param id_: dataset id
         :param uri: fully qualified uri
-        :return: True if location was able to be archived
+        :return: True if location was archived
         """
 
     @deprecat(
@@ -499,7 +499,7 @@ class AbstractDatasetResource(ABC):
 
         :param id_: dataset id
         :param uri: fully qualified uri
-        :return: True location was able to be restored
+        :return: True if location was restored
         """
 
     @abstractmethod
@@ -543,11 +543,11 @@ class AbstractDatasetResource(ABC):
         is guaranteed.  Ordering of results is now unspecified and may vary between index drivers.
 
         :param limit: Limit number of datasets per product (None/default = unlimited)
+        :param source_filter: Filter criteria for sources (None/default = no filtering)
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
         :param order_by: field or expression by which to order results
-        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Matching datasets
         """
@@ -568,6 +568,7 @@ class AbstractDatasetResource(ABC):
 
         :param products: Iterable of products used to build the Dataset models.  May come from a different index.
                          Default/None: all products, Products read from the source index.
+        :param batch_size: Size of each chunk in the returned iterable (default = 1000)
         :return: Iterable of DatasetTuple named tuples
         """
         # Default implementation calls search
@@ -585,7 +586,7 @@ class AbstractDatasetResource(ABC):
 
         API Note: This API method is not finalised and may be subject to change.
 
-        :param batch_types: An iterable of one batch's worth of DatasetTuples to add
+        :param batch_ds: An iterable of one batch's worth of DatasetTuples to add
         :return: BatchStatus named tuple.
         """
         b_skipped = 0
@@ -674,7 +675,6 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
-        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Matching datasets, grouped by Product
         """
@@ -707,7 +707,6 @@ class AbstractDatasetResource(ABC):
                          True: Return archived datasets only.
         :param order_by: a field name, field, function or clause by which to sort output. None is unsorted and may allow
                          faster return of first result depending on the index driver's implementation.
-        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Namedtuple of requested fields, for each matching dataset.
         """
@@ -720,7 +719,6 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Count active datasets only.
                          None: Count archived and active datasets.
                          True: Count archived datasets only.
-        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Count of matching datasets in index
         """
@@ -730,7 +728,6 @@ class AbstractDatasetResource(ABC):
         """
         Perform a search, returning a count of for each matching product type.
 
-        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param archived: False (default): Count active datasets only.
                          None: Count archived and active datasets.
                          True: Count archived datasets only.
@@ -772,7 +769,6 @@ class AbstractDatasetResource(ABC):
         :param archived: False (default): Count active datasets only.
                          None: Count archived and active datasets.
                          True: Count archived datasets only.
-        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :returns: The product, a list of time ranges and the count of matching datasets.
         """
@@ -788,7 +784,6 @@ class AbstractDatasetResource(ABC):
         """
         Perform a search, returning just the search fields of each dataset.
 
-        :param geopolygon: Spatial search polygon (only supported if index supports_spatial_indexes)
         :param query: search query parameters
         :return: Mappings of search fields for matching datasets
         """

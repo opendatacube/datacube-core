@@ -31,7 +31,7 @@ from ._schema import orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
 _LOG = logging.getLogger(__name__)
 
 
-# In theory we could just use the SQLAlchemy registry for this, but it is not indexed
+# In theory, we could just use the SQLAlchemy registry for this, but it is not indexed
 # in a useful way.
 class SpatialIndexORMRegistry:
     """Threadsafe global registry of SpatialIndex ORM classes, indexed by EPSG/SRID code."""
@@ -43,7 +43,7 @@ class SpatialIndexORMRegistry:
         self._lock = self.__class__._lock
 
     def _to_epsg(self, epsg_or_crs: CRS | int) -> int:
-        """Utility method to convert a epsg_or_crs to an epsg."""
+        """Utility method to convert an epsg_or_crs to an epsg."""
         if isinstance(epsg_or_crs, CRS):
             if epsg_or_crs.epsg is None:
                 raise ValueError("CRS with no epsg number")
@@ -215,7 +215,7 @@ def promote_to_multipolygon(geom: Geom) -> Geom:
     if geom.geom_type == "MultiPolygon":
         return geom
     elif geom.geom_type == "Polygon":
-        # Promote to multipolygon (is there a more elegant way to do this??
+        # Promote to multipolygon (is there a more elegant way to do this??)
         polycoords = [list(geom.geom.exterior.coords)]
         for interior in geom.geom.interiors:
             polycoords.append(list(interior.coords))
