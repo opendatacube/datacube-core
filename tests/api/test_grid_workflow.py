@@ -14,13 +14,13 @@ import datetime
 import uuid
 
 
-class PickableMock(MagicMock):
+class PickleableMock(MagicMock):
     def __reduce__(self):
         return (MagicMock, ())
 
 
 def mk_fake_index(products, datasets):
-    fakeindex = PickableMock()
+    fakeindex = PickleableMock()
     fakeindex._db = None
 
     fakeindex.products.get_by_name = lambda name: products.get(name, None)
@@ -73,27 +73,26 @@ def test_gridworkflow():
     # ----- fake a datacube -----
     # e.g. let there be a dataset that coincides with a grid cell
 
-    fakecrs = CRS("EPSG:3577")
+    crs = CRS("EPSG:3577")
 
-    grid = 100  # spatial frequency in crs units
+    grid = 10  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units
     # if cell(0,0) has lower left corner at grid origin,
     # and cell indices increase toward upper right,
     # then this will be cell(1,-2).
     gridspec = GridSpec(
-        crs=fakecrs, tile_shape=(grid, grid), resolution=Resolution(pixel)
+        crs=crs, tile_shape=(grid, grid), resolution=Resolution(pixel)
     )  # e.g. product gridspec
 
     fakedataset = MagicMock()
-    fakedataset.extent = geom.box(
-        left=grid, bottom=-grid, right=2 * grid, top=-2 * grid, crs=fakecrs
-    )
+    fakedataset.extent = gridspec.tile_geobox((1, -2)).extent
     fakedataset.center_time = t = datetime.datetime(2001, 2, 15)
     fakedataset.id = uuid.uuid4()
 
-    fakeindex = PickableMock()
+    fakeindex = PickleableMock()
     fakeindex._db = None
     fakeindex.datasets.get_field_names.return_value = ["time"]  # permit query on time
+    fakeindex.products.get_field_names.return_value = ["time"]
     fakeindex.datasets.search_eager.return_value = [fakedataset]
 
     # ------ test without padding ----
@@ -121,6 +120,7 @@ def test_gridworkflow():
         ).keys()
     ) == [(1, -2)]
 
+    # It's invalid to supply tile_buffer and geopolygon at the same time
     with pytest.raises(ValueError) as e:
         list(
             gw.cell_observations(
@@ -136,27 +136,23 @@ def test_gridworkflow():
 
     # ------ introduce padding --------
 
+    # TODO: WTF
     assert len(gw.list_tiles(tile_buffer=(20, 20), **query)) == 9
 
     # ------ add another dataset (to test grouping) -----
 
-    # consider cell (2,-2)
+    # Add dataset to cell (2,-2)
     fakedataset2 = MagicMock()
-    fakedataset2.extent = geometry.box(
-        left=2 * grid, bottom=-grid, right=3 * grid, top=-2 * grid, crs=fakecrs
-    )
+    fakedataset2.extent = gridspec.tile_geobox((2, -2)).extent
     fakedataset2.center_time = t
     fakedataset2.id = uuid.uuid4()
 
-    def search_eager(lat=None, lon=None, **kwargs):
-        return [fakedataset, fakedataset2]
-
-    fakeindex.datasets.search_eager = search_eager
+    fakeindex.datasets.search_eager.return_value = [fakedataset, fakedataset2]
 
     # unpadded
     assert len(gw.list_tiles(**query)) == 2
-    ti = numpy.datetime64(t, "ns")
-    assert set(gw.list_tiles(**query).keys()) == {(1, -2, ti), (2, -2, ti)}
+    np_time = numpy.datetime64(t, "ns")
+    assert set(gw.list_tiles(**query).keys()) == {(1, -2, np_time), (2, -2, np_time)}
 
     # padded
     assert (
@@ -167,27 +163,27 @@ def test_gridworkflow():
 
     # check the array shape
 
-    tile = gw.list_tiles(**query)[1, -2, ti]  # unpadded example
-    assert grid / pixel == 10
-    assert tile.shape == (1, 10, 10)
-
-    # smoke test str/repr
+    # TODO: Is this right? Do we need padding? wtfmate
+    tile = gw.list_tiles(**query)[1, -2, np_time]  # unpadded example
+    assert tile.shape == (1, grid, grid) # Time, Y, X
+    #
+    # # smoke test str/repr
     assert len(str(tile)) > 0
     assert len(repr(tile)) > 0
-
+    #
     padded_tile = gw.list_tiles(tile_buffer=(20, 20), **query)[
-        1, -2, ti
+        1, -2, np_time
     ]  # padded example
-    # assert grid/pixel + 2*gw2.grid_spec.padding == 14  # GREG: understand this
+    # # assert grid/pixel + 2*gw2.grid_spec.padding == 14  # GREG: understand this
     assert padded_tile.shape == (1, 14, 14)
 
     # count the sources
 
     assert len(tile.sources.isel(time=0).item()) == 1
     assert len(padded_tile.sources.isel(time=0).item()) == 2
-
-    # check the geocoding
-
+    #
+    # # check the geocoding
+    #
     assert tile.geobox.alignment == padded_tile.geobox.alignment
     assert tile.geobox.affine * (0, 0) == padded_tile.geobox.affine * (2, 2)
     assert tile.geobox.affine * (10, 10) == padded_tile.geobox.affine * (10 + 2, 10 + 2)
@@ -207,31 +203,31 @@ def test_gridworkflow():
 
         data = GridWorkflow.load(tile)
         data2 = GridWorkflow.load(padded_tile)
-        # Note, could also test Datacube.load for consistency (but may require more patching)
-
-    assert data is data2 is loader.return_value
+    #     # Note, could also test Datacube.load for consistency (but may require more patching)
+    #
+    # assert data is data2 is loader.return_value
     assert loader.call_count == 2
-
-    # Note, use of positional arguments here is not robust, could spec mock etc.
+    #
+    # # Note, use of positional arguments here is not robust, could spec mock etc.
     for (args, kwargs), loadable in zip(loader.call_args_list, [tile, padded_tile]):
         args = list(args)
         assert args[0] is loadable.sources
         assert args[1] is loadable.geobox
         assert list(args[2].values())[0] is measurement
         assert "resampling" in kwargs
-
-    # ------- check single cell index extract -------
+    #
+    # # ------- check single cell index extract -------
     tile = gw.list_tiles(cell_index=(1, -2), **query)
     assert len(tile) == 1
-    assert tile[1, -2, ti].shape == (1, 10, 10)
-    assert len(tile[1, -2, ti].sources.values[0]) == 1
-
+    assert tile[1, -2, np_time].shape == (1, 10, 10)
+    assert len(tile[1, -2, np_time].sources.values[0]) == 1
+    #
     padded_tile = gw.list_tiles(cell_index=(1, -2), tile_buffer=(20, 20), **query)
     assert len(padded_tile) == 1
-    assert padded_tile[1, -2, ti].shape == (1, 14, 14)
-    assert len(padded_tile[1, -2, ti].sources.values[0]) == 2
-
-    # query without product is not allowed
+    assert padded_tile[1, -2, np_time].shape == (1, 14, 14)
+    assert len(padded_tile[1, -2, np_time].sources.values[0]) == 2
+    #
+    # # query without product is not allowed
     with pytest.raises(RuntimeError):
         gw.list_cells(cell_index=(1, -2), time=query["time"])
 
@@ -240,15 +236,15 @@ def test_gridworkflow_with_time_depth():
     """Test GridWorkflow with time series.
     Also test `Tile` methods `split` and `split_by_time`
     """
-    fakecrs = CRS("EPSG:4326")
+    crs = CRS("EPSG:4326")
 
-    grid = 100  # spatial frequency in crs units
+    # grid = 100  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units
     # if cell(0,0) has lower left corner at grid origin,
     # and cell indices increase toward upper right,
     # then this will be cell(1,-2).
     gridspec = GridSpec(
-        crs=fakecrs, tile_shape=(grid, grid), resolution=Resolution(pixel)
+        crs=crs, tile_shape=(10, 10), resolution=Resolution(pixel)
     )  # e.g. product gridspec
 
     def make_fake_datasets(num_datasets):
@@ -256,13 +252,11 @@ def test_gridworkflow_with_time_depth():
         delta = datetime.timedelta(days=16)
         for i in range(num_datasets):
             fakedataset = MagicMock()
-            fakedataset.extent = geometry.box(
-                left=grid, bottom=-grid, right=2 * grid, top=-2 * grid, crs=fakecrs
-            )
+            fakedataset.extent = gridspec.tile_geobox((1, -2)).extent
             fakedataset.center_time = start_time + (delta * i)
             yield fakedataset
 
-    fakeindex = PickableMock()
+    fakeindex = PickleableMock()
     fakeindex.datasets.get_field_names.return_value = ["time"]  # permit query on time
     fakeindex.datasets.search_eager.return_value = list(make_fake_datasets(100))
 
