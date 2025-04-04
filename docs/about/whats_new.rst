@@ -5,6 +5,11 @@
 What's New
 **********
 
+Next Version
+============
+
+- CI: cancel old PR jobs :pull:`1761`
+
 v1.9.2 (26th February 2025)
 ===========================
 
