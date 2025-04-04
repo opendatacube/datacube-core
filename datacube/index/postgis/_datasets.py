@@ -50,7 +50,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
-        :type product_resource: datacube.index._products.ProductResource
+        :type index: datacube.index._products.ProductResource
         """
         self._db = db
         super().__init__(index)
@@ -161,7 +161,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             # 1a. insert (if not already exists)
             product_id = dataset.product.id
             if product_id is None:
-                # don't assume the product has an id value since it's optional
+                # don't assume the product has an id value since it's optional,
                 # but we should error if the product doesn't exist in the db
                 product_id = self.products.get_by_name_unsafe(dataset.product.name).id
             is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product_id)
@@ -611,6 +611,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Caution – slow! This will usually not use indexes.
 
         :param dict metadata:
+        :param archived: include archived datasets
         :rtype: list[Dataset]
         """
         with self._db_connection() as connection:
@@ -631,9 +632,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Perform a search, returning results as Dataset objects.
 
-        :param Union[str,float,Range,list] query:
         :param int limit: Limit number of datasets
+        :param archived: include archived datasets
         :param Iterable[str|Field|Function] order_by:
+        :param Union[str,float,Range,list] query:
         :rtype: __generator[Dataset]
         """
         source_filter = query.pop('source_filter', None)
@@ -648,8 +650,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Perform a search, returning datasets grouped by product type.
 
+        :param archived: include archived datasets
         :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[(Product,  __generator[Dataset])]]
+        :rtype: __generator[(Product,  __generator[Dataset])]
         """
         for product, datasets in self._do_search_by_product(query, archived=archived):
             yield product, self._make_many(datasets, product)
@@ -671,6 +674,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param tuple[str] field_names:
         :param Union[str,float,Range,list] query:
         :param int limit: Limit number of datasets
+        :param archived: include archived datasets
         :param Iterable[Any] order_by: sql text, dataset field, or sqlalchemy expression
         by which to order results
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
@@ -712,6 +716,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Perform a search, returning count of results.
 
+        :param archived: include archived datasets
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: int
         """
@@ -726,9 +731,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Perform a search, returning a count of for each matching product type.
 
+        :param archived: include archived datasets
         :param dict[str,str|float|datacube.model.Range] query:
         :returns: Sequence of (product, count)
-        :rtype: __generator[(Product,  int)]]
+        :rtype: __generator[(Product,  int)]
         """
         return self._do_count_by_product(query, archived=archived)
 
@@ -740,7 +746,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dict[str,str|float|datacube.model.Range] query:
         :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: __generator[(Product, list[(datetime.datetime, datetime.datetime), int)]]
+        :rtype: __generator[(Product, list[(datetime.datetime, datetime.datetime), int])]
         """
         return self._do_time_count(period, query)
 
@@ -754,7 +760,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dict[str,str|float|datacube.model.Range] query:
         :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int)]]
+        :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int])]
         """
         return next(self._do_time_count(period, query, ensure_single=True))[1]
 
@@ -888,7 +894,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         generated Dataset class that is a subclass of tuple.
 
         Only the requested fields will be returned together with related derived attributes as property functions
-        similar to the datacube.model.Dataset class. For example, if 'extent'is requested all of
+        similar to the datacube.model.Dataset class. For example, if 'extent' is requested all of
         'crs', 'extent', 'transform', and 'bounds' are available as property functions.
 
         The field_names can be custom fields in addition to those specified in metadata_type, fixed fields, or
@@ -896,7 +902,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         and 'bounds'. The custom fields require custom offsets of the metadata doc be provided.
 
         The datasets can be selected based on values of custom fields as long as relevant custom
-        offsets are provided. However custom field values are not transformed so must match what is
+        offsets are provided. However, custom field values are not transformed so must match what is
         stored in the database.
 
         :param field_names: A tuple of field names that would be returned including derived fields
@@ -1013,7 +1019,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         custom_exprs = []
         for key in custom_query:
-            # for now we assume all custom query fields are SimpleDocFields
+            # for now, we assume all custom query fields are SimpleDocFields
             custom_field = SimpleDocField(
                 custom_query[key], custom_query[key], Dataset.metadata,
                 False, offset=custom_offsets[key]

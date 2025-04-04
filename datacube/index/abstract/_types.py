@@ -92,7 +92,7 @@ class DatasetTuple(NamedTuple):
             return cast(list[str], self.uri_)
 
 
-# The special handling of grid_spatial, etc appears to NOT apply to EO3.
+# The special handling of grid_spatial, etc. appears to NOT apply to EO3.
 # Does EO3 handle it in metadata?
 class DatasetSpatialMixin:
     __slots__ = ()

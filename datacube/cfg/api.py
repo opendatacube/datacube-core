@@ -26,7 +26,7 @@ from .utils import ConfigDict, check_valid_env_name
 from ..migration import ODC2DeprecationWarning
 
 # TypeAliases for more concise type hints
-# (Unions required as typehint | operator doesn't work with string forward-references.
+# (Unions required as typehint | operator doesn't work with string forward-references).
 GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike]
 GeneralisedCfg: TypeAlias = Union["ODCConfig", GeneralisedPath]
 GeneralisedEnv: TypeAlias = Union["ODCEnvironment", str]

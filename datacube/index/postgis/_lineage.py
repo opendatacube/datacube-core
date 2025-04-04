@@ -100,7 +100,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
     def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
         id_ = dsid_to_uuid(id_)
         with self._db_connection() as connection:
-            # Convert tree to desired deoth to lineage relations collection
+            # Convert tree to desired depth to lineage relations collection
             relations = connection.load_lineage_relations([id_],
                                                           direction,
                                                           max_depth)

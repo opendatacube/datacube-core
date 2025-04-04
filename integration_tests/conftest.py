@@ -558,7 +558,7 @@ def uninitialised_postgres_db(cfg_env: ODCEnvironment, request) -> PostgresDb | 
 @pytest.fixture
 def uninitialised_postgres_db_pair(cfg_env_pair):
     """
-    Return a pair connections to empty PostgreSQL or PostGIS databases
+    Return a pair of connections to empty PostgreSQL or PostGIS databases
     """
     dbs = tuple(reset_db(cfg_env) for cfg_env in cfg_env_pair)
 
@@ -679,7 +679,7 @@ def geotiffs(tmpdir_factory):
     spatial coords reflecting the size of the test geotiff, defined in
     :ref:`GEOTIFF`.
 
-    :param tmpdir_fatory: pytest tmp dir factory.
+    :param tmpdir_factory: pytest tmp dir factory.
     :return: List of dictionaries like::
 
         {

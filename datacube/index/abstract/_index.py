@@ -31,7 +31,7 @@ class AbstractIndex(ABC):
     """
     Abstract base class for an Index.  All Index implementations should
     inherit from this base class, and implement all abstract methods (and
-    override other methods and contract flags as required.
+    override other methods and contract flags as required).
     """
 
     # Interface contracts - implementations should set to True where appropriate.
@@ -185,7 +185,7 @@ class AbstractIndex(ABC):
 
         Spatial indexes are automatically populated with new datasets as they are indexed, but if there were
         datasets already in the index when a new spatial index is created, or if geometries have been added or
-        modified outside of the ODC in a populated index (e.g. with SQL) then the spatial indexies must be
+        modified outside of the ODC in a populated index (e.g. with SQL) then the spatial indices must be
         updated manually with this method.
 
         This is a very slow operation.  The product_names and dataset_ids lists can be used to break the
@@ -197,7 +197,7 @@ class AbstractIndex(ABC):
         :param product_names: A list of product names to update the spatial indexes.
                               Default is to update for all products
         :param dataset_ids: A list of ids of specific datasets to update in the spatial index.
-                            Default is to update for all datasets (or all datasts in the products
+                            Default is to update for all datasets (or all datasets in the products
                             in the product_names list)
         :return: The number of dataset extents processed - i.e. the number of datasets updated multiplied by the
                  number of spatial indexes updated.
@@ -227,28 +227,32 @@ class AbstractIndex(ABC):
     def clone(self,
               origin_index: "AbstractIndex",
               batch_size: int = 1000,
-              skip_lineage=False,
-              lineage_only=False) -> Mapping[str, BatchStatus]:
+              skip_lineage: bool = False,
+              lineage_only: bool = False) -> Mapping[str, BatchStatus]:
         """
         Clone an existing index into this one.
 
         Steps are:
 
         1) Clone all metadata types compatible with this index driver.
+
            - Products and Datasets with incompatible metadata types are excluded from subsequent steps.
            - Existing metadata types are skipped, but products and datasets associated with them are only
              excluded if the existing metadata type does not match the one from the origin index.
 
         2) Clone all products with "safe" metadata types.
+
            - Products are included or excluded by metadata type as discussed above.
            - Existing products are skipped, but datasets associated with them are only
              excluded if the existing product definition does not match the one from the origin index.
 
         3) Clone all datasets with "safe" products
+
            - Datasets are included or excluded by product and metadata type, as discussed above.
            - Archived datasets and locations are not cloned.
 
         4) Clone all lineage relations that can be cloned.
+
            - All lineage relations are skipped if either index driver does not support lineage,
              or if skip_lineage is True.
            - If this index does not support external lineage then lineage relations that reference datasets
@@ -258,6 +262,8 @@ class AbstractIndex(ABC):
 
         :param origin_index: Index whose contents we wish to clone.
         :param batch_size: Maximum number of objects to write to the database in one go.
+        :param skip_lineage: Skip lineage in cloned result.
+        :param lineage_only: Only clone lineage.
         :return: Dictionary containing a BatchStatus named tuple for "metadata_types", "products"
                  and "datasets", and optionally "lineage".
         """
