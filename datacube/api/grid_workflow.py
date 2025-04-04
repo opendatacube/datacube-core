@@ -236,9 +236,11 @@ class GridWorkflow:
 
             else:
                 for dataset in datasets:
-                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(dataset.extent,
-                                                                                        tile_buffer=tile_buffer,
+                    dataset_extent = dataset.extent.buffer(*tile_buffer) if tile_buffer else dataset.extent
+                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(dataset_extent,
                                                                                         geobox_cache=geobox_cache):
+                        if tile_buffer:
+                            tile_geobox = tile_geobox.buffered(*tile_buffer)
                         add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
             return cells
