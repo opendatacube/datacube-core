@@ -43,22 +43,25 @@ end;
 $$ language plpgsql;
 """.format(schema=SCHEMA_NAME)
 
-INSTALL_TRIGGER_SQL_TEMPLATE = """
-drop trigger if exists row_update_time_{table} on {schema}.{table};
-create trigger row_update_time_{table}
-before update on {schema}.{table}
-for each row
-execute procedure {schema}.set_row_update_time();
-"""
+INSTALL_TRIGGER_SQL_TEMPLATE = [
+    "drop trigger if exists row_update_time_{table} on {schema}.{table}",
+    """
+    create trigger row_update_time_{table}
+    before update on {schema}.{table}
+    for each row
+    execute procedure {schema}.set_row_update_time();
+    """
+]
 
-TYPES_INIT_SQL = """
-drop function if exists {schema}.common_timestamp(text);
-
-create type {schema}.float8range as range (
-    subtype = float8,
-    subtype_diff = float8mi
-);
-""".format(schema=SCHEMA_NAME)
+TYPES_INIT_SQL = [
+    "drop function if exists {schema}.common_timestamp(text)".format(schema=SCHEMA_NAME),
+    """
+    create type {schema}.float8range as range (
+        subtype = float8,
+        subtype_diff = float8mi
+    )
+    """.format(schema=SCHEMA_NAME)
+]
 
 
 # pylint: disable=abstract-method

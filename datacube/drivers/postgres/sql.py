@@ -63,25 +63,30 @@ create index if not exists ix_{table}_added
 on {schema}.{table}(added);
 """
 
-INSTALL_TRIGGER_SQL_TEMPLATE = """
-drop trigger if exists row_update_time_{table} on {schema}.{table};
-create trigger row_update_time_{table}
-before update on {schema}.{table}
-for each row
-execute procedure {schema}.set_row_update_time();
-"""
+INSTALL_TRIGGER_SQL_TEMPLATE = [
+    "drop trigger if exists row_update_time_{table} on {schema}.{table}",
+    """
+    create trigger row_update_time_{table}
+    before update on {schema}.{table}
+    for each row
+    execute procedure {schema}.set_row_update_time();
+    """
+]
 
-TYPES_INIT_SQL = """
-create or replace function {schema}.common_timestamp(text)
-returns timestamp with time zone as $$
-select ($1)::timestamp at time zone 'utc';
-$$ language sql immutable returns null on null input;
-
-create type {schema}.float8range as range (
-    subtype = float8,
-    subtype_diff = float8mi
-);
-""".format(schema=SCHEMA_NAME)
+TYPES_INIT_SQL = [
+    """
+    create or replace function {schema}.common_timestamp(text)
+    returns timestamp with time zone as $$
+    select ($1)::timestamp at time zone 'utc';
+    $$ language sql immutable returns null on null input;
+    """.format(schema=SCHEMA_NAME),
+    """
+    create type {schema}.float8range as range (
+        subtype = float8,
+        subtype_diff = float8mi
+    )
+    """.format(schema=SCHEMA_NAME)
+]
 
 
 # pylint: disable=abstract-method
@@ -94,7 +99,7 @@ def visit_float8range(element, compiler, **kw):
     return "FLOAT8RANGE"
 
 
-# Register the function with SQLAlchemhy.
+# Register the function with SQLAlchemy.
 # pylint: disable=too-many-ancestors
 class CommonTimestamp(GenericFunction):
     type = TIMESTAMP(timezone=True)
