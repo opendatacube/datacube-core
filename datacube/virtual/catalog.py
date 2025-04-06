@@ -8,6 +8,7 @@ Catalog of virtual products.
 
 from collections.abc import Mapping
 from itertools import chain
+from typing_extensions import override
 
 import yaml
 
@@ -22,6 +23,7 @@ class UnappliedTransform:
     def __call__(self, input):
         return self.name_resolver.construct(**self.recipe, input=input)
 
+    @override
     def __repr__(self):
         return yaml.dump(self.recipe, Dumper=SafeDumper,
                          default_flow_style=False, indent=2)
@@ -44,6 +46,7 @@ class Catalog(Mapping):
             return []
         return list(self.contents[section])
 
+    @override
     def __getitem__(self, name):
         """
         Looks up a virtual product or transform by name.
@@ -60,12 +63,15 @@ class Catalog(Mapping):
     def __getattr__(self, name):
         return self[name]
 
+    @override
     def __len__(self):
         return len(self._names('products')) + len(self._names('transforms'))
 
+    @override
     def __iter__(self):
         return chain(iter(self._names('products')), iter(self._names('transforms')))
 
+    @override
     def __dir__(self):
         """
         Override to provide autocompletion of products and transforms.

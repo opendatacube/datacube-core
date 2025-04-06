@@ -17,6 +17,7 @@ import logging
 import re
 from contextlib import contextmanager
 from typing import Any
+from typing_extensions import override
 from collections.abc import Callable, Iterable, Mapping
 
 from sqlalchemy import event, create_engine
@@ -270,6 +271,7 @@ class PostGisDb:
     def get_dataset_fields(cls, metadata_type_definition):
         return _api.get_dataset_fields(metadata_type_definition)
 
+    @override
     def __repr__(self):
         return f"PostgisDb<engine={self._engine!r}>"
 

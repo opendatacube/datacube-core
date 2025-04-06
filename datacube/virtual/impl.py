@@ -12,6 +12,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 
 from typing import Any, cast
+from typing_extensions import override
 from collections.abc import Hashable
 from collections.abc import Mapping as TypeMapping
 
@@ -90,6 +91,7 @@ class VirtualDatasetBag:
         for child in worker(self.bag):
             yield VirtualDatasetBag(child, self.geopolygon, self.product_definitions)
 
+    @override
     def __repr__(self):
         return f"<VirtualDatasetBag of {len(list(self.contained_datasets()))} datacube datasets>"
 
@@ -109,6 +111,7 @@ class VirtualDatasetBox:
         self.product_definitions = product_definitions
         self.geopolygon = geopolygon
 
+    @override
     def __repr__(self):
         if not self.load_natively:
             return f"<VirtualDatasetBox of shape {dict(zip(self.dims, self.shape))}>"
@@ -254,12 +257,15 @@ class VirtualProduct(Mapping):
 
     # helper methods
 
+    @override
     def __getitem__(self, key):
         return self._settings[key]
 
+    @override
     def __len__(self):
         return len(self._settings)
 
+    @override
     def __iter__(self):
         return iter(self._settings)
 
@@ -300,6 +306,7 @@ class VirtualProduct(Mapping):
         """ Convert grouped datasets to `xarray.Dataset`. """
         raise NotImplementedError
 
+    @override
     def __repr__(self):
         return yaml.dump(self._reconstruct(), Dumper=SafeDumper,
                          default_flow_style=False, indent=2)
@@ -326,6 +333,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
         return {key: value if key not in ['fuse_func', 'dataset_predicate'] else qualified_name(value)
                 for key, value in self.items()}
 
+    @override
     def output_measurements(self, product_definitions: TypeMapping[str, Product],  # type: ignore[override]
                             measurements: list[str] | None = None) -> TypeMapping[str, Measurement]:
         self._assert(self._product in product_definitions,
@@ -337,6 +345,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
         product = product_definitions[self._product]
         return product.lookup_measurements(measurements)
 
+    @override
     def query(self, dc: Datacube, **search_terms: dict[str, Any]) -> VirtualDatasetBag:
         product = dc.index.products.get_by_name(self._product)
         if product is None:
@@ -352,6 +361,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
         return VirtualDatasetBag(dc.find_datasets(**merged_terms), query.geopolygon,
                                  {product.name: product})
 
+    @override
     def group(self, datasets: VirtualDatasetBag, **group_settings: dict[str, Any]) -> VirtualDatasetBox:
         geopolygon = datasets.geopolygon
         selected = list(datasets.bag)
@@ -385,6 +395,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
                                  datasets.product_definitions,
                                  geopolygon=None if not load_natively else geopolygon)
 
+    @override
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: dict[str, Any]) -> xarray.Dataset:
         """ Convert grouped datasets to `xarray.Dataset`. """
 
@@ -463,17 +474,21 @@ class Transform(VirtualProduct):
         return dict(transform=qualified_name(self['transform']),
                     input=self._input._reconstruct(), **reject_keys(self, ['input', 'transform']))
 
+    @override
     def output_measurements(self, product_definitions: dict[str, Product]) -> dict[str, Measurement]:
         input_measurements = self._input.output_measurements(product_definitions)
 
         return self._transformation.measurements(input_measurements)
 
+    @override
     def query(self, dc: Datacube, **search_terms: dict[str, Any]) -> VirtualDatasetBag:
         return self._input.query(dc, **search_terms)
 
+    @override
     def group(self, datasets: VirtualDatasetBag, **group_settings: dict[str, Any]) -> VirtualDatasetBox:
         return self._input.group(datasets, **group_settings)
 
+    @override
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: dict[str, Any]) -> xarray.Dataset:
         input_data = self._input.fetch(grouped, **load_settings)
         output_data = self._transformation.compute(input_data)
@@ -513,14 +528,17 @@ class Aggregate(VirtualProduct):
                     input=self._input._reconstruct(),
                     **reject_keys(self, ['input', 'aggregate', 'group_by']))
 
+    @override
     def output_measurements(self, product_definitions: dict[str, Product]) -> dict[str, Measurement]:
         input_measurements = self._input.output_measurements(product_definitions)
 
         return self._statistic.measurements(input_measurements)
 
+    @override
     def query(self, dc: Datacube, **search_terms: dict[str, Any]) -> VirtualDatasetBag:
         return self._input.query(dc, **search_terms)
 
+    @override
     def group(self, datasets: VirtualDatasetBag, **group_settings: dict[str, Any]) -> VirtualDatasetBox:
         grouped = self._input.group(datasets, **group_settings)
         dim = self.get('dim', 'time')
@@ -538,6 +556,7 @@ class Aggregate(VirtualProduct):
         return VirtualDatasetBox(result, grouped.geobox, grouped.load_natively, grouped.product_definitions,
                                  geopolygon=grouped.geopolygon)
 
+    @override
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: dict[str, Any]) -> xarray.Dataset:
         dim = self.get('dim', 'time')
 
@@ -573,6 +592,7 @@ class Collate(VirtualProduct):
         children = [child._reconstruct() for child in self._children]
         return dict(collate=children, **reject_keys(self, ['collate']))
 
+    @override
     def output_measurements(self, product_definitions: dict[str, Product]) -> dict[str, Measurement]:
         input_measurement_list = [child.output_measurements(product_definitions)
                                   for child in self._children]
@@ -592,6 +612,7 @@ class Collate(VirtualProduct):
         first.update({name: Measurement(name=name, dtype='int8', nodata=-1, units='1')})
         return first
 
+    @override
     def query(self, dc: Datacube, **search_terms: dict[str, Any]) -> VirtualDatasetBag:
         result = [child.query(dc, **search_terms) for child in self._children]
 
@@ -599,6 +620,7 @@ class Collate(VirtualProduct):
                                  select_unique([datasets.geopolygon for datasets in result]),
                                  merge_dicts([datasets.product_definitions for datasets in result]))
 
+    @override
     def group(self, datasets: VirtualDatasetBag, **group_settings: dict[str, Any]) -> VirtualDatasetBox:
         self._assert('collate' in datasets.bag and len(datasets.bag['collate']) == len(self._children),
                      "invalid dataset bag")
@@ -625,6 +647,7 @@ class Collate(VirtualProduct):
                                  merge_dicts([grouped.product_definitions for grouped in groups]),
                                  geopolygon=select_unique([grouped.geopolygon for grouped in groups]))
 
+    @override
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: dict[str, Any]) -> xarray.Dataset:
         def is_from(source_index):
             def result(_, value):
@@ -687,6 +710,7 @@ class Juxtapose(VirtualProduct):
         children = [child._reconstruct() for child in self._children]
         return dict(juxtapose=children, **reject_keys(self, ['juxtapose']))
 
+    @override
     def output_measurements(self, product_definitions: dict[str, Product]) -> dict[str, Measurement]:
         input_measurement_list = [child.output_measurements(product_definitions)
                                   for child in self._children]
@@ -700,6 +724,7 @@ class Juxtapose(VirtualProduct):
 
         return result
 
+    @override
     def query(self, dc: Datacube, **search_terms: dict[str, Any]) -> VirtualDatasetBag:
         result = [child.query(dc, **search_terms)
                   for child in self._children]
@@ -708,6 +733,7 @@ class Juxtapose(VirtualProduct):
                                  select_unique([datasets.geopolygon for datasets in result]),
                                  merge_dicts([datasets.product_definitions for datasets in result]))
 
+    @override
     def group(self, datasets: VirtualDatasetBag, **group_settings: dict[str, Any]) -> VirtualDatasetBox:
         self._assert('juxtapose' in datasets.bag and len(datasets.bag['juxtapose']) == len(self._children),
                      "invalid dataset bag")
@@ -727,6 +753,7 @@ class Juxtapose(VirtualProduct):
                                  merge_dicts([grouped.product_definitions for grouped in groups]),
                                  geopolygon=select_unique([grouped.geopolygon for grouped in groups]))
 
+    @override
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: dict[str, Any]) -> xarray.Dataset:
         def select_child(source_index):
             def result(_, value):
@@ -761,6 +788,7 @@ class Reproject(VirtualProduct):
         # pylint: disable=protected-access
         return dict(input=self._input._reconstruct(), **reject_keys(self, ["input"]))
 
+    @override
     def output_measurements(self, product_definitions: dict[str, Product]) -> dict[str, Measurement]:
         """
         A dictionary mapping names to measurement metadata.
@@ -768,10 +796,12 @@ class Reproject(VirtualProduct):
         """
         return self._input.output_measurements(product_definitions)
 
+    @override
     def query(self, dc: Datacube, **search_terms: dict[str, Any]) -> VirtualDatasetBag:
         """ Collection of datasets that match the query. """
         return self._input.query(dc, **reject_keys(search_terms, self._GEOBOX_KEYS))
 
+    @override
     def group(self, datasets: VirtualDatasetBag, **group_settings: dict[str, Any]) -> VirtualDatasetBox:
         """
         Datasets grouped by their timestamps.
@@ -800,6 +830,7 @@ class Reproject(VirtualProduct):
                                  datasets.product_definitions,
                                  geopolygon=geopolygon)
 
+    @override
     def fetch(self, grouped: VirtualDatasetBox, **load_settings: dict[str, Any]) -> xarray.Dataset:
         """ Convert grouped datasets to `xarray.Dataset`. """
         from collections import OrderedDict

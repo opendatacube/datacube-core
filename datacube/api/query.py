@@ -15,6 +15,7 @@ import warnings
 import pandas
 
 from pandas import to_datetime as pandas_to_datetime
+from typing_extensions import override
 import numpy as np
 from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
 from ..model import Range, Dataset
@@ -163,9 +164,11 @@ class Query:
             kwargs['source_filter'] = self.source_filter.search_terms
         return kwargs
 
+    @override
     def __repr__(self):
         return self.__str__()
 
+    @override
     def __str__(self):
         return f"""Datacube Query:
         type = {self.product}

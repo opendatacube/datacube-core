@@ -6,6 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from time import monotonic
 from collections.abc import Mapping, Iterable
+from typing_extensions import override
 from uuid import UUID
 
 from datacube.model import LineageTree, LineageDirection, LineageRelation
@@ -225,32 +226,42 @@ class NoLineageResource(AbstractLineageResource):
         self._index = index
         assert not self._index.supports_external_lineage
 
+    @override
     def get_derived_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         raise NotImplementedError()
 
+    @override
     def get_source_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         raise NotImplementedError()
 
+    @override
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
         raise NotImplementedError()
 
+    @override
     def merge(self, rels: LineageRelations, allow_updates: bool = False, validate_only: bool = False) -> None:
         raise NotImplementedError()
 
+    @override
     def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
         raise NotImplementedError()
 
+    @override
     def set_home(self, home: str, *args: DSID, allow_updates: bool = False) -> int:
         raise NotImplementedError()
 
+    @override
     def clear_home(self, *args: DSID, home: str | None = None) -> int:
         raise NotImplementedError()
 
+    @override
     def get_homes(self, *args: DSID) -> Mapping[UUID, str]:
         return {}
 
+    @override
     def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
         raise NotImplementedError()
 
+    @override
     def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
         raise NotImplementedError()

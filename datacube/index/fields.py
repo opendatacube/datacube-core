@@ -8,6 +8,7 @@ Common datatypes for DB drivers.
 
 from datetime import date, datetime, time
 from dateutil.tz import tz
+from typing_extensions import override
 
 from datacube.model import Range, Not
 from datacube.model.fields import Expression, Field
@@ -31,6 +32,7 @@ class OrExpression(Expression):
         # Or expressions built by dc.load are always made up of simple expressions that share the same field.
         self.field = exprs[0].field
 
+    @override
     def evaluate(self, ctx):
         return any(expr.evaluate(ctx) for expr in self.exprs)
 
@@ -41,6 +43,7 @@ class NotExpression(Expression):
         self.expr = expr
         self.field = expr.field
 
+    @override
     def evaluate(self, ctx):
         return not self.expr.evaluate(ctx)
 

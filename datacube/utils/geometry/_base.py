@@ -9,6 +9,7 @@ import array
 import warnings
 from collections import namedtuple, OrderedDict
 from typing import Union, Optional, Any
+from typing_extensions import override
 from collections.abc import Iterable, Callable, Hashable, Iterator
 from collections.abc import Sequence
 from packaging.version import Version
@@ -277,15 +278,19 @@ class CRS:
 
         raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
+    @override
     def __str__(self) -> str:
         return self._str
 
+    @override
     def __hash__(self) -> int:
         return hash(self._str)
 
+    @override
     def __repr__(self) -> str:
         return "CRS('%s')" % self._str
 
+    @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CRS):
             try:
@@ -301,6 +306,7 @@ class CRS:
 
         return self._crs == other._crs
 
+    @override
     def __ne__(self, other) -> bool:
         return not (self == other)
 
@@ -743,13 +749,16 @@ class Geometry:
     def __bool__(self) -> bool:
         return not self.is_empty
 
+    @override
     def __eq__(self, other: Any) -> bool:
         return (hasattr(other, 'crs') and self.crs == other.crs and
                 hasattr(other, 'geom') and self.geom == other.geom)
 
+    @override
     def __str__(self):
         return 'Geometry(%s, %r)' % (self.__geo_interface__, self.crs)
 
+    @override
     def __repr__(self):
         return 'Geometry(%s, %s)' % (self.geom, self.crs)
 
@@ -1107,6 +1116,7 @@ class GeoBox:
     def __bool__(self) -> bool:
         return not self.is_empty()
 
+    @override
     def __hash__(self):
         return hash((*self.shape, self.crs, self.affine))
 
@@ -1209,12 +1219,15 @@ class GeoBox:
     coords = coordinates
     dims = dimensions
 
+    @override
     def __str__(self):
         return f"GeoBox({self.geographic_extent})"
 
+    @override
     def __repr__(self):
         return f"GeoBox({self.width}, {self.height}, {self.affine!r}, {self.extent.crs})"
 
+    @override
     def __eq__(self, other):
         if not isinstance(other, GeoBox):
             return False

@@ -8,6 +8,7 @@ from typing import (
     Any,
     NamedTuple, TypeVar
 )
+from typing_extensions import override
 from collections.abc import Iterable
 import numpy as np
 from affine import Affine
@@ -146,26 +147,32 @@ class RIOReader(GeoRasterReader):
         self._dtype = src.dtypes[band_idx-1]
         self._pool = pool
 
+    @override
     @property
     def crs(self) -> CRS | None:
         return self._crs
 
+    @override
     @property
     def transform(self) -> Affine | None:
         return self._transform
 
+    @override
     @property
     def dtype(self) -> np.dtype:
         return np.dtype(self._dtype)
 
+    @override
     @property
     def shape(self) -> RasterShape:
         return self._src.shape
 
+    @override
     @property
     def nodata(self) -> int | float | None:
         return self._nodata
 
+    @override
     def read(self,
              window: RasterWindow | None = None,
              out_shape: RasterShape | None = None) -> FutureNdarray:
@@ -208,11 +215,13 @@ class RIORdrDriver(ReaderDriver):
         self._pool = pool
         self._cfg = cfg
 
+    @override
     def new_load_context(self,
                          bands: Iterable[BandInfo],
                          old_ctx: Any | None) -> Any:
         return None  # TODO: implement file handle cache with this
 
+    @override
     def open(self, band: BandInfo, ctx: Any) -> FutureGeoRasterReader:
         return self._pool.submit(_rdr_open, band, ctx, self._pool)
 
@@ -221,14 +230,17 @@ class RDEntry(ReaderDriverEntry):
     PROTOCOLS = ['file', 'http', 'https', 's3', 'ftp', 'zip']
     FORMATS = ['GeoTIFF', 'NetCDF', 'JPEG2000']
 
+    @override
     @property
     def protocols(self) -> list[str]:
         return RDEntry.PROTOCOLS
 
+    @override
     @property
     def formats(self) -> list[str]:
         return RDEntry.FORMATS
 
+    @override
     def supports(self, protocol: str, fmt: str) -> bool:
         # TODO: might need better support matrix structures
 
@@ -237,6 +249,7 @@ class RDEntry(ReaderDriverEntry):
 
         return True
 
+    @override
     def new_instance(self, cfg: dict) -> ReaderDriver:
         cfg = cfg.copy()
         pool = cfg.pop('pool', None)

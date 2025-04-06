@@ -11,6 +11,7 @@ import os
 import copy
 import sys
 from textwrap import dedent
+from typing_extensions import override
 
 import click
 
@@ -66,6 +67,7 @@ class ColorFormatter(logging.Formatter):
         'warning': dict(fg='yellow')
     }
 
+    @override
     def format(self, record):
         if not record.exc_info:
             record = copy.copy(record)
@@ -74,6 +76,7 @@ class ColorFormatter(logging.Formatter):
 
 
 class ClickHandler(logging.Handler):
+    @override
     def emit(self, record):
         try:
             msg = self.format(record)

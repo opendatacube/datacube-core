@@ -12,6 +12,7 @@ from datetime import timezone
 from datetime import datetime, date
 from decimal import Decimal
 from typing import Any, Union
+from typing_extensions import override
 from collections.abc import Callable
 
 from sqlalchemy.types import TIMESTAMP
@@ -115,12 +116,14 @@ class PgField(Field):
             compile_kwargs={"literal_binds": True}
         ))
 
+    @override
     def __eq__(self, value):
         """
         :rtype: Expression
         """
         return EqualsExpression(self, value)
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -145,11 +148,13 @@ class NativeField(PgField):
         self.affects_row_selection = affects_row_selection
         self.join_clause = join_clause
 
+    @override
     @property
     def alchemy_expression(self) -> ColumnExpressionArgument:
         expression = self._expression if self._expression is not None else self.alchemy_column
         return expression.label(self.name)  # type: ignore[union-attr]
 
+    @override
     @cached_property
     def dataset_join_args(self) -> DatasetJoinArgs:
         if self.join_clause is None:
@@ -255,12 +260,14 @@ class SimpleDocField(PgDocField):
     def alchemy_expression(self):
         return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc).label(self.name)
 
+    @override
     def __eq__(self, value):
         """
         :rtype: Expression
         """
         return EqualsExpression(self, value)
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -269,6 +276,7 @@ class SimpleDocField(PgDocField):
 
     can_extract = True
 
+    @override
     def extract(self, document):
         return self._extract_offset_value(document, self.offset, self.aggregation.calc)
 
@@ -283,9 +291,11 @@ class UnindexableValue(Exception):
 class NumericDocField(SimpleDocField):
     type_name = 'numeric'
 
+    @override
     def value_to_alchemy(self, value):
         return cast(value, postgres.NUMERIC)
 
+    @override
     def search_value_to_alchemy(self, value):
         if isinstance(value, float) and math.isnan(value):
             raise UnindexableValue("Cannot index NaNs")
@@ -297,11 +307,13 @@ class NumericDocField(SimpleDocField):
             type_=NUMRANGE,
         )
 
+    @override
     def between(self, low, high):
         # Numeric fields actually stored as ranges in current schema.
         # return ValueBetweenExpression(self, low, high)
         return RangeBetweenExpression(self, low, high, _range_class=PgRange)
 
+    @override
     def parse_value(self, value):
         return Decimal(value)
 
@@ -309,6 +321,7 @@ class NumericDocField(SimpleDocField):
 class IntDocField(NumericDocField):
     type_name = 'integer'
 
+    @override
     def parse_value(self, value):
         return int(value)
 
@@ -316,6 +329,7 @@ class IntDocField(NumericDocField):
 class DoubleDocField(NumericDocField):
     type_name = 'double'
 
+    @override
     def parse_value(self, value):
         return float(value)
 
@@ -326,6 +340,7 @@ DateFieldLike = Union[datetime, date, str, ColumnElement]
 class DateDocField(SimpleDocField):
     type_name = 'datetime'
 
+    @override
     def value_to_alchemy(self, value: DateFieldLike) -> DateFieldLike:
         """
         Wrap a value as needed for this field type.
@@ -339,11 +354,13 @@ class DateDocField(SimpleDocField):
         else:
             raise ValueError("Value not readable as date: %r" % value)
 
+    @override
     def normalise_value(self, value):
         if isinstance(value, str):
             value = datetime.fromisoformat(value)
         return tz_as_utc(value)
 
+    @override
     def search_value_to_alchemy(self, value):
         if isinstance(value, datetime):
             value = tz_as_utc(value)
@@ -355,9 +372,11 @@ class DateDocField(SimpleDocField):
             type_=TSTZRANGE,
         )
 
+    @override
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
+    @override
     def parse_value(self, value):
         return utils.parse_time(value)
 
@@ -398,6 +417,7 @@ class RangeDocField(PgDocField):
             selection='greatest'
         )
 
+    @override
     def value_to_alchemy(self, value):
         raise NotImplementedError('range type')
 
@@ -405,6 +425,7 @@ class RangeDocField(PgDocField):
     def alchemy_expression(self):
         return self.value_to_alchemy((self.lower.alchemy_expression, self.greater.alchemy_expression)).label(self.name)
 
+    @override
     def __eq__(self, value):
         """
         :rtype: Expression
@@ -415,6 +436,7 @@ class RangeDocField(PgDocField):
 
     can_extract = True
 
+    @override
     def extract(self, document):
         min_val = self.lower.extract(document)
         max_val = self.greater.extract(document)
@@ -427,6 +449,7 @@ class NumericRangeDocField(RangeDocField):
     FIELD_CLASS = NumericDocField
     type_name = 'numeric-range'
 
+    @override
     def value_to_alchemy(self, value):
         low, high = value
         return func.numrange(
@@ -436,6 +459,7 @@ class NumericRangeDocField(RangeDocField):
             type_=NUMRANGE,
         )
 
+    @override
     def search_value_to_alchemy(self, value):
         low, high = value
         if isinstance(low, float) and math.isnan(low):
@@ -444,6 +468,7 @@ class NumericRangeDocField(RangeDocField):
             raise UnindexableValue("Cannot index NaNs")
         return self.value_to_alchemy(value)
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -465,6 +490,7 @@ class DateRangeDocField(RangeDocField):
     FIELD_CLASS = DateDocField
     type_name = 'datetime-range'
 
+    @override
     def value_to_alchemy(self, value):
         low, high = value
         # Is OK to cast, because we are wrapping it in timezone-aware datatype.
@@ -479,6 +505,7 @@ class DateRangeDocField(RangeDocField):
             type_=TSTZRANGE,
         )
 
+    @override
     def search_value_to_alchemy(self, value):
         low, high = value
         if isinstance(low, datetime):
@@ -492,6 +519,7 @@ class DateRangeDocField(RangeDocField):
             type_=TSTZRANGE,
         )
 
+    @override
     def normalise_value(self, value):
         if isinstance(value, datetime):
             return tz_as_utc(value)
@@ -500,6 +528,7 @@ class DateRangeDocField(RangeDocField):
         else:
             return tuple(tz_as_utc(v) for v in value)
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -611,6 +640,7 @@ class EqualsExpression(PgExpression):
     def alchemy_expression(self):
         return self.field.search_alchemy_expression == self.value
 
+    @override
     def evaluate(self, ctx):
         return self.field.evaluate(ctx) == self.value
 

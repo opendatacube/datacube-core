@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from typing import cast
+from typing_extensions import override
 from collections.abc import Iterable
 from datacube.index.abstract import AbstractUserResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
@@ -21,6 +22,7 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         self._db = db
         self._index: Index = cast(Index, index)
 
+    @override
     def grant_role(self, role: str, *usernames: str) -> None:
         """
         Grant a role to users
@@ -28,6 +30,7 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             connection.grant_role(role, usernames)
 
+    @override
     def create_user(self, username: str, password: str,
                     role: str, description: str | None = None) -> None:
         """
@@ -36,6 +39,7 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             connection.create_user(username, password, role, description=description)
 
+    @override
     def delete_user(self, *usernames: str) -> None:
         """
         Delete a user
@@ -43,6 +47,7 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             connection.drop_users(usernames)
 
+    @override
     def list_users(self) -> Iterable[tuple[str, str, str | None]]:
         """
         :return: list of (role, user, description)

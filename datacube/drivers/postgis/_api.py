@@ -34,6 +34,7 @@ from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
 
 from typing import Any
+from typing_extensions import override
 from collections.abc import Iterable, Sequence
 from typing import cast as type_cast
 
@@ -1226,6 +1227,7 @@ class PostgisDbAPI:
         )
         return res.rowcount > 0
 
+    @override
     def __repr__(self):
         return "PostgresDb<connection={!r}>".format(self._connection)
 
