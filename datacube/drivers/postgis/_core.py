@@ -56,7 +56,8 @@ def install_timestamp_trigger(connection):
     connection.execute(text(UPDATE_TIMESTAMP_SQL))
 
     for name in TABLE_NAMES:
-        connection.execute(text(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
+        for s in INSTALL_TRIGGER_SQL_TEMPLATE:
+            connection.execute(text(s.format(schema=SCHEMA_NAME, table=name)))
 
 
 def schema_qualified(name):
@@ -107,7 +108,8 @@ def ensure_db(engine, with_permissions=True):
             _LOG.info('Creating schema.')
             c.execute(CreateSchema(SCHEMA_NAME))
             _LOG.info('Creating types.')
-            c.execute(text(TYPES_INIT_SQL))
+            for s in TYPES_INIT_SQL:
+                c.execute(text(s))
             from ._schema import orm_registry, ALL_STATIC_TABLES
             _LOG.info('Creating tables.')
             _LOG.info("Dataset indexes: %s", repr(orm_registry.metadata.tables["odc.dataset"].indexes))
@@ -125,20 +127,18 @@ def ensure_db(engine, with_permissions=True):
 
         if with_permissions:
             _LOG.info('Adding role grants.')
-            c.execute(text(f"""
-            grant usage on schema {SCHEMA_NAME} to odc_user;
-            grant select on all tables in schema {SCHEMA_NAME} to odc_user;
+            c.execute(text(f"grant usage on schema {SCHEMA_NAME} to odc_user"))
+            c.execute(text(f"grant select on all tables in schema {SCHEMA_NAME} to odc_user"))
 
-            grant insert on {SCHEMA_NAME}.dataset,
-                            {SCHEMA_NAME}.dataset_lineage to odc_manage;
-            grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_manage;
+            c.execute(text(f"grant insert on {SCHEMA_NAME}.dataset,"
+                           f"{SCHEMA_NAME}.dataset_lineage to odc_manage"))
+            c.execute(text(f"grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_manage"))
 
-            -- Manage allows deletion of types that have nothing written yet (admin needed to delete the data itself)
-            grant insert, delete on {SCHEMA_NAME}.product,
-                                    {SCHEMA_NAME}.metadata_type to odc_manage;
-            -- Allow creation of indexes, views
-            grant create on schema {SCHEMA_NAME} to odc_manage;
-            """))
+            # Manage allows deletion of types that have nothing written yet (admin needed to delete the data itself)
+            c.execute(text(f"grant insert, delete on {SCHEMA_NAME}.product,"
+                           f"{SCHEMA_NAME}.metadata_type to odc_manage"))
+            # Allow creation of indexes, views
+            c.execute(text(f"grant create on schema {SCHEMA_NAME} to odc_manage"))
             c.commit()
 
     return is_new
