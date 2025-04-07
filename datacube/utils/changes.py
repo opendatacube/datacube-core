@@ -9,6 +9,7 @@ import numpy
 
 from itertools import zip_longest
 from typing import cast, Any, Union
+from typing_extensions import override
 from collections.abc import Callable, Mapping, Sequence
 
 # Type that can be checked for changes.
@@ -40,9 +41,11 @@ def contains(v1: Changeable, v2: Changeable, case_sensitive: bool = False) -> bo
 
 
 class MissingSentinel:
+    @override
     def __str__(self):
         return "missing"
 
+    @override
     def __repr__(self):
         return "missing"
 

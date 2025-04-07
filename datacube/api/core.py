@@ -8,6 +8,7 @@ import uuid
 import collections.abc
 from itertools import groupby
 from typing import Any, cast, TYPE_CHECKING
+from typing_extensions import override
 from collections.abc import Iterable, Callable, Hashable, Mapping, Sequence
 import datetime
 
@@ -1106,9 +1107,11 @@ class Datacube:
                 patch_url=patch_url,
             )
 
+    @override
     def __str__(self):
         return f"Datacube<index={self.index!r}>"
 
+    @override
     def __repr__(self):
         return self.__str__()
 

@@ -7,6 +7,7 @@ import logging
 
 from cachetools.func import lru_cache
 from typing import cast
+from typing_extensions import override
 from collections.abc import Iterable, Sequence
 
 from datacube.index import fields
@@ -49,6 +50,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         self.__init__(*state)
 
+    @override
     def add(self, product, allow_table_lock=False):
         """
         Add a Product.
@@ -91,6 +93,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 )
         return self.get_by_name(product.name)
 
+    @override
     def can_update(self, product, allow_unsafe_updates=False):
         """
         Check if product can be updated. Return bool,safe_changes,unsafe_changes
@@ -135,6 +138,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
+    @override
     def update(self, product: Product, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a product. Unsafe changes will throw a ValueError by default.
@@ -208,6 +212,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         self.get_unsafe.cache_clear()          # type: ignore[attr-defined]
         return self.get_by_name(product.name)
 
+    @override
     def update_document(self, definition, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a Product using its definition
@@ -228,6 +233,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             allow_table_lock=allow_table_lock,
         )
 
+    @override
     def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
         """
         Delete Products, as well as all related datasets
@@ -277,6 +283,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             raise KeyError('"%s" is not a valid Product name' % name)
         return self._make(result)
 
+    @override
     def search_robust(self, **query):
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
@@ -325,6 +332,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             else:
                 yield type_, remaining_matchable
 
+    @override
     def search_by_metadata(self, metadata):
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
@@ -338,6 +346,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             for product in self._make_many(connection.search_products_by_metadata(metadata)):
                 yield product
 
+    @override
     def get_all(self) -> Iterable[Product]:
         """
         Retrieve all Products
@@ -345,6 +354,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return (self._make(record) for record in connection.get_all_products())
 
+    @override
     def get_all_docs(self) -> Iterable[JsonDict]:
         """
         Retrieve all Products
@@ -363,9 +373,11 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             id_=query_row.id,
         )
 
+    @override
     def spatial_extent(self, product, crs=None):
         return None
 
+    @override
     def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
@@ -383,6 +395,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return connection.temporal_extent_by_product(product.id, min_offset, max_offset)
 
+    @override
     def most_recent_change(self, product: str | Product) -> datetime.datetime | None:
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)

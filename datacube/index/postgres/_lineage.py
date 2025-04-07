@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from time import monotonic
 from collections.abc import Iterable
+from typing_extensions import override
 
 from datacube.index.abstract import BatchStatus, NoLineageResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
@@ -15,6 +16,7 @@ class LineageResource(NoLineageResource, IndexResourceAddIn):
         self._db = db
         super().__init__(index)
 
+    @override
     def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
         with self._db_connection(transaction=True) as connection:
             for row in connection.get_all_lineage(batch_size=batch_size):
@@ -24,6 +26,7 @@ class LineageResource(NoLineageResource, IndexResourceAddIn):
                     source_id=row.source_dataset_ref
                 )
 
+    @override
     def _add_batch(self, batch: Iterable[LineageRelation]) -> BatchStatus:
         b_started = monotonic()
         with self._db_connection(transaction=True) as connection:

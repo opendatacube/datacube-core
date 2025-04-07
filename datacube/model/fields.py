@@ -8,6 +8,7 @@ This allows extraction of fields of interest from dataset metadata document.
 """
 from typing import Any
 from collections.abc import Mapping
+from typing_extensions import override
 import toolz
 import decimal
 from datacube.utils import parse_time
@@ -39,11 +40,13 @@ class Expression:
     # DB driver (from Field methods), so they're mostly an opaque token.
 
     # A simple equals implementation for comparison in test code.
+    @override
     def __eq__(self, other) -> bool:
         if self.__class__ != other.__class__:
             return False
         return self.__dict__ == other.__dict__
 
+    @override
     def evaluate(self, ctx):
         raise NotImplementedError()
 
@@ -53,6 +56,7 @@ class SimpleEqualsExpression(Expression):
         self.field = field
         self.value = value
 
+    @override
     def evaluate(self, ctx):
         return self.field.extract(ctx) == self.value
 
@@ -110,11 +114,13 @@ class SimpleField(Field):
         self.type_name = type_name
         super().__init__(name, description)
 
+    @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
         return SimpleEqualsExpression(self, value)
 
     can_extract = True
 
+    @override
     def extract(self, doc):
         v = toolz.get_in(self._offset, doc, default=None)
         if v is None:
@@ -138,6 +144,7 @@ class RangeField(Field):
 
     can_extract = True
 
+    @override
     def extract(self, doc):
         def extract_raw(paths):
             vv = [toolz.get_in(p, doc, default=None) for p in paths]

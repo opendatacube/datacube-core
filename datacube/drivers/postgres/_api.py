@@ -17,6 +17,7 @@ import datetime
 import logging
 import uuid  # noqa: F401
 from typing import Any
+from typing_extensions import override
 from collections.abc import Iterable
 from typing import cast as type_cast
 from sqlalchemy import (
@@ -1276,6 +1277,7 @@ class PostgresDbAPI:
         )
         return res.rowcount > 0
 
+    @override
     def __repr__(self):
         return "PostgresDb<connection={!r}>".format(self._connection)
 

@@ -6,6 +6,7 @@
 import os
 import warnings
 from typing import Any, TYPE_CHECKING
+from typing_extensions import override
 from urllib.parse import urlparse
 from urllib.parse import quote_plus
 
@@ -120,6 +121,7 @@ class AliasOptionHandler(ODCOptionHandler):
     """
     allow_envvar_lookup: bool = False
 
+    @override
     def validate_and_normalise(self, value: Any) -> Any:
         if value is None:
             return None
@@ -133,6 +135,7 @@ class IndexDriverOptionHandler(ODCOptionHandler):
 
     Example implementation for Postgresql/Postgis-based index drivers shown below.
     """
+    @override
     def validate_and_normalise(self, value: Any) -> Any:
         value = super().validate_and_normalise(value)
         from datacube.drivers.indexes import index_drivers
@@ -140,6 +143,7 @@ class IndexDriverOptionHandler(ODCOptionHandler):
             raise ConfigException(f"Unknown index driver: {value} - Try one of {','.join(index_drivers())}")
         return value
 
+    @override
     def handle_dependent_options(self, value: Any) -> None:
         # Get driver-specific config options
         from datacube.drivers.indexes import index_driver_by_name
@@ -158,6 +162,7 @@ class IntOptionHandler(ODCOptionHandler):
         self.minval = minval
         self.maxval = maxval
 
+    @override
     def validate_and_normalise(self, value: Any) -> Any:
         # Call super() to get handle default value
         value = super().validate_and_normalise(value)
@@ -178,6 +183,7 @@ class BoolOptionHandler(ODCOptionHandler):
     """
     Handle config option expecting a boolean value
     """
+    @override
     def validate_and_normalise(self, value: Any) -> Any:
         value = super().validate_and_normalise(value)
         if isinstance(value, bool):
@@ -197,6 +203,7 @@ class IAMAuthenticationOptionHandler(ODCOptionHandler):
 
     If true, adds an IAM Timeout Option to the Environment.
     """
+    @override
     def validate_and_normalise(self, value: Any) -> Any:
         if isinstance(value, bool):
             return value
@@ -205,6 +212,7 @@ class IAMAuthenticationOptionHandler(ODCOptionHandler):
         else:
             return False
 
+    @override
     def handle_dependent_options(self, value: Any) -> None:
         if value:
             self.env._option_handlers.append(
@@ -215,6 +223,7 @@ class IAMAuthenticationOptionHandler(ODCOptionHandler):
 
 
 class PostgresURLOptionHandler(ODCOptionHandler):
+    @override
     def validate_and_normalise(self, value: Any) -> Any:
         if not value:
             return None
@@ -225,6 +234,7 @@ class PostgresURLOptionHandler(ODCOptionHandler):
         # Don't bother splitting up the url, we'd just have to put it back together again later
         return value
 
+    @override
     def handle_dependent_options(self, value: Any) -> None:
         if value is None:
             handlers: tuple[ODCOptionHandler, ...] = (
@@ -258,6 +268,7 @@ class PostgresURLPartHandler(ODCOptionHandler):
         self.urlpart = urlpart
         super().__init__(name, env)
 
+    @override
     def validate_and_normalise(self, value: Any) -> Any:
         url = self.env._normalised[self.urlhandler.name]
         purl = urlparse(url)
@@ -268,6 +279,7 @@ class PostgresURLPartHandler(ODCOptionHandler):
         else:
             return part
 
+    @override
     def get_val_from_environment(self) -> str | None:
         # Never read from environment - take from URL, wherever it came from
         return None

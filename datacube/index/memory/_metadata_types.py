@@ -5,6 +5,7 @@
 import logging
 from copy import deepcopy
 from typing import cast, Any
+from typing_extensions import override
 from collections.abc import Iterable, Mapping
 
 from datacube.index.abstract import AbstractMetadataTypeResource, default_metadata_type_docs
@@ -24,10 +25,12 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
         for doc in default_metadata_type_docs():
             self.add(self.from_doc(doc))
 
+    @override
     def from_doc(self, definition: Mapping[str, Any]) -> MetadataType:
         MetadataType.validate(definition)  # type: ignore[attr-defined]
         return self._make(definition)
 
+    @override
     def add(self, metadata_type: MetadataType, allow_table_lock: bool = False) -> MetadataType:
         MetadataType.validate(metadata_type.definition)  # type: ignore[attr-defined]
         if metadata_type.name in self.by_name:
@@ -44,6 +47,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
             self.by_name[persisted.name] = persisted
         return cast(MetadataType, self.get_by_name(metadata_type.name))
 
+    @override
     def can_update(self, metadata_type: MetadataType, allow_unsafe_updates: bool = False
                    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         MetadataType.validate(metadata_type.definition)  # type: ignore[attr-defined]
@@ -71,6 +75,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
             bad_changes
         )
 
+    @override
     def update(self, metadata_type: MetadataType, allow_unsafe_updates: bool = False, allow_table_lock: bool = False
               ) -> MetadataType:
         can_update, safe_changes, unsafe_changes = self.can_update(metadata_type, allow_unsafe_updates)
@@ -90,18 +95,22 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
         self.by_name[metadata_type.name] = persisted
         return persisted
 
+    @override
     def get_unsafe(self, id_: int) -> MetadataType:
         return self.clone(self.by_id[id_])
 
+    @override
     def get_by_name_unsafe(self, name: str) -> MetadataType:
         return self.clone(self.by_name[name])
 
+    @override
     def check_field_indexes(self, allow_table_lock: bool = False,
                             rebuild_views: bool = False, rebuild_indexes: bool = False) -> None:
         # Cannot implement this method without separating index implementation into
         # separate layer from the API Resource implementations.
         pass
 
+    @override
     def get_all(self) -> Iterable[MetadataType]:
         return (self.clone(mdt) for mdt in self.by_id.values())
 

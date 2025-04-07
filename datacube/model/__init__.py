@@ -15,6 +15,7 @@ from uuid import UUID
 
 from affine import Affine
 from typing import Any
+from typing_extensions import override
 from collections.abc import Mapping, Iterator, Iterable, Sequence
 
 from urllib.parse import urlparse
@@ -372,18 +373,22 @@ class Dataset:
 
         return None
 
+    @override
     def __eq__(self, other) -> bool:
         if isinstance(other, Dataset):
             return self.id == other.id
         return False
 
+    @override
     def __hash__(self):
         return hash(self.id)
 
+    @override
     def __str__(self):
         str_loc = 'not available' if not self.uri else self.uri
         return f"Dataset <id={self.id} product={self.product.name} location={str_loc}>"
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -475,6 +480,7 @@ class Measurement:
     def __iter__(self):
         return iter(self._data)
 
+    @override
     def __str__(self):
         return repr(self)
 
@@ -518,6 +524,7 @@ class Measurement:
         for key, value in kwargs.items():
             self[key] = value
 
+    @override
     def __repr__(self) -> str:
         return f"Measurement({repr(self._data)})"
 
@@ -561,6 +568,7 @@ class MetadataType:
         cls.validate(doc)
         validate_eo3_compatible_type(doc)
 
+    @override
     def __eq__(self, other: Any) -> bool:
         if self is other:
             return True
@@ -570,9 +578,11 @@ class MetadataType:
 
         return self.name == other.name
 
+    @override
     def __str__(self) -> str:
         return f"MetadataType(name={self.name!r}, id_={self.id!r})"
 
+    @override
     def __repr__(self) -> str:
         return str(self)
 
@@ -891,14 +901,17 @@ class Product:
             })
         return row
 
+    @override
     def __str__(self) -> str:
         return f"Product(name={self.name!r}, id_={self.id!r})"
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()
 
     # Types are uniquely identifiable by name:
 
+    @override
     def __eq__(self, other) -> bool:
         if self is other:
             return True
@@ -908,6 +921,7 @@ class Product:
 
         return self.name == other.name
 
+    @override
     def __hash__(self):
         return hash(self.name)
 
@@ -957,6 +971,7 @@ class GridSpec:
             _LOG.warning('In odc-geo GridSpec, origin is expected in (X, Y) order.')
         self.origin = origin or (0.0, 0.0)
 
+    @override
     def __eq__(self, other):
         if not isinstance(other, GridSpec):
             return False
@@ -1108,10 +1123,12 @@ class GridSpec:
         assert step > 0.0
         return range(int(math.floor(lower / step)), int(math.ceil(upper / step)))
 
+    @override
     def __str__(self) -> str:
         return "GridSpec(crs=%s, tile_size=%s, resolution=%s)" % (
             self.crs, self.tile_size, self.resolution)
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -1298,6 +1315,7 @@ class ExtraDimensions:
                 shapes += (len(self.measurements_values(name)),)   # type: ignore[assignment,arg-type]
         return names, shapes
 
+    @override
     def __str__(self) -> str:
         return (
             f"ExtraDimensions(extra_dim={dict(self._dims)}, dim_slice={self._dim_slice} "
@@ -1305,5 +1323,6 @@ class ExtraDimensions:
             f")"
         )
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()

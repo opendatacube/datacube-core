@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
 from typing import Optional, Any, cast
+from typing_extensions import override
 from collections.abc import Mapping, Sequence, Iterable
 
 
@@ -59,6 +60,7 @@ class LineageTree:
     children: dict[str, list["LineageTree"]] | None = None
     home: str | None = None
 
+    @override
     def __eq__(self, other):
         if not self.children and not other.children:
             children_equal = True

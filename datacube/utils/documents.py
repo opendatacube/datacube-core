@@ -17,6 +17,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from typing import Any
+from typing_extensions import override
 from collections.abc import Mapping
 from copy import deepcopy
 from uuid import UUID
@@ -495,6 +496,7 @@ class DocReader:
                 )
             )
 
+    @override
     def __setattr__(self, name, val):
         offset = self._system_offsets.get(name)
         if offset is None:
@@ -505,6 +507,7 @@ class DocReader:
             )
         return _set_doc_offset(offset, self._doc, val)
 
+    @override
     def __dir__(self):
         return list(self.fields)
 

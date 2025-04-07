@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Iterable
+from typing_extensions import override
 from datacube.index.abstract import AbstractUserResource
 
 
@@ -41,6 +42,7 @@ class UserResource(AbstractUserResource):
             "localuser": User("localuser", "password123", "local_user", "Default user")
         }
 
+    @override
     def grant_role(self, role: str, *usernames: str) -> None:
         if role not in self.roles:
             raise ValueError(f"{role} is not a known role")
@@ -50,6 +52,7 @@ class UserResource(AbstractUserResource):
         for user in usernames:
             self.users[user].grant_role(role)
 
+    @override
     def create_user(self, username: str, password: str,
                     role: str, description: str | None = None) -> None:
         if username in self.users:
@@ -58,6 +61,7 @@ class UserResource(AbstractUserResource):
             raise ValueError(f"{role} is not a known role")
         self.users[username] = User(username, password, role, description)
 
+    @override
     def delete_user(self, *usernames: str) -> None:
         for user in usernames:
             if user not in self.users:
@@ -65,5 +69,6 @@ class UserResource(AbstractUserResource):
         for user in usernames:
             del self.users[user]
 
+    @override
     def list_users(self) -> Iterable[tuple[str, str, str | None]]:
         return [(u.default_role, u.username, u.description) for u in self.users.values()]

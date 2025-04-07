@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import numpy as np
 import toolz
+from typing_extensions import override
 
 from . import suppress_deprecations
 from ..model import Dataset
@@ -27,14 +28,17 @@ class RasterFileDataSource(RasterioDataSource):
         self.crs = crs
         self.transform = transform
 
+    @override
     def get_bandnumber(self, src):
         return self.bandnumber
 
+    @override
     def get_transform(self, shape):
         if self.transform is None:
             raise RuntimeError('No transform in the data and no fallback')
         return self.transform
 
+    @override
     def get_crs(self):
         if self.crs is None:
             raise RuntimeError('No CRS in the data and no fallback')

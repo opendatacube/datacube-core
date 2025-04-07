@@ -6,6 +6,7 @@ import datetime
 import logging
 
 from typing import cast
+from typing_extensions import override
 from collections.abc import Iterable, Sequence
 from uuid import UUID
 
@@ -28,6 +29,7 @@ class ProductResource(AbstractProductResource):
         self.by_name: dict[str, Product] = {}
         self.next_id = 1
 
+    @override
     def add(self, product: Product, allow_table_lock: bool = False) -> Product:
         Product.validate(product.definition)  # type: ignore[attr-defined]
         existing = self.get_by_name(product.name)
@@ -51,6 +53,7 @@ class ProductResource(AbstractProductResource):
             self.by_name[clone.name] = clone
         return cast(Product, self.get_by_name(product.name))
 
+    @override
     def can_update(self, product: Product,
                    allow_unsafe_updates: bool = False,
                    allow_table_lock: bool = False
@@ -91,6 +94,7 @@ class ProductResource(AbstractProductResource):
             bad_changes,
         )
 
+    @override
     def update(self, product: Product,
                allow_unsafe_updates: bool = False,
                allow_table_lock: bool = False) -> Product:
@@ -116,6 +120,7 @@ class ProductResource(AbstractProductResource):
         self.by_name[persisted.name] = persisted
         return cast(Product, self.get_by_name(product.name))
 
+    @override
     def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
         deleted = []
         for product in products:
@@ -132,12 +137,15 @@ class ProductResource(AbstractProductResource):
             deleted.append(product)
         return deleted
 
+    @override
     def get_unsafe(self, id_: int) -> Product:
         return self.clone(self.by_id[id_])
 
+    @override
     def get_by_name_unsafe(self, name: str) -> Product:
         return self.clone(self.by_name[name])
 
+    @override
     def search_robust(self, **query: QueryField) -> Iterable[tuple[Product, QueryDict]]:
         def listify(v):
             if isinstance(v, tuple):
@@ -176,12 +184,14 @@ class ProductResource(AbstractProductResource):
             else:
                 yield prod, unmatched
 
+    @override
     def search_by_metadata(self, metadata: JsonDict) -> Iterable[Product]:
         norm_meta = {"properties": metadata}
         for prod in self.get_all():
             if metadata_subset(norm_meta, prod.metadata_doc):
                 yield prod
 
+    @override
     def get_all(self) -> Iterable[Product]:
         return (self.clone(prod) for prod in self.by_id.values())
 
@@ -192,9 +202,11 @@ class ProductResource(AbstractProductResource):
             id_=orig.id
         )
 
+    @override
     def spatial_extent(self, product, crs=None):
         return None
 
+    @override
     def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)
@@ -203,5 +215,6 @@ class ProductResource(AbstractProductResource):
             raise RuntimeError("Product has no datasets and therefore no temporal extent")
         return self._index.datasets.temporal_extent(ids)
 
+    @override
     def most_recent_change(self, product: str | Product) -> datetime.datetime | None:
         raise NotImplementedError("product most recent change is not currently supported by the memory index driver.")
