@@ -112,6 +112,8 @@ cyear
 cython
 da
 Dahu
+DeprecationWarning
+DeprecationWarnings
 dask
 data's
 DataArray
@@ -318,6 +320,7 @@ maxdepth
 md
 metadataType
 MetadataTypes
+miniconda
 Miniforge
 mk
 mkdir
@@ -438,6 +441,7 @@ PyPEG
 PyPI
 pypi
 pyproj
+pyproject
 pyspellcheck
 pytest
 PythonAPI
@@ -531,6 +535,7 @@ tmp
 toctree
 TODO
 ToFloat
+toml
 txt
 typechecking
 typehints
