@@ -70,9 +70,8 @@ class Tile:
         self.geobox: GeoBox = geobox
 
     @property
-    def dims(self) -> tuple[Hashable, ...]:
+    def dims(self) -> tuple[str, ...]:
         """Names of the dimensions, eg ``('time', 'y', 'x')``
-        :return: tuple(str)
         """
         return self.sources.dims + self.geobox.dimensions
 
@@ -96,13 +95,12 @@ class Tile:
         return Tile(sources, geobox)
 
     # TODO(csiro) Split on time range
-    def split(self, dim: str, step: int = 1):
+    def split(self, dim: str, step: int = 1) -> tuple(key, Tile):
         """
         Splits along a non-spatial dimension into Tile objects with a length of 1 or more in the `dim` dimension.
 
         :param dim: Name of the non-spatial dimension to split
         :param step: step size to split
-        :return: tuple(key, Tile)
         """
         axis = self.dims.index(dim)
         indexer = [slice(None)] * len(self.dims)
@@ -111,19 +109,19 @@ class Tile:
             indexer[axis] = slice(i, min(size, i + step))
             yield self.sources[dim].values[i], self[tuple(indexer)]
 
-    def split_by_time(self, freq: str = "A", time_dim: str = "time", **kwargs):
+    def split_by_time(self, freq: str = "A", time_dim: str = "time", **kwargs) -> Generator[tuple(str, Tile)]:
         """
         Splits along the `time` dimension, into periods, using pandas offsets, such as:
         :
             'A': Annual
             'Q': Quarter
             'M': Month
-        See: http://pandas.pydata.org/pandas-docs/stable/timeseries.html?highlight=rollback#timeseries-offset-aliases
+        See: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#dateoffset-objects
 
         :param freq: time series frequency
         :param time_dim: name of the time dimension
         :param kwargs: other keyword arguments passed to ``pandas.period_range``
-        :return: Generator[tuple(str, Tile)] generator of the key string (eg '1994') and the slice of Tile
+        :return:  generator of the key string (eg '1994') and the slice of Tile
         """
         # extract first and last timestamps from the time axis, note this will
         # work with 1 element arrays as well
@@ -156,7 +154,7 @@ class GridWorkflow:
     def __init__(
         self,
         index: Index,
-        grid_spec: GridWorkflow | None = None,
+        grid_spec: GridSpec | None = None,
         product: Product | str | None = None,
     ):
         """
