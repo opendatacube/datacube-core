@@ -24,7 +24,6 @@ from sqlalchemy import (
     cast,
     String,
     Label,
-    FromClause,
     delete,
     column,
     values,
@@ -829,7 +828,7 @@ class PostgresDbAPI:
                 t2,
                 and_(t1.c.time.overlaps(t2.c.time), t1.c.id != t2.c.id)
             )
-        )
+        ).cte("time_overlap")
 
         fields = [getattr(overlapping.c, f.name) for f in fields]
         final_query = select(
@@ -837,7 +836,7 @@ class PostgresDbAPI:
             *fields,
             text("(lower(time_intersect) at time zone 'UTC', upper(time_intersect) at time zone 'UTC') as time")
         ).select_from(
-            type_cast(FromClause, overlapping)
+            overlapping
         ).group_by(
             *fields, text("time_intersect")
         ).having(
