@@ -189,7 +189,7 @@ class SpatialIndexRecord:
     @classmethod
     def from_spindex(cls, spindex: type[SpatialIndex]) -> "SpatialIndexRecord":
         return cls(  # type: ignore [call-arg]
-            srid=spindex.__tablename__[8:],  # type: ignore [attr-defined]
+            srid=int(spindex.__tablename__[8:]),  # type: ignore [attr-defined]
             table_name=spindex.__tablename__  # type: ignore [attr-defined]
         )
 

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import NamedTuple, cast
+from typing import NamedTuple
 from collections.abc import Iterable, Sequence
 from uuid import UUID
 
@@ -67,18 +67,13 @@ class DatasetTuple(NamedTuple):
 
     @property
     def is_legacy(self):
-        if self.uri_is_string:
-            return False
-        return len(self.uri_) > 1
+        return not isinstance(self.uri_, str) and len(self.uri_) > 1
 
     @property
     def uri(self) -> str:
-        if self.uri_is_string:
-            return cast(str, self.uri_)
-        elif self.is_legacy:
-            return self.uris[0]
-        else:
-            return cast(list[str], self.uri_)[0]
+        if isinstance(self.uri_, str):
+            return self.uri_
+        return self.uri_[0]
 
     @property
     @deprecat(
@@ -86,10 +81,9 @@ class DatasetTuple(NamedTuple):
         version='1.9.0',
         category=ODC2DeprecationWarning)
     def uris(self) -> Sequence[str]:
-        if self.uri_is_string:
-            return [cast(str, self.uri_)]
-        else:
-            return cast(list[str], self.uri_)
+        if isinstance(self.uri_, str):
+            return [self.uri_]
+        return self.uri_
 
 
 # The special handling of grid_spatial, etc. appears to NOT apply to EO3.
