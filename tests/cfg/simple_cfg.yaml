@@ -13,7 +13,7 @@ legacy:
    db_connection_timeout: 20
 new:
    index_driver: postgis
-   db_url: postgresql://foo:bar@server.subdomain.domain/mytestdb
+   db_url: 'postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb'
    db_iam_authentication: yes
 postgis:
    alias: new
@@ -22,7 +22,7 @@ memory:
    db_url: '@nota?valid:url//foo&bar%%%'
 new2:
    index_driver: postgis
-   db_url: postgresql://foo:bar@server.subdomain.domain/mytestdb
+   db_url: 'postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb'
    db_database: not_read
    db_port: ignored
    db_iam_authentication: yes
