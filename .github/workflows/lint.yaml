@@ -19,6 +19,12 @@ on:
 
 permissions: {}
 
+# When a PR is updated, cancel the jobs from the previous version. Merges
+# do not define head_ref, so use run_id to never cancel those jobs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -27,7 +33,7 @@ jobs:
         python-version: ["3.12"]
         lintcommand:
           - "pylint -j 2 --report no datacube"
-          - "mypy datacube --warn-unused-ignores"
+          - "mypy datacube"
           - "pycodestyle tests integration_tests examples --max-line-length 120"
     name: Linting
     steps:

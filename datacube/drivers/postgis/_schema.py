@@ -7,7 +7,6 @@ Tables for indexing the datasets which were ingested into the AGDC.
 """
 
 import logging
-from typing import Type
 
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.orm import registry, relationship, column_property
@@ -188,9 +187,9 @@ class SpatialIndexRecord:
     added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
 
     @classmethod
-    def from_spindex(cls, spindex: Type[SpatialIndex]) -> "SpatialIndexRecord":
+    def from_spindex(cls, spindex: type[SpatialIndex]) -> "SpatialIndexRecord":
         return cls(  # type: ignore [call-arg]
-            srid=spindex.__tablename__[8:],  # type: ignore [attr-defined]
+            srid=int(spindex.__tablename__[8:]),  # type: ignore [attr-defined]
             table_name=spindex.__tablename__  # type: ignore [attr-defined]
         )
 

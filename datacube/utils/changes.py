@@ -8,7 +8,9 @@ Validation of document/dictionary changes.
 import numpy
 
 from itertools import zip_longest
-from typing import cast, Any, Callable, List, Mapping, Sequence, Tuple, Union
+from typing import cast, Any, Union
+from typing_extensions import override
+from collections.abc import Callable, Mapping, Sequence
 
 # Type that can be checked for changes.
 # (MyPy approximation without recursive references)
@@ -39,9 +41,11 @@ def contains(v1: Changeable, v2: Changeable, case_sensitive: bool = False) -> bo
 
 
 class MissingSentinel:
+    @override
     def __str__(self):
         return "missing"
 
+    @override
     def __repr__(self):
         return "missing"
 
@@ -50,19 +54,19 @@ MISSING = MissingSentinel()
 
 # Representation of an offset in a dict structure
 OffsetElem = Union[str, int]
-Offset = Tuple[OffsetElem, ...]
+Offset = tuple[OffsetElem, ...]
 
 # Representation of a changed value
 ChangedValue = Union[MissingSentinel, Changeable]
 
 # Representation of a change
-Change = Tuple[Offset, ChangedValue, ChangedValue]
+Change = tuple[Offset, ChangedValue, ChangedValue]
 
 
 def get_doc_changes(original: Changeable,
                     new: Changeable,
                     base_prefix: Offset = ()
-                    ) -> List[Change]:
+                    ) -> list[Change]:
     """
     Return a list of `changed fields` between two dict structures.
 
@@ -79,7 +83,7 @@ def get_doc_changes(original: Changeable,
 
 
     """
-    changed_fields: List[Change] = []
+    changed_fields: list[Change] = []
     if original == new:
         return changed_fields
 
@@ -152,8 +156,8 @@ def allow_any(key: Offset, offset: Offset,
     return True
 
 
-def classify_changes(changes: List[Change], allowed_changes: Mapping[Offset, AllowPolicy]
-                     ) -> Tuple[List[Change], List[Change]]:
+def classify_changes(changes: list[Change], allowed_changes: Mapping[Offset, AllowPolicy]
+                     ) -> tuple[list[Change], list[Change]]:
     """
     Classify list of changes into good(allowed) and bad(not allowed) based on allowed changes.
 
@@ -163,8 +167,8 @@ def classify_changes(changes: List[Change], allowed_changes: Mapping[Offset, All
     """
     allowed_changes_index = dict(allowed_changes)
 
-    good_changes: List[Change] = []
-    bad_changes: List[Change] = []
+    good_changes: list[Change] = []
+    bad_changes: list[Change] = []
 
     for offset, old_val, new_val in changes:
         allowance = allowed_changes_index.get(offset)

@@ -5,6 +5,7 @@
 from abc import ABC, abstractmethod
 from threading import Lock
 from typing import Any
+from typing_extensions import override
 
 from datacube.index.exceptions import TransactionException
 from datacube.utils.generic import thread_local_cache
@@ -164,14 +165,18 @@ class AbstractTransaction(ABC):
 
 class UnhandledTransaction(AbstractTransaction):
     # Minimal implementation for index drivers with no transaction handling.
+    @override
     def _new_connection(self) -> Any:
         return True
 
+    @override
     def _commit(self) -> None:
         pass
 
+    @override
     def _rollback(self) -> None:
         pass
 
+    @override
     def _release_connection(self) -> None:
         pass

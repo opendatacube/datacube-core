@@ -5,9 +5,11 @@
 """ reader
 """
 from typing import (
-    List, Optional, Union, Any, Iterable,
-    Tuple, NamedTuple, TypeVar
+    Any,
+    NamedTuple, TypeVar
 )
+from typing_extensions import override
+from collections.abc import Iterable
 import numpy as np
 from affine import Affine
 from concurrent.futures import ThreadPoolExecutor
@@ -31,15 +33,15 @@ from datacube.drivers._types import (
     RasterWindow,
 )
 
-Overrides = NamedTuple('Overrides', [('crs', Optional[CRS]),
-                                     ('transform', Optional[Affine]),
-                                     ('nodata', Optional[Union[float, int]])])
+Overrides = NamedTuple('Overrides', [('crs', CRS | None),
+                                     ('transform', Affine | None),
+                                     ('nodata', float | int | None)])
 
-RioWindow = Tuple[Tuple[int, int], Tuple[int, int]]  # pylint: disable=invalid-name
+RioWindow = tuple[tuple[int, int], tuple[int, int]]  # pylint: disable=invalid-name
 T = TypeVar('T')
 
 
-def pick(a: Optional[T], b: Optional[T]) -> Optional[T]:
+def pick(a: T | None, b: T | None) -> T | None:
     """ Return first non-None value or None if all are None
     """
     return b if a is None else a
@@ -49,11 +51,11 @@ def _is_netcdf(fmt: str) -> bool:
     return fmt == 'NetCDF'
 
 
-def _roi_to_window(roi: Optional[RasterWindow], shape: RasterShape) -> Optional[RioWindow]:
+def _roi_to_window(roi: RasterWindow | None, shape: RasterShape) -> RioWindow | None:
     if roi is None:
         return None
 
-    def s2t(s: slice, n: int) -> Tuple[int, int]:
+    def s2t(s: slice, n: int) -> tuple[int, int]:
         _in = 0 if s.start is None else s.start
         _out = n if s.stop is None else s.stop
 
@@ -69,7 +71,7 @@ def _roi_to_window(roi: Optional[RasterWindow], shape: RasterShape) -> Optional[
     return (s1, s2)
 
 
-def _dc_crs(crs: Optional[rasterio.crs.CRS]) -> Optional[CRS]:  # pylint: disable=c-extension-no-member
+def _dc_crs(crs: rasterio.crs.CRS | None) -> CRS | None:  # pylint: disable=c-extension-no-member
     """ Convert RIO version of CRS to datacube
     """
     if crs is None:
@@ -79,14 +81,14 @@ def _dc_crs(crs: Optional[rasterio.crs.CRS]) -> Optional[CRS]:  # pylint: disabl
         return None
 
     if crs.is_epsg_code:
-        return CRS('epsg:{}'.format(crs.to_epsg()))
+        return CRS(f'epsg:{crs.to_epsg()}')
     return CRS(crs.wkt)
 
 
 def _read(src: DatasetReader,
           bidx: int,
-          window: Optional[RasterWindow],
-          out_shape: Optional[RasterShape]) -> np.ndarray:
+          window: RasterWindow | None,
+          out_shape: RasterShape | None) -> np.ndarray:
     return src.read(bidx,
                     window=_roi_to_window(window, src.shape),
                     out_shape=out_shape)
@@ -102,7 +104,7 @@ def _rio_uri(band: BandInfo) -> str:
         fname = str(uri_to_local_path(band.uri))
 
         if _is_netcdf(band.format):
-            fname = 'NETCDF:"{}":{}'.format(fname, band.layer)
+            fname = f'NETCDF:"{fname}":{band.layer}'
 
         return fname
 
@@ -145,29 +147,35 @@ class RIOReader(GeoRasterReader):
         self._dtype = src.dtypes[band_idx-1]
         self._pool = pool
 
+    @override
     @property
-    def crs(self) -> Optional[CRS]:
+    def crs(self) -> CRS | None:
         return self._crs
 
+    @override
     @property
-    def transform(self) -> Optional[Affine]:
+    def transform(self) -> Affine | None:
         return self._transform
 
+    @override
     @property
     def dtype(self) -> np.dtype:
         return np.dtype(self._dtype)
 
+    @override
     @property
     def shape(self) -> RasterShape:
         return self._src.shape
 
+    @override
     @property
-    def nodata(self) -> Optional[Union[int, float]]:
+    def nodata(self) -> int | float | None:
         return self._nodata
 
+    @override
     def read(self,
-             window: Optional[RasterWindow] = None,
-             out_shape: Optional[RasterShape] = None) -> FutureNdarray:
+             window: RasterWindow | None = None,
+             out_shape: RasterShape | None = None) -> FutureNdarray:
         return self._pool.submit(_read, self._src, self._band_idx, window, out_shape)
 
 
@@ -207,11 +215,13 @@ class RIORdrDriver(ReaderDriver):
         self._pool = pool
         self._cfg = cfg
 
+    @override
     def new_load_context(self,
                          bands: Iterable[BandInfo],
-                         old_ctx: Optional[Any]) -> Any:
+                         old_ctx: Any | None) -> Any:
         return None  # TODO: implement file handle cache with this
 
+    @override
     def open(self, band: BandInfo, ctx: Any) -> FutureGeoRasterReader:
         return self._pool.submit(_rdr_open, band, ctx, self._pool)
 
@@ -220,14 +230,17 @@ class RDEntry(ReaderDriverEntry):
     PROTOCOLS = ['file', 'http', 'https', 's3', 'ftp', 'zip']
     FORMATS = ['GeoTIFF', 'NetCDF', 'JPEG2000']
 
+    @override
     @property
-    def protocols(self) -> List[str]:
+    def protocols(self) -> list[str]:
         return RDEntry.PROTOCOLS
 
+    @override
     @property
-    def formats(self) -> List[str]:
+    def formats(self) -> list[str]:
         return RDEntry.FORMATS
 
+    @override
     def supports(self, protocol: str, fmt: str) -> bool:
         # TODO: might need better support matrix structures
 
@@ -236,6 +249,7 @@ class RDEntry(ReaderDriverEntry):
 
         return True
 
+    @override
     def new_instance(self, cfg: dict) -> ReaderDriver:
         cfg = cfg.copy()
         pool = cfg.pop('pool', None)

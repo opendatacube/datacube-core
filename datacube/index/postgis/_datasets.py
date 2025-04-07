@@ -11,7 +11,9 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Iterable, Mapping, Union, Optional, Any, NamedTuple, Sequence, cast
+from typing import Any, NamedTuple, cast
+from typing_extensions import override
+from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
 
 from deprecat import deprecat
@@ -49,11 +51,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def __init__(self, db, index):
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
-        :type product_resource: datacube.index._products.ProductResource
+        :type index: datacube.index._products.ProductResource
         """
         self._db = db
         super().__init__(index)
 
+    @override
     def get_unsafe(self, id_: DSID,
                    include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         """
@@ -80,6 +83,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 raise KeyError(id_)
             return self._make(dataset, full_info=True, source_tree=source_tree, derived_tree=derived_tree)
 
+    @override
     def bulk_get(self, ids):
         def to_uuid(x):
             return x if isinstance(x, UUID) else UUID(x)
@@ -109,6 +113,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 for result in connection.get_derived_datasets(id_)
             ]
 
+    @override
     def has(self, id_):
         """
         Have we already indexed this dataset?
@@ -119,6 +124,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return connection.contains_dataset(id_)
 
+    @override
     def bulk_has(self, ids_):
         """
         Like `has` but operates on a list of ids.
@@ -135,8 +141,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return [x in existing for x in
                 map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
 
+    @override
     def add(self, dataset: Dataset,
-            with_lineage: bool = True, archive_less_mature: Optional[int] = None) -> Dataset:
+            with_lineage: bool = True, archive_less_mature: int | None = None) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
@@ -160,7 +167,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             # 1a. insert (if not already exists)
             product_id = dataset.product.id
             if product_id is None:
-                # don't assume the product has an id value since it's optional
+                # don't assume the product has an id value since it's optional,
                 # but we should error if the product doesn't exist in the db
                 product_id = self.products.get_by_name_unsafe(dataset.product.name).id
             is_new = transaction.insert_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product_id)
@@ -182,9 +189,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return dataset
 
+    @override
     def _init_bulk_add_cache(self):
         return {}
 
+    @override
     def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]) -> BatchStatus:
         # Add a "batch" of datasets.
         b_started = monotonic()
@@ -257,6 +266,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 connection.insert_dataset_search_bulk(search_type, values)
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
+    @override
     def search_product_duplicates(self, product: Product, *args):
         """
         Find dataset ids who have duplicates of the given set of field names.
@@ -267,7 +277,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         dataset_fields = product.metadata_type.dataset_fields
 
-        def load_field(f: Union[str, fields.Field]) -> fields.Field:
+        def load_field(f: str | fields.Field) -> fields.Field:
             if isinstance(f, str):
                 return dataset_fields[f]
             assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
@@ -282,6 +292,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     ids = record.pop('ids')
                     yield namedtuple('search_result', record.keys())(**record), set(ids)
 
+    @override
     def can_update(self, dataset, updates_allowed=None):
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
@@ -317,6 +328,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return not bad_changes, good_changes, bad_changes
 
+    @override
     def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=False):
         """
         Update dataset metadata and location
@@ -370,6 +382,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             with self._db_connection(transaction=True) as tr:
                 tr.insert_dataset_location(dataset.id, dataset.uri)
 
+    @override
     def archive(self, ids):
         """
         Mark datasets as archived
@@ -380,6 +393,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for id_ in ids:
                 transaction.archive_dataset(id_)
 
+    @override
     def restore(self, ids):
         """
         Mark datasets as not archived
@@ -390,6 +404,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             for id_ in ids:
                 transaction.restore_dataset(id_)
 
+    @override
     def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Sequence[DSID]:
         """
         Delete datasets
@@ -412,6 +427,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return purged
 
+    @override
     def get_all_dataset_ids(self, archived: bool | None = False):
         """
         Get list of all dataset IDs based only on archived status
@@ -439,6 +455,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return [self.get_location(id_)]
 
+    @override
     def get_location(self, id_):
         """
         Get the list of storage locations for the given dataset id
@@ -511,6 +528,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return connection.insert_dataset_location(id_, uri)
 
+    @override
     def get_datasets_for_location(self, uri, mode=None):
         """
         Find datasets that exist at the given URI
@@ -603,6 +621,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return (self._make(dataset, product=product) for dataset in query_result)
 
+    @override
     def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False):
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
@@ -610,12 +629,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Caution – slow! This will usually not use indexes.
 
         :param dict metadata:
+        :param archived: include archived datasets
         :rtype: list[Dataset]
         """
         with self._db_connection() as connection:
             for dataset in self._make_many(connection.search_datasets_by_metadata(metadata, archived)):
                 yield dataset
 
+    @override
     @deprecat(
         deprecated_args={
             "source_filter": {
@@ -630,9 +651,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Perform a search, returning results as Dataset objects.
 
-        :param Union[str,float,Range,list] query:
         :param int limit: Limit number of datasets
+        :param archived: include archived datasets
         :param Iterable[str|Field|Function] order_by:
+        :param Union[str,float,Range,list] query:
         :rtype: __generator[Dataset]
         """
         source_filter = query.pop('source_filter', None)
@@ -643,16 +665,19 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                                                             order_by=order_by):
             yield from self._make_many(datasets, product)
 
+    @override
     def search_by_product(self, archived: bool | None = False, **query):
         """
         Perform a search, returning datasets grouped by product type.
 
+        :param archived: include archived datasets
         :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[(Product,  __generator[Dataset])]]
+        :rtype: __generator[(Product,  __generator[Dataset])]
         """
         for product, datasets in self._do_search_by_product(query, archived=archived):
             yield product, self._make_many(datasets, product)
 
+    @override
     def search_returning(self,
                          field_names: Iterable[str] | None = None,
                          custom_offsets: Mapping[str, Offset] | None = None,
@@ -670,6 +695,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param tuple[str] field_names:
         :param Union[str,float,Range,list] query:
         :param int limit: Limit number of datasets
+        :param archived: include archived datasets
         :param Iterable[Any] order_by: sql text, dataset field, or sqlalchemy expression
         by which to order results
         :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
@@ -707,10 +733,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 kwargs = {f: extract_field(f) for f in field_name_d}
                 yield result_type(**kwargs)
 
+    @override
     def count(self, archived: bool | None = False, **query):
         """
         Perform a search, returning count of results.
 
+        :param archived: include archived datasets
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: int
         """
@@ -721,16 +749,19 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return result
 
+    @override
     def count_by_product(self, archived: bool | None = False, **query):
         """
         Perform a search, returning a count of for each matching product type.
 
+        :param archived: include archived datasets
         :param dict[str,str|float|datacube.model.Range] query:
         :returns: Sequence of (product, count)
-        :rtype: __generator[(Product,  int)]]
+        :rtype: __generator[(Product,  int)]
         """
         return self._do_count_by_product(query, archived=archived)
 
+    @override
     def count_by_product_through_time(self, period, **query):
         """
         Perform a search, returning counts for each product grouped in time slices
@@ -739,10 +770,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dict[str,str|float|datacube.model.Range] query:
         :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: __generator[(Product, list[(datetime.datetime, datetime.datetime), int)]]
+        :rtype: __generator[(Product, list[(datetime.datetime, datetime.datetime), int])]
         """
         return self._do_time_count(period, query)
 
+    @override
     def count_product_through_time(self, period, **query):
         """
         Perform a search, returning counts for a single product grouped in time slices
@@ -753,7 +785,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dict[str,str|float|datacube.model.Range] query:
         :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int)]]
+        :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int])]
         """
         return next(self._do_time_count(period, query, ensure_single=True))[1]
 
@@ -853,6 +885,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     query_exprs
                 ))
 
+    @override
     @deprecat(
         reason="This method is deprecated and will be removed in 2.0.  "
                "Consider migrating to search_returning()",
@@ -872,6 +905,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 _LOG.warning("search results: %s (%s)", output["id"], output["product"])
                 yield output
 
+    @override
     @deprecat(
         reason="This method is deprecated and will be removed in 2.0.  "
                "Consider migrating to search_returning()",
@@ -887,7 +921,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         generated Dataset class that is a subclass of tuple.
 
         Only the requested fields will be returned together with related derived attributes as property functions
-        similar to the datacube.model.Dataset class. For example, if 'extent'is requested all of
+        similar to the datacube.model.Dataset class. For example, if 'extent' is requested all of
         'crs', 'extent', 'transform', and 'bounds' are available as property functions.
 
         The field_names can be custom fields in addition to those specified in metadata_type, fixed fields, or
@@ -895,7 +929,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         and 'bounds'. The custom fields require custom offsets of the metadata doc be provided.
 
         The datasets can be selected based on values of custom fields as long as relevant custom
-        offsets are provided. However custom field values are not transformed so must match what is
+        offsets are provided. However, custom field values are not transformed so must match what is
         stored in the database.
 
         :param field_names: A tuple of field names that would be returned including derived fields
@@ -1012,7 +1046,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         custom_exprs = []
         for key in custom_query:
-            # for now we assume all custom query fields are SimpleDocFields
+            # for now, we assume all custom query fields are SimpleDocFields
             custom_field = SimpleDocField(
                 custom_query[key], custom_query[key], Dataset.metadata,
                 False, offset=custom_offsets[key]
@@ -1021,6 +1055,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return custom_exprs
 
+    @override
     def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the specified datasets.
@@ -1028,10 +1063,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return connection.temporal_extent_by_ids(ids)
 
+    @override
     def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
 
+    @override
     def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
         local_product = self.products.get_by_name(product.name)
         product_search_key = [local_product.id]

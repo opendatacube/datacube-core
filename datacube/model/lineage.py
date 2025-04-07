@@ -5,7 +5,9 @@
 from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
-from typing import Mapping, Optional, Sequence, Tuple, Iterable, Any, cast
+from typing import Optional, Any, cast
+from typing_extensions import override
+from collections.abc import Mapping, Sequence, Iterable
 
 
 class LineageDirection(Enum):
@@ -48,7 +50,7 @@ class LineageTree:
           children=None means that there may be children in the database.
           children={} means there are no children in the database.
           children represent source datasets or derived datasets depending on the direction.
-    home (Optional[str]):
+     - home (Optional[str]):
           The home index associated with this node's dataset.
           Optional. Index drivers may not implement a home table, in which case this value
           will always be None.
@@ -58,6 +60,7 @@ class LineageTree:
     children: dict[str, list["LineageTree"]] | None = None
     home: str | None = None
 
+    @override
     def __eq__(self, other):
         if not self.children and not other.children:
             children_equal = True
@@ -434,7 +437,7 @@ class LineageRelations:
 
     def relations_diff(self,
                        existing_relations: Optional["LineageRelations"] = None,
-                       allow_updates: bool = False) -> Tuple[Mapping[LineageIDPair, str],
+                       allow_updates: bool = False) -> tuple[Mapping[LineageIDPair, str],
                                                              Mapping[LineageIDPair, str],
                                                              Mapping[UUID, str],
                                                              Mapping[UUID, str]]:

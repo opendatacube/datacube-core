@@ -11,6 +11,7 @@ import os
 import copy
 import sys
 from textwrap import dedent
+from typing_extensions import override
 
 import click
 
@@ -66,6 +67,7 @@ class ColorFormatter(logging.Formatter):
         'warning': dict(fg='yellow')
     }
 
+    @override
     def format(self, record):
         if not record.exc_info:
             record = copy.copy(record)
@@ -74,6 +76,7 @@ class ColorFormatter(logging.Formatter):
 
 
 class ClickHandler(logging.Handler):
+    @override
     def emit(self, record):
         try:
             msg = self.format(record)
@@ -126,7 +129,7 @@ def _log_queries(ctx, param, value):
 def _set_config(ctx, param, value):
     if value:
         if not any(os.path.exists(p) for p in value):
-            raise ValueError('No specified config paths exist: {}'.format(value))
+            raise ValueError(f'No specified config paths exist: {value}')
 
         if not ctx.obj:
             ctx.obj = {}

@@ -9,7 +9,7 @@ Dataset metadata documents define critical metadata about a dataset including:
    - acquisition time
    - provenance information
 
-Traditionally the :ref:`dataset-metadata-doc-eo` format was used to capture
+Traditionally the eo format was used to capture
 information about individual datasets. However there are a number of issues with
 this format, so it is now deprecated and we recommend everyone move to using
 the :ref:`dataset-metadata-doc-eo3`.  The legacy eo format is not supported by

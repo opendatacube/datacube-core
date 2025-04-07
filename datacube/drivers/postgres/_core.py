@@ -53,7 +53,8 @@ def install_timestamp_trigger(connection):
     for name in TABLE_NAMES:
         # Add update columns
         connection.execute(text(UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
-        connection.execute(text(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
+        for s in INSTALL_TRIGGER_SQL_TEMPLATE:
+            connection.execute(text(s.format(schema=SCHEMA_NAME, table=name)))
 
     # Add indexes for dataset table
     ds_table = _schema.DATASET.name
@@ -112,7 +113,8 @@ def ensure_db(engine, with_permissions=True):
             _LOG.info('Creating schema.')
             c.execute(CreateSchema(SCHEMA_NAME))
             _LOG.info('Creating types.')
-            c.execute(text(TYPES_INIT_SQL))
+            for s in TYPES_INIT_SQL:
+                c.execute(text(s))
             _LOG.info('Creating tables.')
             METADATA.create_all(c)
             _LOG.info("Creating triggers.")
@@ -125,22 +127,20 @@ def ensure_db(engine, with_permissions=True):
 
         if with_permissions:
             _LOG.info('Adding role grants.')
-            c.execute(text("""
-            grant usage on schema {schema} to agdc_user;
-            grant select on all tables in schema {schema} to agdc_user;
-            grant execute on function {schema}.common_timestamp(text) to agdc_user;
+            c.execute(text(f"grant usage on schema {SCHEMA_NAME} to agdc_user"))
+            c.execute(text(f"grant select on all tables in schema {SCHEMA_NAME} to agdc_user"))
+            c.execute(text(f"grant execute on function {SCHEMA_NAME}.common_timestamp(text) to agdc_user"))
 
-            grant insert on {schema}.dataset,
-                            {schema}.dataset_location,
-                            {schema}.dataset_source to agdc_ingest;
-            grant usage, select on all sequences in schema {schema} to agdc_ingest;
+            c.execute(text(f"grant insert on {SCHEMA_NAME}.dataset,"
+                           f"{SCHEMA_NAME}.dataset_location,"
+                           f"{SCHEMA_NAME}.dataset_source to agdc_ingest"))
+            c.execute(text(f"grant usage, select on all sequences in schema {SCHEMA_NAME} to agdc_ingest"))
 
-            -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
-            grant insert, delete on {schema}.dataset_type,
-                                    {schema}.metadata_type to agdc_manage;
-            -- Allow creation of indexes, views
-            grant create on schema {schema} to agdc_manage;
-            """.format(schema=SCHEMA_NAME)))
+            # (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
+            c.execute(text(f"grant insert, delete on {SCHEMA_NAME}.dataset_type,"
+                           f"{SCHEMA_NAME}.metadata_type to agdc_manage"))
+            # Allow creation of indexes, views
+            c.execute(text(f"grant create on schema {SCHEMA_NAME} to agdc_manage"))
             c.commit()
 
     return is_new

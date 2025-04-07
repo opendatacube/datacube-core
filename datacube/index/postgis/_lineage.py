@@ -3,7 +3,8 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from time import monotonic
-from typing import Mapping, Optional, Iterable
+from collections.abc import Mapping, Iterable
+from typing_extensions import override
 from uuid import UUID
 
 from datacube.index.abstract import AbstractIndex, AbstractLineageResource, DSID, BatchStatus, dsid_to_uuid
@@ -22,9 +23,11 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
         self._db = db
         super().__init__(index)
 
+    @override
     def get_derived_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         return self.get_lineage_tree(id_, LineageDirection.DERIVED, max_depth)
 
+    @override
     def get_source_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         return self.get_lineage_tree(id_, LineageDirection.SOURCES, max_depth)
 
@@ -43,12 +46,14 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
         # Extract tree from collection
         return rels.extract_tree(id_, direction)
 
+    @override
     def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
         # Convert to a relations collection
         relations = LineageRelations(tree=tree, max_depth=max_depth)
         # and merge into index.
         self.merge(relations, allow_updates=allow_updates)
 
+    @override
     def merge(self, rels: LineageRelations, allow_updates: bool = False, validate_only: bool = False) -> None:
         if allow_updates and validate_only:
             raise ValueError("Cannot validate-only AND allow updates")
@@ -97,10 +102,11 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             connection.write_relations(rels_new, allow_updates=False)
             connection.write_relations(rels_update, allow_updates=True)
 
+    @override
     def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
         id_ = dsid_to_uuid(id_)
         with self._db_connection() as connection:
-            # Convert tree to desired deoth to lineage relations collection
+            # Convert tree to desired depth to lineage relations collection
             relations = connection.load_lineage_relations([id_],
                                                           direction,
                                                           max_depth)
@@ -112,21 +118,25 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             # Delete individual relations.
             connection.remove_lineage_relations(ids, direction)
 
+    @override
     def set_home(self, home: str, *args: DSID, allow_updates: bool = False) -> int:
         with self._db_connection() as connection:
             ids = (dsid_to_uuid(id_) for id_ in args)
             return connection.insert_home(home, ids, allow_updates)
 
-    def clear_home(self, *args: DSID, home: Optional[str] = None) -> int:
+    @override
+    def clear_home(self, *args: DSID, home: str | None = None) -> int:
         ids = [dsid_to_uuid(id_) for id_ in args]
         with self._db_connection() as connection:
             return connection.delete_home(ids)
 
+    @override
     def get_homes(self, *args: DSID) -> Mapping[UUID, str]:
         ids = [dsid_to_uuid(id_) for id_ in args]
         with self._db_connection() as connection:
             return connection.select_homes(ids)
 
+    @override
     def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
         with self._db_connection(transaction=True) as connection:
             for row in connection.get_all_lineage(batch_size=batch_size):
@@ -136,6 +146,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                     source_id=row.source_dataset_ref
                 )
 
+    @override
     def _add_batch(self, batch: Iterable[LineageRelation]) -> BatchStatus:
         b_started = monotonic()
         with self._db_connection(transaction=True) as connection:

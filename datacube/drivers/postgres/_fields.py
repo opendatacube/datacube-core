@@ -8,7 +8,9 @@ Build and index fields within documents.
 from collections import namedtuple
 from datetime import datetime, date
 from decimal import Decimal
-from typing import Any, Callable, Tuple, Union
+from typing import Any
+from typing_extensions import override
+from collections.abc import Callable
 
 from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
@@ -66,12 +68,14 @@ class PgField(Field):
     def postgres_index_type(self):
         return 'btree'
 
+    @override
     def __eq__(self, value):
         """
         :rtype: Expression
         """
         return EqualsExpression(self, value)
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -122,7 +126,7 @@ class PgDocField(PgField):
         return value
 
     def _alchemy_offset_value(self,
-                              doc_offsets: Tuple[Tuple[str]],
+                              doc_offsets: tuple[tuple[str]],
                               agg_function: Callable[[Any], ColumnElement]) -> ColumnElement:
         """
         Get an sqlalchemy value for the given offsets of this field's sqlalchemy column.
@@ -188,12 +192,14 @@ class SimpleDocField(PgDocField):
     def alchemy_expression(self):
         return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc).label(self.name)
 
+    @override
     def __eq__(self, value):
         """
         :rtype: Expression
         """
         return EqualsExpression(self, value)
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -202,6 +208,7 @@ class SimpleDocField(PgDocField):
 
     can_extract = True
 
+    @override
     def extract(self, document):
         return self._extract_offset_value(document, self.offset, self.aggregation.calc)
 
@@ -212,12 +219,15 @@ class SimpleDocField(PgDocField):
 class IntDocField(SimpleDocField):
     type_name = 'integer'
 
+    @override
     def value_to_alchemy(self, value):
         return cast(value, postgres.INTEGER)
 
+    @override
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
+    @override
     def parse_value(self, value):
         return int(value)
 
@@ -225,12 +235,15 @@ class IntDocField(SimpleDocField):
 class NumericDocField(SimpleDocField):
     type_name = 'numeric'
 
+    @override
     def value_to_alchemy(self, value):
         return cast(value, postgres.NUMERIC)
 
+    @override
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
+    @override
     def parse_value(self, value):
         return Decimal(value)
 
@@ -238,12 +251,15 @@ class NumericDocField(SimpleDocField):
 class DoubleDocField(SimpleDocField):
     type_name = 'double'
 
+    @override
     def value_to_alchemy(self, value):
         return cast(value, postgres.DOUBLE_PRECISION)
 
+    @override
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
+    @override
     def parse_value(self, value):
         return float(value)
 
@@ -251,9 +267,10 @@ class DoubleDocField(SimpleDocField):
 class DateDocField(SimpleDocField):
     type_name = 'datetime'
 
+    @override
     def value_to_alchemy(self,
-                         value: Union[datetime, date, str, ColumnElement]
-                        ) -> Union[datetime, date, str, ColumnElement]:
+                         value: datetime | date | str | ColumnElement
+                        ) -> datetime | date | str | ColumnElement:
         """
         Wrap a value as needed for this field type.
         """
@@ -265,9 +282,11 @@ class DateDocField(SimpleDocField):
         else:
             raise ValueError("Value not readable as date: %r" % (value,))
 
+    @override
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
+    @override
     def parse_value(self, value):
         return utils.parse_time(value)
 
@@ -275,8 +294,8 @@ class DateDocField(SimpleDocField):
     def day(self):
         """Get field truncated to the day"""
         return NativeField(
-            '{}_day'.format(self.name),
-            'Day of {}'.format(self.description),
+            f'{self.name}_day',
+            f'Day of {self.description}',
             self.alchemy_column,
             alchemy_expression=cast(func.date_trunc('day', self.alchemy_expression), postgres.TIMESTAMP)
         )
@@ -308,6 +327,7 @@ class RangeDocField(PgDocField):
             selection='greatest'
         )
 
+    @override
     def value_to_alchemy(self, value):
         raise NotImplementedError('range type')
 
@@ -319,6 +339,7 @@ class RangeDocField(PgDocField):
     def alchemy_expression(self):
         return self.value_to_alchemy((self.lower.alchemy_expression, self.greater.alchemy_expression)).label(self.name)
 
+    @override
     def __eq__(self, value):
         """
         :rtype: Expression
@@ -329,6 +350,7 @@ class RangeDocField(PgDocField):
 
     can_extract = True
 
+    @override
     def extract(self, document):
         min_val = self.lower.extract(document)
         max_val = self.greater.extract(document)
@@ -341,6 +363,7 @@ class NumericRangeDocField(RangeDocField):
     FIELD_CLASS = NumericDocField
     type_name = 'numeric-range'
 
+    @override
     def value_to_alchemy(self, value):
         low, high = value
         return func.numrange(
@@ -350,6 +373,7 @@ class NumericRangeDocField(RangeDocField):
             type_=NUMRANGE,
         )
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -361,6 +385,7 @@ class IntRangeDocField(RangeDocField):
     FIELD_CLASS = IntDocField
     type_name = 'integer-range'
 
+    @override
     def value_to_alchemy(self, value):
         low, high = value
         return func.numrange(
@@ -370,6 +395,7 @@ class IntRangeDocField(RangeDocField):
             type_=INT4RANGE,
         )
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -381,6 +407,7 @@ class DoubleRangeDocField(RangeDocField):
     FIELD_CLASS = DoubleDocField
     type_name = 'double-range'
 
+    @override
     def value_to_alchemy(self, value):
         low, high = value
         return func.agdc.float8range(
@@ -390,6 +417,7 @@ class DoubleRangeDocField(RangeDocField):
             type_=FLOAT8RANGE,
         )
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -401,6 +429,7 @@ class DateRangeDocField(RangeDocField):
     FIELD_CLASS = DateDocField
     type_name = 'datetime-range'
 
+    @override
     def value_to_alchemy(self, value):
         low, high = value
         return func.tstzrange(
@@ -410,6 +439,7 @@ class DateRangeDocField(RangeDocField):
             type_=TSTZRANGE,
         )
 
+    @override
     def between(self, low, high):
         """
         :rtype: Expression
@@ -439,7 +469,7 @@ class DateRangeDocField(RangeDocField):
         )
 
 
-def _number_implies_year(v: Union[int, datetime]) -> datetime:
+def _number_implies_year(v: int | datetime) -> datetime:
     """
     >>> _number_implies_year(1994)
     datetime.datetime(1994, 1, 1, 0, 0)
@@ -522,6 +552,7 @@ class EqualsExpression(PgExpression):
     def alchemy_expression(self):
         return self.field.alchemy_expression == self.value
 
+    @override
     def evaluate(self, ctx):
         return self.field.evaluate(ctx) == self.value
 
@@ -596,9 +627,7 @@ def parse_fields(doc, table_column):
             return field_class(name, description, column, indexed, **ctorargs)
         except TypeError as e:
             raise RuntimeError(
-                'Field {name} has unexpected argument for a {type}'.format(
-                    name=name, type=type_name
-                ), e
+                f'Field {name} has unexpected argument for a {type_name}', e
             )
 
     return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}

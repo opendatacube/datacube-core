@@ -33,7 +33,9 @@ from sqlalchemy.sql.expression import Select
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.exc import IntegrityError
 
-from typing import Iterable, Sequence, Optional, Set, Any
+from typing import Any
+from typing_extensions import override
+from collections.abc import Iterable, Sequence
 from typing import cast as type_cast
 
 from datacube.index.fields import OrExpression
@@ -1225,6 +1227,7 @@ class PostgisDbAPI:
         )
         return res.rowcount > 0
 
+    @override
     def __repr__(self):
         return "PostgresDb<connection={!r}>".format(self._connection)
 
@@ -1393,7 +1396,7 @@ class PostgisDbAPI:
                                roots: Iterable[uuid.UUID],
                                direction: LineageDirection,
                                depth: int,
-                               ids_so_far: Optional[Set[uuid.UUID]] = None) -> Iterable[LineageRelation]:
+                               ids_so_far: set[uuid.UUID] | None = None) -> Iterable[LineageRelation]:
         """
         Read from the database all indexed LineageRelation objects required to build all LineageTrees with
         the given roots, direction and depth.

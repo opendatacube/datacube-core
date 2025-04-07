@@ -8,7 +8,7 @@ TODO: not implemented yet
 """
 
 
-class ZerosReaderDriver(object):
+class ZerosReaderDriver:
     def __init__(self):
         self.name = 'ZerosReader'
         self.protocols = ['zero']

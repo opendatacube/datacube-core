@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 import sys
-from typing import Sequence
+from collections.abc import Sequence
 
 import click
 import pyproj

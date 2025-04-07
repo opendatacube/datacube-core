@@ -38,7 +38,7 @@ def test_between_expression():
     assert isinstance(r.end, datetime)
 
     for k in ('lon', 'lat', 'x', 'y'):
-        q = parse_expressions('{} in [10, 11.3]'.format(k))
+        q = parse_expressions(f'{k} in [10, 11.3]')
         assert k in q
         r = q[k]
         assert isinstance(r, Range)

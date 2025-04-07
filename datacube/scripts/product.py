@@ -6,7 +6,6 @@ import csv
 import json
 import logging
 import sys
-from typing import List
 
 import click
 import signal
@@ -78,7 +77,7 @@ bigger your database the longer it will take. Just wait a bit.''')
               help='Check if everything is ok')
 @click.argument('files', type=str, nargs=-1)
 @ui.pass_index()
-def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: List):
+def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: list):
     """
     Update existing products.
 
@@ -140,7 +139,7 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
               help='Check if everything is ok')
 @click.argument('product_names', type=str, nargs=-1)
 @ui.pass_index()
-def delete_products(index: Index, force: bool, dry_run: bool, product_names: List):
+def delete_products(index: Index, force: bool, dry_run: bool, product_names: list):
     """
     Delete products.
 
@@ -267,7 +266,7 @@ def show_product(dc, product_name, output_format):
         for name in product_name:
             p = dc.index.products.get_by_name(name)
             if p is None:
-                echo('No such product: {!r}'.format(name), err=True)
+                echo(f'No such product: {name!r}', err=True)
                 sys.exit(1)
             else:
                 products.append(p)

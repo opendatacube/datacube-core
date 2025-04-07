@@ -1,0 +1,17 @@
+[project]
+name = "dc_tests_io"
+version = "1.0"
+description = "Example \"bad drivers\" for testing driver loading protections"
+authors = [
+    {name = "AGDC Collaboration"},
+]
+requires-python = ">=3.10"
+
+[project.entry-points."datacube.plugins.io.read"]
+bad_end_point = "dc_tests_io.nosuch.module:init"
+failing_end_point_none = "dc_tests_io.dummy:init_to_none"
+failing_end_point_throw = "dc_tests_io.dummy:fail_to_init"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

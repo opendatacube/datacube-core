@@ -9,7 +9,7 @@ from concurrent.futures import Future
 from functools import partial
 
 
-class FakeThreadPoolExecutor():
+class FakeThreadPoolExecutor:
     """ Limited version of ThreadPool that executes in the current thread.
     """
 

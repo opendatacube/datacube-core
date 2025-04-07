@@ -16,7 +16,9 @@ import json
 import logging
 import re
 from contextlib import contextmanager
-from typing import Any, Callable, Iterable, Mapping, Optional, Union, Type
+from typing import Any
+from typing_extensions import override
+from collections.abc import Callable, Iterable, Mapping
 
 from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
@@ -59,7 +61,7 @@ class PostGisDb:
         # We don't recommend using this constructor directly as it may change.
         # Use static methods PostGisDb.create() or PostGisDb.from_config()
         self._engine = engine
-        self._spindexes: Optional[Mapping[int, Any]] = None
+        self._spindexes: Mapping[int, Any] | None = None
 
     @classmethod
     def from_config(cls,
@@ -189,13 +191,13 @@ class PostGisDb:
         self._spindexes = spindexes(self._engine)
 
     @property
-    def spindexes(self) -> Mapping[int, Type[SpatialIndex]]:
+    def spindexes(self) -> Mapping[int, type[SpatialIndex]]:
         if self._spindexes is None:
             self._refresh_spindexes()
             assert self._spindexes is not None  # for type checker
         return self._spindexes
 
-    def create_spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
+    def create_spatial_index(self, crs: CRS) -> type[SpatialIndex] | None:
         """
         Create a spatial index across the database, for the named CRS.
 
@@ -228,7 +230,7 @@ class PostGisDb:
         self._refresh_spindexes()
         return result
 
-    def spatial_index(self, crs: CRS) -> Optional[Type[SpatialIndex]]:
+    def spatial_index(self, crs: CRS) -> type[SpatialIndex] | None:
         return self.spindexes.get(crs_to_epsg(crs))
 
     def spatially_indexed_crses(self, refresh=False) -> Iterable[CRS]:
@@ -269,13 +271,14 @@ class PostGisDb:
     def get_dataset_fields(cls, metadata_type_definition):
         return _api.get_dataset_fields(metadata_type_definition)
 
+    @override
     def __repr__(self):
-        return "PostgisDb<engine={!r}>".format(self._engine)
+        return f"PostgisDb<engine={self._engine!r}>"
 
 
 def handle_dynamic_token_authentication(engine: Engine,
                                         new_token: Callable[..., str],
-                                        timeout: Union[float, int] = 600,
+                                        timeout: float | int = 600,
                                         **kwargs) -> None:
     last_token = [None]
     last_token_time = [0.0]
@@ -302,4 +305,4 @@ def _to_json(o):
 
 def _json_fallback(obj):
     """Fallback json serialiser."""
-    raise TypeError("Type not serializable: {}".format(type(obj)))
+    raise TypeError(f"Type not serializable: {type(obj)}")

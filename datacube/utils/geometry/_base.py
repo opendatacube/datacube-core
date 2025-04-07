@@ -8,7 +8,9 @@ import math
 import array
 import warnings
 from collections import namedtuple, OrderedDict
-from typing import Tuple, Iterable, List, Union, Optional, Any, Callable, Hashable, Dict, Iterator
+from typing import Union, Optional, Any
+from typing_extensions import override
+from collections.abc import Iterable, Callable, Hashable, Iterator
 from collections.abc import Sequence
 from packaging.version import Version
 
@@ -29,9 +31,9 @@ from ..math import is_almost_int
 
 Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
 _BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))  # type: ignore[name-match]
-SomeCRS = Union[str, 'CRS', _CRS, Dict[str, Any]]
+SomeCRS = Union[str, 'CRS', _CRS, dict[str, Any]]
 MaybeCRS = Optional[SomeCRS]
-CoordList = List[Tuple[float, float]]
+CoordList = list[tuple[float, float]]
 
 # pylint: disable=too-many-lines
 
@@ -69,11 +71,11 @@ class BoundingBox(_BoundingBox):
         return int(self.top - self.bottom)
 
     @property
-    def range_x(self) -> Tuple[float, float]:
+    def range_x(self) -> tuple[float, float]:
         return (self.left, self.right)
 
     @property
-    def range_y(self) -> Tuple[float, float]:
+    def range_y(self) -> tuple[float, float]:
         return (self.bottom, self.top)
 
     @property
@@ -97,8 +99,8 @@ class BoundingBox(_BoundingBox):
         return BoundingBox(min(xx), min(yy), max(xx), max(yy))
 
     @staticmethod
-    def from_xy(x: Tuple[float, float],
-                y: Tuple[float, float]) -> 'BoundingBox':
+    def from_xy(x: tuple[float, float],
+                y: tuple[float, float]) -> 'BoundingBox':
         """
         BoundingBox from x and y ranges
 
@@ -110,8 +112,8 @@ class BoundingBox(_BoundingBox):
         return BoundingBox(x1, y1, x2, y2)
 
     @staticmethod
-    def from_points(p1: Tuple[float, float],
-                    p2: Tuple[float, float]) -> 'BoundingBox':
+    def from_points(p1: tuple[float, float],
+                    p2: tuple[float, float]) -> 'BoundingBox':
         """
         BoundingBox from 2 points
 
@@ -122,7 +124,7 @@ class BoundingBox(_BoundingBox):
                                    (p1[1], p2[1]))
 
 
-def _make_crs_key(crs_spec: Union[str, int, _CRS]) -> str:
+def _make_crs_key(crs_spec: str | int | _CRS) -> str:
     if isinstance(crs_spec, str):
         normed_epsg = crs_spec.upper()
         if normed_epsg.startswith("EPSG:"):
@@ -134,7 +136,7 @@ def _make_crs_key(crs_spec: Union[str, int, _CRS]) -> str:
 
 
 @cachetools.cached({}, key=_make_crs_key)
-def _make_crs(crs: Union[str, int, _CRS]) -> Tuple[_CRS, str, Optional[int]]:
+def _make_crs(crs: str | int | _CRS) -> tuple[_CRS, str, int | None]:
     epsg: int | None = None
     crs = _CRS.from_user_input(crs)
     crs_str = crs.srs
@@ -201,7 +203,7 @@ class CRS:
     def __setstate__(self, state):
         self.__init__(state['crs_str'])
 
-    def to_wkt(self, pretty: bool = False, version: Optional[WktVersion] = None) -> str:
+    def to_wkt(self, pretty: bool = False, version: WktVersion | None = None) -> str:
         """
         WKT representation of the CRS
         """
@@ -214,7 +216,7 @@ class CRS:
     def wkt(self) -> str:
         return self.to_wkt(version=WktVersion.WKT1_GDAL)
 
-    def to_epsg(self) -> Optional[int]:
+    def to_epsg(self) -> int | None:
         """
         EPSG Code of the CRS or None
         """
@@ -224,7 +226,7 @@ class CRS:
         return self._epsg
 
     @property
-    def epsg(self) -> Optional[int]:
+    def epsg(self) -> int | None:
         return self.to_epsg()
 
     @property
@@ -248,7 +250,7 @@ class CRS:
         return self._crs.is_projected
 
     @property
-    def dimensions(self) -> Tuple[str, str]:
+    def dimensions(self) -> tuple[str, str]:
         """
         List of dimension names of the CRS.
         The ordering of the names is intended to reflect the `numpy` array axis order of the loaded raster.
@@ -262,7 +264,7 @@ class CRS:
         raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
     @property
-    def units(self) -> Tuple[str, str]:
+    def units(self) -> tuple[str, str]:
         """
         List of dimension units of the CRS.
         The ordering of the units is intended to reflect the `numpy` array axis order of the loaded raster.
@@ -276,15 +278,19 @@ class CRS:
 
         raise ValueError('Neither projected nor geographic')  # pragma: no cover
 
+    @override
     def __str__(self) -> str:
         return self._str
 
+    @override
     def __hash__(self) -> int:
         return hash(self._str)
 
+    @override
     def __repr__(self) -> str:
         return "CRS('%s')" % self._str
 
+    @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CRS):
             try:
@@ -300,6 +306,7 @@ class CRS:
 
         return self._crs == other._crs
 
+    @override
     def __ne__(self, other) -> bool:
         return not (self == other)
 
@@ -331,7 +338,7 @@ class CRS:
         warnings.warn("Please use `str(crs)` instead of `crs.crs_str`", category=DeprecationWarning)
         return self._str
 
-    def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[Any, Any], Tuple[Any, Any]]:
+    def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[Any, Any], tuple[Any, Any]]:
         """
         Returns a function that maps x, y -> x', y' where x, y are coordinates in
         this stored either as scalars or ndarray objects and x', y' are the same
@@ -360,7 +367,7 @@ class CRSMismatchError(ValueError):
     """
 
 
-def _norm_crs(crs: MaybeCRS) -> Optional[CRS]:
+def _norm_crs(crs: MaybeCRS) -> CRS | None:
     if isinstance(crs, CRS):
         return crs
     if crs is None:
@@ -403,7 +410,7 @@ def wrap_shapely(suppress_geos_warnings=False):
     return wrap_func
 
 
-def force_2d(geojson: Dict[str, Any]) -> Dict[str, Any]:
+def force_2d(geojson: dict[str, Any]) -> dict[str, Any]:
     assert 'type' in geojson
     assert 'coordinates' in geojson
 
@@ -419,7 +426,7 @@ def force_2d(geojson: Dict[str, Any]) -> Dict[str, Any]:
                 return x[:2]
             return [go(y) for y in x]
 
-        raise ValueError('invalid coordinate {}'.format(x))
+        raise ValueError(f'invalid coordinate {x}')
 
     return {'type': geojson['type'],
             'coordinates': go(geojson['coordinates'])}
@@ -464,11 +471,11 @@ class Geometry:
     """
 
     def __init__(self,
-                 geom: Union[base.BaseGeometry, Dict[str, Any], 'Geometry'],
+                 geom: Union[base.BaseGeometry, dict[str, Any], 'Geometry'],
                  crs: MaybeCRS = None):
         if isinstance(geom, Geometry):
             assert crs is None
-            self.crs: Optional[CRS] = geom.crs
+            self.crs: CRS | None = geom.crs
             self.geom: base.BaseGeometry = _clone_shapely_geom(geom.geom)
             return
 
@@ -571,7 +578,7 @@ class Geometry:
         return Geometry(self.geom.exterior, self.crs)
 
     @property
-    def interiors(self) -> List['Geometry']:
+    def interiors(self) -> list['Geometry']:
         return [Geometry(g, self.crs) for g in self.geom.interiors]
 
     @property
@@ -595,7 +602,7 @@ class Geometry:
         return self.geom.area
 
     @property
-    def xy(self) -> Tuple[array.array, array.array]:
+    def xy(self) -> tuple[array.array, array.array]:
         return self.geom.xy
 
     @property
@@ -649,7 +656,7 @@ class Geometry:
                 return geometry.Polygon(densify(list(geom.exterior.coords), resolution),
                                         [densify(list(i.coords), resolution) for i in geom.interiors])
 
-            raise ValueError('unknown geometry type {}'.format(geom.geom_type))  # pragma: no cover
+            raise ValueError(f'unknown geometry type {geom.geom_type}')  # pragma: no cover
 
         return Geometry(segmentize_shapely(self.geom), self.crs)
 
@@ -684,7 +691,7 @@ class Geometry:
                                       self.geom), crs)
 
     def to_crs(self, crs: SomeCRS,
-               resolution: Optional[float] = None,
+               resolution: float | None = None,
                wrapdateline: bool = False) -> 'Geometry':
         """
         Convert geometry to a different Coordinate Reference System
@@ -742,13 +749,16 @@ class Geometry:
     def __bool__(self) -> bool:
         return not self.is_empty
 
+    @override
     def __eq__(self, other: Any) -> bool:
         return (hasattr(other, 'crs') and self.crs == other.crs and
                 hasattr(other, 'geom') and self.geom == other.geom)
 
+    @override
     def __str__(self):
         return 'Geometry(%s, %r)' % (self.__geo_interface__, self.crs)
 
+    @override
     def __repr__(self):
         return 'Geometry(%s, %s)' % (self.geom, self.crs)
 
@@ -762,7 +772,7 @@ class Geometry:
         self.__init__(**state)
 
 
-def common_crs(geoms: Iterable[Geometry]) -> Optional[CRS]:
+def common_crs(geoms: Iterable[Geometry]) -> CRS | None:
     """
     Return CRS common across geometries, or raise CRSMismatchError
     """
@@ -778,7 +788,7 @@ def common_crs(geoms: Iterable[Geometry]) -> Optional[CRS]:
 
 def projected_lon(crs: MaybeCRS,
                   lon: float,
-                  lat: Tuple[float, float] = (-90.0, 90.0),
+                  lat: tuple[float, float] = (-90.0, 90.0),
                   step: float = 1.0) -> Geometry:
     """
     Project vertical line along some longitude into given CRS.
@@ -808,7 +818,7 @@ def clip_lon180(geom: Geometry, tol=1e-6) -> Geometry:
     def _clip_180(xx, clip):
         return [x if abs(x) < thresh else clip for x in xx]
 
-    def _pick_clip(xx: List[float]):
+    def _pick_clip(xx: list[float]):
         cc = 0
         for x in xx:
             if abs(x) < thresh:
@@ -881,7 +891,7 @@ def line(coords: CoordList, crs: MaybeCRS) -> Geometry:
     return Geometry({'type': 'LineString', 'coordinates': coords}, crs=crs)
 
 
-def multiline(coords: List[CoordList], crs: MaybeCRS) -> Geometry:
+def multiline(coords: list[CoordList], crs: MaybeCRS) -> Geometry:
     """
     Create a 2D MultiLineString (Multiple disconnected sets of lines)
 
@@ -905,7 +915,7 @@ def polygon(outer, crs: MaybeCRS, *inners) -> Geometry:
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 
 
-def multipolygon(coords: List[List[CoordList]], crs: MaybeCRS) -> Geometry:
+def multipolygon(coords: list[list[CoordList]], crs: MaybeCRS) -> Geometry:
     """
     Create a 2D MultiPolygon
 
@@ -979,7 +989,7 @@ def multigeom(geoms: Iterable[Geometry]) -> Geometry:
 ###########################################
 
 
-def unary_union(geoms: Iterable[Geometry]) -> Optional[Geometry]:
+def unary_union(geoms: Iterable[Geometry]) -> Geometry | None:
     """
     compute union of multiple (multi)polygons efficiently
     """
@@ -1003,7 +1013,7 @@ def unary_intersection(geoms: Iterable[Geometry]) -> Geometry:
     return functools.reduce(Geometry.intersection, geoms)
 
 
-def _align_pix(left: float, right: float, res: float, off: float) -> Tuple[float, int]:
+def _align_pix(left: float, right: float, res: float, off: float) -> tuple[float, int]:
     if res < 0:
         res = -res
         val = math.ceil((right - off) / res) * res + off
@@ -1032,9 +1042,9 @@ class GeoBox:
     @classmethod
     def from_geopolygon(cls,
                         geopolygon: Geometry,
-                        resolution: Tuple[float, float],
+                        resolution: tuple[float, float],
                         crs: MaybeCRS = None,
-                        align: Optional[Tuple[float, float]] = None) -> 'GeoBox':
+                        align: tuple[float, float] | None = None) -> 'GeoBox':
         """
         :param resolution: (y_resolution, x_resolution)
         :param crs: CRS to use, if different from the geopolygon
@@ -1106,6 +1116,7 @@ class GeoBox:
     def __bool__(self) -> bool:
         return not self.is_empty()
 
+    @override
     def __hash__(self):
         return hash((*self.shape, self.crs, self.affine))
 
@@ -1114,15 +1125,15 @@ class GeoBox:
         return self.affine
 
     @property
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> tuple[int, int]:
         return self.height, self.width
 
     @property
-    def crs(self) -> Optional[CRS]:
+    def crs(self) -> CRS | None:
         return self.extent.crs
 
     @property
-    def dimensions(self) -> Tuple[str, str]:
+    def dimensions(self) -> tuple[str, str]:
         """
         List of dimension names of the GeoBox
         """
@@ -1132,21 +1143,21 @@ class GeoBox:
         return crs.dimensions
 
     @property
-    def resolution(self) -> Tuple[float, float]:
+    def resolution(self) -> tuple[float, float]:
         """
         Resolution in Y,X dimensions
         """
         return self.affine.e, self.affine.a
 
     @property
-    def alignment(self) -> Tuple[float, float]:
+    def alignment(self) -> tuple[float, float]:
         """
         Alignment of pixel boundaries in Y,X dimensions
         """
         return self.affine.yoff % abs(self.affine.e), self.affine.xoff % abs(self.affine.a)
 
     @property
-    def coordinates(self) -> Dict[str, Coordinate]:
+    def coordinates(self) -> dict[str, Coordinate]:
         """
         dict of coordinate labels
         """
@@ -1162,7 +1173,7 @@ class GeoBox:
         return OrderedDict((dim, Coordinate(labels, units, res))
                            for dim, labels, units, res in zip(self.dimensions, (ys, xs), units, (yres, xres)))
 
-    def xr_coords(self, with_crs: Union[bool, str] = False) -> Dict[Hashable, xr.DataArray]:
+    def xr_coords(self, with_crs: bool | str = False) -> dict[Hashable, xr.DataArray]:
         """
         Dictionary of Coordinates in xarray format
 
@@ -1189,7 +1200,7 @@ class GeoBox:
             attrs['crs'] = str(crs)
 
         coords = dict((n, _coord_to_xr(n, c, **attrs))
-                      for n, c in self.coordinates.items())  # type: Dict[Hashable, xr.DataArray]
+                      for n, c in self.coordinates.items())  # type: dict[Hashable, xr.DataArray]
 
         if with_crs and crs is not None:
             coords[spatial_ref] = _mk_crs_coord(crs, spatial_ref)
@@ -1208,17 +1219,15 @@ class GeoBox:
     coords = coordinates
     dims = dimensions
 
+    @override
     def __str__(self):
-        return "GeoBox({})".format(self.geographic_extent)
+        return f"GeoBox({self.geographic_extent})"
 
+    @override
     def __repr__(self):
-        return "GeoBox({width}, {height}, {affine!r}, {crs})".format(
-            width=self.width,
-            height=self.height,
-            affine=self.affine,
-            crs=self.extent.crs
-        )
+        return f"GeoBox({self.width}, {self.height}, {self.affine!r}, {self.extent.crs})"
 
+    @override
     def __eq__(self, other):
         if not isinstance(other, GeoBox):
             return False
@@ -1251,7 +1260,7 @@ def bounding_box_in_pixel_domain(geobox: GeoBox, reference: GeoBox) -> BoundingB
     return BoundingBox(tx, ty, tx + geobox.width, ty + geobox.height)
 
 
-def geobox_union_conservative(geoboxes: List[GeoBox]) -> GeoBox:
+def geobox_union_conservative(geoboxes: list[GeoBox]) -> GeoBox:
     """ Union of geoboxes. Fails whenever incompatible grids are encountered. """
     if len(geoboxes) == 0:
         raise ValueError("No geoboxes supplied")
@@ -1266,7 +1275,7 @@ def geobox_union_conservative(geoboxes: List[GeoBox]) -> GeoBox:
     return GeoBox(width=bbox.width, height=bbox.height, affine=affine, crs=reference.crs)
 
 
-def geobox_intersection_conservative(geoboxes: List[GeoBox]) -> GeoBox:
+def geobox_intersection_conservative(geoboxes: list[GeoBox]) -> GeoBox:
     """
     Intersection of geoboxes. Fails whenever incompatible grids are encountered.
     """
@@ -1390,7 +1399,7 @@ def _coord_to_xr(name: str, c: Coordinate, **attrs) -> xr.DataArray:
 
 
 def crs_units_per_degree(crs: SomeCRS,
-                         lon: Union[float, Tuple[float, float]],
+                         lon: float | tuple[float, float],
                          lat: float = 0,
                          step: float = 0.1) -> float:
     """ Compute number of CRS units per degree for a projected CRS at a given location
@@ -1419,7 +1428,7 @@ def crs_units_per_degree(crs: SomeCRS,
 
 def lonlat_bounds(geom: Geometry,
                   mode: str = "safe",
-                  resolution: Optional[float] = None) -> BoundingBox:
+                  resolution: float | None = None) -> BoundingBox:
     """
     Return the bounding box of a geometry
 
@@ -1461,9 +1470,9 @@ def lonlat_bounds(geom: Geometry,
     return BoundingBox.from_xy(xx_range, bbox.range_y)
 
 
-def assign_crs(xx: Union[xr.DataArray, xr.Dataset],
+def assign_crs(xx: xr.DataArray | xr.Dataset,
                crs: MaybeCRS = None,
-               crs_coord_name: str = 'spatial_ref') -> Union[xr.Dataset, xr.DataArray]:
+               crs_coord_name: str = 'spatial_ref') -> xr.Dataset | xr.DataArray:
     """
     Assign CRS for a non-georegistered array or dataset.
 

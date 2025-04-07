@@ -289,7 +289,7 @@ def dataset_maker(idx, t=None):
     (name, sources={}, **kwargs) -> dict
     """
     ns = uuid.UUID('c0fefefe-2470-3b03-803f-e7599f39ceff')
-    postfix = '' if idx is None else '{:04d}'.format(idx)
+    postfix = '' if idx is None else f'{idx:04d}'
 
     if t is None:
         t = datetime.fromordinal(736637 + (0 if idx is None else idx))

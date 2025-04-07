@@ -5,7 +5,7 @@
 """
 Core classes used across modules.
 """
-
+from __future__ import annotations
 import logging
 import math
 from collections import OrderedDict
@@ -14,7 +14,9 @@ from pathlib import Path
 from uuid import UUID
 
 from affine import Affine
-from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union, Sequence
+from typing import Any
+from typing_extensions import override
+from collections.abc import Mapping, Iterator, Iterable, Sequence
 
 from urllib.parse import urlparse
 from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
@@ -74,15 +76,15 @@ class Dataset:
     )
     def __init__(self,
                  product: "Product",
-                 metadata_doc: Dict[str, Any],
-                 uris: Optional[List[str]] = None,
-                 uri: Optional[str] = None,
-                 sources: Optional[Mapping[str, 'Dataset']] = None,
-                 indexed_by: Optional[str] = None,
-                 indexed_time: Optional[datetime] = None,
-                 archived_time: Optional[datetime] = None,
-                 source_tree: Optional[LineageTree] = None,
-                 derived_tree: Optional[LineageTree] = None):
+                 metadata_doc: dict[str, Any],
+                 uris: list[str] | None = None,
+                 uri: str | None = None,
+                 sources: Mapping[str, 'Dataset'] | None = None,
+                 indexed_by: str | None = None,
+                 indexed_time: datetime | None = None,
+                 archived_time: datetime | None = None,
+                 source_tree: LineageTree | None = None,
+                 derived_tree: LineageTree | None = None):
         assert isinstance(product, Product)
 
         self.product = product
@@ -181,7 +183,7 @@ class Dataset:
         return self.product.metadata_type
 
     @property
-    def local_uri(self) -> Optional[str]:
+    def local_uri(self) -> str | None:
         """
         Return the uri if it is local, or None.
 
@@ -197,7 +199,7 @@ class Dataset:
         return None
 
     @property
-    def local_path(self) -> Optional[Path]:
+    def local_path(self) -> Path | None:
         """
         A path to this dataset on the local filesystem (if available).
         """
@@ -229,7 +231,7 @@ class Dataset:
         return str(url.scheme)
 
     @property
-    def measurements(self) -> Dict[str, Any]:
+    def measurements(self) -> dict[str, Any]:
         # It's an optional field in documents.
         # Dictionary of key -> measurement descriptor
         metadata = self.metadata
@@ -238,7 +240,7 @@ class Dataset:
         return metadata.measurements
 
     @cached_property
-    def center_time(self) -> Optional[datetime]:
+    def center_time(self) -> datetime | None:
         """ mid-point of time range
         """
         time = self.time
@@ -247,7 +249,7 @@ class Dataset:
         return time.begin + (time.end - time.begin) // 2
 
     @property
-    def time(self) -> Optional[Range]:
+    def time(self) -> Range | None:
         try:
             time = self.metadata.time
             return Range(parse_time(time.begin), parse_time(time.end))
@@ -269,7 +271,7 @@ class Dataset:
         return self.center_time
 
     @property
-    def bounds(self) -> Optional[BoundingBox]:
+    def bounds(self) -> BoundingBox | None:
         """ :returns: bounding box of the dataset in the native crs
         """
         gs = self._gs
@@ -284,7 +286,7 @@ class Dataset:
                            crs=self.crs)
 
     @property
-    def transform(self) -> Optional[Affine]:
+    def transform(self) -> Affine | None:
         geo = self._gs
         if geo is None:
             return None
@@ -324,14 +326,14 @@ class Dataset:
         return not self.is_archived
 
     @property
-    def _gs(self) -> Optional[Dict[str, Any]]:
+    def _gs(self) -> dict[str, Any] | None:
         try:
             return self.metadata.grid_spatial
         except AttributeError:
             return None
 
     @property
-    def crs(self) -> Optional[CRS]:
+    def crs(self) -> CRS | None:
         """ Return CRS if available
         """
         projection = self._gs
@@ -345,7 +347,7 @@ class Dataset:
         return None
 
     @cached_property
-    def extent(self) -> Optional[Geometry]:
+    def extent(self) -> Geometry | None:
         """ :returns: valid extent of the dataset or None
         """
 
@@ -371,20 +373,22 @@ class Dataset:
 
         return None
 
+    @override
     def __eq__(self, other) -> bool:
         if isinstance(other, Dataset):
             return self.id == other.id
         return False
 
+    @override
     def __hash__(self):
         return hash(self.id)
 
+    @override
     def __str__(self):
         str_loc = 'not available' if not self.uri else self.uri
-        return "Dataset <id={id} product={type} location={loc}>".format(id=self.id,
-                                                                        type=self.product.name,
-                                                                        loc=str_loc)
+        return f"Dataset <id={self.id} product={self.product.name} location={str_loc}>"
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -392,13 +396,13 @@ class Dataset:
     def metadata(self) -> DocReader:
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
-    def metadata_doc_without_lineage(self) -> Dict[str, Any]:
+    def metadata_doc_without_lineage(self) -> dict[str, Any]:
         """ Return metadata document without nested lineage datasets
         """
         return without_lineage_sources(self.metadata_doc, self.metadata_type)
 
 
-class Measurement():
+class Measurement:
     """
     Describes a single data variable of a Product or Dataset.
 
@@ -425,7 +429,7 @@ class Measurement():
 
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
         if missing_keys:
-            raise ValueError("Measurement required keys missing: {}".format(missing_keys))
+            raise ValueError(f"Measurement required keys missing: {missing_keys}")
 
         self.canonical_name = canonical_name or kwargs.get('name')
 
@@ -464,7 +468,7 @@ class Measurement():
 
     def __delitem__(self, key):
         if key in self.REQUIRED_KEYS:
-            raise KeyError("Measurement() requires key {}".format(key))
+            raise KeyError(f"Measurement() requires key {key}")
         del self._data[key]
 
     def __contains__(self, key):
@@ -476,6 +480,7 @@ class Measurement():
     def __iter__(self):
         return iter(self._data)
 
+    @override
     def __str__(self):
         return repr(self)
 
@@ -499,7 +504,7 @@ class Measurement():
         Removes the key and returns its value from the dictionary or a default value if the key is not found.
         """
         if key in self.REQUIRED_KEYS:
-            raise KeyError("Measurement() requires key {}".format(key))
+            raise KeyError(f"Measurement() requires key {key}")
         return self._data.pop(key, default)
 
     def update(self, *args, **kwargs):
@@ -519,6 +524,7 @@ class Measurement():
         for key, value in kwargs.items():
             self[key] = value
 
+    @override
     def __repr__(self) -> str:
         return f"Measurement({repr(self._data)})"
 
@@ -527,7 +533,7 @@ class Measurement():
            and does not preserve Measurement class"""
         return Measurement(**self._data)
 
-    def dataarray_attrs(self) -> Dict[str, Any]:
+    def dataarray_attrs(self) -> dict[str, Any]:
         """This returns attributes filtered for display in a dataarray."""
         return {key: value for key, value in self.items() if key not in self.ATTR_SKIP}
 
@@ -538,8 +544,8 @@ class MetadataType:
 
     def __init__(self,
                  definition: Mapping[str, Any],
-                 dataset_search_fields: Optional[Mapping[str, Field]] = None,
-                 id_: Optional[int] = None):
+                 dataset_search_fields: Mapping[str, Field] | None = None,
+                 id_: int | None = None):
         if dataset_search_fields is None:
             dataset_search_fields = get_dataset_fields(definition)
         self.definition = definition
@@ -562,6 +568,7 @@ class MetadataType:
         cls.validate(doc)
         validate_eo3_compatible_type(doc)
 
+    @override
     def __eq__(self, other: Any) -> bool:
         if self is other:
             return True
@@ -571,9 +578,11 @@ class MetadataType:
 
         return self.name == other.name
 
+    @override
     def __str__(self) -> str:
-        return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
+        return f"MetadataType(name={self.name!r}, id_={self.id!r})"
 
+    @override
     def __repr__(self) -> str:
         return str(self)
 
@@ -590,16 +599,16 @@ class Product:
     def __init__(self,
                  metadata_type: MetadataType,
                  definition: Mapping[str, Any],
-                 id_: Optional[int] = None):
+                 id_: int | None = None):
         assert isinstance(metadata_type, MetadataType)
         self.id = id_
         self.metadata_type = metadata_type
         #: product definition document
         self.definition = definition
-        self._extra_dimensions: Optional[Mapping[str, Any]] = None
-        self._canonical_measurements: Optional[Mapping[str, Measurement]] = None
-        self._all_measurements: Optional[Dict[str, Measurement]] = None
-        self._load_hints: Optional[Dict[str, Any]] = None
+        self._extra_dimensions: Mapping[str, Any] | None = None
+        self._canonical_measurements: Mapping[str, Measurement] | None = None
+        self._all_measurements: dict[str, Measurement] | None = None
+        self._load_hints: dict[str, Any] | None = None
 
     def _resolve_aliases(self):
         if self._all_measurements is not None:
@@ -667,7 +676,7 @@ class Product:
         return self._canonical_measurements
 
     @property
-    def dimensions(self) -> Tuple[str, str, str]:
+    def dimensions(self) -> tuple[str, str, str]:
         """
         List of dimension labels for data in this product
         """
@@ -694,7 +703,7 @@ class Product:
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def grid_spec(self) -> Optional['GridSpec']:
+    def grid_spec(self) -> 'GridSpec' | None:
         """
         Grid specification for this product
         """
@@ -786,7 +795,7 @@ class Product:
         return m.canonical_name
 
     def lookup_measurements(
-        self, measurements: Optional[Union[Iterable[str], str]] = None
+        self, measurements: Iterable[str] | str | None = None
     ) -> Mapping[str, Measurement]:
         """
         Find measurements by name
@@ -801,7 +810,7 @@ class Product:
         mm = self._resolve_aliases()
         return OrderedDict((m, mm[m]) for m in measurements)
 
-    def _extract_load_hints(self) -> Optional[Dict[str, Any]]:
+    def _extract_load_hints(self) -> dict[str, Any] | None:
         _load = self.definition.get('load')
         if _load is None:
             # Check for partial "storage" definition
@@ -832,18 +841,18 @@ class Product:
         return dict(crs=crs, **params)
 
     @property
-    def default_crs(self) -> Optional[CRS]:
+    def default_crs(self) -> CRS | None:
         return self.load_hints().get('output_crs', None)
 
     @property
-    def default_resolution(self) -> Optional[Tuple[float, float]]:
+    def default_resolution(self) -> tuple[float, float] | None:
         return self.load_hints().get('resolution', None)
 
     @property
-    def default_align(self) -> Optional[Tuple[float, float]]:
+    def default_align(self) -> tuple[float, float] | None:
         return self.load_hints().get('align', None)
 
-    def load_hints(self) -> Dict[str, Any]:
+    def load_hints(self) -> dict[str, Any]:
         """
         Returns dictionary with keys compatible with ``dc.load(..)`` named arguments:
 
@@ -892,14 +901,17 @@ class Product:
             })
         return row
 
+    @override
     def __str__(self) -> str:
-        return "Product(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
+        return f"Product(name={self.name!r}, id_={self.id!r})"
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()
 
     # Types are uniquely identifiable by name:
 
+    @override
     def __eq__(self, other) -> bool:
         if self is other:
             return True
@@ -909,6 +921,7 @@ class Product:
 
         return self.name == other.name
 
+    @override
     def __hash__(self):
         return hash(self.name)
 
@@ -945,9 +958,9 @@ class GridSpec:
 
     def __init__(self,
                  crs: CRS,
-                 tile_size: Tuple[float, float],
-                 resolution: Tuple[float, float],
-                 origin: Optional[Tuple[float, float]] = None):
+                 tile_size: tuple[float, float],
+                 resolution: tuple[float, float],
+                 origin: tuple[float, float] | None = None):
         self.crs = crs
         _LOG.warning('In odc-geo GridSpec, tile_size has been renamed tile_shape and should be provided in pixels.')
         self.tile_size = tile_size
@@ -958,6 +971,7 @@ class GridSpec:
             _LOG.warning('In odc-geo GridSpec, origin is expected in (X, Y) order.')
         self.origin = origin or (0.0, 0.0)
 
+    @override
     def __eq__(self, other):
         if not isinstance(other, GridSpec):
             return False
@@ -968,7 +982,7 @@ class GridSpec:
                 and self.origin == other.origin)
 
     @property
-    def dimensions(self) -> Tuple[str, str]:
+    def dimensions(self) -> tuple[str, str]:
         """
         List of dimension names of the grid spec
 
@@ -976,7 +990,7 @@ class GridSpec:
         return self.crs.dimensions
 
     @property
-    def alignment(self) -> Tuple[float, float]:
+    def alignment(self) -> tuple[float, float]:
         """
         Pixel boundary alignment
         """
@@ -984,14 +998,14 @@ class GridSpec:
         return (y, x)
 
     @property
-    def tile_resolution(self) -> Tuple[int, int]:
+    def tile_resolution(self) -> tuple[int, int]:
         """
         Tile size in pixels in CRS dimension order (Usually y,x or lat,lon)
         """
         y, x = (int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
         return (y, x)
 
-    def tile_coords(self, tile_index: Tuple[int, int]) -> Tuple[float, float]:
+    def tile_coords(self, tile_index: tuple[int, int]) -> tuple[float, float]:
         """
         Coordinate of the top-left corner of the tile in (Y,X) order
 
@@ -1008,7 +1022,7 @@ class GridSpec:
                 for index, res, size, origin in zip(tile_index[::-1], self.resolution, self.tile_size, self.origin))
         return (y, x)
 
-    def tile_geobox(self, tile_index: Tuple[int, int]) -> GeoBox:
+    def tile_geobox(self, tile_index: tuple[int, int]) -> GeoBox:
         """
         Tile geobox.
 
@@ -1021,8 +1035,8 @@ class GridSpec:
         return geobox
 
     def tiles(self, bounds: BoundingBox,
-              geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
-                                                                     GeoBox]]:
+              geobox_cache: dict | None = None) -> Iterator[tuple[tuple[int, int],
+                                                                  GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `bounds` rectangle.
@@ -1054,9 +1068,9 @@ class GridSpec:
                 yield tile_index, geobox(tile_index)
 
     def tiles_from_geopolygon(self, geopolygon: Geometry,
-                              tile_buffer: Optional[Tuple[float, float]] = None,
-                              geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
-                                                                                     GeoBox]]:
+                              tile_buffer: tuple[float, float] | None = None,
+                              geobox_cache: dict | None = None) -> Iterator[tuple[tuple[int, int],
+                                                                                  GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `geopolygon`.
@@ -1109,10 +1123,12 @@ class GridSpec:
         assert step > 0.0
         return range(int(math.floor(lower / step)), int(math.ceil(upper / step)))
 
+    @override
     def __str__(self) -> str:
         return "GridSpec(crs=%s, tile_size=%s, resolution=%s)" % (
             self.crs, self.tile_size, self.resolution)
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -1221,14 +1237,14 @@ class ExtraDimensions:
         return self._dims
 
     @property
-    def dim_slice(self) -> Mapping[str, Tuple[int, int]]:
+    def dim_slice(self) -> Mapping[str, tuple[int, int]]:
         """Returns dimension slice for this ExtraDimensions object
 
         :return: A dict of dimension slices that results in this ExtraDimensions object
         """
         return self._dim_slice
 
-    def measurements_values(self, dim: str) -> List[Any]:
+    def measurements_values(self, dim: str) -> list[Any]:
         """Returns the dimension values after slicing
 
         :param dim: The name of the dimension
@@ -1247,7 +1263,7 @@ class ExtraDimensions:
         dim_slice = self.measurements_index(dim)
         return slice(*dim_slice)
 
-    def measurements_index(self, dim: str) -> Tuple[int, int]:
+    def measurements_index(self, dim: str) -> tuple[int, int]:
         """Returns the index for slicing on a dimension as a tuple.
 
         :param dim: The name of the dimension
@@ -1270,7 +1286,7 @@ class ExtraDimensions:
             raise ValueError(f"Dimension {dim} not found.")
         return self._coords[dim].searchsorted(value)
 
-    def coord_slice(self, dim: str, coord_range: Union[float, Tuple[float, float]]) -> Tuple[int, int]:
+    def coord_slice(self, dim: str, coord_range: float | tuple[float, float]) -> tuple[int, int]:
         """Returns the Integer index for a coordinate (min, max) range.
 
         :param dim: The name of the dimension
@@ -1285,7 +1301,7 @@ class ExtraDimensions:
         stop_index = self.index_of(dim, coord_range[1] + 1)
         return start_index, stop_index
 
-    def chunk_size(self) -> Tuple[Tuple[str, ...], Tuple[int, ...]]:
+    def chunk_size(self) -> tuple[tuple[str, ...], tuple[int, ...]]:
         """Returns the names and shapes of dimensions in dimension order
 
         :return: A tuple containing the names and max sizes of each dimension
@@ -1299,6 +1315,7 @@ class ExtraDimensions:
                 shapes += (len(self.measurements_values(name)),)   # type: ignore[assignment,arg-type]
         return names, shapes
 
+    @override
     def __str__(self) -> str:
         return (
             f"ExtraDimensions(extra_dim={dict(self._dims)}, dim_slice={self._dim_slice} "
@@ -1306,5 +1323,6 @@ class ExtraDimensions:
             f")"
         )
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()

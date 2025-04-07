@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from collections import OrderedDict
 from types import SimpleNamespace
-from typing import Tuple, Iterable
+from collections.abc import Iterable
 from uuid import UUID, uuid4
 
 import numpy as np
@@ -211,7 +211,7 @@ def test_read_docs_from_http(sample_document_files, httpserver):
     _test_read_docs_impl(http_docs)
 
 
-def _test_read_docs_impl(sample_documents: Iterable[Tuple[str, int]]):
+def _test_read_docs_impl(sample_documents: Iterable[tuple[str, int]]):
     # Test case for returning URIs pointing to documents
     for doc_url, num_docs in sample_documents:
         all_docs = list(read_documents(doc_url, uri=True))
@@ -223,7 +223,7 @@ def _test_read_docs_impl(sample_documents: Iterable[Tuple[str, int]]):
 
         url = as_url(doc_url)
         if num_docs > 1:
-            expect_uris = [as_url(url) + '#part={}'.format(i) for i in range(num_docs)]
+            expect_uris = [as_url(url) + f'#part={i}' for i in range(num_docs)]
         else:
             expect_uris = [as_url(url)]
 

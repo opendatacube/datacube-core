@@ -2,12 +2,13 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Optional, Collection
+from collections.abc import Collection
 import warnings
 
 import numpy
 import xarray
 import pandas as pd
+from typing_extensions import override
 
 from datacube.utils.masking import make_mask as make_mask_prim
 from datacube.utils.masking import mask_invalid_data as mask_invalid_data_prim
@@ -60,10 +61,11 @@ class MakeMask(Transformation):
         self.mask_measurement_name = mask_measurement_name
         self.flags = flags
 
+    @override
     def measurements(self, input_measurements):
         if self.mask_measurement_name not in input_measurements:
-            raise VirtualProductException("required measurement {} not found"
-                                          .format(self.mask_measurement_name))
+            raise VirtualProductException(f"required measurement {self.mask_measurement_name} not found"
+                                          )
 
         def worker(_, value):
             result = value.copy()
@@ -73,6 +75,7 @@ class MakeMask(Transformation):
         return selective_apply_dict(input_measurements,
                                     apply_to=[self.mask_measurement_name], value_map=worker)
 
+    @override
     def compute(self, data):
         def worker(_, value):
             return make_mask_prim(value, **self.flags)
@@ -93,7 +96,7 @@ class ApplyMask(Transformation):
     :param erosion: the erosion to apply to mask in pixels
     :param dilation: the dilation to apply to mask in pixels
     """
-    def __init__(self, mask_measurement_name, apply_to: Optional[Collection[str]] = None,
+    def __init__(self, mask_measurement_name, apply_to: Collection[str] | None = None,
                  preserve_dtype=True, fallback_dtype='float32', erosion: int = 0, dilation: int = 0):
         self.mask_measurement_name = mask_measurement_name
         self.apply_to = apply_to
@@ -102,6 +105,7 @@ class ApplyMask(Transformation):
         self.erosion = int(erosion)
         self.dilation = int(dilation)
 
+    @override
     def measurements(self, input_measurements):
         rest = {key: value
                 for key, value in input_measurements.items()
@@ -118,6 +122,7 @@ class ApplyMask(Transformation):
 
         return selective_apply_dict(rest, apply_to=self.apply_to, value_map=worker)
 
+    @override
     def compute(self, data):
         mask = data[self.mask_measurement_name]
         rest = data.drop_vars([self.mask_measurement_name])
@@ -145,7 +150,7 @@ class ApplyMask(Transformation):
         def worker(key, value):
             if self.preserve_dtype:
                 if 'nodata' not in value.attrs:
-                    raise VirtualProductException("measurement {} has no nodata value".format(key))
+                    raise VirtualProductException(f"measurement {key} has no nodata value")
                 return value.where(mask, value.attrs['nodata'])
 
             result = value.where(mask).astype(self.fallback_dtype)
@@ -198,6 +203,7 @@ class ToFloat(Transformation):
         self.apply_to = apply_to
         self.dtype = dtype
 
+    @override
     def measurements(self, input_measurements):
         def worker(_, value):
             result = value.copy()
@@ -206,6 +212,7 @@ class ToFloat(Transformation):
 
         return selective_apply_dict(input_measurements, apply_to=self.apply_to, value_map=worker)
 
+    @override
     def compute(self, data):
         def worker(_, value):
             if hasattr(value, 'dtype') and value.dtype == self.dtype:
@@ -255,6 +262,7 @@ class Rename(Transformation):
                       category=DeprecationWarning)
         self.measurement_names = measurement_names
 
+    @override
     def measurements(self, input_measurements):
         def key_map(key):
             return self.measurement_names[key]
@@ -267,6 +275,7 @@ class Rename(Transformation):
         return selective_apply_dict(input_measurements, apply_to=self.measurement_names,
                                     key_map=key_map, value_map=value_map)
 
+    @override
     def compute(self, data):
         return data.rename(self.measurement_names)
 
@@ -305,11 +314,13 @@ class Select(Transformation):
                       category=DeprecationWarning)
         self.measurement_names = measurement_names
 
+    @override
     def measurements(self, input_measurements):
         return {key: value
                 for key, value in input_measurements.items()
                 if key in self.measurement_names}
 
+    @override
     def compute(self, data):
         return data.drop_vars([measurement
                                for measurement in data.data_vars
@@ -352,6 +363,7 @@ class Expressions(Transformation):
         self.output = output
         self.masked = masked
 
+    @override
     def measurements(self, input_measurements):
         parser = formula_parser()
 
@@ -376,6 +388,7 @@ class Expressions(Transformation):
         return {output_var: measurement(output_var, output_desc)
                 for output_var, output_desc in self.output.items()}
 
+    @override
     def compute(self, data):
         parser = formula_parser()
 
@@ -494,6 +507,7 @@ class XarrayReduction(Transformation):
         self.dtype = dtype
         self.dim = dim
 
+    @override
     def measurements(self, input_measurements):
         def worker(_, value):
             if self.dtype is None:
@@ -506,6 +520,7 @@ class XarrayReduction(Transformation):
         return selective_apply_dict(input_measurements,
                                     apply_to=self.apply_to, value_map=worker)
 
+    @override
     def compute(self, data):
         func = getattr(xarray.DataArray, self.method)
 

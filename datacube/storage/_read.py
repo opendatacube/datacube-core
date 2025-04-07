@@ -5,7 +5,7 @@
 """ Dataset -> Raster
 """
 import numpy as np
-from typing import Optional, Tuple, cast
+from typing import cast
 
 from ..utils.math import valid_mask
 
@@ -65,7 +65,7 @@ def read_time_slice(rdr,
                     dst_geobox: GeoBox,
                     resampling: Resampling,
                     dst_nodata: Nodata,
-                    extra_dim_index: Optional[int] = None) -> Tuple[slice, slice]:
+                    extra_dim_index: int | None = None) -> tuple[slice, slice]:
     """ From opened reader object read into `dst`
 
     :returns: affected destination region

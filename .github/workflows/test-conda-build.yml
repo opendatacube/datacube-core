@@ -10,6 +10,12 @@ on:
     paths:
       - '**'
 
+# When a PR is updated, cancel the jobs from the previous version. Merges
+# do not define head_ref, so use run_id to never cancel those jobs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   check-conda:
     runs-on: ${{ matrix.os }}
@@ -33,6 +39,14 @@ jobs:
             hashFiles('conda-environment.yml') }}
 
       - uses: conda-incubator/setup-miniconda@v3
+        continue-on-error: true
+        id: conda1
+        with:
+          environment-file: conda-environment.yml
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version}}
+      - uses: conda-incubator/setup-miniconda@v3
+        if: steps.conda1.outcome == 'failure'
         with:
           environment-file: conda-environment.yml
           auto-update-conda: true

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import List, Optional, Callable
+from collections.abc import Callable
 from .driver_cache import load_drivers
 from .datasource import DataSource
 from ._tools import singleton_setup
@@ -11,7 +11,7 @@ from datacube.storage._base import BandInfo
 DatasourceFactory = Callable[[BandInfo], DataSource]  # pylint: disable=invalid-name
 
 
-class ReaderDriverCache(object):
+class ReaderDriverCache:
     def __init__(self, group: str):
         self._drivers = load_drivers(group)
 
@@ -30,7 +30,7 @@ class ReaderDriverCache(object):
         return self._lookup.get(key)
 
     def __call__(self, uri_scheme: str, fmt: str,
-                 fallback: Optional[DatasourceFactory] = None) -> DatasourceFactory:
+                 fallback: DatasourceFactory | None = None) -> DatasourceFactory:
         """
         Lookup `new_datasource` constructor method from the driver. Returns
         `fallback` method if no driver is found.
@@ -47,7 +47,7 @@ class ReaderDriverCache(object):
         else:
             raise KeyError("No driver found and no fallback provided")
 
-    def drivers(self) -> List[str]:
+    def drivers(self) -> list[str]:
         """
         Returns list of driver names
         """
@@ -63,7 +63,7 @@ def rdr_cache() -> ReaderDriverCache:
                            'datacube.plugins.io.read')
 
 
-def reader_drivers() -> List[str]:
+def reader_drivers() -> list[str]:
     """
     Returns list driver names
     """
@@ -89,7 +89,7 @@ def choose_datasource(band: BandInfo) -> DatasourceFactory:
     return rdr_cache()(band.uri_scheme, band.format, fallback=RasterDatasetDataSource)
 
 
-def new_datasource(band: BandInfo) -> Optional[DataSource]:
+def new_datasource(band: BandInfo) -> DataSource | None:
     """
     Returns a newly constructed data source to read dataset band data.
 

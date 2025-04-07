@@ -6,14 +6,13 @@
 Common methods for UI code.
 """
 from pathlib import Path
-from typing import Union, Optional
 
 from toolz.functoolz import identity
 
 from datacube.utils import read_documents, InvalidDocException, SimpleDocNav, is_supported_document_type, is_url
 
 
-def get_metadata_path(possible_path: Union[str, Path]) -> str:
+def get_metadata_path(possible_path: str | Path) -> str:
     """
     Find a metadata path for a given input/dataset path.
 
@@ -30,7 +29,7 @@ def get_metadata_path(possible_path: Union[str, Path]) -> str:
         return str(dataset_path)
 
     # Otherwise there may be a sibling file with appended suffix '.agdc-md.yaml'.
-    expected_name = dataset_path.parent.joinpath('{}.agdc-md'.format(dataset_path.name))
+    expected_name = dataset_path.parent.joinpath(f'{dataset_path.name}.agdc-md')
     found = _find_any_metadata_suffix(expected_name)
     if found:
         return str(found)
@@ -48,7 +47,7 @@ def get_metadata_path(possible_path: Union[str, Path]) -> str:
         raise ValueError(f'No supported metadata docs found for dataset {dataset_path}')
 
 
-def _find_any_metadata_suffix(path: Path) -> Optional[Path]:
+def _find_any_metadata_suffix(path: Path) -> Path | None:
     """
     Find any supported metadata files that exist with the given file path stem.
     (supported suffixes are tried on the name)
@@ -63,7 +62,7 @@ def _find_any_metadata_suffix(path: Path) -> Optional[Path]:
         return None
 
     if len(existing_paths) > 1:
-        raise ValueError('Multiple matched metadata files: {!r}'.format(existing_paths))
+        raise ValueError(f'Multiple matched metadata files: {existing_paths!r}')
 
     return existing_paths[0]
 

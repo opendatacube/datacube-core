@@ -9,7 +9,7 @@ Next Version
 ============
 
 - Add a common table expression to fix a SQLAlchemy 2.0 sub-query warning :pull:`1747`
-
+- CI: cancel old PR jobs :pull:`1761`
 
 v1.9.2 (26th February 2025)
 ===========================
@@ -101,7 +101,7 @@ Changes since 1.9.0-rc13
 - Update whats_new.rst etc. for 1.9.0 release (:pull:`1694`)
 
 v1.9.0-rc13 (16th December 2024)
-===============================
+================================
 
 - Update and cross-reference 1.8 to 1.9 migration notes (:pull:`1686`)
 - Fix SimpleDocNav lineage handling with PostGIS index (:pull:`1687`)
@@ -394,7 +394,7 @@ v1.8.10 (30 January 2023)
 =========================
 
 Notes for 1.8.10
-~~~~~~~~~~~~~~~~
+----------------
 
  1. The new APIs for bulk-reads, bulk-writes and index cloning should be considered unstable and may change
     in subsequent releases.
@@ -404,7 +404,7 @@ Notes for 1.8.10
     raise an issue on Github and we will try to address them before the next release.
 
 Full list of changes:
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 - Add `grid_spec` to `list_products` (:pull:`1357`)
 - Add database relationship diagram to doc (:pull:`1350`)
@@ -660,14 +660,14 @@ v1.7.0rc1 (18 April 2019)
 =========================
 
 Virtual Products
-~~~~~~~~~~~~~~~~
+----------------
 
 Add :ref:`virtual-products` for multi-product loading.
 
 (:pull:`522`, :pull:`597`, :pull:`601`, :pull:`612`, :pull:`644`, :pull:`677`, :pull:`699`, :pull:`700`)
 
 Changes to Data Loading
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 The internal machinery used when loading and reprojecting data, has been completely rewritten. The new code has been
 tested, but this is a complicated and fundamental part of code and there is potential for breakage.
 
@@ -685,7 +685,7 @@ This change has been made for two reasons:
 - New futures based IO driver interface (:pull:`686`)
 
 Other Changes
-~~~~~~~~~~~~~
+-------------
 
 - Allow specifying different resampling methods for different data variables of
   the same Product. (:pull:`551`)
@@ -699,18 +699,18 @@ Other Changes
 - Thread-safe netCDF access within `dc.load` (:pull:`705`)
 
 Performance Improvements
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 - Use single pass over datasets when computing bounds (:pull:`660`)
 - Bugfixes and improved performance of `dask`-backed arrays (:pull:`547`, :pull:`664`)
 
 Documentation Improvements
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 - Improve :ref:`api-reference` documentation.
 
 Deprecations
-~~~~~~~~~~~~
+------------
 
 - From the command line, the old query syntax for searching within vague time ranges, eg: ``2018-03 < time < 2018-04``
   has been removed. It is unclear exactly what that syntax should mean, whether to include or exclude the months
@@ -755,7 +755,7 @@ v1.6rc2 (29 June 2018)
 ======================
 
 Backwards Incompatible Changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 
 - The `helpers.write_geotiff()` function has been updated to support files smaller
   than 256x256. It also no longer supports specifying the time index. Before passing
@@ -793,7 +793,7 @@ Backwards Incompatible Changes
 
 
 Changes
-~~~~~~~
+-------
 
 - A `--location-policy` option has been added to the `datacube dataset update`
   command. Previously this command would always add a new location to the list
@@ -835,7 +835,7 @@ Changes
   (See :pull:`432` for more details)
 
 Bug Fixes
-~~~~~~~~~
+---------
 
 - The `.dimensions` property of a product no longer crashes when product is
   missing a `grid_spec`. It instead defaults to `time,y,x`
@@ -856,7 +856,7 @@ some significant refactoring, with the potential having issues when upgrading.
 
 
 Backwards Incompatible Fixes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 
  - Drop Support for Python 2. Python 3.5 is now the earliest supported Python
    version.
@@ -865,7 +865,7 @@ Backwards Incompatible Fixes
    work underway in the `execution engine branch`_ to replace these features.
 
 Enhancements
-~~~~~~~~~~~~
+------------
 
  - Support for third party drivers, for custom data storage and custom index
    implementations
@@ -914,7 +914,7 @@ Enhancements
 
 
 Bug Fixes
-~~~~~~~~~
+---------
 
  - Allow creation of :class:`datacube.utils.geometry.Geometry` objects from 3d
    representations. The Z axis is simply thrown away.
@@ -933,7 +933,7 @@ Bug Fixes
    *Proj.4* based comparison or a *GDAL* based comparison. (Closed :issue:`243`)
 
 New Data Support
-~~~~~~~~~~~~~~~~
+----------------
 
  - Added example prepare script for Collection 1 USGS data; improved band
    handling and downloads.
@@ -1038,14 +1038,14 @@ v1.5.0 Purple Unicorn (9 July 2017)
 ===================================
 
 New Features
-~~~~~~~~~~~~
+------------
 
  - Support for AWS S3 array storage
 
  - Driver Manager support for NetCDF, S3, S3-file drivers.
 
 Usability Improvements
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
  - When ``datacube dataset add`` is unable to add a Dataset to the index, print
    out the entire Dataset to make it easier to debug the problem.

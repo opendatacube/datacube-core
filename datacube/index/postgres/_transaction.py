@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
+from typing_extensions import override
+from collections.abc import Iterator
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._api import PostgresDbAPI
@@ -16,18 +18,22 @@ class PostgresTransaction(AbstractTransaction):
         super().__init__(idx_id)
         self._db = db
 
+    @override
     def _new_connection(self) -> Any:
         dbconn = self._db.give_me_a_connection()
         conn = PostgresDbAPI(dbconn)
         conn.begin()
         return conn
 
+    @override
     def _commit(self) -> None:
         self._connection.commit()
 
+    @override
     def _rollback(self) -> None:
         self._connection.rollback()
 
+    @override
     def _release_connection(self) -> None:
         self._connection._connection.close()
         self._connection._connection = None

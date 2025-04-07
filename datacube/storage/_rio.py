@@ -5,15 +5,17 @@
 """
 Driver implementation for Rasterio based reader.
 """
+from __future__ import annotations
 import logging
 import contextlib
 from contextlib import contextmanager
 from threading import RLock
 import numpy as np
 from affine import Affine
+from typing_extensions import override
 import rasterio
 from urllib.parse import urlparse
-from typing import Optional, Iterator
+from collections.abc import Iterator
 
 from odc.geo import CRS
 from datacube.utils.math import num2numpy
@@ -47,7 +49,7 @@ class BandDataSource(GeoRasterReader):
     """
 
     def __init__(self, source, nodata=None,
-                 lock: Optional[RLock] = None):
+                 lock: "RLock" | None = None):
         self.source = source
         if nodata is None:
             nodata = self.source.ds.nodatavals[self.source.bidx-1]
@@ -59,24 +61,29 @@ class BandDataSource(GeoRasterReader):
     def nodata(self):
         return self._nodata
 
+    @override
     @property
     def crs(self) -> CRS:
         return _rasterio_crs(self.source.ds)
 
+    @override
     @property
     def transform(self) -> Affine:
         return self.source.ds.transform
 
+    @override
     @property
     def dtype(self) -> np.dtype:
         return np.dtype(self.source.dtype)
 
+    @override
     @property
     def shape(self) -> RasterShape:
         return self.source.shape
 
-    def read(self, window: Optional[RasterWindow] = None,
-             out_shape: Optional[RasterShape] = None) -> Optional[np.ndarray]:
+    @override
+    def read(self, window: RasterWindow | None = None,
+             out_shape: RasterShape | None = None) -> np.ndarray | None:
         """Read data in the native format, returning a numpy array
         """
         with maybe_lock(self._lock):
@@ -94,15 +101,19 @@ class RasterioDataSource(DataSource):
         self.nodata = nodata
         self._lock = lock
 
+    @override
     def get_bandnumber(self, src):
         raise NotImplementedError()
 
+    @override
     def get_transform(self, shape):
         raise NotImplementedError()
 
+    @override
     def get_crs(self):
         raise NotImplementedError()
 
+    @override
     @contextmanager
     def open(self) -> Iterator[GeoRasterReader]:
         """Context manager which returns a :class:`BandDataSource`"""
@@ -166,7 +177,8 @@ class RasterDatasetDataSource(RasterioDataSource):
         lock = HDF5_LOCK if self._hdf else None
         super(RasterDatasetDataSource, self).__init__(filename, nodata=band.nodata, lock=lock)
 
-    def get_bandnumber(self, src=None) -> Optional[int]:
+    @override
+    def get_bandnumber(self, src=None) -> int | None:
 
         # If `band` property is set to an integer it overrides any other logic
         bi = self._band_info
@@ -192,12 +204,14 @@ class RasterDatasetDataSource(RasterioDataSource):
 
         raise DeprecationWarning("Stacked netcdf without explicit time index is not supported anymore")
 
+    @override
     def get_transform(self, shape: RasterShape) -> Affine:
-        return self._band_info.transform * Affine.scale(   # type: ignore[type-var, return-value]
+        return self._band_info.transform * Affine.scale(   # type: ignore[operator, type-var, return-value]
             1 / shape[1],
             1 / shape[0]
         )
 
+    @override
     def get_crs(self):
         return self._band_info.crs
 
@@ -221,10 +235,10 @@ def _build_hdf_uri(url_str: str, fmt: str, layer: str) -> str:
             raise RuntimeError("Can't access %s over %s" % (fmt, url.scheme))
         base = str(uri_to_local_path(url_str))
 
-    return '{}:"{}":{}'.format(fmt, base, layer)
+    return f'{fmt}:"{base}":{layer}'
 
 
-def _url2rasterio(url_str: str, fmt: str, layer: Optional[str]) -> str:
+def _url2rasterio(url_str: str, fmt: str, layer: str | None) -> str:
     """
     turn URL into a string that could be passed to raterio.open
     """

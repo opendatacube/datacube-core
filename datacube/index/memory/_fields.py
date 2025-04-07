@@ -2,7 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Any, Mapping
+from typing import Any
+from collections.abc import Mapping
 from datacube.model.fields import SimpleField, Field, get_dataset_fields as generic_get_dataset_fields
 from datacube.utils.changes import Offset
 

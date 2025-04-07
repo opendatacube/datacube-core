@@ -15,7 +15,7 @@ from datacube.index.fields import Field
 from datacube.scripts.search_tool import write_csv, write_pretty
 
 
-class MockFile():
+class MockFile:
     def __init__(self):
         self.vals = []
 

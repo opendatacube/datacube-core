@@ -7,7 +7,9 @@ import logging
 import uuid
 import collections.abc
 from itertools import groupby
-from typing import Any, Iterable, cast, Callable, Hashable, Mapping, Sequence, TYPE_CHECKING
+from typing import Any, cast, TYPE_CHECKING
+from typing_extensions import override
+from collections.abc import Iterable, Callable, Hashable, Mapping, Sequence
 import datetime
 
 import deprecat
@@ -62,7 +64,7 @@ class Datacube:
     """
     Interface to search, read and write a datacube.
 
-    :type index: datacube.index.index.Index
+    :type index: datacube.index.Index
     """
 
     def __init__(
@@ -93,7 +95,7 @@ class Datacube:
             contain a 'default' section.
 
             Allows you to have multiple datacube instances in one configuration, specified on load,
-            eg. 'dev', 'test' or 'landsat', 'modis' etc.
+            e.g. 'dev', 'test' or 'landsat', 'modis' etc.
 
             If env is an ODCEnvironment object, config and index should both None.
 
@@ -106,7 +108,7 @@ class Datacube:
             The application name is used to track down problems with database queries, so it is strongly
             advised that be used.  Should be None if an index is supplied.
 
-        :param bool validate_connection: Should we check that the database connection is available and valid.
+        :param bool validate_connection: Check that the database connection is available and valid.
             Defaults to True. Ignored if index is passed.
         """
 
@@ -239,6 +241,7 @@ class Datacube:
         """
         List measurements for each product
 
+        :param show_archived: include archived products in the result.
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict. (defaults to True)
         :rtype: pandas.DataFrame or list(dict)
         """
@@ -316,7 +319,7 @@ class Datacube:
 
         **Dimensions**
 
-            Spatial dimensions can specified using the ``longitude``/``latitude`` and ``x``/``y`` fields.
+            Spatial dimensions can be specified using the ``longitude``/``latitude`` and ``x``/``y`` fields.
 
             The CRS of this query is assumed to be WGS84/EPSG:4326 unless the ``crs`` field is supplied,
             even if the stored data is in another projection or the ``output_crs`` is specified.
@@ -332,7 +335,7 @@ class Datacube:
 
                 geopolygon=polygon(coords, crs="EPSG:3577")
 
-            Or an iterable of polygons (search is done against the union of all polygons::
+            Or an iterable of polygons (search is done against the union of all polygons)::
 
                 geopolygon=[poly1, poly2, poly3, ....]
 
@@ -371,8 +374,8 @@ class Datacube:
 
                 group_by='solar_day'
 
-            For data that has different values for the scene overlap the requires more complex rules for combining data,
-            a function can be provided to the merging into a single time slice.
+            For data that has different values for the scene overlap that requires more complex rules for combining
+            data, a function can be provided to the merging into a single time slice.
 
             See :func:`datacube.helpers.ga_pq_fuser` for an example implementation.
             see :func:`datacube.api.query.query_group_by` for `group_by` built-in functions.
@@ -409,7 +412,7 @@ class Datacube:
             the output ``xarray.Dataset`` object.
 
             If a list is specified, the measurements will be returned in the order requested.
-            By default all available measurements are included.
+            By default, all available measurements are included.
 
         :param str output_crs:
             The CRS of the returned data, for example ``EPSG:3577``.
@@ -476,12 +479,6 @@ class Datacube:
             data is simply copied over the top of each other in a relatively undefined manner. This function can
             perform a specific combining step. This can be a dictionary if different
             fusers are needed per band (similar format to the resampling dict described above).
-
-        :param group_by: When specified, perform basic combining/reducing of the data. For example,
-            ``group_by='solar_day'`` can be used to combine consecutive observations along a single satellite
-            overpass into a single time slice.
-
-            See also :class:`datacube.api.query.GroupBy`
 
         :param datasets: Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects,
             these will be loaded instead of performing a database lookup.
@@ -814,7 +811,10 @@ class Datacube:
             tuple(c.size for k, c in coords.items() if k in dims_default) + geobox.shape
         )
         coords_default: OrderedDict[str, xarray.DataArray] = OrderedDict(
-            **coords, **xr_coords(geobox, spatial_ref)
+            **coords
+        )
+        coords_default.update(
+            [(str(k), v) for k, v in xr_coords(geobox, spatial_ref).items()]
         )
 
         arrays = []
@@ -1042,7 +1042,7 @@ class Datacube:
             function to merge successive arrays as an output. Can be a dictionary just like resampling.
 
         :param dict dask_chunks:
-            If provided, the data will be loaded on demand using using :class:`dask.array.Array`.
+            If provided, the data will be loaded on demand using :class:`dask.array.Array`.
             Should be a dictionary specifying the chunking size for each output dimension.
             Unspecified dimensions will be auto-guessed, currently this means use chunk size of 1 for non-spatial
             dimensions and use whole dimension (no chunking unless specified) for spatial dimensions.
@@ -1050,12 +1050,14 @@ class Datacube:
             See the documentation on using `xarray with dask <https://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
+        :param skip_broken_datasets: do not include broken datasets in the result.
+
         :param progress_cbk: Int, Int -> None
             if supplied will be called for every file read with `files_processed_so_far, total_files`. This is
             only applicable to non-lazy loads, ignored when using dask.
 
         :param ExtraDimensions extra_dims:
-            A ExtraDimensions describing the any additional dimensions on top of (t, y, x)
+            A ExtraDimensions describing any additional dimensions on top of (t, y, x)
 
         :param Callable[[str], str], patch_url:
             if supplied, will be used to patch/sign the url(s), as required to access some commercial archives.
@@ -1105,9 +1107,11 @@ class Datacube:
                 patch_url=patch_url,
             )
 
+    @override
     def __str__(self):
-        return "Datacube<index={!r}>".format(self.index)
+        return f"Datacube<index={self.index!r}>"
 
+    @override
     def __repr__(self):
         return self.__str__()
 
@@ -1356,9 +1360,7 @@ def _calculate_chunk_sizes(
     bad_keys = cast(set[str], set(dask_chunks)) - cast(set[str], set(valid_keys))
     if bad_keys:
         raise KeyError(
-            "Unknown dask_chunk dimension {}. Valid dimensions are: {}".format(
-                bad_keys, valid_keys
-            )
+            f"Unknown dask_chunk dimension {bad_keys}. Valid dimensions are: {valid_keys}"
         )
 
     chunk_maxsz = dict(
@@ -1401,7 +1403,7 @@ def _calculate_chunk_sizes(
 
 
 def _tokenize_dataset(dataset: Dataset) -> str:
-    return "dataset-{}".format(dataset.id.hex)
+    return f"dataset-{dataset.id.hex}"
 
 
 # pylint: disable=too-many-locals
@@ -1418,7 +1420,7 @@ def _make_dask_array(
     dsk = dsk.copy()  # this contains mapping from dataset id to dataset object
 
     token = uuid.uuid4().hex
-    dsk_name = "dc_load_{name}-{token}".format(name=measurement.name, token=token)
+    dsk_name = f"dc_load_{measurement.name}-{token}"
 
     needed_irr_chunks, grid_chunks = chunks[:-2], chunks[-2:]
     actual_irr_chunks = (1,) * len(needed_irr_chunks)

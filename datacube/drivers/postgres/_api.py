@@ -16,7 +16,9 @@ Persistence API implementation for postgres.
 import datetime
 import logging
 import uuid  # noqa: F401
-from typing import Iterable, Any
+from typing import Any
+from typing_extensions import override
+from collections.abc import Iterable
 from typing import cast as type_cast
 from sqlalchemy import (
     cast,
@@ -200,7 +202,7 @@ def get_dataset_fields(metadata_type_definition):
     return fields
 
 
-class PostgresDbAPI(object):
+class PostgresDbAPI:
     def __init__(self, connection):
         self._connection = connection
         self._sqla_txn = None
@@ -1274,6 +1276,7 @@ class PostgresDbAPI(object):
         )
         return res.rowcount > 0
 
+    @override
     def __repr__(self):
         return "PostgresDb<connection={!r}>".format(self._connection)
 

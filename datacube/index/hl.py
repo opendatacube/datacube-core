@@ -10,7 +10,8 @@ import logging
 import json
 import toolz
 from uuid import UUID
-from typing import cast, Any, Callable, Optional, Iterable, List, Mapping, Sequence, Tuple, Union, MutableMapping
+from typing import cast, Any, Union
+from collections.abc import Callable, Iterable, Mapping, Sequence, MutableMapping
 
 from datacube.model import Dataset, LineageTree, Product
 from datacube.index.abstract import AbstractIndex
@@ -30,10 +31,10 @@ class ProductRule:
 
 
 def load_rules_from_types(index: AbstractIndex,
-                          product_names: Optional[Iterable[str]] = None,
-                          excluding: Optional[Iterable[str]] = None
-                          ) -> Union[Tuple[List[ProductRule], None], Tuple[None, str]]:
-    products: List[Product] = []
+                          product_names: Iterable[str] | None = None,
+                          excluding: Iterable[str] | None = None
+                          ) -> tuple[list[ProductRule], None] | tuple[None, str]:
+    products: list[Product] = []
     if product_names:
         for name in product_names:
             product = index.products.get_by_name(name)
@@ -100,7 +101,7 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
     return match
 
 
-def check_dataset_consistent(dataset: Dataset) -> Tuple[bool, Optional[str]]:
+def check_dataset_consistent(dataset: Dataset) -> tuple[bool, str | None]:
     """
     :type dataset: datacube.model.Dataset
     :return: (Is consistent, [error message|None])
@@ -131,21 +132,21 @@ def check_dataset_consistent(dataset: Dataset) -> Tuple[bool, Optional[str]]:
     return True, None
 
 
-def check_consistent(a: Mapping[str, Any], b: Mapping[str, Any]) -> Tuple[bool, Optional[str]]:
+def check_consistent(a: Mapping[str, Any], b: Mapping[str, Any]) -> tuple[bool, str | None]:
     diffs = get_doc_changes(a, b)
     if len(diffs) == 0:
         return True, None
 
     def render_diff(offset, a, b):
         offset = '.'.join(map(str, offset))
-        return '{}: {!r}!={!r}'.format(offset, a, b)
+        return f'{offset}: {a!r}!={b!r}'
 
     return False, ", ".join([render_diff(offset, a, b) for offset, a, b in diffs])
 
 
 DatasetOrError = Union[
-    Tuple[Dataset, None],
-    Tuple[None, Union[str, Exception]]
+    tuple[Dataset, None],
+    tuple[None, str | Exception]
 ]
 
 
@@ -160,7 +161,7 @@ def check_intended_eo3(ds: SimpleDocNav, product: Product) -> None:
 def resolve_no_lineage(ds: SimpleDocNav,
                        uri: str,
                        matcher: ProductMatcher,
-                       source_tree: Optional[LineageTree] = None,
+                       source_tree: LineageTree | None = None,
                        home_index: str | None = None) -> DatasetOrError:
     if source_tree or home_index:
         raise ValueError("source_tree passed to non-lineage resolver")
@@ -175,8 +176,8 @@ def resolve_no_lineage(ds: SimpleDocNav,
 
 def resolve_with_lineage(doc: SimpleDocNav,
                          uri: str, matcher: ProductMatcher,
-                         source_tree: Optional[LineageTree] = None,
-                         home_index: Optional[str] = None) -> DatasetOrError:
+                         source_tree: LineageTree | None = None,
+                         home_index: str | None = None) -> DatasetOrError:
     """
     Dataset driver for the (new) external lineage API
 
@@ -216,7 +217,7 @@ def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: Product
                            index: AbstractIndex,
                            fail_on_missing_lineage: bool,
                            verify_lineage: bool,
-                           source_tree: Optional[LineageTree] = None,
+                           source_tree: LineageTree | None = None,
                            home_index: str | None = None
                            ) -> DatasetOrError:
     if source_tree or home_index:
@@ -260,7 +261,7 @@ def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: Product
                         bad_lineage.append((uuid, err))
 
             if len(bad_lineage) > 0:
-                error_report = '\n'.join('Inconsistent lineage dataset {}:\n> {}'.format(uuid, err)
+                error_report = '\n'.join(f'Inconsistent lineage dataset {uuid}:\n> {err}'
                                          for uuid, err in bad_lineage)
                 return None, error_report
 
@@ -269,7 +270,7 @@ def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: Product
         return v
 
     def resolve_ds(ds: SimpleDocNav,
-                   sources: Optional[Mapping[UUID, Dataset]],
+                   sources: Mapping[UUID, Dataset] | None,
                    cache: MutableMapping[UUID, Dataset]) -> Dataset:
         cached = cache.get(ds.id)
         if cached is not None:
@@ -298,9 +299,9 @@ def dataset_resolver(index: AbstractIndex,
                      fail_on_missing_lineage: bool = False,
                      verify_lineage: bool = True,
                      skip_lineage: bool = False,
-                     home_index: Optional[str] = None) -> Callable[[SimpleDocNav, str, LineageTree | None],
-                                                                   DatasetOrError
-                                                                   ]:
+                     home_index: str | None = None) -> Callable[[SimpleDocNav, str, LineageTree | None],
+                                                                DatasetOrError
+                                                               ]:
     if skip_lineage or not index.supports_lineage:
         # Resolver that ignores lineage.
         resolver: Callable[..., DatasetOrError] = resolve_no_lineage
@@ -324,7 +325,7 @@ def dataset_resolver(index: AbstractIndex,
             "verify_lineage": verify_lineage,
         }
 
-    def resolve(doc: SimpleDocNav, uri: str, source_tree: Optional[LineageTree] = None) -> DatasetOrError:
+    def resolve(doc: SimpleDocNav, uri: str, source_tree: LineageTree | None = None) -> DatasetOrError:
         return resolver(doc, uri, source_tree=source_tree, **extra_kwargs)
 
     return resolve
@@ -377,13 +378,13 @@ class Doc2Dataset:
     """
     def __init__(self,
                  index: AbstractIndex,
-                 products: Optional[Sequence[str]] = None,
-                 exclude_products: Optional[Sequence[str]] = None,
+                 products: Sequence[str] | None = None,
+                 exclude_products: Sequence[str] | None = None,
                  fail_on_missing_lineage: bool = False,
                  verify_lineage: bool = True,
                  skip_lineage: bool = False,
-                 eo3: Union[bool, str] = 'auto',
-                 home_index: Optional[str] = None):
+                 eo3: bool | str = 'auto',
+                 home_index: str | None = None):
         if not index.supports_lineage:
             skip_lineage = True
             verify_lineage = False
@@ -415,8 +416,8 @@ class Doc2Dataset:
                                             skip_lineage=skip_lineage,
                                             home_index=home_index)
 
-    def __call__(self, doc_in: Union[SimpleDocNav, Mapping[str, Any]], uri: str,
-                 source_tree: Optional[LineageTree] = None) -> DatasetOrError:
+    def __call__(self, doc_in: SimpleDocNav | Mapping[str, Any], uri: str,
+                 source_tree: LineageTree | None = None) -> DatasetOrError:
         """Attempt to construct dataset from metadata document and a uri.
 
         :param doc: Dictionary or SimpleDocNav object
@@ -444,10 +445,10 @@ class Doc2Dataset:
 
         dataset, err = self._ds_resolve(doc, uri, source_tree)
         if dataset is None:
-            return None, cast(Union[str, Exception], err)
+            return None, cast(str | Exception, err)
 
         is_consistent, reason = check_dataset_consistent(dataset)
         if not is_consistent:
-            return None, cast(Union[str, Exception], reason)
+            return None, cast(str | Exception, reason)
 
         return dataset, None

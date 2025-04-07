@@ -4,15 +4,15 @@
 # SPDX-License-Identifier: Apache-2.0
 import csv
 import io
-from typing import Iterable, Tuple, Dict, List
+from collections.abc import Iterable
 
 import datacube.scripts.search_tool
 from datacube.model import Product, Dataset
 
 
 def _load_product_query(
-        lazy_results: Iterable[Tuple[Product, Iterable[Dataset]]]
-) -> Dict[str, List[Dataset]]:
+        lazy_results: Iterable[tuple[Product, Iterable[Dataset]]]
+) -> dict[str, list[Dataset]]:
     """
     search_by_product() returns two levels of laziness. load them all into memory
     for easy comparison/counts

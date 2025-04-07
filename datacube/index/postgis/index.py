@@ -5,7 +5,8 @@
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, Iterator, Sequence, Type
+from collections.abc import Iterable, Iterator, Sequence
+from typing_extensions import override
 
 from deprecat import deprecat
 from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
@@ -81,38 +82,47 @@ class Index(AbstractIndex):
         self._lineage = LineageResource(db, self)
         self._datasets = DatasetResource(db, self)
 
+    @override
     @property
     def name(self) -> str:
         return "pgis_index"
 
+    @override
     @property
     def environment(self) -> ODCEnvironment:
         return self._env
 
+    @override
     @property
     def users(self) -> UserResource:
         return self._users
 
+    @override
     @property
     def metadata_types(self) -> MetadataTypeResource:
         return self._metadata_types
 
+    @override
     @property
     def products(self) -> ProductResource:
         return self._products
 
+    @override
     @property
     def lineage(self) -> LineageResource:
         return self._lineage
 
+    @override
     @property
     def datasets(self) -> DatasetResource:
         return self._datasets
 
+    @override
     @property
     def url(self) -> str:
         return str(self._db.url)
 
+    @override
     @classmethod
     def from_config(cls,
                     config_env: ODCEnvironment,
@@ -126,6 +136,7 @@ class Index(AbstractIndex):
     def get_dataset_fields(cls, doc):
         return PostGisDb.get_dataset_fields(doc)
 
+    @override
     def init_db(self, with_default_types=True, with_permissions=True, with_default_spatial_index=True):
         is_new = self._db.init(with_permissions=with_permissions)
 
@@ -139,6 +150,7 @@ class Index(AbstractIndex):
 
         return is_new
 
+    @override
     def close(self):
         """
         Close any idle connections database connections.
@@ -150,20 +162,25 @@ class Index(AbstractIndex):
         """
         self._db.close()
 
+    @override
     @property
     def index_id(self) -> str:
         return self.url
 
+    @override
     def transaction(self) -> AbstractTransaction:
         return PostgisTransaction(self._db, self.index_id)
 
+    @override
     def create_spatial_index(self, crs: CRS) -> bool:
         sp_idx = self._db.create_spatial_index(crs)
         return sp_idx is not None
 
+    @override
     def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
         return self._db.spatially_indexed_crses(refresh)
 
+    @override
     def update_spatial_index(self,
                              crses: Sequence[CRS] = [],
                              product_names: Sequence[str] = [],
@@ -172,9 +189,11 @@ class Index(AbstractIndex):
         with self._active_connection(transaction=True) as conn:
             return conn.update_spindex(crses, product_names, dataset_ids)
 
+    @override
     def __repr__(self):
-        return "Index<db={!r}>".format(self._db)
+        return f"Index<db={self._db!r}>"
 
+    @override
     def drop_spatial_index(self, crs: CRS) -> bool:
         return self._db.drop_spatial_index(crs)
 
@@ -222,10 +241,12 @@ class Index(AbstractIndex):
 
 
 class PostgisIndexDriver(AbstractIndexDriver):
+    @override
     @classmethod
-    def index_class(cls) -> Type[AbstractIndex]:
+    def index_class(cls) -> type[AbstractIndex]:
         return Index
 
+    @override
     @staticmethod
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
@@ -241,6 +262,7 @@ class PostgisIndexDriver(AbstractIndexDriver):
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))
 
+    @override
     @staticmethod
     def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
         return config_options_for_psql_driver(env)

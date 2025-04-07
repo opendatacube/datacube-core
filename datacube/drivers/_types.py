@@ -5,9 +5,10 @@
 """ Defines abstract types for IO drivers.
 """
 from typing import (
-    List, Tuple, Optional, Union, Any, Iterable,
+    Any,
     TYPE_CHECKING
 )
+from collections.abc import Iterable
 
 from abc import ABCMeta, abstractmethod
 import numpy as np
@@ -26,22 +27,22 @@ else:
     FutureNdarray = Future
 
 
-RasterShape = Tuple[int, int]
-RasterWindow = Tuple[slice, slice]
+RasterShape = tuple[int, int]
+RasterWindow = tuple[slice, slice]
 
 
-class GeoRasterReader(object, metaclass=ABCMeta):
+class GeoRasterReader(metaclass=ABCMeta):
     """ Abstract base class for dataset reader.
     """
 
     @property
     @abstractmethod
-    def crs(self) -> Optional[CRS]:
+    def crs(self) -> CRS | None:
         ...  # pragma: no cover
 
     @property
     @abstractmethod
-    def transform(self) -> Optional[Affine]:
+    def transform(self) -> Affine | None:
         ...  # pragma: no cover
 
     @property
@@ -56,24 +57,24 @@ class GeoRasterReader(object, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def nodata(self) -> Optional[Union[int, float]]:
+    def nodata(self) -> int | float | None:
         ...  # pragma: no cover
 
     @abstractmethod
     def read(self,
-             window: Optional[RasterWindow] = None,
-             out_shape: Optional[RasterShape] = None) -> FutureNdarray:
+             window: RasterWindow | None = None,
+             out_shape: RasterShape | None = None) -> FutureNdarray:
         ...  # pragma: no cover
 
 
-class ReaderDriver(object, metaclass=ABCMeta):
+class ReaderDriver(metaclass=ABCMeta):
     """ Interface for Reader Driver
     """
 
     @abstractmethod
     def new_load_context(self,
                          bands: Iterable[BandInfo],
-                         old_ctx: Optional[Any]) -> Any:
+                         old_ctx: Any | None) -> Any:
         """Recycle old context if available/possible and create new context.
            ``old_ctx`` won't be used after this call.
 
@@ -89,15 +90,15 @@ class ReaderDriver(object, metaclass=ABCMeta):
         ...  # pragma: no cover
 
 
-class ReaderDriverEntry(object, metaclass=ABCMeta):
+class ReaderDriverEntry(metaclass=ABCMeta):
     @property
     @abstractmethod
-    def protocols(self) -> List[str]:
+    def protocols(self) -> list[str]:
         ...  # pragma: no cover
 
     @property
     @abstractmethod
-    def formats(self) -> List[str]:
+    def formats(self) -> list[str]:
         ...  # pragma: no cover
 
     @abstractmethod

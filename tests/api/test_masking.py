@@ -88,7 +88,7 @@ def test_describe_flags(simple_var):
     describe_variable_flags(simple_var.to_dataset(), with_pandas=False)
 
 
-class SimpleVariableWithFlagsDef(object):
+class SimpleVariableWithFlagsDef:
     bits_def_yaml = """
         cloud_shadow_fmask:
           bits: 13
@@ -183,7 +183,7 @@ class SimpleVariableWithFlagsDef(object):
     flags_definition = yaml.safe_load(bits_def_yaml)
 
 
-class VariableWithMultiBitFlags(object):
+class VariableWithMultiBitFlags:
     bits_def_yaml = """
         cloud_confidence:
           bits: [13, 14]

@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from contextlib import contextmanager
-from typing import Iterable, Iterator, Type
+from collections.abc import Iterable, Iterator
+from typing_extensions import override
 
 from deprecat import deprecat
 from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
@@ -72,38 +73,47 @@ class Index(AbstractIndex):
         self._lineage = LineageResource(db, self)
         self._datasets = DatasetResource(db, self)
 
+    @override
     @property
     def name(self) -> str:
         return "pg_index"
 
+    @override
     @property
     def environment(self) -> ODCEnvironment:
         return self._env
 
+    @override
     @property
     def users(self) -> UserResource:
         return self._users
 
+    @override
     @property
     def metadata_types(self) -> MetadataTypeResource:
         return self._metadata_types
 
+    @override
     @property
     def products(self) -> ProductResource:
         return self._products
 
+    @override
     @property
     def lineage(self) -> LineageResource:
         return self._lineage
 
+    @override
     @property
     def datasets(self) -> DatasetResource:
         return self._datasets
 
+    @override
     @property
     def url(self) -> str:
         return str(self._db.url)
 
+    @override
     @classmethod
     def from_config(cls,
                     config_env: ODCEnvironment,
@@ -117,6 +127,7 @@ class Index(AbstractIndex):
     def get_dataset_fields(cls, doc):
         return PostgresDb.get_dataset_fields(doc)
 
+    @override
     def init_db(self, with_default_types=True, with_permissions=True):
         is_new = self._db.init(with_permissions=with_permissions)
 
@@ -127,6 +138,7 @@ class Index(AbstractIndex):
 
         return is_new
 
+    @override
     def close(self):
         """
         Close any idle connections database connections.
@@ -138,15 +150,18 @@ class Index(AbstractIndex):
         """
         self._db.close()
 
+    @override
     @property
     def index_id(self) -> str:
         return f"legacy_{self.url}"
 
+    @override
     def transaction(self) -> AbstractTransaction:
         return PostgresTransaction(self._db, self.index_id)
 
+    @override
     def __repr__(self):
-        return "Index<db={!r}>".format(self._db)
+        return f"Index<db={self._db!r}>"
 
     @contextmanager
     def _active_connection(self, transaction: bool = False) -> Iterator[PostgresDbAPI]:
@@ -193,10 +208,12 @@ class Index(AbstractIndex):
 class PostgresIndexDriver(AbstractIndexDriver):
     aliases = ['legacy', 'default']
 
+    @override
     @classmethod
-    def index_class(cls) -> Type[AbstractIndex]:
+    def index_class(cls) -> type[AbstractIndex]:
         return Index
 
+    @override
     @staticmethod
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
@@ -211,6 +228,7 @@ class PostgresIndexDriver(AbstractIndexDriver):
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))
 
+    @override
     @staticmethod
     def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
         return config_options_for_psql_driver(env)

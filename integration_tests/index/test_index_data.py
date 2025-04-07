@@ -9,7 +9,6 @@ Integration tests: these depend on a local Postgres instance.
 """
 import copy
 import datetime
-import sys
 from pathlib import Path
 from uuid import UUID
 
@@ -397,7 +396,8 @@ def test_get_missing_things(index: Index) -> None:
         missing_thing = index.datasets.get(uuid_, include_sources=True)
         assert missing_thing is None, "get() should return none when it doesn't exist"
 
-    id_ = sys.maxsize
+    # Max SmallInteger: https://www.postgresql.org/docs/17/datatype-numeric.html
+    id_ = 32767
     missing_thing = index.metadata_types.get(id_)
     assert missing_thing is None, "get() should return none when it doesn't exist"
 

@@ -2,13 +2,12 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import List
 
 from ._tools import singleton_setup
 from .driver_cache import load_drivers
 
 
-class WriterDriverCache(object):
+class WriterDriverCache:
     def __init__(self, group: str):
         self._drivers = load_drivers(group)
 
@@ -26,7 +25,7 @@ class WriterDriverCache(object):
         """
         return self._drivers.get(name, None)
 
-    def drivers(self) -> List[str]:
+    def drivers(self) -> list[str]:
         """
         Returns list of driver names
         """
@@ -42,7 +41,7 @@ def writer_cache() -> WriterDriverCache:
                            'datacube.plugins.io.write')
 
 
-def writer_drivers() -> List[str]:
+def writer_drivers() -> list[str]:
     """
     Returns list driver names
     """

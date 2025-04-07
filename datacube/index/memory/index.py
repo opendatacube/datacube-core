@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from threading import Lock
-from typing import Type
+from typing_extensions import override
 
 from deprecat import deprecat
 from datacube.cfg import ODCEnvironment
@@ -55,45 +55,56 @@ class Index(AbstractIndex):
             counter = counter + 1
             self._index_id = f"memory={counter}"
 
+    @override
     @property
     def name(self) -> str:
         return "memory_index"
 
+    @override
     @property
     def environment(self) -> ODCEnvironment:
         return self._env
 
+    @override
     @property
     def users(self) -> UserResource:
         return self._users
 
+    @override
     @property
     def metadata_types(self) -> MetadataTypeResource:
         return self._metadata_types
 
+    @override
     @property
     def products(self) -> ProductResource:
         return self._products
 
+    @override
     @property
     def lineage(self) -> LineageResource:
         return self._lineage
 
+    @override
     @property
     def datasets(self) -> DatasetResource:
         return self._datasets
 
+    @override
     @property
     def url(self) -> str:
         return "memory"
 
+    @override
     @property
     def index_id(self) -> str:
         return self._index_id
 
+    @override
     def transaction(self) -> UnhandledTransaction:
         return UnhandledTransaction(self.index_id)
 
+    @override
     @classmethod
     def from_config(cls,
                     config_env: ODCEnvironment,
@@ -105,25 +116,31 @@ class Index(AbstractIndex):
     def get_dataset_fields(cls, doc):
         return get_dataset_fields(doc)
 
+    @override
     def init_db(self, with_default_types=True, with_permissions=True):
         return True
 
+    @override
     def close(self):
         pass
 
+    @override
     def create_spatial_index(self, crs: CRS) -> bool:
         _LOG.warning("memory index driver does not support spatio-temporal indexes")
         return False
 
+    @override
     def __repr__(self):
         return "Index<memory>"
 
 
 class MemoryIndexDriver(AbstractIndexDriver):
+    @override
     @classmethod
-    def index_class(cls) -> Type[AbstractIndex]:
+    def index_class(cls) -> type[AbstractIndex]:
         return Index
 
+    @override
     @staticmethod
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "

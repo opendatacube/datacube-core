@@ -17,7 +17,9 @@ from datacube.model import Product, MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
-from typing import Iterable, Sequence, cast
+from typing import cast
+from typing_extensions import override
+from collections.abc import Iterable, Sequence
 
 _LOG = logging.getLogger(__name__)
 
@@ -49,6 +51,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         self.__init__(*state)
 
+    @override
     def add(self, product, allow_table_lock=False):
         """
         Add a Product.
@@ -69,7 +72,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(product.definition),
-                'Metadata Type {}'.format(product.name)
+                f'Metadata Type {product.name}'
             )
         else:
             metadata_type = self._index.metadata_types.get_by_name(product.metadata_type.name)
@@ -86,6 +89,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 )
         return self.get_by_name(product.name)
 
+    @override
     def _add_batch(self, batch_products: Iterable[Product]) -> BatchStatus:
         # Would be nice to keep this level of internals hidden from this layer,
         # but most efficient to do it before grabbing a connection and keep the implementation
@@ -104,6 +108,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             added, skipped = connection.insert_product_bulk(values)
             return BatchStatus(added, skipped, monotonic() - b_started)
 
+    @override
     def can_update(self, product, allow_unsafe_updates=False):
         """
         Check if product can be updated. Return bool,safe_changes,unsafe_changes
@@ -148,6 +153,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
+    @override
     def update(self, product: Product, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a product. Unsafe changes will throw a ValueError by default.
@@ -215,6 +221,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         self.get_unsafe.cache_clear()          # type: ignore[attr-defined]
         return self.get_by_name(product.name)
 
+    @override
     def update_document(self, definition, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a Product using its definition
@@ -235,6 +242,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             allow_table_lock=allow_table_lock,
         )
 
+    @override
     def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
         """
         Delete Products, as well as all related datasets
@@ -280,6 +288,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             raise KeyError('"%s" is not a valid Product name' % name)
         return self._make(result)
 
+    @override
     def search_robust(self, **query):
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
@@ -331,6 +340,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             else:
                 yield type_, remaining_matchable
 
+    @override
     def search_by_metadata(self, metadata):
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
@@ -344,6 +354,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             for product in self._make_many(connection.search_products_by_metadata(metadata)):
                 yield product
 
+    @override
     def get_all(self) -> Iterable[Product]:
         """
         Retrieve all Products
@@ -351,6 +362,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return self._make_many(connection.get_all_products())
 
+    @override
     def get_all_docs(self) -> Iterable[JsonDict]:
         with self._db_connection() as connection:
             for row in connection.get_all_product_docs():
@@ -366,6 +378,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             id_=query_row.id,
         )
 
+    @override
     def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
@@ -379,6 +392,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         return result
 
+    @override
     def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)
@@ -386,6 +400,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return connection.spatial_extent(ids, crs)
 
+    @override
     def most_recent_change(self, product: str | Product) -> datetime.datetime | None:
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)

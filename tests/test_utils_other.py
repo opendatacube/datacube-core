@@ -157,7 +157,7 @@ def test_gen_pass(n_bytes):
 
 @given(text(alphabet=string.digits + string.ascii_letters + ' ,:.![]?', max_size=20))
 def test_write_user_secret_file(txt):
-    fname = u".tst-datacube-uefvwr4cfkkl0ijk.txt"
+    fname = ".tst-datacube-uefvwr4cfkkl0ijk.txt"
 
     write_user_secret_file(txt, fname)
     txt_back = slurp(fname)
@@ -577,7 +577,7 @@ def test_check_write_path(tmpdir):
     assert isinstance(check_write_path(str(some_path), overwrite=False), Path)
 
     p = tmpdir/"ttt.tmp"
-    with open(str(p), 'wt') as f:
+    with open(str(p), 'w') as f:
         f.write("text")
 
     assert p.exists()

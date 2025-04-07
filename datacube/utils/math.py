@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Tuple, Union, Optional, Any
+from typing import Any
 from math import ceil
 
 import numpy
@@ -18,7 +18,7 @@ def unsqueeze_data_array(da: xr.DataArray,
                          dim: str,
                          pos: int,
                          coord: Any = 0,
-                         attrs: Optional[dict] = None) -> xr.DataArray:
+                         attrs: dict | None = None) -> xr.DataArray:
     """
     Add a 1-length dimension to a data array.
 
@@ -44,8 +44,8 @@ def unsqueeze_dataset(ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0) ->
 
 
 @deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
-def spatial_dims(xx: Union[xr.DataArray, xr.Dataset],
-                 relaxed: bool = False) -> Optional[Tuple[str, str]]:
+def spatial_dims(xx: xr.DataArray | xr.Dataset,
+                 relaxed: bool = False) -> tuple[str, str] | None:
     return xr_spatial_dims(xx, relaxed)
 
 
@@ -55,7 +55,7 @@ def maybe_zero(x: float, tol: float) -> float:
 
 
 @deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
-def maybe_int(x: float, tol: float) -> Union[int, float]:
+def maybe_int(x: float, tol: float) -> int | float:
     return geomath.maybe_int(x, tol)
 
 

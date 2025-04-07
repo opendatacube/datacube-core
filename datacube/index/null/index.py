@@ -3,7 +3,6 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Type
 
 from deprecat import deprecat
 from datacube.cfg import ODCEnvironment
@@ -16,6 +15,7 @@ from datacube.model import MetadataType
 from datacube.model.fields import get_dataset_fields
 from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS
+from typing_extensions import override
 
 _LOG = logging.getLogger(__name__)
 
@@ -40,42 +40,52 @@ class Index(AbstractIndex):
         self._lineage = NoLineageResource(self)
         self._datasets = DatasetResource(self)
 
+    @override
     @property
     def name(self) -> str:
         return "null_index"
 
+    @override
     @property
     def environment(self) -> ODCEnvironment:
         return self._env
 
+    @override
     @property
     def users(self) -> UserResource:
         return self._users
 
+    @override
     @property
     def metadata_types(self) -> MetadataTypeResource:
         return self._metadata_types
 
+    @override
     @property
     def products(self) -> ProductResource:
         return self._products
 
+    @override
     @property
     def lineage(self) -> NoLineageResource:
         return self._lineage
 
+    @override
     @property
     def datasets(self) -> DatasetResource:
         return self._datasets
 
+    @override
     @property
     def url(self) -> str:
         return "null"
 
+    @override
     @property
     def index_id(self) -> str:
         return "null"
 
+    @override
     def transaction(self) -> UnhandledTransaction:
         return UnhandledTransaction(self.index_id)
 
@@ -87,25 +97,31 @@ class Index(AbstractIndex):
     def get_dataset_fields(cls, doc):
         return get_dataset_fields(doc)
 
+    @override
     def init_db(self, with_default_types=True, with_permissions=True):
         return True
 
+    @override
     def close(self):
         pass
 
+    @override
     def create_spatial_index(self, crs: CRS) -> bool:
         _LOG.warning("null driver does not support spatio-temporal indexes")
         return False
 
+    @override
     def __repr__(self):
         return "Index<null>"
 
 
 class NullIndexDriver(AbstractIndexDriver):
+    @override
     @classmethod
-    def index_class(cls) -> Type[AbstractIndex]:
+    def index_class(cls) -> type[AbstractIndex]:
         return Index
 
+    @override
     @staticmethod
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "

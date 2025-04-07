@@ -11,7 +11,9 @@ from itertools import chain
 from deprecat import deprecat
 from collections import namedtuple
 from time import monotonic
-from typing import (Any, Callable, Iterable, Mapping, Sequence, cast)
+from typing import Any, cast
+from typing_extensions import override
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from uuid import UUID
 
 from datacube.migration import ODC2DeprecationWarning
@@ -51,6 +53,7 @@ class DatasetResource(AbstractDatasetResource):
         self._by_product: dict[str, set[UUID]] = {}
         self._archived_by_product: dict[str, set[UUID]] = {}
 
+    @override
     def get_unsafe(self, id_: DSID, include_sources: bool = False,
                    include_deriveds: bool = False, max_depth: int = 0) -> Dataset:
         self._check_get_legacy(include_deriveds, max_depth)
@@ -62,18 +65,23 @@ class DatasetResource(AbstractDatasetResource):
             }
         return ds
 
+    @override
     def bulk_get(self, ids: Iterable[DSID]) -> Iterable[Dataset]:
         return (ds for ds in (self.get(dsid) for dsid in ids) if ds is not None)
 
+    @override
     def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         return (cast(Dataset, self.get(dsid)) for dsid in self._derivations.get(dsid_to_uuid(id_), {}).values())
 
+    @override
     def has(self, id_: DSID) -> bool:
         return dsid_to_uuid(id_) in self._by_id
 
+    @override
     def bulk_has(self, ids_: Iterable[DSID]) -> Iterable[bool]:
         return (self.has(id_) for id_ in ids_)
 
+    @override
     def add(self, dataset: Dataset,
             with_lineage: bool = True,
             archive_less_mature: int | None = None) -> Dataset:
@@ -130,6 +138,7 @@ class DatasetResource(AbstractDatasetResource):
                          ds.id)
         self._derivations[src.id][classifier] = ds.id
 
+    @override
     def search_product_duplicates(self,
                                   product: Product,
                                   *args: str | Field
@@ -167,6 +176,7 @@ class DatasetResource(AbstractDatasetResource):
         # only return entries with more than one dataset
         return list({k: v for k, v in dups.items() if len(v) > 1})
 
+    @override
     def can_update(self,
                    dataset: Dataset,
                    updates_allowed: Mapping[Offset, AllowPolicy] | None = None
@@ -194,6 +204,7 @@ class DatasetResource(AbstractDatasetResource):
         good_changes, bad_changes = changes.classify_changes(doc_changes, allowed)
         return not bad_changes, good_changes, bad_changes
 
+    @override
     def update(self,
                dataset: Dataset,
                updates_allowed: Mapping[Offset, AllowPolicy] | None = None,
@@ -258,6 +269,7 @@ class DatasetResource(AbstractDatasetResource):
             self.add_location(dataset.id, uri)
         return len(new_uris) > 0
 
+    @override
     def archive(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
@@ -271,6 +283,7 @@ class DatasetResource(AbstractDatasetResource):
                 ds.archived_time = datetime.datetime.now()
                 self._archived_by_id[id_] = ds
 
+    @override
     def restore(self, ids: Iterable[DSID]) -> None:
         for id_ in ids:
             id_ = dsid_to_uuid(id_)
@@ -281,6 +294,7 @@ class DatasetResource(AbstractDatasetResource):
                 self._archived_by_product[ds.product.name].remove(ds.id)
                 self._by_product[ds.product.name].add(ds.id)
 
+    @override
     def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Sequence[DSID]:
         purged = []
         for id_ in ids:
@@ -307,6 +321,7 @@ class DatasetResource(AbstractDatasetResource):
                 purged.append(id_)
         return purged
 
+    @override
     def get_all_dataset_ids(self, archived: bool | None = False) -> Iterable[UUID]:
         if archived:
             return (id_ for id_ in self._archived_by_id.keys())
@@ -315,6 +330,7 @@ class DatasetResource(AbstractDatasetResource):
         else:
             return (id_ for id_ in self._by_id.keys())
 
+    @override
     @deprecat(
         reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
         version="1.9.0",
@@ -324,6 +340,7 @@ class DatasetResource(AbstractDatasetResource):
         uuid = dsid_to_uuid(id_)
         return (s for s in self._locations[uuid])
 
+    @override
     def get_location(self, id_: DSID) -> str | None:
         uuid = dsid_to_uuid(id_)
         locations = [s for s in self._locations.get(uuid, [])]
@@ -331,6 +348,7 @@ class DatasetResource(AbstractDatasetResource):
             return None
         return locations[0]
 
+    @override
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
                "Archived locations may not be accessible in future releases.",
@@ -341,6 +359,7 @@ class DatasetResource(AbstractDatasetResource):
         uuid = dsid_to_uuid(id_)
         return (s for s, dt in self._archived_locations[uuid])
 
+    @override
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
                "Archived locations may not be accessible in future releases.",
@@ -351,6 +370,7 @@ class DatasetResource(AbstractDatasetResource):
         uuid = dsid_to_uuid(id_)
         return ((s, dt) for s, dt in self._archived_locations[uuid])
 
+    @override
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
                "Dataset location can be set or updated with the update() method.",
@@ -370,6 +390,7 @@ class DatasetResource(AbstractDatasetResource):
         self._locations[uuid].append(uri)
         return True
 
+    @override
     def get_datasets_for_location(self, uri: str, mode: str | None = None) -> Iterable[Dataset]:
         if mode is None:
             mode = 'exact' if uri.count('#') > 0 else 'prefix'
@@ -387,6 +408,7 @@ class DatasetResource(AbstractDatasetResource):
                     break
         return self.bulk_get(ids)
 
+    @override
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
                "Dataset location can be set or updated with the update() method.",
@@ -410,6 +432,7 @@ class DatasetResource(AbstractDatasetResource):
                 removed = True
         return removed
 
+    @override
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
                "Archived locations may not be accessible in future releases. "
@@ -429,6 +452,7 @@ class DatasetResource(AbstractDatasetResource):
         self._archived_locations[uuid].append((uri, datetime.datetime.now()))
         return True
 
+    @override
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
                "Archived locations may not be restorable in future releases. "
@@ -448,6 +472,7 @@ class DatasetResource(AbstractDatasetResource):
         self._locations[uuid].append(uri)
         return True
 
+    @override
     def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False) -> Iterable[Dataset]:
         if archived:
             # True: Return archived datasets only
@@ -579,6 +604,7 @@ class DatasetResource(AbstractDatasetResource):
     def _get_prod_queries(self, **query: QueryField) -> Iterable[tuple[Mapping[str, QueryField], Product]]:
         return ((q, product) for product, q in self._index.products.search_robust(**query))
 
+    @override
     @deprecat(
         deprecated_args={
             "source_filter": {
@@ -596,16 +622,15 @@ class DatasetResource(AbstractDatasetResource):
                **query: QueryField) -> Iterable[Dataset]:
         if order_by:
             raise NotImplementedError("order_by argument is not currently supported by the memory index driver.")
-        return cast(
-            Iterable[Dataset],
-            self._search_flat(limit=limit, source_filter=source_filter, archived=archived, **query)
-        )
+        return self._search_flat(limit=limit, source_filter=source_filter, archived=archived, **query)
 
+    @override
     def search_by_product(self,
                           archived: bool | None = False,
                           **query: QueryField) -> Iterable[tuple[Iterable[Dataset], Product]]:
         return self._search_grouped(archived=archived, **query)  # type: ignore[arg-type]
 
+    @override
     def search_returning(self,
                          field_names: Iterable[str] | None = None,
                          custom_offsets: Mapping[str, Offset] | None = None,
@@ -644,13 +669,16 @@ class DatasetResource(AbstractDatasetResource):
             }
             yield result_type(**result_vals)
 
+    @override
     def count(self, archived: bool | None = False, **query: QueryField) -> int:
         return len(list(self.search(archived=archived, **query)))
 
+    @override
     def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[tuple[Product, int]]:
         for datasets, prod in self.search_by_product(archived=archived, **query):
             yield (prod, len(list(datasets)))
 
+    @override
     def count_by_product_through_time(self,
                                       period: str,
                                       archived: bool | None = False,
@@ -749,7 +777,7 @@ class DatasetResource(AbstractDatasetResource):
             if last_product and single_product_only:
                 raise ValueError(f"Multiple products match single query search: {repr(query)}")
             if last_product:
-                yield cast(YieldType, last_product)
+                yield last_product
             period_counts = []
             for p in periods:
                 count = 0
@@ -767,6 +795,7 @@ class DatasetResource(AbstractDatasetResource):
         else:
             yield last_product
 
+    @override
     def count_product_through_time(
             self,
             period: str,
@@ -775,6 +804,7 @@ class DatasetResource(AbstractDatasetResource):
     ) -> Iterable[tuple[Range, int]]:
         return list(self._product_period_count(period, archived=archived, single_product_only=True, **query))[0][1]
 
+    @override
     @deprecat(
         reason="This method is deprecated and will be removed in 2.0.  "
                "Consider migrating to search_returning()",
@@ -791,9 +821,11 @@ class DatasetResource(AbstractDatasetResource):
         for ds in self.search(**query):
             yield make_summary(ds)
 
+    @override
     def spatial_extent(self, ids, crs=None):
         return None
 
+    @override
     def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         min_time: datetime.datetime | None = None
         max_time: datetime.datetime | None = None
@@ -816,6 +848,7 @@ class DatasetResource(AbstractDatasetResource):
         return (cast(datetime.datetime, min_time), cast(datetime.datetime, max_time))
 
     # pylint: disable=redefined-outer-name
+    @override
     def search_returning_datasets_light(
             self,
             field_names: tuple[str, ...],
@@ -916,8 +949,10 @@ class LineageResource(NoLineageResource):
     Minimal implementation as does not support external lineage.
     Lineage indexes live in the Dataset resource, so thin wrapper around that.
     """
+    @override
     def get_all_lineage(self, batch_size: int = 1000) -> Iterable[LineageRelation]:
         return self._index.datasets._get_all_lineage()
 
+    @override
     def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
         return self._index.datasets._add_lineage_batch(batch_rels)

@@ -8,18 +8,19 @@ from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 import numpy as np
 from affine import Affine
-from typing import Tuple, Iterator, Optional, Union
+from typing import Union
+from collections.abc import Iterator
 
 
-RasterShape = Tuple[int, int]                 # pylint: disable=invalid-name
+RasterShape = tuple[int, int]                 # pylint: disable=invalid-name
 RasterWindow = Union[                         # pylint: disable=invalid-name
-    Tuple[Tuple[int, int], Tuple[int, int]],
-    Tuple[slice, slice]]
+    tuple[tuple[int, int], tuple[int, int]],
+    tuple[slice, slice]]
 
 # pylint: disable=pointless-statement
 
 
-class GeoRasterReader(object, metaclass=ABCMeta):
+class GeoRasterReader(metaclass=ABCMeta):
     """ Abstract base class for dataset reader.
     """
 
@@ -30,12 +31,12 @@ class GeoRasterReader(object, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def transform(self) -> Optional[Affine]:
+    def transform(self) -> Affine | None:
         ...  # pragma: no cover
 
     @property
     @abstractmethod
-    def dtype(self) -> Union[str, np.dtype]:
+    def dtype(self) -> str | np.dtype:
         ...  # pragma: no cover
 
     @property
@@ -45,17 +46,17 @@ class GeoRasterReader(object, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def nodata(self) -> Optional[Union[int, float]]:
+    def nodata(self) -> int | float | None:
         ...  # pragma: no cover
 
     @abstractmethod
     def read(self,
-             window: Optional[RasterWindow] = None,
-             out_shape: Optional[RasterShape] = None) -> Optional[np.ndarray]:
+             window: RasterWindow | None = None,
+             out_shape: RasterShape | None = None) -> np.ndarray | None:
         ...  # pragma: no cover
 
 
-class DataSource(object, metaclass=ABCMeta):
+class DataSource(metaclass=ABCMeta):
     """ Abstract base class for dataset source.
     """
 

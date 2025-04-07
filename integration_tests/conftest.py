@@ -11,7 +11,6 @@ from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Union
 from uuid import uuid4
 
 import pytest
@@ -559,7 +558,7 @@ def uninitialised_postgres_db(cfg_env: ODCEnvironment, request) -> PostgresDb | 
 @pytest.fixture
 def uninitialised_postgres_db_pair(cfg_env_pair):
     """
-    Return a pair connections to empty PostgreSQL or PostGIS databases
+    Return a pair of connections to empty PostgreSQL or PostGIS databases
     """
     dbs = tuple(reset_db(cfg_env) for cfg_env in cfg_env_pair)
 
@@ -571,7 +570,7 @@ def uninitialised_postgres_db_pair(cfg_env_pair):
 
 @pytest.fixture
 def index(cfg_env,
-          uninitialised_postgres_db: Union[PostGisDb, PostgresDb]):
+          uninitialised_postgres_db: PostGisDb | PostgresDb):
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db()
     yield index
@@ -613,7 +612,7 @@ def index_pair_populated_empty(cfg_env_pair, uninitialised_postgres_db_pair,
 
 
 @pytest.fixture
-def index_empty(cfg_env, uninitialised_postgres_db: Union[PostGisDb, PostgresDb]):
+def index_empty(cfg_env, uninitialised_postgres_db: PostGisDb | PostgresDb):
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db(with_default_types=False)
     yield index
@@ -680,7 +679,7 @@ def geotiffs(tmpdir_factory):
     spatial coords reflecting the size of the test geotiff, defined in
     :ref:`GEOTIFF`.
 
-    :param tmpdir_fatory: pytest tmp dir factory.
+    :param tmpdir_factory: pytest tmp dir factory.
     :return: List of dictionaries like::
 
         {

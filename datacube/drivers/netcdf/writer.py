@@ -69,8 +69,8 @@ def create_netcdf(netcdf_path, **kwargs):
     nco.date_created = datetime.today().isoformat()
     nco.setncattr('Conventions', 'CF-1.6, ACDD-1.3')
     nco.history = ("NetCDF-CF file created by "
-                   "datacube version '{}' at {:%Y%m%d}."
-                   .format(__version__, datetime.now(UTC)))
+                   f"datacube version '{__version__}' at {datetime.now(UTC):%Y%m%d}."
+                   )
     return nco
 
 
@@ -220,7 +220,7 @@ def _create_projected_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING)
     cf = crs._crs.to_cf()
     grid_mapping_name = cf['grid_mapping_name']
     if grid_mapping_name not in CRS_PARAM_WRITERS:
-        raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
+        raise ValueError(f'{grid_mapping_name} CRS is not supported')
 
     crs_var = nco.createVariable(name, 'i4')
     CRS_PARAM_WRITERS[grid_mapping_name](crs_var, crs)

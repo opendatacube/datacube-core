@@ -5,6 +5,7 @@
 import logging
 
 from cachetools.func import lru_cache
+from typing_extensions import override
 
 from datacube.index.abstract import AbstractMetadataTypeResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
@@ -38,6 +39,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         """
         self.__init__(*state)
 
+    @override
     def from_doc(self, definition):
         """
         :param dict definition:
@@ -46,6 +48,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         MetadataType.validate(definition)
         return self._make(definition)
 
+    @override
     def add(self, metadata_type, allow_table_lock=False):
         """
         :param datacube.model.MetadataType metadata_type:
@@ -67,7 +70,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(metadata_type.definition),
-                'Metadata Type {}'.format(metadata_type.name)
+                f'Metadata Type {metadata_type.name}'
             )
         else:
             with self._db_connection(transaction=allow_table_lock) as connection:
@@ -78,6 +81,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                 )
         return self.get_by_name(metadata_type.name)
 
+    @override
     def can_update(self, metadata_type, allow_unsafe_updates=False):
         """
         Check if metadata type can be updated. Return bool,safe_changes,unsafe_changes
@@ -113,6 +117,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
+    @override
     def update(self, metadata_type: MetadataType, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
@@ -155,6 +160,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         self.get_unsafe.cache_clear()           # type: ignore[attr-defined]
         return self.get_by_name(metadata_type.name)
 
+    @override
     def update_document(self, definition, allow_unsafe_updates=False):
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
@@ -185,6 +191,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             raise KeyError('%s is not a valid MetadataType name' % name)
         return self._make_from_query_row(record)
 
+    @override
     def check_field_indexes(self, allow_table_lock=False,
                             rebuild_views=False, rebuild_indexes=False):
         """
@@ -202,6 +209,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                 rebuild_views=rebuild_views,
             )
 
+    @override
     def get_all(self):
         """
         Retrieve all Metadata Types
@@ -211,6 +219,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             return self._make_many(connection.get_all_metadata_types())
 
+    @override
     def get_all_docs(self):
         with self._db_connection() as connection:
             for row in connection.get_all_metadata_type_docs():

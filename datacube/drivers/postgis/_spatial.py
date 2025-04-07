@@ -8,7 +8,7 @@ Tracking spatial indexes
 
 import logging
 from threading import Lock
-from typing import Mapping, Type
+from collections.abc import Mapping
 
 from sqlalchemy import ForeignKey, select, delete
 from sqlalchemy.dialects import postgresql as postgres
@@ -31,11 +31,11 @@ from ._schema import orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
 _LOG = logging.getLogger(__name__)
 
 
-# In theory we could just use the SQLAlchemy registry for this, but it is not indexed
+# In theory, we could just use the SQLAlchemy registry for this, but it is not indexed
 # in a useful way.
 class SpatialIndexORMRegistry:
     """Threadsafe global registry of SpatialIndex ORM classes, indexed by EPSG/SRID code."""
-    _registry: dict[int, Type[SpatialIndex]] = {}
+    _registry: dict[int, type[SpatialIndex]] = {}
     _lock = Lock()
 
     def __init__(self):
@@ -43,7 +43,7 @@ class SpatialIndexORMRegistry:
         self._lock = self.__class__._lock
 
     def _to_epsg(self, epsg_or_crs: CRS | int) -> int:
-        """Utility method to convert a epsg_or_crs to an epsg."""
+        """Utility method to convert an epsg_or_crs to an epsg."""
         if isinstance(epsg_or_crs, CRS):
             if epsg_or_crs.epsg is None:
                 raise ValueError("CRS with no epsg number")
@@ -61,12 +61,12 @@ class SpatialIndexORMRegistry:
                 added = True
         return added
 
-    def get(self, epsg_or_crs: CRS | int) -> Type[SpatialIndex] | None:
+    def get(self, epsg_or_crs: CRS | int) -> type[SpatialIndex] | None:
         """Retrieve the registered SpatialIndex ORM class"""
         epsg = self._to_epsg(epsg_or_crs)
         return self._registry.get(epsg)
 
-    def _mint_new_spindex(self, epsg: int) -> Type[SpatialIndex]:
+    def _mint_new_spindex(self, epsg: int) -> type[SpatialIndex]:
         """
         Dynamically create a new ORM class for a EPSG/SRID.
 
@@ -106,7 +106,7 @@ def is_spindex_table_name(name: str):
     return False
 
 
-def spindex_for_epsg(epsg: int) -> Type[SpatialIndex]:
+def spindex_for_epsg(epsg: int) -> type[SpatialIndex]:
     """Return ORM class of a SpatialIndex for EPSG/SRID - dynamically creating if necessary"""
     sir = SpatialIndexORMRegistry()
     spindex = sir.get(epsg)
@@ -126,7 +126,7 @@ def crs_to_epsg(crs: CRS) -> int:
         return int(str(crs)[5:])
 
 
-def spindex_for_crs(crs: CRS) -> Type[SpatialIndex]:
+def spindex_for_crs(crs: CRS) -> type[SpatialIndex]:
     """Return ORM class of a SpatialIndex for CRS - dynamically creating if necessary"""
     try:
         return spindex_for_epsg(crs_to_epsg(crs))
@@ -135,17 +135,17 @@ def spindex_for_crs(crs: CRS) -> Type[SpatialIndex]:
         raise ValueError(f"Cannot create a postgis spatial index for a non-EPSG-style CRS: {str(crs)}")
 
 
-def spindex_for_record(rec: SpatialIndexRecord) -> Type[SpatialIndex]:
+def spindex_for_record(rec: SpatialIndexRecord) -> type[SpatialIndex]:
     """Convert a Record of a SpatialIndex created in a particular database to an ORM class"""
     return spindex_for_epsg(rec.srid)  # type: ignore[arg-type]
 
 
-def ensure_spindex(engine: Engine, sp_idx: Type[SpatialIndex]) -> None:
+def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
     """Ensure a Spatial Index exists in a particular database."""
     with Session(engine) as session:
         results = session.execute(
             select(SpatialIndexRecord.srid).where(
-                SpatialIndexRecord.srid == sp_idx.__tablename__[8:])  # type: ignore[attr-defined]
+                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:]))  # type: ignore[arg-type,attr-defined]
         )
         for result in results:
             # SpatialIndexRecord exists - actual index assumed to exist too.
@@ -170,11 +170,11 @@ def ensure_spindex(engine: Engine, sp_idx: Type[SpatialIndex]) -> None:
     return
 
 
-def drop_spindex(engine: Engine, sp_idx: Type[SpatialIndex]):
+def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex]):
     with Session(engine) as session:
         results = session.execute(
             select(SpatialIndexRecord).where(
-                SpatialIndexRecord.srid == sp_idx.__tablename__[8:])  # type: ignore[attr-defined]
+                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:]))  # type: ignore[arg-type,attr-defined]
         )
         spidx_record = None
         for result in results:
@@ -196,7 +196,7 @@ def drop_spindex(engine: Engine, sp_idx: Type[SpatialIndex]):
     return True
 
 
-def spindexes(engine: Engine) -> Mapping[int, Type[SpatialIndex]]:
+def spindexes(engine: Engine) -> Mapping[int, type[SpatialIndex]]:
     """
     Return a SRID-to-Spatial Index ORM class mapping for indexes that exist in a particular database.
     """
@@ -215,7 +215,7 @@ def promote_to_multipolygon(geom: Geom) -> Geom:
     if geom.geom_type == "MultiPolygon":
         return geom
     elif geom.geom_type == "Polygon":
-        # Promote to multipolygon (is there a more elegant way to do this??
+        # Promote to multipolygon (is there a more elegant way to do this??)
         polycoords = [list(geom.geom.exterior.coords)]
         for interior in geom.geom.interiors:
             polycoords.append(list(interior.coords))

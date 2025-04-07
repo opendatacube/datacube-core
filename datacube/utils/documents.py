@@ -16,7 +16,9 @@ from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
-from typing import Dict, Any, Mapping
+from typing import Any
+from typing_extensions import override
+from collections.abc import Mapping
 from copy import deepcopy
 from uuid import UUID
 
@@ -392,7 +394,7 @@ def metadata_subset(element, document, full_recursion=False) -> bool:
     return False
 
 
-class SimpleDocNav(object):
+class SimpleDocNav:
     """
     Allows navigation of Dataset metadata document lineage tree without
     creating full Dataset objects.
@@ -494,6 +496,7 @@ class DocReader:
                 )
             )
 
+    @override
     def __setattr__(self, name, val):
         offset = self._system_offsets.get(name)
         if offset is None:
@@ -504,6 +507,7 @@ class DocReader:
             )
         return _set_doc_offset(offset, self._doc, val)
 
+    @override
     def __dir__(self):
         return list(self.fields)
 
@@ -529,9 +533,9 @@ class DocReader:
         return {**self.system_fields, **self.search_fields}
 
 
-def without_lineage_sources(doc: Dict[str, Any],
+def without_lineage_sources(doc: dict[str, Any],
                             spec,
-                            inplace: bool = False) -> Dict[str, Any]:
+                            inplace: bool = False) -> dict[str, Any]:
     """ Replace lineage.source_datasets with {}
 
     :param dict doc: parsed yaml/json document describing dataset

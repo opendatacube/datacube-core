@@ -16,7 +16,8 @@ import json
 import logging
 import re
 from contextlib import contextmanager
-from typing import Callable, Union
+from collections.abc import Callable
+from typing_extensions import override
 
 from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
@@ -35,7 +36,7 @@ _LIB_ID = 'odc-' + str(datacube.__version__)
 _LOG = logging.getLogger(__name__)
 
 
-class PostgresDb(object):
+class PostgresDb:
     """
     A thin database access api.
 
@@ -190,7 +191,7 @@ class PostgresDb(object):
         to the pool beforehand.
 
         The connection can raise errors if not following this advice ("server closed the connection unexpectedly"),
-        as some servers will aggressively close idle connections (eg. DEA's NCI servers). It also prevents the
+        as some servers will aggressively close idle connections (e.g. DEA's NCI servers). It also prevents the
         connection from being reused while borrowed.
 
         Low level context manager, use <index_resource>._db_connection instead
@@ -209,13 +210,14 @@ class PostgresDb(object):
     def get_dataset_fields(cls, metadata_type_definition):
         return _api.get_dataset_fields(metadata_type_definition)
 
+    @override
     def __repr__(self):
-        return "PostgresDb<engine={!r}>".format(self._engine)
+        return f"PostgresDb<engine={self._engine!r}>"
 
 
 def handle_dynamic_token_authentication(engine: Engine,
                                         new_token: Callable[..., str],
-                                        timeout: Union[float, int] = 600,
+                                        timeout: float | int = 600,
                                         **kwargs) -> None:
     last_token = [None]
     last_token_time = [0.0]
@@ -242,4 +244,4 @@ def _to_json(o):
 
 def _json_fallback(obj):
     """Fallback json serialiser."""
-    raise TypeError("Type not serializable: {}".format(type(obj)))
+    raise TypeError(f"Type not serializable: {type(obj)}")
