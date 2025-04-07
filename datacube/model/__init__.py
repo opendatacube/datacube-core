@@ -698,11 +698,6 @@ class Product:
         return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
-    @deprecat(
-        reason="The Grid Workflow is deprecated. This property may return an (optional) odc-geo GridSpec in future.",
-        version="1.9.0",
-        category=ODC2DeprecationWarning
-    )
     def grid_spec(self) -> 'GridSpec' | None:
         """
         Grid specification for this product
