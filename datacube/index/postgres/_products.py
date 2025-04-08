@@ -8,7 +8,7 @@ import logging
 from cachetools.func import lru_cache
 from typing import cast
 from typing_extensions import override
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
@@ -94,7 +94,11 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         return self.get_by_name(product.name)
 
     @override
-    def can_update(self, product, allow_unsafe_updates=False):
+    def can_update(self,
+                   product: Product,
+                   allow_unsafe_updates: bool = False,
+                   allow_table_lock: bool = False
+                   ) -> tuple[bool, Iterable[changes.Change], Iterable[changes.Change]]:
         """
         Check if product can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -103,15 +107,20 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         :param Product product: Product to update
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param allow_table_lock:
+            Allow an exclusive lock to be taken on the table while creating the indexes.
+            This will halt other user's requests until completed.
+
+            If false, creation will be slower and cannot be done in a transaction.
         :rtype: bool,list[change],list[change]
         """
-        Product.validate(product.definition)
+        Product.validate(product.definition)  # type: ignore[attr-defined]
 
         existing = self.get_by_name(product.name)
         if not existing:
             raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % product.name)
 
-        updates_allowed = {
+        updates_allowed: Mapping[changes.Offset, changes.AllowPolicy] = {
             ('description',): changes.allow_any,
             ('license',): changes.allow_any,
             ('metadata_type',): changes.allow_any,
