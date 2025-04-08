@@ -1164,6 +1164,7 @@ class PostgisDbAPI:
         )
         return res.first()[0]
 
+    @staticmethod
     def _get_active_field_names(fields, metadata_doc):
         for field in fields.values():
             if field.can_extract:
