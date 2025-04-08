@@ -196,9 +196,10 @@ class PostgresDb:
 
         Low level context manager, use <index_resource>._db_connection instead
         """
-        with self._engine.connect() as connection:
+        with self._engine.connect().execution_options(
+                isolation_level="AUTOCOMMIT"
+        ) as connection:
             try:
-                connection.execution_options(isolation_level="AUTOCOMMIT")
                 yield _api.PostgresDbAPI(connection)
             finally:
                 connection.close()
