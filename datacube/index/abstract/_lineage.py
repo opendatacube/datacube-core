@@ -31,10 +31,10 @@ class AbstractLineageResource(ABC):
     However, any index driver that supports lineage must implement at least the get_all_lineage() and _add_batch()
     methods.
     """
-    def __init__(self, index) -> None:
+    def __init__(self, index, supports_external_lineage: bool = True) -> None:
         self._index = index
-        # This is explicitly for indexes that do not support the External Lineage API.
-        assert self._index.supports_external_lineage
+        supports = self._index.supports_external_lineage
+        assert (supports if supports_external_lineage else not supports)
 
     @abstractmethod
     def get_derived_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
@@ -223,8 +223,7 @@ class NoLineageResource(AbstractLineageResource):
     implementations of the get_all_lineage() and _add_batch() methods.
     """
     def __init__(self, index) -> None:
-        self._index = index
-        assert not self._index.supports_external_lineage
+        super().__init__(index, supports_external_lineage=False)
 
     @override
     def get_derived_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
