@@ -6,6 +6,8 @@
 Module
 """
 import datetime
+import warnings
+from antimeridian import FixWindingWarning
 from typing import Any
 from collections import namedtuple
 
@@ -1001,8 +1003,10 @@ def test_find_duplicates_eo3(index,
 
 
 def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_dataset):
-    index.datasets.add(nrt_dataset, with_lineage=False)
-    index.datasets.add(final_dataset, with_lineage=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', FixWindingWarning)
+        index.datasets.add(nrt_dataset, with_lineage=False)
+        index.datasets.add(final_dataset, with_lineage=False)
     assert not index.datasets.get(nrt_dataset.id).is_archived
     assert not index.datasets.get(final_dataset.id).is_archived
 

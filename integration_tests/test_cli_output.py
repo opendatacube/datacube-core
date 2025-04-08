@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import pytest
 
 
 def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs):
@@ -60,6 +61,7 @@ def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs):
     assert runner.exit_code == 1
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_cli_dataset_subcommand(index, clirunner,
                                 extended_eo3_metadata_type,
                                 ls8_eo3_product, wo_eo3_product, africa_s2_eo3_product,
@@ -153,6 +155,7 @@ def test_cli_dataset_subcommand(index, clirunner,
     assert runner.exit_code == 0
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_read_and_update_metadata_product_dataset_command(index, clirunner,
                                                           ext_eo3_mdt_path,
                                                           eo3_product_paths,

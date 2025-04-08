@@ -7,6 +7,7 @@ Common methods for index integration tests.
 """
 import itertools
 import os
+import warnings
 from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
@@ -15,6 +16,7 @@ from uuid import uuid4
 
 import pytest
 import yaml
+from antimeridian import FixWindingWarning
 from click.testing import CliRunner
 from hypothesis import HealthCheck, settings
 from sqlalchemy import text
@@ -264,7 +266,9 @@ def doc_to_ds(index, product_name, ds_doc, ds_path, src_tree=None, derived_tree=
         ds.source_tree = src_tree
     if derived_tree is not None:
         ds.derived_tree = derived_tree
-    index.datasets.add(ds, with_lineage=index.supports_lineage)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', FixWindingWarning)
+        index.datasets.add(ds, with_lineage=index.supports_lineage)
     return index.datasets.get(ds.id)
 
 

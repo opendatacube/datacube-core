@@ -239,6 +239,7 @@ def test_missing_extra_dimensions(clirunner, invalid_dataset_type_paths):
 
 
 @pytest.mark.usefixtures("default_metadata_type")
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_indexing(clirunner, index, product_def):
     """Test indexing features for 2D and 3D products.
 
@@ -301,6 +302,7 @@ def test_indexing(clirunner, index, product_def):
 
 
 @pytest.mark.usefixtures("default_metadata_type")
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_indexing_with_spectral_map(clirunner, index, dataset_types):
     """Test indexing features with spectral map."""
     product_id = GEDI_PRODUCT_IDS[0]
@@ -321,6 +323,7 @@ def test_indexing_with_spectral_map(clirunner, index, dataset_types):
 
 
 @pytest.mark.usefixtures("default_metadata_type")
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_end_to_end_multitime(clirunner, index, product_def, original_data):
     """Test simple indexing but for multiple measurements and wavelengths."""
     dc = Datacube(index=index)

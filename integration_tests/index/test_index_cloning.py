@@ -2,8 +2,10 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import pytest
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_index_clone(index_pair_populated_empty):
     pop_idx, empty_idx = index_pair_populated_empty
     assert list(empty_idx.products.get_all()) == []
@@ -14,6 +16,7 @@ def test_index_clone(index_pair_populated_empty):
     assert results["datasets"].skipped == 0
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_index_clone_small_batch(index_pair_populated_empty):
     pop_idx, empty_idx = index_pair_populated_empty
     assert list(empty_idx.products.get_all()) == []
@@ -24,6 +27,7 @@ def test_index_clone_small_batch(index_pair_populated_empty):
     assert results["datasets"].skipped == 0
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_index_clone_cli(cfg_env_pair, index_pair_populated_empty, clirunner):
     source_cfg, target_cfg = cfg_env_pair
     clirunner([
@@ -39,6 +43,7 @@ def test_index_clone_cli(cfg_env_pair, index_pair_populated_empty, clirunner):
     ], skip_env=True, expect_success=True)
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_index_clone_cli_small_batch(cfg_env_pair, index_pair_populated_empty, clirunner):
     source_cfg, target_cfg = cfg_env_pair
     clirunner([
