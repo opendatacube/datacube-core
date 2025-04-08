@@ -569,7 +569,7 @@ class DatasetResource(AbstractDatasetResource):
                 elif return_format == self.RET_FORMAT_PRODUCT_GROUPED:
                     product_results.append(ds)
             if return_format == self.RET_FORMAT_PRODUCT_GROUPED and product_results:
-                yield (product_results, product)
+                yield product_results, product
 
     def _search_flat(
             self,
@@ -676,7 +676,7 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[tuple[Product, int]]:
         for datasets, prod in self.search_by_product(archived=archived, **query):
-            yield (prod, len(list(datasets)))
+            yield prod, len(list(datasets))
 
     @override
     def count_by_product_through_time(self,
@@ -845,7 +845,7 @@ class DatasetResource(AbstractDatasetResource):
                 min_time = dsmin
             if max_time is None or dsmax > max_time:
                 max_time = dsmax
-        return (cast(datetime.datetime, min_time), cast(datetime.datetime, max_time))
+        return cast(datetime.datetime, min_time), cast(datetime.datetime, max_time)
 
     # pylint: disable=redefined-outer-name
     @override

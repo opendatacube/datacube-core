@@ -770,7 +770,7 @@ class Product:
                 continue
 
             # Found 3D measurement, check if extra_dimension is defined.
-            if (len(defined_extra_dimensions) == 0):
+            if len(defined_extra_dimensions) == 0:
                 raise ValueError(
                     "extra_dimensions is not defined. 3D measurements require extra_dimensions "
                     "to be defined for the dimension"
@@ -1009,7 +1009,7 @@ class GridSpec:
         Pixel boundary alignment
         """
         y, x = (orig % abs(res) for orig, res in zip(self.origin, self.resolution))
-        return (y, x)
+        return y, x
 
     @property
     def tile_resolution(self) -> tuple[int, int]:
@@ -1017,7 +1017,7 @@ class GridSpec:
         Tile size in pixels in CRS dimension order (Usually y,x or lat,lon)
         """
         y, x = (int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
-        return (y, x)
+        return y, x
 
     def tile_coords(self, tile_index: tuple[int, int]) -> tuple[float, float]:
         """
@@ -1034,7 +1034,7 @@ class GridSpec:
 
         y, x = (coord(index, res, size, origin)
                 for index, res, size, origin in zip(tile_index[::-1], self.resolution, self.tile_size, self.origin))
-        return (y, x)
+        return y, x
 
     def tile_geobox(self, tile_index: tuple[int, int]) -> GeoBox:
         """
@@ -1108,7 +1108,7 @@ class GridSpec:
             tile_geobox = tile_geobox.buffered(*tile_buffer) if tile_buffer else tile_geobox
 
             if intersects(tile_geobox.extent, geopolygon):
-                yield (tile_index, tile_geobox)
+                yield tile_index, tile_geobox
 
     @staticmethod
     def grid_range(lower: float, upper: float, step: float) -> range:

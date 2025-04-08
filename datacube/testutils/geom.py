@@ -82,7 +82,7 @@ def xy_norm(x: np.ndarray, y: np.ndarray,
         s = 1.0/v.max()
         v *= s
 
-        return (s, -vmin*s)
+        return s, -vmin * s
 
     A_rot = Affine.rotation(deg)   # noqa: N806
     x, y = apply_affine(A_rot, x, y)
