@@ -41,10 +41,10 @@ jobs:
           uses: actions/cache@v4
           with:
               path: .cache
-              key: ${{ runner.os }}-doctor-rst-${{ steps.extract_base_branch.outputs.branch }}
+              key: doctor-rst-${{ runner.os }}-${{ steps.extract_base_branch.outputs.branch }}
 
       -   name: "Run DOCtor-RST"
-          uses: docker://oskarstark/doctor-rst:1.64.0
+          uses: docker://oskarstark/doctor-rst:1.67.0
           with:
               args: --short --error-format=github --cache-file=/github/workspace/.cache/doctor-rst.cache
           env:

@@ -27,6 +27,7 @@ Next Version
 - Update to Python 3.10 syntax :pull:`1756`, :pull:`1757`, :pull:`1758`, :pull:`1759`
 - Preparations for Psycopg3 support :pull:`1764`, :pull:`1765`, :pull:`1766`
 - Add override annotations :pull:`1767`
+- CI: update doctor rst version :pull:`1775`
 
 v1.9.2 (26th February 2025)
 ===========================
