@@ -215,7 +215,7 @@ class Datacube:
 
             # Add sorted count to each existing row
             rows = [row + [count[1]] for row, count in zip(rows, counts)]
-            cols = cols + ["dataset_count"]
+            cols += ["dataset_count"]
 
         # If pandas not requested, return list of dicts
         if not with_pandas:

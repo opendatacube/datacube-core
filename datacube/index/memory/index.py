@@ -52,7 +52,7 @@ class Index(AbstractIndex):
         self._datasets = DatasetResource(self)
         global counter
         with counter_lock:
-            counter = counter + 1
+            counter += 1
             self._index_id = f"memory={counter}"
 
     @override
