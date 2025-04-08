@@ -113,8 +113,8 @@ class Index(AbstractIndex):
     def url(self) -> str:
         return str(self._db.url)
 
-    @override
     @classmethod
+    @override
     def from_config(cls,
                     config_env: ODCEnvironment,
                     application_name: str | None = None,
@@ -205,13 +205,13 @@ class Index(AbstractIndex):
 class PostgresIndexDriver(AbstractIndexDriver):
     aliases = ['legacy', 'default']
 
-    @override
     @classmethod
+    @override
     def index_class(cls) -> type[AbstractIndex]:
         return Index
 
-    @override
     @staticmethod
+    @override
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
                "Please use the 'index.metadata_type.from_doc()' instead.",
@@ -225,8 +225,8 @@ class PostgresIndexDriver(AbstractIndexDriver):
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))
 
-    @override
     @staticmethod
+    @override
     def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
         return config_options_for_psql_driver(env)
 

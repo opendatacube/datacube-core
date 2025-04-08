@@ -104,8 +104,8 @@ class Index(AbstractIndex):
     def transaction(self) -> UnhandledTransaction:
         return UnhandledTransaction(self.index_id)
 
-    @override
     @classmethod
+    @override
     def from_config(cls,
                     config_env: ODCEnvironment,
                     application_name: str | None = None,
@@ -135,13 +135,13 @@ class Index(AbstractIndex):
 
 
 class MemoryIndexDriver(AbstractIndexDriver):
-    @override
     @classmethod
+    @override
     def index_class(cls) -> type[AbstractIndex]:
         return Index
 
-    @override
     @staticmethod
+    @override
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
                "Please use the 'index.metadata_type.from_doc()' instead.",
