@@ -172,7 +172,7 @@ class DatasetResource(AbstractDatasetResource):
             if vals in dups:
                 dups[vals].add(ds.id)
             else:
-                dups[vals] = set([ds.id])  # avoid duplicate entries
+                dups[vals] = {ds.id}  # avoid duplicate entries
         # only return entries with more than one dataset
         return list({k: v for k, v in dups.items() if len(v) > 1})
 
@@ -256,7 +256,7 @@ class DatasetResource(AbstractDatasetResource):
                           dataset: Dataset,
                           existing: Dataset | None = None
                          ) -> bool:
-        skip_set: set[str | None] = set([None])
+        skip_set: set[str | None] = {None}
         new_uris: list[str] = []
         if existing and existing.uris:
             for uri in existing.uris:
@@ -277,7 +277,7 @@ class DatasetResource(AbstractDatasetResource):
                 ds = self._active_by_id.pop(id_)
                 self._by_product[ds.product.name].remove(ds.id)
                 if ds.product.name not in self._archived_by_product:
-                    self._archived_by_product[ds.product.name] = set([ds.id])
+                    self._archived_by_product[ds.product.name] = {ds.id}
                 else:
                     self._archived_by_product[ds.product.name].add(ds.id)
                 ds.archived_time = datetime.datetime.now()
