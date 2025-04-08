@@ -218,12 +218,10 @@ class Index(AbstractIndex):
         :return: A PostgresDbAPI object, with the specified transaction semantics.
         """
         trans = self.thread_transaction()
-        closing = False
         if trans is not None:
             # Use active transaction
             yield trans._connection
         elif transaction:
-            closing = True
             with self._db._connect() as conn:
                 conn.begin()
                 # assert conn.in_transaction
@@ -234,7 +232,6 @@ class Index(AbstractIndex):
                     conn.rollback()
                     raise
         else:
-            closing = True
             # Autocommit behaviour:
             with self._db._connect() as conn:
                 yield conn
