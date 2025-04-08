@@ -139,8 +139,9 @@ class IndexDriverOptionHandler(ODCOptionHandler):
     def validate_and_normalise(self, value: Any) -> Any:
         value = super().validate_and_normalise(value)
         from datacube.drivers.indexes import index_drivers
-        if value not in index_drivers():
-            raise ConfigException(f"Unknown index driver: {value} - Try one of {','.join(index_drivers())}")
+        drivers = index_drivers()
+        if value not in drivers:
+            raise ConfigException(f"Unknown index driver: {value} - Try one of {','.join(drivers)}")
         return value
 
     @override
