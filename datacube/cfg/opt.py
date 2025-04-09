@@ -141,7 +141,7 @@ class IndexDriverOptionHandler(ODCOptionHandler):
         from datacube.drivers.indexes import index_drivers
         drivers = index_drivers()
         if value not in drivers:
-            raise ConfigException(f"Unknown index driver: {value} - Try one of {','.join(drivers)}")
+            raise ConfigException(f"Unknown index driver: {value} - Try one of {','.join(sorted(drivers))}")
         return value
 
     @override
