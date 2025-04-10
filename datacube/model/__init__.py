@@ -526,7 +526,7 @@ class Measurement:
 
     @override
     def __eq__(self, other):
-        return self._data == other._data
+        return isinstance(other, Measurement) and self._data == other._data
 
     @override
     def __hash__(self):
