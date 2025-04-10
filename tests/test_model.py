@@ -299,6 +299,8 @@ def test_measurement_equality():
     m1 = Measurement(name='t', dtype='uint8', nodata=255, units='1')
     m2 = Measurement(name='t', dtype='uint8', nodata=255, units='1')
     assert m1 == m2
+    g1 = AlbersGS.tile_geobox((15, -40))
+    assert m1 != g1
 
 
 @pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL))
