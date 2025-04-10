@@ -525,6 +525,14 @@ class Measurement:
             self[key] = value
 
     @override
+    def __eq__(self, other):
+        return self._data == other._data
+
+    @override
+    def __hash__(self):
+        return hash(self._data)
+
+    @override
     def __repr__(self) -> str:
         return f"Measurement({repr(self._data)})"
 
@@ -536,6 +544,12 @@ class Measurement:
     def dataarray_attrs(self) -> dict[str, Any]:
         """This returns attributes filtered for display in a dataarray."""
         return {key: value for key, value in self.items() if key not in self.ATTR_SKIP}
+
+    def __getstate__(self):
+        return self._data
+
+    def __setstate__(self, state):
+        self.__init__(**state)
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')

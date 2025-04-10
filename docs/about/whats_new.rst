@@ -28,6 +28,7 @@ Next Version
 - Preparations for Psycopg3 support :pull:`1764`, :pull:`1765`, :pull:`1766`
 - Add override annotations :pull:`1767`
 - CI: update doctor rst version :pull:`1775`
+- Fix error when run with Python 3.10 causing pickling errors :pull:`1776`
 
 v1.9.2 (26th February 2025)
 ===========================
