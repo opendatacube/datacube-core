@@ -545,6 +545,12 @@ class Measurement:
         """This returns attributes filtered for display in a dataarray."""
         return {key: value for key, value in self.items() if key not in self.ATTR_SKIP}
 
+    def __getstate__(self):
+        return self._data
+
+    def __setstate__(self, state):
+        self.__init__(**state)
+
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
 class MetadataType:
