@@ -27,7 +27,9 @@ Next Version
 - Update to Python 3.10 syntax :pull:`1756`, :pull:`1757`, :pull:`1758`, :pull:`1759`
 - Preparations for Psycopg3 support :pull:`1764`, :pull:`1765`, :pull:`1766`
 - Add override annotations :pull:`1767`
-- - Optimize index_drivers() to return a set :pull:`1774`
+- Optimize index_drivers() to return a set :pull:`1774`
+- CI: update doctor rst version :pull:`1775`
+- Fix error when run with Python 3.10 causing pickling errors :pull:`1776`
 
 v1.9.2 (26th February 2025)
 ===========================
