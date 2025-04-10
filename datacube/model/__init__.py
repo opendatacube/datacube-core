@@ -525,6 +525,14 @@ class Measurement:
             self[key] = value
 
     @override
+    def __eq__(self, other):
+        return self._data == other._data
+
+    @override
+    def __hash__(self):
+        return hash(self._data)
+
+    @override
     def __repr__(self) -> str:
         return f"Measurement({repr(self._data)})"
 

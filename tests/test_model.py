@@ -294,6 +294,12 @@ def test_measurement():
     assert 'dtype' in str(e.value)
 
 
+def test_measurement_equality():
+    m1 = Measurement(name='t', dtype='uint8', nodata=255, units='1')
+    m2 = Measurement(name='t', dtype='uint8', nodata=255, units='1')
+    assert m1 == m2
+
+
 def test_output_geobox_load_hints():
     geobox0 = AlbersGS.tile_geobox((15, -40))
 
