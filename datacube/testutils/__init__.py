@@ -406,7 +406,7 @@ def gen_tiff_dataset(bands,
                      prefix='',
                      timestamp='2018-07-19',
                      base_folder_of_record=None,
-                     **kwargs):
+                     **kwargs) -> tuple[Dataset, GeoBox]:
     """
        each band:
          .name    - string
