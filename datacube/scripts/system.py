@@ -129,7 +129,6 @@ def clone(env: ODCEnvironment, batch_size: int, skip_lineage: bool, lineage_only
         source_config = env._cfg[source_env]
     except KeyError:
         raise click.ClickException(f"No datacube config found for '{source_env}'")
-        exit(1)
 
     try:
         src_index = index_connect(source_config, validate_connection=True)

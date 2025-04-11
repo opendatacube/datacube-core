@@ -91,7 +91,7 @@ def test_rd_internals_bidx(data_folder):
             _rio_band_idx(bi, src)
 
         # extract from .uri
-        bi.uri = bi.uri + "#part=5"
+        bi.uri += "#part=5"
         assert _rio_band_idx(bi, src) == 5
 
         # extract from .band

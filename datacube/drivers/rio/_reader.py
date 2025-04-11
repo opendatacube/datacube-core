@@ -64,11 +64,11 @@ def _roi_to_window(roi: RasterWindow | None, shape: RasterShape) -> RioWindow | 
         if _out < 0:
             _out += n
 
-        return (_in, _out)
+        return _in, _out
 
     s1, s2 = (s2t(s, n)
               for s, n in zip(roi, shape))
-    return (s1, s2)
+    return s1, s2
 
 
 def _dc_crs(crs: rasterio.crs.CRS | None) -> CRS | None:  # pylint: disable=c-extension-no-member

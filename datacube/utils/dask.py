@@ -250,9 +250,9 @@ def _save_blob_to_file(data: bytes | str,
         with open(fname, 'wb') as f:
             f.write(data)
     except IOError:
-        return (fname, False)
+        return fname, False
 
-    return (fname, True)
+    return fname, True
 
 
 def _save_blob_to_s3(data: bytes | str,

@@ -511,6 +511,7 @@ STAC
 stac
 stacker
 stacspec
+staticmethod
 stdlib
 Stereographic
 str

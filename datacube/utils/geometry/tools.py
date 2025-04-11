@@ -198,7 +198,7 @@ def apply_affine(A: Affine, x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, n
 
     x, y = A @ np.vstack([x.ravel(), y.ravel()]) + t
     x, y = (a.reshape(shape) for a in (x, y))
-    return (x, y)
+    return x, y
 
 
 def split_translation(t):
@@ -225,7 +225,7 @@ def split_translation(t):
             x_part += 1
             x_whole -= 1
 
-        return (x_whole, x_part)
+        return x_whole, x_part
 
     _tt = [_split1(x) for x in t]
 
@@ -434,7 +434,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> tuple[slice, s
         # remap src from flipped space to normal
         src = slice(Ns - src.stop, Ns - src.start)
 
-    return (src, dst)
+    return src, dst
 
 
 def box_overlap(src_shape, dst_shape, ST, tol):  # noqa: N803
@@ -620,12 +620,12 @@ def compute_reproject_roi(src, dst, tol=0.05, padding=None, align=None):
         roi_src = roi_from_points(XY, src.shape, padding, align=align)
 
         if roi_is_empty(roi_src):
-            return (roi_src, np.s_[0:0, 0:0])
+            return roi_src, np.s_[0:0, 0:0]
 
         # project src roi back into dst and compute roi from that
         xy = np.vstack(tr(roi_boundary(roi_src, pts_per_side)))
         roi_dst = roi_from_points(xy, dst.shape, padding=0)  # no need to add padding twice
-        return (roi_src, roi_dst)
+        return roi_src, roi_dst
 
     tr = native_pix_transform(src, dst)
 
