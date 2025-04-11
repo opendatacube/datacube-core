@@ -113,8 +113,8 @@ class Index(AbstractIndex):
     def url(self) -> str:
         return str(self._db.url)
 
-    @override
     @classmethod
+    @override
     def from_config(cls,
                     config_env: ODCEnvironment,
                     application_name: str | None = None,
@@ -184,12 +184,10 @@ class Index(AbstractIndex):
         :return: A PostgresDbAPI object, with the specified transaction semantics.
         """
         trans = self.thread_transaction()
-        closing = False
         if trans is not None:
             # Use active transaction
             yield trans._connection
         elif transaction:
-            closing = True
             with self._db._connect() as conn:
                 conn.begin()
                 try:
@@ -199,7 +197,6 @@ class Index(AbstractIndex):
                     conn.rollback()
                     raise
         else:
-            closing = True
             # Autocommit behaviour:
             with self._db._connect() as conn:
                 yield conn
@@ -208,13 +205,13 @@ class Index(AbstractIndex):
 class PostgresIndexDriver(AbstractIndexDriver):
     aliases = ['legacy', 'default']
 
-    @override
     @classmethod
+    @override
     def index_class(cls) -> type[AbstractIndex]:
         return Index
 
-    @override
     @staticmethod
+    @override
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
                "Please use the 'index.metadata_type.from_doc()' instead.",
@@ -228,8 +225,8 @@ class PostgresIndexDriver(AbstractIndexDriver):
         return MetadataType(definition,
                             dataset_search_fields=Index.get_dataset_fields(definition))
 
-    @override
     @staticmethod
+    @override
     def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
         return config_options_for_psql_driver(env)
 

@@ -1029,7 +1029,7 @@ class PostgisDbAPI:
             )
 
         def xytuple(o):
-            return (o['x'], o['y'])
+            return o['x'], o['y']
 
         for result in self._connection.execute(query):
             dsid = result[0]
@@ -1466,14 +1466,14 @@ class PostgisDbAPI:
         query = self.temporal_extent_full().where(Dataset.product_ref == product_id)
         res = self._connection.execute(query)
         for tmin, tmax in res:
-            return (time_min.normalise_value(tmin), time_max.normalise_value(tmax))
+            return time_min.normalise_value(tmin), time_max.normalise_value(tmax)
         raise RuntimeError("Product has no datasets and therefore no temporal extent")
 
     def temporal_extent_by_ids(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
         query = self.temporal_extent_full().where(Dataset.id.in_(ids))
         res = self._connection.execute(query)
         for tmin, tmax in res:
-            return (time_min.normalise_value(tmin), time_max.normalise_value(tmax))
+            return time_min.normalise_value(tmin), time_max.normalise_value(tmax)
         raise ValueError("no dataset ids provided")
 
     def temporal_extent_full(self) -> Select:

@@ -25,9 +25,11 @@ Next Version
 - CI: cancel old PR jobs :pull:`1761`
 - Fix some readthedocs warnings :pull:`1762`
 - Update to Python 3.10 syntax :pull:`1756`, :pull:`1757`, :pull:`1758`, :pull:`1759`
-- Preparations for Psycopg3 support :pull:`1764`, :pull:`1765`, :pull:`1766`
+- Preparations for Psycopg3 support :pull:`1763`, :pull:`1764`, :pull:`1765`, :pull:`1766`
 - Add override annotations :pull:`1767`
 - Optimize index_drivers() to return a set :pull:`1774`
+- Various minor cleanups :pull:`1772`
+- api: add missing staticmethod :pull:`1773`
 - CI: update doctor rst version :pull:`1775`
 - Fix error when run with Python 3.10 causing pickling errors :pull:`1776`
 

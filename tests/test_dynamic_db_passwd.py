@@ -14,7 +14,7 @@ last_base = [None]
 
 
 def next_token(base):
-    counter[0] = counter[0] + 1
+    counter[0] += 1
     last_base[0] = base
     return f"{base}{counter[0]}"
 
