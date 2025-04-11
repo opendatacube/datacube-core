@@ -79,6 +79,39 @@ def test_load_data(tmpdir):
     np.testing.assert_array_equal(aa, ds_data.aa.values[0])
 
 
+def test_load_data_dask(tmp_path):
+    spatial = dict(resolution=(15, -15),
+                   offset=(11230, 1381110),)
+
+    nodata = -999
+    aa = mk_test_image(128, 128, 'int16', nodata=nodata)
+
+    ds, geobox = gen_tiff_dataset([SimpleNamespace(name='aa', values=aa, nodata=nodata)],
+                                  tmp_path,
+                                  prefix='ds1-',
+                                  timestamp='2018-07-19',
+                                  **spatial)
+
+    sources = Datacube.group_datasets([ds], 'time')
+    mm = ds.product.measurements
+
+    import dask
+    dask.config.set(scheduler='synchronous')
+
+    ds_data = Datacube.load_data(sources, geobox, mm, dask_chunks={'x': 50, 'y': 67})  # spatial dims not equal!
+    ds_data.compute()
+    assert ds_data.aa.nodata == nodata
+    np.testing.assert_array_equal(aa, ds_data.aa.values[0])
+
+    # Include an empty value area outside the data area, large enough to include completely empty chunks
+    geobox = geobox.pad(100, 100)
+    ds_data = Datacube.load_data(sources, geobox, mm, dask_chunks={'x': 50, 'y': 67})  # spatial dims not equal!
+
+    ds_data.compute()
+    assert ds_data.aa.nodata == nodata
+    np.testing.assert_array_equal(aa, ds_data.aa.values[0, 100:228, 100:228])
+
+
 def test_load_data_with_url_mangling(tmpdir):
     actual_tmpdir = Path(str(tmpdir))
     recorded_tmpdir = Path(str(tmpdir / "not" / "actual" / "location"))
