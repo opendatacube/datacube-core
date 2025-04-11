@@ -51,11 +51,11 @@ def index_cache() -> IndexDriverCache:
                            'datacube.plugins.index')
 
 
-def index_drivers() -> list[str]:
+def index_drivers() -> set[str]:
     """
-    Returns list driver names
+    Returns a set of driver names
     """
-    return index_cache().drivers()
+    return set(index_cache().drivers())
 
 
 def index_driver_by_name(name: str) -> AbstractIndexDriver | None:
